@@ -1,0 +1,101 @@
+[tool.poetry]
+name = "secretgraph"
+description = "A secure, decentral identity graph"
+version = "0.1"
+license = "MIT"
+authors = ["Alexander Kaftan"]
+homepage = "https://spkcspider.net"
+readme = "README.md"
+repository = "https://github.com/spkcspider/spkcspider"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Framework :: Django",
+  "Intended Audience :: System Administrators",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX",
+  "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+  "Topic :: Internet :: WWW/HTTP :: Dynamic Content :: Content Management System",
+  "Topic :: Internet :: WWW/HTTP :: WSGI :: Application"
+]
+
+keywords = [
+  "online identity", "decentral networks"
+]
+
+[tool.poetry.dependencies]
+python = ">=3.6"
+django = '>=3.0'
+cryptography = "*"
+django-ranged-response = "*"
+
+django-simple-captcha = {version="*", optional = true}
+flipflop = {version="*", optional = true}
+mysqlclient = {version="*", optional = true}
+django-mysql = {version="*", optional = true}
+psycopg2 = {version="*", optional = true}
+celery = {version="*", optional = true}
+sqlalchemy = {version="*", optional = true}
+spkcspider-domainauth = {version=">=0.4", optional = true}
+django-webtest = {version="*", optional = true}
+WSGIProxy2 = {version="*", optional = true}
+
+
+[tool.poetry.dev-dependencies]
+django-extensions = '*'
+Werkzeug = '*'
+pylint = "*"
+django-simple-captcha = {version="*"}
+requests = '*'
+certifi = '*'
+bleach = '*'
+rdflib = '*'
+html5lib = '*'
+django-widget-tweaks = "*"
+django-next-prev = "*"
+django-fast-ratelimit = "*"
+
+
+[tool.poetry.extras]
+fastcgi = ["flipflop"]
+postgresql = ["psycopg2"]
+mysql = ["mysqlclient", "django-mysql"]
+tasks = ["celery", "sqlalchemy"]
+test = ["django-webtest", "django-simple-captcha", "WSGIProxy2", "celery", "spkcspider-domainauth"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+minversion = 3.4.0
+isolated_build = True
+envlist = py{36,37,38}-django{30,master}-{sqlite3,postgresql,mysql}
+extras =
+  test
+
+[testenv]
+whitelist_externals =
+  psql
+commands =
+  !postgresql: python -Wd ./manage.py test tests
+  postgresql: python -Wd ./manage.py test --keepdb tests
+  postgresql: psql -c 'drop database spkcspider_tests;' -U postgres
+
+
+setenv =
+    PYTHONDONTWRITEBYTECODE=1
+    sqlite3: DJANGO_SETTINGS_MODULE=testsettings.test_sqlite3
+    postgresql: DJANGO_SETTINGS_MODULE=testsettings.test_postgresql
+    mysql: DJANGO_SETTINGS_MODULE=testsettings.test_mysql
+
+deps =
+  django30: Django>=3.0,<3.1
+  djangomaster: https://github.com/django/django/archive/master.zip
+  postgresql: psycopg2-binary
+  mysql: mysqlclient
+  mysql: django-mysql
+
+"""
+
+[build-system]
+requires = ["poetry>=1.0"]
+build-backend = "poetry.masonry.api"
