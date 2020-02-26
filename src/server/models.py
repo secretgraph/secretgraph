@@ -52,7 +52,6 @@ class Content(models.Model):
             ~models.Q(id="referenced_by__id")
         )
     )
-    counter: int = models.IntegerField(default=0, editable=False)
 
 
 class ContentValue(models.Model):
@@ -60,6 +59,7 @@ class ContentValue(models.Model):
     content: Content = models.ForeignKey(
         Content, on_delete=models.CASCADE,
     )
+    updated = models.DateTimeField(auto_now=True)
     name: str = models.CharField(max_length=255)
     value: bytes = models.BinaryField(null=True, blank=True)
     # extern content pushed, can only use file
@@ -67,11 +67,6 @@ class ContentValue(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                name="%(class)s_unique",
-                fields=("content", "name"),
-                condition=models.Q(unique=True)
-            ),
             models.CheckConstraint(
                 models.Q(value__isnull=True) |
                 models.Q(file__isnull=True),
