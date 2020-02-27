@@ -46,12 +46,27 @@ class Content(models.Model):
     component: Component = models.ForeignKey(
         Component, on_delete=models.CASCADE,
     )
-    references = models.ManyToManyField(
-        "self", related_name="referenced_by",
-        editable=False, symmetrical=False, limit_choices_to=(
-            ~models.Q(id="referenced_by__id")
-        )
+
+
+class ReferenceContent(models.Model):
+    id: int = models.BigAutoField(primary_key=True, editable=False)
+    source = models.ForeignKey(
+        Content, related_name="references",
+        on_delete=models.CASCADE,
     )
+    target = models.ForeignKey(
+        Content, related_name="referenced_by",
+        on_delete=models.CASCADE
+    )
+    delete_recursive = models.BooleanField(blank=True, default=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                ~models.Q(source="target"),
+                name="%(class)s_no_self_ref"
+            ),
+        ]
 
 
 class ContentValue(models.Model):

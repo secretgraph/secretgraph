@@ -1,7 +1,10 @@
 
 
 def deleteContentCb(sender, instance):
-    instance.referenced_by.delete()
+    sender.objects.filter(
+        references__delete_recursive=True,
+        references__target=instance
+    ).delete()
 
 
 def deleteContentValueCb(sender, instance):

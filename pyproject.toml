@@ -29,13 +29,12 @@ django = '>=3.0'
 cryptography = "*"
 django-ranged-response = "*"
 
+graphene-django = {version="*", optional = true}
 django-simple-captcha = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 django-mysql = {version="*", optional = true}
 psycopg2 = {version="*", optional = true}
-celery = {version="*", optional = true}
-sqlalchemy = {version="*", optional = true}
 spkcspider-domainauth = {version=">=0.4", optional = true}
 django-webtest = {version="*", optional = true}
 WSGIProxy2 = {version="*", optional = true}
