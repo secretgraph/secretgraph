@@ -22,10 +22,6 @@ classifiers = [
 keywords = [
   "online identity", "decentral networks"
 ]
-packages = [
-    { include = "secretgraph", from = "src" },
-]
-
 
 [tool.poetry.dependencies]
 python = ">=3.6"
