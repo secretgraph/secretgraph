@@ -6,7 +6,7 @@ license = "MIT"
 authors = ["Alexander Kaftan"]
 homepage = "https://spkcspider.net"
 readme = "README.md"
-repository = "https://github.com/spkcspider/spkcspider"
+repository = "https://github.com/devkral/secretgraph"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Framework :: Django",
@@ -22,15 +22,22 @@ classifiers = [
 keywords = [
   "online identity", "decentral networks"
 ]
+packages = [
+    { include = "secretgraph", from = "src" },
+]
+
 
 [tool.poetry.dependencies]
 python = ">=3.6"
 django = '>=3.0'
 cryptography = "*"
+rdflib = '*'
 django-ranged-response = "*"
 
+
+requests = "*"
+certifi = "*"
 graphene-django = {version="*", optional = true}
-django-simple-captcha = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 django-mysql = {version="*", optional = true}
@@ -44,23 +51,14 @@ WSGIProxy2 = {version="*", optional = true}
 django-extensions = '*'
 Werkzeug = '*'
 pylint = "*"
-django-simple-captcha = {version="*"}
-requests = '*'
-certifi = '*'
-bleach = '*'
-rdflib = '*'
-html5lib = '*'
-django-widget-tweaks = "*"
-django-next-prev = "*"
-django-fast-ratelimit = "*"
 
 
 [tool.poetry.extras]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
 mysql = ["mysqlclient", "django-mysql"]
-tasks = ["celery", "sqlalchemy"]
-test = ["django-webtest", "django-simple-captcha", "WSGIProxy2", "celery", "spkcspider-domainauth"]
+#tasks = ["celery", "sqlalchemy"]
+test = ["django-webtest", "WSGIProxy2"]
 
 [tool.tox]
 legacy_tox_ini = """
@@ -77,7 +75,7 @@ whitelist_externals =
 commands =
   !postgresql: python -Wd ./manage.py test tests
   postgresql: python -Wd ./manage.py test --keepdb tests
-  postgresql: psql -c 'drop database spkcspider_tests;' -U postgres
+  postgresql: psql -c 'drop database secretgraph_tests;' -U postgres
 
 
 setenv =

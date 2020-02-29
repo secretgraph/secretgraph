@@ -96,7 +96,8 @@ class Action(models.Model):
         Component, on_delete=models.CASCADE,
     )
     keyhash: str = models.CharField(max_length=255)
-    # value returns encrypted aes key required
+    nonce: str = models.CharField(max_length=255)
+    # value returns ttl with required encrypted aes key
     value: bytes = models.BinaryField(null=True, blank=True)
     start = models.DateTimeField(auto_now_add=True, blank=True)
     stop = models.DateTimeField(blank=True, null=True)
