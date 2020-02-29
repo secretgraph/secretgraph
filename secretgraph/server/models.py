@@ -1,8 +1,10 @@
 
 import secrets
 import posixpath
+from datetime import datetime as dt
 
 from django.db import models
+from django.core.files.base import File
 from django.core.files.storage import default_storage
 
 from django.conf import settings
@@ -50,15 +52,15 @@ class Content(models.Model):
 
 class ReferenceContent(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
-    source = models.ForeignKey(
+    source: Content = models.ForeignKey(
         Content, related_name="references",
         on_delete=models.CASCADE,
     )
-    target = models.ForeignKey(
+    target: Content = models.ForeignKey(
         Content, related_name="referenced_by",
         on_delete=models.CASCADE
     )
-    delete_recursive = models.BooleanField(blank=True, default=True)
+    delete_recursive: bool = models.BooleanField(blank=True, default=True)
 
     class Meta:
         constraints = [
@@ -72,19 +74,22 @@ class ReferenceContent(models.Model):
 class ContentValue(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     content: Content = models.ForeignKey(
-        Content, on_delete=models.CASCADE,
+        Content, on_delete=models.CASCADE, related_name="values"
     )
-    updated = models.DateTimeField(auto_now=True)
+    updated: dt = models.DateTimeField(auto_now=True)
     name: str = models.CharField(max_length=255)
+    # used as nonce in connection with a file attribute
     value: bytes = models.BinaryField(null=True, blank=True)
     # extern content pushed, can only use file
-    file = models.FileField(upload_to=get_file_path, null=True, blank=True)
+    file: File = models.FileField(
+        upload_to=get_file_path, null=True, blank=True
+    )
 
     class Meta:
         constraints = [
             models.CheckConstraint(
-                models.Q(value__isnull=True) |
-                models.Q(file__isnull=True),
+                models.Q(value__isnull=False, file__isnull=True) |
+                models.Q(value__isnull=False, file__isnull=False),
                 name="%(class)s_only_one_val"
             ),
         ]
@@ -93,14 +98,14 @@ class ContentValue(models.Model):
 class Action(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     component: Component = models.ForeignKey(
-        Component, on_delete=models.CASCADE,
+        Component, on_delete=models.CASCADE, related_name="actions"
     )
     keyhash: str = models.CharField(max_length=255)
     nonce: str = models.CharField(max_length=255)
     # value returns ttl with required encrypted aes key
     value: bytes = models.BinaryField(null=True, blank=True)
-    start = models.DateTimeField(auto_now_add=True, blank=True)
-    stop = models.DateTimeField(blank=True, null=True)
+    start: dt = models.DateTimeField(auto_now_add=True, blank=True)
+    stop: dt = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         constraints = [
