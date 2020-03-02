@@ -33,7 +33,8 @@ def get_file_path(instance, filename) -> str:
 
 class Component(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
-    value: bytes = models.BinaryField()
+    flexid = models.UUIDField(default=None, blank=True, null=True)
+    public_info: str = models.TextField()
 
     if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
         user = models.ForeignKey(

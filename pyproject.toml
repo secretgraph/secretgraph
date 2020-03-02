@@ -44,17 +44,19 @@ WSGIProxy2 = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
+graphene-django = '*'
 django-extensions = '*'
 Werkzeug = '*'
 pylint = "*"
 
 
 [tool.poetry.extras]
+server = ["graphene-django"]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
 mysql = ["mysqlclient", "django-mysql"]
 #tasks = ["celery", "sqlalchemy"]
-test = ["django-webtest", "WSGIProxy2"]
+test = ["django-webtest", "WSGIProxy2", "graphene-django"]
 
 [tool.tox]
 legacy_tox_ini = """

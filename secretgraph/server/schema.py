@@ -16,18 +16,21 @@ delete_self
 """
 
 
-class ActionNode(DjangoObjectType):
-    class Meta:
-        model = Action
-        filter_fields = ['keyhash']
-        fields = []
-        interfaces = (relay.Node,)
-
-
 class ComponentNode(DjangoObjectType):
     class Meta:
         model = Component
         interfaces = (relay.Node,)
+
+    def resolve_id(self, info):
+        return self.flexid
+
+    @classmethod
+    def get_node(cls, info, id):
+        queryset = cls.get_queryset(cls._meta.model.objects, info)
+        try:
+            return queryset.get(flexid=id)
+        except cls._meta.model.DoesNotExist:
+            return None
 
 
 class ContentNode(DjangoObjectType):
@@ -41,9 +44,17 @@ class ContentNode(DjangoObjectType):
         interfaces = (relay.Node,)
 
 
-class ComponentValueNode(DjangoObjectType):
+class ContentValueNode(DjangoObjectType):
     class Meta:
         model = ContentValue
+        interfaces = (relay.Node,)
+
+
+class ActionNode(DjangoObjectType):
+    class Meta:
+        model = Action
+        filter_fields = ['keyhash']
+        fields = []
         interfaces = (relay.Node,)
 
 

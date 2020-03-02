@@ -2,7 +2,7 @@
 category = "main"
 description = "A library for parsing ISO 8601 strings."
 name = "aniso8601"
-optional = true
+optional = false
 python-versions = "*"
 version = "7.0.0"
 
@@ -177,7 +177,7 @@ version = "1.0"
 category = "main"
 description = "GraphQL Framework for Python"
 name = "graphene"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.1.8"
 
@@ -196,7 +196,7 @@ test = ["pytest", "pytest-benchmark", "pytest-cov", "pytest-mock", "snapshottest
 category = "main"
 description = "Graphene Django integration"
 name = "graphene-django"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.8.2"
 
@@ -217,7 +217,7 @@ test = ["pytest (>=3.6.3)", "pytest-cov", "coveralls", "mock", "pytz", "pytest-d
 category = "main"
 description = "GraphQL implementation for Python"
 name = "graphql-core"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.3.1"
 
@@ -234,7 +234,7 @@ test = ["pytest (4.6.9)", "pytest-django (3.8.0)", "pytest-cov (2.8.1)", "covera
 category = "main"
 description = "Relay implementation for Python"
 name = "graphql-relay"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.0.1"
 
@@ -304,7 +304,7 @@ version = "1.4.6"
 category = "main"
 description = "Promises/A+ implementation for Python"
 name = "promise"
-optional = true
+optional = false
 python-versions = "*"
 version = "2.3"
 
@@ -398,7 +398,7 @@ socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
 category = "main"
 description = "Reactive Extensions (Rx) for Python"
 name = "rx"
-optional = true
+optional = false
 python-versions = "*"
 version = "1.6.1"
 
@@ -406,7 +406,7 @@ version = "1.6.1"
 category = "main"
 description = "This library brings functools.singledispatch from Python 3.4 to Python 2.6-3.3."
 name = "singledispatch"
-optional = true
+optional = false
 python-versions = "*"
 version = "3.4.0.3"
 
@@ -547,10 +547,11 @@ webob = "*"
 fastcgi = ["flipflop"]
 mysql = ["mysqlclient", "django-mysql"]
 postgresql = ["psycopg2"]
-test = ["django-webtest", "WSGIProxy2"]
+server = ["graphene-django"]
+test = ["django-webtest", "WSGIProxy2", "graphene-django"]
 
 [metadata]
-content-hash = "90ffdc5b86e91a4d7b3efcbfc633839805c847e986ff7b6049bf09c15deab227"
+content-hash = "88afeba81ad9f9427e8359e90a6c285adaff68281d4baf32f6f52860ef715d7d"
 python-versions = ">=3.6"
 
 [metadata.files]
