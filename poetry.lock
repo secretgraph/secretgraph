@@ -134,6 +134,17 @@ six = ">=1.2"
 
 [[package]]
 category = "main"
+description = "Django-filter is a reusable Django application for allowing users to filter querysets dynamically."
+name = "django-filter"
+optional = false
+python-versions = ">=3.4"
+version = "2.2.0"
+
+[package.dependencies]
+Django = ">=1.11"
+
+[[package]]
+category = "main"
 description = "Django-MySQL extends Django's built-in MySQL and MariaDB support their specific features not available on other databases."
 name = "django-mysql"
 optional = true
@@ -547,11 +558,11 @@ webob = "*"
 fastcgi = ["flipflop"]
 mysql = ["mysqlclient", "django-mysql"]
 postgresql = ["psycopg2"]
-server = ["graphene-django"]
+server = ["graphene-django", "django-filter"]
 test = ["django-webtest", "WSGIProxy2", "graphene-django"]
 
 [metadata]
-content-hash = "88afeba81ad9f9427e8359e90a6c285adaff68281d4baf32f6f52860ef715d7d"
+content-hash = "4ffd8225f872af6c6cd94c820904aeb6af9fad2acbe0a858a9f47cd519a407b5"
 python-versions = ">=3.6"
 
 [metadata.files]
@@ -644,6 +655,10 @@ django = [
 django-extensions = [
     {file = "django-extensions-2.2.8.tar.gz", hash = "sha256:2699cc1d6fb4bd393c0b5832fea4bc685f2ace5800b3c9ff222b2080f161ac04"},
     {file = "django_extensions-2.2.8-py2.py3-none-any.whl", hash = "sha256:1a03c4e8bade575f8c2be6c76456f8a2be3f9b02ab9f47d3535afa9562dc0493"},
+]
+django-filter = [
+    {file = "django-filter-2.2.0.tar.gz", hash = "sha256:c3deb57f0dd7ff94d7dce52a047516822013e2b441bed472b722a317658cfd14"},
+    {file = "django_filter-2.2.0-py3-none-any.whl", hash = "sha256:558c727bce3ffa89c4a7a0b13bc8976745d63e5fd576b3a9a851650ef11c401b"},
 ]
 django-mysql = [
     {file = "django-mysql-3.3.0.tar.gz", hash = "sha256:b984dfe75bedeb01bfcb974fe8400c224a6b55677b98a799f1c96274d96c5a72"},

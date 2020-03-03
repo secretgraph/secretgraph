@@ -1,7 +1,7 @@
 import graphene
 
-from .server.schema import ServerQuery
-from .server.schema import ServerMutation
+from .server.schema import Query as ServerQuery
+from .server.schema import Mutation as ServerMutation
 
 
 class Query(

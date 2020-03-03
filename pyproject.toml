@@ -34,6 +34,7 @@ django-ranged-response = "*"
 requests = "*"
 certifi = "*"
 graphene-django = {version="*", optional = true}
+django-filter = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 django-mysql = {version="*", optional = true}
@@ -44,6 +45,7 @@ WSGIProxy2 = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
+django-filter = "*"
 graphene-django = '*'
 django-extensions = '*'
 Werkzeug = '*'
@@ -51,7 +53,7 @@ pylint = "*"
 
 
 [tool.poetry.extras]
-server = ["graphene-django"]
+server = ["graphene-django", "django-filter"]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
 mysql = ["mysqlclient", "django-mysql"]

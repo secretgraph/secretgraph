@@ -12,7 +12,7 @@ if __name__ == "__main__":
         "DJANGO_SETTINGS_MODULE", "secretgraph.settings.debug"
     )
     if not os.environ.get(
-        "SPIDER_SILENCE",
+        "SECRETGRAPH_SILENCE",
         os.environ.get(
             "RUN_MAIN",  # is started with reloader
             os.environ.get(

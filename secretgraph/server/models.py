@@ -6,6 +6,7 @@ from datetime import datetime as dt
 from django.db import models
 from django.core.files.base import File
 from django.core.files.storage import default_storage
+from django.utils import timezone
 
 from django.conf import settings
 
@@ -61,13 +62,20 @@ class ReferenceContent(models.Model):
         Content, related_name="referenced_by",
         on_delete=models.CASCADE
     )
+    name: str = models.CharField(
+        max_length=255, default="", null=False, blank=True
+    )
     delete_recursive: bool = models.BooleanField(blank=True, default=True)
 
     class Meta:
         constraints = [
             models.CheckConstraint(
-                ~models.Q(source="target"),
+                check=~models.Q(source=models.F("target")),
                 name="%(class)s_no_self_ref"
+            ),
+            models.UniqueConstraint(
+                fields=["source", "target", "name"],
+                name="%(class)s_unique"
             ),
         ]
 
@@ -77,10 +85,10 @@ class ContentValue(models.Model):
     content: Content = models.ForeignKey(
         Content, on_delete=models.CASCADE, related_name="values"
     )
-    updated: dt = models.DateTimeField(auto_now=True)
+    updated: dt = models.DateTimeField(auto_now=True, editable=False)
     name: str = models.CharField(max_length=255)
     # used as nonce in connection with a file attribute
-    value: bytes = models.BinaryField(null=True, blank=True)
+    value: str = models.TextField(null=True, blank=True)
     # extern content pushed, can only use file
     file: File = models.FileField(
         upload_to=get_file_path, null=True, blank=True
@@ -89,8 +97,10 @@ class ContentValue(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                models.Q(value__isnull=False, file__isnull=True) |
-                models.Q(value__isnull=False, file__isnull=False),
+                check=(
+                    models.Q(value__isnull=False, file__isnull=True) |
+                    models.Q(value__isnull=False, file__isnull=False)
+                ),
                 name="%(class)s_only_one_val"
             ),
         ]
@@ -104,8 +114,8 @@ class Action(models.Model):
     keyhash: str = models.CharField(max_length=255)
     nonce: str = models.CharField(max_length=255)
     # value returns ttl with required encrypted aes key
-    value: bytes = models.BinaryField(null=True, blank=True)
-    start: dt = models.DateTimeField(auto_now_add=True, blank=True)
+    value: bytes = models.BinaryField(null=False, blank=False)
+    start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)
 
     class Meta:

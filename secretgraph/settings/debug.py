@@ -1,7 +1,7 @@
 
 import os
 
-os.environ["DEBUG"] = True
+os.environ["DEBUG"] = "true"
 
 from secretgraph.settings import *  # noqa: F403, F401
 
@@ -16,3 +16,11 @@ DATABASES = {
 FIXTURE_DIRS = [
     "tests/fixtures/"
 ]
+
+SECRET_KEY = "CHANGEME"
+
+INSTALLED_APPS += [
+    "secretgraph.server"
+]
+
+SECRETGRAPH_BIND_TO_USER = True
