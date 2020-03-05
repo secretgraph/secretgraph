@@ -37,7 +37,10 @@ class Component(models.Model):
     flexid = models.UUIDField(default=None, blank=True, null=True)
     public_info: str = models.TextField()
 
-    if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+    if (
+        getattr(settings, "AUTH_USER_MODEL", None) or
+        getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
+    ):
         user = models.ForeignKey(
             settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
             null=True, blank=True

@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = []
-    if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+    if getattr(settings, "AUTH_USER_MODEL", None) or getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
         dependencies.append(
             migrations.swappable_dependency(settings.AUTH_USER_MODEL)
         )
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
         ('flexid', models.UUIDField(blank=True, default=None, null=True)),
         ('public_info', models.TextField()),
     ]
-    if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+    if getattr(settings, "AUTH_USER_MODEL", None) or getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
         component_fields.append((
             'user',
             models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)

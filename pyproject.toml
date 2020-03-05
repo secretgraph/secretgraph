@@ -34,7 +34,7 @@ django-ranged-response = "*"
 requests = "*"
 certifi = "*"
 graphene-django = {version="*", optional = true}
-django-filter = {version="*", optional = true}
+django-filter = {version=">=2", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 django-mysql = {version="*", optional = true}
@@ -45,7 +45,7 @@ WSGIProxy2 = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
-django-filter = "*"
+django-filter = ">=2"
 graphene-django = '*'
 django-extensions = '*'
 Werkzeug = '*'

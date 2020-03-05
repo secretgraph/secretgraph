@@ -1,18 +1,12 @@
 
 from django.conf import settings
+import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 
 from .models import Component, Content, ContentValue, ReferenceContent
 from .utils import retrieve_allowed_objects
-
-
-class ReferenceContentConnection(relay.Connection, DjangoObjectType):
-    class Meta:
-        model = ReferenceContent
-        fields = ['source', 'target', 'name', 'delete_recursive']
-        node = relay.Node
 
 
 class ContentNode(DjangoObjectType):
@@ -28,7 +22,13 @@ class ContentNode(DjangoObjectType):
         fields = [
             'nonce', 'component', 'values', 'references', 'referenced_by'
         ]
-    references = relay.ConnectionField(ReferenceContentConnection)
+
+
+class ReferenceContentNode(DjangoObjectType):
+    class Meta:
+        model = ReferenceContent
+        interfaces = (relay.Node,)
+        fields = ['source', 'target', 'name', 'delete_recursive']
 
 
 class ComponentNode(DjangoObjectType):
@@ -36,8 +36,13 @@ class ComponentNode(DjangoObjectType):
         model = Component
         interfaces = (relay.Node,)
         fields = ['public_info']
-        if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+        filter_fields = {}
+        if (
+            getattr(settings, "AUTH_USER_MODEL", None) or
+            getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
+        ):
             fields.append("user")
+            filter_fields["user"] = ["exact"]
 
     def resolve_id(self, info):
         return self.flexid
@@ -81,6 +86,37 @@ class UploadFile(graphene.ClientIDMutation):
 """
 
 
+class ComponentMutation(relay.ClientIDMutation):
+    class Input:
+        public_info = graphene.String(required=True)
+        id = graphene.ID()
+        user = graphene.ID()
+
+    component = graphene.Field(ComponentNode)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, public_info, id):
+        idpart = cls.from_global_id(id)[1]
+        if idpart:
+            component = retrieve_allowed_objects(
+                info, "manage", Content.objects.all()
+            ).get(id=idpart)
+
+            Component.objects.get(pk=idpart)
+            component.public_info = public_info
+            component.save(update_fields=["public_info"])
+        else:
+            prebuild = {
+                "public_info": public_info
+            }
+            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+                if not info.context.user.is_authenticated:
+                    raise
+                prebuild["user"] = info.context.user
+            component = Component.objects.create(**prebuild)
+        return cls(component=component)
+
+
 class Query():
     component = relay.Node.Field(ComponentNode)
     all_components = DjangoFilterConnectionField(ComponentNode)
@@ -105,4 +141,4 @@ class Query():
 
 
 class Mutation():
-    pass
+    manage_component = ComponentMutation.Field()

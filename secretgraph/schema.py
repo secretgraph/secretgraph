@@ -5,14 +5,14 @@ from .server.schema import Mutation as ServerMutation
 
 
 class Query(
-    ServerQuery,  # Add your Query objects here
+    ServerQuery,
     graphene.ObjectType
 ):
     pass
 
 
 class Mutation(
-    ServerMutation,  # Add your Mutation objects here
+    ServerMutation,
     graphene.ObjectType
 ):
     pass
