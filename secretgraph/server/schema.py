@@ -1,9 +1,10 @@
 
-from django.conf import settings
 import graphene
+from django.conf import settings
 from graphene import relay
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
+from rdflib import Graph
 
 from .models import Component, Content, ContentValue, ReferenceContent
 from .utils import retrieve_allowed_objects
@@ -32,6 +33,8 @@ class ReferenceContentNode(DjangoObjectType):
 
 
 class ComponentNode(DjangoObjectType):
+
+    # exposed id is flexid
     class Meta:
         model = Component
         interfaces = (relay.Node,)
@@ -95,14 +98,14 @@ class ComponentMutation(relay.ClientIDMutation):
     component = graphene.Field(ComponentNode)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, public_info, id):
+    def mutate_and_get_payload(cls, root, info, public_info, id, user=None):
         idpart = cls.from_global_id(id)[1]
+        g = Graph()
+        g.parse(public_info, "turtle")
         if idpart:
             component = retrieve_allowed_objects(
-                info, "manage", Content.objects.all()
-            ).get(id=idpart)
-
-            Component.objects.get(pk=idpart)
+                info, "manage", Component.objects.all()
+            ).get(flexid=idpart)
             component.public_info = public_info
             component.save(update_fields=["public_info"])
         else:
@@ -113,8 +116,56 @@ class ComponentMutation(relay.ClientIDMutation):
                 if not info.context.user.is_authenticated:
                     raise
                 prebuild["user"] = info.context.user
+            # TODO: admin permission
+            # if info.context.user.has_perm("TODO") and user:
+            #     prebuild["user"] = cls.from_global_id(user)[1]
             component = Component.objects.create(**prebuild)
+        # TODO: inject related
         return cls(component=component)
+
+
+class RegenerateComponentIDMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+
+    component = graphene.Field(ComponentNode)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, id):
+        components = Component.objects.all()
+        # TODO: admin permission
+        # if not info.context.user.has_perm("TODO"):
+        #    components = retrieve_allowed_objects(
+        #        info, "manage", components
+        #    )
+        component = components.get(flexid=cls.from_global_id(id)[1])
+        component.flexid = None
+        component.save(update_fields=["flexid"])
+        return cls(component=component)
+
+
+class ContentMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID()
+        component = graphene.ID()
+        content = graphene.Field(ContentValueNode)
+
+    value = graphene.Field(ContentValueNode)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, id):
+        pass
+
+
+class PushFileMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+
+    value = graphene.Field(ContentValueNode)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, id):
+        pass
 
 
 class Query():
@@ -142,3 +193,4 @@ class Query():
 
 class Mutation():
     manage_component = ComponentMutation.Field()
+    regenerate_flexid = RegenerateComponentIDMutation.Field()

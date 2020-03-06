@@ -72,6 +72,6 @@ def retrieve_allowed_objects(info, scope, query):
                     keyhash=keyhashes[0]
                 )
     if isinstance(query.model, Component):
-        return query
+        return query.filter(id__in=components)
 
     return query.filter(component_id__in=components)
