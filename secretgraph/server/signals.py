@@ -17,8 +17,9 @@ def deleteContentValueCb(sender, instance, **kwargs):
         instance.file.delete(False)
 
 
-def generateComponentFlexidCb(sender, instance, **kwargs):
-    if not instance.flexid:
+def generateFlexid(sender, instance, force=False, **kwargs):
+    from .models import Component, Content, ContentValue
+    if not instance.flexid or force:
         for i in range(0, 1000):
             if i >= 999:
                 raise ValueError(
@@ -33,9 +34,19 @@ def generateComponentFlexidCb(sender, instance, **kwargs):
                 break
             except IntegrityError:
                 pass
+        if isinstance(sender, Component) and force:
+            for c in instance.contents.prefetch("values").all():
+                generateFlexid(Content, c, True)
+        if isinstance(sender, Content) and force:
+            for c in instance.values.all():
+                generateFlexid(ContentValue, c, True)
 
 
 def fillEmptyFlexidsCb(sender, **kwargs):
-    from .models import Component
+    from .models import Component, Content, ContentValue
     for c in Component.objects.filter(flexid=None):
-        generateComponentFlexidCb(Component, c)
+        generateFlexid(Component, c, False)
+    for c in Content.objects.filter(flexid=None):
+        generateFlexid(Content, c, False)
+    for c in ContentValue.objects.filter(flexid=None):
+        generateFlexid(ContentValue, c, False)

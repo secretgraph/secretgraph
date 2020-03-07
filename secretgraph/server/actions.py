@@ -1,4 +1,7 @@
 
+from uuid import UUID
+from django.db.models import Q
+
 from .models import Content, Component, Action
 
 
@@ -20,22 +23,26 @@ class ActionHandler():
         return None
 
     @staticmethod
-    def do_view(action_dict, objects, scope, sender, fullaccess, **kwargs):
+    def do_view(action_dict, scope, sender, fullaccess, **kwargs):
         if scope == "view" and not fullaccess:
-            objects = objects.exclude(id__in=action_dict["excluded_ids"])
-            objects = objects.exclude(
-                values__name__in=action_dict["exclude_with_name"]
+            excl_filters = (
+                Q(flexid__in=action_dict["excluded_ids"]) |
+                Q(values__name__in=action_dict["exclude_with_name"])
             )
+
             return {
-                "objects": objects,
-                "hidden_values": action_dict["hidden_values"],
+                "excl_filters": excl_filters,
+                "excl_values": Q(name__in=action_dict["hidden_values"]),
             }
         return None
 
     @staticmethod
     def clean_view(action_dict):
         exclude_ids = action_dict.get("exclude_ids", [])
-        action_dict["exclude_ids"] = list(map(int, exclude_ids))
+        try:
+            all(map(UUID, exclude_ids))
+        except Exception:
+            raise ValueError()
         exclude_with_name = action_dict.get("exclude_with_name", [])
         if not all(map(lambda x: isinstance(str), exclude_with_name)):
             raise ValueError()
@@ -46,49 +53,53 @@ class ActionHandler():
         action_dict["hidden_values"] = hidden_values
 
     @staticmethod
-    def do_update(action_dict, objects, scope, sender, fullaccess, **kwargs):
+    def do_update(action_dict,  scope, sender, fullaccess, **kwargs):
+        # broken
+        excl_filters = Q()
         if scope in {"view", "update"} and not fullaccess:
-            objects = objects.filter(id__in=action_dict["update_ids"])
+            excl_filters &= ~Q(id__in=action_dict["update_ids"])
         if scope == "view" and sender in {Content, Component}:
             return {
-                "objects": objects,
-                "shown_values": action_dict["shown_values"],
+                "excl_filters": excl_filters,
+                "excl_values": ~Q(name__in=action_dict["update_values"]),
             }
         elif scope == "update" and sender in {Content, Component}:
             return {
-                "objects": objects,
-                "shown_values": action_dict["shown_values"],
+                "excl_filters": excl_filters,
+                "excl_values": ~Q(name__in=action_dict["update_values"]),
             }
         return None
 
     @staticmethod
     def clean_update(action_dict):
         update_ids = action_dict.get("update_ids", [])
-        action_dict["update_ids"] = list(map(int, update_ids))
-        shown_values = action_dict.get("shown_values", [])
-        if not all(map(lambda x: isinstance(str), shown_values)):
+        try:
+            all(map(UUID, update_ids))
+        except Exception:
             raise ValueError()
-        action_dict["shown_values"] = shown_values
+        action_dict["update_ids"] = update_ids
+        update_values = action_dict.get("update_values", [])
+        if not all(map(lambda x: isinstance(x, str), update_values)):
+            raise ValueError()
+        action_dict["update_values"] = update_values
 
     @staticmethod
     def do_manage(
-        action_dict, objects, scope, sender, action, fullaccess, **kwargs
+        action_dict, scope, sender, action, fullaccess, **kwargs
     ):
         type_name = sender.__name__
-        if not fullaccess:
-            objects = sender.objects.filter(component_id=action.component_id)
-        objects = objects.exclude(
+        excl_filters = Q(
             id__in=action_dict["exclude"][type_name]
         )
         if (
             action_dict["type"] == "Component" and
             action_dict["type"] != type_name
         ):
-            objects = objects.exclude(
-                component_id__in=action_dict["exclude"]["Component"]
+            excl_filters |= Q(
+                component__flexid__in=action_dict["exclude"]["Component"]
             )
         return {
-            "objects": objects,
+            "excl_filters": excl_filters,
             "fullaccess": True
         }
 
@@ -96,24 +107,25 @@ class ActionHandler():
     def clean_manage(action_dict):
         action_dict.setdefault("exclude", {})
         for n in ["Content", "Component", "Action"]:
-            action_dict["exclude"][n].setdefault([])
-            action_dict["exclude"][n] = list(map(
-                int, action_dict["exclude"][n]
-            ))
+            action_dict["exclude"].setdefault(n, [])
+            try:
+                all(map(UUID, action_dict["exclude"][n]))
+            except Exception:
+                raise ValueError()
 
     @staticmethod
-    def do_stored_update(action_dict, objects, scope, sender, **kwargs):
+    def do_stored_update(action_dict, scope, **kwargs):
         for obj in [Component, Content, Action]:
-            type_name = sender.__name__
+            type_name = obj.__name__
             obj.objects.filter(
-                id__in=action_dict["delete"][type_name]
+                flexid__in=action_dict["delete"][type_name]
             ).delete()
             for obid, updatevalues in action_dict["update"][type_name].items():
                 updatevalues.pop("id", None)
                 updatevalues.pop("component", None)
                 updatevalues.pop("references", None)
                 updatevalues.pop("referenced_by", None)
-                obj.objects.filter(id=obid).update(**updatevalues)
+                obj.objects.filter(flexid=obid).update(**updatevalues)
         return None
 
     @staticmethod
@@ -121,16 +133,18 @@ class ActionHandler():
         action_dict.setdefault("delete", {})
         action_dict.setdefault("update", {})
         for n in ["Component", "Content", "Action"]:
-            action_dict["delete"][n].setdefault([])
-            action_dict["update"][n].setdefault(dict)
-            action_dict["delete"][n] = list(set(map(
-                int, action_dict["delete"][n]
-            )))
-            if action_dict["update"][n] is None:
-                action_dict["update"][n] = {}
-            elif not isinstance(action_dict["update"][n], dict):
+            action_dict["delete"].setdefault(n, [])
+            action_dict["update"].setdefault(n, dict)
+            try:
+                all(map(UUID, action_dict["delete"][n]))
+            except Exception:
                 raise ValueError()
-            if not all(lambda x: isinstance(x, int), action_dict["update"][n]):
+            if not isinstance(action_dict["update"][n], dict):
+                raise ValueError()
+
+            try:
+                all(map(UUID, action_dict["update"][n].keys()))
+            except Exception:
                 raise ValueError()
             for idkey in action_dict["delete"][n]:
                 action_dict["update"][n].pop(idkey, None)
@@ -141,5 +155,23 @@ class ActionHandler():
                 updatevalues.pop("referenced_by", None)
 
     @staticmethod
+    def do_push(action_dict, objects, fullaccess, scope, **kwargs):
+        if scope == "push" and not fullaccess:
+            return {
+                "excl_filters": ~Q(flexid__in=action_dict["push_ids"]),
+                "excl_values": ~Q(name__in=action_dict["push_values"])
+            }
+        return None
+
+    @staticmethod
     def clean_push(action_dict):
-        pass
+        push_ids = action_dict.get("push_ids", [])
+        try:
+            all(map(UUID, push_ids))
+        except Exception:
+            raise ValueError()
+        action_dict["push_ids"] = push_ids
+        push_values = action_dict.get("push_values", [])
+        if not all(map(lambda x: isinstance(str), push_values)):
+            raise ValueError()
+        action_dict["push_values"] = push_values

@@ -6,7 +6,7 @@ from django.db.models.signals import (
 )
 
 from .signals import (
-    deleteContentCb, deleteContentValueCb, generateComponentFlexidCb,
+    deleteContentCb, deleteContentValueCb, generateFlexid,
     fillEmptyFlexidsCb
 )
 
@@ -27,7 +27,15 @@ class SecretGraphServerConfig(AppConfig):
         )
 
         post_save.connect(
-            generateComponentFlexidCb, sender=Component
+            generateFlexid, sender=Component
+        )
+
+        post_save.connect(
+            generateFlexid, sender=Content
+        )
+
+        post_save.connect(
+            generateFlexid, sender=ContentValue
         )
 
         post_migrate.connect(

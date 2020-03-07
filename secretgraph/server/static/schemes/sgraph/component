@@ -1,0 +1,35 @@
+@prefix component: </static/schemes/sgraph/component#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cc: <https://creativecommons.org/ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+</static/schemes/sgraph/component#> a owl:Ontology ;
+  dc:title "Secretgraph Content Value" ;
+  dc:description "This is the spkcgraph format used by spkcspider." ;
+  cc:license <https://creativecommons.org/publicdomain/zero/1.0/> .
+
+component:Component a rdfs:Class ;
+  rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
+  rdfs:domain rdfs:Resource .
+
+component:esecrets a rdf:Bag ;
+  rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
+  rdfs:domain component:Component ;
+  rdfs:range xsd:base64Binary.
+
+component:EncryptedBox a rdfs:Class ;
+  rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
+  rdfs:domain component:Component .
+
+component:EncryptedBox.esecrets a rdf:Bag ;
+  rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
+  rdfs:domain component:EncryptedBox ;
+  rdfs:range component:esecret .
+
+component:tasks a rdf:Seq ;
+  rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
+  rdfs:domain component:EncryptedBox ;
+  rdfs:range xsd:string .

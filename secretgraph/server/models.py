@@ -1,4 +1,5 @@
 
+from uuid import UUID
 import secrets
 import posixpath
 from datetime import datetime as dt
@@ -34,7 +35,8 @@ def get_file_path(instance, filename) -> str:
 
 class Component(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
-    flexid = models.UUIDField(default=None, blank=True, null=True)
+    flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
+    nonce: str = models.CharField(max_length=255)
     public_info: str = models.TextField()
 
     if (
@@ -49,7 +51,9 @@ class Component(models.Model):
 
 class Content(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
-    nonce: str = models.CharField(max_length=255)
+    flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
+    # cached nonce
+    cached_nonce: str = models.CharField(max_length=255)
     component: Component = models.ForeignKey(
         Component, on_delete=models.CASCADE,
     )
@@ -85,28 +89,21 @@ class ReferenceContent(models.Model):
 
 class ContentValue(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
+    flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
     content: Content = models.ForeignKey(
         Content, on_delete=models.CASCADE, related_name="values"
     )
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     name: str = models.CharField(max_length=255)
-    # used as nonce in connection with a file attribute
-    value: str = models.TextField(null=True, blank=True)
+    # search value
+    search_value: str = models.TextField(default="", null=False, blank=True)
     # extern content pushed, can only use file
     file: File = models.FileField(
         upload_to=get_file_path, null=True, blank=True
     )
 
     class Meta:
-        constraints = [
-            models.CheckConstraint(
-                check=(
-                    models.Q(value__isnull=False, file__isnull=True) |
-                    models.Q(value__isnull=False, file__isnull=False)
-                ),
-                name="%(class)s_only_one_val"
-            ),
-        ]
+        constraints = []
 
 
 class Action(models.Model):
