@@ -36,6 +36,7 @@ def get_file_path(instance, filename) -> str:
 class Component(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
+    # only expose nonce when view rights
     nonce: str = models.CharField(max_length=255)
     public_info: str = models.TextField()
 
@@ -52,8 +53,8 @@ class Component(models.Model):
 class Content(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
-    # cached nonce
-    cached_nonce: str = models.CharField(max_length=255)
+    # cached nonce from component
+    nonce: str = models.CharField(max_length=255)
     component: Component = models.ForeignKey(
         Component, on_delete=models.CASCADE,
     )
