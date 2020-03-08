@@ -63,7 +63,7 @@ class ComponentNode(FlexidMixin, DjangoObjectType):
     class Meta:
         model = Component
         interfaces = (relay.Node,)
-        fields = ['public_info']
+        fields = ['public_info', 'nonce']
         filter_fields = {}
         if (
             getattr(settings, "AUTH_USER_MODEL", None) or
@@ -71,6 +71,12 @@ class ComponentNode(FlexidMixin, DjangoObjectType):
         ):
             fields.append("user")
             filter_fields["user"] = ["exact"]
+
+    def resolve_nonce(self, info):
+        passed_component_set = getattr(info, "passed_component_set", set())
+        if self.id not in passed_component_set:
+            return None
+        return self.nonce
 
 
 class ContentValueNode(FlexidMixin, DjangoObjectType):
@@ -83,7 +89,7 @@ class ContentValueNode(FlexidMixin, DjangoObjectType):
 
     def resolve_value(self, info):
         # url to
-        return ""
+        return self.file.url
 
 
 class FlexidType(graphene.Union):

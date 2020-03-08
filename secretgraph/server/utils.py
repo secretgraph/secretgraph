@@ -27,6 +27,8 @@ def retrieve_allowed_objects(info, scope, query):
     result = {
         "components": {}
     }
+    if not hasattr(info, "passed_component_set"):
+        setattr(info, "passed_component_set", set())
     for item in authset:
         spitem = item.split(":", 1)
         if len(spitem) != 2:
@@ -78,6 +80,8 @@ def retrieve_allowed_objects(info, scope, query):
                 excl_filters |= result.get("excl_filters", models.Q())
                 excl_values |= result.get("excl_values", models.Q())
             components.update(result.get("extra_components", []))
+
+            info.passed_component_set.add(action.component_id)
 
             if action.keyhash != keyhashes[0]:
                 Action.objects.filter(keyhash=action.keyhash).update(

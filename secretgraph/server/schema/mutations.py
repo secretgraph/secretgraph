@@ -17,12 +17,13 @@ class ComponentMutation(relay.ClientIDMutation):
     class Input:
         public_info = graphene.String(required=True)
         id = graphene.ID(required=False)
+        nonce = graphene.ID(required=False)
         user = graphene.ID(required=False)
 
     component = graphene.Field(ComponentNode)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, public_info, id, user=None):
+    def mutate_and_get_payload(cls, root, info, public_info, id, nonce, user):
         idpart = cls.from_global_id(id)[1]
         g = Graph()
         g.parse(public_info, "turtle")
@@ -31,11 +32,18 @@ class ComponentMutation(relay.ClientIDMutation):
                 info, "manage", Component.objects.all()
             ).get(flexid=idpart)
             component.public_info = public_info
-            component.save(update_fields=["public_info"])
+            if nonce:
+                component.nonce = nonce
+            # TODO: admin permission
+            # if info.context.user.has_perm("TODO") and user:
+            #     prebuild["user"] = cls.from_global_id(user)[1]
+            component.save(update_fields=["public_info", "nonce"])
         else:
             prebuild = {
-                "public_info": public_info
+                "public_info": public_info,
             }
+            if nonce:
+                prebuild["nonce"] = nonce
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
                 if not info.context.user.is_authenticated:
                     raise
@@ -108,6 +116,9 @@ class ContentMutation(relay.ClientIDMutation):
             )
             _content.component = _component
 
+        if content.nonce and _content.component.nonce != content.nonce:
+            raise ValueError("new nonce must match component nonce")
+
         files = info.context.FILES
         flexid_name_map = {}
         val_name_dict = parse_name_q(result["excl_values"], negated=True)
@@ -127,7 +138,7 @@ class ContentMutation(relay.ClientIDMutation):
 
         if _content.id:
             # update contents if nonce changes
-            if content.nonce != _content.nonce:
+            if content.nonce and content.nonce != _content.nonce:
                 if result["excl_values"].children:
                     raise ValueError("Missing update rights")
                 if flexid_name_map and mode == InsertMode.ADD:
@@ -155,8 +166,8 @@ class ContentMutation(relay.ClientIDMutation):
                 _content.values.exclude(
                     flexid__in=list(flexid_name_map.keys())
                 ).delete()
-
-        _content.nonce = content.nonce
+        if content.nonce:
+            _content.nonce = content.nonce
         _content.save()
 
         for v in content.values:
