@@ -21,7 +21,7 @@ class Query():
     def resolve_all_components(self, info, **kwargs):
         if info.context.user.is_staff:
             return Component.objects.all()
-        return Component.objects.none()
+        return Component.objects.filter(public=True)
 
     def resolve_content(self, info, content_id):
         result = retrieve_allowed_objects(

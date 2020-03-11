@@ -39,6 +39,8 @@ class Component(models.Model):
     # only expose nonce when view rights
     nonce: str = models.CharField(max_length=255)
     public_info: str = models.TextField()
+    # internal field for listing public components
+    public: bool = models.BooleanField(default=False, blank=True)
 
     if (
         getattr(settings, "AUTH_USER_MODEL", None) or
