@@ -8,7 +8,7 @@ from .mutations import (
     ComponentMutation, ContentMutation, PushContentMutation,
     RegenerateFlexidMutation
 )
-from .nodes import ComponentNode, ContentNode
+from .definitions import ComponentNode, ContentNode
 
 
 class Query():

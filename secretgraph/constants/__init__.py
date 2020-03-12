@@ -1,5 +1,7 @@
 import enum
 
+from rdflib import Namespace
+
 
 class Action(enum.Enum):
     FETCH = 'fetch'
@@ -8,3 +10,7 @@ class Action(enum.Enum):
     MANAGE = 'manage'
     STORED_DELETE = 'stored_delete'
     STORED_REPLACE = 'stored_replace'
+
+
+sgraph_content = Namespace("/static/schemes/sgraph/content")
+sgraph_component = Namespace("/static/schemes/sgraph/content")

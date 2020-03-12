@@ -15,11 +15,6 @@ component:Component a rdfs:Class ;
   rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
   rdfs:domain rdfs:Resource .
 
-component:esecrets a rdf:Bag ;
-  rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
-  rdfs:domain component:Component ;
-  rdfs:range xsd:base64Binary.
-
 component:EncryptedBox a rdfs:Class ;
   rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
   rdfs:domain component:Component .
@@ -27,9 +22,9 @@ component:EncryptedBox a rdfs:Class ;
 component:EncryptedBox.esecrets a rdf:Bag ;
   rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
   rdfs:domain component:EncryptedBox ;
-  rdfs:range component:esecret .
+  rdfs:range xsd:base64Binary .
 
-component:tasks a rdf:Seq ;
+component:EncryptedBox.tasks a rdf:Seq ;
   rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
   rdfs:domain component:EncryptedBox ;
   rdfs:range xsd:string .

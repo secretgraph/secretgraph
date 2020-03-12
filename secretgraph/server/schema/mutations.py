@@ -8,42 +8,40 @@ from ..models import Component, Content, ContentValue
 # , ReferenceContent
 from ..signals import generateFlexid
 from ..utils import check_name, parse_name_q, retrieve_allowed_objects
-from .nodes import (
+from .definitions import (
     ComponentNode, ContentNode, ContentValueNode, FlexidType, InsertMode
 )
+from ...constants import sgraph_component
 
 
 class ComponentMutation(relay.ClientIDMutation):
     class Input:
-        public_info = graphene.String(required=True)
-        id = graphene.ID(required=False)
-        nonce = graphene.ID(required=False)
-        user = graphene.ID(required=False)
+        component = graphene.Field(ComponentNode)
 
     component = graphene.Field(ComponentNode)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, public_info, id, nonce, user):
-        idpart = cls.from_global_id(id)[1]
+    def mutate_and_get_payload(cls, root, info, component):
+        idpart = cls.from_global_id(component.id)[1]
         g = Graph()
-        g.parse(public_info, "turtle")
+        g.parse(component.public_info, "turtle")
         if idpart:
-            component = retrieve_allowed_objects(
-                info, "manage", Component.objects.all()
+            _component = retrieve_allowed_objects(
+                component.info, "manage", Component.objects.all()
             ).get(flexid=idpart)
-            component.public_info = public_info
-            if nonce:
-                component.nonce = nonce
+            _component.public_info = component.public_info
+            if component.nonce:
+                _component.nonce = component.nonce
             # TODO: admin permission
             # if info.context.user.has_perm("TODO") and user:
             #     prebuild["user"] = cls.from_global_id(user)[1]
             component.save(update_fields=["public_info", "nonce"])
         else:
             prebuild = {
-                "public_info": public_info,
+                "public_info": component.public_info,
             }
-            if nonce:
-                prebuild["nonce"] = nonce
+            if component.nonce:
+                prebuild["nonce"] = component.nonce
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
                 if not info.context.user.is_authenticated:
                     raise
@@ -51,9 +49,27 @@ class ComponentMutation(relay.ClientIDMutation):
             # TODO: admin permission
             # if info.context.user.has_perm("TODO") and user:
             #     prebuild["user"] = cls.from_global_id(user)[1]
-            component = Component.objects.create(**prebuild)
-        # TODO: inject related
-        return cls(component=component)
+            _component = Component.objects.create(**prebuild)
+        # TODO: initial: create actions, contents
+        _component.public = False
+        if list(g.query(
+            """
+            SELECT DISITINCT (COUNT(?tasks) AS ?ctasks)
+            WHERE {
+                ?n a component:EncryptedBox ;
+                   component:EncryptedBox.esecrets ?secrets .
+                   component:EncryptedBox.tasks ?tasks .
+            }
+            """,
+            initNs={
+                "component": sgraph_component
+            }
+        ):
+            if i.ctasks == 0:
+                _component.public = True
+        _component.save(update_fields=["public"])
+
+        return cls(component=_component)
 
 
 class RegenerateFlexidMutation(relay.ClientIDMutation):
