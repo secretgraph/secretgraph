@@ -37,6 +37,7 @@ class Component(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
     # only expose nonce when view rights
+    # nonce is not changeable, only for search
     nonce: str = models.CharField(max_length=255)
     public_info: str = models.TextField()
     # internal field for listing public components
@@ -55,8 +56,9 @@ class Component(models.Model):
 class Content(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
-    # cached nonce from component
-    nonce: str = models.CharField(max_length=255)
+    # key unencrypt scheme = permission ok
+    keyhash: str = models.CharField(max_length=255)
+    scheme: str = models.TextField(blank=False, null=False)
     component: Component = models.ForeignKey(
         Component, on_delete=models.CASCADE,
     )
@@ -99,10 +101,18 @@ class ContentValue(models.Model):
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     name: str = models.CharField(max_length=255)
     # search value
-    search_value: str = models.TextField(default="", null=False, blank=True)
+    value: str = models.TextField(default="", null=False, blank=True)
+
+
+class EncryptedValue(models.Model):
+    id: int = models.BigAutoField(primary_key=True, editable=False)
+    value: ContentValue = models.ForeignKey(
+        ContentValue, on_delete=models.CASCADE, related_name="encrypted"
+    )
+    nonce: str = models.CharField(max_length=255)
     # extern content pushed, can only use file
     file: File = models.FileField(
-        upload_to=get_file_path, null=True, blank=True
+        upload_to=get_file_path
     )
 
     class Meta:
