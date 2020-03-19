@@ -33,9 +33,15 @@ def get_file_path(instance, filename) -> str:
     return ret_path
 
 
-class Component(models.Model):
+class FlexidModel(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
-    flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
+    flexid: UUID = models.UUIDField(blank=True, null=True, unique=True)
+
+    class Meta:
+        abstract = True
+
+
+class Component(FlexidModel):
     # only expose nonce when view rights
     # nonce is not changeable, only for search
     nonce: str = models.CharField(max_length=255)
@@ -53,15 +59,23 @@ class Component(models.Model):
         )
 
 
-class Content(models.Model):
-    id: int = models.BigAutoField(primary_key=True, editable=False)
-    flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
+class Content(FlexidModel):
     # key unencrypt scheme = permission ok
-    keyhash: str = models.CharField(max_length=255)
+    key_hash: str = models.CharField(max_length=255)
     scheme: str = models.TextField(blank=False, null=False)
+    info: str = models.TextField(blank=False, null=False)
+    info_hash: str = models.CharField(max_length=255)
     component: Component = models.ForeignKey(
         Component, on_delete=models.CASCADE,
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["info_hash", "component_id"],
+                name="unique_content1"
+            )
+        ]
 
 
 class ReferenceContent(models.Model):
@@ -100,15 +114,6 @@ class ContentValue(models.Model):
     )
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     name: str = models.CharField(max_length=255)
-    # search value
-    value: str = models.TextField(default="", null=False, blank=True)
-
-
-class EncryptedValue(models.Model):
-    id: int = models.BigAutoField(primary_key=True, editable=False)
-    value: ContentValue = models.ForeignKey(
-        ContentValue, on_delete=models.CASCADE, related_name="encrypted"
-    )
     nonce: str = models.CharField(max_length=255)
     # extern content pushed, can only use file
     file: File = models.FileField(
@@ -124,7 +129,7 @@ class Action(models.Model):
     component: Component = models.ForeignKey(
         Component, on_delete=models.CASCADE, related_name="actions"
     )
-    keyhash: str = models.CharField(max_length=255)
+    key_hash: str = models.CharField(max_length=255)
     nonce: str = models.CharField(max_length=255)
     # value returns ttl with required encrypted aes key
     value: bytes = models.BinaryField(null=False, blank=False)

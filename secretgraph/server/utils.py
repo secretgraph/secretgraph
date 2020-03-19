@@ -7,7 +7,7 @@ from django.db import models
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Action, Component
+from .models import Action, Component, ContentValue
 from .actions import ActionHandler
 
 
@@ -49,7 +49,7 @@ def retrieve_allowed_objects(info, scope, query):
 
         actions = pre_filtered_actions.filter(
             component__flexid=componentflexid,
-            keyhash__in=keyhashes
+            key_hash__in=keyhashes
         )
         if not actions:
             continue
@@ -79,13 +79,13 @@ def retrieve_allowed_objects(info, scope, query):
             else:
                 excl_filters |= result.get("excl_filters", models.Q())
                 excl_values |= result.get("excl_values", models.Q())
-            components.update(result.get("extra_components", []))
+            # components.update(result.get("extra_components", []))
 
             info.passed_component_set.add(action.component_id)
 
-            if action.keyhash != keyhashes[0]:
+            if action.key_hash != keyhashes[0]:
                 Action.objects.filter(keyhash=action.keyhash).update(
-                    keyhash=keyhashes[0]
+                    key_hash=keyhashes[0]
                 )
         result["components"][componentflexid] = {
             "excl_values": excl_values,
@@ -102,12 +102,14 @@ def retrieve_allowed_objects(info, scope, query):
             all_filters |= (
                 ~excl_filters & models.Q(component_id=actions[0].component_id)
             )
+
     if isinstance(query.model, Component):
-        result["objects"] = \
-            query.filter(all_filters, flexid__in=components)
+        all_filters &= models.Q(flexid__in=components)
+    elif isinstance(query.model, ContentValue):
+        all_filters &= models.Q(content__component__flexid__in=components)
     else:
-        result["objects"] = \
-            query.filter(all_filters, component__flexid__in=components)
+        all_filters &= models.Q(component__flexid__in=components)
+    result["objects"] = query.filter(all_filters)
     return result
 
 
