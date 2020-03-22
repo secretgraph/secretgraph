@@ -60,8 +60,9 @@ class Component(FlexidModel):
 
 
 class Content(FlexidModel):
-    # key unencrypt scheme = permission ok
+    # search for key_hash
     key_hash: str = models.CharField(max_length=255)
+    # key unencrypt scheme = permission ok
     scheme: str = models.TextField(blank=False, null=False)
     info: str = models.TextField(blank=False, null=False)
     info_hash: str = models.CharField(max_length=255)
@@ -73,7 +74,7 @@ class Content(FlexidModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["info_hash", "component_id"],
-                name="unique_content1"
+                name="unique_content"
             )
         ]
 
