@@ -6,7 +6,7 @@ from django.db.models.signals import (
 )
 
 from .signals import (
-    deleteContentCb, deleteEncryptedValueCb, generateFlexid,
+    deleteContentCb, deleteEncryptedFileCb, generateFlexid,
     fillEmptyFlexidsCb
 )
 
@@ -17,13 +17,13 @@ class SecretGraphServerConfig(AppConfig):
     verbose_name = 'Secretgraph backend'
 
     def ready(self):
-        from .models import Content, ContentValue, Component
+        from .models import Content, ContentFile, Component
         pre_delete.connect(
             deleteContentCb, sender=Content
         )
 
         post_delete.connect(
-            deleteEncryptedValueCb, sender=ContentValue,
+            deleteEncryptedFileCb, sender=ContentFile,
         )
 
         post_save.connect(

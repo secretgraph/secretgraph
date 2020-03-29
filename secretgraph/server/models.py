@@ -59,13 +59,50 @@ class Component(FlexidModel):
         )
 
 
+class Action(models.Model):
+    id: int = models.BigAutoField(primary_key=True, editable=False)
+    component: Component = models.ForeignKey(
+        Component, on_delete=models.CASCADE, related_name="actions"
+    )
+    key_hash: str = models.CharField(max_length=255)
+    nonce: str = models.CharField(max_length=255)
+    # value returns ttl with required encrypted aes key
+    value: bytes = models.BinaryField(null=False, blank=False)
+    start: dt = models.DateTimeField(default=timezone.now, blank=True)
+    stop: dt = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(
+                    start__lte=models.F("stop")
+                ) |
+                models.Q(stop__isnull=True),
+                name="%(class)s_order"
+            ),
+            models.CheckConstraint(
+                check=models.Q(
+                    start__isnull=False
+                ) |
+                models.Q(
+                    stop__isnull=False
+                ),
+                name="%(class)s_exist"
+            )
+        ]
+
+
 class Content(FlexidModel):
     # search for key_hash
     key_hash: str = models.CharField(max_length=255)
-    # key unencrypt scheme = permission ok
-    scheme: str = models.TextField(blank=False, null=False)
+    nonce: str = models.CharField(max_length=255)
+    # key unencrypt content = permission ok
+    content: str = models.TextField(blank=False, null=False)
+    # searchable info array
     info: str = models.TextField(blank=False, null=False)
-    info_hash: str = models.CharField(max_length=255)
+    # hash without flags and special parameters,
+    # null if multiple contents are allowed
+    info_hash: str = models.CharField(max_length=255, blank=True, null=True)
     component: Component = models.ForeignKey(
         Component, on_delete=models.CASCADE,
     )
@@ -107,11 +144,9 @@ class ReferenceContent(models.Model):
         ]
 
 
-class ContentValue(models.Model):
-    id: int = models.BigAutoField(primary_key=True, editable=False)
-    flexid: UUID = models.UUIDField(default=None, blank=True, null=True)
+class ContentFile(FlexidModel):
     content: Content = models.ForeignKey(
-        Content, on_delete=models.CASCADE, related_name="values"
+        Content, on_delete=models.CASCADE, related_name="files"
     )
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     name: str = models.CharField(max_length=255)
@@ -123,36 +158,3 @@ class ContentValue(models.Model):
 
     class Meta:
         constraints = []
-
-
-class Action(models.Model):
-    id: int = models.BigAutoField(primary_key=True, editable=False)
-    component: Component = models.ForeignKey(
-        Component, on_delete=models.CASCADE, related_name="actions"
-    )
-    key_hash: str = models.CharField(max_length=255)
-    nonce: str = models.CharField(max_length=255)
-    # value returns ttl with required encrypted aes key
-    value: bytes = models.BinaryField(null=False, blank=False)
-    start: dt = models.DateTimeField(default=timezone.now, blank=True)
-    stop: dt = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(
-                    start__lte=models.F("stop")
-                ) |
-                models.Q(stop__isnull=True),
-                name="%(class)s_order"
-            ),
-            models.CheckConstraint(
-                check=models.Q(
-                    start__isnull=False
-                ) |
-                models.Q(
-                    stop__isnull=False
-                ),
-                name="%(class)s_exist"
-            )
-        ]
