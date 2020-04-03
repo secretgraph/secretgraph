@@ -3,7 +3,7 @@ from django.conf import settings
 from graphene import relay
 from graphene_django import DjangoObjectType
 
-from .models import Component, Content, ContentValue, ReferenceContent
+from .models import Component, Content, ContentFile, ContentReference
 
 
 class FlexidMixin():
@@ -26,19 +26,19 @@ class ContentNode(FlexidMixin, DjangoObjectType):
         model = Content
         filter_fields = {
             'component': ['exact'],
-            'values__name': ['exact', 'startswith'],
-            'values__search_value': ['exact', 'startswith'],
-            'references__name': ['exact', 'startswith']
+            'info': ['contains'],
         }
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'component', 'values', 'references', 'referenced_by'
+            'nonce', 'content', 'info', 'component', 'values',
+            'references',
+            'referenced_by'
         ]
 
 
-class ReferenceContentNode(DjangoObjectType):
+class ContentReferenceNode(DjangoObjectType):
     class Meta:
-        model = ReferenceContent
+        model = ContentReference
         interfaces = (relay.Node,)
         fields = ['source', 'target', 'name', 'delete_recursive']
 
@@ -79,11 +79,11 @@ class ComponentNode(FlexidMixin, DjangoObjectType):
         return self.nonce
 
 
-class ContentValueNode(FlexidMixin, DjangoObjectType):
+class ContentFileNode(FlexidMixin, DjangoObjectType):
     class Meta:
-        model = ContentValue
+        model = ContentFile
         interfaces = (relay.Node,)
-        fields = ['content', 'updated', 'name', 'search_value']
+        fields = ['content', 'updated', 'name']
 
     value = graphene.String(required=True)
 
@@ -94,7 +94,7 @@ class ContentValueNode(FlexidMixin, DjangoObjectType):
 
 class FlexidType(graphene.Union):
     class Meta:
-        types = (Component, ContentNode, ContentValueNode)
+        types = (Component, ContentNode, ContentFile)
 
 
 class InsertMode(graphene.Enum):

@@ -12,7 +12,7 @@ def deleteContentCb(sender, instance, **kwargs):
     ).delete()
 
 
-def deleteEncryptedValueCb(sender, instance, **kwargs):
+def deleteEncryptedFileCb(sender, instance, **kwargs):
     if instance.file:
         instance.file.delete(False)
 

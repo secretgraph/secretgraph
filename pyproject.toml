@@ -50,6 +50,7 @@ graphene-django = '*'
 django-extensions = '*'
 Werkzeug = '*'
 pylint = "*"
+rope = "^0.16.0"
 
 
 [tool.poetry.extras]

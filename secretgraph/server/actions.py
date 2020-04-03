@@ -26,13 +26,12 @@ class ActionHandler():
     def do_view(action_dict, scope, sender, fullaccess, **kwargs):
         if scope == "view" and not fullaccess:
             excl_filters = (
-                Q(flexid__in=action_dict["excluded_ids"]) |
-                Q(values__name__in=action_dict["exclude_with_name"])
+                Q(flexid__in=action_dict["exclude_ids"]) |
+                Q(info__name__in=action_dict["exclude_with_name"])
             )
 
             return {
-                "excl_filters": excl_filters,
-                "excl_values": Q(name__in=action_dict["hidden_values"]),
+                "excl_filters": excl_filters
             }
         return None
 
@@ -43,45 +42,14 @@ class ActionHandler():
             all(map(UUID, exclude_ids))
         except Exception:
             raise ValueError()
-        exclude_with_name = action_dict.get("exclude_with_name", [])
-        if not all(map(lambda x: isinstance(str), exclude_with_name)):
+        exclude_info = action_dict.get("exclude_info", [])
+        if not all(map(lambda x: isinstance(str), exclude_info)):
             raise ValueError()
-        action_dict["exclude_with_name"] = exclude_with_name
+        action_dict["exclude_info"] = exclude_info
         hidden_values = action_dict.get("hidden_values", [])
         if not all(map(lambda x: isinstance(str), hidden_values)):
             raise ValueError()
         action_dict["hidden_values"] = hidden_values
-
-    @staticmethod
-    def do_update(action_dict,  scope, sender, fullaccess, **kwargs):
-        # broken
-        excl_filters = Q()
-        if scope in {"view", "update"} and not fullaccess:
-            excl_filters &= ~Q(id__in=action_dict["update_ids"])
-        if scope == "view" and sender in {Content, Component}:
-            return {
-                "excl_filters": excl_filters,
-                "excl_values": ~Q(name__in=action_dict["update_values"]),
-            }
-        elif scope == "update" and sender in {Content, Component}:
-            return {
-                "excl_filters": excl_filters,
-                "excl_values": ~Q(name__in=action_dict["update_values"]),
-            }
-        return None
-
-    @staticmethod
-    def clean_update(action_dict):
-        update_ids = action_dict.get("update_ids", [])
-        try:
-            all(map(UUID, update_ids))
-        except Exception:
-            raise ValueError()
-        action_dict["update_ids"] = update_ids
-        update_values = action_dict.get("update_values", [])
-        if not all(map(lambda x: isinstance(x, str), update_values)):
-            raise ValueError()
-        action_dict["update_values"] = update_values
 
     @staticmethod
     def do_manage(
@@ -153,25 +121,3 @@ class ActionHandler():
                 updatevalues.pop("component", None)
                 updatevalues.pop("references", None)
                 updatevalues.pop("referenced_by", None)
-
-    @staticmethod
-    def do_push(action_dict, objects, fullaccess, scope, **kwargs):
-        if scope == "push" and not fullaccess:
-            return {
-                "excl_filters": ~Q(flexid__in=action_dict["push_ids"]),
-                "excl_values": ~Q(name__in=action_dict["push_values"])
-            }
-        return None
-
-    @staticmethod
-    def clean_push(action_dict):
-        push_ids = action_dict.get("push_ids", [])
-        try:
-            all(map(UUID, push_ids))
-        except Exception:
-            raise ValueError()
-        action_dict["push_ids"] = push_ids
-        push_values = action_dict.get("push_values", [])
-        if not all(map(lambda x: isinstance(str), push_values)):
-            raise ValueError()
-        action_dict["push_values"] = push_values

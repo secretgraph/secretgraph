@@ -55,7 +55,6 @@ def retrieve_allowed_objects(info, scope, query):
             continue
 
         excl_filters = models.Q()
-        excl_values = models.Q()
         fullaccess = False
         for action in actions:
             action_dict = json.loads(aesgcm.decrypt(
@@ -75,10 +74,8 @@ def retrieve_allowed_objects(info, scope, query):
             if not fullaccess and result.get("fullaccess", False):
                 fullaccess = True
                 excl_filters = result.get("excl_filters", models.Q())
-                excl_values = result.get("excl_values", models.Q())
             else:
                 excl_filters |= result.get("excl_filters", models.Q())
-                excl_values |= result.get("excl_values", models.Q())
             # components.update(result.get("extra_components", []))
 
             info.passed_component_set.add(action.component_id)
@@ -88,7 +85,6 @@ def retrieve_allowed_objects(info, scope, query):
                     key_hash=keyhashes[0]
                 )
         result["components"][componentflexid] = {
-            "excl_values": excl_values,
             "excl_filters": excl_filters,
             "fullaccess": fullaccess,
             "key": key

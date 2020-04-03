@@ -116,7 +116,7 @@ class Content(FlexidModel):
         ]
 
 
-class ReferenceContent(models.Model):
+class ContentReference(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     source: Content = models.ForeignKey(
         Content, related_name="references",

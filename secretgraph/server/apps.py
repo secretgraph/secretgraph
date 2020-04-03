@@ -35,7 +35,7 @@ class SecretGraphServerConfig(AppConfig):
         )
 
         post_save.connect(
-            generateFlexid, sender=ContentValue
+            generateFlexid, sender=ContentFile
         )
 
         post_migrate.connect(
