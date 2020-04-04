@@ -50,7 +50,7 @@ class ComponentMutation(relay.ClientIDMutation):
             # if info.context.user.has_perm("TODO") and user:
             #     prebuild["user"] = cls.from_global_id(user)[1]
             _component = Component.objects.create(**prebuild)
-        # TODO: initial: create actions, contents
+        # TODO: initial: create actions
         _component.public = False
         if list(g.query(
             """
@@ -85,8 +85,6 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
             objects = Component.objects.all()
         elif _type == "Content":
             objects = Content.objects.all()
-        elif _type == "ContentValue":
-            objects = ContentValue.objects.all()
         else:
             raise ValueError()
         objects = retrieve_allowed_objects(info, "update", objects)

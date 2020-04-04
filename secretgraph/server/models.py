@@ -13,10 +13,9 @@ from django.conf import settings
 
 
 def get_file_path(instance, filename) -> str:
-    ret = getattr(settings, "SECRETGRAPH_FILE_DIR", "spider_files")
+    ret = getattr(settings, "SECRETGRAPH_FILE_DIR", "content_files")
     # try 100 times to find free filename
     # but should not take more than 1 try
-    # IMPORTANT: strip . to prevent creation of htaccess files or similar
     for _i in range(0, 100):
         ret_path = default_storage.generate_filename(
             posixpath.join(
@@ -42,9 +41,7 @@ class FlexidModel(models.Model):
 
 
 class Component(FlexidModel):
-    # only expose nonce when view rights
-    # nonce is not changeable, only for search
-    nonce: str = models.CharField(max_length=255)
+    # keyhash is nonce
     public_info: str = models.TextField()
     # internal field for listing public components
     public: bool = models.BooleanField(default=False, blank=True)
@@ -95,9 +92,12 @@ class Action(models.Model):
 class Content(FlexidModel):
     # search for key_hash
     key_hash: str = models.CharField(max_length=255)
+    updated: dt = models.DateTimeField(auto_now=True, editable=False)
+
     nonce: str = models.CharField(max_length=255)
-    # key unencrypt content = permission ok
-    content: str = models.TextField(blank=False, null=False)
+    file: File = models.FileField(
+        upload_to=get_file_path
+    )
     # searchable info array
     info: str = models.TextField(blank=False, null=False)
     # hash without flags and special parameters,

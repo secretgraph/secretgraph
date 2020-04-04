@@ -30,10 +30,15 @@ class ContentNode(FlexidMixin, DjangoObjectType):
         }
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'content', 'info', 'component', 'values',
-            'references',
-            'referenced_by'
+            'nonce', 'info', 'updated', 'component', 'files',
+            'references', 'referenced_by'
         ]
+
+    value = graphene.String(required=True)
+
+    def resolve_value(self, info):
+        # url to
+        return self.file.url
 
 
 class ContentReferenceNode(DjangoObjectType):
@@ -72,12 +77,6 @@ class ComponentNode(FlexidMixin, DjangoObjectType):
             fields.append("user")
             filter_fields["user"] = ["exact"]
 
-    def resolve_nonce(self, info):
-        passed_component_set = getattr(info, "passed_component_set", set())
-        if self.id not in passed_component_set:
-            return None
-        return self.nonce
-
 
 class ContentFileNode(FlexidMixin, DjangoObjectType):
     class Meta:
@@ -85,9 +84,9 @@ class ContentFileNode(FlexidMixin, DjangoObjectType):
         interfaces = (relay.Node,)
         fields = ['content', 'updated', 'name']
 
-    value = graphene.String(required=True)
+    link = graphene.String(required=True)
 
-    def resolve_value(self, info):
+    def resolve_link(self, info):
         # url to
         return self.file.url
 
