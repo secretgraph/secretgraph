@@ -13,32 +13,33 @@ from .definitions import ComponentNode, ContentNode
 
 class Query():
     component = relay.Node.Field(ComponentNode)
+    components = DjangoFilterConnectionField(ComponentNode)
     all_components = DjangoFilterConnectionField(ComponentNode)
 
     content = relay.Node.Field(ContentNode)
-    all_contents = DjangoFilterConnectionField(ContentNode)
+    contents = DjangoFilterConnectionField(ContentNode)
 
     def resolve_all_components(self, info, **kwargs):
         if info.context.user.is_staff:
             return Component.objects.all()
         return Component.objects.filter(public=True)
 
+    def resolve_components(self, info, **kwargs):
+        return retrieve_allowed_objects(
+            info, "view", Component.objects.all()
+        )
+
     def resolve_content(self, info, content_id):
         result = retrieve_allowed_objects(
             info, "view", Content.objects.all()
         )
         _content = result["objects"].get(id=content_id)
-        _content.values = _content.values.exclude(result["excl_values"])
         return _content
 
-    def resolve_all_contents(self, info, **kwargs):
-        result = retrieve_allowed_objects(
-            info, "view", Content.objects.all()
+    def resolve_contents(self, info, **kwargs):
+        return retrieve_allowed_objects(
+            info, "view", Content.objects.all(), level=5
         )
-
-        def _helper(_content):
-            _content.values = _content.values.exclude(result["excl_values"])
-        return map(_helper, result["objects"])
 
 
 class Mutation():

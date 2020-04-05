@@ -7,8 +7,19 @@ from django.db import models
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Action, Component, ContentValue
+from .models import Action, Component, Content
 from .actions import ActionHandler
+
+
+def calculate_hashes(inp):
+    hashes = []
+    for algo in settings.SECRETGRAPH_HASH_ALGORITHMS:
+        if isinstance(algo, str):
+            algo = hashlib.new(algo)
+        hashes.append(
+            base64.b64encode(algo.update(inp).digest()).decode("ascii")
+        )
+    return inp
 
 
 def retrieve_allowed_objects(info, scope, query):
@@ -27,8 +38,6 @@ def retrieve_allowed_objects(info, scope, query):
     result = {
         "components": {}
     }
-    if not hasattr(info, "passed_component_set"):
-        setattr(info, "passed_component_set", set())
     for item in authset:
         spitem = item.split(":", 1)
         if len(spitem) != 2:
@@ -39,13 +48,7 @@ def retrieve_allowed_objects(info, scope, query):
         except Exception:
             continue
         aesgcm = AESGCM(key)
-        keyhashes = []
-        for algo in settings.SECRETGRAPH_HASH_ALGORITHMS:
-            if isinstance(algo, str):
-                algo = hashlib.new(algo)
-            keyhashes.append(
-                base64.b64encode(algo.update(key).digest())
-            )
+        keyhashes = calculate_hashes(key)
 
         actions = pre_filtered_actions.filter(
             component__flexid=componentflexid,
@@ -54,7 +57,7 @@ def retrieve_allowed_objects(info, scope, query):
         if not actions:
             continue
 
-        excl_filters = models.Q()
+        filters = models.Q()
         fullaccess = False
         for action in actions:
             action_dict = json.loads(aesgcm.decrypt(
@@ -73,82 +76,38 @@ def retrieve_allowed_objects(info, scope, query):
                 continue
             if not fullaccess and result.get("fullaccess", False):
                 fullaccess = True
-                excl_filters = result.get("excl_filters", models.Q())
+                filters = result.get("filters", models.Q())
             else:
-                excl_filters |= result.get("excl_filters", models.Q())
+                filters &= result.get("filters", models.Q())
             # components.update(result.get("extra_components", []))
-
-            info.passed_component_set.add(action.component_id)
 
             if action.key_hash != keyhashes[0]:
                 Action.objects.filter(keyhash=action.keyhash).update(
                     key_hash=keyhashes[0]
                 )
         result["components"][componentflexid] = {
-            "excl_filters": excl_filters,
+            "filters": filters,
             "fullaccess": fullaccess,
             "key": key
         }
         components.add(componentflexid)
         if isinstance(query.model, Component):
             all_filters |= (
-                ~excl_filters & models.Q(id=actions[0].component_id)
+                filters & models.Q(id=actions[0].component_id)
             )
         else:
             all_filters |= (
-                ~excl_filters & models.Q(component_id=actions[0].component_id)
+                filters & models.Q(component_id=actions[0].component_id)
             )
 
     if isinstance(query.model, Component):
         all_filters &= models.Q(flexid__in=components)
-    elif isinstance(query.model, ContentValue):
-        all_filters &= models.Q(content__component__flexid__in=components)
     else:
         all_filters &= models.Q(component__flexid__in=components)
+    if isinstance(query.model, Content):
+        all_filters &= (
+            models.Q(action__in=actions) |
+            models.Q(action_id__isnull=True)
+        )
     result["objects"] = query.filter(all_filters)
     return result
-
-
-def parse_name_q(q, negated=False, _d=None):
-    if _d:
-        _d = {}
-    if negated:
-        negated = not q.negated
-    else:
-        negated = q.negated
-    if negated:
-        prefix = "exclude_name"
-    else:
-        prefix = "include_name"
-
-    for c in q.children:
-        if isinstance(c, models.Q):
-            parse_name_q(c, _d=_d, negated=negated)
-        elif c[0] == "name":
-            _d.setdefault(prefix, set())
-            _d[prefix].add(c[1])
-        elif c[0] == "name__in":
-            _d.setdefault(prefix, set())
-            _d[prefix].update(c[1])
-        elif c[0] == "name__startswith":
-            _d.setdefault(f"{prefix}__startswith", set())
-            _d[f"{prefix}__startswith"].add(c[1])
-    if "include_name" in _d:
-        _d["include_name"].difference_update(_d.pop("exclude_name", []))
-    return _d
-
-
-def check_name(d, name):
-    if "include_name" in d:
-        if name not in d["include_name"]:
-            return False
-    if "include_name__startswith" in d:
-        if not all(lambda x: name in x, d["include_name__startswith"]):
-            return False
-    if "exclude_name" in d:
-        if name in d["exclude_name"]:
-            return False
-    if "exclude_name__startswith" in d:
-        if not all(lambda x: name not in x, d["exclude_name__startswith"]):
-            return False
-    return True

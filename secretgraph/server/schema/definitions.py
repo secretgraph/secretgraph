@@ -3,7 +3,7 @@ from django.conf import settings
 from graphene import relay
 from graphene_django import DjangoObjectType
 
-from .models import Component, Content, ContentFile, ContentReference
+from .models import Component, Content, ContentReference
 
 
 class FlexidMixin():
@@ -26,17 +26,20 @@ class ContentNode(FlexidMixin, DjangoObjectType):
         model = Content
         filter_fields = {
             'component': ['exact'],
-            'info': ['contains'],
+            'info__tag': ['startswith'],
         }
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'info', 'updated', 'component', 'files',
-            'references', 'referenced_by'
+            'nonce', 'updated', 'component', 'references', 'referenced_by'
         ]
 
-    value = graphene.String(required=True)
+    info = graphene.List(graphene.String)
+    link = graphene.String()
 
-    def resolve_value(self, info):
+    def resolve_info(self, info):
+        return self.info.all().values_list("tag", flat=True)
+
+    def resolve_link(self, info):
         # url to
         return self.file.url
 
@@ -68,7 +71,7 @@ class ComponentNode(FlexidMixin, DjangoObjectType):
     class Meta:
         model = Component
         interfaces = (relay.Node,)
-        fields = ['public_info', 'nonce']
+        fields = ['public_info']
         filter_fields = {}
         if (
             getattr(settings, "AUTH_USER_MODEL", None) or
@@ -78,22 +81,9 @@ class ComponentNode(FlexidMixin, DjangoObjectType):
             filter_fields["user"] = ["exact"]
 
 
-class ContentFileNode(FlexidMixin, DjangoObjectType):
-    class Meta:
-        model = ContentFile
-        interfaces = (relay.Node,)
-        fields = ['content', 'updated', 'name']
-
-    link = graphene.String(required=True)
-
-    def resolve_link(self, info):
-        # url to
-        return self.file.url
-
-
 class FlexidType(graphene.Union):
     class Meta:
-        types = (Component, ContentNode, ContentFile)
+        types = (Component, ContentNode)
 
 
 class InsertMode(graphene.Enum):

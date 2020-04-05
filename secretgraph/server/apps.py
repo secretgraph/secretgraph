@@ -17,13 +17,13 @@ class SecretGraphServerConfig(AppConfig):
     verbose_name = 'Secretgraph backend'
 
     def ready(self):
-        from .models import Content, ContentFile, Component
+        from .models import Content, Component
         pre_delete.connect(
             deleteContentCb, sender=Content
         )
 
         post_delete.connect(
-            deleteEncryptedFileCb, sender=ContentFile,
+            deleteEncryptedFileCb, sender=Content,
         )
 
         post_save.connect(
@@ -32,10 +32,6 @@ class SecretGraphServerConfig(AppConfig):
 
         post_save.connect(
             generateFlexid, sender=Content
-        )
-
-        post_save.connect(
-            generateFlexid, sender=ContentFile
         )
 
         post_migrate.connect(

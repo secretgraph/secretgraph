@@ -56,6 +56,32 @@ class Component(FlexidModel):
         )
 
 
+class Content(FlexidModel):
+    # search for key_hash
+    key_hash: str = models.CharField(max_length=255)
+    accessed: bool = models.BooleanField(default=False, blank=True)
+    updated: dt = models.DateTimeField(auto_now=True, editable=False)
+
+    nonce: str = models.CharField(max_length=255)
+    file: File = models.FileField(
+        upload_to=get_file_path
+    )
+    # hash without flags and special parameters,
+    # null if multiple contents are allowed
+    info_hash: str = models.CharField(max_length=255, blank=True, null=True)
+    component: Component = models.ForeignKey(
+        Component, on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["info_hash", "component_id"],
+                name="unique_content"
+            )
+        ]
+
+
 class Action(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     component: Component = models.ForeignKey(
@@ -67,6 +93,10 @@ class Action(models.Model):
     value: bytes = models.BinaryField(null=False, blank=False)
     start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)
+    content: Content = models.ForeignKey(
+        Content, related_name="attached_action",
+        on_delete=models.CASCADE, null=True, blank=True
+    )
 
     class Meta:
         constraints = [
@@ -89,31 +119,20 @@ class Action(models.Model):
         ]
 
 
-class Content(FlexidModel):
-    # search for key_hash
-    key_hash: str = models.CharField(max_length=255)
-    updated: dt = models.DateTimeField(auto_now=True, editable=False)
-
-    nonce: str = models.CharField(max_length=255)
-    file: File = models.FileField(
-        upload_to=get_file_path
+class ContentTag(models.Model):
+    id: int = models.BigAutoField(primary_key=True, editable=False)
+    content: Content = models.ForeignKey(
+        Content, related_name="info",
+        on_delete=models.CASCADE
     )
-    # searchable info array
-    info: str = models.TextField(blank=False, null=False)
-    # hash without flags and special parameters,
-    # null if multiple contents are allowed
-    info_hash: str = models.CharField(max_length=255, blank=True, null=True)
-    component: Component = models.ForeignKey(
-        Component, on_delete=models.CASCADE,
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["info_hash", "component_id"],
-                name="unique_content"
-            )
-        ]
+    # searchable info
+    tag: str = models.TextField(blank=False, null=False)
+    constraints = [
+        models.UniqueConstraint(
+            fields=["content", "tag"],
+            name="unique_content_tag"
+        )
+    ]
 
 
 class ContentReference(models.Model):
@@ -142,19 +161,3 @@ class ContentReference(models.Model):
                 name="%(class)s_unique"
             ),
         ]
-
-
-class ContentFile(FlexidModel):
-    content: Content = models.ForeignKey(
-        Content, on_delete=models.CASCADE, related_name="files"
-    )
-    updated: dt = models.DateTimeField(auto_now=True, editable=False)
-    name: str = models.CharField(max_length=255)
-    nonce: str = models.CharField(max_length=255)
-    # extern content pushed, can only use file
-    file: File = models.FileField(
-        upload_to=get_file_path
-    )
-
-    class Meta:
-        constraints = []
