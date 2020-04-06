@@ -6,7 +6,7 @@ import os
 import graphene
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
-from django.core.files.base import ContentFile, File
+from django.core.files.base import File
 from django.db import transaction
 from graphene import relay
 from graphene_file_upload.scalars import Upload
@@ -17,7 +17,7 @@ from ..actions import ActionHandler
 from ..models import Action, Component, Content, ContentReference, ContentTag
 # , ReferenceContent
 from ..signals import generateFlexid
-from ..utils import check_name, parse_name_q, retrieve_allowed_objects
+from ..utils import retrieve_allowed_objects
 from .arguments import ActionArg
 from .definitions import ComponentNode, ContentNode, FlexidType
 

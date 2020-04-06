@@ -58,7 +58,10 @@ def retrieve_allowed_objects(info, scope, query):
             continue
 
         filters = models.Q()
-        fullaccess = False
+        # 1 normal
+        # 2 owner
+        # 3 special
+        accesslevel = 1
         for action in actions:
             action_dict = json.loads(aesgcm.decrypt(
                 base64.b64decode(action.nonce),
@@ -70,14 +73,15 @@ def retrieve_allowed_objects(info, scope, query):
                 action_dict,
                 scope=scope,
                 action=action,
-                fullaccess=fullaccess
+                accesslevel=accesslevel
             )
             if result is None:
                 continue
-            if not fullaccess and result.get("fullaccess", False):
-                fullaccess = True
+            foundaccesslevel = result.get("accesslevel", 1)
+            if accesslevel < foundaccesslevel:
+                accesslevel = foundaccesslevel
                 filters = result.get("filters", models.Q())
-            else:
+            elif accesslevel == foundaccesslevel:
                 filters &= result.get("filters", models.Q())
             # components.update(result.get("extra_components", []))
 
@@ -87,8 +91,9 @@ def retrieve_allowed_objects(info, scope, query):
                 )
         result["components"][componentflexid] = {
             "filters": filters,
-            "fullaccess": fullaccess,
-            "key": key
+            "accesslevel": accesslevel,
+            "key": key,
+            "actions": actions
         }
         components.add(componentflexid)
         if isinstance(query.model, Component):

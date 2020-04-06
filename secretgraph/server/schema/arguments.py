@@ -1,8 +1,6 @@
 import graphene
 from graphene_django import DjangoObjectType
 
-from django.conf import settings
-
 from .models import Action as DjangoAction
 
 

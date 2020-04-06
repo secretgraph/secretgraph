@@ -1,4 +1,5 @@
 # from django.conf import settings
+import graphene
 from graphene import relay
 from graphene_django.filter import DjangoFilterConnectionField
 
@@ -8,10 +9,11 @@ from .mutations import (
     ComponentMutation, ContentMutation, PushContentMutation,
     RegenerateFlexidMutation
 )
-from .definitions import ComponentNode, ContentNode
+from .definitions import ComponentNode, ContentNode, ServerConfig
 
 
 class Query():
+    server_config = graphene.Field(ServerConfig)
     component = relay.Node.Field(ComponentNode)
     components = DjangoFilterConnectionField(ComponentNode)
     all_components = DjangoFilterConnectionField(ComponentNode)
@@ -25,21 +27,29 @@ class Query():
         return Component.objects.filter(public=True)
 
     def resolve_components(self, info, **kwargs):
-        return retrieve_allowed_objects(
+        result = retrieve_allowed_objects(
             info, "view", Component.objects.all()
         )
+        return result["objects"]
 
     def resolve_content(self, info, content_id):
+        keyset = set(info.context.headers.get("X-Keys", "").replace(
+            " ", ""
+        ).split(","))
         result = retrieve_allowed_objects(
-            info, "view", Content.objects.all()
+            info, "view", Content.objects.filter(key_hash__in=keyset)
         )
         _content = result["objects"].get(id=content_id)
         return _content
 
     def resolve_contents(self, info, **kwargs):
-        return retrieve_allowed_objects(
-            info, "view", Content.objects.all(), level=5
+        keyset = set(info.context.headers.get("X-Keys", "").replace(
+            " ", ""
+        ).split(","))
+        result = retrieve_allowed_objects(
+            info, "view", Content.objects.filter(key_hash__in=keyset)
         )
+        return result["objects"]
 
 
 class Mutation():

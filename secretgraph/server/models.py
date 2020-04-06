@@ -59,7 +59,6 @@ class Component(FlexidModel):
 class Content(FlexidModel):
     # search for key_hash
     key_hash: str = models.CharField(max_length=255)
-    accessed: bool = models.BooleanField(default=False, blank=True)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
 
     nonce: str = models.CharField(max_length=255)
@@ -97,6 +96,7 @@ class Action(models.Model):
         Content, related_name="attached_action",
         on_delete=models.CASCADE, null=True, blank=True
     )
+    accessed: bool = models.BooleanField(default=False, blank=True)
 
     class Meta:
         constraints = [

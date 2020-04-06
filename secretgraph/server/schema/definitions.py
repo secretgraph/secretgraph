@@ -1,9 +1,13 @@
 import graphene
 from django.conf import settings
-from graphene import relay
+from graphene import relay, ObjectType
 from graphene_django import DjangoObjectType
 
 from .models import Component, Content, ContentReference
+
+
+class ServerConfig(ObjectType):
+    key_iterations = graphene.Int()
 
 
 class FlexidMixin():

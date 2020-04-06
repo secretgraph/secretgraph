@@ -48,8 +48,10 @@ class ActionHandler():
         return None
 
     @staticmethod
-    def do_view(action_dict, scope, sender, fullaccess, **kwargs):
-        if scope == "view" and not fullaccess and isinstance(sender, Content):
+    def do_view(action_dict, scope, sender, accesslevel, **kwargs):
+        if accesslevel > 1 or scope != "view":
+            return None
+        if isinstance(sender, Content):
             excl_filters = Q()
             for i in action_dict.get("exclude_info", []):
                 excl_filters |= Q(info__tag__startswith=i)
@@ -76,12 +78,10 @@ class ActionHandler():
         return action_dict
 
     @staticmethod
-    def do_update(action_dict, scope, sender, fullaccess, **kwargs):
-        if (
-            scope == "update" and
-            not fullaccess and
-            isinstance(sender, Content)
-        ):
+    def do_update(action_dict, scope, sender, accesslevel, **kwargs):
+        if accesslevel > 1 or scope != "update":
+            return None
+        if isinstance(sender, Content):
             incl_filters = Q(id__in=action_dict.get("ids", []))
             return {
                 "filters": incl_filters
@@ -96,7 +96,7 @@ class ActionHandler():
         return action_dict
 
     @staticmethod
-    def do_extra(action_dict, scope, sender, fullaccess, **kwargs):
+    def do_extra(action_dict, scope, sender, **kwargs):
         if scope == action_dict["extra"]:
             incl_filters = Q()
             for i in action_dict.get("include_info", []):
@@ -120,7 +120,7 @@ class ActionHandler():
 
     @staticmethod
     def do_manage(
-        action_dict, scope, sender, action, fullaccess, **kwargs
+        action_dict, scope, sender, action, **kwargs
     ):
         type_name = sender.__name__
         excl_filters = Q(
@@ -135,7 +135,7 @@ class ActionHandler():
             )
         return {
             "filters": ~excl_filters,
-            "fullaccess": True
+            "accesslevel": 2
         }
 
     @staticmethod
