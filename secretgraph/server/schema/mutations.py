@@ -147,6 +147,7 @@ class ContentMutation(relay.ClientIDMutation):
         content = graphene.Field(ContentNode, required=True)
         info_for_hash = graphene.List(graphene.String, required=False)
         value = Upload(required=False)
+        key = graphene.String(required=_serverside_encryption)
 
     content = graphene.Field(ContentNode)
 
@@ -221,6 +222,7 @@ class ContentMutation(relay.ClientIDMutation):
 class PushContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
+        value = Upload(required=False)
 
     value = graphene.Field(ContentNode)
 

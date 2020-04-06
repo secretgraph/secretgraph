@@ -93,10 +93,10 @@ class Action(models.Model):
     start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)
     content: Content = models.ForeignKey(
-        Content, related_name="attached_action",
+        Content, related_name="attached_actions",
         on_delete=models.CASCADE, null=True, blank=True
     )
-    accessed: bool = models.BooleanField(default=False, blank=True)
+    used: bool = models.BooleanField(default=False, blank=True)
 
     class Meta:
         constraints = [

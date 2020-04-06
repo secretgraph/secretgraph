@@ -40,6 +40,10 @@ class Query():
             info, "view", Content.objects.filter(key_hash__in=keyset)
         )
         _content = result["objects"].get(id=content_id)
+        _content.attached_actions.filter(
+            id__in=result["components"][_content.component.flexid]
+        ).update(used=True)
+
         return _content
 
     def resolve_contents(self, info, **kwargs):

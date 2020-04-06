@@ -62,6 +62,7 @@ def retrieve_allowed_objects(info, scope, query):
         # 2 owner
         # 3 special
         accesslevel = 1
+        fetchtags = set()
         for action in actions:
             action_dict = json.loads(aesgcm.decrypt(
                 base64.b64decode(action.nonce),
@@ -77,6 +78,7 @@ def retrieve_allowed_objects(info, scope, query):
             )
             if result is None:
                 continue
+            fetchtags.update(result.get("fetchtags", []))
             foundaccesslevel = result.get("accesslevel", 1)
             if accesslevel < foundaccesslevel:
                 accesslevel = foundaccesslevel
@@ -93,7 +95,8 @@ def retrieve_allowed_objects(info, scope, query):
             "filters": filters,
             "accesslevel": accesslevel,
             "key": key,
-            "actions": actions
+            "actions": actions,
+            "fetchtags": fetchtags
         }
         components.add(componentflexid)
         if isinstance(query.model, Component):
