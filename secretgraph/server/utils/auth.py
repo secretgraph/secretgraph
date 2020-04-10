@@ -22,8 +22,8 @@ def calculate_hashes(inp):
     return inp
 
 
-def retrieve_allowed_objects(info, scope, query):
-    authset = set(info.context.headers.get("Authorization", "").replace(
+def retrieve_allowed_objects(request, scope, query):
+    authset = set(request.headers.get("Authorization", "").replace(
         " ", ""
     ).split(","))
     now = timezone.now()
@@ -74,7 +74,8 @@ def retrieve_allowed_objects(info, scope, query):
                 action_dict,
                 scope=scope,
                 action=action,
-                accesslevel=accesslevel
+                accesslevel=accesslevel,
+                request=request
             )
             if result is None:
                 continue

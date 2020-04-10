@@ -8,6 +8,10 @@ proxy translates it for web
 
 verifier
 
+# structure
+
+
+
 
 # Why two languages?
 
