@@ -57,11 +57,11 @@ class Component(FlexidModel):
 
 
 class Content(FlexidModel):
-    # search for key_hash
-    key_hash: str = models.CharField(max_length=255)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
+    mark_for_destruction: dt = models.DateTimeField(null=True, blank=True)
 
     nonce: str = models.CharField(max_length=255)
+    # can decrypt = correct key
     file: File = models.FileField(
         upload_to=get_file_path
     )
@@ -81,6 +81,26 @@ class Content(FlexidModel):
         ]
 
 
+class ContentAction(models.Model):
+    id: int = models.BigAutoField(primary_key=True, editable=False)
+    content: Content = models.ForeignKey(
+        Content, related_name="actions",
+        on_delete=models.CASCADE
+    )
+    used: bool = models.BooleanField(default=False, blank=True)
+    group: str = models.CharField(
+        max_length=255, null=False, default="", blank=True
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content", "group"],
+                name="%(class)s_unique"
+            ),
+        ]
+
+
 class Action(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     component: Component = models.ForeignKey(
@@ -92,11 +112,10 @@ class Action(models.Model):
     value: bytes = models.BinaryField(null=False, blank=False)
     start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)
-    content: Content = models.ForeignKey(
-        Content, related_name="attached_actions",
+    content_action: ContentAction = models.OneToOneField(
+        ContentAction, related_name="action",
         on_delete=models.CASCADE, null=True, blank=True
     )
-    used: bool = models.BooleanField(default=False, blank=True)
 
     class Meta:
         constraints = [
@@ -145,7 +164,7 @@ class ContentReference(models.Model):
         Content, related_name="referenced_by",
         on_delete=models.CASCADE
     )
-    name: str = models.CharField(
+    group: str = models.CharField(
         max_length=255, default="", null=False, blank=True
     )
     delete_recursive: bool = models.BooleanField(blank=True, default=True)
@@ -157,7 +176,7 @@ class ContentReference(models.Model):
                 name="%(class)s_no_self_ref"
             ),
             models.UniqueConstraint(
-                fields=["source", "target", "name"],
+                fields=["source", "target", "group"],
                 name="%(class)s_unique"
             ),
         ]

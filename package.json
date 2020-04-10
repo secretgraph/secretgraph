@@ -1,6 +1,7 @@
 {
   "private": true,
-  "dependencies": {
-
+  "dependencies": {},
+  "devDependencies": {
+    "webpack-bundle-tracker": "^1.0.0-alpha.1"
   }
 }

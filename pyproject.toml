@@ -35,7 +35,6 @@ requests = "*"
 certifi = "*"
 graphene-django = {version="*", optional = true}
 graphene-file-upload = {version="*", optional = true}
-django-filter = {version=">=2", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 django-mysql = {version="*", optional = true}
@@ -43,20 +42,21 @@ psycopg2 = {version="*", optional = true}
 spkcspider-domainauth = {version=">=0.4", optional = true}
 django-webtest = {version="*", optional = true}
 WSGIProxy2 = {version="*", optional = true}
+django-webpack-loader = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
-django-filter = ">=2"
 graphene-django = '*'
 graphene-file-upload = "*"
 django-extensions = '*'
 Werkzeug = '*'
 pylint = "*"
-rope = "^0.16.0"
+django-webpack-loader = "*"
+rope = "*"
 
 
 [tool.poetry.extras]
-server = ["graphene-django", "django-filter"]
+server = ["graphene-django", "graphene-file-upload"]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
 mysql = ["mysqlclient", "django-mysql"]

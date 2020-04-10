@@ -13,14 +13,15 @@ from graphene_file_upload.scalars import Upload
 from rdflib import Graph
 
 from ...constants import sgraph_component
-from ..actions import ActionHandler
-from ..models import Action, Component, Content, ContentReference, ContentTag
+from ..actions.handler import ActionHandler
+from ..models import (
+    Action, Component, Content, ContentAction, ContentReference, ContentTag
+)
 # , ReferenceContent
 from ..signals import generateFlexid
-from ..utils import retrieve_allowed_objects
-from .arguments import ActionArg
+from ..utils.auth import retrieve_allowed_objects
+from .arguments import ComponentInput, ContentInput
 from .definitions import ComponentNode, ContentNode, FlexidType
-
 
 _serverside_encryption = getattr(
     settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
@@ -48,14 +49,14 @@ def _is_public(graph):
 
 class ComponentMutation(relay.ClientIDMutation):
     class Input:
-        component = graphene.Field(ComponentNode)
-        actions = graphene.Field(graphene.List(ActionArg), required=False)
+        id = graphene.ID(required=False)
+        component = ComponentInput(required=True)
 
     component = graphene.Field(ComponentNode)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, component, actions):
-        idpart = cls.from_global_id(component.id)[1]
+    def mutate_and_get_payload(cls, root, info, component_id, component):
+        idpart = cls.from_global_id(component_id)[1]
         g = Graph()
         g.parse(component.public_info, "turtle")
         if idpart:
@@ -69,7 +70,7 @@ class ComponentMutation(relay.ClientIDMutation):
             #     prebuild["user"] = cls.from_global_id(user)[1]
             component.save(update_fields=["public_info", "nonce", "public"])
         else:
-            if not actions:
+            if not component.actions:
                 raise ValueError("Actions required")
             prebuild = {
                 "public_info": component.public_info,
@@ -83,9 +84,10 @@ class ComponentMutation(relay.ClientIDMutation):
             # if info.context.user.has_perm("TODO") and user:
             #     prebuild["user"] = cls.from_global_id(user)[1]
             _component = Component.objects.create(**prebuild)
-        if actions:
+        if component.actions:
             final_actions = []
-            for action in actions:
+            final_content_actions = []
+            for action in component.actions:
                 key = base64.base64_decode(action.key)
                 action_value = ActionHandler.clean_action(
                     json.loads(action.value), info
@@ -93,6 +95,10 @@ class ComponentMutation(relay.ClientIDMutation):
                 aesgcm = AESGCM(key)
                 nonce = os.urandom(13)
                 halgo = hashlib.new(settings.SECRETGRAPH_HASH_ALGORITHMS[0])
+                _content_action = action_value.pop("content_action", None)
+                if _content_action:
+                    final_content_actions.append(_content_action)
+
                 final_actions.append(Action(
                     value=aesgcm.encode(
                         nonce,
@@ -104,13 +110,17 @@ class ComponentMutation(relay.ClientIDMutation):
                     hash_algo=base64.b64encode(halgo.update(
                         key
                     ).digest()).decode("ascii"),
-                    nonce=base64.b64encode(nonce).decode("ascii")
+                    nonce=base64.b64encode(nonce).decode("ascii"),
+                    content=_content_action
                 ))
 
             with transaction.atomic():
-                retrieve_allowed_objects(
+                actions = retrieve_allowed_objects(
                     info, "manage", _component.actions.all()
-                ).delete()
+                )
+                ContentAction.objects.filter(action__in=actions).delete()
+                actions.delete()
+                ContentAction.objects.bulk_create(final_content_actions)
                 _component.actions.bulk_create(final_actions)
         return cls(component=_component)
 
@@ -144,9 +154,8 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
 class ContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
-        content = graphene.Field(ContentNode, required=True)
+        content = graphene.Field(ContentInput, required=True)
         info_for_hash = graphene.List(graphene.String, required=False)
-        value = Upload(required=False)
         key = graphene.String(required=_serverside_encryption)
 
     content = graphene.Field(ContentNode)
@@ -195,22 +204,24 @@ class ContentMutation(relay.ClientIDMutation):
             _content.nonce = content.nonce
             _content.file.delete(False)
             _content.file.save("", File(value))
-        final_info_tags = []
-        final_references = []
+        else:
+            _content.save()
+        final_info_tags = [ContentTag(tag=f"id={_content.flexid}")]
         for i in content.info:
-            final_info_tags.append(ContentTag(i))
+            final_info_tags.append(ContentTag(tag=i))
         with transaction.atomic():
             _content.info.delete()
             _content.info.create_bulk(final_info_tags)
 
+        final_references = []
         for ref in content.references:
             ob = Content.objects.filter(
-                flexid=ref.flexid, component_id=_content.component_id
+                flexid=ref.target, component_id=_content.component_id
             ).first()
             if not ob:
                 continue
             final_references.append(ContentReference(
-                target=ob
+                target=ob, group=ref.group or "",
             ))
         with transaction.atomic():
             _content.references.delete()
@@ -227,8 +238,17 @@ class PushContentMutation(relay.ClientIDMutation):
     value = graphene.Field(ContentNode)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, id, value):
+    def mutate_and_get_payload(cls, root, info, content_id, value):
         result = retrieve_allowed_objects(
             info, "push", Content.objects.all()
         )
+        source = result["objects"].get(id=content_id)
+        actions = \
+            result["components"][source.component.flexid]["actions"].filter(
+                content_action__content=source
+            ).prefetch_selected("content_action")
+
+        extras = {}
+        for action in actions:
+            extras.update(result["action_extras"].get(action.id, []))
         raise NotImplementedError

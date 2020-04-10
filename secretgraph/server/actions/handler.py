@@ -3,11 +3,11 @@ from uuid import UUID
 from functools import lru_cache
 from django.db.models import Q
 
-from .models import Content, Component, Action
+from ..models import Content, Component, Action
 
 
 def _only_owned_helper(klass, linput, info, fields=("id",)):
-    from .utils import retrieve_allowed_objects
+    from .utils.auth import retrieve_allowed_objects
     if hasattr(klass, "flexid"):
         return retrieve_allowed_objects(
             info, "manage", klass.objects.filter(
@@ -104,7 +104,8 @@ class ActionHandler():
 
             return {
                 "filters": incl_filters,
-                "form": action_dict.get("form")
+                "form": action_dict.get("form"),
+                "extras": action_dict.get("extras") or []
             }
         return None
 

@@ -7,8 +7,8 @@ from django.db import models
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Action, Component, Content
-from .actions import ActionHandler
+from ..models import Action, Component, Content
+from ..actions.handler import ActionHandler
 
 
 def calculate_hashes(inp):
@@ -36,7 +36,8 @@ def retrieve_allowed_objects(info, scope, query):
     components = set()
     all_filters = models.Q()
     result = {
-        "components": {}
+        "components": {},
+        "action_extras": {}
     }
     for item in authset:
         spitem = item.split(":", 1)
@@ -62,7 +63,6 @@ def retrieve_allowed_objects(info, scope, query):
         # 2 owner
         # 3 special
         accesslevel = 1
-        fetchtags = set()
         for action in actions:
             action_dict = json.loads(aesgcm.decrypt(
                 base64.b64decode(action.nonce),
@@ -78,8 +78,8 @@ def retrieve_allowed_objects(info, scope, query):
             )
             if result is None:
                 continue
-            fetchtags.update(result.get("fetchtags", []))
             foundaccesslevel = result.get("accesslevel", 1)
+            result["action_extras"][action.id] = result.get("extras", set())
             if accesslevel < foundaccesslevel:
                 accesslevel = foundaccesslevel
                 filters = result.get("filters", models.Q())
@@ -96,7 +96,6 @@ def retrieve_allowed_objects(info, scope, query):
             "accesslevel": accesslevel,
             "key": key,
             "actions": actions,
-            "fetchtags": fetchtags
         }
         components.add(componentflexid)
         if isinstance(query.model, Component):

@@ -1,0 +1,74 @@
+{% load i18n %}
+{% load static %}
+{% load flatpages %}
+<!DOCTYPE html>
+<html lang="{{LANGUAGE_CODE}}">
+  <head>
+    <title>{% block title %}{% endblock %}</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta name="application-name" content="secretgraph"/>
+
+    <meta name="viewport" content="{% block viewport %}width=device-width, initial-scale=1.0{% endblock %}">
+
+    {% block favicon %}
+    <link rel="shortcut icon" type="image/svg" href="{% static 'spider_base/favicon.svg' %}" />
+    {% endblock %}
+    {# CSS for all pages #}
+    {% block base_styles %}
+    <link rel="stylesheet" href="{% static 'node_modules/w3-css/w3.css' %}">
+    <link rel="stylesheet" href="{% static 'node_modules/@fortawesome/fontawesome-free/css/all.min.css' %}">
+    {# later {% theme %} call #}
+    {% endblock %}
+    {# CSS for page #}
+    {% block styles %}
+    {% endblock %}
+  </head>
+
+  <body>
+  {# use sub div instead body because of select2 uses wrong colors elsewise #}
+  <div class="{% block body_class %}{% endblock %}">
+    {# Deco content, e.g.base.html  #}
+    {% block layout %}
+      <main class="{% block main_classes %}{% endblock %}" {% block main_attributes %}{% endblock %}>
+      {% block messages %}
+        {% if messages %}
+          <ul class="messages w3-ul w3-padding">{% for message in messages %}
+            <li class="{% if message.tags %}{{ message.tags }}{% endif %} {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}w3-red{% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}w3-green{% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}w3-orange{% else %}w3-blue{% endif %}">{{ message|capfirst }}</li>
+          {% endfor %}</ul>
+        {% endif %}
+      {% endblock messages %}
+      {# Main content  #}
+      {% block content %}
+        <div id="content-main"></div>
+      {% endblock %}
+    </main>
+    {% block global_footer %}
+    {% concat_string '/' LANGUAGE_CODE '/gfooter/' as global_footer_localized %}
+    {% get_flatpages global_footer_localized for request.user as footer_pages %}
+    {% if not footer_pages %}
+      {% get_flatpages '/gfooter/' for request.user as footer_pages %}
+    {% endif %}
+    {% if footer_pages %}
+    <footer style="border-top: 2px solid #aaa;">
+      <div class="w3-red w3-row w3-padding">
+        {% for page in footer_pages %}
+          <div class="w3-padding w3-col s12 m4">
+            <a href="{{page.url}}">{{page.title}}</a>
+          </div>
+        {% endfor %}
+      </div>
+    </footer>
+    {% endif %}
+    {% endblock %}
+    {% endblock %}
+
+    {# Scripts #}
+    {% block scripts %}
+    <script></script>
+    {% endblock %}
+
+    {# e.g. modals #}
+    {% block outercontent %}{% endblock %}
+  </div>
+  </body>
+</html>
