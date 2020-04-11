@@ -7,20 +7,20 @@ from graphql_relay import from_global_id
 from ..models import Content, Component, Action
 
 
-def _only_owned_helper(klass, linput, request, fields=("id",)):
+def _only_owned_helper(
+    klass, linput, request, fields=("id",), check_field=None
+):
     from ..utils.auth import retrieve_allowed_objects
-    if hasattr(klass, "flexid"):
-        return retrieve_allowed_objects(
-            request, "manage", klass.objects.filter(
-                flexid__in=linput or []
-            )
-        )["objects"].values_list(*fields, flat=True)
-    else:
-        fields = {"flexid"}.symmetric_difference(fields)
-        return retrieve_allowed_objects(
-            request, "manage",
-            klass.objects.filter(id__in=linput or [])
-        )["objects"].values_list(*fields, flat=True)
+    if not check_field:
+        check_field = "flexid"
+    if check_field == "flexid" and not hasattr(klass, "flexid"):
+        check_field = "id"
+    if not hasattr(klass, "flexid"):
+        fields = set(fields).difference({"flexid"})
+    return retrieve_allowed_objects(
+        request, "manage",
+        klass.objects.filter(**{f"{check_field}__in": linput or []})
+    )["objects"].values_list(*fields, flat=True)
 
 
 @lru_cache()
@@ -143,12 +143,15 @@ class ActionHandler():
         excl_filters = Q(
             id__in=action_dict["exclude"][type_name]
         )
-        if (
-            action_dict["type"] == "Component" and
-            action_dict["type"] != type_name
-        ):
+        if type_name != "Component":
             excl_filters |= Q(
                 component__id__in=action_dict["exclude"]["Component"]
+            )
+        if type_name == "Action":
+            excl_filters |= Q(
+                content_action__content_id__in=action_dict[
+                    "exclude"
+                ]["Content"]
             )
         return {
             "filters": ~excl_filters,
@@ -161,18 +164,23 @@ class ActionHandler():
             "action": "manage",
             "exclude": {
                 "Component": [],
-                "Content": [],
-                "Action": []
+                "Content": []
             }
         }
         for idtuple in action_dict.get("exclude") or []:
             type_name, id = from_global_id(idtuple)
             result["exclude"][type_name].append(id)
-        for klass in [Component, Content, Action]:
+        result["exclude"]["Action"] = set()
+        for key_hash in action_dict.get("exclude_actions") or []:
+            result["exclude"]["Action"].append(key_hash)
+        for klass in [Component, Content]:
             type_name = klass.__name__
-            action_dict["exclude"][type_name] = _only_owned_helper(
-                klass, action_dict["exclude"].get(type_name)
+            result["exclude"][type_name] = _only_owned_helper(
+                klass, result["exclude"][type_name], request
             )
+        result["exclude"]["Action"] = _only_owned_helper(
+            klass, action_dict["exclude"]["Action"], request
+        )
         return result
 
     @staticmethod
@@ -196,8 +204,7 @@ class ActionHandler():
             "action": "stored_update",
             "delete": {
                 "Component": [],
-                "Content": [],
-                "Action": []
+                "Content": []
             },
             "update": {
                 "Component": {},
@@ -208,17 +215,21 @@ class ActionHandler():
         update_mapper = {
             "Component": {},
             "Content": {},
-            "Action": {}
         }
 
         for idtuple in action_dict.get("delete") or []:
             type_name, id = from_global_id(idtuple)
             result["delete"][type_name].append(id)
 
+        result["delete"]["Action"] = []
+        for keyhash in action_dict.get("delete_actions") or []:
+            result["delete"][type_name].append(keyhash)
+
         for klass in [Component, Content, Action]:
             type_name = klass.__name__
             result["delete"][type_name] = _only_owned_helper(
-                klass, result["delete"][type_name], request
+                klass, result["delete"][type_name], request,
+                check_field="key_hash" if type_name == "Action" else None
             )
 
         _del_sets = {
@@ -231,7 +242,12 @@ class ActionHandler():
             if isinstance(jsonob, str):
                 jsonob = json.loads(jsonob)
             newob = {}
-            type_name, id = from_global_id(jsonob.get("id"))
+            idpart = jsonob.get("id")
+            if idpart:
+                type_name, id = from_global_id(idpart)
+            else:
+                type_name = "Action"
+                id = jsonob["key_hash"]
             for name, field_type in get_valid_fields(type_name):
                 if name in jsonob:
                     if not isinstance(jsonob[name], field_type):
@@ -255,11 +271,24 @@ class ActionHandler():
                 result["update"][type_name][_id] = \
                     update_mapper[type_name][_flexid]
 
-        for _id in _only_owned_helper(
-            Action, update_mapper["Action"].keys(), request
+        for _key_hash, _content_action, _id in _only_owned_helper(
+            Action, update_mapper["Action"].keys(), request,
+            fields=("key_hash", "content_action", "id"),
+            check_field="key_hash"
         ):
             if _id in _del_sets[type_name]:
                 continue
+            content = update_mapper["Action"][_key_hash].get("content", None)
+            if content and (
+                not _content_action or
+                _content_action.content_id != content
+            ):
+                continue
+            elif not content and _content_action:
+                continue
             result["update"]["Action"][_id] = \
-                update_mapper["Action"][_flexid]
+                dict(filter(
+                    lambda x, y: x != "content"
+                    update_mapper["Action"][_key_hash].items()
+                ))
         return result

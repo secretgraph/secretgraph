@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.core.files.base import ContentFile, File
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from graphql_relay import from_global_id
 from rdflib import Graph
@@ -64,10 +65,11 @@ def hash_key(key):
     ).decode("ascii")
 
 
-def create_actions_func(component, actions, request):
+def create_actions_func(component, actionlists, request):
     final_actions = []
     final_content_actions = []
     action_types = set()
+    include_deletion = set()
     default_key = request.headers.get("Authorization", "").replace(
         " ", ""
     ).split(",", 1)[0].split(":", 1)[-1]
@@ -75,54 +77,79 @@ def create_actions_func(component, actions, request):
         default_key = base64.b64decode(default_key)
     except Exception:
         default_key = None
-    for action in actions:
-        action_key = action.get("key")
-        if isinstance(action_key, bytes):
-            pass
-        elif isinstance(action_key, str):
-            action_key = base64.base64_decode(action_key)
-        elif default_key:
-            action_key = default_key
+    for actionlist in actionlists:
+        content = actionlist.get("content")
+        if content:
+            if isinstance(content, str):
+                type_name, id = from_global_id(content)
+                if type_name != "Content":
+                    raise ValueError("Invalid type, requires content")
+                content = Content.objects.get(
+                    mark_for_destruction=None, flexid=id,
+                    component=component
+                )
+                include_deletion.add(content.id)
         else:
-            raise ValueError("No key specified/available")
+            include_deletion.add(None)
+        for action in actionlist.get("actions") or []:
+            action_key = action.get("key")
+            if isinstance(action_key, bytes):
+                pass
+            elif isinstance(action_key, str):
+                action_key = base64.base64_decode(action_key)
+            elif default_key:
+                action_key = default_key
+            else:
+                raise ValueError("No key specified/available")
 
-        action_key_hash = hash_key(action_key)
-        action_value = action["value"]
-        if isinstance(str, action_value):
-            action_value = json.loads(action_value)
-        action_value = ActionHandler.clean_action(
-            action["value"], request
-        )
+            action_key_hash = hash_key(action_key)
+            action_value = action["value"]
+            if isinstance(str, action_value):
+                action_value = json.loads(action_value)
+            action_value = ActionHandler.clean_action(
+                action_value, request
+            )
 
-        # create Action object
-        aesgcm = AESGCM(action_key)
-        nonce = os.urandom(13)
-        # add content_action
-        _content_action = action_value.pop("content_action", None)
-        if _content_action:
-            final_content_actions.append(_content_action)
+            # create Action object
+            aesgcm = AESGCM(action_key)
+            nonce = os.urandom(13)
+            # add content_action
+            group = action_value.pop("content_action_group") or ""
+            if content:
+                c = ContentAction(
+                    content=content,
+                    group=group
+                )
+                final_content_actions.append(c)
 
-        action = Action(
-            value=aesgcm.encode(
-                nonce,
-                json.dumps(action_value).encode("utf-8"),
-                None
-            ),
-            start=action.get("start", timezone.now()),
-            stop=action.stop,
-            key_hash=action_key_hash,
-            nonce=base64.b64encode(nonce).decode("ascii"),
-            content=_content_action
-        )
-        action.action_type = action_value["action"]
-        action_types.add(action_value["action"])
-        final_actions.append(action)
+            action = Action(
+                value=aesgcm.encode(
+                    nonce,
+                    json.dumps(action_value).encode("utf-8"),
+                    None
+                ),
+                start=action.get("start", timezone.now()),
+                stop=action.stop,
+                key_hash=action_key_hash,
+                nonce=base64.b64encode(nonce).decode("ascii"),
+                content_action=c
+            )
+            action.action_type = action_value["action"]
+            action_types.add(action_value["action"])
+            final_actions.append(action)
 
     def save_func():
-        actions = retrieve_allowed_objects(
+        result = retrieve_allowed_objects(
             request, "manage", component.actions.all()
         )
-        ContentAction.objects.filter(action__in=actions).delete()
+        # delete old actions in group if allowed
+        actions = result["objects"].filter(
+            Q(content_action__content__in=include_deletion) |
+            Q(content_action=None) if None in include_deletion else Q()
+        )
+        ContentAction.objects.filter(
+            action__in=actions
+        ).delete()
         actions.delete()
         ContentAction.objects.bulk_create(final_content_actions)
         component.actions.bulk_create(final_actions)
@@ -347,8 +374,6 @@ def create_content(objdata, request, authset=None, key=None, min_key_hashes=2):
             authset.add(key)
         else:
             key = key.split(":", 1)[0]
-
-
 
     return _update_or_create_content(
         Content(), objdata, request, authset, min_key_hashes

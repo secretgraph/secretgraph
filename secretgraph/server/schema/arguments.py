@@ -10,9 +10,14 @@ class ActionInput(graphene.InputObjectType):
     key = graphene.String(required=True)
 
 
+class ActionListInput(graphene.InputObjectType):
+    actions = graphene.List(ActionInput, required=True)
+    content = graphene.ID(required=False)
+
+
 class ComponentInput(graphene.InputObjectType):
     public_info = graphene.String(required=False)
-    actions = graphene.List(ActionInput, required=False)
+    actions = graphene.List(ActionListInput, required=False)
 
 
 class ReferenceInput(graphene.InputObjectType):
