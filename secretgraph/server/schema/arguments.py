@@ -2,22 +2,10 @@ import graphene
 from graphene_file_upload.scalars import Upload
 
 
-class ActionInputBase(graphene.InputObjectType):
-    action = graphene.String(required=True)
-
-
-class ActionInputView(ActionInputBase):
-    pass
-
-
-class ActionInputManage(ActionInputBase):
-    exclude = graphene.List(graphene.ID, required=False)
-
-
 class ActionInput(graphene.InputObjectType):
     start = graphene.DateTime(required=False)
     stop = graphene.DateTime(required=False)
-    value = ActionInputBase(required=True)
+    value = graphene.JSONString(required=True)
     # always required as actions must be checked and transformed by server
     key = graphene.String(required=True)
 

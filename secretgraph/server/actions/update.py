@@ -82,6 +82,9 @@ def create_actions_func(component, actions, request):
             raise ValueError("No key specified/available")
 
         action_key_hash = hash_key(action_key)
+        action_value = action["value"]
+        if isinstance(str, action_value):
+            action_value = json.loads(action_value)
         action_value = ActionHandler.clean_action(
             action["value"], request
         )
