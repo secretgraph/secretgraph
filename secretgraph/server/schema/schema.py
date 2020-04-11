@@ -27,16 +27,9 @@ class Query():
     def resolve_component(
         self, info, id, **kwargs
     ):
-        res = fetch_components(
+        return fetch_components(
             info.context, query=id
-        )
-
-        if not res:
-            raise res.model.DoesNotExist(
-                "%s matching query does not exist." %
-                res.model._meta.object_name
-            )
-        return res.first()
+        )["object"]
 
     def resolve_all_components(
         self, info, user=None, **kwargs
@@ -64,25 +57,19 @@ class Query():
             info.context,
             info_include=kwargs.get("info_include"),
             info_exclude=kwargs.get("info_exclude")
-        )
+        )["objects"]
 
     def resolve_content(self, info, id, **kwargs):
-        res = fetch_contents(
+        return fetch_contents(
             info.context, query=id
-        )
-        if not res:
-            raise res.model.DoesNotExist(
-                "%s matching query does not exist." %
-                res.model._meta.object_name
-            )
-        return res.first()
+        )["object"]
 
     def resolve_contents(self, info, **kwargs):
         return fetch_contents(
             info.context,
             info_include=kwargs.get("info_include"),
             info_exclude=kwargs.get("info_exclude")
-        )
+        )["objects"]
 
 
 class Mutation():

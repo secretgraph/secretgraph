@@ -1,14 +1,19 @@
 import base64
 import hashlib
 import json
+import logging
 import os
+import tempfile
+from io import BytesIO
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from graphql_relay import from_global_id
 from django.conf import settings
-from django.core.files.base import File, ContentFile
-from django.utils import timezone
+from django.core.files.base import ContentFile, File
 from django.db import transaction
+from django.utils import timezone
+from graphql_relay import from_global_id
 from rdflib import Graph
 
 from ...constants import sgraph_component
@@ -204,13 +209,45 @@ def update_component(component, objdata, request, user=None):
     )
 
 
-def _update_or_create_content(content, objdata, request):
+def encrypt_value(key, value, nonce=None):
+    if isinstance(key, str):
+        key = base64.b64decode(key)
+    if not nonce:
+        nonce = os.urandom(13)
+
+    if isinstance(value, bytes):
+        value = BytesIO(value)
+    elif isinstance(value, str):
+        value = BytesIO(base64.b64decode(value))
+    f = tempfile.NameTemporaryFile()
+    encryptor = Cipher(
+        algorithms.AES(key),
+        modes.GCM(nonce),
+        backend=default_backend()
+    ).encryptor()
+    chunk = value.read(512)
+    while chunk:
+        assert isinstance(chunk, bytes)
+        f.write(encryptor.update(chunk))
+        chunk = value.read(512)
+    f.write(encryptor.finalize())
+    f.write(encryptor.tag)
+    return f, nonce
+
+
+def encrypt_info_tag(encryptor, tag):
+    pass
+
+
+def _update_or_create_content(
+    content, objdata, request, authset, min_key_hashes
+):
     if objdata["component"] != content.component:
         type_name, flexid = from_global_id(content.component.id)
         if type_name != "Component":
             raise ValueError("Requires Component id")
         content.component = retrieve_allowed_objects(
-            request, "update", Component.objects.all()
+            request, "update", Component.objects.all(), authset=authset
         )["objects"].get(flexid=flexid)
 
     if objdata.get("value"):
@@ -237,8 +274,15 @@ def _update_or_create_content(content, objdata, request):
     final_info_tags = None
     if objdata.get("info") is not None:
         final_info_tags = []
+        count_key_hash_info = 0
         for i in objdata["info"]:
+            if i.startswith("key_hash="):
+                count_key_hash_info += 1
             final_info_tags.append(ContentTag(tag=i))
+        if count_key_hash_info < 1:
+            raise ValueError("No key_hash info")
+        elif count_key_hash_info < min_key_hashes:
+            logging.debug("Lacks %d key_hash", min_key_hashes)
 
         if objdata.get("info_for_hash"):
             info_for_hash = set(filter(
@@ -254,6 +298,8 @@ def _update_or_create_content(content, objdata, request):
         else:
             content.info_hash = None
     elif not content.id:
+        # if content does not exist, skip info tag creation
+        final_info_tags = None
         content.info_hash = None
 
     final_references = None
@@ -261,7 +307,8 @@ def _update_or_create_content(content, objdata, request):
         final_references = []
         for ref in objdata["references"]:
             ob = Content.objects.filter(
-                flexid=ref.target, component_id=content.component_id
+                flexid=ref.target, component_id=content.component_id,
+                mark_for_destruction=None
             ).first()
             if not ob:
                 continue
@@ -285,24 +332,40 @@ def _update_or_create_content(content, objdata, request):
     return content
 
 
-def create_content(objdata, request):
+def create_content(objdata, request, authset=None, key=None, min_key_hashes=2):
     if not objdata.get("value"):
         raise ValueError("Requires value")
+
+    if key:
+        if key.count(":") == 2:
+            if authset is None:
+                authset = set(request.headers.get("Authorization", "").replace(
+                    " ", ""
+                ).split(","))
+            else:
+                authset = set(authset)
+            authset.add(key)
+        else:
+            key = key.split(":", 1)[0]
+
+
+
     return _update_or_create_content(
-        Content(), objdata, request
+        Content(), objdata, request, authset, min_key_hashes
     )
 
 
-def update_content(content, objdata, request):
+def update_content(content, objdata, request, authset=None, min_key_hashes=2):
     if isinstance(content, str):
         type_name, flexid = from_global_id(content)
         if type_name != "Content":
             raise ValueError("Only for Contents")
         result = retrieve_allowed_objects(
-            request, "update", Content.objects.all()
+            request, "update", Content.objects.all(),
+            authset=authset
         )
         content = result["objects"].get(flexid=flexid)
     assert content.id
     return _update_or_create_content(
-        content, objdata, request
+        content, objdata, request, authset, min_key_hashes
     )

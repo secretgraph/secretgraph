@@ -22,10 +22,11 @@ def calculate_hashes(inp):
     return inp
 
 
-def retrieve_allowed_objects(request, scope, query):
-    authset = set(request.headers.get("Authorization", "").replace(
-        " ", ""
-    ).split(","))
+def retrieve_allowed_objects(request, scope, query, authset=None):
+    if not authset:
+        authset = set(request.headers.get("Authorization", "").replace(
+            " ", ""
+        ).split(","))
     now = timezone.now()
     pre_filtered_actions = Action.objects.select_related("component").filter(
         start__lte=now
@@ -38,19 +39,30 @@ def retrieve_allowed_objects(request, scope, query):
     result = {
         "components": {},
         "action_extras": {},
-        "actions": Action.objects.none()
+        "actions": Action.objects.none(),
+        "action_key_map": {},
+        "content_key_map": {}
     }
     for item in authset:
-        spitem = item.split(":", 1)
-        if len(spitem) != 2:
+        spitem = item.split(":", 2)
+        if len(spitem) < 2:
             continue
-        componentflexid, key = spitem
+        elif len(spitem) == 3:
+            try:
+                content_key = base64.b64decode(spitem[0])
+            except Exception:
+                content_key = None
+            if content_key:
+                for i in calculate_hashes(content_key):
+                    result["content_key_map"] = content_key
+
+        componentflexid, action_key = spitem[-2:]
         try:
-            key = base64.b64decode(key)
+            action_key = base64.b64decode(action_key)
         except Exception:
             continue
-        aesgcm = AESGCM(key)
-        keyhashes = calculate_hashes(key)
+        aesgcm = AESGCM(action_key)
+        keyhashes = calculate_hashes(action_key)
 
         actions = pre_filtered_actions.filter(
             component__flexid=componentflexid,
@@ -96,10 +108,12 @@ def retrieve_allowed_objects(request, scope, query):
         result["components"][componentflexid] = {
             "filters": filters,
             "accesslevel": accesslevel,
-            "key": key,
+            "action_key": action_key,
             "actions": actions,
         }
         result["actions"] |= actions
+        for h in keyhashes:
+            result["action_key_map"][h] = action_key
         components.add(componentflexid)
         if issubclass(query.model, Component):
             all_filters |= (

@@ -13,12 +13,14 @@ def fetch_components(
     request, query=None,
     info_include=None, info_exclude=None
 ):
+    flexid = None
     if query is None:
         query = Component.objects.all()
     elif isinstance(query, str):
         if ":" in query:
             type_name, query = from_global_id(query)
-        query = Component.objects.filter(flexid=query)
+        flexid = query
+        query = Component.objects.all()
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(contents__info__tag__startswith=i)
@@ -29,24 +31,42 @@ def fetch_components(
     result = retrieve_allowed_objects(
         request, "view", query.filter(~excl_filters & incl_filters)
     )
-    return result["objects"]
+    if flexid:
+        result["objects"] = result["objects"].filter(flexid=flexid)
+        result["object"] = result["objects"].get()
+    return result
 
 
-class UsageTracker(object):
+class ContentFetchQueryset(QuerySet):
+    """
+        Tracks usage of contents and mark accordingly Content for removal
+    """
 
-    def __init__(self, result, objects=None):
-        self._qs = objects or result["objects"]
-        self._result = result
+    def __init__(self, secretgraph_result=None, **kwargs):
+        query = kwargs.get("query", None)
+        result = secretgraph_result or query.secretgraph_result
+        if result:
+            self.secretgraph_result = result
+            kwargs["query"] = query or result["objects"]
+            kwargs["model"] = kwargs.get("model", None) or query.model
+        super().__init__(**kwargs)
+
+    def _clone(self):
+        """
+        Return a copy of the current QuerySet. A lightweight alternative
+        to deepcopy().
+        """
+        c = super()._clone()
+        c.secretgraph_result = self.secretgraph_result
+        return c
 
     def _fetch_trigger(self, objects):
-        if isinstance(objects, (QuerySet, list, set, tuple)):
-            used_actions = self._result["actions"].filter(
-                content_action__content__in=objects
-            ).select_related("content_action")
-        else:
-            used_actions = self._result["actions"].filter(
-                content_action__content=objects
-            ).select_related("content_action")
+        assert self.secretgraph_result
+        if isinstance(objects, Content):
+            objects = [objects]
+        used_actions = self.secretgraph_result["actions"].filter(
+            content_action__content__in=objects
+        ).select_related("content_action")
         cactions = ContentAction.objects.filter(action__in=used_actions)
         cactions.update(used=True)
         mark_for_destruction = timezone.now() + td(hours=8)
@@ -59,29 +79,43 @@ class UsageTracker(object):
         return objects
 
     def __iter__(self):
-        for i in super().__iter__():
-            yield self._fetch_trigger(i)
+        for i in self._fetch_trigger(super().__iter__()):
+            yield i
 
     def __len__(self):
-        return self._qs.__len__()
-
-    def __getattr__(self, key):
-        return getattr(self._qs, key)
+        return self._originalqs.__len__()
 
     def __getitem__(self, key):
-        return self._fetch_trigger(self._qs.__getitem__(key))
+        return self._fetch_trigger(self._originalqs.__getitem__(key))
+
+    def __getattr__(self, key):
+        return getattr(self._originalqs, key)
+
+    def get(self, *args, **kwargs):
+        return self._fetch_trigger(self._originalqs.get(*args, **kwargs))
+
+    def first(self):
+        return self._fetch_trigger(self._originalqs.first())
 
 
 def fetch_contents(
-    request, query=None,
+    request, query=None, authset=None,
     info_include=None, info_exclude=None
-) -> UsageTracker:
+) -> dict:
+    flexid = None
+    # cleanup expired
+    Content.objects.filter(
+        mark_for_destruction__lte=timezone.now()
+    ).delete()
     if query is None:
-        query = Component.objects.all()
+        query = Content.objects.all()
     elif isinstance(query, str):
         if ":" in query:
             type_name, query = from_global_id(query)
-        query = Component.objects.filter(flexid=query)
+            if type_name != "Content":
+                raise ValueError("Only for contents")
+        flexid = query
+        query = Content.objects.all()
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(info__tag__startswith=i)
@@ -90,6 +124,24 @@ def fetch_contents(
     for i in info_exclude or []:
         excl_filters |= Q(info__tag__startswith=i)
     result = retrieve_allowed_objects(
-        request, "view", query.filter(~excl_filters & incl_filters)
+        request, "view", query.filter(~excl_filters & incl_filters),
+        authset=authset
     )
-    return UsageTracker(result)
+    result["objects"] = result["objects"].filter(
+        info__tag__in=map(
+            lambda x: f"key_hash={x}", result["action_key_map"].keys()
+        )
+    )
+    if result["content_key_map"]:
+        result["objects"] = result["objects"].filter(
+            info__tag__in=map(
+                lambda x: f"key_hash={x}", result["content_key_map"].keys()
+            )
+        )
+    result["objects"] = ContentFetchQueryset(result)
+    if flexid:
+        result["objects"] = result["objects"].filter(flexid=flexid)
+        assert isinstance(result["objects"], ContentFetchQueryset)
+        assert hasattr(result["objects"], "secretgraph_result")
+        result["object"] = result["objects"].get()
+    return result
