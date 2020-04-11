@@ -288,7 +288,7 @@ class ActionHandler():
                 continue
             result["update"]["Action"][_id] = \
                 dict(filter(
-                    lambda x, y: x != "content"
+                    lambda x, y: x != "content",
                     update_mapper["Action"][_key_hash].items()
                 ))
         return result
