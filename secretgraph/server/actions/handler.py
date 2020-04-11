@@ -61,7 +61,7 @@ class ActionHandler():
     def do_view(action_dict, scope, sender, accesslevel, **kwargs):
         if accesslevel > 1 or scope != "view":
             return None
-        if isinstance(sender, Content):
+        if issubclass(sender, Content):
             excl_filters = Q()
             for i in action_dict.get("exclude_info", []):
                 excl_filters |= Q(info__tag__startswith=i)
@@ -94,7 +94,7 @@ class ActionHandler():
     def do_update(action_dict, scope, sender, accesslevel, **kwargs):
         if accesslevel > 1 or scope != "update":
             return None
-        if isinstance(sender, Content):
+        if issubclass(sender, Content):
             incl_filters = Q(id__in=action_dict.get("ids", []))
             return {
                 "filters": incl_filters
