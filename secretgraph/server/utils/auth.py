@@ -37,7 +37,8 @@ def retrieve_allowed_objects(request, scope, query):
     all_filters = models.Q()
     result = {
         "components": {},
-        "action_extras": {}
+        "action_extras": {},
+        "actions": Action.objects.none()
     }
     for item in authset:
         spitem = item.split(":", 1)
@@ -98,8 +99,9 @@ def retrieve_allowed_objects(request, scope, query):
             "key": key,
             "actions": actions,
         }
+        result["actions"] |= actions
         components.add(componentflexid)
-        if isinstance(query.model, Component):
+        if issubclass(query.model, Component):
             all_filters |= (
                 filters & models.Q(id=actions[0].component_id)
             )
@@ -108,11 +110,11 @@ def retrieve_allowed_objects(request, scope, query):
                 filters & models.Q(component_id=actions[0].component_id)
             )
 
-    if isinstance(query.model, Component):
+    if issubclass(query.model, Component):
         all_filters &= models.Q(flexid__in=components)
     else:
         all_filters &= models.Q(component__flexid__in=components)
-    if isinstance(query.model, Content):
+    if issubclass(query.model, Content):
         all_filters &= (
             models.Q(action__in=actions) |
             models.Q(action_id__isnull=True)

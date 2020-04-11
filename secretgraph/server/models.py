@@ -69,7 +69,7 @@ class Content(FlexidModel):
     # null if multiple contents are allowed
     info_hash: str = models.CharField(max_length=255, blank=True, null=True)
     component: Component = models.ForeignKey(
-        Component, on_delete=models.CASCADE,
+        Component, on_delete=models.CASCADE, related_name="contents"
     )
 
     class Meta:

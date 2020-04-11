@@ -4,7 +4,7 @@ import json
 import os
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from graphene_relay import from_global_id
+from graphql_relay import from_global_id
 from django.conf import settings
 from django.core.files.base import File, ContentFile
 from django.utils import timezone
@@ -26,24 +26,27 @@ _serverside_encryption = getattr(
 
 def get_secrets(graph):
     public_secrets = []
-    protected_secrets = []
+    protected_secrets = {}
+    # tasks must not be distinct
     for i in graph.query(
         """
-        SELECT DISTINCT ?secret (COUNT(?tasks) AS ?ctasks)
+        SELECT ?secret ?task
         WHERE {
             ?n a component:EncryptedBox ;
                 component:EncryptedBox.esecrets ?secret .
-                component:EncryptedBox.tasks ?tasks .
+            OPTIONAL {  component:EncryptedBox.tasks ?task } .
         }
         """,
         initNs={
             "component": sgraph_component
         }
     ):
-        if i.tasks == 0:
-            public_secrets.append(i.secret)
+        if i.task:
+            # hopefully the order is preserved
+            protected_secrets.setdefault(i.secret, [])
+            protected_secrets[i.secret].append(i.task)
         else:
-            protected_secrets.append(i.secret)
+            public_secrets.append(i.secret)
     return public_secrets, protected_secrets
 
 
@@ -60,8 +63,24 @@ def create_actions_func(component, actions, request):
     final_actions = []
     final_content_actions = []
     action_types = set()
+    default_key = request.headers.get("Authorization", "").replace(
+        " ", ""
+    ).split(",", 1)[0].split(":", 1)[-1]
+    try:
+        default_key = base64.b64decode(default_key)
+    except Exception:
+        default_key = None
     for action in actions:
-        action_key = base64.base64_decode(action["key"])
+        action_key = action.get("key")
+        if isinstance(action_key, bytes):
+            pass
+        elif isinstance(action_key, str):
+            action_key = base64.base64_decode(action_key)
+        elif default_key:
+            action_key = default_key
+        else:
+            raise ValueError("No key specified/available")
+
         action_key_hash = hash_key(action_key)
         action_value = ActionHandler.clean_action(
             action["value"], request
@@ -102,13 +121,13 @@ def create_actions_func(component, actions, request):
     setattr(save_func, "actions", final_actions)
     setattr(save_func, "content_actions", final_content_actions)
     setattr(save_func, "action_types", action_types)
+    setattr(save_func, "key", default_key)
     return save_func
 
 
 def _update_or_create_component(
     component, objdata, request
 ):
-
     if objdata.get("public_info"):
         g = Graph()
         g.parse(objdata["public_info"], "turtle")
@@ -122,16 +141,18 @@ def _update_or_create_component(
 
     if objdata.get("actions"):
         created = not component.id
-        save_func = create_actions_func(component, objdata["actions"], request)
+        action_save_func = create_actions_func(
+            component, objdata["actions"], request
+        )
         assert created and not component.id, \
             "Don't save component in action clean"
 
         m_actions = filter(
-            lambda x: x.action_type == "manage", save_func.actions
+            lambda x: x.action_type == "manage", action_save_func.actions
         )
         m_actions = set(map(lambda x: x.key_hash, m_actions))
 
-        if created and "manage" not in save_func.action_types:
+        if created and "manage" not in action_save_func.action_types:
             raise ValueError("Requires \"manage\" Action")
 
         if m_actions.intersection(public_secret_hashes):
@@ -139,7 +160,7 @@ def _update_or_create_component(
 
         with transaction.atomic():
             component.save()
-            save_func()
+            action_save_func()
     elif component.id is not None and not public_secret_hashes:
         component.save()
     else:
@@ -151,6 +172,7 @@ def create_component(objdata, request, user=None):
     if not objdata.get("actions"):
         raise ValueError("Actions required")
     prebuild = {}
+
     if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
         if not user:
             raise ValueError("No user specified")
@@ -162,6 +184,14 @@ def create_component(objdata, request, user=None):
 
 
 def update_component(component, objdata, request, user=None):
+    if isinstance(component, str):
+        type_name, flexid = from_global_id(component)
+        if type_name != "Component":
+            raise ValueError("Only for Components")
+        result = retrieve_allowed_objects(
+            request, "update", Component.objects.all()
+        )
+        component = result["objects"].get(flexid=flexid)
     assert component.id
     if user:
         component.user = user
@@ -204,10 +234,6 @@ def _update_or_create_content(content, objdata, request):
     final_info_tags = None
     if objdata.get("info") is not None:
         final_info_tags = []
-        if not create:
-            final_info_tags.append(ContentTag(
-                tag=f"id={content.flexid}"
-            ))
         for i in objdata["info"]:
             final_info_tags.append(ContentTag(tag=i))
 
@@ -242,8 +268,10 @@ def _update_or_create_content(content, objdata, request):
     with transaction.atomic():
         save_func()
         if final_info_tags is not None:
-            content.info.delete()
+            # simply ignore id=, can only be changed in regenerateFlexid
+            content.info.exclude(startswith="id=").delete()
             content.info.create_bulk(final_info_tags)
+        # but create it after object was created
         if create:
             content.info.create(
                 tag=f"id={content.flexid}"
@@ -263,6 +291,14 @@ def create_content(objdata, request):
 
 
 def update_content(content, objdata, request):
+    if isinstance(content, str):
+        type_name, flexid = from_global_id(content)
+        if type_name != "Content":
+            raise ValueError("Only for Contents")
+        result = retrieve_allowed_objects(
+            request, "update", Content.objects.all()
+        )
+        content = result["objects"].get(flexid=flexid)
     assert content.id
     return _update_or_create_content(
         content, objdata, request

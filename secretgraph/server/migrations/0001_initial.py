@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                 ('nonce', models.CharField(max_length=255)),
                 ('file', models.FileField(upload_to=secretgraph.server.models.get_file_path)),
                 ('info_hash', models.CharField(blank=True, max_length=255, null=True)),
-                ('component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='secretgraph_base.Component')),
+                ('component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph_base.Component')),
             ],
         ),
         migrations.CreateModel(

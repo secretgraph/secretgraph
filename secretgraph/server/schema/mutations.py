@@ -55,19 +55,34 @@ class ComponentMutation(relay.ClientIDMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, component, id=None):
         if id:
-            type_name, flexid = cls.from_global_id(id)
-            if type_name != "Component":
-                raise ValueError("Only for Components")
-            result = retrieve_allowed_objects(
-                info.context, "update", Component.objects.all()
-            )
             return cls(component=update_component(
-                result["objects"].get(flexid=flexid), info.context
+                id, info.context
             ))
         else:
-            user = info.context.user
-            if not user.is_authenticated:
-                raise ValueError("Must be logged in")
+            user = None
+            manage = retrieve_allowed_objects(
+                info.context, "manage", Component.actions.all()
+            )["objects"].first()
+
+            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+                if manage:
+                    user = manage.user
+                if not user:
+                    user = info.context.user
+                if not user.is_authenticated:
+                    raise ValueError("Must be logged in")
+            elif (
+                getattr(
+                    settings, "SECRETGRAPH_ALLOW_REGISTER", False
+                ) == "cluster" and
+                not manage.exist()
+            ):
+                raise ValueError("Cannot register new component clusters")
+            elif getattr(
+                settings, "SECRETGRAPH_ALLOW_REGISTER", False
+            ) is not True:
+                raise ValueError("Cannot register new components")
+
             return cls(
                 component=create_component(component, info.context, user)
             )
@@ -86,15 +101,9 @@ class ContentMutation(relay.ClientIDMutation):
         cls, root, info, content, id=None, key=None
     ):
         if id:
-            type_name, flexid = cls.from_global_id(id)
-            if type_name != "Content":
-                raise ValueError("Only for Contents")
-            result = retrieve_allowed_objects(
-                info, "update", Content.objects.all()
-            )
             return cls(
                 content=update_content(
-                    result["objects"].get(flexid=flexid),
+                    id,
                     content, info.context
                 )
             )

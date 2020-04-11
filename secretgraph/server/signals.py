@@ -31,15 +31,18 @@ def generateFlexid(sender, instance, force=False, **kwargs):
                     instance.save(
                         update_fields=["flexid"]
                     )
-                if isinstance(sender, Content):
-                    fname = instance.file.name
-                    instance.file.save("", instance.file.open("r"))
-                    instance.file.storage.delete(fname)
                 break
             except IntegrityError:
                 pass
 
-        if isinstance(sender, Component) and force:
+        if issubclass(sender, Content):
+            fname = instance.file.name
+            instance.file.save("", instance.file.open("r"))
+            instance.file.storage.delete(fname)
+            instance.info.filter(tag__startswith="id=").update(
+                tag=f"id={instance.flexid}"
+            )
+        elif issubclass(sender, Component) and force:
             for c in instance.contents.all():
                 generateFlexid(Content, c, True)
 

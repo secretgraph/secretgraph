@@ -2,7 +2,7 @@
 import json
 from functools import lru_cache
 from django.db.models import Q
-from graphene_relay import from_global_id
+from graphql_relay import from_global_id
 
 from ..models import Content, Component, Action
 
@@ -46,8 +46,6 @@ class ActionHandler():
 
     @classmethod
     def clean_action(cls, action_dict, request):
-        if isinstance(action_dict, str):
-            action_dict = json.loads(action_dict)
         action = action_dict["action"]
         result = getattr(
             cls, "clean_%s" % action

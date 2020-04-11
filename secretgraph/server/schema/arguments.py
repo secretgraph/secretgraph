@@ -14,15 +14,10 @@ class ActionInputManage(ActionInputBase):
     exclude = graphene.List(graphene.ID, required=False)
 
 
-class ActionInputValue(graphene.Union):
-    class Meta:
-        types = (ActionInputView, ActionInputManage,)
-
-
 class ActionInput(graphene.InputObjectType):
     start = graphene.DateTime(required=False)
     stop = graphene.DateTime(required=False)
-    value = graphene.ActionInputValue(required=True)
+    value = ActionInputBase(required=True)
     # always required as actions must be checked and transformed by server
     key = graphene.String(required=True)
 

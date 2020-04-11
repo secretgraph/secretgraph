@@ -3,6 +3,7 @@ from django.conf import settings
 from graphene import relay, ObjectType
 from graphene_django import DjangoObjectType
 
+from ..actions.view import fetch_contents
 from ..models import Component, Content, ContentReference
 
 
@@ -81,12 +82,22 @@ class ComponentNode(FlexidMixin, DjangoObjectType):
     class Meta:
         model = Component
         interfaces = (relay.Node,)
-        fields = ['public_info']
+        fields = ['public_info', 'contents']
         if (
             getattr(settings, "AUTH_USER_MODEL", None) or
             getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
         ):
             fields.append("user")
+    contents = ContentConnection()
+
+    def resolve_contents(
+        self, info, **kwargs
+    ):
+        return fetch_contents(
+            info.context,
+            info_include=kwargs.get("info_include"),
+            infoexclude=kwargs.get("info_exclude")
+        )
 
 
 class ComponentConnection(relay.Connection):
