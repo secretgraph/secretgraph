@@ -53,6 +53,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('group', models.CharField(blank=True, default='', max_length=255)),
+                ('extra', models.TextField(blank=True, default='', null=False)),
                 ('delete_recursive', models.BooleanField(blank=True, default=True)),
                 ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='references', to='secretgraph_base.Content')),
                 ('target', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='referenced_by', to='secretgraph_base.Content')),

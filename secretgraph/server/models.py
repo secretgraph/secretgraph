@@ -165,8 +165,9 @@ class ContentReference(models.Model):
         on_delete=models.CASCADE
     )
     group: str = models.CharField(
-        max_length=255, default="", null=False, blank=True
+        max_length=255, default='', null=False, blank=True
     )
+    extra: str = models.TextField(blank=True, null=False, default='')
     delete_recursive: bool = models.BooleanField(blank=True, default=True)
 
     class Meta:
