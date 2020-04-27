@@ -1,0 +1,32 @@
+@prefix scontent: </static/schemes/sgraph/simplecontent#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cc: <https://creativecommons.org/ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+</static/schemes/sgraph/content#> a owl:Ontology ;
+  dc:title "Simple Secretgraph format" ;
+  dc:description "This is the spkcgraph format used by spkcspider." ;
+  cc:license <https://creativecommons.org/publicdomain/zero/1.0/> .
+
+scontent:Content a rdfs:Class ;
+  rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
+  rdfs:domain rdfs:Resource .
+
+scontent:value a rdf:Property ;
+  rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
+  rdfs:domain scontent:ContentRoot .
+
+scontent:value.name a rdf:Property ;
+  rdfs:subPropertyOf scontent:value ;
+  rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
+  rdfs:domain scontent:value ;
+  rdf:range xsd:string .
+
+scontent:value.value a rdf:Property ;
+  rdfs:subPropertyOf scontent:value ;
+  rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
+  rdfs:domain scontent:value ;
+  rdf:range rdfs:Literal .

@@ -1,0 +1,26 @@
+@prefix key: </static/schemes/sgraph/content#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cc: <https://creativecommons.org/ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+</static/schemes/sgraph/content#> a owl:Ontology ;
+  dc:title "Secretgraph Key" ;
+  dc:description "This is the spkcgraph format used by spkcspider." ;
+  cc:license <https://creativecommons.org/publicdomain/zero/1.0/> .
+
+key:Key a rdfs:Class ;
+  rdfs:isDefinedBy </static/schemes/sgraph/key#> ;
+  rdfs:domain rdfs:Resource .
+
+key:Key.public_key a rdf:Property;
+  rdfs:isDefinedBy </static/schemes/sgraph/key#> ;
+  rdfs:domain key:Key ;
+  rdfs:range xsd:base64Binary .
+
+key:Key.encrypted_private_key a rdf:Property;
+  rdfs:isDefinedBy </static/schemes/sgraph/key#> ;
+  rdfs:domain key:Key ;
+  rdfs:range xsd:base64Binary .
