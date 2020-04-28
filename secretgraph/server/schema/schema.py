@@ -1,16 +1,16 @@
 
 import graphene
-from graphene import relay
 from django.db.models import Q
+from graphene import relay
 
+from ..actions.view import fetch_components, fetch_contents
 from ..models import Component
-from ..actions.view import fetch_contents, fetch_components
 from .definitions import (
     ComponentConnection, ComponentNode, ContentConnection, ContentNode,
     ServerConfig
 )
 from .mutations import (
-    ComponentMutation, ContentMutation, PushContentMutation,
+    ComponentMutation, ContentMutation, DeleteMutation, PushContentMutation,
     RegenerateFlexidMutation
 )
 
@@ -77,3 +77,4 @@ class Mutation():
     update_component = ComponentMutation.Field()
     push_content = PushContentMutation.Field()
     regenerate_flexid = RegenerateFlexidMutation.Field()
+    delete = DeleteMutation.Field()

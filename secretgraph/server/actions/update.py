@@ -161,7 +161,7 @@ def create_actions_func(component, actionlists, request):
 
 
 def _update_or_create_component(
-    component, objdata, request
+    request, component, objdata
 ):
     if objdata.get("public_info"):
         g = Graph()
@@ -203,7 +203,7 @@ def _update_or_create_component(
     return component
 
 
-def create_component(objdata, request, user=None):
+def create_component(request, objdata=None, user=None):
     if not objdata.get("actions"):
         raise ValueError("Actions required")
     prebuild = {}
@@ -213,12 +213,17 @@ def create_component(objdata, request, user=None):
             raise ValueError("No user specified")
     if user:
         prebuild["user"] = user
+    if not objdata:
+        objdata = {
+
+        }
+        raise NotImplementedError
     return _update_or_create_component(
-        Component(**prebuild), objdata, request
+        request, Component(**prebuild), objdata
     )
 
 
-def update_component(component, objdata, request, user=None):
+def update_component(request, component, objdata, user=None):
     if isinstance(component, str):
         type_name, flexid = from_global_id(component)
         if type_name != "Component":
@@ -232,7 +237,7 @@ def update_component(component, objdata, request, user=None):
         component.user = user
 
     return _update_or_create_component(
-        component, objdata, request
+        request, component, objdata
     )
 
 
@@ -267,7 +272,7 @@ def encrypt_info_tag(encryptor, tag):
 
 
 def _update_or_create_content(
-    content, objdata, request, authset, min_key_hashes
+    request, content, objdata, authset, min_key_hashes, is_key
 ):
     if objdata["component"] != content.component:
         type_name, flexid = from_global_id(content.component.id)
@@ -299,10 +304,15 @@ def _update_or_create_content(
     create = not content.id
 
     final_info_tags = None
-    if objdata.get("info") is not None:
+    if min_key_hashes == "key":
+        final_info_tags = []
+        # TODO: calculate
+    elif objdata.get("info") is not None:
         final_info_tags = []
         count_key_hash_info = 0
         for i in objdata["info"]:
+            if i == "key":
+                raise ValueError("key is invalid tag for content")
             if i.startswith("key_hash="):
                 count_key_hash_info += 1
             final_info_tags.append(ContentTag(tag=i))
@@ -359,7 +369,7 @@ def _update_or_create_content(
     return content
 
 
-def create_content(objdata, request, authset=None, key=None, min_key_hashes=2):
+def create_content(request, objdata, authset=None, key=None, min_key_hashes=2):
     if not objdata.get("value"):
         raise ValueError("Requires value")
 
@@ -376,11 +386,32 @@ def create_content(objdata, request, authset=None, key=None, min_key_hashes=2):
             key = key.split(":", 1)[0]
 
     return _update_or_create_content(
-        Content(), objdata, request, authset, min_key_hashes
+        request, Content(), objdata, authset, min_key_hashes, False
     )
 
 
-def update_content(content, objdata, request, authset=None, min_key_hashes=2):
+def create_key(request, objdata=None, authset=None, key=None):
+    if not objdata.get("value"):
+        raise ValueError("Requires value")
+
+    if key:
+        if key.count(":") == 2:
+            if authset is None:
+                authset = set(request.headers.get("Authorization", "").replace(
+                    " ", ""
+                ).split(","))
+            else:
+                authset = set(authset)
+            authset.add(key)
+        else:
+            key = key.split(":", 1)[0]
+
+    return _update_or_create_content(
+        request, Content(), objdata, authset, "key"
+    )
+
+
+def update_content(request, content, objdata, authset=None, min_key_hashes=2):
     if isinstance(content, str):
         type_name, flexid = from_global_id(content)
         if type_name != "Content":
@@ -392,5 +423,5 @@ def update_content(content, objdata, request, authset=None, min_key_hashes=2):
         content = result["objects"].get(flexid=flexid)
     assert content.id
     return _update_or_create_content(
-        content, objdata, request, authset, min_key_hashes
+        request, content, objdata, authset, min_key_hashes
     )

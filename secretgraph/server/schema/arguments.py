@@ -15,16 +15,10 @@ class ActionListInput(graphene.InputObjectType):
     content = graphene.ID(required=False)
 
 
-class KeyInput(graphene.InputObjectType):
+class ContentKeyInput(graphene.InputObjectType):
     # small version of ContentInput for key. Can autocompute most things
     value = Upload(required=True)
     nonce = graphene.String(required=True)
-
-
-class ComponentInput(graphene.InputObjectType):
-    public_info = graphene.String(required=False)
-    actions = graphene.List(ActionListInput, required=False)
-    key = KeyInput(required=False)
 
 
 class ReferenceInput(graphene.InputObjectType):
@@ -32,11 +26,21 @@ class ReferenceInput(graphene.InputObjectType):
     group = graphene.String(required=False)
 
 
-class ContentInput(graphene.InputObjectType):
-    id = graphene.ID(required=False)
-    value = Upload(required=False)
+class ContentValueInput(graphene.InputObjectType):
+    value = Upload(required=True)
     nonce = graphene.String(required=False)
-    component = graphene.ID(required=False)
     references = graphene.List(ReferenceInput, required=False)
     info = graphene.List(graphene.String)
     info_for_hash = graphene.List(graphene.String)
+
+
+class ContentInput(graphene.InputObjectType):
+    component = graphene.ID(required=False)
+    key = ContentKeyInput(required=False)
+    value = ContentValueInput(required=False)
+
+
+class ComponentInput(graphene.InputObjectType):
+    public_info = graphene.String(required=False)
+    actions = graphene.List(ActionListInput, required=False)
+    key = ContentKeyInput(required=False)

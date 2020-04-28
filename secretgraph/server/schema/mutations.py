@@ -1,17 +1,18 @@
+from datetime import timedelta as td
+
 import graphene
+from django.db.models import Q
 from django.conf import settings
+from django.utils import timezone
 from graphene import relay
 
 from ..actions.update import (
     create_component, create_content, update_component, update_content
 )
-from ..models import (
-    Component, Content
-)
-# , ReferenceContent
+from ..models import Component, Content
 from ..signals import generateFlexid
 from ..utils.auth import retrieve_allowed_objects
-from .arguments import ComponentInput, ContentInput
+from .arguments import ComponentInput, ContentInput, ContentValueInput
 from .definitions import ComponentNode, ContentNode, FlexidType
 
 _serverside_encryption = getattr(
@@ -34,7 +35,7 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
             objects = Content.objects.all()
         else:
             raise ValueError()
-        objects = retrieve_allowed_objects(info, "update", objects)
+        objects = retrieve_allowed_objects(info, "update", objects)["objects"]
         # TODO: admin permission
         # if not info.context.user.has_perm("TODO"):
         #    components = retrieve_allowed_objects(
@@ -45,12 +46,95 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
         return cls(node=obj)
 
 
+class DeleteMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+
+    node = graphene.Field(FlexidType)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, id):
+        _type, flexid = cls.from_global_id(id)
+        now = timezone.now()
+        now_plus_x = now + td(minutes=20)
+        # cleanup expired
+        Content.objects.filter(
+            mark_for_destruction__lte=now
+        ).delete()
+        if _type == "Component":
+            objects = Component.objects.all()
+            result = retrieve_allowed_objects(info, "delete", objects)
+        elif _type == "Content":
+            objects = Content.objects.all()
+            result = retrieve_allowed_objects(info, "delete", objects)
+        else:
+            raise ValueError()
+        # TODO: admin permission
+        # if not info.context.user.has_perm("TODO"):
+        #    components = retrieve_allowed_objects(
+        #        info, "manage", components
+        #    )
+        obj = result["objects"].get(flexid=flexid)
+        ret = cls(node=obj)
+        if _type == "Content":
+            if (
+                not obj.mark_for_destruction or
+                obj.mark_for_destruction > now_plus_x
+            ):
+                obj.mark_for_destruction = now_plus_x
+                obj.save(update_fields=["mark_for_destruction"])
+        elif _type == "Component":
+            if not obj.contents.exists():
+                obj.delete()
+            else:
+                obj.contents.filter(
+                    Q(mark_for_destruction__isnull=True) |
+                    Q(mark_for_destruction__gt=now_plus_x)
+                ).update(mark_for_destruction=now_plus_x)
+        return ret
+
+
+class ResetMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+
+    node = graphene.Field(FlexidType)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, id):
+        _type, flexid = cls.from_global_id(id)
+        if _type == "Component":
+            objects = Component.objects.all()
+            result = retrieve_allowed_objects(info, "manage", objects)
+        elif _type == "Content":
+            objects = Content.objects.all()
+            result = retrieve_allowed_objects(info, "manage", objects)
+        else:
+            raise ValueError()
+        # TODO: admin permission
+        # if not info.context.user.has_perm("TODO"):
+        #    components = retrieve_allowed_objects(
+        #        info, "manage", components
+        #    )
+        obj = result["objects"].get(flexid=flexid)
+        ret = cls(node=obj)
+        if _type == "Content":
+            obj.mark_for_destruction = None
+            obj.save(update_fields=["mark_for_destruction"])
+        elif _type == "Component":
+            obj.contents.filter(
+                mark_for_destruction__isnull=False
+            ).update(mark_for_destruction=None)
+        return ret
+
+
 class ComponentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         component = ComponentInput(required=True)
 
     component = graphene.Field(ComponentNode)
+    key = graphene.String(required=False)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, component, id=None):
@@ -84,7 +168,7 @@ class ComponentMutation(relay.ClientIDMutation):
                 raise ValueError("Cannot register new components")
 
             return cls(
-                component=create_component(component, info.context, user)
+                component=create_component(info.context, component, user)
             )
 
 
@@ -103,18 +187,19 @@ class ContentMutation(relay.ClientIDMutation):
         if id:
             return cls(
                 content=update_content(
+                    info.context,
                     id,
-                    content, info.context
+                    content
                 )
             )
         else:
-            return cls(content=create_content(content, info.context))
+            return cls(content=create_content(info.context, content))
 
 
 class PushContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
-        content = graphene.Field(ContentInput, required=True)
+        value = graphene.Field(ContentValueInput, required=True)
 
     value = graphene.Field(ContentNode)
 
