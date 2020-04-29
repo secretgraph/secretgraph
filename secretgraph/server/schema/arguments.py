@@ -16,8 +16,9 @@ class ActionListInput(graphene.InputObjectType):
 
 
 class ContentKeyInput(graphene.InputObjectType):
-    # small version of ContentInput for key. Can autocompute most things
-    value = Upload(required=True)
+    public_key = graphene.String(required=True)
+    # encrypted!
+    private_key = graphene.String(required=True)
     nonce = graphene.String(required=True)
 
 

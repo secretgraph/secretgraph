@@ -12,5 +12,6 @@ class Action(enum.Enum):
     STORED_REPLACE = 'stored_replace'
 
 
-sgraph_content = Namespace("/static/schemes/sgraph/content")
-sgraph_component = Namespace("/static/schemes/sgraph/content")
+sgraph_key = Namespace("/static/schemes/sgraph/key")
+sgraph_component = Namespace("/static/schemes/sgraph/component")
+sgraph_simplecontent = Namespace("/static/schemes/sgraph/simplecontent")

@@ -99,7 +99,7 @@ class ContentFetchQueryset(QuerySet):
 
 
 def fetch_contents(
-    request, query=None, authset=None,
+    request, query=None, authset=None, decryptset=None,
     info_include=None, info_exclude=None
 ) -> dict:
     flexid = None
@@ -132,7 +132,8 @@ def fetch_contents(
             lambda x: f"key_hash={x}", result["action_key_map"].keys()
         )
     )
-    if result["content_key_map"]:
+    keys = result["objects"].filter(info__tag="key")
+    if keys:
         result["objects"] = result["objects"].filter(
             info__tag__in=map(
                 lambda x: f"key_hash={x}", result["content_key_map"].keys()

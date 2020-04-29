@@ -40,21 +40,12 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "components": {},
         "action_extras": {},
         "actions": Action.objects.none(),
-        "action_key_map": {},
-        "content_key_map": {}
+        "action_key_map": {}
     }
     for item in authset:
-        spitem = item.split(":", 2)
-        if len(spitem) < 2:
+        spitem = item.split(":", 1)
+        if len(spitem) != 2:
             continue
-        elif len(spitem) == 3:
-            try:
-                content_key = base64.b64decode(spitem[0])
-            except Exception:
-                content_key = None
-            if content_key:
-                for i in calculate_hashes(content_key):
-                    result["content_key_map"] = content_key
 
         componentflexid, action_key = spitem[-2:]
         try:

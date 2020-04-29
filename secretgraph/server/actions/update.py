@@ -271,7 +271,7 @@ def encrypt_info_tag(encryptor, tag):
     pass
 
 
-def _update_or_create_content(
+def _update_or_create_content_or_key(
     request, content, objdata, authset, min_key_hashes, is_key
 ):
     if objdata["component"] != content.component:
@@ -374,7 +374,7 @@ def create_content(request, objdata, authset=None, key=None, min_key_hashes=2):
         raise ValueError("Requires value")
 
     if key:
-        if key.count(":") == 2:
+        if key.count(":") == 1:
             if authset is None:
                 authset = set(request.headers.get("Authorization", "").replace(
                     " ", ""
@@ -385,28 +385,16 @@ def create_content(request, objdata, authset=None, key=None, min_key_hashes=2):
         else:
             key = key.split(":", 1)[0]
 
-    return _update_or_create_content(
+    return _update_or_create_content_or_key(
         request, Content(), objdata, authset, min_key_hashes, False
     )
 
 
-def create_key(request, objdata=None, authset=None, key=None):
-    if not objdata.get("value"):
-        raise ValueError("Requires value")
+def create_key(request, objdata=None, authset=None):
+    if not objdata.get("public_key"):
+        raise ValueError("Requires public key")
 
-    if key:
-        if key.count(":") == 2:
-            if authset is None:
-                authset = set(request.headers.get("Authorization", "").replace(
-                    " ", ""
-                ).split(","))
-            else:
-                authset = set(authset)
-            authset.add(key)
-        else:
-            key = key.split(":", 1)[0]
-
-    return _update_or_create_content(
+    return _update_or_create_content_or_key(
         request, Content(), objdata, authset, "key"
     )
 
@@ -422,6 +410,12 @@ def update_content(request, content, objdata, authset=None, min_key_hashes=2):
         )
         content = result["objects"].get(flexid=flexid)
     assert content.id
-    return _update_or_create_content(
+    if content.info.filter(tag="key"):
+        raise ValueError("Cannot update key")
+    newdata = {
+        "component": objdata.get("component"),
+
+    }
+    return _update_or_create_content_or_key(
         request, content, objdata, authset, min_key_hashes
     )
