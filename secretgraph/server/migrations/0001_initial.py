@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('group', models.CharField(blank=True, default='', max_length=255)),
                 ('extra', models.TextField(blank=True, default='', null=False)),
-                ('delete_recursive', models.BooleanField(blank=True, default=True)),
+                ('delete_recursive', models.BooleanField(blank=True, default=True, null=True)),
                 ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='references', to='secretgraph_base.Content')),
                 ('target', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='referenced_by', to='secretgraph_base.Content')),
             ],
@@ -104,5 +104,10 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='action',
             constraint=models.CheckConstraint(check=models.Q(('start__isnull', False), ('stop__isnull', False), _connector='OR'), name='action_exist'),
+        ),
+        migrations.AddConstraint(
+            model_name='contentreference',
+            constraint=models.CheckConstraint(check=models.Q(models.Q(_negated=True, group='key'), (
+                'delete_recursive__isnull', True), _connector='OR'), name='contentreference_key'),
         ),
     ]

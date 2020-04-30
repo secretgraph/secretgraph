@@ -1,15 +1,43 @@
 
 import uuid
 
-from django.db import transaction
+from django.db import transaction, models
 from django.db.utils import IntegrityError
+
+from ..constants import DeleteRecursive
 
 
 def deleteContentCb(sender, instance, **kwargs):
+    from ..models import ContentReference
+    references = ContentReference.objects.filter(
+        target=instance
+    )
+    nogroup_references = references.filter(
+        delete_recursive=DeleteRecursive.NO_GROUP
+    )
+
+    recursive_references = references.filter(
+        delete_recursive=DeleteRecursive.TRUE
+    )
+    # delete recursive connected contents
     sender.objects.filter(
-        references__delete_recursive=True,
-        references__target=instance
+        references__in=recursive_references
     ).delete()
+
+    # delete contents if group vanishes
+    delete_ids = []
+    for content_id in sender.objects.filter(
+        models.Q(references__in=nogroup_references)
+    ).values_list("pk", flat=True):
+        if not ContentReference.objects.filter(
+            ~models.Q(target=instance),
+            id=content_id,
+            group__in=nogroup_references.filter(
+                target_id=content_id
+            ).values_list("group", flat=True)
+        ):
+            delete_ids.append(content_id)
+    sender.objects.filter(id__in=delete_ids).delete()
 
 
 def deleteEncryptedFileCb(sender, instance, **kwargs):

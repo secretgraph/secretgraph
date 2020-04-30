@@ -1,4 +1,4 @@
-
+from typing import Optional
 from uuid import UUID
 import secrets
 import posixpath
@@ -168,13 +168,22 @@ class ContentReference(models.Model):
         max_length=255, default='', null=False, blank=True
     )
     extra: str = models.TextField(blank=True, null=False, default='')
-    delete_recursive: bool = models.BooleanField(blank=True, default=True)
+    delete_recursive: Optional[bool] = models.BooleanField(
+        blank=True, default=True, null=True
+    )
 
     class Meta:
         constraints = [
             models.CheckConstraint(
                 check=~models.Q(source=models.F("target")),
                 name="%(class)s_no_self_ref"
+            ),
+            models.CheckConstraint(
+                check=(
+                    ~models.Q(group="key")
+                    | models.Q(delete_recursive__isnull=True)
+                ),
+                name="%(class)s_key"
             ),
             models.UniqueConstraint(
                 fields=["source", "target", "group"],
