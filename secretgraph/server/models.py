@@ -1,15 +1,21 @@
+import logging
+import posixpath
+import secrets
+from datetime import datetime as dt
 from typing import Optional
 from uuid import UUID
-import secrets
-import posixpath
-from datetime import datetime as dt
 
-from django.db import models
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import default_storage
+from django.db import models
 from django.utils import timezone
+from rdflib import Graph
 
-from django.conf import settings
+from ..constants import sgraph_key
+
+logger = logging.getLogger(__name__)
 
 
 def get_file_path(instance, filename) -> str:
@@ -80,6 +86,19 @@ class Content(FlexidModel):
             )
         ]
 
+    def load_pubkey(self):
+        """ Works only for Keys (special Content) """
+        try:
+            graph = Graph()
+            graph.parse(file=self.value, format="turtle")
+            key = graph.value(
+                predicate=sgraph_key["Key.public_key"]
+            ).toPython()
+            return load_pem_public_key(key)
+        except Exception as exc:
+            logger.error("Could not load public key", exc_info=exc)
+        return None
+
 
 class ContentAction(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
@@ -108,7 +127,7 @@ class Action(models.Model):
     )
     key_hash: str = models.CharField(max_length=255)
     nonce: str = models.CharField(max_length=255)
-    # value returns ttl with required encrypted aes key
+    # value returns json with required encrypted aes key
     value: bytes = models.BinaryField(null=False, blank=False)
     start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)

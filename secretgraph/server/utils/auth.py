@@ -3,12 +3,13 @@ import hashlib
 import json
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.conf import settings
+from graphql_relay import from_global_id
 
-from ..models import Action, Component, Content
 from ..actions.handler import ActionHandler
+from ..models import Action, Component, Content
 
 
 def calculate_hashes(inp):
@@ -48,6 +49,12 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             continue
 
         componentflexid, action_key = spitem[-2:]
+        _type = "Component"
+        try:
+            _type, componentflexid = from_global_id(componentflexid)
+        finally:
+            if _type != "Component":
+                continue
         try:
             action_key = base64.b64decode(action_key)
         except Exception:

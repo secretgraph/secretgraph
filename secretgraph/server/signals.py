@@ -12,6 +12,9 @@ def deleteContentCb(sender, instance, **kwargs):
     references = ContentReference.objects.filter(
         target=instance
     )
+    no_references = ContentReference.objects.filter(
+        ~models.Q(target=instance)
+    )
     nogroup_references = references.filter(
         delete_recursive=DeleteRecursive.NO_GROUP
     )
@@ -24,13 +27,12 @@ def deleteContentCb(sender, instance, **kwargs):
         references__in=recursive_references
     ).delete()
 
-    # delete contents if group vanishes
+    # delete contents if group vanishes and NO_GROUP is set
     delete_ids = []
     for content_id in sender.objects.filter(
         models.Q(references__in=nogroup_references)
     ).values_list("pk", flat=True):
-        if not ContentReference.objects.filter(
-            ~models.Q(target=instance),
+        if not no_references.filter(
             id=content_id,
             group__in=nogroup_references.filter(
                 target_id=content_id

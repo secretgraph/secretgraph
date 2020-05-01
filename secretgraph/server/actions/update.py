@@ -24,6 +24,7 @@ from ..models import (
 )
 # , ReferenceContent
 from ..utils.auth import retrieve_allowed_objects
+from ..utils.encryption import encrypt_into_file
 
 _serverside_encryption = getattr(
     settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
@@ -282,25 +283,6 @@ def _update_or_create_content_or_key(
             request, "update", Component.objects.all(), authset=authset
         )["objects"].get(flexid=flexid)
 
-    if objdata.get("value"):
-        if not objdata.get("nonce"):
-            raise ValueError("No nonce")
-        content.nonce = objdata["nonce"]
-
-        if isinstance(objdata["value"], bytes):
-            f = ContentFile(objdata["value"])
-        elif isinstance(objdata["value"], str):
-            f = ContentFile(base64.b64decode(objdata["value"]))
-        else:
-            f = File(objdata["value"])
-
-        def save_func():
-            content.file.delete(False)
-            content.file.save("", f)
-    else:
-        def save_func():
-            content.save()
-
     create = not content.id
 
     final_info_tags = None
@@ -325,33 +307,95 @@ def _update_or_create_content_or_key(
             info_for_hash = set(filter(
                 lambda x: not x.startswith("id="), objdata["info_for_hash"]
             ))
-            if not info_for_hash.issubset(objdata.get("info")):
+            if not info_for_hash.issubset(objdata["info"]):
                 raise ValueError("no subset of info")
             hashob = hashlib.new(settings.SECRETGRAPH_HASH_ALGORITHMS[0])
-            for h in content.info_for_hash.sort():
+            for h in info_for_hash.sort():
                 hashob.update(h.encode("utf8"))
             content.info_hash = \
                 base64.b64encode(hashob.digest()).decode("ascii")
         else:
             content.info_hash = None
-    elif not content.id:
+    elif create:
         # if content does not exist, skip info tag creation
         final_info_tags = None
         content.info_hash = None
 
     final_references = None
+    keys_specified = False
     if objdata.get("references") is not None:
         final_references = []
         for ref in objdata["references"]:
-            ob = Content.objects.filter(
+            targetob = Content.objects.filter(
                 flexid=ref.target, component_id=content.component_id,
                 mark_for_destruction=None
             ).first()
-            if not ob:
+            if not targetob:
                 continue
-            final_references.append(ContentReference(
-                target=ob, group=ref.group or "",
-            ))
+            refob = ContentReference(
+                target=targetob, group=ref.group or ""
+            )
+            if refob.group == "key":
+                refob.delete_recursive = None
+                keys_specified = True
+            final_references.append(refob)
+
+    if not keys_specified and objdata.get("inner_key"):
+        assert is_key == False
+        # last resort
+        if create:
+            keys = retrieve_allowed_objects(
+                request, "view", Content.objects.filter(
+                    info__tag="key",
+                    component_id=content.component_id
+                ),
+                authset=authset
+            )["objects"]
+        else:
+            keys = ContentReference.objects.filter(
+                source=content, group="key"
+            )
+        if not keys:
+            raise ValueError("No keys found")
+
+        # three cases:
+        # 1. everything is fine: keys, references
+        # 2. update references: keys
+        # 3. create references: new object, keys
+
+        # encrypt here inner_key with public keys
+        raise NotImplementedError()
+
+    # if create checked in parent function
+    if objdata.get("value"):
+        # normalize nonce and check constraints
+        try:
+            if isinstance(objdata["nonce"], bytes):
+                checknonce = objdata["nonce"]
+                objdata["nonce"] = base64.b64encode(checknonce)
+            else:
+                checknonce = base64.b64decode(objdata["nonce"])
+        except Exception:
+            raise ValueError("No nonce")
+        if len(checknonce) != 13:
+            raise ValueError("invalid nonce size")
+        if checknonce.count(b"\0") == len(checknonce):
+            raise ValueError("weak nonce")
+        content.nonce = objdata["nonce"]
+
+        if isinstance(objdata["value"], bytes):
+            f = ContentFile(objdata["value"])
+        elif isinstance(objdata["value"], str):
+            f = ContentFile(base64.b64decode(objdata["value"]))
+        else:
+            f = File(objdata["value"])
+
+        def save_func():
+            content.file.delete(False)
+            content.file.save("", f)
+    else:
+        def save_func():
+            content.save()
     with transaction.atomic():
         save_func()
         if final_info_tags is not None:
@@ -386,7 +430,7 @@ def create_content(request, objdata, authset=None, key=None, min_key_hashes=2):
             key = key.split(":", 1)[0]
 
     return _update_or_create_content_or_key(
-        request, Content(), objdata, authset, min_key_hashes, False
+        request, Content(), objdata, authset, min_key_hashes, False, None
     )
 
 
@@ -395,7 +439,7 @@ def create_key(request, objdata=None, authset=None):
         raise ValueError("Requires public key")
 
     return _update_or_create_content_or_key(
-        request, Content(), objdata, authset, "key"
+        request, Content(), objdata, authset, "key", None
     )
 
 
