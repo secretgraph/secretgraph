@@ -1,5 +1,3 @@
-import json
-from typing import Iterable
 
 
 class FakeList(list):
@@ -14,12 +12,13 @@ class FakeList(list):
         return bool(self.inner)
 
 
-class IterJsonEncoder(json.JSONEncoder):
+class FakeStr(str):
+    def __init__(self, l):
+        self.inner = l
+        super().__init__()
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __iter__(self):
+        return iter(self.inner)
 
-    def default(self, obj):
-        if isinstance(obj, Iterable):
-            return FakeList(obj)
-        return super().default(obj)
+    def __bool__(self):
+        return bool(self.inner)

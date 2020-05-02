@@ -1,17 +1,12 @@
-import base64
 import logging
 from datetime import timedelta as td
-from typing import Iterable
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 from graphql_relay import from_global_id
 
 from ..models import Component, Content, ContentAction
 from ..utils.auth import retrieve_allowed_objects
-from ..utils.encryption import create_key_map
 
 logger = logging.getLogger(__name__)
 
@@ -175,60 +170,3 @@ def fetch_contents(
         assert hasattr(result["objects"], "secretgraph_result")
         result["object"] = result["objects"].get()
     return result
-
-
-def fetch_contents_decrypted(
-    request, query=None, authset=None, decryptset=None, info_include=None,
-    info_exclude=None
-) -> Iterable[Iterable[str]]:
-    result = fetch_contents(
-        request, query=query, authset=authset, info_include=info_include,
-        info_exclude=info_exclude
-    )
-    result["objects"].only_direct_fetch_action_trigger = True
-    key_map = create_key_map(request, result["objects"], decryptset)
-    for content in result["objects"].filter(
-        Q(info__tag="key") | Q(id__in=key_map.keys())
-    ):
-        if content.id in key_map:
-            try:
-                decryptor = Cipher(
-                    algorithms.AES(key_map[content.flexid]),
-                    modes.GCM(base64.b64decode(content.nonce)),
-                    backend=default_backend()
-                ).decryptor()
-            except Exception as exc:
-                logger.warning(
-                    "creating decrypting context failed", exc_info=exc
-                )
-                continue
-
-            def _generator():
-                with content.value.open() as fileob:
-                    chunk = fileob.read(512)
-                    nextchunk = None
-                    while chunk:
-                        nextchunk = fileob.read(512)
-                        assert isinstance(chunk, bytes)
-                        if nextchunk:
-                            yield decryptor.update(chunk)
-                        else:
-                            yield decryptor.update(chunk[:-16])
-                            yield decryptor.finalize_with_tag(chunk[-16:])
-                        chunk = nextchunk
-                result["objects"].fetch_action_trigger(content)
-        else:
-            def _generator():
-                with content.value.open() as fileob:
-                    chunk = fileob.read(512)
-                    while chunk:
-                        yield chunk
-                        chunk = fileob.read(512)
-                result["objects"].fetch_action_trigger(content)
-        yield _generator()
-
-
-def fetch_contents_decrypted_json(
-    request, query=None, authset=None, decryptset=None, info_include=None,
-    info_exclude=None
-) -> Iterable[str]:

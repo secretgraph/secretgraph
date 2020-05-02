@@ -2,6 +2,7 @@ import base64
 import logging
 import os
 import tempfile
+from typing import Iterable
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -10,6 +11,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.conf import settings
+from django.models import Q
 from graphql_relay import from_global_id
 from rdflib import Graph
 
@@ -50,11 +52,7 @@ def encrypt_into_file(infile, outfile=None):
     return outfile, nonce, inner_key
 
 
-def create_key_map(request, contents, keyset=None):
-    if not keyset:
-        keyset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
+def create_key_map(contents, keyset):
     key_map1 = {}
     for i in keyset:
         i = i.split(":", 1)
@@ -107,3 +105,49 @@ def create_key_map(request, contents, keyset=None):
             except Exception as exc:
                 logger.warning("Could not decode shared key", exc_info=exc)
     return key_map
+
+
+def iter_decrypt_contents(
+    content_query, decryptset
+) -> Iterable[Iterable[str]]:
+    content_query.only_direct_fetch_action_trigger = True
+    key_map = create_key_map(content_query, decryptset)
+    for content in content_query.filter(
+        Q(info__tag="key") | Q(id__in=key_map.keys())
+    ):
+        if content.id in key_map:
+            try:
+                decryptor = Cipher(
+                    algorithms.AES(key_map[content.flexid]),
+                    modes.GCM(base64.b64decode(content.nonce)),
+                    backend=default_backend()
+                ).decryptor()
+            except Exception as exc:
+                logger.warning(
+                    "creating decrypting context failed", exc_info=exc
+                )
+                continue
+
+            def _generator():
+                with content.value.open() as fileob:
+                    chunk = fileob.read(512)
+                    nextchunk = None
+                    while chunk:
+                        nextchunk = fileob.read(512)
+                        assert isinstance(chunk, bytes)
+                        if nextchunk:
+                            yield decryptor.update(chunk)
+                        else:
+                            yield decryptor.update(chunk[:-16])
+                            yield decryptor.finalize_with_tag(chunk[-16:])
+                        chunk = nextchunk
+                content_query.fetch_action_trigger(content)
+        else:
+            def _generator():
+                with content.value.open() as fileob:
+                    chunk = fileob.read(512)
+                    while chunk:
+                        yield chunk
+                        chunk = fileob.read(512)
+                content_query.fetch_action_trigger(content)
+        yield _generator()
