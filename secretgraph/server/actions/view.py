@@ -187,14 +187,16 @@ def fetch_contents_decrypted(
     )
     result["objects"].only_direct_fetch_action_trigger = True
     key_map = create_key_map(request, result["objects"], decryptset)
-    for content in result["objects"]:
-        if content.flexid in key_map:
+    for content in result["objects"].filter(
+        Q(info__tag="key") | Q(id__in=key_map.keys())
+    ):
+        if content.id in key_map:
             try:
                 decryptor = Cipher(
                     algorithms.AES(key_map[content.flexid]),
                     modes.GCM(base64.b64decode(content.nonce)),
                     backend=default_backend()
-                )
+                ).decryptor()
             except Exception as exc:
                 logger.warning(
                     "creating decrypting context failed", exc_info=exc
@@ -215,4 +217,18 @@ def fetch_contents_decrypted(
                             yield decryptor.finalize_with_tag(chunk[-16:])
                         chunk = nextchunk
                 result["objects"].fetch_action_trigger(content)
-            yield _generator()
+        else:
+            def _generator():
+                with content.value.open() as fileob:
+                    chunk = fileob.read(512)
+                    while chunk:
+                        yield chunk
+                        chunk = fileob.read(512)
+                result["objects"].fetch_action_trigger(content)
+        yield _generator()
+
+
+def fetch_contents_decrypted_json(
+    request, query=None, authset=None, decryptset=None, info_include=None,
+    info_exclude=None
+) -> Iterable[str]:

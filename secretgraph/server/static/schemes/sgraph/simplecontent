@@ -11,22 +11,30 @@
   dc:description "This is the spkcgraph format used by spkcspider." ;
   cc:license <https://creativecommons.org/publicdomain/zero/1.0/> .
 
-scontent:Content a rdfs:Class ;
+scontent:ContentRoot a rdf:Bag ;
   rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
   rdfs:domain rdfs:Resource .
 
-scontent:value a rdf:Property ;
+scontent:Value a rdf:Class ;
   rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
   rdfs:domain scontent:ContentRoot .
 
-scontent:value.name a rdf:Property ;
-  rdfs:subPropertyOf scontent:value ;
+scontent:Value.name a rdf:Property ;
   rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
-  rdfs:domain scontent:value ;
+  rdfs:domain scontent:Value ;
   rdf:range xsd:string .
 
-scontent:value.value a rdf:Property ;
-  rdfs:subPropertyOf scontent:value ;
+scontent:Value.value a rdf:Property ;
   rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
-  rdfs:domain scontent:value ;
+  rdfs:domain scontent:Value ;
   rdf:range rdfs:Literal .
+
+scontent:Link a rdfs:Datatype ;
+  rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
+  rdfs:domain scontent:Value.value ;
+  rdfs:subClassOf xsd:anyURI .
+
+scontent:Value.authset a rdf:Property ;
+  rdfs:domain scontent:Value ;
+  rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
+  rdf:range xsd:string .

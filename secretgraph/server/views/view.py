@@ -1,19 +1,35 @@
 from django.views.generic import View
+from django.http import StreamingHttpResponse
+
+from ..utils.misc import IterJsonEncoder
+from ..actions.view import fetch_contents, fetch_contents_decrypted
 
 
-class DownloadView(View):
+encoder = IterJsonEncoder()
+
+class DocumentsView(View):
     model = None
+    try_decrypt = True
 
     def get(self, request, *args, **kwargs):
-        # TODO: still required? Isn't it enough to change file location and
-        # offload directly to web server
-        # check permission, redirect or directly offer, add nonce as header
-        pass
+        if self.try_decrypt:
+            contents = fetch_contents_decrypted()
+        else:
+            contents = fetch_contents()
 
+        # single
+        if kwargs.get("id"):
+            try:
+                contents = next(contents)
+            except StopIteration:
+                raise Http404()
+            response = StreamingHttpResponse(
+                contents
+            )
+        else:
+            response = StreamingHttpResponse(
+                encoder.iterencode(contents)
+            )
 
-class PlainView(View):
-    model = None
-
-    def get(self, request, *args, **kwargs):
-        # check permission, redirect or directly offer, add nonce as header
-        pass
+        # check permission, redirect or directly offer, add nonces as header
+        return response

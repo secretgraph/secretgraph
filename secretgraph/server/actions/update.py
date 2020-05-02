@@ -24,7 +24,7 @@ from ..models import (
 )
 # , ReferenceContent
 from ..utils.auth import retrieve_allowed_objects
-from ..utils.encryption import encrypt_into_file
+from ..utils.encryption import default_padding
 
 _serverside_encryption = getattr(
     settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
@@ -340,31 +340,28 @@ def _update_or_create_content_or_key(
                 keys_specified = True
             final_references.append(refob)
 
-    if not keys_specified and objdata.get("inner_key"):
-        assert is_key == False
+    inner_key = objdata.get("key")
+    if not keys_specified and inner_key:
+        assert not is_key
+        if isinstance(inner_key, str):
+            inner_key = base64.b64decode(inner_key)
         # last resort
         if create:
-            keys = retrieve_allowed_objects(
+            for key in retrieve_allowed_objects(
                 request, "view", Content.objects.filter(
                     info__tag="key",
                     component_id=content.component_id
                 ),
                 authset=authset
-            )["objects"]
-        else:
-            keys = ContentReference.objects.filter(
-                source=content, group="key"
-            )
-        if not keys:
-            raise ValueError("No keys found")
-
-        # three cases:
-        # 1. everything is fine: keys, references
-        # 2. update references: keys
-        # 3. create references: new object, keys
-
-        # encrypt here inner_key with public keys
-        raise NotImplementedError()
+            )["objects"]:
+                refob = ContentReference(
+                    target=targetob, group="key", delete_recursive=None,
+                    extra=key.encrypt(
+                        inner_key,
+                        default_padding
+                    )
+                )
+                final_references.append(refob)
 
     # if create checked in parent function
     if objdata.get("value"):
