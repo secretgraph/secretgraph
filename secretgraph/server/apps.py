@@ -6,7 +6,7 @@ from django.db.models.signals import (
 )
 
 from .signals import (
-    deleteContentCb, deleteEncryptedFileCb, generateFlexid,
+    deleteContentCb, deleteEncryptedFileCb, generateFlexid, regenerateKeyHash,
     fillEmptyFlexidsCb
 )
 
@@ -36,4 +36,8 @@ class SecretGraphServerConfig(AppConfig):
 
         post_migrate.connect(
             fillEmptyFlexidsCb, sender=self
+        )
+
+        post_migrate.connect(
+            regenerateKeyHash, sender=self
         )

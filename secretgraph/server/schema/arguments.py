@@ -29,17 +29,17 @@ class ReferenceInput(graphene.InputObjectType):
 
 
 class ContentValueInput(graphene.InputObjectType):
-    value = Upload(required=True)
+    value = Upload(required=False)
     nonce = graphene.String(required=False)
-    references = graphene.List(ReferenceInput, required=False)
-    info = graphene.List(graphene.String)
-    info_for_hash = graphene.List(graphene.String)
 
 
 class ContentInput(graphene.InputObjectType):
     component = graphene.ID(required=False)
     key = ContentKeyInput(required=False)
     value = ContentValueInput(required=False)
+    references = graphene.List(ReferenceInput, required=False)
+    info = graphene.List(graphene.String, required=False)
+    content_hash = graphene.String(required=False)
 
 
 class ComponentInput(graphene.InputObjectType):

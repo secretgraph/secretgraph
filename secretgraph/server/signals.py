@@ -77,6 +77,23 @@ def generateFlexid(sender, instance, force=False, **kwargs):
                 generateFlexid(Content, c, True)
 
 
+def regenerateKeyHash(sender, force=False, **kwargs):
+    from .models import Content
+    from .utils.misc import hash_object
+    contents = Content.objects.filter(info__tag="key")
+    # calculate for all old hashes
+    if not force:
+        contents = contents.exclude(
+            content_hash__regex='^.{%d}$' % len(hash_object(b""))
+        )
+    for content in contents:
+        chash = hash_object(content.load_pubkey())
+        if chash == content.content_hash:
+            continue
+        content.content_hash = chash
+        content.save(update_fields=["content_hash"])
+
+
 def fillEmptyFlexidsCb(sender, **kwargs):
     from .models import Component, Content
     for c in Component.objects.filter(flexid=None):
