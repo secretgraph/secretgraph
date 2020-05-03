@@ -13,6 +13,8 @@
 
 scontent:ContentRoot a rdf:Bag ;
   rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
+  rdfs:label "Root for a simplecontent" ;
+  rdfs:comment "" ;
   rdfs:domain rdfs:Resource .
 
 scontent:Value a rdf:Class ;

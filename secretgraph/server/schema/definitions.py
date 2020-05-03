@@ -59,7 +59,7 @@ class ContentReferenceNode(DjangoObjectType):
     class Meta:
         model = ContentReference
         interfaces = (relay.Node,)
-        fields = ['source', 'target', 'group', 'delete_recursive']
+        fields = ['source', 'target', 'group', 'extra', 'delete_recursive']
 
     def resolve_id(self, info):
         return f"{self.source.flexid}:{self.target.flexid}:{self.group}"
@@ -114,9 +114,3 @@ class ComponentConnection(relay.Connection):
 class FlexidType(graphene.Union):
     class Meta:
         types = (ComponentNode, ContentNode)
-
-
-class InsertMode(graphene.Enum):
-    ADD = 0
-    REPLACE = 1
-    REPLACE_PARTLY = 2

@@ -5,7 +5,7 @@ from datetime import datetime as dt
 from typing import Optional
 from uuid import UUID
 
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import default_storage
@@ -71,9 +71,9 @@ class Content(FlexidModel):
     file: File = models.FileField(
         upload_to=get_file_path
     )
-    # hash without flags and special parameters,
+    # unique hash for content, e.g. generated from some info tags
     # null if multiple contents are allowed
-    info_hash: str = models.CharField(max_length=255, blank=True, null=True)
+    content_hash: str = models.CharField(max_length=255, blank=True, null=True)
     component: Component = models.ForeignKey(
         Component, on_delete=models.CASCADE, related_name="contents"
     )
@@ -81,7 +81,7 @@ class Content(FlexidModel):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["info_hash", "component_id"],
+                fields=["content_hash", "component_id"],
                 name="unique_content"
             )
         ]
@@ -94,7 +94,7 @@ class Content(FlexidModel):
             key = graph.value(
                 predicate=sgraph_key["Key.public_key"]
             ).toPython()
-            return load_pem_public_key(key)
+            return load_der_public_key(key)
         except Exception as exc:
             logger.error("Could not load public key", exc_info=exc)
         return None

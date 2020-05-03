@@ -13,6 +13,8 @@
 
 component:Component a rdfs:Class ;
   rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
+  rdfs:label "Component-Root" ;
+  rdfs:comment "Root for a Component" ;
   rdfs:domain rdfs:Resource .
 
 component:EncryptedBox a rdfs:Class ;

@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                 ('mark_for_destruction', models.DateTimeField(blank=True, null=True)),
                 ('nonce', models.CharField(max_length=255)),
                 ('file', models.FileField(upload_to=secretgraph.server.models.get_file_path)),
-                ('info_hash', models.CharField(blank=True, max_length=255, null=True)),
+                ('content_hash', models.CharField(blank=True, max_length=255, null=True)),
                 ('component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph_base.Component')),
             ],
         ),
@@ -95,7 +95,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='content',
-            constraint=models.UniqueConstraint(fields=('info_hash', 'component_id'), name='unique_content'),
+            constraint=models.UniqueConstraint(fields=('content_hash', 'component_id'), name='unique_content'),
         ),
         migrations.AddConstraint(
             model_name='action',

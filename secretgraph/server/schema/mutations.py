@@ -189,11 +189,16 @@ class ContentMutation(relay.ClientIDMutation):
                 content=update_content(
                     info.context,
                     id,
-                    content
+                    content,
+                    key
                 )
             )
         else:
-            return cls(content=create_content(info.context, content))
+            return cls(
+                content=create_content(
+                    info.context, content, key
+                )
+            )
 
 
 class PushContentMutation(relay.ClientIDMutation):

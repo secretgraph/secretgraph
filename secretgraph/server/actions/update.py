@@ -1,34 +1,34 @@
 import base64
-import hashlib
 import json
 import logging
 import os
-import tempfile
-from io import BytesIO
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.serialization import (
+    load_der_private_key, load_der_public_key
+)
 from django.conf import settings
 from django.core.files.base import ContentFile, File
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from graphql_relay import from_global_id
-from rdflib import Graph
+from rdflib import Graph, BNode, Literal, RDF
 
-from ...constants import sgraph_component
+from ...constants import sgraph_component, sgraph_key
 from ..actions.handler import ActionHandler
 from ..models import (
     Action, Component, Content, ContentAction, ContentReference, ContentTag
 )
 # , ReferenceContent
 from ..utils.auth import retrieve_allowed_objects
+from ..utils.misc import calculate_hashes, hash_object
 from ..utils.encryption import default_padding
 
-_serverside_encryption = getattr(
-    settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
-)
+
+len_default_hash = len(hash_object(""))
 
 
 def get_secrets(graph):
@@ -55,15 +55,6 @@ def get_secrets(graph):
         else:
             public_secrets.append(i.secret)
     return public_secrets, protected_secrets
-
-
-def hash_key(key):
-    return base64.b64encode(
-        hashlib.new(
-            settings.SECRETGRAPH_HASH_ALGORITHMS[0],
-            key
-        ).digest()
-    ).decode("ascii")
 
 
 def create_actions_func(component, actionlists, request):
@@ -103,7 +94,7 @@ def create_actions_func(component, actionlists, request):
             else:
                 raise ValueError("No key specified/available")
 
-            action_key_hash = hash_key(action_key)
+            action_key_hash = hash_object(action_key)
             action_value = action["value"]
             if isinstance(str, action_value):
                 action_value = json.loads(action_value)
@@ -167,7 +158,7 @@ def _update_or_create_component(
     if objdata.get("public_info"):
         g = Graph()
         g.parse(objdata["public_info"], "turtle")
-        public_secret_hashes = set(map(hash_key, get_secrets(g)[0]))
+        public_secret_hashes = set(map(hash_object, get_secrets(g)[0]))
         component.public_info = objdata["public_info"]
         component.public = len(public_secret_hashes) > 0
     elif component.id is not None:
@@ -242,36 +233,6 @@ def update_component(request, component, objdata, user=None):
     )
 
 
-def encrypt_value(key, value, nonce=None):
-    if isinstance(key, str):
-        key = base64.b64decode(key)
-    if not nonce:
-        nonce = os.urandom(13)
-
-    if isinstance(value, bytes):
-        value = BytesIO(value)
-    elif isinstance(value, str):
-        value = BytesIO(base64.b64decode(value))
-    f = tempfile.NameTemporaryFile()
-    encryptor = Cipher(
-        algorithms.AES(key),
-        modes.GCM(nonce),
-        backend=default_backend()
-    ).encryptor()
-    chunk = value.read(512)
-    while chunk:
-        assert isinstance(chunk, bytes)
-        f.write(encryptor.update(chunk))
-        chunk = value.read(512)
-    f.write(encryptor.finalize())
-    f.write(encryptor.tag)
-    return f, nonce
-
-
-def encrypt_info_tag(encryptor, tag):
-    pass
-
-
 def _update_or_create_content_or_key(
     request, content, objdata, authset, min_key_hashes, is_key
 ):
@@ -286,40 +247,30 @@ def _update_or_create_content_or_key(
     create = not content.id
 
     final_info_tags = None
-    if min_key_hashes == "key":
-        final_info_tags = []
-        # TODO: calculate
-    elif objdata.get("info") is not None:
+    if objdata.get("info") is not None:
         final_info_tags = []
         count_key_hash_info = 0
         for i in objdata["info"]:
-            if i == "key":
+            if not is_key and i == "key":
                 raise ValueError("key is invalid tag for content")
             if i.startswith("key_hash="):
                 count_key_hash_info += 1
+            if len(i) > 8000:
+                raise ValueError("Info tag too big")
             final_info_tags.append(ContentTag(tag=i))
         if count_key_hash_info < 1:
             raise ValueError("No key_hash info")
         elif count_key_hash_info < min_key_hashes:
             logging.debug("Lacks %d key_hash", min_key_hashes)
-
-        if objdata.get("info_for_hash"):
-            info_for_hash = set(filter(
-                lambda x: not x.startswith("id="), objdata["info_for_hash"]
-            ))
-            if not info_for_hash.issubset(objdata["info"]):
-                raise ValueError("no subset of info")
-            hashob = hashlib.new(settings.SECRETGRAPH_HASH_ALGORITHMS[0])
-            for h in info_for_hash.sort():
-                hashob.update(h.encode("utf8"))
-            content.info_hash = \
-                base64.b64encode(hashob.digest()).decode("ascii")
-        else:
-            content.info_hash = None
     elif create:
         # if content does not exist, skip info tag creation
         final_info_tags = None
-        content.info_hash = None
+
+    if "content_hash" in objdata:
+        chash = objdata["content_hash"]
+        if chash is not None and len(chash) != len_default_hash:
+            raise ValueError("Invalid hashing algorithm used for content_hash")
+        content.content_hash = chash
 
     final_references = None
     keys_specified = False
@@ -332,8 +283,11 @@ def _update_or_create_content_or_key(
             ).first()
             if not targetob:
                 continue
+            if ref.get("extra") and len(ref["extra"]) > 8000:
+                raise ValueError("Extra tag too big")
             refob = ContentReference(
-                target=targetob, group=ref.group or ""
+                target=targetob, group=ref.get("group") or "",
+                extra=ref.get("extra") or ""
             )
             if refob.group == "key":
                 refob.delete_recursive = None
@@ -410,37 +364,94 @@ def _update_or_create_content_or_key(
     return content
 
 
-def create_content(request, objdata, authset=None, key=None, min_key_hashes=2):
-    if not objdata.get("value"):
-        raise ValueError("Requires value")
+def create_content(request, objdata, key=None, authset=None, min_key_hashes=2):
+    value_obj = objdata.get("value")
+    key_obj = objdata.get("key")
+    if not value_obj and not key_obj:
+        raise ValueError("Requires value or key")
+    if value_obj and key_obj:
+        raise ValueError("Can only specify one of value or key")
 
-    if key:
-        if key.count(":") == 1:
-            if authset is None:
-                authset = set(request.headers.get("Authorization", "").replace(
-                    " ", ""
-                ).split(","))
-            else:
-                authset = set(authset)
-            authset.add(key)
-        else:
-            key = key.split(":", 1)[0]
+    is_key = False
+    if key_obj:
+        is_key = True
+        min_key_hashes = 0  # autogenerated
+        if isinstance(key_obj["private_key"], str):
+            key_obj["private_key"] = base64.b64decode(key_obj["private_key"])
+        if isinstance(key_obj["public_key"], str):
+            key_obj["public_key"] = base64.b64decode(key_obj["public_key"])
+        if isinstance(key_obj["nonce"], str):
+            key_obj["nonce"] = base64.b64decode(key_obj["nonce"])
+        if key:
+            aesgcm = AESGCM(key)
+            privkey = aesgcm.decrypt(
+                key_obj["private_key"],
+                key_obj["nonce"],
+                None
+            )
+            privkey = load_der_private_key(privkey, None, default_backend())
+            key_obj["private_key"] = aesgcm.encrypt(
+                privkey.private_bytes(
+                    encoding=serialization.Encoding.DER,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption()
+                ),
+                key_obj["nonce"],
+                None
+            )
+        pubkey = load_der_public_key(
+            key_obj["public_key"], None, default_backend()
+        )
+        key_obj["public_key"] = pubkey.public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        g = Graph()
+        key_node = BNode()
+        g.add((
+            key_node,
+            RDF.type,  # = a
+            sgraph_key["Key"]
+        ))
+        g.add((
+            key_node,
+            sgraph_key["Key.public_key"],
+            Literal(key_obj["public_key"])
+        ))
+        g.add((
+            key_node,
+            sgraph_key["Key.private_key"],
+            Literal(key_obj["private_key"])
+        ))
+
+        hashes = calculate_hashes(key_obj["public_key"])
+        info = list(map(
+            lambda x: f"keyhash={x}", hashes
+        ))
+        info.append("key")
+
+        value_obj = {
+            "nonce": key_obj["nonce"],
+            "value": g.serialize("turtle"),
+            "info": info,
+            "content_hash": hashes[0]
+        }
+
+    newdata = {
+        "component": objdata.get("component"),
+        "key": key,
+        **value_obj
+    }
 
     return _update_or_create_content_or_key(
-        request, Content(), objdata, authset, min_key_hashes, False, None
+        request, Content(), newdata, authset, min_key_hashes, is_key
     )
 
 
-def create_key(request, objdata=None, authset=None):
-    if not objdata.get("public_key"):
-        raise ValueError("Requires public key")
-
-    return _update_or_create_content_or_key(
-        request, Content(), objdata, authset, "key", None
-    )
-
-
-def update_content(request, content, objdata, authset=None, min_key_hashes=2):
+def update_content(
+    request, content, objdata, key=None, authset=None, min_key_hashes=2
+):
     if isinstance(content, str):
         type_name, flexid = from_global_id(content)
         if type_name != "Content":
@@ -452,11 +463,13 @@ def update_content(request, content, objdata, authset=None, min_key_hashes=2):
         content = result["objects"].get(flexid=flexid)
     assert content.id
     if content.info.filter(tag="key"):
+        # TODO: allow updating encrypted private key if public key matches
         raise ValueError("Cannot update key")
     newdata = {
         "component": objdata.get("component"),
-
+        "key": key,
+        **objdata["value"]
     }
     return _update_or_create_content_or_key(
-        request, content, objdata, authset, min_key_hashes
+        request, content, newdata, authset, min_key_hashes, None
     )

@@ -1,26 +1,14 @@
 import base64
-import hashlib
 import json
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from graphql_relay import from_global_id
 
 from ..actions.handler import ActionHandler
 from ..models import Action, Component, Content
-
-
-def calculate_hashes(inp):
-    hashes = []
-    for algo in settings.SECRETGRAPH_HASH_ALGORITHMS:
-        if isinstance(algo, str):
-            algo = hashlib.new(algo)
-        hashes.append(
-            base64.b64encode(algo.update(inp).digest()).decode("ascii")
-        )
-    return inp
+from .misc import calculate_hashes
 
 
 def retrieve_allowed_objects(request, scope, query, authset=None):

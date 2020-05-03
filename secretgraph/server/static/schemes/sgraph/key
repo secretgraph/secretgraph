@@ -13,14 +13,20 @@
 
 key:Key a rdfs:Class ;
   rdfs:isDefinedBy </static/schemes/sgraph/key#> ;
+  rdfs:label "Key-Root" ;
+  rdfs:comment "Root for a Key" ;
   rdfs:domain rdfs:Resource .
 
 key:Key.public_key a rdf:Property;
   rdfs:isDefinedBy </static/schemes/sgraph/key#> ;
   rdfs:domain key:Key ;
+  rdfs:label "Public Key" ;
+  rdfs:comment "Public Key in DER format" ;
   rdfs:range xsd:base64Binary .
 
-key:Key.encrypted_private_key a rdf:Property;
+key:Key.private_key a rdf:Property;
   rdfs:isDefinedBy </static/schemes/sgraph/key#> ;
   rdfs:domain key:Key ;
+  rdfs:label "Private Key" ;
+  rdfs:comment "Encrypted Private Key in DER format" ;
   rdfs:range xsd:base64Binary .
