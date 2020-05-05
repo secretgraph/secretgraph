@@ -21,12 +21,19 @@ component:EncryptedBox a rdfs:Class ;
   rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
   rdfs:domain component:Component .
 
-component:EncryptedBox.esecrets a rdf:Bag ;
+component:EncryptedBox.secrets a rdf:Bag ;
   rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
+  rdfs:label "Encrypted secrets (nonce:secret)" ;
   rdfs:domain component:EncryptedBox ;
-  rdfs:range xsd:base64Binary .
+  rdfs:range xsd:string .
 
 component:EncryptedBox.tasks a rdf:Seq ;
   rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
   rdfs:domain component:EncryptedBox ;
   rdfs:range xsd:string .
+
+component:Component.boxes a rdf:Property;
+  rdfs:isDefinedBy </static/schemes/sgraph/component#> ;
+  rdfs:comment "Encrypted boxes for a Component" ;
+  rdfs:domain component:Component ;
+  rdfs:range component:EncryptedBox .

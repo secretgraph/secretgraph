@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 import logging
 import os
@@ -16,7 +17,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from graphql_relay import from_global_id
-from rdflib import RDF, BNode, Graph, Literal
+from rdflib import RDF, XSD, BNode, Graph, Literal
 
 from ...constants import sgraph_component, sgraph_key
 from ..actions.handler import ActionHandler
@@ -42,7 +43,7 @@ def get_secrets(graph):
         SELECT ?secret ?task
         WHERE {
             ?n a component:EncryptedBox ;
-                component:EncryptedBox.esecrets ?secret .
+                component:EncryptedBox.secrets ?secret .
             OPTIONAL {  component:EncryptedBox.tasks ?task } .
         }
         """,
@@ -553,7 +554,7 @@ def _update_or_create_component(
     return component
 
 
-def create_component(request, objdata=None, key=None, user=None):
+def create_component(request, objdata=None, key=None, pw=None, user=None):
     prebuild = {}
 
     if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
@@ -563,18 +564,49 @@ def create_component(request, objdata=None, key=None, user=None):
         prebuild["user"] = user
     action_key = None
     private_key = None
-    if not objdata:
+    if not isinstance(objdata, dict):
         action_key = os.urandom(32)
-        encrypted_value =""
         objdata = {
             "actions": [
                 {
                     "key": action_key,
-                    "value": encrypted_value
+                    "value": {
+                        "action": "manage"
+                    }
                 }
             ]
         }
-        raise NotImplementedError
+        if pw:
+            salt = os.urandom(16)
+            nonce = os.urandom(13)
+            hashed_pw = hashlib.pbkdf2_hmac(
+                'sha256', pw.encode("utf8"), salt, 250000
+            )
+            encrypted_secret = AESGCM(hashed_pw).encrypt(
+                action_key, nonce, None
+            )
+            encrypted_secret = "{}:{}".format(
+                base64.b64encode(nonce).decode("ascii"),
+                base64.b64encode(encrypted_secret).decode("ascii")
+            )
+            # nonce not required because random data is encrypted
+            b1 = BNode()
+            b2 = BNode()
+            g = Graph()
+            g.add((b1, RDF.type, sgraph_component["Component"]))
+            g.add((b1, sgraph_component["Component.boxes"], b2))
+            g.add((
+                b2,
+                sgraph_component["Component.secrets"],
+                Literal(encrypted_secret, datatype=XSD.string)
+            ))
+            g.add((
+                b2,
+                sgraph_component["Component.tasks"],
+                Literal(f"pw:{salt}", datatype=XSD.string)
+            ))
+            objdata["public_info"] = g.serialize(format="turtle")
+
     if not objdata.get("actions"):
         raise ValueError("Actions required")
     contentdata = {}
