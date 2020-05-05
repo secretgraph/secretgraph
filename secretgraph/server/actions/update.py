@@ -5,6 +5,7 @@ import os
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import (
     load_der_private_key, load_der_public_key
@@ -15,7 +16,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from graphql_relay import from_global_id
-from rdflib import Graph, BNode, Literal, RDF
+from rdflib import RDF, BNode, Graph, Literal
 
 from ...constants import sgraph_component, sgraph_key
 from ..actions.handler import ActionHandler
@@ -24,8 +25,8 @@ from ..models import (
 )
 # , ReferenceContent
 from ..utils.auth import retrieve_allowed_objects
-from ..utils.misc import calculate_hashes, hash_object
 from ..utils.encryption import default_padding, encrypt_into_file
+from ..utils.misc import calculate_hashes, hash_object
 
 logger = logging.getLogger(__name__)
 
@@ -552,7 +553,7 @@ def _update_or_create_component(
     return component
 
 
-def create_component(request, objdata=None, user=None):
+def create_component(request, objdata=None, key=None, user=None):
     prebuild = {}
 
     if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
@@ -561,22 +562,72 @@ def create_component(request, objdata=None, user=None):
     if user:
         prebuild["user"] = user
     action_key = None
-    content_key = None
+    private_key = None
     if not objdata:
         action_key = os.urandom(32)
-        content_key = os.urandom(32)
+        encrypted_value =""
         objdata = {
-
+            "actions": [
+                {
+                    "key": action_key,
+                    "value": encrypted_value
+                }
+            ]
         }
         raise NotImplementedError
     if not objdata.get("actions"):
         raise ValueError("Actions required")
+    contentdata = {}
+    if not objdata.get("key"):
+        if not key:
+            key = os.urandom(32)
+        aesgcm = AESGCM(key)
+        nonce = os.urandom(13)
+        private_key = generate_private_key(
+            public_exponent=65537,
+            key_size=4096,
+            backend=default_backend()
+        )
+        contentdata["key"] = {
+            "nonce": nonce,
+            "private_key": aesgcm.encrypt(
+                private_key.private_bytes(
+                    encoding=serialization.Encoding.DER,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption()
+                ),
+                nonce,
+                None
+            ),
+            "public_key": private_key.public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+                encryption_algorithm=serialization.NoEncryption()
+            )
+        }
+
+    else:
+        contentdata["key"] = objdata["key"]
+    component = _update_or_create_component(
+        request, Component(**prebuild), objdata
+    )
+    contentdata["component"] = component
+    try:
+        create_content(
+            request, contentdata, key=key,
+            authset=[
+                ":".join([component.flexid, base64.b64encode(action_key)])
+            ]
+        )
+    except Exception as exc:
+        component.delete()
+        raise exc
+
     return (
-        _update_or_create_component(
-            request, Component(**prebuild), objdata
-        ),
+        component,
         action_key,
-        content_key
+        private_key,
+        key
     )
 
 

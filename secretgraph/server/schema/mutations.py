@@ -135,7 +135,8 @@ class ComponentMutation(relay.ClientIDMutation):
 
     component = graphene.Field(ComponentNode)
     action_key = graphene.String(required=False)
-    content_key = graphene.String(required=False)
+    private_key = graphene.String(required=False)
+    key_for_private_key = graphene.String(required=False)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, component, id=None):
@@ -167,12 +168,13 @@ class ComponentMutation(relay.ClientIDMutation):
                 settings, "SECRETGRAPH_ALLOW_REGISTER", False
             ) is not True:
                 raise ValueError("Cannot register new components")
-            component, action_key, content_key = \
+            component, action_key, private_key, key_for_private_key = \
                 create_component(info.context, component, user)
             return cls(
                 component=component,
                 action_key=action_key,
-                content_key=content_key
+                private_key=private_key,
+                key_for_private_key=key_for_private_key
             )
 
 
