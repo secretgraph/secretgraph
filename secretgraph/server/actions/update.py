@@ -553,8 +553,6 @@ def _update_or_create_component(
 
 
 def create_component(request, objdata=None, user=None):
-    if not objdata.get("actions"):
-        raise ValueError("Actions required")
     prebuild = {}
 
     if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
@@ -562,13 +560,23 @@ def create_component(request, objdata=None, user=None):
             raise ValueError("No user specified")
     if user:
         prebuild["user"] = user
+    action_key = None
+    content_key = None
     if not objdata:
+        action_key = os.urandom(32)
+        content_key = os.urandom(32)
         objdata = {
 
         }
         raise NotImplementedError
-    return _update_or_create_component(
-        request, Component(**prebuild), objdata
+    if not objdata.get("actions"):
+        raise ValueError("Actions required")
+    return (
+        _update_or_create_component(
+            request, Component(**prebuild), objdata
+        ),
+        action_key,
+        content_key
     )
 
 
