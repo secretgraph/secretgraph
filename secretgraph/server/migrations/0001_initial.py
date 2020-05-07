@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Component',
+            name='Spider',
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('flexid', models.UUIDField(blank=True, null=True, unique=True)),
@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                 ('nonce', models.CharField(max_length=255)),
                 ('file', models.FileField(upload_to=secretgraph.server.models.get_file_path)),
                 ('content_hash', models.CharField(blank=True, max_length=255, null=True)),
-                ('component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph_base.Component')),
+                ('spider', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph_base.Spider')),
             ],
         ),
         migrations.CreateModel(
@@ -77,7 +77,7 @@ class Migration(migrations.Migration):
                 ('value', models.BinaryField()),
                 ('start', models.DateTimeField(blank=True, default=django.utils.timezone.now)),
                 ('stop', models.DateTimeField(blank=True, null=True)),
-                ('component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph_base.Component')),
+                ('spider', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph_base.Spider')),
                 ('content_action', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='action', to='secretgraph_base.ContentAction')),
             ],
         ),
@@ -95,7 +95,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='content',
-            constraint=models.UniqueConstraint(fields=('content_hash', 'component_id'), name='unique_content'),
+            constraint=models.UniqueConstraint(fields=('content_hash', 'spider_id'), name='unique_content'),
         ),
         migrations.AddConstraint(
             model_name='action',

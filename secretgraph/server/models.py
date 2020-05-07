@@ -25,7 +25,7 @@ def get_file_path(instance, filename) -> str:
     for _i in range(0, 100):
         ret_path = default_storage.generate_filename(
             posixpath.join(
-                ret, str(instance.component.id),
+                ret, str(instance.spider.id),
                 "%s.store" % secrets.token_urlsafe(
                     getattr(settings, "SECRETGRAPH_KEY_SIZE")
                 )
@@ -46,10 +46,10 @@ class FlexidModel(models.Model):
         abstract = True
 
 
-class Component(FlexidModel):
+class Spider(FlexidModel):
     # keyhash is nonce
     public_info: str = models.TextField()
-    # internal field for listing public components
+    # internal field for listing public spiders
     public: bool = models.BooleanField(default=False, blank=True)
 
     if (
@@ -74,14 +74,14 @@ class Content(FlexidModel):
     # unique hash for content, e.g. generated from some info tags
     # null if multiple contents are allowed
     content_hash: str = models.CharField(max_length=255, blank=True, null=True)
-    component: Component = models.ForeignKey(
-        Component, on_delete=models.CASCADE, related_name="contents"
+    spider: Spider = models.ForeignKey(
+        Spider, on_delete=models.CASCADE, related_name="contents"
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["content_hash", "component_id"],
+                fields=["content_hash", "spider_id"],
                 name="unique_content"
             )
         ]
@@ -122,8 +122,8 @@ class ContentAction(models.Model):
 
 class Action(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
-    component: Component = models.ForeignKey(
-        Component, on_delete=models.CASCADE, related_name="actions"
+    spider: Spider = models.ForeignKey(
+        Spider, on_delete=models.CASCADE, related_name="actions"
     )
     key_hash: str = models.CharField(max_length=255)
     nonce: str = models.CharField(max_length=255)

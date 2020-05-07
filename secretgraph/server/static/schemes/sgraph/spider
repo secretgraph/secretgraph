@@ -1,0 +1,39 @@
+@prefix component: </static/schemes/sgraph/component#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cc: <https://creativecommons.org/ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+</static/schemes/sgraph/spider#> a owl:Ontology ;
+  dc:title "Secretgraph Spider" ;
+  dc:description "This is the spkcgraph format used by spkcspider." ;
+  cc:license <https://creativecommons.org/publicdomain/zero/1.0/> .
+
+spider:Spider a rdfs:Class ;
+  rdfs:isDefinedBy </static/schemes/sgraph/spider#> ;
+  rdfs:label "Spider-Root" ;
+  rdfs:comment "Root for a Spider" ;
+  rdfs:domain rdfs:Resource .
+
+spider:EncryptedBox a rdfs:Class ;
+  rdfs:isDefinedBy </static/schemes/sgraph/spider#> ;
+  rdfs:domain spider:Spider .
+
+spider:EncryptedBox.secrets a rdf:Bag ;
+  rdfs:isDefinedBy </static/schemes/sgraph/spider#> ;
+  rdfs:label "Encrypted secrets (nonce:secret)" ;
+  rdfs:domain spider:EncryptedBox ;
+  rdfs:range xsd:string .
+
+spider:EncryptedBox.tasks a rdf:Seq ;
+  rdfs:isDefinedBy </static/schemes/sgraph/spider#> ;
+  rdfs:domain spider:EncryptedBox ;
+  rdfs:range xsd:string .
+
+spider:Spider.boxes a rdf:Property;
+  rdfs:isDefinedBy </static/schemes/sgraph/spider#> ;
+  rdfs:comment "Encrypted boxes for a Spider" ;
+  rdfs:domain spider:Spider ;
+  rdfs:range spider:EncryptedBox .
