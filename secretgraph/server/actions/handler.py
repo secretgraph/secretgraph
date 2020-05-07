@@ -97,16 +97,52 @@ class ActionHandler():
         if issubclass(sender, Content):
             incl_filters = Q(id__in=action_dict.get("ids", []))
             return {
-                "filters": incl_filters
+                "filters": incl_filters,
+                "serverside_check": action_dict.get(
+                    "serverside_check", False
+                )
             }
         return None
 
     @staticmethod
     def clean_update(action_dict, request):
-        action_dict["ids"] = _only_owned_helper(
-            Content, action_dict.get("ids"), request
-        )
-        return action_dict
+        result = {
+            "action": "update",
+            "ids": _only_owned_helper(
+                Content, action_dict.get("ids"), request
+            ),
+            "serverside_check": bool(action_dict.get("serverside_check"))
+        }
+        return result
+
+    @staticmethod
+    def do_push(action_dict, scope, sender, accesslevel, **kwargs):
+        if accesslevel > 1 or scope != "push":
+            return None
+        if issubclass(sender, Content):
+            incl_filters = Q(id__in=action_dict.get("ids", []))
+            return {
+                "filters": incl_filters,
+                "serverside_check": action_dict.get(
+                    "serverside_check", False
+                ),
+                "prefilled": action_dict.get("prefilled", {})
+            }
+        return None
+
+    @staticmethod
+    def clean_push(action_dict, request):
+        result = {
+            "action": "push",
+            "ids": _only_owned_helper(
+                Content, action_dict.get("ids"), request
+            ),
+            "serverside_check": bool(action_dict.get("serverside_check"))
+        }
+        if isinstance(action_dict.get("prefilled"), dict):
+            # TODO
+            pass
+        return result
 
     @staticmethod
     def do_extra(action_dict, scope, sender, **kwargs):
