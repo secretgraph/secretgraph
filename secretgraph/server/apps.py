@@ -17,7 +17,7 @@ class SecretGraphServerConfig(AppConfig):
     verbose_name = 'Secretgraph backend'
 
     def ready(self):
-        from .models import Content, Component
+        from .models import Content, Cluster
         pre_delete.connect(
             deleteContentCb, sender=Content
         )
@@ -27,7 +27,7 @@ class SecretGraphServerConfig(AppConfig):
         )
 
         post_save.connect(
-            generateFlexid, sender=Component
+            generateFlexid, sender=Cluster
         )
 
         post_save.connect(

@@ -48,7 +48,7 @@ def deleteEncryptedFileCb(sender, instance, **kwargs):
 
 
 def generateFlexid(sender, instance, force=False, **kwargs):
-    from .models import Component, Content
+    from .models import Cluster, Content
     if not instance.flexid or force:
         for i in range(0, 1000):
             if i >= 999:
@@ -72,7 +72,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
             instance.info.filter(tag__startswith="id=").update(
                 tag=f"id={instance.flexid}"
             )
-        elif issubclass(sender, Component) and force:
+        elif issubclass(sender, Cluster) and force:
             for c in instance.contents.all():
                 generateFlexid(Content, c, True)
 
@@ -95,8 +95,8 @@ def regenerateKeyHash(sender, force=False, **kwargs):
 
 
 def fillEmptyFlexidsCb(sender, **kwargs):
-    from .models import Component, Content
-    for c in Component.objects.filter(flexid=None):
-        generateFlexid(Component, c, False)
+    from .models import Cluster, Content
+    for c in Cluster.objects.filter(flexid=None):
+        generateFlexid(Cluster, c, False)
     for c in Content.objects.filter(flexid=None):
         generateFlexid(Content, c, False)
