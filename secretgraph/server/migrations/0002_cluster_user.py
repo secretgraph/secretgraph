@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
     ):
         operations.append(migrations.AddField(
-            model_name='spider',
+            model_name='cluster',
             name='user',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
         ))

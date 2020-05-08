@@ -19,10 +19,10 @@ from django.utils import timezone
 from graphql_relay import from_global_id
 from rdflib import RDF, XSD, BNode, Graph, Literal
 
-from ...constants import sgraph_component, sgraph_key
+from ...constants import sgraph_cluster, sgraph_key
 from ..actions.handler import ActionHandler
 from ..models import (
-    Action, Component, Content, ContentAction, ContentReference, ContentTag
+    Action, Cluster, Content, ContentAction, ContentReference, ContentTag
 )
 # , ReferenceContent
 from ..utils.auth import retrieve_allowed_objects
@@ -42,13 +42,13 @@ def get_secrets(graph):
         """
         SELECT ?secret ?task
         WHERE {
-            ?n a component:EncryptedBox ;
-                component:EncryptedBox.secrets ?secret .
-            OPTIONAL {  component:EncryptedBox.tasks ?task } .
+            ?n a cluster:EncryptedBox ;
+                cluster:EncryptedBox.secrets ?secret .
+            OPTIONAL {  cluster:EncryptedBox.tasks ?task } .
         }
         """,
         initNs={
-            "component": sgraph_component
+            "cluster": sgraph_cluster
         }
     ):
         if i.task:
@@ -60,7 +60,7 @@ def get_secrets(graph):
     return public_secrets, protected_secrets
 
 
-def create_actions_func(component, actionlists, request):
+def create_actions_func(cluster, actionlists, request):
     final_actions = []
     final_content_actions = []
     action_types = set()
@@ -81,7 +81,7 @@ def create_actions_func(component, actionlists, request):
                     raise ValueError("Invalid type, requires content")
                 content = Content.objects.get(
                     mark_for_destruction=None, flexid=id,
-                    component=component
+                    cluster=cluster
                 )
                 include_deletion.add(content.id)
         else:
@@ -135,7 +135,7 @@ def create_actions_func(component, actionlists, request):
 
     def save_func():
         result = retrieve_allowed_objects(
-            request, "manage", component.actions.all()
+            request, "manage", cluster.actions.all()
         )
         # delete old actions in group if allowed
         actions = result["objects"].filter(
@@ -147,7 +147,7 @@ def create_actions_func(component, actionlists, request):
         ).delete()
         actions.delete()
         ContentAction.objects.bulk_create(final_content_actions)
-        component.actions.bulk_create(final_actions)
+        cluster.actions.bulk_create(final_actions)
     setattr(save_func, "actions", final_actions)
     setattr(save_func, "content_actions", final_content_actions)
     setattr(save_func, "action_types", action_types)
@@ -177,12 +177,12 @@ def _transform_info_tags(objdata):
 def _update_or_create_content_or_key(
     request, content, objdata, authset, is_key
 ):
-    if objdata["component"] != content.component:
-        type_name, flexid = from_global_id(content.component.id)
-        if type_name != "Component":
-            raise ValueError("Requires Component id")
-        content.component = retrieve_allowed_objects(
-            request, "update", Component.objects.all(), authset=authset
+    if objdata["cluster"] != content.cluster:
+        type_name, flexid = from_global_id(content.cluster.id)
+        if type_name != "Cluster":
+            raise ValueError("Requires Cluster id")
+        content.cluster = retrieve_allowed_objects(
+            request, "update", Cluster.objects.all(), authset=authset
         )["objects"].get(flexid=flexid)
 
     create = not content.id
@@ -254,7 +254,7 @@ def _update_or_create_content_or_key(
         final_references = []
         for ref in objdata["references"]:
             targetob = Content.objects.filter(
-                flexid=ref.target, component_id=content.component_id,
+                flexid=ref.target, cluster_id=content.cluster_id,
                 mark_for_destruction=None
             ).first()
             if not targetob:
@@ -282,7 +282,7 @@ def _update_or_create_content_or_key(
             for key in retrieve_allowed_objects(
                 request, "view", Content.objects.filter(
                     info__tag="key",
-                    component_id=content.component_id
+                    cluster_id=content.cluster_id
                 ),
                 authset=authset
             )["objects"]:
@@ -403,7 +403,7 @@ def create_content(request, objdata, key=None, authset=None):
         }
     else:
         newdata = {
-            "component": objdata.get("component"),
+            "cluster": objdata.get("cluster"),
             "references": objdata.get("references"),
             "content_hash": objdata.get("content_hash"),
             "info": objdata.get("info"),
@@ -502,7 +502,7 @@ def update_content(
         }
     else:
         newdata = {
-            "component": objdata.get("component"),
+            "cluster": objdata.get("cluster"),
             "key": key,
             **objdata["value"]
         }
@@ -511,27 +511,27 @@ def update_content(
     )
 
 
-def _update_or_create_component(
-    request, component, objdata
+def _update_or_create_cluster(
+    request, cluster, objdata
 ):
     if objdata.get("public_info"):
         g = Graph()
         g.parse(objdata["public_info"], "turtle")
         public_secret_hashes = set(map(hash_object, get_secrets(g)[0]))
-        component.public_info = objdata["public_info"]
-        component.public = len(public_secret_hashes) > 0
-    elif component.id is not None:
+        cluster.public_info = objdata["public_info"]
+        cluster.public = len(public_secret_hashes) > 0
+    elif cluster.id is not None:
         public_secret_hashes = {}
     else:
         raise ValueError("no public info")
 
     if objdata.get("actions"):
-        created = not component.id
+        created = not cluster.id
         action_save_func = create_actions_func(
-            component, objdata["actions"], request
+            cluster, objdata["actions"], request
         )
-        assert created and not component.id, \
-            "Don't save component in action clean"
+        assert created and not cluster.id, \
+            "Don't save cluster in action clean"
 
         m_actions = filter(
             lambda x: x.action_type == "manage", action_save_func.actions
@@ -545,16 +545,16 @@ def _update_or_create_component(
             raise ValueError("\"manage\" action cannot be public")
 
         with transaction.atomic():
-            component.save()
+            cluster.save()
             action_save_func()
-    elif component.id is not None and not public_secret_hashes:
-        component.save()
+    elif cluster.id is not None and not public_secret_hashes:
+        cluster.save()
     else:
-        raise ValueError("no actions for new component")
-    return component
+        raise ValueError("no actions for new cluster")
+    return cluster
 
 
-def create_component(request, objdata=None, key=None, pw=None, user=None):
+def create_cluster(request, objdata=None, key=None, pw=None, user=None):
     prebuild = {}
 
     if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
@@ -564,6 +564,9 @@ def create_component(request, objdata=None, key=None, pw=None, user=None):
         prebuild["user"] = user
     action_key = None
     private_key = None
+    if not objdata.get("key"):
+        if not key:
+            key = os.urandom(32)
     if not isinstance(objdata, dict):
         action_key = os.urandom(32)
         objdata = {
@@ -578,41 +581,47 @@ def create_component(request, objdata=None, key=None, pw=None, user=None):
         }
         if pw:
             salt = os.urandom(16)
-            nonce = os.urandom(13)
             hashed_pw = hashlib.pbkdf2_hmac(
                 'sha256', pw.encode("utf8"), salt, 250000
             )
-            encrypted_secret = AESGCM(hashed_pw).encrypt(
-                action_key, nonce, None
-            )
-            encrypted_secret = "{}:{}".format(
-                base64.b64encode(nonce).decode("ascii"),
-                base64.b64encode(encrypted_secret).decode("ascii")
-            )
-            # nonce not required because random data is encrypted
+            aesgcm = AESGCM(hashed_pw)
+
             b1 = BNode()
             b2 = BNode()
             g = Graph()
-            g.add((b1, RDF.type, sgraph_component["Component"]))
-            g.add((b1, sgraph_component["Component.boxes"], b2))
+            g.add((b1, RDF.type, sgraph_cluster["Cluster"]))
+            g.add((b1, sgraph_cluster["Cluster.boxes"], b2))
             g.add((
                 b2,
-                sgraph_component["Component.secrets"],
-                Literal(encrypted_secret, datatype=XSD.string)
-            ))
-            g.add((
-                b2,
-                sgraph_component["Component.tasks"],
+                sgraph_cluster["Cluster.tasks"],
                 Literal(f"pw:{salt}", datatype=XSD.string)
             ))
+            for k, ktype in [(action_key, b"manage"), (key, b"")]:
+                if not k:
+                    continue
+                nonce = os.urandom(13)
+
+                encrypted_secret = aesgcm.encrypt(
+                    b"%b:%b" % (
+                        ktype,
+                        base64.b64encode(action_key)
+                    ), nonce, None
+                )
+                encrypted_secret = "{}:{}".format(
+                    base64.b64encode(nonce).decode("ascii"),
+                    base64.b64encode(encrypted_secret).decode("ascii")
+                )
+                g.add((
+                    b2,
+                    sgraph_cluster["Cluster.secrets"],
+                    Literal(encrypted_secret, datatype=XSD.string)
+                ))
             objdata["public_info"] = g.serialize(format="turtle")
 
     if not objdata.get("actions"):
         raise ValueError("Actions required")
     contentdata = {}
     if not objdata.get("key"):
-        if not key:
-            key = os.urandom(32)
         aesgcm = AESGCM(key)
         nonce = os.urandom(13)
         private_key = generate_private_key(
@@ -640,42 +649,42 @@ def create_component(request, objdata=None, key=None, pw=None, user=None):
 
     else:
         contentdata["key"] = objdata["key"]
-    component = _update_or_create_component(
-        request, Component(**prebuild), objdata
+    cluster = _update_or_create_cluster(
+        request, Cluster(**prebuild), objdata
     )
-    contentdata["component"] = component
+    contentdata["cluster"] = cluster
     try:
         create_content(
             request, contentdata, key=key,
             authset=[
-                ":".join([component.flexid, base64.b64encode(action_key)])
+                ":".join([cluster.flexid, base64.b64encode(action_key)])
             ]
         )
     except Exception as exc:
-        component.delete()
+        cluster.delete()
         raise exc
 
     return (
-        component,
+        cluster,
         action_key,
         private_key,
         key
     )
 
 
-def update_component(request, component, objdata, user=None):
-    if isinstance(component, str):
-        type_name, flexid = from_global_id(component)
-        if type_name != "Component":
-            raise ValueError("Only for Components")
+def update_cluster(request, cluster, objdata, user=None):
+    if isinstance(cluster, str):
+        type_name, flexid = from_global_id(cluster)
+        if type_name != "Cluster":
+            raise ValueError("Only for Clusters")
         result = retrieve_allowed_objects(
-            request, "update", Component.objects.all()
+            request, "update", Cluster.objects.all()
         )
-        component = result["objects"].get(flexid=flexid)
-    assert component.id
+        cluster = result["objects"].get(flexid=flexid)
+    assert cluster.id
     if user:
-        component.user = user
+        cluster.user = user
 
-    return _update_or_create_component(
-        request, component, objdata
+    return _update_or_create_cluster(
+        request, cluster, objdata
     )

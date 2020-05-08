@@ -5,24 +5,24 @@ from django.db.models import Q, QuerySet
 from django.utils import timezone
 from graphql_relay import from_global_id
 
-from ..models import Component, Content, ContentAction
+from ..models import Cluster, Content, ContentAction
 from ..utils.auth import retrieve_allowed_objects
 
 logger = logging.getLogger(__name__)
 
 
-def fetch_components(
+def fetch_clusters(
     request, query=None,
     info_include=None, info_exclude=None
 ):
     flexid = None
     if query is None:
-        query = Component.objects.all()
+        query = Cluster.objects.all()
     elif isinstance(query, str):
         if ":" in query:
             type_name, query = from_global_id(query)
         flexid = query
-        query = Component.objects.all()
+        query = Cluster.objects.all()
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(contents__info__tag__startswith=i)

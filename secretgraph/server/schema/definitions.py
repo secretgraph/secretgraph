@@ -4,7 +4,7 @@ from graphene import relay, ObjectType
 from graphene_django import DjangoObjectType
 
 from ..actions.view import fetch_contents
-from ..models import Component, Content, ContentReference
+from ..models import Cluster, Content, ContentReference
 
 
 class ServerConfig(ObjectType):
@@ -32,7 +32,7 @@ class ContentNode(FlexidMixin, DjangoObjectType):
         name = "Content"
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'updated', 'component', 'references', 'referenced_by'
+            'nonce', 'updated', 'cluster', 'references', 'referenced_by'
         ]
 
     info = graphene.List(graphene.String)
@@ -49,7 +49,7 @@ class ContentNode(FlexidMixin, DjangoObjectType):
 class ContentConnection(relay.Connection):
     include_info = graphene.List(graphene.String)
     exclude_info = graphene.List(graphene.String)
-    component = graphene.ID()
+    cluster = graphene.ID()
 
     class Meta:
         node = ContentNode
@@ -78,9 +78,9 @@ class ContentReferenceNode(DjangoObjectType):
             return None
 
 
-class ComponentNode(FlexidMixin, DjangoObjectType):
+class ClusterNode(FlexidMixin, DjangoObjectType):
     class Meta:
-        model = Component
+        model = Cluster
         interfaces = (relay.Node,)
         fields = ['public_info', 'contents']
         if (
@@ -100,7 +100,7 @@ class ComponentNode(FlexidMixin, DjangoObjectType):
         )
 
 
-class ComponentConnection(relay.Connection):
+class ClusterConnection(relay.Connection):
     if (
         getattr(settings, "AUTH_USER_MODEL", None) or
         getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
@@ -108,9 +108,9 @@ class ComponentConnection(relay.Connection):
         user = graphene.ID()
 
     class Meta:
-        node = ComponentNode
+        node = ClusterNode
 
 
 class FlexidType(graphene.Union):
     class Meta:
-        types = (ComponentNode, ContentNode)
+        types = (ClusterNode, ContentNode)

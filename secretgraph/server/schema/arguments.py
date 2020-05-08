@@ -34,7 +34,7 @@ class ContentValueInput(graphene.InputObjectType):
 
 
 class ContentInput(graphene.InputObjectType):
-    component = graphene.ID(required=False)
+    cluster = graphene.ID(required=False)
     key = ContentKeyInput(required=False)
     value = ContentValueInput(required=False)
     references = graphene.List(ReferenceInput, required=False)
@@ -42,7 +42,7 @@ class ContentInput(graphene.InputObjectType):
     content_hash = graphene.String(required=False)
 
 
-class ComponentInput(graphene.InputObjectType):
+class ClusterInput(graphene.InputObjectType):
     public_info = graphene.String(required=False)
     actions = graphene.List(ActionListInput, required=False)
     key = ContentKeyInput(required=False)

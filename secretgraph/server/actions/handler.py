@@ -4,7 +4,7 @@ from functools import lru_cache
 from django.db.models import Q
 from graphql_relay import from_global_id
 
-from ..models import Content, Component, Action
+from ..models import Content, Cluster, Action
 
 
 def _only_owned_helper(
@@ -32,7 +32,7 @@ def get_valid_fields(klass):
         name: klass.__annotations__[name] for name in set(map(
             lambda x: x.name, klass._meta.get_fields()
         )).difference((
-            "id", "component", "references", "referenced_by"
+            "id", "cluster", "cluster_id", "references", "referenced_by"
         )).union(klass.__annotations__.keys())
     }
 
@@ -179,9 +179,9 @@ class ActionHandler():
         excl_filters = Q(
             id__in=action_dict["exclude"][type_name]
         )
-        if type_name != "Component":
+        if type_name != "Cluster":
             excl_filters |= Q(
-                component__id__in=action_dict["exclude"]["Component"]
+                cluster_id__in=action_dict["exclude"]["Cluster"]
             )
         if type_name == "Action":
             excl_filters |= Q(
@@ -199,7 +199,7 @@ class ActionHandler():
         result = {
             "action": "manage",
             "exclude": {
-                "Component": [],
+                "Cluster": [],
                 "Content": [],
                 "Action": []
             }
@@ -207,7 +207,7 @@ class ActionHandler():
         for idtuple in action_dict.get("exclude") or []:
             type_name, id = from_global_id(idtuple)
             result["exclude"][type_name].append(id)
-        for klass in [Component, Content, Action]:
+        for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
             result["exclude"][type_name] = _only_owned_helper(
                 klass, result["exclude"][type_name], request
@@ -216,14 +216,14 @@ class ActionHandler():
 
     @staticmethod
     def do_stored_update(action_dict, scope, **kwargs):
-        for klass in [Component, Content, Action]:
+        for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
             klass.objects.filter(
                 id__in=action_dict["delete"][type_name]
             ).delete()
             for _id, updatevalues in action_dict["update"][type_name].items():
                 updatevalues.pop("id", None)
-                updatevalues.pop("component", None)
+                updatevalues.pop("cluster", None)
                 updatevalues.pop("references", None)
                 updatevalues.pop("referenced_by", None)
                 klass.objects.filter(id=_id).update(**updatevalues)
@@ -234,18 +234,18 @@ class ActionHandler():
         result = {
             "action": "stored_update",
             "delete": {
-                "Component": [],
+                "Cluster": [],
                 "Content": [],
                 "Action": []
             },
             "update": {
-                "Component": {},
+                "Cluster": {},
                 "Content": {},
                 "Action": {}
             }
         }
         update_mapper = {
-            "Component": {},
+            "Cluster": {},
             "Content": {},
             "Action": {}
         }
@@ -253,13 +253,13 @@ class ActionHandler():
         for idtuple in action_dict.get("delete") or []:
             if ":" in idtuple:
                 type_name, id = from_global_id(idtuple)
-                if type_name not in {"Content", "Component"}:
+                if type_name not in {"Content", "Cluster"}:
                     raise ValueError("Invalid idtype")
                 result["delete"][type_name].append(id)
             else:
                 result["delete"][type_name].append(idtuple)
 
-        for klass in [Component, Content, Action]:
+        for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
             result["delete"][type_name] = _only_owned_helper(
                 klass, result["delete"][type_name], request,
@@ -267,7 +267,7 @@ class ActionHandler():
             )
 
         _del_sets = {
-            "Component": set(result["delete"]["Component"]),
+            "Cluster": set(result["delete"]["Cluster"]),
             "Content": set(result["delete"]["Content"]),
             "Action": set(result["delete"]["Action"]),
         }
@@ -289,7 +289,7 @@ class ActionHandler():
                     newob[name] = jsonob[name]
             update_mapper[type_name][idpart] = newob
 
-        for klass in [Component, Content, Action]:
+        for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
             for _flexid, _id in _only_owned_helper(
                 klass, update_mapper[type_name].keys(), request,

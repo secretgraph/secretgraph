@@ -16,12 +16,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Spider',
+            name='Cluster',
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('flexid', models.UUIDField(blank=True, null=True, unique=True)),
                 ('public_info', models.TextField()),
                 ('public', models.BooleanField(blank=True, default=False)),
+                ('featured', models.BooleanField(blank=True, default=False)),
             ],
             options={
                 'abstract': False,
@@ -37,7 +38,7 @@ class Migration(migrations.Migration):
                 ('nonce', models.CharField(max_length=255)),
                 ('file', models.FileField(upload_to=secretgraph.server.models.get_file_path)),
                 ('content_hash', models.CharField(blank=True, max_length=255, null=True)),
-                ('spider', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph_base.Spider')),
+                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph_base.Cluster')),
             ],
         ),
         migrations.CreateModel(
@@ -77,7 +78,7 @@ class Migration(migrations.Migration):
                 ('value', models.BinaryField()),
                 ('start', models.DateTimeField(blank=True, default=django.utils.timezone.now)),
                 ('stop', models.DateTimeField(blank=True, null=True)),
-                ('spider', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph_base.Spider')),
+                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph_base.Cluster')),
                 ('content_action', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='action', to='secretgraph_base.ContentAction')),
             ],
         ),
@@ -95,7 +96,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='content',
-            constraint=models.UniqueConstraint(fields=('content_hash', 'spider_id'), name='unique_content'),
+            constraint=models.UniqueConstraint(fields=('content_hash', 'cluster_id'), name='unique_content'),
         ),
         migrations.AddConstraint(
             model_name='action',

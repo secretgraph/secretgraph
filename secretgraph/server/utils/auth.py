@@ -7,7 +7,7 @@ from django.utils import timezone
 from graphql_relay import from_global_id
 
 from ..actions.handler import ActionHandler
-from ..models import Action, Component, Content
+from ..models import Action, Cluster, Content
 from .misc import calculate_hashes
 
 
@@ -17,16 +17,16 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             " ", ""
         ).split(","))
     now = timezone.now()
-    pre_filtered_actions = Action.objects.select_related("component").filter(
+    pre_filtered_actions = Action.objects.select_related("cluster").filter(
         start__lte=now
     ).filter(
         models.Q(stop__isnull=True) |
         models.Q(stop__gte=now)
     )
-    components = set()
+    clusters = set()
     all_filters = models.Q()
     result = {
-        "components": {},
+        "clusters": {},
         "action_extras": {},
         "actions": Action.objects.none(),
         "action_key_map": {}
@@ -36,12 +36,12 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         if len(spitem) != 2:
             continue
 
-        componentflexid, action_key = spitem[-2:]
-        _type = "Component"
+        clusterflexid, action_key = spitem[-2:]
+        _type = "Cluster"
         try:
-            _type, componentflexid = from_global_id(componentflexid)
+            _type, clusterflexid = from_global_id(clusterflexid)
         finally:
-            if _type != "Component":
+            if _type != "Cluster":
                 continue
         try:
             action_key = base64.b64decode(action_key)
@@ -51,7 +51,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         keyhashes = calculate_hashes(action_key)
 
         actions = pre_filtered_actions.filter(
-            component__flexid=componentflexid,
+            cluster__flexid=clusterflexid,
             key_hash__in=keyhashes
         )
         if not actions:
@@ -85,13 +85,12 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 filters = result.get("filters", models.Q())
             elif accesslevel == foundaccesslevel:
                 filters &= result.get("filters", models.Q())
-            # components.update(result.get("extra_components", []))
 
             if action.key_hash != keyhashes[0]:
                 Action.objects.filter(keyhash=action.keyhash).update(
                     key_hash=keyhashes[0]
                 )
-        result["components"][componentflexid] = {
+        result["clusters"][clusterflexid] = {
             "filters": filters,
             "accesslevel": accesslevel,
             "action_key": action_key,
@@ -100,20 +99,20 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         result["actions"] |= actions
         for h in keyhashes:
             result["action_key_map"][h] = action_key
-        components.add(componentflexid)
-        if issubclass(query.model, Component):
+        clusters.add(clusterflexid)
+        if issubclass(query.model, Cluster):
             all_filters |= (
-                filters & models.Q(id=actions[0].component_id)
+                filters & models.Q(id=actions[0].cluster_id)
             )
         else:
             all_filters |= (
-                filters & models.Q(component_id=actions[0].component_id)
+                filters & models.Q(cluster_id=actions[0].cluster_id)
             )
 
-    if issubclass(query.model, Component):
-        all_filters &= models.Q(flexid__in=components)
+    if issubclass(query.model, Cluster):
+        all_filters &= models.Q(flexid__in=clusters)
     else:
-        all_filters &= models.Q(component__flexid__in=components)
+        all_filters &= models.Q(cluster__flexid__in=clusters)
     if issubclass(query.model, Content):
         all_filters &= (
             models.Q(action__in=actions) |

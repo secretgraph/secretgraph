@@ -3,35 +3,35 @@ import graphene
 from django.db.models import Q
 from graphene import relay
 
-from ..actions.view import fetch_components, fetch_contents
-from ..models import Component
+from ..actions.view import fetch_clusters, fetch_contents
+from ..models import Cluster
 from .definitions import (
-    ComponentConnection, ComponentNode, ContentConnection, ContentNode,
+    ClusterConnection, ClusterNode, ContentConnection, ContentNode,
     ServerConfig
 )
 from .mutations import (
-    ComponentMutation, ContentMutation, DeleteMutation, PushContentMutation,
+    ClusterMutation, ContentMutation, DeleteMutation, PushContentMutation,
     RegenerateFlexidMutation
 )
 
 
 class Query():
     server_config = graphene.Field(ServerConfig)
-    component = relay.Node.Field(ComponentNode)
-    components = relay.ConnectionField(ComponentConnection)
-    all_components = relay.ConnectionField(ComponentConnection)
+    cluster = relay.Node.Field(ClusterNode)
+    clusters = relay.ConnectionField(ClusterConnection)
+    all_clusters = relay.ConnectionField(ClusterConnection)
 
     content = relay.Node.Field(ContentNode)
     contents = relay.ConnectionField(ContentConnection)
 
-    def resolve_component(
+    def resolve_cluster(
         self, info, id, **kwargs
     ):
-        return fetch_components(
+        return fetch_clusters(
             info.context, query=id
         )["object"]
 
-    def resolve_all_components(
+    def resolve_all_clusters(
         self, info, user=None, **kwargs
     ):
         incl_filters = Q()
@@ -41,19 +41,19 @@ class Query():
         excl_filters = Q()
         for i in kwargs.get("info_exclude") or []:
             excl_filters |= Q(info__tag__startswith=i)
-        components = Component.objects.filter(
+        clusters = Cluster.objects.filter(
             ~excl_filters & incl_filters
         )
         if user:
-            components = components.filter(user__username=user)
+            clusters = clusters.filter(user__username=user)
         if not info.context.user.is_staff:
-            components = components.filter(public=True)
-        return components
+            clusters = clusters.filter(public=True)
+        return clusters
 
-    def resolve_components(
+    def resolve_clusters(
         self, info, **kwargs
     ):
-        return fetch_components(
+        return fetch_clusters(
             info.context,
             info_include=kwargs.get("info_include"),
             info_exclude=kwargs.get("info_exclude")
@@ -74,7 +74,7 @@ class Query():
 
 class Mutation():
     update_content = ContentMutation.Field()
-    update_component = ComponentMutation.Field()
+    update_cluster = ClusterMutation.Field()
     push_content = PushContentMutation.Field()
     regenerate_flexid = RegenerateFlexidMutation.Field()
     delete = DeleteMutation.Field()
