@@ -16,7 +16,6 @@ from django.models import Q
 from graphql_relay import from_global_id
 from rdflib import Graph
 
-from ..constants import sgraph_key
 from ..models import Content, ContentReference
 
 
@@ -80,7 +79,7 @@ def create_key_map(contents, keyset):
     )
 
     key_query = Content.objects.filter(
-        info__tag="key",
+        info__tag="private_key",
         info__tag__in=key_map1.keys(),
         references__in=reference_query
     )
@@ -94,9 +93,7 @@ def create_key_map(contents, keyset):
         try:
             aesgcm = AESGCM(base64.b64decode(matching_key))
             privkey = aesgcm.decrypt(
-                graph.value(
-                    predicate=sgraph_key["Key.encrypted_private_key"]
-                ).toPython(),
+                key.value.open("rb").read(),
                 base64.b64decode(key.nonce),
                 None
             )
@@ -123,7 +120,7 @@ def iter_decrypt_contents(
     content_query.only_direct_fetch_action_trigger = True
     key_map = create_key_map(content_query, decryptset)
     for content in content_query.filter(
-        Q(info__tag="key") | Q(id__in=key_map.keys())
+        Q(info__tag="public_key") | Q(id__in=key_map.keys())
     ):
         if content.id in key_map:
             try:

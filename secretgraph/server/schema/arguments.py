@@ -23,7 +23,7 @@ class ContentKeyInput(graphene.InputObjectType):
 
 
 class ReferenceInput(graphene.InputObjectType):
-    target = graphene.ID(required=False)
+    target = graphene.ID(required=True)
     extra = graphene.String(required=False)
     group = graphene.String(required=False)
 

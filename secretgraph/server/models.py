@@ -13,7 +13,6 @@ from django.db import models
 from django.utils import timezone
 from rdflib import Graph
 
-from ..constants import sgraph_key
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class FlexidModel(models.Model):
 
 
 class Cluster(FlexidModel):
-    # keyhash is nonce
+    # key_hash is nonce
     public_info: str = models.TextField()
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
@@ -88,14 +87,9 @@ class Content(FlexidModel):
         ]
 
     def load_pubkey(self):
-        """ Works only for Keys (special Content) """
+        """ Works only for public keys (special Content) """
         try:
-            graph = Graph()
-            graph.parse(file=self.value, format="turtle")
-            key = graph.value(
-                predicate=sgraph_key["Key.public_key"]
-            ).toPython()
-            return load_der_public_key(key)
+            return load_der_public_key(self.value.open("rb").read())
         except Exception as exc:
             logger.error("Could not load public key", exc_info=exc)
         return None

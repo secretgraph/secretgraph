@@ -144,9 +144,8 @@ LOGOUT_REDIRECT_URL = "home"
 
 # AUTH_USER_MODEL = 'spider_accounts.SpiderUser'
 
-# max depth of references used in embed
-#   should be >=5, allows 4 levels depth in contents+link to it
-SECRETGRAPH_MAX_DEPTH = 5
+# require serverside encryption
+# SECRETGRAPH_SERVERSIDE_ENCRYPTION = True
 # requests parameter overwrites
 # * "hostname.foo": parameter for specific domain
 # * "".foo": parameter for a tld

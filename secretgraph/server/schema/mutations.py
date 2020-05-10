@@ -1,23 +1,23 @@
 from datetime import timedelta as td
 
 import graphene
-from django.db.models import Q
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 from graphene import relay
+from graphql_relay import from_global_id
 
 from ..actions.update import (
-    create_cluster, create_content, update_cluster, update_content
+    create_cluster, create_content, update_cluster, update_content,
+    create_actions_func
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
 from ..utils.auth import retrieve_allowed_objects
-from .arguments import ClusterInput, ContentInput, ContentValueInput
-from .definitions import ClusterNode, ContentNode, FlexidType
-
-_serverside_encryption = getattr(
-    settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
+from .arguments import (
+    ClusterInput, ContentInput, ContentValueInput, ReferenceInput
 )
+from .definitions import ClusterNode, ContentNode, FlexidType
 
 
 class RegenerateFlexidMutation(relay.ClientIDMutation):
@@ -132,6 +132,7 @@ class ClusterMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         cluster = ClusterInput(required=True)
+        key = graphene.String(required=False)
 
     cluster = graphene.Field(ClusterNode)
     action_key = graphene.String(required=False)
@@ -182,7 +183,9 @@ class ContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         content = graphene.Field(ContentInput, required=True)
-        key = graphene.String(required=_serverside_encryption)
+        key = graphene.String(required=getattr(
+            settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
+        ))
 
     content = graphene.Field(ContentNode)
 
@@ -211,21 +214,27 @@ class PushContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
         value = graphene.Field(ContentValueInput, required=True)
+        key = graphene.String(required=getattr(
+            settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
+        ))
+        references = graphene.List(ReferenceInput, required=False)
 
     value = graphene.Field(ContentNode)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, content_id, value):
+    def mutate_and_get_payload(cls, root, info, id, value):
+        type_name, flexid = from_global_id(id)
+        if type_name != "Content":
+            raise ValueError("Only for Contents")
         result = retrieve_allowed_objects(
-            info, "push", Content.objects.all()
+            info, "push", Content.objects.filter(flexid=flexid)
         )
-        source = result["objects"].get(id=content_id)
-        actions = \
-            result["clusters"][source.cluster.flexid]["actions"].filter(
-                content_action__content=source
-            ).prefetch_selected("content_action")
+        source = result["objects"].first()
+        # TODO: check for null
+        form = result["forms"][source.id]
+        c = create_content(
+            info.context, form, key
+        )
+        if form.get("updateable"):
 
-        extras = {}
-        for action in actions:
-            extras.update(result["action_extras"].get(action.id, []))
         raise NotImplementedError

@@ -1,4 +1,5 @@
 import base64
+import logging
 import json
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -11,6 +12,9 @@ from ..models import Action, Cluster, Content
 from .misc import calculate_hashes
 
 
+logger = logging.getLogger(__name__)
+
+
 def retrieve_allowed_objects(request, scope, query, authset=None):
     if not authset:
         authset = set(request.headers.get("Authorization", "").replace(
@@ -20,14 +24,19 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     pre_filtered_actions = Action.objects.select_related("cluster").filter(
         start__lte=now
     ).filter(
-        models.Q(stop__isnull=True) |
-        models.Q(stop__gte=now)
+        models.Q(stop__isnull=True) | models.Q(stop__gte=now)
     )
+    if isinstance(query.model, Content):
+        pre_filtered_actions = pre_filtered_actions.filter(
+            models.Q(content_action__isnull=True) |
+            models.Q(content_action__content__in=query)
+        )
     clusters = set()
     all_filters = models.Q()
-    result = {
+    returnval = {
+        "rejecting_action": None,
         "clusters": {},
-        "action_extras": {},
+        "forms": {},
         "actions": Action.objects.none(),
         "action_key_map": {}
     }
@@ -58,10 +67,11 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             continue
 
         filters = models.Q()
+        # 0 default
         # 1 normal
         # 2 owner
         # 3 special
-        accesslevel = 1
+        accesslevel = 0
         for action in actions:
             action_dict = json.loads(aesgcm.decrypt(
                 base64.b64decode(action.nonce),
@@ -78,8 +88,27 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             )
             if result is None:
                 continue
-            foundaccesslevel = result.get("accesslevel", 1)
-            result["action_extras"][action.id] = result.get("extras", set())
+            if result is False:
+                returnval["rejecting_action"] = (action, action_dict)
+                returnval["objects"] = query.none()
+                return returnval
+            foundaccesslevel = result["accesslevel"]
+            if result.get("form"):
+                if (
+                    action.content_action.content_id not in returnval["forms"]
+                    or accesslevel < foundaccesslevel
+                ):
+                    keys = result["form"].get("required_keys", [])
+                    result["form"]["required_keys"] = set(
+                        Content.objects.filter(
+                            models.Q(id__in=keys) |
+                            models.Q(content_hash__in=keys),
+                            info__tag="public_key",
+                        ).values_list("content_hash", flat=True)
+                    )
+                    returnval["forms"][action.content_action.content_id] = \
+                        result["form"]
+
             if accesslevel < foundaccesslevel:
                 accesslevel = foundaccesslevel
                 filters = result.get("filters", models.Q())
@@ -87,18 +116,18 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 filters &= result.get("filters", models.Q())
 
             if action.key_hash != keyhashes[0]:
-                Action.objects.filter(keyhash=action.keyhash).update(
+                Action.objects.filter(key_hash=action.key_hash).update(
                     key_hash=keyhashes[0]
                 )
-        result["clusters"][clusterflexid] = {
+        returnval["clusters"][clusterflexid] = {
             "filters": filters,
             "accesslevel": accesslevel,
             "action_key": action_key,
             "actions": actions,
         }
-        result["actions"] |= actions
+        returnval["actions"] |= actions
         for h in keyhashes:
-            result["action_key_map"][h] = action_key
+            returnval["action_key_map"][h] = action_key
         clusters.add(clusterflexid)
         if issubclass(query.model, Cluster):
             all_filters |= (
@@ -118,5 +147,5 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             models.Q(action__in=actions) |
             models.Q(action_id__isnull=True)
         )
-    result["objects"] = query.filter(all_filters)
-    return result
+    returnval["objects"] = query.filter(all_filters)
+    return returnval

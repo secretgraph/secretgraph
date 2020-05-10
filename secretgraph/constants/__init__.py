@@ -17,7 +17,5 @@ class DeleteRecursive(enum.Enum):
     TRUE = True
     NO_GROUP = None
 
-
-sgraph_key = Namespace("/static/schemes/sgraph/key")
 sgraph_cluster = Namespace("/static/schemes/sgraph/cluster")
 sgraph_simplecontent = Namespace("/static/schemes/sgraph/simplecontent")

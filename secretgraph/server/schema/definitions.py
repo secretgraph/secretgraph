@@ -8,7 +8,12 @@ from ..models import Cluster, Content, ContentReference
 
 
 class ServerConfig(ObjectType):
-    key_iterations = graphene.Int()
+    require_serverside_encryption = graphene.Boolean()
+
+    def resolve_require_serverside_encryption(self, info):
+        return bool(getattr(
+            settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
+        ))
 
 
 class FlexidMixin():

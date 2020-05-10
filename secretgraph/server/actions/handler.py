@@ -8,7 +8,7 @@ from ..models import Content, Cluster, Action
 
 
 def _only_owned_helper(
-    klass, linput, request, fields=("id",), check_field=None
+    klass, linput, request, fields=("id",), check_field=None, scope="manage"
 ):
     from ..utils.auth import retrieve_allowed_objects
     if not check_field:
@@ -18,7 +18,7 @@ def _only_owned_helper(
     if not hasattr(klass, "flexid"):
         fields = set(fields).difference({"flexid"})
     return retrieve_allowed_objects(
-        request, "manage",
+        request, scope,
         klass.objects.filter(**{f"{check_field}__in": linput or []})
     )["objects"].values_list(*fields, flat=True)
 
@@ -45,11 +45,11 @@ class ActionHandler():
         )(action_dict, sender=sender, **kwargs)
 
     @classmethod
-    def clean_action(cls, action_dict, request):
+    def clean_action(cls, action_dict, request, content=None):
         action = action_dict["action"]
         result = getattr(
             cls, "clean_%s" % action
-        )(action_dict, request)
+        )(action_dict, request, content)
         assert result["action"] == action
         return result
 
@@ -71,12 +71,13 @@ class ActionHandler():
                 incl_filters |= Q(info__tag__startswith=i)
 
             return {
-                "filters": ~excl_filters & incl_filters
+                "filters": ~excl_filters & incl_filters,
+                "accesslevel": 1
             }
         return None
 
     @staticmethod
-    def clean_view(action_dict, request):
+    def clean_view(action_dict, request, content):
         result = {
             "action": "view"
         }
@@ -92,83 +93,113 @@ class ActionHandler():
 
     @staticmethod
     def do_update(action_dict, scope, sender, accesslevel, **kwargs):
-        if accesslevel > 1 or scope != "update":
+        ownaccesslevel = 3 if action_dict.get("restricted") else 1
+        if accesslevel > ownaccesslevel or scope != "update":
             return None
         if issubclass(sender, Content):
             incl_filters = Q(id__in=action_dict.get("ids", []))
             return {
                 "filters": incl_filters,
-                "serverside_check": action_dict.get(
-                    "serverside_check", False
-                )
+                "form": action_dict["form"],
+                "accesslevel": ownaccesslevel
             }
         return None
 
     @staticmethod
-    def clean_update(action_dict, request):
+    def clean_update(action_dict, request, content):
         result = {
             "action": "update",
+            "content_action_group": "update",
+            "restricted": bool(action_dict.get("restricted")),
             "ids": _only_owned_helper(
-                Content, action_dict.get("ids"), request
+                Content,
+                action_dict.get("ids", content and [content.id]),
+                request
             ),
-            "serverside_check": bool(action_dict.get("serverside_check"))
+            "form": {
+                "required_keys": [],
+                "info": [],
+                "references": []
+            }
         }
+
+        if action_dict.get("required_keys"):
+            result["form"]["required_keys"] = list(_only_owned_helper(
+                Content, action_dict["required_keys"], request,
+                fields=("id",), check_field="content_hash", scope="view"
+            ))
+        if action_dict.get("info"):
+            for i in action_dict["info"]:
+                if i in {"public_key", "private_key"}:
+                    raise ValueError()
+            result["form"]["info"].extend(action_dict.get("info", []))
         return result
 
     @staticmethod
     def do_push(action_dict, scope, sender, accesslevel, **kwargs):
-        if accesslevel > 1 or scope != "push":
-            return None
-        if issubclass(sender, Content):
-            incl_filters = Q(id__in=action_dict.get("ids", []))
+        if scope == "push" and issubclass(sender, Content):
             return {
-                "filters": incl_filters,
-                "serverside_check": action_dict.get(
-                    "serverside_check", False
+                "filters": Q(id=action_dict["id"]),
+                "form": action_dict["form"],
+                "accesslevel": 3
+            }
+        if accesslevel < 1 and scope == "view" and issubclass(sender, Content):
+            return {
+                "filters": (
+                    Q(id=action_dict["id"]) |
+                    Q(content_hash__in=action_dict["form"]["required_keys"])
                 ),
-                "prefilled": action_dict.get("prefilled", {})
+                "accesslevel": 0
             }
         return None
 
     @staticmethod
-    def clean_push(action_dict, request):
+    def clean_push(action_dict, request, content):
+        if not content:
+            raise ValueError("Can only be specified for a content")
+
         result = {
             "action": "push",
-            "ids": _only_owned_helper(
-                Content, action_dict.get("ids"), request
-            ),
-            "serverside_check": bool(action_dict.get("serverside_check"))
-        }
-        if isinstance(action_dict.get("prefilled"), dict):
-            # TODO
-            pass
-        return result
-
-    @staticmethod
-    def do_extra(action_dict, scope, sender, **kwargs):
-        if scope == action_dict["extra"]:
-            incl_filters = Q()
-            for i in action_dict.get("include_info", []):
-                incl_filters |= Q(info__tag__startswith=i)
-
-            return {
-                "filters": incl_filters,
-                "form": action_dict.get("form"),
-                "extras": action_dict.get("extras") or []
+            "content_action_group": "push",
+            "id": content.id,
+            "form": {
+                "required_keys": [],
+                "info": [],
+                # create update action
+                "updateable": bool(action_dict.get("updateable")),
+                "references": [
+                    {
+                        "group": "push",
+                        "target": content.id,
+                        "delete_recursive": True
+                    }
+                ]
             }
-        return None
-
-    @staticmethod
-    def clean_extra(action_dict, request):
-        result = {
-            "action": "extra"
         }
-        if action_dict.get("extra", None) not in {"push"}:
-            raise ValueError()
-        include_info = action_dict.get("include_info", [])
-        if not all(map(lambda x: isinstance(str), include_info)):
-            raise ValueError()
-        result["include_info"] = include_info
+        for i in action_dict.get("info", []):
+            if i in {"public_key", "private_key"}:
+                raise ValueError()
+        result["form"]["info"].extend(action_dict.get("info", []))
+        references = action_dict.get("references") or {}
+        if isinstance(references, list):
+            references = dict(map(lambda x: (x["target"], x), references))
+        for _flexid, _id in _only_owned_helper(
+            Content, references.keys(), request,
+            fields=("flexid",)
+        ):
+            result["form"]["references"].append({
+                "target": _id,
+                "group": references[_flexid].get("group", ""),
+                "delete_recursive": references[_flexid].get(
+                    "delete_recursive", True
+                )
+            })
+        if action_dict.get("required_keys"):
+            result["form"]["required_keys"] = list(_only_owned_helper(
+                Content, action_dict["required_keys"], request,
+                fields=("id",), check_field="content_hash", scope="view"
+            ))
+
         return result
 
     @staticmethod
@@ -191,11 +222,18 @@ class ActionHandler():
             )
         return {
             "filters": ~excl_filters,
-            "accesslevel": 2
+            "accesslevel": 2,
+            "form": {
+                "required_keys": [],
+                "info": [],
+                "references": []
+            }
         }
 
     @staticmethod
-    def clean_manage(action_dict, request):
+    def clean_manage(action_dict, request, content):
+        if content:
+            raise ValueError("manage cannot be changed to content")
         result = {
             "action": "manage",
             "exclude": {
@@ -230,7 +268,7 @@ class ActionHandler():
         return None
 
     @staticmethod
-    def clean_stored_update(action_dict, request):
+    def clean_stored_update(action_dict, request, content):
         result = {
             "action": "stored_update",
             "delete": {

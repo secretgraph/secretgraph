@@ -36,7 +36,7 @@ scontent:Link a rdfs:Datatype ;
   rdfs:domain scontent:Value.value ;
   rdfs:subClassOf xsd:anyURI .
 
-scontent:Value.authset a rdf:Property ;
+scontent:Value.authorization a rdf:Property ;
   rdfs:domain scontent:Value ;
   rdfs:isDefinedBy </static/schemes/sgraph/simplecontent#> ;
   rdf:range xsd:string .
