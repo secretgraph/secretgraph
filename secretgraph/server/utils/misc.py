@@ -4,6 +4,7 @@ import base64
 
 from django.conf import settings
 from cryptography.hazmat.primitives import serialization
+from ...constants import sgraph_cluster
 
 
 def hash_object(inp, algo=None):
@@ -55,3 +56,29 @@ def calculate_hashes(inp):
             base64.b64encode(algo.digest()).decode("ascii")
         )
     return inp
+
+
+def get_secrets(graph):
+    public_secrets = []
+    protected_secrets = {}
+    # tasks must not be distinct
+    for i in graph.query(
+        """
+        SELECT ?secret ?task
+        WHERE {
+            ?n a cluster:EncryptedBox ;
+                cluster:EncryptedBox.secrets ?secret .
+            OPTIONAL {  cluster:EncryptedBox.tasks ?task } .
+        }
+        """,
+        initNs={
+            "cluster": sgraph_cluster
+        }
+    ):
+        if i.task:
+            # hopefully the order is preserved
+            protected_secrets.setdefault(i.secret, [])
+            protected_secrets[i.secret].append(i.task)
+        else:
+            public_secrets.append(i.secret)
+    return public_secrets, protected_secrets

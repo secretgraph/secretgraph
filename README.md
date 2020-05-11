@@ -14,9 +14,10 @@ verifier
 
 # Why two languages?
 
-- js is not mature enough for web services. Dependency hell.
+- js is not mature enough for web servers. Dependency hell with security holes.
 
 
 # TODO
 
+transfer values
 maybe: encrypt some info tags
