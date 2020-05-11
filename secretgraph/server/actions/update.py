@@ -224,6 +224,7 @@ def transform_key_into_dataobj(key_obj, key=None, content=None):
     ))
 
     return (
+        hashes,
         {
             "nonce": key_obj["nonce"],
             "value": key_obj["public_key"],
@@ -234,7 +235,7 @@ def transform_key_into_dataobj(key_obj, key=None, content=None):
             "nonce": key_obj["nonce"],
             "value": key_obj["private_key"],
             "info": ["private_key"].extend(info),
-            "content_hash": hashes[0]
+            "content_hash": None
         } if key_obj.get("private_key") else None
     )
 
@@ -259,19 +260,21 @@ def _transform_info_tags(objdata, is_key):
 
 
 def _update_or_create_content_or_key(
-    request, content, objdata, authset, is_key, default_keys, required_keys
+    request, content, objdata, authset, is_key, required_keys
 ):
     if isinstance(objdata["cluster"], str):
         type_name, objdata["cluster"] = from_global_id(objdata["cluster"])
         if type_name != "Cluster":
             raise ValueError("Requires Cluster id")
-        content.cluster = retrieve_allowed_objects(
+        objdata["cluster"] = retrieve_allowed_objects(
             request, "update", Cluster.objects.filter(
                 flexid=objdata["cluster"]
             ), authset=authset
-        )["objects"].get(flexid=objdata["cluster"])
-    else:
+        )["objects"].first()
+    if objdata.get("cluster"):
         content.cluster = objdata["cluster"]
+    if not content.cluster:
+        raise ValueError()
 
     create = not content.id
 
@@ -358,15 +361,28 @@ def _update_or_create_content_or_key(
         final_references = []
 
     inner_key = objdata.get("key")
-    if not key_hashes_ref and inner_key and default_keys:
-        assert not is_key
+    if not is_key and not key_hashes_ref and inner_key:
         if isinstance(inner_key, str):
             inner_key = base64.b64decode(inner_key)
         # last resort
         if final_references is not None:
-            if callable(default_keys):
-                default_keys = default_keys()
-            for keyob in default_keys:
+            default_keys = retrieve_allowed_objects(
+                request, "view", Content.objects.filter(
+                    cluster=content.cluster,
+                    info="public_key", authset=authset
+                )
+            )["objects"]
+
+            if required_keys:
+                default_keys |= Content.objects.filter(
+                    info__tag="public_key",
+                    info__tag__in=map(
+                        lambda x: f"key_hash={x}",
+                        required_keys
+                    )
+                )
+
+            for keyob in default_keys.distinct():
                 refob = ContentReference(
                     target=keyob, group="key", delete_recursive=None,
                     extra=keyob.encrypt(
@@ -430,32 +446,50 @@ def create_key_func(
     key_obj = objdata.get("key")
     if not key_obj:
         raise ValueError("Requires key")
+    if isinstance(objdata["cluster"], str):
+        type_name, objdata["cluster"] = from_global_id(objdata["cluster"])
+        if type_name != "Cluster":
+            raise ValueError("Requires Cluster id")
+        objdata["cluster"] = retrieve_allowed_objects(
+            request, "view", Cluster.objects.filter(
+                flexid=objdata["cluster"]
+            ), authset=authset
+        )["objects"].first()
+    if not objdata["cluster"]:
+        raise ValueError()
 
-    public, private = transform_key_into_dataobj(key_obj, key=key)
-    public_content = Content()
+    hashes, public, private = transform_key_into_dataobj(key_obj, key=key)
+    public_content = None
+    if objdata["cluster"].id:
+        public_content = Content.objects.filter(
+            cluster=objdata["cluster"],
+            info__tag="public_key",
+            info__tag__in=map(lambda x: f"key_hash={x}", hashes)
+        ).first()
+    public_content = public_content or Content()
     public["info"].extend(objdata.get("info") or [])
-    public = _update_or_create_content_or_key(
-        request, public_content, public, authset, True, None, []
-    )
     if private:
         private["info"].extend(objdata.get("info") or [])
+        private = _update_or_create_content_or_key(
+            request, Content(), private, authset, True, []
+        )
         private["references"].append({
             "target": public_content,
-            "group": "private_key",
-            "delete_recursive": False
+            "group": "public_key",
+            "delete_recursive": True
         })
-        private = _update_or_create_content_or_key(
-            request, Content(), private, authset, True, None, []
-        )
-    else:
-        def private():
-            return None
-    return public, private
+    public = _update_or_create_content_or_key(
+        request, public_content, public, authset, True, []
+    )
+
+    def func():
+        return public(), private and private()
+
+    return func
 
 
 def create_content(
-    request, objdata, key=None, authset=None,
-    default_keys=None, required_keys=None
+    request, objdata, key=None, authset=None, required_keys=None
 ):
     value_obj = objdata.get("value")
     key_obj = objdata.get("key")
@@ -467,13 +501,12 @@ def create_content(
     is_key = False
     if key_obj:
         is_key = True
-        public, private = create_key_func(
+        save_func = create_key_func(
             request, objdata, key=key, authset=authset
         )
 
         with transaction.atomic():
-            private()
-            return public()
+            return save_func()[0]
     else:
         newdata = {
             "cluster": objdata.get("cluster"),
@@ -483,27 +516,20 @@ def create_content(
             "key": key,
             **value_obj
         }
+        content_obj = Content()
+        save_func = _update_or_create_content_or_key(
+            request, content_obj, newdata, authset, is_key,
+            required_keys or []
+        )
 
         with transaction.atomic():
-            _update_or_create_content_or_key(
-                request, Content(), newdata, authset, is_key,
-                default_keys, required_keys or []
-            )()
+            return save_func()
 
 
 def update_content(
     request, content, objdata, key=None, authset=None,
-    default_keys=None, required_keys=None
+    required_keys=None
 ):
-    if isinstance(content, str):
-        type_name, flexid = from_global_id(content)
-        if type_name != "Content":
-            raise ValueError("Only for Contents")
-        result = retrieve_allowed_objects(
-            request, "update", Content.objects.all(),
-            authset=authset
-        )
-        content = result["objects"].get(flexid=flexid)
     assert content.id
     is_key = False
     if content.info.filter(tag="public_key"):
@@ -512,9 +538,9 @@ def update_content(
         if not key_obj:
             raise ValueError("Cannot transform key to content")
 
-        new_data = transform_key_into_dataobj(
+        hashes, new_data, private = transform_key_into_dataobj(
             key_obj, key=key, content=content
-        )[0]
+        )
         new_data["info"].extend(objdata.get("info") or [])
     elif content.info.filter(tag="private_key"):
         is_key = True
@@ -522,9 +548,9 @@ def update_content(
         if not key_obj:
             raise ValueError("Cannot transform key to content")
 
-        new_data = transform_key_into_dataobj(
+        hashes, public, new_data = transform_key_into_dataobj(
             key_obj, key=key, content=content
-        )[1]
+        )
         if not new_data:
             raise ValueError()
         new_data["info"].extend(objdata.get("info") or [])
@@ -536,7 +562,7 @@ def update_content(
         }
     func = _update_or_create_content_or_key(
         request, content, newdata, authset, is_key,
-        default_keys, required_keys or []
+        required_keys or []
     )
     with transaction.atomic():
         return func()

@@ -11,7 +11,6 @@ from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db import models
 from django.utils import timezone
-from rdflib import Graph
 
 
 logger = logging.getLogger(__name__)

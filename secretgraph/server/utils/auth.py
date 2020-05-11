@@ -93,27 +93,16 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 returnval["objects"] = query.none()
                 return returnval
             foundaccesslevel = result["accesslevel"]
-            if result.get("form"):
-                if (
-                    action.content_action.content_id not in returnval["forms"]
-                    or accesslevel < foundaccesslevel
-                ):
-                    keys = result["form"].get("required_keys", [])
-                    result["form"]["required_keys"] = set(
-                        Content.objects.filter(
-                            models.Q(id__in=keys) |
-                            models.Q(content_hash__in=keys),
-                            info__tag="public_key",
-                        ).values_list("content_hash", flat=True)
-                    )
-                    returnval["forms"][action.content_action.content_id] = \
-                        result["form"]
 
             if accesslevel < foundaccesslevel:
                 accesslevel = foundaccesslevel
                 filters = result.get("filters", models.Q())
+                if result.get("form"):
+                    returnval["forms"] = {action.id: result["form"]}
             elif accesslevel == foundaccesslevel:
                 filters &= result.get("filters", models.Q())
+                if result.get("form"):
+                    returnval["forms"][action.id] = result["form"]
 
             if action.key_hash != keyhashes[0]:
                 Action.objects.filter(key_hash=action.key_hash).update(

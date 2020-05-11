@@ -93,11 +93,21 @@ class ActionHandler():
 
     @staticmethod
     def do_update(action_dict, scope, sender, accesslevel, **kwargs):
-        ownaccesslevel = 3 if action_dict.get("restricted") else 1
-        if accesslevel > ownaccesslevel or scope != "update":
+        if action_dict.get("restricted") and scope == "update":
+            ownaccesslevel = 3
+        else:
+            ownaccesslevel = 0
+        if accesslevel > ownaccesslevel or scope not in {"update", "view"}:
             return None
         if issubclass(sender, Content):
             incl_filters = Q(id__in=action_dict.get("ids", []))
+            return {
+                "filters": incl_filters,
+                "form": action_dict["form"],
+                "accesslevel": ownaccesslevel
+            }
+        elif issubclass(sender, Cluster):
+            incl_filters = Q(content__id__in=action_dict.get("ids", []))
             return {
                 "filters": incl_filters,
                 "form": action_dict["form"],

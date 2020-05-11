@@ -1,3 +1,5 @@
+
+import logging
 from datetime import timedelta as td
 
 import graphene
@@ -9,7 +11,7 @@ from graphql_relay import from_global_id
 
 from ..actions.update import (
     create_cluster, create_content, update_cluster, update_content,
-    create_actions_func
+    create_action_for_content
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
@@ -18,6 +20,9 @@ from .arguments import (
     ClusterInput, ContentInput, ContentValueInput, ReferenceInput
 )
 from .definitions import ClusterNode, ContentNode, FlexidType
+
+
+logger = logging.getLogger(__name__)
 
 
 class RegenerateFlexidMutation(relay.ClientIDMutation):
@@ -194,18 +199,69 @@ class ContentMutation(relay.ClientIDMutation):
         cls, root, info, content, id=None, key=None
     ):
         if id:
+            type_name, flexid = from_global_id(id)
+            if type_name != "Content":
+                raise ValueError("Only for Contents")
+            result = retrieve_allowed_objects(
+                info.context, "update", Content.objects.filter(flexid=flexid)
+            )
+            content_obj = result["objects"].first()
+            if not content_obj:
+                raise ValueError()
+            required_keys = []
+            try:
+                form = next(iter(result["objects"].keys()))
+                if content.get("info") is not None:
+                    content["info"] = form.get("info", []).extend(
+                        content["info"]
+                    )
+                if content.get("references") is not None:
+                    content["references"] = form.get("references", []).extend(
+                        content["references"]
+                    )
+                required_keys = form.get("required_keys", [])
+            except StopIteration:
+                pass
             return cls(
                 content=update_content(
                     info.context,
-                    id,
+                    content_obj,
                     content,
-                    key
+                    key=key,
+                    required_keys=required_keys
                 )
             )
         else:
+            type_name, flexid = from_global_id(content.cluster)
+            if type_name != "Cluster":
+                raise ValueError("Requires Cluster type for cluster")
+
+            result = retrieve_allowed_objects(
+                info.context, "update", Cluster.objects.filter(flexid=flexid)
+            )
+            cluster_obj = result["objects"].first()
+            if not cluster_obj:
+                raise ValueError()
+
+            required_keys = []
+            try:
+                form = next(iter(result["objects"].keys()))
+                if content.get("info") is not None:
+                    content["info"] = form.get("info", []).extend(
+                        content["info"]
+                    )
+                if content.get("references") is not None:
+                    content["references"] = form.get("references", []).extend(
+                        content["references"]
+                    )
+                required_keys = form.get("required_keys", [])
+            except StopIteration:
+                pass
             return cls(
                 content=create_content(
-                    info.context, content, key
+                    info.context, content,
+                    key=key,
+                    required_keys=required_keys
                 )
             )
 
@@ -219,22 +275,43 @@ class PushContentMutation(relay.ClientIDMutation):
         ))
         references = graphene.List(ReferenceInput, required=False)
 
-    value = graphene.Field(ContentNode)
+    content = graphene.Field(ContentNode)
+    action_key = graphene.String(required=False)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, id, value):
+    def mutate_and_get_payload(cls, root, info, id, value, key, references):
         type_name, flexid = from_global_id(id)
         if type_name != "Content":
             raise ValueError("Only for Contents")
         result = retrieve_allowed_objects(
-            info, "push", Content.objects.filter(flexid=flexid)
+            info.context, "push", Content.objects.filter(flexid=flexid)
         )
         source = result["objects"].first()
-        # TODO: check for null
-        form = result["forms"][source.id]
+        if not source:
+            raise ValueError()
+        form = result["forms"][source.actions.get(group="push").id]
+        content = dict(form)
+        if references:
+            content["references"] = references.extend(
+                content.get("references") or []
+            )
+        content["value"] = value
+        required_keys = form.get("required_keys", [])
         c = create_content(
-            info.context, form, key
+            info.context, content, key=key, required_keys=required_keys
         )
-        if form.get("updateable"):
-
-        raise NotImplementedError
+        key = None
+        if form.pop("updateable", False):
+            try:
+                key = create_action_for_content(
+                    c,
+                    {
+                        "action": "update",
+                        "restrict": True,
+                        "form": form
+                    },
+                    info.context
+                )
+            except Exception as exc:
+                logger.error("Creating action failed", exc_info=exc)
+        return
