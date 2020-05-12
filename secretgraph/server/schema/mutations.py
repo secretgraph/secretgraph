@@ -1,4 +1,5 @@
 
+import os
 import logging
 from datetime import timedelta as td
 
@@ -10,8 +11,7 @@ from graphene import relay
 from graphql_relay import from_global_id
 
 from ..actions.update import (
-    create_cluster, create_content, update_cluster, update_content,
-    create_action_for_content
+    create_cluster, create_content, update_cluster, update_content
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
@@ -290,28 +290,23 @@ class PushContentMutation(relay.ClientIDMutation):
         if not source:
             raise ValueError()
         form = result["forms"][source.actions.get(group="push").id]
-        content = dict(form)
+        dataobj = dict(form)
         if references:
-            content["references"] = references.extend(
-                content.get("references") or []
+            dataobj["references"] = references.extend(
+                dataobj.get("references") or []
             )
-        content["value"] = value
+        dataobj["value"] = value
         required_keys = form.get("required_keys", [])
-        c = create_content(
-            info.context, content, key=key, required_keys=required_keys
-        )
-        key = None
+        action_key = None
         if form.pop("updateable", False):
-            try:
-                key = create_action_for_content(
-                    c,
-                    {
-                        "action": "update",
-                        "restrict": True,
-                        "form": form
-                    },
-                    info.context
-                )
-            except Exception as exc:
-                logger.error("Creating action failed", exc_info=exc)
-        return
+            action_key = os.urandom(32)
+            dataobj["actions"] = [{
+                "key": action_key,
+                "action": "update",
+                "restrict": True,
+                "form": form
+            }]
+        c = create_content(
+            info.context, dataobj, key=key, required_keys=required_keys
+        )
+        return cls(content=c, action_key=action_key)

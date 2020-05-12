@@ -26,6 +26,7 @@ from ...utils.auth import retrieve_allowed_objects
 from ...utils.conf import get_requests_params
 from ...utils.encryption import default_padding, encrypt_into_file
 from ...utils.misc import calculate_hashes, hash_object
+from ._actions import create_actions_func
 
 logger = logging.getLogger(__name__)
 
@@ -273,6 +274,13 @@ def _update_or_create_content_or_key(
         raise ValueError(
             "missing required keys"
         )
+    if objdata.get("actions") is not None:
+        actions_save_func = create_actions_func(
+            content, objdata["actions"], request
+        )
+    else:
+        def actions_save_func():
+            pass
 
     def save_func():
         save_func_value()
@@ -297,6 +305,7 @@ def _update_or_create_content_or_key(
                     refs = content.references.all()
                 refs.delete()
             content.references.create_bulk(final_references)
+        actions_save_func()
     return content
     return save_func
 
@@ -329,8 +338,10 @@ def create_key_func(
         ).first()
     public_content = public_content or Content()
     public["info"].extend(objdata.get("info") or [])
+    public["actions"] = objdata.get("actions")
     if private:
         private["info"].extend(objdata.get("info") or [])
+        private["actions"] = objdata.get("actions")
         private = _update_or_create_content_or_key(
             request, Content(), private, authset, True, []
         )
@@ -374,6 +385,7 @@ def create_content(
             "references": objdata.get("references"),
             "content_hash": objdata.get("content_hash"),
             "info": objdata.get("info"),
+            "actions": objdata.get("actions"),
             "key": key,
             **value_obj
         }
@@ -399,28 +411,32 @@ def update_content(
         if not key_obj:
             raise ValueError("Cannot transform key to content")
 
-        hashes, new_data, private = _transform_key_into_dataobj(
+        hashes, newdata, private = _transform_key_into_dataobj(
             key_obj, key=key, content=content
         )
-        new_data["info"].extend(objdata.get("info") or [])
+        newdata["info"].extend(objdata.get("info") or [])
     elif content.info.filter(tag="private_key"):
         is_key = True
         key_obj = objdata.get("key")
         if not key_obj:
             raise ValueError("Cannot transform key to content")
 
-        hashes, public, new_data = _transform_key_into_dataobj(
+        hashes, public, newdata = _transform_key_into_dataobj(
             key_obj, key=key, content=content
         )
-        if not new_data:
+        if not newdata:
             raise ValueError()
-        new_data["info"].extend(objdata.get("info") or [])
+        newdata["info"].extend(objdata.get("info") or [])
     else:
         newdata = {
             "cluster": objdata.get("cluster"),
+            "references": objdata.get("references"),
+            "content_hash": objdata.get("content_hash"),
+            "info": objdata.get("info"),
             "key": key,
             **objdata["value"]
         }
+    newdata["actions"] = objdata.get("actions")
     func = _update_or_create_content_or_key(
         request, content, newdata, authset, is_key,
         required_keys or []

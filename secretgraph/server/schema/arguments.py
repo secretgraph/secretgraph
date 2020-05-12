@@ -10,11 +10,6 @@ class ActionInput(graphene.InputObjectType):
     key = graphene.String(required=True)
 
 
-class ActionListInput(graphene.InputObjectType):
-    actions = graphene.List(ActionInput, required=True)
-    content = graphene.ID(required=False)
-
-
 class ContentKeyInput(graphene.InputObjectType):
     public_key = graphene.String(required=True)
     # encrypted!
@@ -40,9 +35,10 @@ class ContentInput(graphene.InputObjectType):
     references = graphene.List(ReferenceInput, required=False)
     info = graphene.List(graphene.String, required=False)
     content_hash = graphene.String(required=False)
+    actions = graphene.List(ActionInput, required=False)
 
 
 class ClusterInput(graphene.InputObjectType):
     public_info = graphene.String(required=False)
-    actions = graphene.List(ActionListInput, required=False)
+    actions = graphene.List(ActionInput, required=False)
     key = ContentKeyInput(required=False)
