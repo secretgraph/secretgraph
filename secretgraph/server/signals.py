@@ -29,6 +29,7 @@ def deleteContentCb(sender, instance, **kwargs):
 
     # delete contents if group vanishes and NO_GROUP is set
     delete_ids = []
+    # TODO: use OuterRef
     for content_id in sender.objects.filter(
         models.Q(references__in=nogroup_references)
     ).values_list("pk", flat=True):
