@@ -429,7 +429,9 @@ def update_content(
         return func()
 
 
-def transfer_value(content, key=None, url=None, headers=None, cleanup=True):
+def transfer_value(
+    content, key=None, url=None, headers=None, transfer=True
+):
     _headers = {}
     if key:
         assert not url, "can only specify key or url"
@@ -455,8 +457,11 @@ def transfer_value(content, key=None, url=None, headers=None, cleanup=True):
 
     params, inline_domain = get_requests_params(url)
     # block content while updating file
+    q = Q(id=content.id)
+    if transfer:
+        q &= Q(info__tag="transfer")
     bcontents = Content.objects.filter(
-        id=content.id
+        q
     ).select_for_update()
     with transaction.atomic():
         # 1. lock content, 2. check if content was deleted before updating
@@ -477,7 +482,7 @@ def transfer_value(content, key=None, url=None, headers=None, cleanup=True):
                 with content.value.open("wb") as f:
                     for chunk in response.streaming_content:
                         f.write(chunk)
-                if cleanup:
+                if transfer:
                     content.references.filter(group="transfer").delete()
                 return TransferResult.SUCCESS
             except Exception as exc:
@@ -500,7 +505,7 @@ def transfer_value(content, key=None, url=None, headers=None, cleanup=True):
                     with content.value.open("wb") as f:
                         for chunk in response.iter_content(512):
                             f.write(chunk)
-                    if cleanup:
+                    if transfer:
                         content.references.filter(group="transfer").delete()
                     return TransferResult.SUCCESS
             except Exception as exc:

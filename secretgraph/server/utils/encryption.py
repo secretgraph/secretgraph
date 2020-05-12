@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_private_key
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.conf import settings
-from django.models import Q
+from django.models import Q, Exists, OuterRef
 from graphql_relay import from_global_id
 from rdflib import Graph
 
@@ -59,7 +59,7 @@ def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
     return outfile, nonce, key
 
 
-def create_key_map(contents, keyset):
+def create_key_maps(contents, keyset):
     """
         queries transfers and create content key map
     """
@@ -90,9 +90,7 @@ def create_key_map(contents, keyset):
         references__in=reference_query
     )
     content_key_map = {}
-    transfers = set()
-    successfull_transfers = []
-    remove_contents = []
+    transfer_key_map = {}
     for key in key_query:
         matching_key = key.info.filter(tag__in=key_map1.keys()).first()
         if not matching_key:
@@ -113,8 +111,6 @@ def create_key_map(contents, keyset):
         for ref in reference_query.filter(
             target=key
         ).only("group", "extra", "source_id"):
-            if ref.group == "transfer":
-                transfers.add(ref.source_id)
             try:
                 shared_key = privkey.decrypt(
                     base64.b64decode(ref.extra),
@@ -126,32 +122,42 @@ def create_key_map(contents, keyset):
                 )
                 continue
             if ref.group == "key":
-                content_key_map[ref.source_id]
+                content_key_map[ref.source_id] = shared_key
             else:
-                result = transfer_value(
-                    ref.content, key=shared_key, cleanup=True
-                )
-                if result == TransferResult.SUCCESS:
-                    successfull_transfers.append(ref.source_id)
-                elif result == TransferResult.NOTFOUND:
-                    remove_contents.append(ref.source_id)
-    for i in transfers.difference(successfull_transfers):
-        content_key_map.pop(i, None)
-    return content_key_map
+                transfer_key_map[ref.source_id] = shared_key
+    return content_key_map, transfer_key_map
 
 
 def iter_decrypt_contents(
     content_query, decryptset
 ) -> Iterable[Iterable[str]]:
     content_query.only_direct_fetch_action_trigger = True
-    key_map = create_key_map(content_query, decryptset)
+    content_map, transfer_map = create_key_maps(content_query, decryptset)
     for content in content_query.filter(
-        Q(info__tag="public_key") | Q(id__in=key_map.keys())
+        Q(info__tag="public_key") | Q(id__in=content_map.keys())
+    ).annotate(
+        is_transfer=Exists(
+            ContentReference.objects.filter(
+                source=OuterRef("pk"),
+                group="transfer"
+            )
+        )
     ):
-        if content.id in key_map:
+        if content.id in transfer_map:
+            result = transfer_value(
+                content, key=transfer_map[content.id], transfer=True
+            )
+            if result == TransferResult.NOTFOUND:
+                content.delete()
+                continue
+            elif result != TransferResult.SUCCESS:
+                continue
+        elif content.is_transfer:
+            continue
+        if content.id in content_map:
             try:
                 decryptor = Cipher(
-                    algorithms.AES(key_map[content.flexid]),
+                    algorithms.AES(content_map[content.flexid]),
                     modes.GCM(base64.b64decode(content.nonce)),
                     backend=default_backend()
                 ).decryptor()
@@ -187,6 +193,7 @@ def iter_decrypt_contents(
 
 
 def encrypt_info_tag(keys, nonce, tag):
+    # TODO: maybe
     ntags = []
     for key in keys:
         pass
