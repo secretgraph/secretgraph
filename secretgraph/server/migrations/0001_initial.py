@@ -108,7 +108,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='contentreference',
-            constraint=models.CheckConstraint(check=models.Q(models.Q(_negated=True, group='key'), (
-                'delete_recursive__isnull', True), _connector='OR'), name='contentreference_key'),
+            constraint=models.CheckConstraint(check=models.Q(models.Q(models.Q(('group', 'key'), ('group', 'transfer'), _connector='OR'), _negated=True), ('delete_recursive__isnull', True), _connector='OR'), name='contentreference_key'),
         ),
     ]

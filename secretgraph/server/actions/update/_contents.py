@@ -5,6 +5,7 @@ __all__ = [
 
 import base64
 import logging
+from email.parser import BytesParser
 
 import requests
 from cryptography.hazmat.backends import default_backend
@@ -19,6 +20,7 @@ from django.db.models import Q
 from django.test import Client
 from graphql_relay import from_global_id
 
+from ....constants import TransferResult
 from ...models import Cluster, Content, ContentReference, ContentTag
 from ...utils.auth import retrieve_allowed_objects
 from ...utils.conf import get_requests_params
@@ -209,9 +211,10 @@ def _update_or_create_content_or_key(
                 target=targetob, group=ref.get("group") or "",
                 extra=ref.get("extra") or ""
             )
-            if refob.group == "key":
+            if refob.group in {"key", "transfer"}:
                 refob.delete_recursive = None
-                key_hashes_ref.add(targetob.content_hash)
+                if refob.group == "key":
+                    key_hashes_ref.add(targetob.content_hash)
                 if targetob.content_hash not in key_hashes_info:
                     raise ValueError("Key hash not found in info")
             final_references.append(refob)
@@ -426,28 +429,80 @@ def update_content(
         return func()
 
 
-def transfer_value(content, url, headers):
-    raise NotImplementedError()
-    params, inline_domain = get_requests_params(url)
-    if inline_domain:
-        response = Client().get(
-            url,
-            Connection="close",
-            SERVER_NAME=inline_domain,
-            **headers
-        )
-        if response.status_code != 200:
-            raise ValueError()
-    else:
+def transfer_value(content, key=None, url=None, headers=None, cleanup=True):
+    _headers = {}
+    if key:
+        assert not url, "can only specify key or url"
         try:
-            with requests.get(
+            _blob = AESGCM(key).decrypt(
+                content.value.open("rb").read(),
+                base64.b64decode(content.nonce),
+                None
+            ).split(b'\r\n', 1)
+            if len(_blob) == 1:
+                url = _blob[0]
+            else:
+                url = _blob[0]
+                _headers.update(
+                    BytesParser().parsebytes(_blob[1], headersonly=True)
+                )
+        except Exception as exc:
+            logger.error("Error while decoding url, headers", exc_info=exc)
+            return TransferResult.ERROR
+
+    if headers:
+        _headers.update(headers)
+
+    params, inline_domain = get_requests_params(url)
+    # block content while updating file
+    bcontents = Content.objects.filter(
+        id=content.id
+    ).select_for_update()
+    with transaction.atomic():
+        # 1. lock content, 2. check if content was deleted before updating
+        if not bcontents:
+            return TransferResult.ERROR
+        if inline_domain:
+            response = Client().get(
                 url,
-                headers={
-                    "Connection": "close",
-                    **headers
-                },
-                **params
-            ):
-                pass
-        except Exception:
-            pass
+                Connection="close",
+                SERVER_NAME=inline_domain,
+                **_headers
+            )
+            if response.status_code == 404:
+                return TransferResult.NOTFOUND
+            elif response.status_code != 200:
+                return TransferResult.ERROR
+            try:
+                with content.value.open("wb") as f:
+                    for chunk in response.streaming_content:
+                        f.write(chunk)
+                if cleanup:
+                    content.references.filter(group="transfer").delete()
+                return TransferResult.SUCCESS
+            except Exception as exc:
+                logger.error("Error while transferring content", exc_info=exc)
+            return TransferResult.ERROR
+        else:
+            try:
+                with requests.get(
+                    url,
+                    headers={
+                        "Connection": "close",
+                        **_headers
+                    },
+                    **params
+                ):
+                    if response.status_code == 404:
+                        return TransferResult.NOTFOUND
+                    elif response.status_code != 200:
+                        return TransferResult.ERROR
+                    with content.value.open("wb") as f:
+                        for chunk in response.iter_content(512):
+                            f.write(chunk)
+                    if cleanup:
+                        content.references.filter(group="transfer").delete()
+                    return TransferResult.SUCCESS
+            except Exception as exc:
+                logger.error("Error while transferring content", exc_info=exc)
+            return TransferResult.ERROR

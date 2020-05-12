@@ -16,7 +16,9 @@ from django.models import Q
 from graphql_relay import from_global_id
 from rdflib import Graph
 
+from ...constants import TransferResult
 from ..models import Content, ContentReference
+from ..actions.update import transfer_value
 
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,9 @@ def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
 
 
 def create_key_map(contents, keyset):
+    """
+        queries transfers and create content key map
+    """
     key_map1 = {}
     for i in keyset:
         i = i.split(":", 1)
@@ -74,7 +79,8 @@ def create_key_map(contents, keyset):
                 key_map1[f"key_hash={i[0]}"] = i[1]
 
     reference_query = ContentReference.objects.filter(
-        group="key",
+        Q(group="key") |
+        Q(group="transfer"),
         source__in=contents
     )
 
@@ -83,7 +89,10 @@ def create_key_map(contents, keyset):
         info__tag__in=key_map1.keys(),
         references__in=reference_query
     )
-    key_map = {}
+    content_key_map = {}
+    transfers = set()
+    successfull_transfers = []
+    remove_contents = []
     for key in key_query:
         matching_key = key.info.filter(tag__in=key_map1.keys()).first()
         if not matching_key:
@@ -103,15 +112,32 @@ def create_key_map(contents, keyset):
             continue
         for ref in reference_query.filter(
             target=key
-        ).only("extra", "source_id"):
+        ).only("group", "extra", "source_id"):
+            if ref.group == "transfer":
+                transfers.add(ref.source_id)
             try:
-                key_map[ref.source_id] = privkey.decrypt(
+                shared_key = privkey.decrypt(
                     base64.b64decode(ref.extra),
                     default_padding
                 )
             except Exception as exc:
-                logger.warning("Could not decode shared key", exc_info=exc)
-    return key_map
+                logger.warning(
+                    "Could not decode shared key", exc_info=exc
+                )
+                continue
+            if ref.group == "key":
+                content_key_map[ref.source_id]
+            else:
+                result = transfer_value(
+                    ref.content, key=shared_key, cleanup=True
+                )
+                if result == TransferResult.SUCCESS:
+                    successfull_transfers.append(ref.source_id)
+                elif result == TransferResult.NOTFOUND:
+                    remove_contents.append(ref.source_id)
+    for i in transfers.difference(successfull_transfers):
+        content_key_map.pop(i, None)
+    return content_key_map
 
 
 def iter_decrypt_contents(

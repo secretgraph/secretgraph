@@ -4,18 +4,19 @@ from rdflib import Namespace
 
 
 class Action(enum.Enum):
-    FETCH = 'fetch'
-    UPDATE = 'update'
-    VIEW = 'view'
-    MANAGE = 'manage'
-    STORED_DELETE = 'stored_delete'
-    STORED_REPLACE = 'stored_replace'
+    pass
 
 
 class DeleteRecursive(enum.Enum):
     FALSE = False
     TRUE = True
     NO_GROUP = None
+
+
+class TransferResult(enum.Enum):
+    SUCCESS = "success"
+    NOTFOUND = "notfound"
+    ERROR = "error"
 
 
 sgraph_cluster = Namespace("/static/schemes/sgraph/cluster")

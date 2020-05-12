@@ -193,7 +193,10 @@ class ContentReference(models.Model):
             ),
             models.CheckConstraint(
                 check=(
-                    ~models.Q(group="key")
+                    ~(
+                        models.Q(group="key") |
+                        models.Q(group="transfer")
+                    )
                     | models.Q(delete_recursive__isnull=True)
                 ),
                 name="%(class)s_key"
