@@ -28,20 +28,25 @@ def deleteContentCb(sender, instance, **kwargs):
     ).delete()
 
     # delete contents if group vanishes and NO_GROUP is set
-    # TODO: check if group disappears
     delete_ids = []
     for content_id in sender.objects.filter(
         models.Q(references__in=nogroup_references)
     ).annotate(
-        relevant_groups=models.SubQuery(nogroup_references.filter(
-            source=models.OuterRef("pk")
-        ))
-    ).exclude(
-        models.Exists(
+        relevant_groups=models.SubQuery(
+            nogroup_references.filter(
+                source=models.OuterRef("pk")
+            ).annotate(
+                amount=models.Count("group", distinct=True)
+            )
+        )
+    ).filter(
+        relevant_groups__amount__gt=models.Subquery(
             other_references.filter(
                 source=models.OuterRef("pk"),
                 group__in=models.OuterRef("relevant_groups.group")
-            )
+            ).annotate(
+                amount=models.Count("group", distinct=True)
+            ).values("amount")
         )
     ).values_list("pk", flat=True):
         delete_ids.append(content_id)
