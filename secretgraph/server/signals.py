@@ -12,7 +12,7 @@ def deleteContentCb(sender, instance, **kwargs):
     references = ContentReference.objects.filter(
         target=instance
     )
-    no_references = ContentReference.objects.filter(
+    other_references = ContentReference.objects.filter(
         ~models.Q(target=instance)
     )
     nogroup_references = references.filter(
@@ -28,18 +28,23 @@ def deleteContentCb(sender, instance, **kwargs):
     ).delete()
 
     # delete contents if group vanishes and NO_GROUP is set
+    # TODO: check if group disappears
     delete_ids = []
-    # TODO: use OuterRef
     for content_id in sender.objects.filter(
         models.Q(references__in=nogroup_references)
+    ).annotate(
+        relevant_groups=models.SubQuery(nogroup_references.filter(
+            source=models.OuterRef("pk")
+        ))
+    ).exclude(
+        models.Exists(
+            other_references.filter(
+                source=models.OuterRef("pk"),
+                group__in=models.OuterRef("relevant_groups.group")
+            )
+        )
     ).values_list("pk", flat=True):
-        if not no_references.filter(
-            id=content_id,
-            group__in=nogroup_references.filter(
-                target_id=content_id
-            ).values_list("group", flat=True)
-        ):
-            delete_ids.append(content_id)
+        delete_ids.append(content_id)
     sender.objects.filter(id__in=delete_ids).delete()
 
 
