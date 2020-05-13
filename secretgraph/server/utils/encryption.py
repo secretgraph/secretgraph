@@ -12,13 +12,12 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_private_key
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.conf import settings
-from django.models import Q, Exists, OuterRef
+from django.db.models import Q, Exists, OuterRef
 from graphql_relay import from_global_id
 from rdflib import Graph
 
 from ...constants import TransferResult
 from ..models import Content, ContentReference
-from ..actions.update import transfer_value
 
 
 logger = logging.getLogger(__name__)
@@ -131,6 +130,7 @@ def create_key_maps(contents, keyset):
 def iter_decrypt_contents(
     content_query, decryptset
 ) -> Iterable[Iterable[str]]:
+    from ..actions.update import transfer_value
     content_query.only_direct_fetch_action_trigger = True
     content_map, transfer_map = create_key_maps(content_query, decryptset)
     for content in content_query.filter(

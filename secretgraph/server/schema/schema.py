@@ -73,8 +73,8 @@ class Query():
 
 
 class Mutation():
-    update_content = ContentMutation.Field()
-    update_cluster = ClusterMutation.Field()
+    content = ContentMutation.Field()
+    cluster = ClusterMutation.Field()
     push_content = PushContentMutation.Field()
     regenerate_flexid = RegenerateFlexidMutation.Field()
     delete = DeleteMutation.Field()

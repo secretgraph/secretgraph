@@ -6,7 +6,7 @@ from .server.schema import Query as ServerQuery
 from .server.schema import Mutation as ServerMutation
 
 
-class Query(
+class SecretgraphQuery(
     ServerQuery,
     graphene.ObjectType
 ):
@@ -14,11 +14,11 @@ class Query(
     pass
 
 
-class Mutation(
+class SecretgraphMutation(
     ServerMutation,
     graphene.ObjectType
 ):
     pass
 
 
-schema = graphene.Schema(query=Query, mutation=Mutation)
+schema = graphene.Schema(query=SecretgraphQuery, mutation=SecretgraphMutation)

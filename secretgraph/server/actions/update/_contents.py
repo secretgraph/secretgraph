@@ -57,9 +57,11 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
         key_obj["private_key"] = base64.b64decode(key_obj["private_key"])
     if isinstance(key_obj["public_key"], str):
         key_obj["public_key"] = base64.b64decode(key_obj["public_key"])
-    if isinstance(key_obj["nonce"], str):
+    if isinstance(key_obj.get("nonce"), str):
         key_obj["nonce"] = base64.b64decode(key_obj["nonce"])
     if key and key_obj.get("private_key"):
+        if not key_obj.get("nonce"):
+            raise ValueError("encrypted private key requires nonce")
         aesgcm = AESGCM(key)
         privkey = aesgcm.decrypt(
             key_obj["private_key"],
@@ -106,7 +108,7 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
     return (
         hashes,
         {
-            "nonce": key_obj["nonce"],
+            "nonce": "",
             "value": key_obj["public_key"],
             "info": ["public_key"].extend(info),
             "content_hash": hashes[0]
