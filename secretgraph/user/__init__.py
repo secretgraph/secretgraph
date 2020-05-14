@@ -1,1 +1,1 @@
-default_app_config = 'secretgraph.user.SecretGraphUserConfig'
+default_app_config = 'secretgraph.user.apps.SecretGraphUserConfig'

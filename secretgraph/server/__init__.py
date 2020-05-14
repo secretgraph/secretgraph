@@ -1,1 +1,1 @@
-default_app_config = 'secretgraph.server.SecretGraphServerConfig'
+default_app_config = 'secretgraph.server.apps.SecretGraphServerConfig'
