@@ -8,7 +8,6 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('secretgraph', '0001_initial'),
     ]
 
@@ -18,6 +17,9 @@ class Migration(migrations.Migration):
         getattr(settings, "AUTH_USER_MODEL", None) or
         getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
     ):
+        dependencies.append(
+            migrations.swappable_dependency(settings.AUTH_USER_MODEL)
+        )
         operations.append(migrations.AddField(
             model_name='cluster',
             name='user',
