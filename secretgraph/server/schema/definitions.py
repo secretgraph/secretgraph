@@ -8,9 +8,9 @@ from ..models import Cluster, Content, ContentReference
 
 
 class ServerConfig(ObjectType):
-    require_serverside_encryption = graphene.Boolean()
+    requireServersideEncryption = graphene.Boolean()
 
-    def resolve_require_serverside_encryption(self, info):
+    def resolve_requireServersideEncryption(self, info):
         return bool(getattr(
             settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
         ))
@@ -52,8 +52,8 @@ class ContentNode(FlexidMixin, DjangoObjectType):
 
 
 class ContentConnection(relay.Connection):
-    include_info = graphene.List(graphene.String)
-    exclude_info = graphene.List(graphene.String)
+    includeInfo = graphene.List(graphene.String)
+    excludeInfo = graphene.List(graphene.String)
     cluster = graphene.ID()
 
     class Meta:
@@ -87,28 +87,21 @@ class ClusterNode(FlexidMixin, DjangoObjectType):
     class Meta:
         model = Cluster
         interfaces = (relay.Node,)
-        fields = ['contents']
+        fields = ['public_info', 'contents']
         if (
             getattr(settings, "AUTH_USER_MODEL", None) or
             getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
         ):
             fields.append("user")
     contents = ContentConnection()
-    publicInfo = graphene.String()
-
-    def resolve_publicInfo(
-        self, info, **kwargs
-    ):
-        # don't rely on auto camelcase
-        return self.public_info
 
     def resolve_contents(
         self, info, **kwargs
     ):
         return fetch_contents(
             info.context,
-            info_include=kwargs.get("info_include"),
-            infoexclude=kwargs.get("info_exclude")
+            info_include=kwargs.get("infoInclude"),
+            infoexclude=kwargs.get("infoExclude")
         )
 
 
