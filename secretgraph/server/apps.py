@@ -13,7 +13,7 @@ from .signals import (
 
 class SecretGraphServerConfig(AppConfig):
     name = 'secretgraph.server'
-    label = 'secretgraph_base'
+    label = 'secretgraph'
     verbose_name = 'Secretgraph backend'
 
     def ready(self):

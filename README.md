@@ -3,9 +3,9 @@
 
 # structure
 
-constants contains constants
-server outputs raw data
-proxy translates it for web
+* constants: contains constants
+* server: outputs raw data
+* user: Quota user
 
 
 verifier

@@ -1,6 +1,5 @@
 {% load i18n %}
 {% load static %}
-{% load flatpages %}
 <!DOCTYPE html>
 <html lang="{{LANGUAGE_CODE}}">
   <head>
@@ -11,7 +10,7 @@
     <meta name="viewport" content="{% block viewport %}width=device-width, initial-scale=1.0{% endblock %}">
 
     {% block favicon %}
-    <link rel="shortcut icon" type="image/svg" href="{% static 'spider_base/favicon.svg' %}" />
+    <link rel="shortcut icon" type="image/svg" href="{% static 'secretgraph/favicon.svg' %}" />
     {% endblock %}
     {# CSS for all pages #}
     {% block base_styles %}
@@ -30,36 +29,12 @@
     {# Deco content, e.g.base.html  #}
     {% block layout %}
       <main class="{% block main_classes %}{% endblock %}" {% block main_attributes %}{% endblock %}>
-      {% block messages %}
-        {% if messages %}
-          <ul class="messages w3-ul w3-padding">{% for message in messages %}
-            <li class="{% if message.tags %}{{ message.tags }}{% endif %} {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}w3-red{% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}w3-green{% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}w3-orange{% else %}w3-blue{% endif %}">{{ message|capfirst }}</li>
-          {% endfor %}</ul>
-        {% endif %}
-      {% endblock messages %}
       {# Main content  #}
       {% block content %}
         <div id="content-main"></div>
       {% endblock %}
     </main>
     {% block global_footer %}
-    {% concat_string '/' LANGUAGE_CODE '/gfooter/' as global_footer_localized %}
-    {% get_flatpages global_footer_localized for request.user as footer_pages %}
-    {% if not footer_pages %}
-      {% get_flatpages '/gfooter/' for request.user as footer_pages %}
-    {% endif %}
-    {% if footer_pages %}
-    <footer style="border-top: 2px solid #aaa;">
-      <div class="w3-red w3-row w3-padding">
-        {% for page in footer_pages %}
-          <div class="w3-padding w3-col s12 m4">
-            <a href="{{page.url}}">{{page.title}}</a>
-          </div>
-        {% endfor %}
-      </div>
-    </footer>
-    {% endif %}
-    {% endblock %}
     {% endblock %}
 
     {# Scripts #}

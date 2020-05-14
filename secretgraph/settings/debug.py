@@ -9,7 +9,7 @@ from secretgraph.settings import *  # noqa: F403, F401
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),  # noqa F405
     }
 }
 
@@ -19,7 +19,7 @@ FIXTURE_DIRS = [
 
 SECRET_KEY = "CHANGEME"
 
-INSTALLED_APPS += [
+INSTALLED_APPS += [  # noqa F405
     "secretgraph.server"
 ]
 
