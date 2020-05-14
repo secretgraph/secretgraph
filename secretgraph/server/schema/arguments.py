@@ -17,12 +17,12 @@ class ActionInput(graphene.InputObjectType):
 
 
 class ContentKeyInput(graphene.InputObjectType):
-    public_key = graphene.String(
+    publicKey = graphene.String(
         required=True,
         description="Cleartext public key (base64 encoded der key)"
     )
     # encrypted!
-    private_key = graphene.String(
+    privateKey = graphene.String(
         required=False,
         description=(
             "Encrypted private key (base64 encoded der key, "
@@ -52,11 +52,11 @@ class ContentInput(graphene.InputObjectType):
     value = ContentValueInput(required=False)
     references = graphene.List(ReferenceInput, required=False)
     info = graphene.List(graphene.String, required=False)
-    content_hash = graphene.String(required=False)
+    contentHash = graphene.String(required=False)
     actions = graphene.List(ActionInput, required=False)
 
 
 class ClusterInput(graphene.InputObjectType):
-    public_info = graphene.String(required=False)
+    publicInfo = graphene.String(required=False)
     actions = graphene.List(ActionInput, required=False)
     key = ContentKeyInput(required=False)

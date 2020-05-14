@@ -87,13 +87,20 @@ class ClusterNode(FlexidMixin, DjangoObjectType):
     class Meta:
         model = Cluster
         interfaces = (relay.Node,)
-        fields = ['public_info', 'contents']
+        fields = ['contents']
         if (
             getattr(settings, "AUTH_USER_MODEL", None) or
             getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
         ):
             fields.append("user")
     contents = ContentConnection()
+    publicInfo = graphene.String()
+
+    def resolve_publicInfo(
+        self, info, **kwargs
+    ):
+        # don't rely on auto camelcase
+        return self.public_info
 
     def resolve_contents(
         self, info, **kwargs

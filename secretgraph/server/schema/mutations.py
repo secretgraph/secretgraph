@@ -8,14 +8,13 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 from graphene import relay
-from graphql_relay import from_global_id
 
 from ..actions.update import (
     create_cluster, create_content, update_cluster, update_content
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
-from ..utils.auth import retrieve_allowed_objects
+from ..utils.auth import retrieve_allowed_objects, id_to_result
 from .arguments import (
     ClusterInput, ContentInput, ContentValueInput, ReferenceInput
 )
@@ -33,21 +32,16 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, id):
-        _type, flexid = cls.from_global_id(id)
-        if _type == "Cluster":
-            objects = Cluster.objects.all()
-        elif _type == "Content":
-            objects = Content.objects.all()
-        else:
-            raise ValueError()
-        objects = retrieve_allowed_objects(info, "update", objects)["objects"]
+        result = id_to_result(info.context, id, (Content, Cluster), "update")
         # TODO: admin permission
         # if not info.context.user.has_perm("TODO"):
         #    components = retrieve_allowed_objects(
         #        info, "manage", components
         #    )
-        obj = objects.get(flexid=flexid)
-        generateFlexid(objects.model, obj, True)
+        obj = result["objects"].first()
+        if not obj:
+            raise ValueError()
+        generateFlexid(type(obj), obj, True)
         return cls(node=obj)
 
 
@@ -59,36 +53,30 @@ class DeleteMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, id):
-        _type, flexid = cls.from_global_id(id)
         now = timezone.now()
         now_plus_x = now + td(minutes=20)
         # cleanup expired
         Content.objects.filter(
             mark_for_destruction__lte=now
         ).delete()
-        if _type == "Cluster":
-            objects = Cluster.objects.all()
-            result = retrieve_allowed_objects(info, "delete", objects)
-        elif _type == "Content":
-            objects = Content.objects.all()
-            result = retrieve_allowed_objects(info, "delete", objects)
-        else:
-            raise ValueError()
         # TODO: admin permission
         # if not info.context.user.has_perm("TODO"):
         #    components = retrieve_allowed_objects(
         #        info, "manage", components
         #    )
-        obj = result["objects"].get(flexid=flexid)
+        result = id_to_result(info.context, id, (Content, Cluster), "delete")
+        obj = result["objects"].first()
+        if not obj:
+            raise ValueError()
         ret = cls(node=obj)
-        if _type == "Content":
+        if isinstance(obj, Content):
             if (
                 not obj.mark_for_destruction or
                 obj.mark_for_destruction > now_plus_x
             ):
                 obj.mark_for_destruction = now_plus_x
                 obj.save(update_fields=["mark_for_destruction"])
-        elif _type == "Component":
+        elif isinstance(obj, Cluster):
             if not obj.contents.exists():
                 obj.delete()
             else:
@@ -107,26 +95,20 @@ class ResetMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, id):
-        _type, flexid = cls.from_global_id(id)
-        if _type == "Cluster":
-            objects = Cluster.objects.all()
-            result = retrieve_allowed_objects(info, "manage", objects)
-        elif _type == "Content":
-            objects = Content.objects.all()
-            result = retrieve_allowed_objects(info, "manage", objects)
-        else:
-            raise ValueError()
         # TODO: admin permission
         # if not info.context.user.has_perm("TODO"):
         #    clusters = retrieve_allowed_objects(
         #        info, "manage", clusters
         #    )
-        obj = result["objects"].get(flexid=flexid)
+        result = id_to_result(info.context, id, (Content, Cluster), "delete")
+        obj = result["objects"].first()
+        if not obj:
+            raise ValueError()
         ret = cls(node=obj)
-        if _type == "Content":
+        if isinstance(obj, Content):
             obj.mark_for_destruction = None
             obj.save(update_fields=["mark_for_destruction"])
-        elif _type == "Cluster":
+        elif isinstance(obj, Cluster):
             obj.contents.filter(
                 mark_for_destruction__isnull=False
             ).update(mark_for_destruction=None)
@@ -136,19 +118,27 @@ class ResetMutation(relay.ClientIDMutation):
 class ClusterMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
-        cluster = ClusterInput(required=True)
-        key = graphene.String(required=False)
+        cluster = ClusterInput(required=False)
+        password = graphene.String(required=False)
 
     cluster = graphene.Field(ClusterNode)
-    action_key = graphene.String(required=False)
-    private_key = graphene.String(required=False)
-    key_for_private_key = graphene.String(required=False)
+    actionKey = graphene.String(required=False)
+    privateKey = graphene.String(required=False)
+    keyForPrivateKey = graphene.String(required=False)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, cluster, id=None):
+    def mutate_and_get_payload(
+        cls, root, info, id=None, cluster=None, password=None
+    ):
         if id:
+            if not cluster:
+                raise ValueError()
+            result = id_to_result(info.context, id, Cluster, "manage")
+            cluster_obj = result["objects"].first()
+            if not cluster_obj:
+                raise ValueError()
             return cls(cluster=update_cluster(
-                id, info.context
+                cluster_obj, cluster, info.context
             ))
         else:
             user = None
@@ -174,13 +164,15 @@ class ClusterMutation(relay.ClientIDMutation):
                 settings, "SECRETGRAPH_ALLOW_REGISTER", False
             ) is not True:
                 raise ValueError("Cannot register new cluster")
-            cluster, action_key, private_key, key_for_private_key = \
-                create_cluster(info.context, cluster, user)
+            _cluster, action_key, privateKey, key_for_privateKey = \
+                create_cluster(
+                    info.context, cluster, user, password=password
+                )
             return cls(
-                cluster=cluster,
-                action_key=action_key,
-                private_key=private_key,
-                key_for_private_key=key_for_private_key
+                cluster=_cluster,
+                actionKey=action_key,
+                privateKey=privateKey,
+                keyForPrivateKey=key_for_privateKey
             )
 
 
@@ -199,12 +191,7 @@ class ContentMutation(relay.ClientIDMutation):
         cls, root, info, content, id=None, key=None
     ):
         if id:
-            type_name, flexid = from_global_id(id)
-            if type_name != "Content":
-                raise ValueError("Only for Contents")
-            result = retrieve_allowed_objects(
-                info.context, "update", Content.objects.filter(flexid=flexid)
-            )
+            result = id_to_result(info.context, id, Content, "update")
             content_obj = result["objects"].first()
             if not content_obj:
                 raise ValueError()
@@ -232,20 +219,14 @@ class ContentMutation(relay.ClientIDMutation):
                 )
             )
         else:
-            type_name, flexid = from_global_id(content.cluster)
-            if type_name != "Cluster":
-                raise ValueError("Requires Cluster type for cluster")
-
-            result = retrieve_allowed_objects(
-                info.context, "update", Cluster.objects.filter(flexid=flexid)
-            )
+            result = id_to_result(info.context, id, Cluster, "update")
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError()
 
             required_keys = []
             try:
-                form = next(iter(result["objects"].keys()))
+                form = next(iter(result["forms"].keys()))
                 if content.get("info") is not None:
                     content["info"] = form.get("info", []).extend(
                         content["info"]
@@ -276,16 +257,11 @@ class PushContentMutation(relay.ClientIDMutation):
         references = graphene.List(ReferenceInput, required=False)
 
     content = graphene.Field(ContentNode)
-    action_key = graphene.String(required=False)
+    actionKey = graphene.String(required=False)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, id, value, key, references):
-        type_name, flexid = from_global_id(id)
-        if type_name != "Content":
-            raise ValueError("Only for Contents")
-        result = retrieve_allowed_objects(
-            info.context, "push", Content.objects.filter(flexid=flexid)
-        )
+        result = id_to_result(info.context, id, Content, "push")
         source = result["objects"].first()
         if not source:
             raise ValueError()
@@ -309,4 +285,4 @@ class PushContentMutation(relay.ClientIDMutation):
         c = create_content(
             info.context, dataobj, key=key, required_keys=required_keys
         )
-        return cls(content=c, action_key=action_key)
+        return cls(content=c, actionKey=action_key)

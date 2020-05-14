@@ -10,12 +10,10 @@ from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.db import transaction
-from graphql_relay import from_global_id
 from rdflib import RDF, XSD, BNode, Graph, Literal
 
 from ....constants import sgraph_cluster
 from ...models import Cluster
-from ...utils.auth import retrieve_allowed_objects
 from ...utils.misc import get_secrets, hash_object
 from ._actions import create_actions_func
 from ._contents import create_key_func
@@ -26,11 +24,11 @@ len_default_hash = len(hash_object(b""))
 def _update_or_create_cluster(
     request, cluster, objdata
 ):
-    if objdata.get("public_info"):
+    if objdata.get("publicInfo"):
         g = Graph()
-        g.parse(objdata["public_info"], "turtle")
+        g.parse(objdata["publicInfo"], "turtle")
         public_secret_hashes = set(map(hash_object, get_secrets(g)[0]))
-        cluster.public_info = objdata["public_info"]
+        cluster.public_info = objdata["publicInfo"]
         cluster.public = len(public_secret_hashes) > 0
     elif cluster.id is not None:
         public_secret_hashes = {}
@@ -70,7 +68,7 @@ def _update_or_create_cluster(
 
 
 def create_cluster(
-    request, objdata=None, key=None, pw=None, user=None, authset=None
+    request, objdata=None, key=None, password=None, user=None, authset=None
 ):
     prebuild = {}
 
@@ -80,10 +78,12 @@ def create_cluster(
     if user:
         prebuild["user"] = user
     action_key = None
-    private_key = None
+    privateKey = None
     if not objdata.get("key"):
         if not key:
             key = os.urandom(32)
+    if isinstance(key, str):
+        key = base64.b64decode(key)
     if not isinstance(objdata, dict):
         action_key = os.urandom(32)
         objdata = {
@@ -99,10 +99,10 @@ def create_cluster(
         g = Graph()
         root = BNode()
         g.add((root, RDF.type, sgraph_cluster["Cluster"]))
-        if pw:
+        if password:
             salt = os.urandom(16)
             hashed_pw = hashlib.pbkdf2_hmac(
-                'sha256', pw.encode("utf8"), salt, 250000
+                'sha256', password.encode("utf8"), salt, 250000
             )
             aesgcm = AESGCM(hashed_pw)
 
@@ -133,7 +133,7 @@ def create_cluster(
                     sgraph_cluster["Cluster.secrets"],
                     Literal(encrypted_secret, datatype=XSD.string)
                 ))
-        objdata["public_info"] = g.serialize(format="turtle")
+        objdata["publicInfo"] = g.serialize(format="turtle")
 
     if not objdata.get("actions"):
         raise ValueError("Actions required")
@@ -141,15 +141,15 @@ def create_cluster(
     if not objdata.get("key"):
         aesgcm = AESGCM(key)
         nonce = os.urandom(13)
-        private_key = generate_private_key(
+        privateKey = generate_private_key(
             public_exponent=65537,
             key_size=4096,
             backend=default_backend()
         )
         contentdata["key"] = {
             "nonce": nonce,
-            "private_key": aesgcm.encrypt(
-                private_key.private_bytes(
+            "privateKey": aesgcm.encrypt(
+                privateKey.private_bytes(
                     encoding=serialization.Encoding.DER,
                     format=serialization.PrivateFormat.PKCS8,
                     encryption_algorithm=serialization.NoEncryption()
@@ -157,7 +157,7 @@ def create_cluster(
                 nonce,
                 None
             ),
-            "public_key": private_key.public_bytes(
+            "publicKey": privateKey.public_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
                 encryption_algorithm=serialization.NoEncryption()
@@ -181,20 +181,12 @@ def create_cluster(
     return (
         cluster,
         action_key,
-        private_key,
+        privateKey,
         key
     )
 
 
 def update_cluster(request, cluster, objdata, user=None):
-    if isinstance(cluster, str):
-        type_name, flexid = from_global_id(cluster)
-        if type_name != "Cluster":
-            raise ValueError("Only for Clusters")
-        result = retrieve_allowed_objects(
-            request, "update", Cluster.objects.all()
-        )
-        cluster = result["objects"].get(flexid=flexid)
     assert cluster.id
     if user:
         cluster.user = user

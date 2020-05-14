@@ -138,3 +138,34 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         )
     returnval["objects"] = query.filter(all_filters)
     return returnval
+
+
+def id_to_result(request, id, klasses, scope="view"):
+    if not isinstance(klasses, tuple):
+        klasses = (klasses,)
+    if isinstance(id, str):
+        type_name, flexid = from_global_id(id)
+        result = None
+        for klass in klasses:
+            if type_name == klass.__name__:
+                result = retrieve_allowed_objects(
+                    request, scope, klass.objects.filter(flexid=flexid)
+                )
+                break
+        if not result:
+            raise ValueError(
+                "Only for {}".format(
+                    ",".join(map(lambda x: x.__name__, klasses))
+                )
+            )
+    elif not isinstance(id, klasses):
+        raise ValueError(
+            "Only for {}".format(
+                ",".join(map(lambda x: x.__name__, klasses))
+            )
+        )
+    else:
+        result = retrieve_allowed_objects(
+            request, scope, type(id).objects.filter(id=id.id)
+        )
+    return result

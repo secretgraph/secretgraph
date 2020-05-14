@@ -53,23 +53,23 @@ def _transform_info_tags(objdata, is_key):
 
 
 def _transform_key_into_dataobj(key_obj, key=None, content=None):
-    if isinstance(key_obj.get("private_key"), str):
-        key_obj["private_key"] = base64.b64decode(key_obj["private_key"])
-    if isinstance(key_obj["public_key"], str):
-        key_obj["public_key"] = base64.b64decode(key_obj["public_key"])
+    if isinstance(key_obj.get("privateKey"), str):
+        key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
+    if isinstance(key_obj["publicKey"], str):
+        key_obj["publicKey"] = base64.b64decode(key_obj["publicKey"])
     if isinstance(key_obj.get("nonce"), str):
         key_obj["nonce"] = base64.b64decode(key_obj["nonce"])
-    if key and key_obj.get("private_key"):
+    if key and key_obj.get("privateKey"):
         if not key_obj.get("nonce"):
             raise ValueError("encrypted private key requires nonce")
         aesgcm = AESGCM(key)
         privkey = aesgcm.decrypt(
-            key_obj["private_key"],
+            key_obj["privateKey"],
             key_obj["nonce"],
             None
         )
         privkey = load_der_private_key(privkey, None, default_backend())
-        key_obj["private_key"] = aesgcm.encrypt(
+        key_obj["privateKey"] = aesgcm.encrypt(
             privkey.private_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PrivateFormat.PKCS8,
@@ -79,7 +79,7 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
             None
         )
 
-        key_obj["public_key"] = privkey.public_bytes(
+        key_obj["publicKey"] = privkey.public_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
             encryption_algorithm=serialization.NoEncryption()
@@ -87,9 +87,9 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
     else:
         try:
             pubkey = load_der_public_key(
-                key_obj["public_key"], None, default_backend()
+                key_obj["publicKey"], None, default_backend()
             )
-            key_obj["public_key"] = pubkey.public_bytes(
+            key_obj["publicKey"] = pubkey.public_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
                 encryption_algorithm=serialization.NoEncryption()
@@ -98,9 +98,9 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
             # logger.debug("loading public key failed", exc_info=exc)
             raise ValueError("Invalid public key") from exc
     if content:
-        if content.value.open("rb").read() != key_obj["public_key"]:
+        if content.value.open("rb").read() != key_obj["publicKey"]:
             raise ValueError("Cannot change public key")
-    hashes = calculate_hashes(key_obj["public_key"])
+    hashes = calculate_hashes(key_obj["publicKey"])
     info = list(map(
         lambda x: f"key_hash={x}", hashes
     ))
@@ -109,16 +109,16 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
         hashes,
         {
             "nonce": "",
-            "value": key_obj["public_key"],
-            "info": ["public_key"].extend(info),
-            "content_hash": hashes[0]
+            "value": key_obj["publicKey"],
+            "info": ["publicKey"].extend(info),
+            "contentHash": hashes[0]
         },
         {
             "nonce": key_obj["nonce"],
-            "value": key_obj["private_key"],
-            "info": ["private_key"].extend(info),
-            "content_hash": None
-        } if key_obj.get("private_key") else None
+            "value": key_obj["privateKey"],
+            "info": ["privateKey"].extend(info),
+            "contentHash": None
+        } if key_obj.get("privateKey") else None
     )
 
 
@@ -184,7 +184,7 @@ def _update_or_create_content_or_key(
     else:
         key_hashes_info = set()
 
-    chash = objdata.get("content_hash")
+    chash = objdata.get("contentHash")
     if chash is not None:
         if len(chash) not in (0, len_default_hash):
             raise ValueError("Invalid hashing algorithm used for content_hash")
@@ -233,7 +233,7 @@ def _update_or_create_content_or_key(
             default_keys = retrieve_allowed_objects(
                 request, "view", Content.objects.filter(
                     cluster=content.cluster,
-                    info="public_key", authset=authset
+                    info__tag="public_key", authset=authset
                 )
             )["objects"]
 
@@ -302,7 +302,7 @@ def _update_or_create_content_or_key(
         if final_references is not None:
             if not create:
                 if is_key:
-                    refs = content.references.exclude(group="private_key")
+                    refs = content.references.exclude(group="privateKey")
                 else:
                     refs = content.references.all()
                 refs.delete()
@@ -349,7 +349,7 @@ def create_key_func(
         )
         private["references"].append({
             "target": public_content,
-            "group": "public_key",
+            "group": "publicKey",
             "delete_recursive": True
         })
     public = _update_or_create_content_or_key(
@@ -385,7 +385,7 @@ def create_content(
         newdata = {
             "cluster": objdata.get("cluster"),
             "references": objdata.get("references"),
-            "content_hash": objdata.get("content_hash"),
+            "contentHash": objdata.get("contentHash"),
             "info": objdata.get("info"),
             "actions": objdata.get("actions"),
             "key": key,
@@ -433,7 +433,7 @@ def update_content(
         newdata = {
             "cluster": objdata.get("cluster"),
             "references": objdata.get("references"),
-            "content_hash": objdata.get("content_hash"),
+            "contentHash": objdata.get("contentHash"),
             "info": objdata.get("info"),
             "key": key,
             **objdata["value"]
