@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 ('nonce', models.CharField(max_length=255)),
                 ('file', models.FileField(upload_to=secretgraph.server.models.get_file_path)),
                 ('content_hash', models.CharField(blank=True, max_length=255, null=True)),
-                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph_base.Cluster')),
+                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph.Cluster')),
             ],
         ),
         migrations.CreateModel(
@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('tag', models.TextField()),
-                ('content', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='info', to='secretgraph_base.Content')),
+                ('content', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='info', to='secretgraph.Content')),
             ],
         ),
         migrations.CreateModel(
@@ -56,8 +56,8 @@ class Migration(migrations.Migration):
                 ('group', models.CharField(blank=True, default='', max_length=255)),
                 ('extra', models.TextField(blank=True, default='', null=False)),
                 ('delete_recursive', models.BooleanField(blank=True, default=True, null=True)),
-                ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='references', to='secretgraph_base.Content')),
-                ('target', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='referenced_by', to='secretgraph_base.Content')),
+                ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='references', to='secretgraph.Content')),
+                ('target', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='referenced_by', to='secretgraph.Content')),
             ],
         ),
         migrations.CreateModel(
@@ -66,7 +66,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('used', models.BooleanField(blank=True, default=False)),
                 ('group', models.CharField(blank=True, default='', max_length=255)),
-                ('content', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph_base.Content')),
+                ('content', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph.Content')),
             ],
         ),
         migrations.CreateModel(
@@ -78,8 +78,8 @@ class Migration(migrations.Migration):
                 ('value', models.BinaryField()),
                 ('start', models.DateTimeField(blank=True, default=django.utils.timezone.now)),
                 ('stop', models.DateTimeField(blank=True, null=True)),
-                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph_base.Cluster')),
-                ('content_action', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='action', to='secretgraph_base.ContentAction')),
+                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph.Cluster')),
+                ('content_action', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='action', to='secretgraph.ContentAction')),
             ],
         ),
         migrations.AddConstraint(

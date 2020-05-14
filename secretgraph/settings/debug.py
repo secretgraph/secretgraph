@@ -20,6 +20,9 @@ FIXTURE_DIRS = [
 SECRET_KEY = "CHANGEME"
 
 INSTALLED_APPS += [  # noqa F405
+    'django.contrib.admin',
+    'django.contrib.messages',  # required for admin
+    'django.contrib.contenttypes',  # required for admin
     "secretgraph.server"
 ]
 

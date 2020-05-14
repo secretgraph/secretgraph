@@ -43,7 +43,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.staticfiles',  # Required for GraphiQL
