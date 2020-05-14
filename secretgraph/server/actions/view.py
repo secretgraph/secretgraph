@@ -35,7 +35,6 @@ def fetch_clusters(
     )
     if flexid:
         result["objects"] = result["objects"].filter(flexid=flexid)
-        result["object"] = result["objects"].get()
     return result
 
 
@@ -168,5 +167,4 @@ def fetch_contents(
         result["objects"] = result["objects"].filter(flexid=flexid)
         assert isinstance(result["objects"], ContentFetchQueryset)
         assert hasattr(result["objects"], "secretgraph_result")
-        result["object"] = result["objects"].get()
     return result
