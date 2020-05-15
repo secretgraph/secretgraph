@@ -21,8 +21,11 @@ SECRET_KEY = "CHANGEME"
 
 
 INSTALLED_APPS += [  # noqa F405
+    "secretgraph.user",
     "secretgraph.server"
 ]
+
+AUTH_USER_MODEL = "secretgraph_user.QuotaUser"
 
 # requires auth app
 SECRETGRAPH_BIND_TO_USER = True
