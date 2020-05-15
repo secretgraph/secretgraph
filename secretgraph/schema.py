@@ -4,10 +4,13 @@ from graphene import relay
 
 from .server.schema import Query as ServerQuery
 from .server.schema import Mutation as ServerMutation
+from .user.schema import Query as UserQuery
+from .user.schema import Mutation as UserMutation
 
 
 class SecretgraphQuery(
     ServerQuery,
+    UserQuery,
     graphene.ObjectType
 ):
     node = relay.Node.Field()
@@ -16,6 +19,7 @@ class SecretgraphQuery(
 
 class SecretgraphMutation(
     ServerMutation,
+    UserMutation,
     graphene.ObjectType
 ):
     pass

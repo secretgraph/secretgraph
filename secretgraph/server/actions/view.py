@@ -5,8 +5,8 @@ from django.db.models import Q, QuerySet
 from django.utils import timezone
 from graphql_relay import from_global_id
 
+from ...utils.auth import retrieve_allowed_objects
 from ..models import Cluster, Content, ContentAction
-from ..utils.auth import retrieve_allowed_objects
 
 logger = logging.getLogger(__name__)
 

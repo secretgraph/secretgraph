@@ -10,6 +10,9 @@ from ..models import Cluster, Content, ContentReference
 class ServerConfig(ObjectType):
     requireServersideEncryption = graphene.Boolean()
 
+    class Meta:
+        interfaces = (relay.Node,)
+
     def resolve_requireServersideEncryption(self, info):
         return bool(getattr(
             settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False

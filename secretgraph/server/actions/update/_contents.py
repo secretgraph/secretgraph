@@ -21,11 +21,11 @@ from django.test import Client
 from graphql_relay import from_global_id
 
 from ....constants import TransferResult
+from ....utils.auth import retrieve_allowed_objects
+from ....utils.conf import get_requests_params
+from ....utils.encryption import default_padding, encrypt_into_file
+from ....utils.misc import calculate_hashes, hash_object
 from ...models import Cluster, Content, ContentReference, ContentTag
-from ...utils.auth import retrieve_allowed_objects
-from ...utils.conf import get_requests_params
-from ...utils.encryption import default_padding, encrypt_into_file
-from ...utils.misc import calculate_hashes, hash_object
 from ._actions import create_actions_func
 
 logger = logging.getLogger(__name__)

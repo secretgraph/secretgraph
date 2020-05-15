@@ -9,12 +9,12 @@ from django.db.models import Q
 from django.utils import timezone
 from graphene import relay
 
+from ...utils.auth import retrieve_allowed_objects, id_to_result
 from ..actions.update import (
     create_cluster, create_content, update_cluster, update_content
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
-from ..utils.auth import retrieve_allowed_objects, id_to_result
 from .arguments import (
     ClusterInput, ContentInput, ContentValueInput, ReferenceInput
 )
@@ -150,8 +150,8 @@ class ClusterMutation(relay.ClientIDMutation):
                 if manage:
                     user = manage.user
                 if not user:
-                    user = info.context.user
-                if not user.is_authenticated:
+                    user = getattr(info.context, "user", None)
+                if not user or not user.is_authenticated:
                     raise ValueError("Must be logged in")
             elif (
                 getattr(
@@ -159,7 +159,7 @@ class ClusterMutation(relay.ClientIDMutation):
                 ) == "cluster" and
                 not manage.exist()
             ):
-                raise ValueError("Cannot register new cluster clusters")
+                raise ValueError("Cannot register new cluster")
             elif getattr(
                 settings, "SECRETGRAPH_ALLOW_REGISTER", False
             ) is not True:

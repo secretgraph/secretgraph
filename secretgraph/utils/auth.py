@@ -7,8 +7,8 @@ from django.db import models
 from django.utils import timezone
 from graphql_relay import from_global_id
 
-from ..actions.handler import ActionHandler
-from ..models import Action, Cluster, Content
+from ..server.actions.handler import ActionHandler
+from ..server.models import Action, Cluster, Content
 from .misc import calculate_hashes
 
 

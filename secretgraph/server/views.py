@@ -2,7 +2,7 @@ from django.views.generic import View
 from django.views.generic.edit import UpdateView
 from django.http import StreamingHttpResponse, Http404
 
-from .utils.encryption import iter_decrypt_contents
+from ..utils.encryption import iter_decrypt_contents
 from .actions.view import fetch_contents, fetch_clusters
 from .forms import PushForm, UpdateForm
 

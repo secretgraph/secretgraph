@@ -16,10 +16,10 @@ from .mutations import (
 
 
 class Query():
-    server_config = graphene.Field(ServerConfig)
+    secretgraphConfig = graphene.Field(ServerConfig)
     cluster = relay.Node.Field(ClusterNode)
     clusters = relay.ConnectionField(ClusterConnection)
-    all_clusters = relay.ConnectionField(ClusterConnection)
+    allClusters = relay.ConnectionField(ClusterConnection)
 
     content = relay.Node.Field(ContentNode)
     contents = relay.ConnectionField(ContentConnection)
@@ -73,8 +73,8 @@ class Query():
 
 
 class Mutation():
-    content = ContentMutation.Field()
-    cluster = ClusterMutation.Field()
-    push_content = PushContentMutation.Field()
-    regenerate_flexid = RegenerateFlexidMutation.Field()
-    delete = DeleteMutation.Field()
+    updateOrCreateContent = ContentMutation.Field()
+    updateOrCreateCluster = ClusterMutation.Field()
+    pushContent = PushContentMutation.Field()
+    regenerateFlexid = RegenerateFlexidMutation.Field()
+    deleteContentOrCluster = DeleteMutation.Field()

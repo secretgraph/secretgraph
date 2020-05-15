@@ -9,12 +9,12 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
 from django.utils import timezone
 
+from ....utils.auth import retrieve_allowed_objects
+from ....utils.misc import hash_object
 from ...actions.handler import ActionHandler
 from ...models import (
     Action, Content, Cluster, ContentAction
 )
-from ...utils.auth import retrieve_allowed_objects
-from ...utils.misc import hash_object
 
 
 def create_actions_func(

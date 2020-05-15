@@ -4,7 +4,7 @@ import base64
 
 from django.conf import settings
 from cryptography.hazmat.primitives import serialization
-from ...constants import sgraph_cluster
+from ..constants import sgraph_cluster
 
 
 def hash_object(inp, algo=None):
