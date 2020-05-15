@@ -6,7 +6,7 @@ INSTALLED_APPS += [  # noqa F405
 ]
 
 STATICFILES_DIRS += [  # noqa F405
-    ("assets", "assets"),
+    ("webpack_bundles", "webpack_bundles"),
 ]
 
 WEBPACK_LOADER = {

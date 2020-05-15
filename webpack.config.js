@@ -4,11 +4,11 @@ var BundleTracker = require('webpack-bundle-tracker');
 
 module.exports = {
   context: __dirname,
-  entry: "./assets/js/index.tsx",
+  entry: "./Client/js/index.tsx",
   // devtool: "inline-source-map",
   mode: "development",
   output: {
-    path: path.resolve(__dirname, "./assets/webpack_bundles/"),
+    path: path.resolve(__dirname, "./webpack_bundles/"),
     filename: "[name]-[hash].js",
   },
   module: {
