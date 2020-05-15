@@ -1,4 +1,4 @@
-__all__ = ["SecretGraphServerConfig"]
+__all__ = ["SecretgraphServerConfig"]
 
 from django.apps import AppConfig
 from django.db.models.signals import (
@@ -11,7 +11,7 @@ from .signals import (
 )
 
 
-class SecretGraphServerConfig(AppConfig):
+class SecretgraphServerConfig(AppConfig):
     name = 'secretgraph.server'
     label = 'secretgraph'
     verbose_name = 'Secretgraph backend'

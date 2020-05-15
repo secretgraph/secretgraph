@@ -2,7 +2,8 @@ import os
 from secretgraph.settings import *  # noqa: F403, F401
 
 INSTALLED_APPS += [  # noqa F405
-    "webpack_loader"
+    "webpack_loader",
+    "secretgraph.proxy"
 ]
 
 STATICFILES_DIRS = [  # noqa F405

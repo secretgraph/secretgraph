@@ -10,7 +10,6 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, "./webpack_bundles/"),
     filename: "[name].js", //-[hash]
-    //chunkFilename: "[name].bundle.js",
   },
   module: {
     rules: [
@@ -30,7 +29,7 @@ module.exports = {
       filename: "./webpack-stats.json",
       path: __dirname,
     }),
-  ]/**
+  ] /**
   optimization: {
     splitChunks: {
       chunks: "all",
@@ -39,5 +38,5 @@ module.exports = {
   externals: {
     react: "React",
     "react-dom": "ReactDOM",
-  },*/,
+  },*/
 };

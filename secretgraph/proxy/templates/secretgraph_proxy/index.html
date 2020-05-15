@@ -23,12 +23,7 @@
   <body>
     {# Deco content, e.g.base.html  #}
     {% block layout %}
-      <main class="{% block main_classes %}{% endblock %}" {% block main_attributes %}{% endblock %}>
-      {# Main content  #}
-      {% block content %}
-        <div id="content-main"></div>
-      {% endblock %}
-    </main>
+    <div id="content-main" data-server-path="{{server_path}}"></div>
     {% endblock %}
 
     {# Scripts #}
