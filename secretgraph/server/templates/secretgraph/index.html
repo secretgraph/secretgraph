@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load static %}
+{% load render_bundle from webpack_loader %}
 <!DOCTYPE html>
 <html lang="{{LANGUAGE_CODE}}">
   <head>
@@ -12,20 +13,13 @@
     {% block favicon %}
     <link rel="shortcut icon" type="image/svg" href="{% static 'secretgraph/favicon.svg' %}" />
     {% endblock %}
-    {# CSS for all pages #}
-    {% block base_styles %}
-    <link rel="stylesheet" href="{% static 'node_modules/w3-css/w3.css' %}">
-    <link rel="stylesheet" href="{% static 'node_modules/@fortawesome/fontawesome-free/css/all.min.css' %}">
-    {# later {% theme %} call #}
-    {% endblock %}
-    {# CSS for page #}
+    {# CSS #}
     {% block styles %}
+    {% render_bundle 'main' 'css' %}
     {% endblock %}
   </head>
 
   <body>
-  {# use sub div instead body because of select2 uses wrong colors elsewise #}
-  <div class="{% block body_class %}{% endblock %}">
     {# Deco content, e.g.base.html  #}
     {% block layout %}
       <main class="{% block main_classes %}{% endblock %}" {% block main_attributes %}{% endblock %}>
@@ -38,11 +32,7 @@
 
     {# Scripts #}
     {% block scripts %}
-    <script></script>
+    {% render_bundle 'main' 'js' %}
     {% endblock scripts %}
-
-    {# e.g. modals #}
-    {% block outercontent %}{% endblock outercontent %}
-  </div>
   </body>
 </html>
