@@ -7,22 +7,28 @@ from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster
 from .definitions import (
     ClusterConnection, ClusterNode, ContentConnection, ContentNode,
-    ServerConfig
+    SecretgraphConfig
 )
 from .mutations import (
-    ClusterMutation, ContentMutation, DeleteMutation, PushContentMutation,
+    ClusterMutation, ContentMutation,
+    ResetDeletionContentOrClusterMutation,
+    DeleteContentOrClusterMutation,
+    PushContentMutation,
     RegenerateFlexidMutation
 )
 
 
 class Query():
-    secretgraphConfig = graphene.Field(ServerConfig)
+    secretgraphConfig = graphene.Field(SecretgraphConfig)
     cluster = relay.Node.Field(ClusterNode)
     clusters = relay.ConnectionField(ClusterConnection)
     allClusters = relay.ConnectionField(ClusterConnection)
 
     content = relay.Node.Field(ContentNode)
     contents = relay.ConnectionField(ContentConnection)
+
+    def resolve_secretgraphConfig(self, info, **kwargs):
+        return SecretgraphConfig()
 
     def resolve_cluster(
         self, info, id, **kwargs
@@ -77,4 +83,6 @@ class Mutation():
     updateOrCreateCluster = ClusterMutation.Field()
     pushContent = PushContentMutation.Field()
     regenerateFlexid = RegenerateFlexidMutation.Field()
-    deleteContentOrCluster = DeleteMutation.Field()
+    deleteContentOrCluster = DeleteContentOrClusterMutation.Field()
+    resetDeletionContentOrCluster = \
+        ResetDeletionContentOrClusterMutation.Field()

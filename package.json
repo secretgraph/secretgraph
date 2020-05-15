@@ -1,20 +1,37 @@
 {
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "@material-ui/core": "^4.9.14",
+    "@material-ui/icons": "^4.9.1",
+    "roboto-fontface": "^0.10.0"
+  },
   "devDependencies": {
+    "@babel/plugin-transform-runtime": "^7.9.6",
+    "@babel/preset-env": "^7.9.6",
+    "@babel/preset-react": "^7.9.4",
+    "@babel/preset-typescript": "^7.9.0",
+    "@types/material-ui": "^0.21.7",
     "@types/react": "^16.9.35",
     "@types/react-dom": "^16.9.8",
     "@types/react-relay": "^7.0.7",
     "@types/relay-runtime": "^8.0.9",
+    "babel-loader": "^8.1.0",
+    "babel-plugin-relay": "^9.1.0",
+    "graphql": "^14.6.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-relay": "^9.1.0",
     "relay": "^0.8.0-1",
-    "source-map-loader": "^0.2.4",
-    "ts-loader": "^7.0.4",
+    "relay-compiler": "^8.0.0",
+    "relay-compiler-language-typescript": "^12.0.2",
+    "relay-compiler-webpack-plugin": "^8.0.2",
     "typescript": "^3.9.2",
     "webpack": "^4.43.0",
     "webpack-bundle-tracker": "^0.4.3",
     "webpack-cli": "^3.3.11"
+  },
+  "scripts": {
+    "relay": "relay-compiler --schema=schema.json --src=./Client/js/ --language typescript --artifactDirectory=./Client/js/__generated__",
+    "watch": "webpack --watch"
   }
 }

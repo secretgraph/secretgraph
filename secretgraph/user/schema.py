@@ -9,9 +9,9 @@ from graphene import relay
 from graphene_django import DjangoObjectType
 from graphql_relay import from_global_id
 
-from ...server.actions.update import create_cluster
-from ...server.models import Cluster, Content
-from ...utils.auth import id_to_result, retrieve_allowed_objects
+from ..server.actions.update import create_cluster
+from ..server.models import Cluster, Content
+from ..utils.auth import id_to_result, retrieve_allowed_objects
 
 
 class UserNode(DjangoObjectType):
@@ -91,7 +91,7 @@ class UserMutation(relay.ClientIDMutation):
             )
 
 
-class DeleteMutation(relay.ClientIDMutation):
+class DeleteUserMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
 
@@ -132,4 +132,4 @@ class Query():
 
 class Mutation():
     signupUser = UserMutation.Field()
-    deleteUser = DeleteMutation.Field()
+    deleteUser = DeleteUserMutation.Field()

@@ -45,7 +45,7 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
         return cls(node=obj)
 
 
-class DeleteMutation(relay.ClientIDMutation):
+class DeleteContentOrClusterMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
 
@@ -87,7 +87,7 @@ class DeleteMutation(relay.ClientIDMutation):
         return ret
 
 
-class ResetMutation(relay.ClientIDMutation):
+class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
 

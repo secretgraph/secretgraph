@@ -1,0 +1,12 @@
+{
+  "plugins": [
+    ["relay", { "artifactDirectory": "./Client/js/__generated__" }],
+    "@babel/transform-runtime"
+  ],
+  "presets": [
+    "@babel/preset-react",
+    "@babel/preset-env",
+    "@babel/preset-typescript"
+  ],
+  "sourceMaps": true
+}

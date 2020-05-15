@@ -1,6 +1,8 @@
-var path = require('path');
-var webpack = require('webpack');
-var BundleTracker = require('webpack-bundle-tracker');
+const path = require("path");
+const webpack = require("webpack");
+const BundleTracker = require("webpack-bundle-tracker");
+const RelayCompilerLanguageTypescript = require("relay-compiler-language-typescript");
+const RelayCompilerWebpackPlugin = require("relay-compiler-webpack-plugin");
 
 module.exports = {
   context: __dirname,
@@ -15,7 +17,10 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: "ts-loader",
+        loader: "babel-loader",
+        options: {
+          rootMode: "root",
+        },
         exclude: /node_modules/,
       },
     ],
@@ -25,6 +30,12 @@ module.exports = {
   },
 
   plugins: [
+    new RelayCompilerWebpackPlugin({
+      schema: path.resolve(__dirname, "./schema.json"),
+      src: path.resolve(__dirname, "./Client/js/"),
+      artifactDirectory: "./Client/js/__generated__",
+      languagePlugin: RelayCompilerLanguageTypescript.default,
+    }),
     new BundleTracker({
       filename: "./webpack-stats.json",
       path: __dirname,
@@ -38,5 +49,5 @@ module.exports = {
   externals: {
     react: "React",
     "react-dom": "ReactDOM",
-  },*/
+  },*/,
 };

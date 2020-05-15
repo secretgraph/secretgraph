@@ -18,7 +18,7 @@ BASE_DIR = os.path.dirname(
 
 GRAPHENE = {
     'SCHEMA': 'secretgraph.schema.schema',
-    'SCHEMA_OUTPUT': 'data/schema.json',  # defaults to schema.json,
+    'SCHEMA_OUTPUT': 'schema.json',
     'SCHEMA_INDENT': 2,
     'MIDDLEWARE': []
 }

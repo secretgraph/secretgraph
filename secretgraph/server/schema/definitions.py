@@ -7,11 +7,8 @@ from ..actions.view import fetch_contents
 from ..models import Cluster, Content, ContentReference
 
 
-class ServerConfig(ObjectType):
+class SecretgraphConfig(ObjectType):
     requireServersideEncryption = graphene.Boolean()
-
-    class Meta:
-        interfaces = (relay.Node,)
 
     def resolve_requireServersideEncryption(self, info):
         return bool(getattr(

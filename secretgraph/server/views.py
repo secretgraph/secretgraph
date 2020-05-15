@@ -17,8 +17,8 @@ class ClustersView(View):
         authset.update(request.GET.getlist("token"))
         result = fetch_clusters(
             request, query=kwargs.get("id"), authset=authset,
-            info_include=request.GET.getlist("incl_info"),
-            info_exclude=request.GET.getlist("excl_info")
+            info_include=request.GET.getlist("inclInfo"),
+            info_exclude=request.GET.getlist("exclInfo")
         )
         if not result["objects"]:
             raise Http404()
@@ -44,8 +44,8 @@ class DocumentsView(View):
         authset.update(request.GET.getlist("token"))
         result = fetch_contents(
             request, query=kwargs.get("id"), authset=authset,
-            info_include=request.GET.getlist("incl_info"),
-            info_exclude=request.GET.getlist("excl_info")
+            info_include=request.GET.getlist("inclInfo"),
+            info_exclude=request.GET.getlist("exclInfo")
         )
         if not result["objects"]:
             raise Http404()
