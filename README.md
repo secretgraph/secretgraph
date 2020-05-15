@@ -7,6 +7,7 @@
 * server: outputs raw data
 * user: Quota user
 
+* assets: Client stuff
 
 verifier
 

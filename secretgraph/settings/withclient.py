@@ -6,14 +6,13 @@ INSTALLED_APPS += [  # noqa F405
 ]
 
 STATICFILES_DIRS += [  # noqa F405
-    ("assets", "client"),
-    ("webpack_bundles", "webpack_bundles"),
+    ("assets", "assets"),
 ]
 
 WEBPACK_LOADER = {
     'DEFAULT': {
         'CACHE': not DEBUG,  # noqa F405
-        'BUNDLE_DIR_NAME': 'bundles/',
+        'BUNDLE_DIR_NAME': 'webpack_bundles/',
         'STATS_FILE': os.path.join(BASE_DIR, 'webpack-stats.json'),  # noqa F405
         'IGNORE': [r'.+\.hot-update.js', r'.+\.map'],
     }
@@ -21,6 +20,6 @@ WEBPACK_LOADER = {
 
 if not DEBUG:  # noqa F405
     WEBPACK_LOADER.update({
-        'BUNDLE_DIR_NAME': 'webpack_dist/',
+        # 'BUNDLE_DIR_NAME': 'webpack_bundles/',
         # 'STATS_FILE': os.path.join(BASE_DIR, 'webpack-stats-prod.json')  # noqa F405
     })

@@ -7,8 +7,8 @@ cgihandler.fcgi
 cgihandler.build
 cgihandler.dist
 media
-webpack_bundles
-webpack_dist
+assets/webpack_bundles
+webpack-stats.json
 node_modules
 pip-wheel-metadata/
 

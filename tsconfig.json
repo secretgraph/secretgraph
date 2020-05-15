@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
-    "outDir": "./webpack_bundles/",
-    "sourceMap": true,
+    "outDir": "./assets/webpack_bundles/",
     "noImplicitAny": true,
     "module": "es6",
     "target": "es5",
     "jsx": "react",
     "allowJs": true
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "webpack.config.*.js",
+    "**/*.spec.ts"
+  ]
 }
