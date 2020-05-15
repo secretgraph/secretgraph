@@ -5,11 +5,12 @@ var BundleTracker = require('webpack-bundle-tracker');
 module.exports = {
   context: __dirname,
   entry: "./Client/js/index.tsx",
-  // devtool: "inline-source-map",
+  devtool: "inline-source-map",
   mode: "development",
   output: {
     path: path.resolve(__dirname, "./webpack_bundles/"),
-    filename: "[name]-[hash].js",
+    filename: "[name].js", //-[hash]
+    //chunkFilename: "[name].bundle.js",
   },
   module: {
     rules: [
@@ -27,11 +28,16 @@ module.exports = {
   plugins: [
     new BundleTracker({
       filename: "./webpack-stats.json",
-      path: __dirname
-    })
-  ],
+      path: __dirname,
+    }),
+  ]/**
+  optimization: {
+    splitChunks: {
+      chunks: "all",
+    },
+  },
   externals: {
     react: "React",
     "react-dom": "ReactDOM",
-  },
+  },*/,
 };

@@ -34,11 +34,6 @@ if DEBUG:
 
 ALLOWED_HOSTS = []
 
-# FILE_UPLOAD_HANDLERS = [
-#    'django.core.files.uploadhandler.MemoryFileUploadHandler',
-#    "spkcspider.apps.spider.functions.LimitedTemporaryFileUploadHandler",
-# ]
-
 
 # Application definition
 
@@ -75,8 +70,6 @@ TEMPLATES = [
                 'django.template.context_processors.i18n',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -116,13 +109,8 @@ USE_L10N = True
 USE_TZ = True
 
 
-STATICFILES_DIRS = [
-    # add node_modules as node_modules under static
-    ("node_modules", "node_modules")
-]
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.11/howto/static-files/
+# https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 
 STATIC_ROOT = 'static/'

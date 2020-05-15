@@ -17,6 +17,7 @@
     {% block styles %}
     {% render_bundle 'main' 'css' %}
     {% endblock %}
+    {#% render_bundle 'vendors~main' 'js' %#}
   </head>
 
   <body>
@@ -31,8 +32,8 @@
     {% endblock %}
 
     {# Scripts #}
-    {% block scripts %}
+    {% block body_scripts %}
     {% render_bundle 'main' 'js' %}
-    {% endblock scripts %}
+    {% endblock body_scripts %}
   </body>
 </html>

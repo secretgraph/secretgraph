@@ -7,6 +7,7 @@ cgihandler.fcgi
 cgihandler.build
 cgihandler.dist
 media
+static
 webpack_bundles
 webpack-stats.json
 node_modules
