@@ -120,6 +120,7 @@ class ClusterMutation(relay.ClientIDMutation):
         id = graphene.ID(required=False)
         cluster = ClusterInput(required=False)
         password = graphene.String(required=False)
+        # needs no key as it can generate key itself
 
     cluster = graphene.Field(ClusterNode)
     actionKey = graphene.String(required=False)
@@ -180,9 +181,7 @@ class ContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         content = graphene.Field(ContentInput, required=True)
-        key = graphene.String(required=getattr(
-            settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
-        ))
+        key = graphene.String(required=False)
 
     content = graphene.Field(ContentNode)
 
@@ -224,6 +223,7 @@ class ContentMutation(relay.ClientIDMutation):
             if not cluster_obj:
                 raise ValueError()
 
+            # TODO: inject cluster keys of checking instance if required
             required_keys = []
             try:
                 form = next(iter(result["forms"].keys()))
@@ -235,7 +235,7 @@ class ContentMutation(relay.ClientIDMutation):
                     content["references"] = form.get("references", []).extend(
                         content["references"]
                     )
-                required_keys = form.get("required_keys", [])
+                required_keys.extends(form.get("required_keys", []))
             except StopIteration:
                 pass
             return cls(
@@ -251,16 +251,16 @@ class PushContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
         value = graphene.Field(ContentValueInput, required=True)
-        key = graphene.String(required=getattr(
-            settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
-        ))
+        key = graphene.String(required=False)
         references = graphene.List(ReferenceInput, required=False)
 
     content = graphene.Field(ContentNode)
     actionKey = graphene.String(required=False)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, id, value, key, references):
+    def mutate_and_get_payload(
+        cls, root, info, id, value, key=None, references=None
+    ):
         result = id_to_result(info.context, id, Content, "push")
         source = result["objects"].first()
         if not source:
@@ -272,7 +272,9 @@ class PushContentMutation(relay.ClientIDMutation):
                 dataobj.get("references") or []
             )
         dataobj["value"] = value
-        required_keys = form.get("required_keys", [])
+        # TODO: inject cluster keys of checking instance if required
+        required_keys = []
+        required_keys.extends(form.get("required_keys", []))
         action_key = None
         if form.pop("updateable", False):
             action_key = os.urandom(32)

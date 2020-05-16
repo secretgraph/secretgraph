@@ -19,10 +19,14 @@ def fetch_clusters(
     if query is None:
         query = Cluster.objects.all()
     elif isinstance(query, str):
-        if ":" in query:
+        type_name = "Cluster"
+        try:
             type_name, query = from_global_id(query)
-        flexid = query
-        query = Cluster.objects.all()
+        except Exception:
+            pass
+        query = Cluster.objects.filter(flexid=query)
+        if type_name != "Cluster":
+            raise ValueError("No Cluster Id")
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(contents__info__tag__startswith=i)
@@ -125,7 +129,6 @@ class ContentFetchQueryset(QuerySet):
 def fetch_contents(
     request, query=None, authset=None, info_include=None, info_exclude=None
 ) -> dict:
-    flexid = None
     # cleanup expired
     Content.objects.filter(
         mark_for_destruction__lte=timezone.now()
@@ -133,12 +136,15 @@ def fetch_contents(
     if query is None:
         query = Content.objects.all()
     elif isinstance(query, str):
-        if ":" in query:
+        type_name = "Content"
+        try:
             type_name, query = from_global_id(query)
-            if type_name != "Content":
-                raise ValueError("Only for contents")
-        flexid = query
-        query = Content.objects.all()
+        except Exception:
+            pass
+        if type_name != "Content":
+            raise ValueError("No Content id")
+
+        query = Content.objects.filter(flexid=query)
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(info__tag__startswith=i)
@@ -163,8 +169,4 @@ def fetch_contents(
             )
         )
     result["objects"] = ContentFetchQueryset(result)
-    if flexid:
-        result["objects"] = result["objects"].filter(flexid=flexid)
-        assert isinstance(result["objects"], ContentFetchQueryset)
-        assert hasattr(result["objects"], "secretgraph_result")
     return result

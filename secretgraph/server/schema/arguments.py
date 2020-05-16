@@ -42,7 +42,7 @@ class ReferenceInput(graphene.InputObjectType):
 
 
 class ContentValueInput(graphene.InputObjectType):
-    value = Upload(required=False)
+    value = Upload(required=True)
     nonce = graphene.String(required=False)
 
 

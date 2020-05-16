@@ -8,12 +8,12 @@ from ..models import Cluster, Content, ContentReference
 
 
 class SecretgraphConfig(ObjectType):
-    requireServersideEncryption = graphene.Boolean()
+    injectedClusters = graphene.List(graphene.String)
 
-    def resolve_requireServersideEncryption(self, info):
-        return bool(getattr(
-            settings, "SECRETGRAPH_SERVERSIDE_ENCRYPTION", False
-        ))
+    def resolve_injectedClusters(self, info):
+        return getattr(
+            settings, "SECRETGRAPH_INJECT_CLUSTERS", None
+        ) or []
 
 
 class FlexidMixin():
@@ -88,29 +88,31 @@ class ClusterNode(FlexidMixin, DjangoObjectType):
         model = Cluster
         interfaces = (relay.Node,)
         fields = ['public_info', 'contents']
-        if (
-            getattr(settings, "AUTH_USER_MODEL", None) or
-            getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
-        ):
-            fields.append("user")
     contents = ContentConnection()
+    user = relay.Node.Field()
 
     def resolve_contents(
         self, info, **kwargs
     ):
         return fetch_contents(
             info.context,
+            self.contents,
             info_include=kwargs.get("infoInclude"),
             infoexclude=kwargs.get("infoExclude")
         )
 
+    def resolve_user(
+        self, info, **kwargs
+    ):
+        if not hasattr(self, "user"):
+            return None
+        return self.user
+
 
 class ClusterConnection(relay.Connection):
-    if (
-        getattr(settings, "AUTH_USER_MODEL", None) or
-        getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
-    ):
-        user = graphene.ID()
+    user = graphene.ID(required=False)
+    public = graphene.Boolean(required=False)
+    featured = graphene.Boolean(required=False)
 
     class Meta:
         node = ClusterNode

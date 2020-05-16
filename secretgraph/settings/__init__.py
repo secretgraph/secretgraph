@@ -126,8 +126,8 @@ LOGOUT_REDIRECT_URL = "home"
 
 # AUTH_USER_MODEL = 'spider_accounts.SpiderUser'
 
-# require serverside encryption
-# SECRETGRAPH_SERVERSIDE_ENCRYPTION = True
+# required for serverside encryption
+# SECRETGRAPH_INJECT_CLUSTERS = []
 # requests parameter overwrites
 # * "hostname.foo": parameter for specific domain
 # * "".foo": parameter for a tld

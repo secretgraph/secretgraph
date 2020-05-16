@@ -154,7 +154,7 @@ def id_to_result(request, id, klasses, scope="view"):
                 break
         if not result:
             raise ValueError(
-                "Only for {}".format(
+                "Only for {} (ids)".format(
                     ",".join(map(lambda x: x.__name__, klasses))
                 )
             )

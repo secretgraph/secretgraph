@@ -1,7 +1,9 @@
 
 import graphene
+from django.conf import settings
 from django.db.models import Q
 from graphene import relay
+from graphql_relay import from_global_id
 
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster
@@ -22,7 +24,6 @@ class Query():
     secretgraphConfig = graphene.Field(SecretgraphConfig)
     cluster = relay.Node.Field(ClusterNode)
     clusters = relay.ConnectionField(ClusterConnection)
-    allClusters = relay.ConnectionField(ClusterConnection)
 
     content = relay.Node.Field(ContentNode)
     contents = relay.ConnectionField(ContentConnection)
@@ -37,32 +38,36 @@ class Query():
             info.context, query=id
         )["object"]
 
-    def resolve_all_clusters(
-        self, info, user=None, **kwargs
-    ):
-        incl_filters = Q()
-        for i in kwargs.get("info_include") or []:
-            incl_filters |= Q(info__tag__startswith=i)
-
-        excl_filters = Q()
-        for i in kwargs.get("info_exclude") or []:
-            excl_filters |= Q(info__tag__startswith=i)
-        clusters = Cluster.objects.filter(
-            ~excl_filters & incl_filters
-        )
-        if user:
-            clusters = clusters.filter(user__username=user)
-        if not info.context.user.is_staff:
-            clusters = clusters.filter(public=True)
-        return clusters
-
     def resolve_clusters(
-        self, info, **kwargs
+        self, info, public=False, featured=False, user=None, **kwargs
     ):
+        clusters = Cluster.objects.all()
+        if user:
+            if (
+                not getattr(settings, "AUTH_USER_MODEL", None) and
+                not getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
+            ):
+                raise ValueError("Users are not supported")
+            try:
+                user = from_global_id(user)[1]
+            except Exception:
+                pass
+            clusters = clusters.filter(user__pk=user)
+        if public:
+            incl_filters = Q()
+            for i in kwargs.get("infoInclude") or []:
+                incl_filters |= Q(info__tag__startswith=i)
+
+            excl_filters = Q()
+            for i in kwargs.get("infoExclude") or []:
+                excl_filters |= Q(info__tag__startswith=i)
+            return clusters.filter(
+                ~excl_filters & incl_filters
+            )
         return fetch_clusters(
             info.context,
-            info_include=kwargs.get("info_include"),
-            info_exclude=kwargs.get("info_exclude")
+            info_include=kwargs.get("infoInclude", []),
+            info_exclude=kwargs.get("infoExclude", [])
         )["objects"]
 
     def resolve_content(self, info, id, **kwargs):
