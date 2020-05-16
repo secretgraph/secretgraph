@@ -128,11 +128,20 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             )
 
     if issubclass(query.model, Cluster):
-        all_filters &= models.Q(flexid__in=clusters)
-    else:
-        all_filters &= models.Q(cluster__flexid__in=clusters)
-    if issubclass(query.model, Content):
         all_filters &= (
+            models.Q(flexid__in=clusters) |
+            models.Q(public=True)
+        )
+    else:
+        all_filters &= (
+            models.Q(cluster__flexid__in=clusters) |
+            models.Q(cluster__public=True)
+        )
+        all_filters &= (
+            (
+                models.Q(info__tag="public_key") &
+                models.Q(info__tag="public")
+            ) |
             models.Q(action__in=actions) |
             models.Q(action_id__isnull=True)
         )

@@ -54,6 +54,7 @@ class ContentNode(FlexidMixin, DjangoObjectType):
 class ContentConnection(relay.Connection):
     includeInfo = graphene.List(graphene.String)
     excludeInfo = graphene.List(graphene.String)
+    public = graphene.Boolean(required=False)
     cluster = graphene.ID()
 
     class Meta:
