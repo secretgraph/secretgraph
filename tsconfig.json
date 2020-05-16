@@ -4,12 +4,7 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "strictNullChecks": true,
-    "module": "es6",
-    "target": "es6",
     "jsx": "react",
-    "noEmit": true,
-    "allowJs": true,
-    "esModuleInterop": true,
     "lib": [
       "es6",
       "dom"

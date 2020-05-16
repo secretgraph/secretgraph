@@ -1,6 +1,6 @@
 {
   "plugins": [
-    ["relay", { "artifactDirectory": "./Client/js/__generated__" }],
+    ["relay", { "artifactDirectory": "./assets/js/__generated__" }],
     "@babel/transform-runtime"
   ],
   "presets": [

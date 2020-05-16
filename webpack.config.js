@@ -3,10 +3,11 @@ const webpack = require("webpack");
 const BundleTracker = require("webpack-bundle-tracker");
 const RelayCompilerLanguageTypescript = require("relay-compiler-language-typescript");
 const RelayCompilerWebpackPlugin = require("relay-compiler-webpack-plugin");
+const ServiceWorkerWebpackPlugin = require("serviceworker-webpack-plugin");
 
 module.exports = {
   context: __dirname,
-  entry: "./Client/js/index.tsx",
+  entry: "./assets/js/Client/index.tsx",
   devtool: "inline-source-map",
   mode: "development",
   output: {
@@ -32,13 +33,16 @@ module.exports = {
   plugins: [
     new RelayCompilerWebpackPlugin({
       schema: path.resolve(__dirname, "./schema.json"),
-      src: path.resolve(__dirname, "./Client/js/"),
-      artifactDirectory: "./Client/js/__generated__",
+      src: path.resolve(__dirname, "./assets/js/"),
+      artifactDirectory: "./assets/js/__generated__",
       languagePlugin: RelayCompilerLanguageTypescript.default,
     }),
     new BundleTracker({
       filename: "./webpack-stats.json",
       path: __dirname,
+    }),
+    new ServiceWorkerWebpackPlugin({ // should be last
+      entry: "./assets/js/ServiceWorker/index.tsx",
     }),
   ] /**
   optimization: {
