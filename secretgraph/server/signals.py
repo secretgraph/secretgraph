@@ -92,8 +92,8 @@ def regenerateKeyHash(sender, force=False, **kwargs):
     from ..utils.misc import hash_object
     from .models import Content
     contents = Content.objects.filter(
-        models.Q(info__tag="private_key") |
-        models.Q(info__tag="public_key")
+        models.Q(info__tag="type=PrivateKey") |
+        models.Q(info__tag="type=PublicKey")
     )
     # calculate for all old hashes
     if not force:

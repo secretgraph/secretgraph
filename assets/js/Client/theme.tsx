@@ -1,22 +1,21 @@
 
 import { withStyles, withTheme, Theme } from "@material-ui/core/styles";
 
-const drawerWidth = 240;
+const drawerWidth = "16rem";
 
 export const theme = (theme: Theme) => ({
   root: {
     display: "flex",
   },
   appBar: {
-    transition: theme.transitions.create(["margin", "width"], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
+  },
+  drawerHeaderSelect: {
+    width: "100%"
   },
   appBarShift: {
-    width: `calc(100% - ${drawerWidth}px)`,
-    marginLeft: drawerWidth,
-    transition: theme.transitions.create(["margin", "width"], {
+    width: `calc(100% - ${drawerWidth})`,
+    marginLeft: "auto",
+    transition: theme.transitions.create(["width"], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),

@@ -161,7 +161,7 @@ def fetch_contents(
             lambda x: f"key_hash={x}", result["action_key_map"].keys()
         )
     )
-    keys = result["objects"].filter(info__tag="private_key")
+    keys = result["objects"].filter(info__tag="type=PrivateKey")
     if keys:
         result["objects"] = result["objects"].filter(
             info__tag__in=map(

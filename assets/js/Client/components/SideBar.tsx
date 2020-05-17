@@ -3,91 +3,107 @@ import * as React from "react";
 import Drawer from '@material-ui/core/Drawer';
 import List from "@material-ui/core/List";
 import Typography from "@material-ui/core/Typography";
+import Hidden from '@material-ui/core/Hidden';
 import Divider from "@material-ui/core/Divider";
 import IconButton from "@material-ui/core/IconButton";
 import MenuIcon from "@material-ui/icons/Menu";
+import CreatableSelect from 'react-select/creatable';
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
+import ExpansionPanel from '@material-ui/core/ExpansionPanel';
+import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
+import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import InboxIcon from "@material-ui/icons/MoveToInbox";
 import MailIcon from "@material-ui/icons/Mail";
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../theme";
 
-
-
-type Props = {
+type SideBarProps = {
   sidebarHandler: any,
   open: boolean,
+  setDrawerOpen: any,
   classes: any,
   theme: Theme
 };
 
-type State = {
-  open: boolean
+type SideBarHeaderProps = {
+  classes: any,
+  theme: Theme,
+  closeButton: any
 };
 
-class SideBar extends React.Component<Props, State> {
-  static defaultProps = {
-    open: true,
-  }
+const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
+  const { classes, theme, closeButton } = props;
+  const headerElements = (
+    <CreatableSelect
+        className={classes.drawerHeaderSelect}
+    />
+  );
+  return (
+    <div className={classes.drawerHeader}>
+      {theme.direction === "ltr" ? headerElements: null}
+      {closeButton}
+      {theme.direction !== "ltr" ? headerElements: null}
+    </div>
+  )
+})
 
-  constructor(props: any) {
-    super(props);
-    this.state = {
-      open: props.open,
-    };
-  }
-
-  openDrawer() {
-    this.setState({ open: true });
-  }
-
-  closeDrawer() {
-    this.setState({ open: false });
-  }
-
-  render() {
-    const { classes, theme } = this.props;
+function SideBar (props: SideBarProps) {
+    const { classes, theme, sidebarHandler, open, setDrawerOpen } = props;
+    const closeButton = (
+      <Hidden lgUp>
+        <IconButton onClick={() => setDrawerOpen(false)}>
+          {theme.direction === "ltr" ? (
+            <ChevronLeftIcon />
+          ) : (
+            <ChevronRightIcon />
+          )}
+        </IconButton>
+      </Hidden>
+    );
     return (
       <Drawer
         className={classes.drawer}
         variant="persistent"
-        anchor="left"
-        open={this.state.open}
+        anchor={theme.direction === 'ltr' ? 'left' : 'right'}
+        open={open}
         classes={{
           paper: classes.drawerPaper,
         }}
       >
-        <div className={classes.drawerHeader}>
-          <IconButton onClick={this.closeDrawer.bind(this)}>
-            {theme.direction === "ltr" ? (
-              <ChevronLeftIcon />
-            ) : (
-              <ChevronRightIcon />
+        <SideBarHeader closeButton={closeButton} />
+        <Divider />
+        <ExpansionPanel>
+          <ExpansionPanelSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="panel1a-content"
+            id="panel1a-header"
+          >
+            <Typography className={classes.heading}>PostBox</Typography>
+          </ExpansionPanelSummary>
+          <ExpansionPanelDetails>
+            <List>
+            {["Inbox", "Starred", "Send email", "Drafts"].map(
+              (text, index) => (
+                <ListItem button key={text}>
+                  <ListItemIcon>
+                    {index % 2 === 0 ? (
+                      <InboxIcon />
+                    ) : (
+                      <MailIcon />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText primary={text} />
+                </ListItem>
+              )
             )}
-          </IconButton>
-        </div>
-        <Divider />
-        <List>
-          {["Inbox", "Starred", "Send email", "Drafts"].map(
-            (text, index) => (
-              <ListItem button key={text}>
-                <ListItemIcon>
-                  {index % 2 === 0 ? (
-                    <InboxIcon />
-                  ) : (
-                    <MailIcon />
-                  )}
-                </ListItemIcon>
-                <ListItemText primary={text} />
-              </ListItem>
-            )
-          )}
-        </List>
-        <Divider />
+          </List>
+          </ExpansionPanelDetails>
+        </ExpansionPanel>
         <List>
           {["All mail", "Trash", "Spam"].map((text, index) => (
             <ListItem button key={text}>
@@ -100,7 +116,6 @@ class SideBar extends React.Component<Props, State> {
         </List>
       </Drawer>
     );
-  }
 }
 
 export default themeComponent(SideBar);

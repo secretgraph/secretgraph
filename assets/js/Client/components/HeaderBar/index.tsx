@@ -13,39 +13,51 @@ import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../../theme";
 
 type Props = {
-  drawerOpener: any,
+  open: Boolean,
+  setDrawerOpen: any,
   classes: any,
   theme: Theme
 };
 
 
-class HeaderBar extends React.Component<Props> {
-  render() {
-    const { classes, theme } = this.props;
-    return (
-      <AppBar position="static">
-        <Toolbar>
-          <IconButton
-            edge="start"
-            className={classes.menuButton}
-            onClick={this.props.drawerOpener}
-            color="inherit"
-            aria-label="menu"
-          >
-            <MenuIcon />
-          </IconButton>
-          <IconButton
-            edge="end"
-            className={classes.userButton}
-            color="inherit"
-            aria-label="user"
-          >
-            <AccountCircle />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-    );
+function HeaderBar(props: Props) {
+  const { classes, theme, open, setDrawerOpen } = props;
+  let menuButton = null;
+  if (!open){
+    menuButton = (
+      <IconButton
+        edge="start"
+        className={classes.menuButton}
+        onClick={() => setDrawerOpen(true)}
+        color="inherit"
+        aria-label="menu"
+      >
+        <MenuIcon />
+      </IconButton>
+    )
   }
+  return (
+    <AppBar
+      position="static"
+      className={
+        open
+          ? classes.appBarShift
+          : classes.appBar
+      }
+    >
+      <Toolbar>
+        {menuButton}
+        <IconButton
+          edge="start"
+          className={classes.userButton}
+          color="inherit"
+          aria-label="user"
+        >
+          <AccountCircle />
+        </IconButton>
+      </Toolbar>
+    </AppBar>
+  );
 }
 
 

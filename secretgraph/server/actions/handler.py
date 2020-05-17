@@ -140,7 +140,7 @@ class ActionHandler():
             ))
         if action_dict.get("info"):
             for i in action_dict["info"]:
-                if i in {"public_key", "private_key"}:
+                if i in {"type=PublicKey", "type=PrivateKey"}:
                     raise ValueError()
             result["form"]["info"].extend(action_dict.get("info", []))
         return result
@@ -187,7 +187,7 @@ class ActionHandler():
             }
         }
         for i in action_dict.get("info", []):
-            if i in {"public_key", "private_key"}:
+            if i in {"type=PublicKey", "type=PrivateKey"}:
                 raise ValueError()
         result["form"]["info"].extend(action_dict.get("info", []))
         references = action_dict.get("references") or {}

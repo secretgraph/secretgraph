@@ -99,7 +99,7 @@ def create_key_maps(contents, keyset=(), inject_public=True):
     )
 
     key_query = Content.objects.filter(
-        info__tag="private_key",
+        info__tag="type=PrivateKey",
         info__tag__in=key_map1.keys(),
         references__in=reference_query
     )
@@ -151,7 +151,7 @@ def iter_decrypt_contents(
         content_query, decryptset, inject_public=inject_public
     )
     for content in content_query.filter(
-        Q(info__tag="public_key") | Q(id__in=content_map.keys())
+        Q(info__tag="type=PublicKey") | Q(id__in=content_map.keys())
     ).annotate(
         is_transfer=Exists(
             ContentReference.objects.filter(

@@ -8,28 +8,22 @@ import SideBar from "../components/SideBar";
 type Props = {
 };
 
-export default class MainPage extends React.Component<Props> {
-  drawerRef: React.RefObject<any>
-
-  constructor(props: any) {
-    super(props);
-    this.drawerRef = React.createRef();
-  }
-  render() {
-    // const {userID} = this.props;
-    const openDrawer = () => {
-      this.drawerRef.current?.openDrawer();
-    };
-    return (
-      <div>
-        <HeaderBar drawerOpener={openDrawer.bind(this)} />
-        <SideBar sidebarHandler="" ref={this.drawerRef} />
-        <main>
-          <div></div>
-        </main>
-      </div>
-    );
-  }
+export default function MainPage() {
+  // const {userID} = this.props;
+  const [drawerOpen, setDrawerOpen] = React.useState(true);
+  return (
+    <div>
+      <HeaderBar open={drawerOpen} setDrawerOpen={setDrawerOpen} />
+      <SideBar
+        sidebarHandler=""
+        open={drawerOpen}
+        setDrawerOpen={setDrawerOpen}
+      />
+      <main>
+        <div></div>
+      </main>
+    </div>
+  );
 }
 /**
 
