@@ -45,7 +45,7 @@ class FlexidModel(models.Model):
 
 
 class Cluster(FlexidModel):
-    publicInfo: str = models.TextField()
+    publicInfo: str = models.TextField(db_column="public_info")
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
@@ -62,7 +62,10 @@ class Cluster(FlexidModel):
 
 class Content(FlexidModel):
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
-    markForDestruction: dt = models.DateTimeField(null=True, blank=True)
+    markForDestruction: dt = models.DateTimeField(
+        null=True, blank=True,
+        db_column="mark_for_destruction"
+    )
 
     nonce: str = models.CharField(max_length=255)
     # can decrypt = correct key
@@ -71,7 +74,10 @@ class Content(FlexidModel):
     )
     # unique hash for content, e.g. generated from some info tags
     # null if multiple contents are allowed
-    contentHash: str = models.CharField(max_length=255, blank=True, null=True)
+    contentHash: str = models.CharField(
+        max_length=255, blank=True, null=True,
+        db_column="content_hash"
+    )
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="contents"
     )
@@ -118,7 +124,10 @@ class Action(models.Model):
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="actions"
     )
-    keyHash: str = models.CharField(max_length=255)
+    keyHash: str = models.CharField(
+        max_length=255,
+        db_column="key_hash"
+    )
     nonce: str = models.CharField(max_length=255)
     # value returns json with required encrypted aes key
     value: bytes = models.BinaryField(null=False, blank=False)
@@ -126,7 +135,8 @@ class Action(models.Model):
     stop: dt = models.DateTimeField(blank=True, null=True)
     contentAction: ContentAction = models.OneToOneField(
         ContentAction, related_name="action",
-        on_delete=models.CASCADE, null=True, blank=True
+        on_delete=models.CASCADE, null=True, blank=True,
+        db_column="content_action"
     )
 
     class Meta:
@@ -173,7 +183,7 @@ class ContentReference(models.Model):
         on_delete=models.CASCADE,
     )
     target: Content = models.ForeignKey(
-        Content, related_name="referenced_by",
+        Content, related_name="referencedBy",
         on_delete=models.CASCADE
     )
     group: str = models.CharField(
@@ -181,7 +191,8 @@ class ContentReference(models.Model):
     )
     extra: str = models.TextField(blank=True, null=False, default='')
     deleteRecursive: Optional[bool] = models.BooleanField(
-        blank=True, default=True, null=True
+        blank=True, default=True, null=True,
+        db_column="delete_recursive"
     )
 
     class Meta:
