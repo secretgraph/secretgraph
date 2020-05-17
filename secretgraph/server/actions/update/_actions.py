@@ -35,11 +35,11 @@ def create_actions_func(
     if isinstance(obj, Content):
         cluster = obj.cluster
         content = obj
-        delete_q = Q(content_action__content=content)
+        delete_q = Q(contentAction__content=content)
     elif isinstance(obj, Cluster):
         cluster = obj
         content = None
-        delete_q = Q(content_action=None)
+        delete_q = Q(contentAction__isnull=True)
     else:
         raise ValueError("Invalid type")
 
@@ -82,9 +82,9 @@ def create_actions_func(
             ),
             start=action.get("start", timezone.now()),
             stop=action.stop,
-            key_hash=action_key_hash,
+            keyHash=action_key_hash,
             nonce=base64.b64encode(nonce).decode("ascii"),
-            content_action=c
+            contentAction=c
         )
         action.action_type = action_value["action"]
         action_types.add(action_value["action"])

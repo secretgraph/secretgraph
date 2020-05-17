@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('flexid', models.UUIDField(blank=True, null=True, unique=True)),
-                ('public_info', models.TextField()),
+                ('publicInfo', models.TextField()),
                 ('public', models.BooleanField(blank=True, default=False)),
                 ('featured', models.BooleanField(blank=True, default=False)),
             ],
@@ -34,10 +34,10 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('flexid', models.UUIDField(blank=True, null=True, unique=True)),
                 ('updated', models.DateTimeField(auto_now=True)),
-                ('mark_for_destruction', models.DateTimeField(blank=True, null=True)),
+                ('markForDestruction', models.DateTimeField(blank=True, null=True)),
                 ('nonce', models.CharField(max_length=255)),
                 ('file', models.FileField(upload_to=secretgraph.server.models.get_file_path)),
-                ('content_hash', models.CharField(blank=True, max_length=255, null=True)),
+                ('contentHash', models.CharField(blank=True, max_length=255, null=True)),
                 ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="contents", to='secretgraph.Cluster')),
             ],
         ),
@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('group', models.CharField(blank=True, default='', max_length=255)),
                 ('extra', models.TextField(blank=True, default='', null=False)),
-                ('delete_recursive', models.BooleanField(blank=True, default=True, null=True)),
+                ('deleteRecursive', models.BooleanField(blank=True, default=True, null=True)),
                 ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='references', to='secretgraph.Content')),
                 ('target', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='referenced_by', to='secretgraph.Content')),
             ],
@@ -73,13 +73,13 @@ class Migration(migrations.Migration):
             name='Action',
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
-                ('key_hash', models.CharField(max_length=255)),
+                ('keyHash', models.CharField(max_length=255)),
                 ('nonce', models.CharField(max_length=255)),
                 ('value', models.BinaryField()),
                 ('start', models.DateTimeField(blank=True, default=django.utils.timezone.now)),
                 ('stop', models.DateTimeField(blank=True, null=True)),
                 ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph.Cluster')),
-                ('content_action', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='action', to='secretgraph.ContentAction')),
+                ('contentAction', models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='action', to='secretgraph.ContentAction')),
             ],
         ),
         migrations.AddConstraint(
@@ -96,7 +96,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='content',
-            constraint=models.UniqueConstraint(fields=('content_hash', 'cluster_id'), name='unique_content'),
+            constraint=models.UniqueConstraint(fields=('contentHash', 'cluster_id'), name='unique_content'),
         ),
         migrations.AddConstraint(
             model_name='action',
@@ -108,6 +108,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='contentreference',
-            constraint=models.CheckConstraint(check=models.Q(models.Q(models.Q(('group', 'key'), ('group', 'transfer'), _connector='OR'), _negated=True), ('delete_recursive__isnull', True), _connector='OR'), name='contentreference_key'),
+            constraint=models.CheckConstraint(check=models.Q(models.Q(models.Q(('group', 'key'), ('group', 'transfer'), _connector='OR'), _negated=True), ('deleteRecursive__isnull', True), _connector='OR'), name='contentreference_key'),
         ),
     ]

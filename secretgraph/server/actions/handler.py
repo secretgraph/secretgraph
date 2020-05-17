@@ -136,7 +136,7 @@ class ActionHandler():
         if action_dict.get("required_keys"):
             result["form"]["required_keys"] = list(_only_owned_helper(
                 Content, action_dict["required_keys"], request,
-                fields=("id",), check_field="content_hash", scope="view"
+                fields=("id",), check_field="contentHash", scope="view"
             ))
         if action_dict.get("info"):
             for i in action_dict["info"]:
@@ -157,7 +157,7 @@ class ActionHandler():
             return {
                 "filters": (
                     Q(id=action_dict["id"]) |
-                    Q(content_hash__in=action_dict["form"]["required_keys"])
+                    Q(contentHash__in=action_dict["form"]["required_keys"])
                 ),
                 "accesslevel": 0
             }
@@ -181,7 +181,7 @@ class ActionHandler():
                     {
                         "group": "push",
                         "target": content.id,
-                        "delete_recursive": True
+                        "deleteRecursive": True
                     }
                 ]
             }
@@ -200,14 +200,14 @@ class ActionHandler():
             result["form"]["references"].append({
                 "target": _id,
                 "group": references[_flexid].get("group", ""),
-                "delete_recursive": references[_flexid].get(
-                    "delete_recursive", True
+                "deleteRecursive": references[_flexid].get(
+                    "deleteRecursive", True
                 )
             })
         if action_dict.get("required_keys"):
             result["form"]["required_keys"] = list(_only_owned_helper(
                 Content, action_dict["required_keys"], request,
-                fields=("id",), check_field="content_hash", scope="view"
+                fields=("id",), check_field="contentHash", scope="view"
             ))
 
         return result
@@ -311,7 +311,7 @@ class ActionHandler():
             type_name = klass.__name__
             result["delete"][type_name] = _only_owned_helper(
                 klass, result["delete"][type_name], request,
-                check_field="key_hash" if type_name == "Action" else None
+                check_field="keyHash" if type_name == "Action" else None
             )
 
         _del_sets = {

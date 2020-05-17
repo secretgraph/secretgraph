@@ -84,7 +84,7 @@ def create_key_maps(contents, keyset=(), inject_public=True):
             contents__in=contents
         ):
             g = Graph()
-            g.parse(cluster.public_info, "turtle")
+            g.parse(cluster.publicInfo, "turtle")
             key_map1.update(
                 map(
                     lambda x: ("key_hash=%s" % hash_object(x), x),

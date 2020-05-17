@@ -28,7 +28,7 @@ def _update_or_create_cluster(
         g = Graph()
         g.parse(objdata["publicInfo"], "turtle")
         public_secret_hashes = set(map(hash_object, get_secrets(g)[0]))
-        cluster.public_info = objdata["publicInfo"]
+        cluster.publicInfo = objdata["publicInfo"]
         cluster.public = len(public_secret_hashes) > 0
     elif cluster.id is not None:
         public_secret_hashes = {}

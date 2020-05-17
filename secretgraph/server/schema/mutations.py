@@ -57,7 +57,7 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         now_plus_x = now + td(minutes=20)
         # cleanup expired
         Content.objects.filter(
-            mark_for_destruction__lte=now
+            markForDestruction__lte=now
         ).delete()
         # TODO: admin permission
         # if not info.context.user.has_perm("TODO"):
@@ -71,19 +71,19 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         ret = cls(node=obj)
         if isinstance(obj, Content):
             if (
-                not obj.mark_for_destruction or
-                obj.mark_for_destruction > now_plus_x
+                not obj.markForDestruction or
+                obj.markForDestruction > now_plus_x
             ):
-                obj.mark_for_destruction = now_plus_x
-                obj.save(update_fields=["mark_for_destruction"])
+                obj.markForDestruction = now_plus_x
+                obj.save(update_fields=["markForDestruction"])
         elif isinstance(obj, Cluster):
             if not obj.contents.exists():
                 obj.delete()
             else:
                 obj.contents.filter(
-                    Q(mark_for_destruction__isnull=True) |
-                    Q(mark_for_destruction__gt=now_plus_x)
-                ).update(mark_for_destruction=now_plus_x)
+                    Q(markForDestruction__isnull=True) |
+                    Q(markForDestruction__gt=now_plus_x)
+                ).update(markForDestruction=now_plus_x)
         return ret
 
 
@@ -106,12 +106,12 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
             raise ValueError()
         ret = cls(node=obj)
         if isinstance(obj, Content):
-            obj.mark_for_destruction = None
-            obj.save(update_fields=["mark_for_destruction"])
+            obj.markForDestruction = None
+            obj.save(update_fields=["markForDestruction"])
         elif isinstance(obj, Cluster):
             obj.contents.filter(
-                mark_for_destruction__isnull=False
-            ).update(mark_for_destruction=None)
+                markForDestruction__isnull=False
+            ).update(markForDestruction=None)
         return ret
 
 

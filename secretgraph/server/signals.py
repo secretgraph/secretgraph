@@ -16,11 +16,11 @@ def deleteContentCb(sender, instance, **kwargs):
         ~models.Q(target=instance)
     )
     nogroup_references = references.filter(
-        delete_recursive=DeleteRecursive.NO_GROUP
+        deleteRecursive=DeleteRecursive.NO_GROUP
     )
 
     recursive_references = references.filter(
-        delete_recursive=DeleteRecursive.TRUE
+        deleteRecursive=DeleteRecursive.TRUE
     )
     # delete recursive connected contents
     sender.objects.filter(
@@ -98,14 +98,14 @@ def regenerateKeyHash(sender, force=False, **kwargs):
     # calculate for all old hashes
     if not force:
         contents = contents.exclude(
-            content_hash__regex='^.{%d}$' % len(hash_object(b""))
+            contentHash__regex='^.{%d}$' % len(hash_object(b""))
         )
     for content in contents:
         chash = hash_object(content.load_pubkey())
-        if chash == content.content_hash:
+        if chash == content.contentHash:
             continue
-        content.content_hash = chash
-        content.save(update_fields=["content_hash"])
+        content.contentHash = chash
+        content.save(update_fields=["contentHash"])
 
 
 def fillEmptyFlexidsCb(sender, **kwargs):

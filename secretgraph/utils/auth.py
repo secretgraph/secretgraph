@@ -28,8 +28,8 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     )
     if isinstance(query.model, Content):
         pre_filtered_actions = pre_filtered_actions.filter(
-            models.Q(content_action__isnull=True) |
-            models.Q(content_action__content__in=query)
+            models.Q(contentAction__isnull=True) |
+            models.Q(contentAction__content__in=query)
         )
     clusters = set()
     all_filters = models.Q()
@@ -61,7 +61,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
 
         actions = pre_filtered_actions.filter(
             cluster__flexid=clusterflexid,
-            key_hash__in=keyhashes
+            keyHash__in=keyhashes
         )
         if not actions:
             continue
@@ -104,9 +104,9 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 if result.get("form"):
                     returnval["forms"][action.id] = result["form"]
 
-            if action.key_hash != keyhashes[0]:
-                Action.objects.filter(key_hash=action.key_hash).update(
-                    key_hash=keyhashes[0]
+            if action.keyHash != keyhashes[0]:
+                Action.objects.filter(keyHash=action.key_hash).update(
+                    keyHash=keyhashes[0]
                 )
         returnval["clusters"][clusterflexid] = {
             "filters": filters,

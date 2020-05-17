@@ -103,7 +103,7 @@ class DeleteUserMutation(relay.ClientIDMutation):
         now_plus_x = now + td(minutes=20)
         # cleanup expired
         Content.objects.filter(
-            mark_for_destruction__lte=now
+            markForDestruction__lte=now
         ).delete()
         user = get_user_model().objects.get(pk=from_global_id(id)[0])
         result = retrieve_allowed_objects(
@@ -120,9 +120,9 @@ class DeleteUserMutation(relay.ClientIDMutation):
             user.delete()
         else:
             user_contents.filter(
-                Q(mark_for_destruction__isnull=True) |
-                Q(mark_for_destruction__gt=now_plus_x)
-            ).update(mark_for_destruction=now_plus_x)
+                Q(markForDestruction__isnull=True) |
+                Q(markForDestruction__gt=now_plus_x)
+            ).update(markForDestruction=now_plus_x)
         return cls(user=user)
 
 

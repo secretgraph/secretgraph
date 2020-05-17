@@ -65,7 +65,7 @@ class ContentReferenceNode(DjangoObjectType):
     class Meta:
         model = ContentReference
         interfaces = (relay.Node,)
-        fields = ['source', 'target', 'group', 'extra', 'delete_recursive']
+        fields = ['source', 'target', 'group', 'extra', 'deleteRecursive']
 
     def resolve_id(self, info):
         return f"{self.source.flexid}:{self.target.flexid}:{self.group}"
@@ -88,7 +88,7 @@ class ClusterNode(FlexidMixin, DjangoObjectType):
     class Meta:
         model = Cluster
         interfaces = (relay.Node,)
-        fields = ['public_info', 'contents']
+        fields = ['publicInfo', 'contents']
     contents = ContentConnection()
     user = relay.Node.Field()
 

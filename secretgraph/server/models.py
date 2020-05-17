@@ -45,8 +45,7 @@ class FlexidModel(models.Model):
 
 
 class Cluster(FlexidModel):
-    # key_hash is nonce
-    public_info: str = models.TextField()
+    publicInfo: str = models.TextField()
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
@@ -63,7 +62,7 @@ class Cluster(FlexidModel):
 
 class Content(FlexidModel):
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
-    mark_for_destruction: dt = models.DateTimeField(null=True, blank=True)
+    markForDestruction: dt = models.DateTimeField(null=True, blank=True)
 
     nonce: str = models.CharField(max_length=255)
     # can decrypt = correct key
@@ -72,7 +71,7 @@ class Content(FlexidModel):
     )
     # unique hash for content, e.g. generated from some info tags
     # null if multiple contents are allowed
-    content_hash: str = models.CharField(max_length=255, blank=True, null=True)
+    contentHash: str = models.CharField(max_length=255, blank=True, null=True)
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="contents"
     )
@@ -80,7 +79,7 @@ class Content(FlexidModel):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["content_hash", "cluster_id"],
+                fields=["contentHash", "cluster_id"],
                 name="unique_content"
             )
         ]
@@ -119,13 +118,13 @@ class Action(models.Model):
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="actions"
     )
-    key_hash: str = models.CharField(max_length=255)
+    keyHash: str = models.CharField(max_length=255)
     nonce: str = models.CharField(max_length=255)
     # value returns json with required encrypted aes key
     value: bytes = models.BinaryField(null=False, blank=False)
     start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)
-    content_action: ContentAction = models.OneToOneField(
+    contentAction: ContentAction = models.OneToOneField(
         ContentAction, related_name="action",
         on_delete=models.CASCADE, null=True, blank=True
     )
@@ -181,7 +180,7 @@ class ContentReference(models.Model):
         max_length=255, default='', null=False, blank=True
     )
     extra: str = models.TextField(blank=True, null=False, default='')
-    delete_recursive: Optional[bool] = models.BooleanField(
+    deleteRecursive: Optional[bool] = models.BooleanField(
         blank=True, default=True, null=True
     )
 
@@ -197,7 +196,7 @@ class ContentReference(models.Model):
                         models.Q(group="key") |
                         models.Q(group="transfer")
                     )
-                    | models.Q(delete_recursive__isnull=True)
+                    | models.Q(deleteRecursive__isnull=True)
                 ),
                 name="%(class)s_key"
             ),

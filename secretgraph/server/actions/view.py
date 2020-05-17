@@ -85,21 +85,21 @@ class ContentFetchQueryset(QuerySet):
             return objects
         if isinstance(objects, Content):
             used_actions = self.secretgraph_result["actions"].filter(
-                content_action__content=objects
-            ).select_related("content_action")
+                contentAction__content=objects
+            ).select_related("contentAction")
         else:
             used_actions = self.secretgraph_result["actions"].filter(
-                content_action__content__in=objects
-            ).select_related("content_action")
+                contentAction__content__in=objects
+            ).select_related("contentAction")
         cactions = ContentAction.objects.filter(action__in=used_actions)
         cactions.update(used=True)
-        mark_for_destruction = timezone.now() + td(hours=8)
+        markForDestruction = timezone.now() + td(hours=8)
         contents = Content.objects.filter(
             actions__in=cactions.filter(group="fetch", used=True)
         ).exclude(actions__in=ContentAction.objects.filter(
             group="fetch", used=False
         ))
-        contents.update(mark_for_destruction=mark_for_destruction)
+        contents.update(markForDestruction=markForDestruction)
         return objects
 
     def __iter__(self):
@@ -131,7 +131,7 @@ def fetch_contents(
 ) -> dict:
     # cleanup expired
     Content.objects.filter(
-        mark_for_destruction__lte=timezone.now()
+        markForDestruction__lte=timezone.now()
     ).delete()
     if query is None:
         query = Content.objects.all()

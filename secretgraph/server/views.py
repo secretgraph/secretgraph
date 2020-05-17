@@ -27,8 +27,8 @@ class ClustersView(View):
             seperator = b""
             for cluster in result["objects"]:
                 yield seperator
-                # public_info cannot contain \0 because of TextField
-                yield cluster.public_info
+                # publicInfo cannot contain \0 because of TextField
+                yield cluster.publicInfo
                 seperator = b"\0"
 
         return StreamingHttpResponse(gen())
