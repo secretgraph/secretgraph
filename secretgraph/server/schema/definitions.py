@@ -37,7 +37,7 @@ class ContentNode(FlexidMixin, DjangoObjectType):
         name = "Content"
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'updated', 'cluster', 'references', 'referenced_by'
+            'nonce', 'updated', 'cluster', 'references', 'referencedBy'
         ]
 
     info = graphene.List(graphene.String)
