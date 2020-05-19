@@ -13,8 +13,7 @@ import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../../theme";
 
 type Props = {
-  open: boolean,
-  setDrawerOpen: any,
+  openState: any,
   classes: any,
   theme: Theme,
   title: string
@@ -22,14 +21,14 @@ type Props = {
 
 
 function HeaderBar(props: Props) {
-  const { classes, theme, title, open, setDrawerOpen } = props;
+  const { classes, theme, title, openState } = props;
   let menuButton = null;
-  if (!open){
+  if (!openState.drawerOpen){
     menuButton = (
       <IconButton
         edge="start"
         className={classes.menuButton}
-        onClick={() => setDrawerOpen(true)}
+        onClick={() => openState.setDrawerOpen(true)}
         color="inherit"
         aria-label="menu"
       >
@@ -40,7 +39,7 @@ function HeaderBar(props: Props) {
   return (
     <AppBar
       position="sticky"
-      className={open ? classes.appBarShift : classes.appBar}
+      className={openState.drawerOpen ? classes.appBarShift : classes.appBar}
     >
       <Toolbar className={classes.appBarToolBar}>
         {menuButton}

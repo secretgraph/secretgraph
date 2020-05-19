@@ -140,7 +140,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         all_filters &= (
             (
                 models.Q(info__tag="type=PublicKey") &
-                models.Q(info__tag="public")
+                models.Q(info__tag="state=public")
             ) |
             models.Q(action__in=actions) |
             models.Q(action_id__isnull=True)

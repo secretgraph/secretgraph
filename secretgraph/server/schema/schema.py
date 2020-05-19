@@ -82,9 +82,9 @@ class Query():
             contents = contents.filter(flexid=cluster)
         if public in {True, False}:
             if public:
-                contents = contents.filter(info__tag="public")
+                contents = contents.filter(info__tag="state=public")
             else:
-                contents = contents.exclude(info__tag="public")
+                contents = contents.exclude(info__tag="state=public")
 
         return fetch_contents(
             info.context,

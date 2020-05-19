@@ -33,7 +33,10 @@ export const secretgraphTheme = (theme: Theme) => ({
   userButton: {
   },
   newItemSelect: {
-    minWidth: "200px"
+    display: "none",
+  },
+  newItemSelectOpen: {
+    minWidth: "200px",
   },
   drawer: {
     width: drawerWidth,
@@ -56,18 +59,18 @@ export const secretgraphTheme = (theme: Theme) => ({
   sideBarBody: {
     overflowY: "auto"
   },
-  actionToolBar: {
-    padding: 0,
-    flexGrow: 0,
+  actionToolBarOuter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   actionToolBarInner: {
     backgroundColor: "blue",
     color: "white",
+    padding: theme.spacing(0),
     borderRadius: "15px 15px 0 0",
     border: "1px solid black",
-    position: "absolute",
-    bottom: "0",
-    right: theme.spacing(1),
+    margin: theme.spacing(0, 1, 0, 0),
   },
   actionToolBarButton: {
     color: 'white',

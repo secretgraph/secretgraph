@@ -168,12 +168,14 @@ class ContentTag(models.Model):
     )
     # searchable info
     tag: str = models.TextField(blank=False, null=False)
-    constraints = [
-        models.UniqueConstraint(
-            fields=["content", "tag"],
-            name="unique_content_tag"
-        )
-    ]
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content", "tag"],
+                name="unique_content_tag"
+            ),
+        ]
 
 
 class ContentReference(models.Model):

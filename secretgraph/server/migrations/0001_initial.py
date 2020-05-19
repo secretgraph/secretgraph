@@ -113,4 +113,8 @@ class Migration(migrations.Migration):
             model_name='action',
             constraint=models.CheckConstraint(check=models.Q(('start__isnull', False), ('stop__isnull', False), _connector='OR'), name='action_exist'),
         ),
+        migrations.AddConstraint(
+            model_name='contenttag',
+            constraint=models.UniqueConstraint(fields=('content', 'tag'), name='unique_content_tag'),
+        ),
     ]

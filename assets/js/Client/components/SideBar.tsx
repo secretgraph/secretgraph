@@ -23,8 +23,7 @@ import { themeComponent } from "../theme";
 
 type SideBarProps = {
   sidebarHandler: any,
-  open: boolean,
-  setDrawerOpen: any,
+  openState: any,
   classes: any,
   theme: Theme
 };
@@ -52,10 +51,10 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
 })
 
 function SideBar (props: SideBarProps) {
-    const { classes, theme, sidebarHandler, open, setDrawerOpen } = props;
+    const { classes, theme, sidebarHandler, openState } = props;
     const closeButton = (
       <Hidden lgUp>
-        <IconButton onClick={() => setDrawerOpen(false)}>
+        <IconButton onClick={() => openState.setDrawerOpen(false)}>
           {theme.direction === "ltr" ? (
             <ChevronLeftIcon />
           ) : (
@@ -69,7 +68,7 @@ function SideBar (props: SideBarProps) {
         className={classes.drawer}
         variant="persistent"
         anchor={theme.direction === 'ltr' ? 'left' : 'right'}
-        open={open}
+        open={openState.drawerOpen}
         classes={{
           paper: classes.drawerPaper,
         }}

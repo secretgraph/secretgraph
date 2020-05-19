@@ -8,46 +8,19 @@ import { Theme } from "@material-ui/core/styles";
 import IconButton from "@material-ui/core/IconButton";
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
-import AsyncSelect from 'react-select/async';
+import Select from 'react-select';
 
 type Props = {
-  buttonHandler: any,
   classes: any,
   theme: Theme,
+  action: any,
+  currentItem: any
 };
 
-
 export default themeComponent((props: Props) => {
-  const { classes, theme, buttonHandler } = props;
+  const { classes, theme, action, currentItem } = props;
   const [actionOpen, setActionOpen] = React.useState(false);
-  let newItem = null;
-  const loadOptions = (inputValue: any, callback: any) => {
-    callback("sdssd");
-  };
-
-  if (actionOpen) {
-    newItem = (
-      <AsyncSelect
-        cacheOptions
-        loadOptions={loadOptions}
-        className={classes.newItemSelect}
-        onInputChange={() => setActionOpen(false)}
-        onBlur={() => setActionOpen(false)}
-      />
-    );
-  }
-  const closeAdd = (
-    event: React.KeyboardEvent | React.MouseEvent,
-  ) => {
-    if (
-      event.type === 'keydown' &&
-      ((event as React.KeyboardEvent).key === 'Tab' ||
-        (event as React.KeyboardEvent).key === 'Shift')
-    ) {
-      return;
-    }
-    setActionOpen(false);
-  };
+  const [actionWeakOpen, setActionWeakOpen] = React.useState(false);
 
   const addAction = () => {
     if (!actionOpen){
@@ -55,11 +28,19 @@ export default themeComponent((props: Props) => {
       return;
     }
   }
+
+  const blurDisables = () => {
+    if (!actionWeakOpen){
+      setActionOpen(false);
+    }
+  }
   return (
-    <Toolbar className={classes.actionToolBar}
-      onKeyDown={closeAdd}
+    <div className={classes.actionToolBarOuter}
+      onBlur={blurDisables}
+      onMouseLeave={() => setActionWeakOpen(false)}
     >
-      <span className={classes.actionToolBarInner}>
+      <div style={{flexGrow: 1}} />
+      <Toolbar className={classes.actionToolBarInner}>
         <Tooltip title="Edit" arrow>
           <IconButton
             className={classes.actionToolBarButton}
@@ -68,18 +49,23 @@ export default themeComponent((props: Props) => {
             <EditIcon />
           </IconButton>
         </Tooltip>
-        {newItem}
+        <Select
+          className={(actionWeakOpen || actionOpen) ? classes.newItemSelectOpen : classes.newItemSelect}
+          onInputChange={() => setActionOpen(false)}
+          options={options}
+        />
         <Tooltip title="Add" arrow>
           <IconButton
             className={classes.actionToolBarButton}
             aria-label="add"
             onClick={addAction}
+            onMouseEnter={() => setActionWeakOpen(true)}
           >
             <AddIcon />
           </IconButton>
         </Tooltip>
-      </span>
-    </Toolbar>
+      </Toolbar>
+    </div>
   );
 })
 
