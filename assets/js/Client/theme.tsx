@@ -1,33 +1,39 @@
 
-import { withStyles, withTheme, Theme } from "@material-ui/core/styles";
+import { fade, withStyles, withTheme, Theme } from "@material-ui/core/styles";
 
 const drawerWidth = "16rem";
 
-export const theme = (theme: Theme) => ({
+export const secretgraphTheme = (theme: Theme) => ({
   root: {
     display: "flex",
+    flexDirection: "column"
   },
   appBar: {
-  },
-  drawerHeaderSelect: {
-    width: "100%"
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
   },
   appBarShift: {
     width: `calc(100% - ${drawerWidth})`,
-    marginLeft: "auto",
-    transition: theme.transitions.create(["width"], {
+    marginLeft: theme.direction === "ltr" ? drawerWidth : 0,
+    transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
   },
+  appBarToolBar : {
+  },
+  appBarTitle : {
+    flexGrow: 1,
+    marginLeft: "3rem",
+  },
   menuButton: {
-    marginRight: theme.spacing(2),
   },
   userButton: {
-    marginRight: theme.spacing(2),
   },
-  hide: {
-    display: "none",
+  newItemSelect: {
+    minWidth: "200px"
   },
   drawer: {
     width: drawerWidth,
@@ -36,32 +42,65 @@ export const theme = (theme: Theme) => ({
   drawerPaper: {
     width: drawerWidth,
   },
-  drawerHeader: {
+  sideBarHeaderSelect: {
+    width: "100%"
+  },
+  sideBarHeader: {
+    // necessary for content to be below app bar
+    ...theme.mixins.toolbar,
     display: "flex",
     alignItems: "center",
     padding: theme.spacing(0, 1),
-    // necessary for content to be below app bar
-    ...theme.mixins.toolbar,
     justifyContent: "flex-end",
   },
-  content: {
+  sideBarBody: {
+    overflowY: "auto"
+  },
+  actionToolBar: {
+    padding: 0,
+    flexGrow: 0,
+  },
+  actionToolBarInner: {
+    backgroundColor: "blue",
+    color: "white",
+    borderRadius: "15px 15px 0 0",
+    border: "1px solid black",
+    position: "absolute",
+    bottom: "0",
+    right: theme.spacing(1),
+  },
+  actionToolBarButton: {
+    color: 'white',
+  },
+  mainSection: {
+    borderRadius: "5px",
+    border: "1px solid black",
+    minHeight: "100px",
     flexGrow: 1,
-    padding: theme.spacing(3),
-    transition: theme.transitions.create("margin", {
+  },
+  content: {
+    display: "flex",
+    flexDirection: "column",
+    flexGrow: 1,
+    padding: theme.spacing(1),
+    transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
-    marginLeft: -drawerWidth,
   },
   contentShift: {
-    transition: theme.transitions.create("margin", {
+    display: "flex",
+    flexDirection: "column",
+    flexGrow: 1,
+    padding: theme.spacing(1),
+    transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
-    marginLeft: 0,
+    marginLeft: theme.direction === "ltr" ? drawerWidth : 0,
   },
 });
 
 export function themeComponent(component: any) {
-  return withStyles(theme)(withTheme(component));
+  return withStyles(secretgraphTheme)(withTheme(component));
 }

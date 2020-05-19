@@ -9,7 +9,6 @@
     <meta name="application-name" content="secretgraph"/>
 
     <meta name="viewport" content="{% block viewport %}width=device-width, initial-scale=1.0{% endblock %}">
-
     {% block favicon %}
     <link rel="shortcut icon" type="image/svg" href="{% static 'secretgraph/favicon.svg' %}" />
     {% endblock %}
@@ -20,10 +19,10 @@
     {#% render_bundle 'vendors~main' 'js' %#}
   </head>
 
-  <body>
+  <body style="display: contents; margin: 0">
     {# Deco content, e.g.base.html  #}
     {% block layout %}
-    <div id="content-main" data-server-path="{{server_path}}"></div>
+    <div style="display: contents" id="content-main" data-server-path="{{server_path}}"></div>
     {% endblock %}
 
     {# Scripts #}

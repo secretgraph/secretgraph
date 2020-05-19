@@ -6,7 +6,6 @@ import Typography from "@material-ui/core/Typography";
 import Hidden from '@material-ui/core/Hidden';
 import Divider from "@material-ui/core/Divider";
 import IconButton from "@material-ui/core/IconButton";
-import MenuIcon from "@material-ui/icons/Menu";
 import CreatableSelect from 'react-select/creatable';
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
@@ -40,14 +39,14 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
   const { classes, theme, closeButton } = props;
   const headerElements = (
     <CreatableSelect
-        className={classes.drawerHeaderSelect}
+        className={classes.sideBarHeaderSelect}
     />
   );
   return (
-    <div className={classes.drawerHeader}>
+    <div className={classes.sideBarHeader}>
       {theme.direction === "ltr" ? headerElements: null}
       {closeButton}
-      {theme.direction !== "ltr" ? headerElements: null}
+      {theme.direction === "rtl" ? headerElements: null}
     </div>
   )
 })
@@ -77,44 +76,47 @@ function SideBar (props: SideBarProps) {
       >
         <SideBarHeader closeButton={closeButton} />
         <Divider />
-        <ExpansionPanel>
-          <ExpansionPanelSummary
-            expandIcon={<ExpandMoreIcon />}
-            aria-controls="panel1a-content"
-            id="panel1a-header"
-          >
-            <Typography className={classes.heading}>PostBox</Typography>
-          </ExpansionPanelSummary>
-          <ExpansionPanelDetails>
-            <List>
-            {["Inbox", "Starred", "Send email", "Drafts"].map(
-              (text, index) => (
-                <ListItem button key={text}>
-                  <ListItemIcon>
-                    {index % 2 === 0 ? (
-                      <InboxIcon />
-                    ) : (
-                      <MailIcon />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText primary={text} />
-                </ListItem>
-              )
-            )}
+        <div className={classes.sideBarBody}>
+          <ExpansionPanel>
+            <ExpansionPanelSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls="panel1a-content"
+              id="panel1a-header"
+            >
+              <Typography className={classes.heading}>PostBox</Typography>
+            </ExpansionPanelSummary>
+            <ExpansionPanelDetails>
+              <List>
+              {["Inbox", "Starred", "Send email", "Drafts"].map(
+                (text, index) => (
+                  <ListItem button key={text}>
+                    <ListItemIcon>
+                      {index % 2 === 0 ? (
+                        <InboxIcon />
+                      ) : (
+                        <MailIcon />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText primary={text} />
+                  </ListItem>
+                )
+              )}
+              </List>
+            </ExpansionPanelDetails>
+          </ExpansionPanel>
+          <List>
+            {["All mail", "Trash", "Spam", "l2", "l", "l13", "Öösdsd"].map((text, index) => (
+              <ListItem button key={text}>
+                <ListItemIcon>
+                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+                </ListItemIcon>
+                <ListItemText primary={text} />
+              </ListItem>
+            ))}
           </List>
-          </ExpansionPanelDetails>
-        </ExpansionPanel>
-        <List>
-          {["All mail", "Trash", "Spam"].map((text, index) => (
-            <ListItem button key={text}>
-              <ListItemIcon>
-                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItem>
-          ))}
-        </List>
+        </div>
       </Drawer>
+
     );
 }
 

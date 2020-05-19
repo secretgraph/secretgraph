@@ -13,15 +13,16 @@ import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../../theme";
 
 type Props = {
-  open: Boolean,
+  open: boolean,
   setDrawerOpen: any,
   classes: any,
-  theme: Theme
+  theme: Theme,
+  title: string
 };
 
 
 function HeaderBar(props: Props) {
-  const { classes, theme, open, setDrawerOpen } = props;
+  const { classes, theme, title, open, setDrawerOpen } = props;
   let menuButton = null;
   if (!open){
     menuButton = (
@@ -38,15 +39,14 @@ function HeaderBar(props: Props) {
   }
   return (
     <AppBar
-      position="static"
-      className={
-        open
-          ? classes.appBarShift
-          : classes.appBar
-      }
+      position="sticky"
+      className={open ? classes.appBarShift : classes.appBar}
     >
-      <Toolbar>
+      <Toolbar className={classes.appBarToolBar}>
         {menuButton}
+        <Typography variant="h6" className={classes.appBarTitle}>
+          {title}
+        </Typography>
         <IconButton
           edge="start"
           className={classes.userButton}
