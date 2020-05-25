@@ -3,10 +3,11 @@ import * as React from "react";
 import Drawer from '@material-ui/core/Drawer';
 import List from "@material-ui/core/List";
 import Typography from "@material-ui/core/Typography";
+import TextField from '@material-ui/core/TextField';
 import Hidden from '@material-ui/core/Hidden';
 import Divider from "@material-ui/core/Divider";
 import IconButton from "@material-ui/core/IconButton";
-import CreatableSelect from 'react-select/creatable';
+import Autocomplete from '@material-ui/lab/Autocomplete';
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
@@ -22,10 +23,11 @@ import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../theme";
 
 type SideBarProps = {
-  sidebarHandler: any,
   openState: any,
   classes: any,
-  theme: Theme
+  theme: Theme,
+  mainContext: any,
+  setMainContext: any
 };
 
 type SideBarHeaderProps = {
@@ -37,8 +39,20 @@ type SideBarHeaderProps = {
 const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
   const { classes, theme, closeButton } = props;
   const headerElements = (
-    <CreatableSelect
-        className={classes.sideBarHeaderSelect}
+    <Autocomplete
+      className={classes.sideBarHeaderSelect}
+      options={[]}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Search content"
+          variant="outlined"
+          inputProps={{
+            ...params.inputProps,
+            autoComplete: 'new-password', // disable autocomplete and autofill
+          }}
+        />
+      )}
     />
   );
   return (
@@ -51,7 +65,7 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
 })
 
 function SideBar (props: SideBarProps) {
-    const { classes, theme, sidebarHandler, openState } = props;
+    const { classes, theme, mainContext, setMainContext, openState } = props;
     const closeButton = (
       <Hidden lgUp>
         <IconButton onClick={() => openState.setDrawerOpen(false)}>

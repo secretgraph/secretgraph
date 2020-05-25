@@ -32,11 +32,19 @@ export const secretgraphTheme = (theme: Theme) => ({
   },
   userButton: {
   },
-  newItemSelect: {
+  contentStateSelect: {
+    marginLeft: theme.spacing(1),
+    color: "white",
+    direction: "rtl",
+    fontSize: "120%"
+  },
+  hidden: {
     display: "none",
   },
-  newItemSelectOpen: {
-    minWidth: "200px",
+  newItemSelect: {
+    color: "white",
+    direction: "rtl",
+    fontSize: "120%"
   },
   drawer: {
     width: drawerWidth,

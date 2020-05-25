@@ -8,19 +8,37 @@ import { Theme } from "@material-ui/core/styles";
 import IconButton from "@material-ui/core/IconButton";
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
-import Select from 'react-select';
+import NativeSelect from '@material-ui/core/NativeSelect';
+import MenuItem from '@material-ui/core/MenuItem';
+import { elements } from './elements';
+import { contentStates } from '../constants';
+
 
 type Props = {
   classes: any,
   theme: Theme,
-  action: any,
-  currentItem: any
+  mainContext: any,
+  setMainContext: any
 };
 
 export default themeComponent((props: Props) => {
-  const { classes, theme, action, currentItem } = props;
+  const { classes, theme, mainContext, setMainContext } = props;
   const [actionOpen, setActionOpen] = React.useState(false);
   const [actionWeakOpen, setActionWeakOpen] = React.useState(false);
+  let editButton = null;
+
+  if (mainContext.item && mainContext.action == "view"){
+    editButton = (
+      <Tooltip title="Edit" arrow>
+        <IconButton
+          className={classes.actionToolBarButton}
+          aria-label="edit"
+        >
+          <EditIcon />
+        </IconButton>
+      </Tooltip>
+    );
+  }
 
   const addAction = () => {
     if (!actionOpen){
@@ -41,22 +59,39 @@ export default themeComponent((props: Props) => {
     >
       <div style={{flexGrow: 1}} />
       <Toolbar className={classes.actionToolBarInner}>
-        <Tooltip title="Edit" arrow>
-          <IconButton
-            className={classes.actionToolBarButton}
-            aria-label="edit"
-          >
-            <EditIcon />
-          </IconButton>
+        <Tooltip title="Select state of content" arrow>
+          <NativeSelect
+            className={classes.contentStateSelect}
+            onChange={(event: any) => setMainContext({
+              ...mainContext,
+              state: event.target.value
+            })}
+            value={mainContext.state}
+            children={
+              contentStates.map((item: any) => (
+                <option value={item.value} key={item.value}>{item.label}</option>
+              ))
+            }
+          />
         </Tooltip>
-        <Select
-          className={(actionWeakOpen || actionOpen) ? classes.newItemSelectOpen : classes.newItemSelect}
-          onInputChange={() => setActionOpen(false)}
-          options={options}
+        {editButton}
+        <NativeSelect
+          className={(actionWeakOpen || actionOpen || mainContext.action === "add") ? classes.newItemSelect : classes.hidden}
+          onChange={(event: any) => setMainContext({
+            ...mainContext,
+            action: "add",
+            item: event.target.value
+          })}
+          value={mainContext.item}
+          children={
+            elements.map((item: any) => (
+              <option value={item.value} key={item.value}>{item.label}</option>
+            ))
+          }
         />
         <Tooltip title="Add" arrow>
           <IconButton
-            className={classes.actionToolBarButton}
+            className={(actionWeakOpen || actionOpen || mainContext.action === "add") ? classes.hidden : classes.actionToolBarButton}
             aria-label="add"
             onClick={addAction}
             onMouseEnter={() => setActionWeakOpen(true)}
@@ -68,27 +103,3 @@ export default themeComponent((props: Props) => {
     </div>
   );
 })
-
-
-/**
-export default class ActionBar extends React.Component<Props> {
-  render() {
-    return (
-      <div
-        value={value}
-        onChange={handleChange}
-        indicatorColor="primary"
-        textColor="primary"
-        scrollButtons="auto"
-        aria-label=""
-      ><Tooltip title="Add" arrow>
-  <Button>Arrow</Button>
-</Tooltip>
-        <Tab label="Item Two" {...a11yProps(1)} />
-        <Tab label="Item Three" {...a11yProps(2)} />
-      </Tabs>
-    );
-  }
-
-}
-*/
