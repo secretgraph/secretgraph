@@ -28,7 +28,7 @@ export const secretgraphTheme = (theme: Theme) => ({
     flexGrow: 1,
     marginLeft: "3rem",
   },
-  menuButton: {
+  sidebarButton: {
   },
   userButton: {
   },
@@ -54,7 +54,8 @@ export const secretgraphTheme = (theme: Theme) => ({
     width: drawerWidth,
   },
   sideBarHeaderSelect: {
-    width: "100%"
+    width: "100%",
+    marginTop: "3px"
   },
   sideBarHeader: {
     // necessary for content to be below app bar

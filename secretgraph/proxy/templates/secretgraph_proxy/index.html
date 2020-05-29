@@ -12,6 +12,7 @@
     {% block favicon %}
     <link rel="shortcut icon" type="image/svg" href="{% static 'secretgraph/favicon.svg' %}" />
     {% endblock %}
+    <script type="text/javascript" src="{% url 'javascript-i18n' %}"></script>
     {# CSS #}
     {% block styles %}
     {% render_bundle 'main' 'css' %}

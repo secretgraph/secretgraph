@@ -21,24 +21,23 @@ type Props = {
   setMainContext: any
 };
 
+function createOptionsIterator(mapObject: Map<string, any>) {
+  return {
+    *[Symbol.iterator]() {
+      for(const [key, value] of mapObject){
+        yield (
+          <option value={key} key={key}>{value.label}</option>
+        );
+      }
+    }
+  }
+}
+
+
 export default themeComponent((props: Props) => {
   const { classes, theme, mainContext, setMainContext } = props;
   const [actionOpen, setActionOpen] = React.useState(false);
   const [actionWeakOpen, setActionWeakOpen] = React.useState(false);
-  let editButton = null;
-
-  if (mainContext.item && mainContext.action == "view"){
-    editButton = (
-      <Tooltip title="Edit" arrow>
-        <IconButton
-          className={classes.actionToolBarButton}
-          aria-label="edit"
-        >
-          <EditIcon />
-        </IconButton>
-      </Tooltip>
-    );
-  }
 
   const addAction = () => {
     if (!actionOpen){
@@ -61,20 +60,25 @@ export default themeComponent((props: Props) => {
       <Toolbar className={classes.actionToolBarInner}>
         <Tooltip title="Select state of content" arrow>
           <NativeSelect
-            className={classes.contentStateSelect}
+            className={(mainContext.action === "help") ? classes.hidden : classes.contentStateSelect}
             onChange={(event: any) => setMainContext({
               ...mainContext,
               state: event.target.value
             })}
             value={mainContext.state}
             children={
-              contentStates.map((item: any) => (
-                <option value={item.value} key={item.value}>{item.label}</option>
-              ))
+              createOptionsIterator(contentStates)
             }
           />
         </Tooltip>
-        {editButton}
+        <Tooltip title="Edit" arrow>
+          <IconButton
+            className={!(mainContext.item && mainContext.action === "view") ? classes.hidden : classes.actionToolBarButton}
+            aria-label="edit"
+          >
+            <EditIcon />
+          </IconButton>
+        </Tooltip>
         <NativeSelect
           className={(actionWeakOpen || actionOpen || mainContext.action === "add") ? classes.newItemSelect : classes.hidden}
           onChange={(event: any) => setMainContext({
@@ -84,9 +88,7 @@ export default themeComponent((props: Props) => {
           })}
           value={mainContext.item}
           children={
-            elements.map((item: any) => (
-              <option value={item.value} key={item.value}>{item.label}</option>
-            ))
+            createOptionsIterator(elements)
           }
         />
         <Tooltip title="Add" arrow>
