@@ -1,7 +1,6 @@
 
 import * as React from "react";
 import { themeComponent } from "../theme";
-import Button from '@material-ui/core/Button';
 import Toolbar from "@material-ui/core/Toolbar";
 import Tooltip from '@material-ui/core/Tooltip';
 import { Theme } from "@material-ui/core/styles";
@@ -9,7 +8,7 @@ import IconButton from "@material-ui/core/IconButton";
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
 import NativeSelect from '@material-ui/core/NativeSelect';
-import MenuItem from '@material-ui/core/MenuItem';
+import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined';
 import { elements } from './elements';
 import { contentStates } from '../constants';
 
@@ -79,18 +78,20 @@ export default themeComponent((props: Props) => {
             <EditIcon />
           </IconButton>
         </Tooltip>
-        <NativeSelect
-          className={(actionWeakOpen || actionOpen || mainContext.action === "add") ? classes.newItemSelect : classes.hidden}
-          onChange={(event: any) => setMainContext({
-            ...mainContext,
-            action: "add",
-            item: event.target.value
-          })}
-          value={mainContext.item}
-          children={
-            createOptionsIterator(elements)
-          }
-        />
+        <Tooltip title="Add Element" arrow>
+          <NativeSelect
+            className={(actionWeakOpen || actionOpen || mainContext.action === "add") ? classes.newItemSelect : classes.hidden}
+            onChange={(event: any) => setMainContext({
+              ...mainContext,
+              action: "add",
+              item: event.target.value
+            })}
+            value={mainContext.item}
+            children={
+              createOptionsIterator(elements)
+            }
+          />
+        </Tooltip>
         <Tooltip title="Add" arrow>
           <IconButton
             className={(actionWeakOpen || actionOpen || mainContext.action === "add") ? classes.hidden : classes.actionToolBarButton}
@@ -101,6 +102,12 @@ export default themeComponent((props: Props) => {
             <AddIcon />
           </IconButton>
         </Tooltip>
+        <IconButton
+            className={classes.actionToolBarButton}
+            aria-label="help"
+          >
+            <HelpOutlineOutlinedIcon />
+          </IconButton>
       </Toolbar>
     </div>
   );

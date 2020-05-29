@@ -93,8 +93,8 @@ function SideBar (props: SideBarProps) {
           <ExpansionPanel>
             <ExpansionPanelSummary
               expandIcon={<ExpandMoreIcon />}
-              aria-controls="panel1a-content"
-              id="panel1a-header"
+              aria-controls="PostBox-content"
+              id="PostBox-header"
             >
               <Typography className={classes.heading}>PostBox</Typography>
             </ExpansionPanelSummary>

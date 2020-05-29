@@ -66,7 +66,8 @@ export const secretgraphTheme = (theme: Theme) => ({
     justifyContent: "flex-end",
   },
   sideBarBody: {
-    overflowY: "auto"
+    overflowY: "auto",
+    paddingRight: "3px"
   },
   actionToolBarOuter: {
     display: "flex",
