@@ -1,7 +1,9 @@
 declare var gettext: any;
 
+import { editSource, viewSource } from "./source"
+
 export const elements = new Map([
-  ['source', { label: gettext('Source') }],
+  ['source', { label: gettext('Source'), edit: editSource, view: viewSource }],
   ['file', { label: gettext('File') }],
   ['text', { label: gettext('Text') }],
   ['postbox', { label: gettext('Postbox') }],

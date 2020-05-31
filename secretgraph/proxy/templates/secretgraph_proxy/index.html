@@ -1,34 +1,13 @@
-{% load i18n %}
-{% load static %}
+{% extends "secretgraph/base.html" %}
 {% load render_bundle from webpack_loader %}
-<!DOCTYPE html>
-<html lang="{{LANGUAGE_CODE}}">
-  <head>
-    <title>{% block title %}{% endblock %}</title>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <meta name="application-name" content="secretgraph"/>
+{% block styles %}
+{% render_bundle 'main' 'css' %}
+{% endblock %}
 
-    <meta name="viewport" content="{% block viewport %}width=device-width, initial-scale=1.0{% endblock %}">
-    {% block favicon %}
-    <link rel="shortcut icon" type="image/svg" href="{% static 'secretgraph/favicon.svg' %}" />
-    {% endblock %}
-    <script type="text/javascript" src="{% url 'javascript-i18n' %}"></script>
-    {# CSS #}
-    {% block styles %}
-    {% render_bundle 'main' 'css' %}
-    {% endblock %}
-    {#% render_bundle 'vendors~main' 'js' %#}
-  </head>
+{% block layout %}
+<div style="display: contents" id="content-main" data-server-path="{{server_path}}"></div>
+{% endblock %}
 
-  <body style="display: contents; margin: 0">
-    {# Deco content, e.g.base.html  #}
-    {% block layout %}
-    <div style="display: contents" id="content-main" data-server-path="{{server_path}}"></div>
-    {% endblock %}
-
-    {# Scripts #}
-    {% block body_scripts %}
-    {% render_bundle 'main' 'js' %}
-    {% endblock body_scripts %}
-  </body>
-</html>
+{% block body_scripts %}
+{% render_bundle 'main' 'js' %}
+{% endblock body_scripts %}

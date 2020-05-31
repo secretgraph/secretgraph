@@ -6,8 +6,8 @@ cgihandler.cgi
 cgihandler.fcgi
 cgihandler.build
 cgihandler.dist
-media
-static
+./media
+./static
 webpack_bundles
 webpack-stats.json
 __generated__

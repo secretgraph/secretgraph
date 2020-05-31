@@ -8,6 +8,7 @@ import IconButton from "@material-ui/core/IconButton";
 import MenuIcon from "@material-ui/icons/Menu";
 import AccountCircle from "@material-ui/icons/AccountCircle";
 import { Theme } from "@material-ui/core/styles";
+import { Helmet } from 'react-helmet';
 
 import { themeComponent } from "../theme";
 import { elements } from './elements';
@@ -60,6 +61,9 @@ function HeaderBar(props: Props) {
       position="sticky"
       className={openState.drawerOpen ? classes.appBarShift : classes.appBar}
     >
+      <Helmet>
+        <title>{`Secretgraph: ${title}`}</title>
+      </Helmet>
       <Toolbar className={classes.appBarToolBar}>
         {sidebarButton}
         <Typography variant="h6" className={classes.appBarTitle}>

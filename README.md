@@ -1,15 +1,16 @@
 
 
 
-# structure
+# structure django
 
 * constants: contains constants
-* server: outputs raw data
-* user: Quota user
+* server: server component for raw data. Has some views for non graphql
+* proxy: presents react part to user
+* user: Quota user, some views for editing user
 
-* assets: Client stuff
-
-verifier
+# further structure
+* assets: Client react stuff
+* tests: tests
 
 
 
@@ -20,5 +21,4 @@ verifier
 
 # TODO
 
-transfer values
-maybe: encrypt some info tags
+* maybe: encrypt some info tags
