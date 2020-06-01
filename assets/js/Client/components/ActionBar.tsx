@@ -33,7 +33,7 @@ function createOptionsIterator(mapObject: Map<string, any>) {
 }
 
 
-export default themeComponent((props: Props) => {
+function ActionBar(props: Props) {
   const { classes, theme, mainContext, setMainContext } = props;
   const [actionOpen, setActionOpen] = React.useState(false);
   const [actionWeakOpen, setActionWeakOpen] = React.useState(false);
@@ -59,7 +59,7 @@ export default themeComponent((props: Props) => {
       <Toolbar className={classes.actionToolBarInner}>
         <Tooltip title="Select state of content" arrow>
           <NativeSelect
-            className={(mainContext.action === "help") ? classes.hidden : classes.contentStateSelect}
+            className={(mainContext.action === "help" || !mainContext.item) ? classes.hidden : classes.contentStateSelect}
             onChange={(event: any) => setMainContext({
               ...mainContext,
               state: event.target.value
@@ -111,4 +111,6 @@ export default themeComponent((props: Props) => {
       </Toolbar>
     </div>
   );
-})
+}
+
+export default themeComponent(ActionBar);

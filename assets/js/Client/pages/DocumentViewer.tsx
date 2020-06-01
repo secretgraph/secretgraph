@@ -17,6 +17,6 @@ export default themeComponent((props: Props) => {
   const { classes, theme, mainContext, setMainContext } = props;
 
   return (
-    <div />
+    <React.Fragment />
   );
 });

@@ -1,5 +1,7 @@
 declare var gettext: any;
 
+import * as React from "react"
+
 import { editSource, viewSource } from "./source"
 
 export const elements = new Map([

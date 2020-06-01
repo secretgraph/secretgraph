@@ -10,10 +10,12 @@ type Props = {
   mainContext: any
 };
 
-export default themeComponent((props: Props) => {
+function Help(props: Props) {
   const { classes, theme, mainContext } = props;
 
   return (
-    <div />
+    <React.Fragment />
   );
-});
+}
+
+export default themeComponent(Help);

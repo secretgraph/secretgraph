@@ -7,7 +7,11 @@ from graphene_file_upload.django import FileUploadGraphQLView
 from .proxy.views import ProxyView
 
 urlpatterns = [
-    path("graphql", csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))),
+    path(
+        "graphql",
+        csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True)),
+        name="graphql-plain"
+    ),
     path("secretgraph/", include("secretgraph.server.urls")),
 
 ]
@@ -18,4 +22,10 @@ urlpatterns += i18n_patterns(
         ProxyView.as_view()
     ),
     path('jsi18n/', JavaScriptCatalog.as_view(), name='javascript-i18n'),
+    # for localized graphql
+    path(
+        "graphql",
+        csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True)),
+        name="graphql-localized"
+    )
 )

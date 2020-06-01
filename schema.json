@@ -1302,6 +1302,22 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
+              "name": "hashAlgorithms",
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
               "name": "injectedClusters",
               "type": {
                 "kind": "LIST",
@@ -1312,12 +1328,34 @@
                   "ofType": null
                 }
               }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "registerUrl",
+              "type": {
+                "kind": "SCALAR",
+                "name": "RegisterUrl",
+                "ofType": null
+              }
             }
           ],
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
           "name": "SecretgraphConfig",
+          "possibleTypes": null
+        },
+        {
+          "description": "The `RegisterUrl` scalar type represents can be:\n*  String: url,\n*  Boolean: can register/cannot register at all.",
+          "enumValues": null,
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "kind": "SCALAR",
+          "name": "RegisterUrl",
           "possibleTypes": null
         },
         {

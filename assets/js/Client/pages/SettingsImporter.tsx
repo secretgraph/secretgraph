@@ -13,10 +13,14 @@ type Props = {
   setMainContext: any
 };
 
-export default themeComponent((props: Props) => {
+function SettingsImporter(props: Props) {
   const { classes, theme, mainContext, setMainContext } = props;
 
   return (
-    <React.Fragment />
+    <React.Fragment>
+
+    </React.Fragment>
   );
-});
+}
+
+export default themeComponent(SettingsImporter);

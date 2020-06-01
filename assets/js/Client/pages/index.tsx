@@ -5,7 +5,9 @@ import HeaderBar from "../components/HeaderBar";
 import SideBar from "../components/SideBar";
 import { themeComponent } from "../theme";
 import { elements } from '../components/elements';
+import { loadConfigSync } from '../utils/config';
 import Help from './Help';
+import SettingsImporter from './SettingsImporter';
 import DocumentEditor from './DocumentEditor';
 import DocumentViewer from './DocumentViewer';
 
@@ -15,13 +17,15 @@ type Props = {
   theme: Theme
 };
 
-export default themeComponent((props: Props) => {
+
+function MainPage(props: Props) {
   const {classes, theme} = props;
   const [drawerOpen, setDrawerOpen] = React.useState(true);
+  const [config, setConfig] = React.useState(() => loadConfigSync());
   const [mainContext, setMainContext] = React.useState({
     "component": null,
-    "action": "add",
-    "item": elements.keys().next().value,
+    "action": config ? "add" : "start",
+    "item": config ? elements.keys().next().value : null,
     "state": "draft"
   });
   let frameElement = null;
@@ -31,6 +35,8 @@ export default themeComponent((props: Props) => {
         <DocumentViewer
           mainContext={mainContext}
           setMainContext={setMainContext}
+          config={config}
+          setConfig={setConfig}
         />
       );
       break;
@@ -40,10 +46,23 @@ export default themeComponent((props: Props) => {
         <DocumentEditor
           mainContext={mainContext}
           setMainContext={setMainContext}
+          config={config}
+          setConfig={setConfig}
         />
       );
       break;
-    default:
+    case "start":
+    case "import":
+      frameElement = (
+        <SettingsImporter
+          mainContext={mainContext}
+          setMainContext={setMainContext}
+          config={config}
+          setConfig={setConfig}
+        />
+      );
+      break;
+    case "help":
       frameElement = (
         <Help
           mainContext={mainContext}
@@ -55,8 +74,11 @@ export default themeComponent((props: Props) => {
   return (
     <div className={classes.root}>
       <HeaderBar
+        config={config}
+        setConfig={setConfig}
         openState={{drawerOpen, setDrawerOpen}}
-        mainContext={mainContext}/>
+        mainContext={mainContext}
+        setMainContext={setMainContext}/>
       <SideBar
         mainContext={mainContext}
         setMainContext={setMainContext}
@@ -73,4 +95,5 @@ export default themeComponent((props: Props) => {
       </main>
     </div>
   );
-});
+};
+export default themeComponent(MainPage);

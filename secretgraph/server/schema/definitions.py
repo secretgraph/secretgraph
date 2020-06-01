@@ -1,19 +1,50 @@
 import graphene
 from django.conf import settings
+from django.shortcuts import resolve_url
 from graphene import relay, ObjectType
 from graphene_django import DjangoObjectType
+
+from graphene.types.generic import GenericScalar
 
 from ..actions.view import fetch_contents
 from ..models import Cluster, Content, ContentReference
 
 
+class RegisterUrl(GenericScalar):
+    """
+    The `RegisterUrl` scalar type represents can be:
+    *  String: url,
+    *  Boolean: can register/cannot register at all.
+    """
+
+
 class SecretgraphConfig(ObjectType):
+    hashAlgorithms = graphene.List(graphene.String)
     injectedClusters = graphene.List(graphene.String)
+    registerUrl = graphene.Field(RegisterUrl)
+
+    def resolve_hashAlgorithms(self, info):
+        return settings.SECRETGRAPH_HASH_ALGORITHMS
 
     def resolve_injectedClusters(self, info):
         return getattr(
             settings, "SECRETGRAPH_INJECT_CLUSTERS", None
         ) or []
+
+    def resolve_registerUrl(self, info):
+        if getattr(
+            settings, "SECRETGRAPH_ALLOW_REGISTER", False
+        ) is not True:
+            return False
+        signup_url = getattr(settings, "SIGNUP_URL", None)
+        if (
+            getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
+            and not signup_url
+        ):
+            return False
+        if signup_url:
+            return resolve_url(signup_url)
+        return True
 
 
 class FlexidMixin():

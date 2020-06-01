@@ -64,7 +64,7 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
   )
 })
 
-function SideBar (props: SideBarProps) {
+function SideBar(props: SideBarProps) {
     const { classes, theme, mainContext, setMainContext, openState } = props;
     const closeButton = (
       <Hidden lgUp>
