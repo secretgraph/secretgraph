@@ -17,23 +17,23 @@ cluster:Cluster a rdfs:Class ;
   rdfs:comment "Root for a Cluster" ;
   rdfs:domain rdfs:Resource .
 
-cluster:EncryptedBox a rdfs:Class ;
+cluster:AuthBox a rdfs:Class ;
   rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
   rdfs:domain cluster:Cluster .
 
-cluster:EncryptedBox.secrets a rdf:Bag ;
+cluster:AuthBox.actions a rdf:Bag ;
   rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
-  rdfs:label "Encrypted secrets (nonce:<type:b64secret>)" ;
-  rdfs:domain cluster:EncryptedBox ;
+  rdfs:label "Optionally specify actions" ;
+  rdfs:domain cluster:AuthBox ;
   rdfs:range xsd:string .
 
-cluster:EncryptedBox.tasks a rdf:Seq ;
+cluster:AuthBox.tasks a rdf:Seq ;
   rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
-  rdfs:domain cluster:EncryptedBox ;
+  rdfs:domain cluster:AuthBox ;
   rdfs:range xsd:string .
 
-cluster:Cluster.boxes a rdf:Property;
+cluster:Cluster.boxes a rdf:Bag;
   rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
   rdfs:comment "Encrypted boxes for a Cluster" ;
   rdfs:domain cluster:Cluster ;
-  rdfs:range cluster:EncryptedBox .
+  rdfs:range cluster:AuthBox .

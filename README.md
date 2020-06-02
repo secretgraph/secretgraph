@@ -21,6 +21,7 @@
 
 # TODO
 
+* urgent: switch from EncryptedBox logic to AuthBox
 * don't expose pw protected secrets in publicInfo
   * expose ways for login
   * tokens are stretched so that also a pw can be a token
