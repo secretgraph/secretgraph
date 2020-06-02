@@ -38,7 +38,9 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "clusters": {},
         "forms": {},
         "actions": Action.objects.none(),
-        "action_key_map": {}
+        "action_key_map": {},
+        "action_types_clusters": {},
+        "action_types_contents": {}
     }
     for item in authset:
         spitem = item.split(":", 1)
@@ -86,12 +88,31 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 accesslevel=accesslevel,
                 request=request
             )
+            if action.contentAction:
+                action_type_dict = \
+                    returnval["action_types_contents"].setdefault(
+                        action.contentAction.content_id,
+                        {}
+                    )
+            else:
+                action_type_dict = \
+                    returnval["action_types_clusters"].setdefault(
+                        action.cluster_id,
+                        {}
+                    )
             if result is None:
+                action_type_dict[action.keyHash] = (
+                    action_dict["action"], False
+                )
                 continue
             if result is False:
                 returnval["rejecting_action"] = (action, action_dict)
                 returnval["objects"] = query.none()
                 return returnval
+            action_type_dict[action.keyHash] = (
+                action_dict["action"], True
+            )
+
             foundaccesslevel = result["accesslevel"]
 
             if accesslevel < foundaccesslevel:

@@ -21,4 +21,7 @@
 
 # TODO
 
+* don't expose pw protected secrets in publicInfo
+  * expose ways for login
+  * tokens are stretched so that also a pw can be a token
 * maybe: encrypt some info tags

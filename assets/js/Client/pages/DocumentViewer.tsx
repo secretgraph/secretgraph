@@ -3,7 +3,6 @@ import * as React from "react";
 import { Theme } from "@material-ui/core/styles";
 
 import { themeComponent } from "../theme";
-import { newComponentLabel } from "../messages";
 import { elements } from '../components/elements';
 
 type Props = {

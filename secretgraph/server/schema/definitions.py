@@ -62,7 +62,34 @@ class FlexidMixin():
             return None
 
 
-class ContentNode(FlexidMixin, DjangoObjectType):
+class ActionEntry(graphene.ObjectType):
+    keyHash = graphene.String()
+    type = graphene.String()
+
+
+class ActionMixin(object):
+    availableActions = graphene.List(ActionEntry)
+
+    def resolve_availableActions(self, info, result_key, cluster_id):
+        result = getattr(info, "secretgraphResult", {})
+        resultval = result.get(
+            result_key, {}
+        ).get(self.id, {}).items()
+        # only show some actions
+        resultval = filter(lambda x: x[1][0] in {
+            "manage", "push", "view", "update"
+        }, resultval)
+        if ("manage", True) not in result.get(
+            "action_types_clusters", {}
+        ).get(cluster_id, {}).values():
+            resultval = filter(lambda x: x[1][1], resultval)
+
+        return map(
+            lambda x: ActionEntry(keyHash=x[0], type=x[1][0]), resultval
+        )
+
+
+class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     class Meta:
         model = Content
         name = "Content"
@@ -80,6 +107,11 @@ class ContentNode(FlexidMixin, DjangoObjectType):
     def resolve_link(self, info):
         # url to
         return self.file.url
+
+    def resolve_availableActions(self, info):
+        return super().resolve_availableActions(
+            self, info, "action_types_contents", self.cluster_id
+        )
 
 
 class ContentConnection(relay.Connection):
@@ -115,7 +147,7 @@ class ContentReferenceNode(DjangoObjectType):
             return None
 
 
-class ClusterNode(FlexidMixin, DjangoObjectType):
+class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     class Meta:
         model = Cluster
         interfaces = (relay.Node,)
@@ -139,6 +171,11 @@ class ClusterNode(FlexidMixin, DjangoObjectType):
         if not hasattr(self, "user"):
             return None
         return self.user
+
+    def resolve_availableActions(self, info):
+        return super().resolve_availableActions(
+            self, info, "action_types_clusters", self.id
+        )
 
 
 class ClusterConnection(relay.Connection):
