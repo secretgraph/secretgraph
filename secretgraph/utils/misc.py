@@ -60,25 +60,17 @@ def calculate_hashes(inp):
 
 def get_secrets(graph):
     public_secrets = []
-    protected_secrets = {}
-    # tasks must not be distinct
     for i in graph.query(
         """
-        SELECT ?secret ?task
+        SELECT ?secret
         WHERE {
-            ?n a cluster:EncryptedBox ;
-                cluster:EncryptedBox.secrets ?secret .
-            OPTIONAL {  cluster:EncryptedBox.tasks ?task } .
+            ?n a cluster:PublicSecret ;
+                 cluster:PublicSecret.value ?secret .
         }
         """,
         initNs={
             "cluster": sgraph_cluster
         }
     ):
-        if i.task:
-            # hopefully the order is preserved
-            protected_secrets.setdefault(i.secret, [])
-            protected_secrets[i.secret].append(i.task)
-        else:
-            public_secrets.append(i.secret)
-    return public_secrets, protected_secrets
+        public_secrets.append(i.secret)
+    return public_secrets

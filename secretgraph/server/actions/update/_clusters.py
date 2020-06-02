@@ -1,7 +1,6 @@
 __all__ = ["create_cluster", "update_cluster"]
 
 import base64
-import hashlib
 import os
 
 from cryptography.hazmat.backends import default_backend
@@ -10,7 +9,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.db import transaction
-from rdflib import RDF, XSD, BNode, Graph, Literal
+from rdflib import RDF, BNode, Graph
 
 from ....constants import sgraph_cluster
 from ....utils.misc import get_secrets, hash_object
@@ -27,7 +26,7 @@ def _update_or_create_cluster(
     if objdata.get("publicInfo"):
         g = Graph()
         g.parse(objdata["publicInfo"], "turtle")
-        public_secret_hashes = set(map(hash_object, get_secrets(g)[0]))
+        public_secret_hashes = set(map(hash_object, get_secrets(g)))
         cluster.publicInfo = objdata["publicInfo"]
         cluster.public = len(public_secret_hashes) > 0
     elif cluster.id is not None:
@@ -68,7 +67,7 @@ def _update_or_create_cluster(
 
 
 def create_cluster(
-    request, objdata=None, key=None, password=None, user=None, authset=None
+    request, objdata=None, key=None, user=None, authset=None
 ):
     prebuild = {}
 
@@ -99,40 +98,6 @@ def create_cluster(
         g = Graph()
         root = BNode()
         g.add((root, RDF.type, sgraph_cluster["Cluster"]))
-        if password:
-            salt = os.urandom(16)
-            hashed_pw = hashlib.pbkdf2_hmac(
-                'sha256', password.encode("utf8"), salt, 250000
-            )
-            aesgcm = AESGCM(hashed_pw)
-
-            b2 = BNode()
-            g.add((root, sgraph_cluster["Cluster.boxes"], b2))
-            g.add((
-                b2,
-                sgraph_cluster["Cluster.tasks"],
-                Literal(f"pw:{salt}", datatype=XSD.string)
-            ))
-            for k, ktype in [(action_key, b"manage"), (key, b"")]:
-                if not k:
-                    continue
-                nonce = os.urandom(13)
-
-                encrypted_secret = aesgcm.encrypt(
-                    b"%b:%b" % (
-                        ktype,
-                        base64.b64encode(k)
-                    ), nonce, None
-                )
-                encrypted_secret = "{}:{}".format(
-                    base64.b64encode(nonce).decode("ascii"),
-                    base64.b64encode(encrypted_secret).decode("ascii")
-                )
-                g.add((
-                    b2,
-                    sgraph_cluster["Cluster.secrets"],
-                    Literal(encrypted_secret, datatype=XSD.string)
-                ))
         objdata["publicInfo"] = g.serialize(format="turtle")
 
     if not objdata.get("actions"):

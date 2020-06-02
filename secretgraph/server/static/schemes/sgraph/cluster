@@ -17,23 +17,24 @@ cluster:Cluster a rdfs:Class ;
   rdfs:comment "Root for a Cluster" ;
   rdfs:domain rdfs:Resource .
 
-cluster:AuthBox a rdfs:Class ;
+cluster:PublicSecret a rdfs:Class ;
   rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
   rdfs:domain cluster:Cluster .
 
-cluster:AuthBox.actions a rdf:Bag ;
+cluster:PublicSecret.value a rdf:Property ;
   rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
-  rdfs:label "Optionally specify actions" ;
-  rdfs:domain cluster:AuthBox ;
+  rdfs:label "Public secret value" ;
+  rdfs:domain cluster:PublicSecret ;
+  rdfs:range xsd:base64Binary .
+
+cluster:PublicSecret.actions a rdf:Bag ;
+  rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
+  rdfs:label "Optionally specify actions which can be triggered by open secret" ;
+  rdfs:domain cluster:PublicSecret ;
   rdfs:range xsd:string .
 
-cluster:AuthBox.tasks a rdf:Seq ;
+cluster:Cluster.publicsecret a rdf:Bag;
   rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
-  rdfs:domain cluster:AuthBox ;
-  rdfs:range xsd:string .
-
-cluster:Cluster.boxes a rdf:Bag;
-  rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
-  rdfs:comment "Encrypted boxes for a Cluster" ;
+  rdfs:comment "Public Secrets for a Cluster" ;
   rdfs:domain cluster:Cluster ;
-  rdfs:range cluster:AuthBox .
+  rdfs:range cluster:PublicSecret .

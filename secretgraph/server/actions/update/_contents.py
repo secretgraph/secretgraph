@@ -342,7 +342,7 @@ def _update_or_create_content_or_key(
                     # add public when action_key is public
                     g = Graph()
                     g.parse(content.cluster.publicInfo, "turtle")
-                    secrets = get_secrets(g)[0]
+                    secrets = get_secrets(g)
                     has_action_secret = False
                     for i in secrets:
                         splitted = i.split(b":", 1)
