@@ -70,7 +70,7 @@ class ActionEntry(graphene.ObjectType):
 class ActionMixin(object):
     availableActions = graphene.List(ActionEntry)
 
-    def resolve_availableActions(self, info, result_key, cluster_id):
+    def resolve_availableActions(self, info, result_key):
         result = getattr(info, "secretgraphResult", {})
         resultval = result.get(
             result_key, {}
@@ -79,11 +79,6 @@ class ActionMixin(object):
         resultval = filter(lambda x: x[1][0] in {
             "manage", "push", "view", "update"
         }, resultval)
-        if ("manage", True) not in result.get(
-            "action_types_clusters", {}
-        ).get(cluster_id, {}).values():
-            resultval = filter(lambda x: x[1][1], resultval)
-
         return map(
             lambda x: ActionEntry(keyHash=x[0], type=x[1][0]), resultval
         )
@@ -110,7 +105,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
     def resolve_availableActions(self, info):
         return super().resolve_availableActions(
-            self, info, "action_types_contents", self.cluster_id
+            self, info, "action_types_contents"
         )
 
 
@@ -174,7 +169,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
     def resolve_availableActions(self, info):
         return super().resolve_availableActions(
-            self, info, "action_types_clusters", self.id
+            self, info, "action_types_clusters"
         )
 
 

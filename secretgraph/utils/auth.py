@@ -88,6 +88,12 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 accesslevel=accesslevel,
                 request=request
             )
+            if result is None:
+                continue
+            if result is False:
+                returnval["rejecting_action"] = (action, action_dict)
+                returnval["objects"] = query.none()
+                return returnval
             if action.contentAction:
                 action_type_dict = \
                     returnval["action_types_contents"].setdefault(
@@ -100,18 +106,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                         action.cluster_id,
                         {}
                     )
-            if result is None:
-                action_type_dict[action.keyHash] = (
-                    action_dict["action"], False
-                )
-                continue
-            if result is False:
-                returnval["rejecting_action"] = (action, action_dict)
-                returnval["objects"] = query.none()
-                return returnval
-            action_type_dict[action.keyHash] = (
-                action_dict["action"], True
-            )
+            action_type_dict[action.keyHash] = action_dict["action"]
 
             foundaccesslevel = result["accesslevel"]
 
