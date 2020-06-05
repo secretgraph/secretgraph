@@ -1,13 +1,28 @@
 from django.views.generic import View
 from django.views.generic.edit import UpdateView
 from django.http import StreamingHttpResponse, Http404
+from graphene_file_upload.django import FileUploadGraphQLView
 
 from ..utils.encryption import iter_decrypt_contents
 from .actions.view import fetch_contents, fetch_clusters
 from .forms import PushForm, UpdateForm
 
 
-class ClustersView(View):
+class AllowCORSMixin(object):
+
+    def add_cors_headers(self, response):
+        response["Access-Control-Allow-Origin"] = "*"
+        if self.request.method == "OPTIONS":
+            # copy from allow
+            response["Access-Control-Allow-Methods"] = response['Allow']
+
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        self.add_cors_headers(response)
+        return response
+
+
+class ClustersView(AllowCORSMixin, View):
 
     def get(self, request, *args, **kwargs):
         # for authset
@@ -34,7 +49,7 @@ class ClustersView(View):
         return StreamingHttpResponse(gen())
 
 
-class DocumentsView(View):
+class DocumentsView(AllowCORSMixin, View):
 
     def get(self, request, *args, **kwargs):
         # for decryptset and authset
@@ -69,7 +84,7 @@ class DocumentsView(View):
         return StreamingHttpResponse(gen())
 
 
-class PushView(UpdateView):
+class PushView(AllowCORSMixin, UpdateView):
     form_class = PushForm
 
     def post(self, request, id, *args, **kwargs):
@@ -80,7 +95,7 @@ class PushView(UpdateView):
         authset.update(request.GET.getlist("token"))
 
 
-class UpdateView(UpdateView):
+class UpdateView(AllowCORSMixin, UpdateView):
     form_class = UpdateForm
 
     def post(self, request, id, *args, **kwargs):
@@ -89,3 +104,7 @@ class UpdateView(UpdateView):
             " ", ""
         ).split(","))
         authset.update(request.GET.getlist("token"))
+
+
+class CORSFileUploadGraphQLView(AllowCORSMixin, FileUploadGraphQLView):
+    pass

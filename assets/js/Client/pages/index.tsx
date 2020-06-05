@@ -10,7 +10,7 @@ import Help from './Help';
 import SettingsImporter from './SettingsImporter';
 import DocumentEditor from './DocumentEditor';
 import DocumentViewer from './DocumentViewer';
-
+import { createEnvironment } from '../utils/graphql'
 
 type Props = {
   classes: any,
@@ -26,7 +26,8 @@ function MainPage(props: Props) {
     "component": null,
     "action": config ? "add" : "start",
     "item": config ? elements.keys().next().value : null,
-    "state": "draft"
+    "state": "draft",
+    "environment": config ? createEnvironment(config.baseUrl) : null
   });
   let frameElement = null;
   switch(mainContext.action){

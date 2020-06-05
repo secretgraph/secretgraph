@@ -27,34 +27,35 @@ const menuRef: React.RefObject<any> = React.createRef();
 function HeaderBar(props: Props) {
   const { classes, theme, mainContext, setMainContext, openState, config, setConfig } = props;
   const [menuOpen, setMenuOpen] = React.useState(false);
-  let title;
+  let title: string, documenttitle: string;
   switch (mainContext.action){
     case "add":
       let temp = elements.get(mainContext.item);
       title = `Add: ${temp ? temp.label : 'unknown'}`;
-      document.title = `Secretgraph: ${title}`;
+      documenttitle = `Secretgraph: ${title}`;
       break;
     case "update":
       title = `Update: ${mainContext.item}`;
-      document.title = `Secretgraph: ${title}`;
+      documenttitle = `Secretgraph: ${title}`;
       break;
     case "help":
       title = `Help: ${mainContext.item}`;
-      document.title = `Secretgraph: ${title}`;
+      documenttitle = `Secretgraph: ${title}`;
       break;
     case "start":
       title = "Secretgraph - Start";
-      document.title = title;
+      documenttitle = title;
       break;
     case "import":
       title = "Secretgraph - Import";
-      document.title = title;
+      documenttitle = title;
       break;
     default:
       title = mainContext.item;
-      document.title = `Secretgraph: ${title}`;
+      documenttitle = `Secretgraph: ${title}`;
       break;
   }
+
 
   const exportSettings = () => {
     exportConfig(config);
@@ -82,6 +83,11 @@ function HeaderBar(props: Props) {
       </IconButton>
     )
   }
+
+  React.useEffect(() => {
+    document.title = documenttitle;
+  })
+
   return (
     <AppBar
       position="sticky"
@@ -117,7 +123,7 @@ function HeaderBar(props: Props) {
           onClose={() => setMenuOpen(false)}
         >
           <MenuItem className={!config ? classes.hidden : null} onClick={() => setMenuOpen(false)}>Update Settings</MenuItem>
-          <MenuItem className={!config ? classes.hidden : null} onClick={() => setMenuOpen(false)}>Load Settings</MenuItem>
+          <MenuItem className={!config ? classes.hidden : null} onClick={openImporter}>Load Settings</MenuItem>
           <MenuItem className={!config ? classes.hidden : null} onClick={exportSettings}>Export Settings</MenuItem>
           <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
         </Menu>

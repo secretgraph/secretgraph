@@ -1,8 +1,8 @@
-import { Config } from "../interfaces"
+import { ConfigInterface } from "../interfaces"
 import { saveAs } from 'file-saver';
 
 
-export function loadConfigSync(obj: Storage = window.localStorage): Config | null {
+export function loadConfigSync(obj: Storage = window.localStorage): ConfigInterface | null {
   let result = obj.getItem("secretgraphConfig");
   if (!result) {
     return null;
@@ -10,7 +10,7 @@ export function loadConfigSync(obj: Storage = window.localStorage): Config | nul
   return JSON.parse(result);
 }
 
-export async function loadConfig(obj: string | File | Request | Storage = window.localStorage): Promise<Config | null> {
+export async function loadConfig(obj: string | File | Request | Storage = window.localStorage): Promise<ConfigInterface | null> {
   if ( obj instanceof Storage ) {
     return loadConfigSync(obj);
   } else if ( obj instanceof File ) {
@@ -25,14 +25,14 @@ export async function loadConfig(obj: string | File | Request | Storage = window
   }
 }
 
-export function saveConfig(config: Config | string, storage: Storage = window.localStorage) {
+export function saveConfig(config: ConfigInterface | string, storage: Storage = window.localStorage) {
   if( typeof(config) !== "string" ) {
     config = JSON.stringify(config);
   }
   storage.setItem("secretgraphConfig", config);
 }
 
-export function exportConfig(config: Config | string, name: string = "secretgraph_settings.json") {
+export function exportConfig(config: ConfigInterface | string, name: string = "secretgraph_settings.json") {
   if( typeof(config) !== "string" ) {
     config = JSON.stringify(config);
   }

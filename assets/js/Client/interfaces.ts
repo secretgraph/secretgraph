@@ -1,12 +1,19 @@
 
 
-export interface ConfigCluster {
+export interface ConfigClusterInterface {
   hashes: string[]
 }
 
-export interface Config {
+
+export interface ConfigInterface {
   certificates: { [hash: string]: string };
   tokens: { [hash: string]: string };
-  clusters: { [url: string]: { [flexid: string]: ConfigCluster } };
+  clusters: { [url: string]: { [flexid: string]: ConfigClusterInterface } };
   baseUrl: string;
+}
+
+
+export interface SecretgraphEventInterface {
+  created: boolean,
+  configUrl?: string
 }
