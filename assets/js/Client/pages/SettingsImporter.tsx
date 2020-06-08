@@ -20,8 +20,8 @@ import { themeComponent } from "../theme";
 import { startHelp, startLabel, importStartLabel, importFileLabel, importHelp } from "../messages";
 import { ConfigInterface, SecretgraphEventInterface } from '../interfaces';
 import { loadConfig } from "../utils/config";
-import { createEnvironment } from "../utils/graphql";
-import { toBase64 } from "..utils/misc"
+import { createEnvironment, initializeCluster } from "../utils/graphql";
+import { utf8ToBase64 } from "../utils/misc"
 
 type Props = {
   classes: any,
@@ -49,11 +49,11 @@ function SettingsImporter(props: Props) {
         baseUrl: event.configUrl ? event.configUrl : ProviderUrlRef.current.value
       };
       env = createEnvironment(newConfig.baseUrl);
-      let key = null
+      let b64key: string | null = null
       if (PasswordRef.current.value) {
-        key = toBase64(PasswordRef.current.value);
+        b64key = utf8ToBase64(PasswordRef.current.value);
       }
-
+      const cluster = await initializeCluster(env, newConfig, b64key);
     } else {
       if (event.configUrl){
         newConfig = await loadConfig(

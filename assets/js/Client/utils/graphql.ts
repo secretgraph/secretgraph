@@ -49,11 +49,25 @@ export const createEnvironment = (url: string) => {
   });
 }
 
-export async function initializeCluster(env: Environment, config: ConfigInterface, key: string | null=null) {
+export async function initializeCluster(env: Environment, config: ConfigInterface, key?: string | null) {
   const cluster: any = await fetchQuery(
     env, createClusterMutation, { "key": key }
   );
-  await fetchQuery(
+  const digest: string = String.fromCharCode(... new Uint8Array((await crypto.subtle.digest("sha512", cluster.actionKey))));
+  config["clusters"][config["baseUrl"]] = {};
+  config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
+    hashes: {}
+  }
+  config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
+    digest
+  ] = ["manage"];
+  config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
+    cluster.publicKeyHash
+  ] = [];
+  config["certificates"][cluster.publicKeyHash] = cluster.privateKey;
+  config["tokens"][digest] = cluster.actionKey;
+
+  const content = await fetchQuery(
     env, createContentMutation, {
       "key": cluster.privateKey,
       "cluster": cluster.cluster.id,

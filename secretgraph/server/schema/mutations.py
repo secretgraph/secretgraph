@@ -11,6 +11,7 @@ from django.utils import timezone
 from graphene import relay
 
 from ...utils.auth import id_to_result, retrieve_allowed_objects
+from ...utils.misc import hash_object
 from ..actions.update import (
     create_cluster, create_content, update_cluster, update_content
 )
@@ -119,6 +120,7 @@ class ClusterMutation(relay.ClientIDMutation):
         cluster = ClusterInput(required=False)
 
     cluster = graphene.Field(ClusterNode)
+    publicKeyHash = graphene.String(required=False)
     actionKey = graphene.String(required=False)
     privateKey = graphene.String(required=False)
     keyForPrivateKey = graphene.String(required=False)
@@ -169,7 +171,8 @@ class ClusterMutation(relay.ClientIDMutation):
                 cluster=_cluster,
                 actionKey=action_key,
                 privateKey=privateKey,
-                keyForPrivateKey=key_for_privateKey
+                keyForPrivateKey=key_for_privateKey,
+                publicKeyHash=hash_object(privateKey)
             )
 
 
