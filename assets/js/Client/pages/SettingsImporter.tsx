@@ -21,6 +21,7 @@ import { startHelp, startLabel, importStartLabel, importFileLabel, importHelp } 
 import { ConfigInterface, SecretgraphEventInterface } from '../interfaces';
 import { loadConfig } from "../utils/config";
 import { createEnvironment } from "../utils/graphql";
+import { toBase64 } from "..utils/misc"
 
 type Props = {
   classes: any,
@@ -48,28 +49,11 @@ function SettingsImporter(props: Props) {
         baseUrl: event.configUrl ? event.configUrl : ProviderUrlRef.current.value
       };
       env = createEnvironment(newConfig.baseUrl);
-      let derivedKey = null;
-      let nonce = null;
+      let key = null
       if (PasswordRef.current.value) {
-        nonce = window.crypto.getRandomValues(new Uint8Array(16));
-        const keyMaterial = await window.crypto.subtle.importKey(
-          "raw" as const,
-          new TextEncoder().encode(PasswordRef.current.value),
-          { name: "PBKDF2" as const },
-          false,
-          ["deriveBits" as const, "deriveKey" as const]
-        );
-        derivedKey = await window.crypto.subtle.deriveBits(
-          {
-            "name": "PBKDF2",
-            salt: nonce,
-            "iterations": 100000,
-            "hash": "SHA-256"
-          },
-          keyMaterial,
-          104
-        );
+        key = toBase64(PasswordRef.current.value);
       }
+
     } else {
       if (event.configUrl){
         newConfig = await loadConfig(
