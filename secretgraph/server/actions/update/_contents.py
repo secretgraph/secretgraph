@@ -4,7 +4,6 @@ __all__ = [
 
 
 import base64
-import hashlib
 import logging
 from email.parser import BytesParser
 
@@ -12,10 +11,7 @@ import requests
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.serialization import (
-    load_der_private_key, load_der_public_key
-)
-from django.conf import settings
+from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.files.base import ContentFile, File
 from django.db import transaction
 from django.db.models import Q
@@ -64,58 +60,28 @@ def _transform_info_tags(objdata):
     return info_tags, key_hashes, content_type, content_state or "default"
 
 
-def _transform_key_into_dataobj(key_obj, key=None, content=None):
+def _transform_key_into_dataobj(key_obj, content=None):
     if isinstance(key_obj.get("privateKey"), str):
         key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
     if isinstance(key_obj["publicKey"], str):
         key_obj["publicKey"] = base64.b64decode(key_obj["publicKey"])
     if isinstance(key_obj.get("nonce"), str):
         key_obj["nonce"] = base64.b64decode(key_obj["nonce"])
-    if key and key_obj.get("privateKey"):
+    if key_obj.get("privateKey"):
         if not key_obj.get("nonce"):
             raise ValueError("encrypted private key requires nonce")
-        derivedKey = hashlib.pbkdf2_hmac(
-            "sha512",
-            key,
-            key_obj["nonce"],
-            iterations=settings.SECRETGRAPH_ITERATIONS[0],
-            dklen=32
+    try:
+        pubkey = load_der_public_key(
+            key_obj["publicKey"], None, default_backend()
         )
-        aesgcm = AESGCM(derivedKey)
-        privkey = aesgcm.decrypt(
-            key_obj["privateKey"],
-            key_obj["nonce"],
-            None
-        )
-        privkey = load_der_private_key(privkey, None, default_backend())
-        key_obj["privateKey"] = aesgcm.encrypt(
-            privkey.private_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
-            ),
-            key_obj["nonce"],
-            None
-        )
-
-        key_obj["publicKey"] = privkey.public_bytes(
+        key_obj["publicKey"] = pubkey.public_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
             encryption_algorithm=serialization.NoEncryption()
         )
-    else:
-        try:
-            pubkey = load_der_public_key(
-                key_obj["publicKey"], None, default_backend()
-            )
-            key_obj["publicKey"] = pubkey.public_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo,
-                encryption_algorithm=serialization.NoEncryption()
-            )
-        except Exception as exc:
-            # logger.debug("loading public key failed", exc_info=exc)
-            raise ValueError("Invalid public key") from exc
+    except Exception as exc:
+        # logger.debug("loading public key failed", exc_info=exc)
+        raise ValueError("Invalid public key") from exc
     if content:
         if content.value.open("rb").read() != key_obj["publicKey"]:
             raise ValueError("Cannot change public key")
@@ -400,7 +366,7 @@ def create_key_func(
     if not objdata["cluster"]:
         raise ValueError()
 
-    hashes, public, private = _transform_key_into_dataobj(key_obj, key=key)
+    hashes, public, private = _transform_key_into_dataobj(key_obj)
     public_content = None
     if objdata["cluster"].id:
         public_content = Content.objects.filter(
@@ -484,7 +450,7 @@ def update_content(
             raise ValueError("Cannot transform key to content")
 
         hashes, newdata, private = _transform_key_into_dataobj(
-            key_obj, key=key, content=content
+            key_obj, content=content
         )
         newdata["info"].extend(objdata.get("info") or [])
     elif content.info.filter(tag="type=PrivateKey"):
@@ -494,7 +460,7 @@ def update_content(
             raise ValueError("Cannot transform key to content")
 
         hashes, public, newdata = _transform_key_into_dataobj(
-            key_obj, key=key, content=content
+            key_obj, content=content
         )
         if not newdata:
             raise ValueError()
