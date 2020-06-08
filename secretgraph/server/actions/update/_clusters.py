@@ -2,12 +2,9 @@ __all__ = ["create_cluster", "update_cluster"]
 
 import base64
 import os
-import hashlib
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.db import transaction
 from rdflib import RDF, BNode, Graph
@@ -105,36 +102,13 @@ def create_cluster(
         raise ValueError("Actions required")
     contentdata = {}
     if not objdata.get("key"):
-        nonce = os.urandom(13)
-        derivedKey = hashlib.pbkdf2_hmac(
-            "sha512",
-            key,
-            nonce,
-            iterations=settings.SECRETGRAPH_ITERATIONS[0],
-            dklen=32
-        )
-        aesgcm = AESGCM(derivedKey)
         privateKey = generate_private_key(
             public_exponent=65537,
             key_size=4096,
             backend=default_backend()
         )
         contentdata["key"] = {
-            "nonce": nonce,
-            "privateKey": aesgcm.encrypt(
-                privateKey.private_bytes(
-                    encoding=serialization.Encoding.DER,
-                    format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=serialization.NoEncryption()
-                ),
-                nonce,
-                None
-            ),
-            "publicKey": privateKey.public_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo,
-                encryption_algorithm=serialization.NoEncryption()
-            )
+            "privateKey": privateKey
         }
 
     else:

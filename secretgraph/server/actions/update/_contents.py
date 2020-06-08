@@ -4,14 +4,19 @@ __all__ = [
 
 
 import base64
+import hashlib
 import logging
+import os
 from email.parser import BytesParser
 
 import requests
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.serialization import load_der_public_key
+from cryptography.hazmat.primitives.serialization import (
+    load_der_private_key, load_der_public_key
+)
+from django.conf import settings
 from django.core.files.base import ContentFile, File
 from django.db import transaction
 from django.db.models import Q
@@ -60,16 +65,48 @@ def _transform_info_tags(objdata):
     return info_tags, key_hashes, content_type, content_state or "default"
 
 
-def _transform_key_into_dataobj(key_obj, content=None):
+def _transform_key_into_dataobj(key_obj, key=None, content=None):
     if isinstance(key_obj.get("privateKey"), str):
         key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
-    if isinstance(key_obj["publicKey"], str):
+    if isinstance(key_obj.get("publicKey"), str):
         key_obj["publicKey"] = base64.b64decode(key_obj["publicKey"])
     if isinstance(key_obj.get("nonce"), str):
         key_obj["nonce"] = base64.b64decode(key_obj["nonce"])
     if key_obj.get("privateKey"):
-        if not key_obj.get("nonce"):
-            raise ValueError("encrypted private key requires nonce")
+        if not key_obj.get("nonce") and not key:
+            raise ValueError("encrypted private key requires nonce or key")
+        elif key and not content:
+            # shortcut for encrypting key and creating public key
+            if not key_obj.get("nonce"):
+                key_obj["nonce"] = os.urandom(13)
+            derivedKey = hashlib.pbkdf2_hmac(
+                "sha512",
+                key,
+                key_obj["nonce"],
+                iterations=settings.SECRETGRAPH_ITERATIONS[0],
+                dklen=32
+            )
+            aesgcm = AESGCM(derivedKey)
+            if isinstance(key_obj["privateKey"], bytes):
+                key_obj["privateKey"] = load_der_private_key(
+                    key_obj["privateKey"], None, default_backend()
+                )
+            key_obj["publicKey"] = key_obj["privateKey"].public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+                encryption_algorithm=serialization.NoEncryption()
+            )
+            key_obj["privateKey"] = aesgcm.encrypt(
+                key_obj["privateKey"].private_bytes(
+                    encoding=serialization.Encoding.DER,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption()
+                ),
+                key_obj["nonce"],
+                None
+            )
+    if not key_obj.get("publicKey"):
+        raise ValueError("No public key")
     try:
         pubkey = load_der_public_key(
             key_obj["publicKey"], None, default_backend()
@@ -366,7 +403,7 @@ def create_key_func(
     if not objdata["cluster"]:
         raise ValueError()
 
-    hashes, public, private = _transform_key_into_dataobj(key_obj)
+    hashes, public, private = _transform_key_into_dataobj(key_obj, key=key)
     public_content = None
     if objdata["cluster"].id:
         public_content = Content.objects.filter(
@@ -380,14 +417,14 @@ def create_key_func(
     if private:
         private["info"].extend(objdata.get("info") or [])
         private["actions"] = objdata.get("actions")
-        private = _update_or_create_content_or_key(
-            request, Content(), private, authset, True, []
-        )
         private["references"].append({
             "target": public_content,
             "group": "public_key",
             "deleteRecursive": True
         })
+        private = _update_or_create_content_or_key(
+            request, Content(), private, authset, True, []
+        )
     public = _update_or_create_content_or_key(
         request, public_content, public, authset, True, []
     )
@@ -408,11 +445,10 @@ def create_content(
     if value_obj and key_obj:
         raise ValueError("Can only specify one of value or key")
 
-    is_key = False
     if key_obj:
-        is_key = True
+        # has removed key argument for only allowing complete key
         save_func = create_key_func(
-            request, objdata, key=key, authset=authset
+            request, objdata, authset=authset
         )
 
         with transaction.atomic():
@@ -429,7 +465,7 @@ def create_content(
         }
         content_obj = Content()
         save_func = _update_or_create_content_or_key(
-            request, content_obj, newdata, authset, is_key,
+            request, content_obj, newdata, authset, False,
             required_keys or []
         )
 
@@ -450,7 +486,7 @@ def update_content(
             raise ValueError("Cannot transform key to content")
 
         hashes, newdata, private = _transform_key_into_dataobj(
-            key_obj, content=content
+            key_obj, content=content, key=key
         )
         newdata["info"].extend(objdata.get("info") or [])
     elif content.info.filter(tag="type=PrivateKey"):
@@ -460,7 +496,7 @@ def update_content(
             raise ValueError("Cannot transform key to content")
 
         hashes, public, newdata = _transform_key_into_dataobj(
-            key_obj, content=content
+            key_obj, content=content, key=key
         )
         if not newdata:
             raise ValueError()

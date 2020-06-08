@@ -19,13 +19,13 @@ class ActionInput(graphene.InputObjectType):
 class ContentKeyInput(graphene.InputObjectType):
     publicKey = graphene.String(
         required=True,
-        description="Cleartext public key (base64 encoded der key)"
+        description="Cleartext public key (base64 encoded DER key)"
     )
     # encrypted!
     privateKey = graphene.String(
         required=False,
         description=(
-            "Encrypted private key (base64 encoded der key, "
+            "Encrypted private key (base64 encoded DER key, "
             "requires nonce)"
         )
     )
