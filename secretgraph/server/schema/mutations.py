@@ -1,6 +1,7 @@
 
-import os
 import logging
+import os
+import re
 from datetime import timedelta as td
 
 import graphene
@@ -9,17 +10,14 @@ from django.db.models import Q
 from django.utils import timezone
 from graphene import relay
 
-from ...utils.auth import retrieve_allowed_objects, id_to_result
+from ...utils.auth import id_to_result, retrieve_allowed_objects
 from ..actions.update import (
     create_cluster, create_content, update_cluster, update_content
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
-from .arguments import (
-    ClusterInput, ContentInput, ContentValueInput, ReferenceInput
-)
+from .arguments import ClusterInput, ContentInput, PushContentInput
 from .definitions import ClusterNode, ContentNode, FlexidType
-
 
 logger = logging.getLogger(__name__)
 
@@ -119,8 +117,6 @@ class ClusterMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         cluster = ClusterInput(required=False)
-        password = graphene.String(required=False)
-        # needs no key as it can generate key itself
 
     cluster = graphene.Field(ClusterNode)
     actionKey = graphene.String(required=False)
@@ -167,7 +163,7 @@ class ClusterMutation(relay.ClientIDMutation):
                 raise ValueError("Cannot register new cluster")
             _cluster, action_key, privateKey, key_for_privateKey = \
                 create_cluster(
-                    info.context, cluster, user, password=password
+                    info.context, cluster, user
                 )
             return cls(
                 cluster=_cluster,
@@ -198,14 +194,34 @@ class ContentMutation(relay.ClientIDMutation):
             try:
                 form = next(iter(result["objects"].keys()))
                 if content.get("info") is not None:
-                    content["info"] = form.get("info", []).extend(
+                    allowed = form.get("allowInfo", None)
+                    if allowed is not None:
+                        matcher = re.compile(
+                            "^(?:%s)(?:(?<==)|$)" % "|".join(map(
+                                re.escape,
+                                allowed
+                            ))
+                        )
+                        content["info"] = filter(
+                            lambda x: matcher.fullmatch(x),
+                            content["info"]
+                        )
+                    content["info"] = form.get("injectInfo", []).extend(
                         content["info"]
                     )
+                else:
+                    # none should be possible
+                    content["info"] = form.get("injectInfo", None)
                 if content.get("references") is not None:
-                    content["references"] = form.get("references", []).extend(
-                        content["references"]
-                    )
-                required_keys = form.get("required_keys", [])
+                    content["references"] = \
+                        form.get("injectReferences", []).extend(
+                            content["references"]
+                        )
+                else:
+                    # none should be possible
+                    content["references"] = \
+                        form.get("injectReferences", None)
+                required_keys = form.get("requiredKeys", [])
             except StopIteration:
                 pass
             return cls(
@@ -223,8 +239,11 @@ class ContentMutation(relay.ClientIDMutation):
             if not cluster_obj:
                 raise ValueError()
 
-            # TODO: inject cluster keys of checking instance if required
-            required_keys = []
+            required_keys = list(
+                Content.objects.injected_keys().values_list(
+                    "contentHash", flat=True
+                )
+            )
             try:
                 form = next(iter(result["forms"].keys()))
                 if content.get("info") is not None:
@@ -235,7 +254,7 @@ class ContentMutation(relay.ClientIDMutation):
                     content["references"] = form.get("references", []).extend(
                         content["references"]
                     )
-                required_keys.extends(form.get("required_keys", []))
+                required_keys.extends(form.get("requiredKeys", []))
             except StopIteration:
                 pass
             return cls(
@@ -249,42 +268,66 @@ class ContentMutation(relay.ClientIDMutation):
 
 class PushContentMutation(relay.ClientIDMutation):
     class Input:
-        id = graphene.ID(required=True)
-        value = graphene.Field(ContentValueInput, required=True)
+        content = graphene.Field(PushContentInput, required=True)
         key = graphene.String(required=False)
-        references = graphene.List(ReferenceInput, required=False)
 
     content = graphene.Field(ContentNode)
     actionKey = graphene.String(required=False)
 
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, id, value, key=None, references=None
+        cls, root, info, content, key=False
     ):
-        result = id_to_result(info.context, id, Content, "push")
+        parent_id = content.pop("parent")
+        result = id_to_result(info.context, parent_id, Content, "push")
         source = result["objects"].first()
         if not source:
             raise ValueError()
         form = result["forms"][source.actions.get(group="push").id]
-        dataobj = dict(form)
-        if references:
-            dataobj["references"] = references.extend(
-                dataobj.get("references") or []
+        if content.get("info") is not None:
+            allowed = form.get("allowInfo", None)
+            if allowed is not None:
+                matcher = re.compile(
+                    "^(?:%s)(?:(?<==)|$)" % "|".join(map(
+                        re.escape,
+                        allowed
+                    ))
+                )
+                content["info"] = filter(
+                    lambda x: matcher.fullmatch(x),
+                    content["info"]
+                )
+            content["info"] = form.get("injectInfo", []).extend(
+                content["info"]
             )
-        dataobj["value"] = value
-        # TODO: inject cluster keys of checking instance if required
-        required_keys = []
-        required_keys.extends(form.get("required_keys", []))
+        else:
+            # none should be possible
+            content["info"] = form.get("injectInfo", None)
+        if content.get("references") is not None:
+            content["references"] = \
+                form.get("injectReferences", []).extend(
+                    content["references"]
+                )
+        else:
+            # none should be possible
+            content["references"] = \
+                form.get("injectReferences", None)
+        required_keys = list(
+            Content.objects.injected_keys().values_list(
+                "contentHash", flat=True
+            )
+        )
+        required_keys.extends(form.get("requiredKeys", []))
         action_key = None
         if form.pop("updateable", False):
             action_key = os.urandom(32)
-            dataobj["actions"] = [{
+            content["actions"] = [{
                 "key": action_key,
                 "action": "update",
                 "restrict": True,
                 "form": form
             }]
         c = create_content(
-            info.context, dataobj, key=key, required_keys=required_keys
+            info.context, content, key=key, required_keys=required_keys
         )
         return cls(content=c, actionKey=action_key)

@@ -121,7 +121,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                     returnval["forms"][action.id] = result["form"]
 
             if action.keyHash != keyhashes[0]:
-                Action.objects.filter(keyHash=action.key_hash).update(
+                Action.objects.filter(keyHash=action.keyHash).update(
                     keyHash=keyhashes[0]
                 )
         returnval["clusters"][clusterflexid] = {

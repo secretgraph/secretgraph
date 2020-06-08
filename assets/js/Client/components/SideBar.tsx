@@ -21,6 +21,7 @@ import MailIcon from "@material-ui/icons/Mail";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../theme";
+import { ConfigInterface } from "../interfaces";
 
 type SideBarProps = {
   openState: any,
@@ -34,6 +35,19 @@ type SideBarHeaderProps = {
   classes: any,
   theme: Theme,
   closeButton: any
+};
+
+
+type SideBarPostboxProps = {
+  classes: any,
+  theme: Theme,
+  config: ConfigInterface
+};
+
+type SideBarItemsProps = {
+  classes: any,
+  theme: Theme,
+  config: ConfigInterface
 };
 
 const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
@@ -64,6 +78,65 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
   )
 })
 
+
+const SideBarPostbox = themeComponent((props: SideBarPostboxProps) => {
+  const { classes, theme, config } = props;
+  return (
+    <ExpansionPanel>
+      <ExpansionPanelSummary
+        expandIcon={<ExpandMoreIcon />}
+        aria-controls="PostBox-content"
+        id="PostBox-header"
+      >
+        <Typography className={classes.heading}>PostBox</Typography>
+      </ExpansionPanelSummary>
+      <ExpansionPanelDetails>
+        <List>
+          <ListItem button key={"Inbox"}>
+            <ListItemIcon>
+              <InboxIcon />
+            </ListItemIcon>
+          </ListItem>
+          <ListItem button key={"Starred"}>
+            <ListItemIcon>
+              <InboxIcon />
+            </ListItemIcon>
+          </ListItem>
+          <ListItem button key={"Outbox"}>
+            <ListItemIcon>
+              <InboxIcon />
+            </ListItemIcon>
+          </ListItem>
+          <ListItem button key={"Drafts"}>
+            <ListItemIcon>
+              <InboxIcon />
+            </ListItemIcon>
+          </ListItem>
+        </List>
+      </ExpansionPanelDetails>
+    </ExpansionPanel>
+  );
+});
+
+
+const SideBarItems = themeComponent((props: SideBarItemsProps) => {
+  const { classes, theme, config } = props;
+  return (
+    <List>
+      {["All mail", "Trash", "Spam", "l2", "l", "l13", "Öösdsd"].map((text, index) => (
+        <ListItem button key={text}>
+          <ListItemIcon>
+            {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+          </ListItemIcon>
+          <ListItemText primary={text} />
+        </ListItem>
+      ))}
+    </List>
+  );
+})
+
+
+
 function SideBar(props: SideBarProps) {
     const { classes, theme, mainContext, setMainContext, openState } = props;
     const closeButton = (
@@ -90,43 +163,9 @@ function SideBar(props: SideBarProps) {
         <SideBarHeader closeButton={closeButton} />
         <Divider />
         <div className={classes.sideBarBody}>
-          <ExpansionPanel>
-            <ExpansionPanelSummary
-              expandIcon={<ExpandMoreIcon />}
-              aria-controls="PostBox-content"
-              id="PostBox-header"
-            >
-              <Typography className={classes.heading}>PostBox</Typography>
-            </ExpansionPanelSummary>
-            <ExpansionPanelDetails>
-              <List>
-              {["Inbox", "Starred", "Send email", "Drafts"].map(
-                (text, index) => (
-                  <ListItem button key={text}>
-                    <ListItemIcon>
-                      {index % 2 === 0 ? (
-                        <InboxIcon />
-                      ) : (
-                        <MailIcon />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText primary={text} />
-                  </ListItem>
-                )
-              )}
-              </List>
-            </ExpansionPanelDetails>
-          </ExpansionPanel>
-          <List>
-            {["All mail", "Trash", "Spam", "l2", "l", "l13", "Öösdsd"].map((text, index) => (
-              <ListItem button key={text}>
-                <ListItemIcon>
-                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                </ListItemIcon>
-                <ListItemText primary={text} />
-              </ListItem>
-            ))}
-          </List>
+          <SideBarPostbox
+          />
+          <SideBarItems/>
         </div>
       </Drawer>
 

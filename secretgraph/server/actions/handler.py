@@ -32,7 +32,7 @@ def get_valid_fields(klass):
         name: klass.__annotations__[name] for name in set(map(
             lambda x: x.name, klass._meta.get_fields()
         )).difference((
-            "id", "cluster", "cluster_id", "references", "referenced_by"
+            "id", "cluster", "cluster_id", "references", "referencedBy"
         )).union(klass.__annotations__.keys())
     }
 
@@ -63,11 +63,11 @@ class ActionHandler():
             return None
         if issubclass(sender, Content):
             excl_filters = Q()
-            for i in action_dict.get("exclude_info", []):
+            for i in action_dict.get("excludeInfo", []):
                 excl_filters |= Q(info__tag__startswith=i)
 
             incl_filters = Q()
-            for i in action_dict.get("include_info", []):
+            for i in action_dict.get("includeInfo", []):
                 incl_filters |= Q(info__tag__startswith=i)
 
             return {
@@ -81,14 +81,14 @@ class ActionHandler():
         result = {
             "action": "view"
         }
-        exclude_info = action_dict.get("exclude_info", [])
+        exclude_info = action_dict.get("excludeInfo", [])
         if not all(map(lambda x: isinstance(str), exclude_info)):
             raise ValueError()
-        result["exclude_info"] = exclude_info
-        include_info = action_dict.get("include_info", [])
+        result["excludeInfo"] = exclude_info
+        include_info = action_dict.get("includeInfo", [])
         if not all(map(lambda x: isinstance(str), include_info)):
             raise ValueError()
-        result["include_info"] = include_info
+        result["includeInfo"] = include_info
         return result
 
     @staticmethod
@@ -119,7 +119,7 @@ class ActionHandler():
     def clean_update(action_dict, request, content):
         result = {
             "action": "update",
-            "content_action_group": "update",
+            "contentActionGroup": "update",
             "restricted": bool(action_dict.get("restricted")),
             "ids": _only_owned_helper(
                 Content,
@@ -127,15 +127,16 @@ class ActionHandler():
                 request
             ),
             "form": {
-                "required_keys": [],
-                "info": [],
+                "requiredKeys": [],
+                "injectInfo": [],
+                "allowInfo": action_dict.get("allowInfo", []),
                 "references": []
             }
         }
 
-        if action_dict.get("required_keys"):
-            result["form"]["required_keys"] = list(_only_owned_helper(
-                Content, action_dict["required_keys"], request,
+        if action_dict.get("requiredKeys"):
+            result["form"]["requiredKeys"] = list(_only_owned_helper(
+                Content, action_dict["requiredKeys"], request,
                 fields=("id",), check_field="contentHash", scope="view"
             ))
         if action_dict.get("info"):
@@ -157,7 +158,7 @@ class ActionHandler():
             return {
                 "filters": (
                     Q(id=action_dict["id"]) |
-                    Q(contentHash__in=action_dict["form"]["required_keys"])
+                    Q(contentHash__in=action_dict["form"]["requiredKeys"])
                 ),
                 "accesslevel": 0
             }
@@ -170,14 +171,15 @@ class ActionHandler():
 
         result = {
             "action": "push",
-            "content_action_group": "push",
+            "contentActionGroup": "push",
             "id": content.id,
             "form": {
-                "required_keys": [],
-                "info": [],
+                "requiredKeys": [],
+                "injectInfo": [],
+                "allowInfo": action_dict.get("allowInfo", []),
                 # create update action
                 "updateable": bool(action_dict.get("updateable")),
-                "references": [
+                "injectReferences": [
                     {
                         "group": "push",
                         "target": content.id,
@@ -186,27 +188,29 @@ class ActionHandler():
                 ]
             }
         }
-        for i in action_dict.get("info", []):
+        for i in action_dict.get("injectInfo", []):
             if i in {"type=PublicKey", "type=PrivateKey"}:
                 raise ValueError()
-        result["form"]["info"].extend(action_dict.get("info", []))
-        references = action_dict.get("references") or {}
+        result["form"]["injectInfo"].extend(
+            action_dict.get("injectInfo", [])
+        )
+        references = action_dict.get("injectReferences") or {}
         if isinstance(references, list):
             references = dict(map(lambda x: (x["target"], x), references))
         for _flexid, _id in _only_owned_helper(
             Content, references.keys(), request,
             fields=("flexid",)
         ):
-            result["form"]["references"].append({
+            result["form"]["injectReferences"].append({
                 "target": _id,
                 "group": references[_flexid].get("group", ""),
                 "deleteRecursive": references[_flexid].get(
                     "deleteRecursive", True
                 )
             })
-        if action_dict.get("required_keys"):
-            result["form"]["required_keys"] = list(_only_owned_helper(
-                Content, action_dict["required_keys"], request,
+        if action_dict.get("requiredKeys"):
+            result["form"]["requiredKeys"] = list(_only_owned_helper(
+                Content, action_dict["requiredKeys"], request,
                 fields=("id",), check_field="contentHash", scope="view"
             ))
 
@@ -234,9 +238,10 @@ class ActionHandler():
             "filters": ~excl_filters,
             "accesslevel": 2,
             "form": {
-                "required_keys": [],
-                "info": [],
-                "references": []
+                "requiredKeys": [],
+                "injectInfo": [],
+                "allowInfo": None,
+                "injectReferences": []
             }
         }
 
@@ -258,12 +263,13 @@ class ActionHandler():
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
             result["exclude"][type_name] = _only_owned_helper(
-                klass, result["exclude"][type_name], request
+                klass, result["exclude"][type_name], request,
+                check_field="keyHash" if type_name == "Action" else "flexid"
             )
         return result
 
     @staticmethod
-    def do_stored_update(action_dict, scope, **kwargs):
+    def do_storedUpdate(action_dict, scope, **kwargs):
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
             klass.objects.filter(
@@ -273,14 +279,14 @@ class ActionHandler():
                 updatevalues.pop("id", None)
                 updatevalues.pop("cluster", None)
                 updatevalues.pop("references", None)
-                updatevalues.pop("referenced_by", None)
+                updatevalues.pop("referencedBy", None)
                 klass.objects.filter(id=_id).update(**updatevalues)
         return None
 
     @staticmethod
-    def clean_stored_update(action_dict, request, content):
+    def clean_storedUpdate(action_dict, request, content):
         result = {
-            "action": "stored_update",
+            "action": "storedUpdate",
             "delete": {
                 "Cluster": [],
                 "Content": [],

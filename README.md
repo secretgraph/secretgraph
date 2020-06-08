@@ -21,5 +21,6 @@
 
 # TODO
 
+* handle in fetch requests uploads (extract files, use multipart and split into operations, map)
 * settings content(s) for sharing configuration, maybe use info tag "config"
 * maybe: encrypt some info tags

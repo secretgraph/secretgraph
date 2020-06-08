@@ -2,6 +2,7 @@ __all__ = ["create_cluster", "update_cluster"]
 
 import base64
 import os
+import hashlib
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -77,7 +78,7 @@ def create_cluster(
     if user:
         prebuild["user"] = user
     action_key = None
-    privateKey = None
+    # no public key is set
     if not objdata.get("key"):
         if not key:
             key = os.urandom(32)
@@ -104,8 +105,15 @@ def create_cluster(
         raise ValueError("Actions required")
     contentdata = {}
     if not objdata.get("key"):
-        aesgcm = AESGCM(key)
         nonce = os.urandom(13)
+        derivedKey = hashlib.pbkdf2_hmac(
+            "sha512",
+            key,
+            nonce,
+            iterations=settings.SECRETGRAPH_ITERATIONS[0],
+            dklen=32
+        )
+        aesgcm = AESGCM(derivedKey)
         privateKey = generate_private_key(
             public_exponent=65537,
             key_size=4096,

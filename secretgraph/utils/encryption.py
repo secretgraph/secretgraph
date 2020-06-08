@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import logging
 import os
 import tempfile
@@ -8,18 +9,17 @@ from typing import Iterable
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_private_key
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.conf import settings
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q, SubQuery
 from graphql_relay import from_global_id
 from rdflib import Graph
 
 from ..constants import TransferResult
 from ..server.models import Content, ContentReference
 from .misc import get_secrets, hash_object
-
 
 logger = logging.getLogger(__name__)
 
@@ -63,21 +63,22 @@ def create_key_maps(contents, keyset=(), inject_public=True):
     """
         queries transfers and create content key map
     """
-    from ..models import Cluster
+    from ..models import Cluster, ContentTag
     key_map1 = {}
     for i in keyset:
         i = i.split(":", 1)
         if len(i) == 2:
             _type = "Content"
+            _key = base64.b64decode(i[1])
             try:
                 _type, _id = from_global_id(i[0])
                 if _type != "Content":
                     continue
-                key_map1[f"id={i[0]}"] = _id
+                key_map1[f"id={_id}"] = _key
             except Exception:
                 # is hash or flexid
-                key_map1[f"id={i[0]}"] = i[1]
-                key_map1[f"key_hash={i[0]}"] = i[1]
+                key_map1[f"id={i[0]}"] = _key
+                key_map1[f"key_hash={i[0]}"] = _key
     if inject_public:
         for cluster in Cluster.objects.filter(
             public=True,
@@ -102,20 +103,26 @@ def create_key_maps(contents, keyset=(), inject_public=True):
         info__tag="type=PrivateKey",
         info__tag__in=key_map1.keys(),
         references__in=reference_query
-    )
+    ).annotate(matching_tag=SubQuery(
+        ContentTag.objects.filter(content_id=OuterRef("pk")).values("tag")[:1]
+    ))
     content_key_map = {}
     transfer_key_map = {}
     for key in key_query:
-        matching_key = key.info.filter(tag__in=key_map1.keys()).first()
-        if not matching_key:
-            continue
-        graph = Graph()
-        graph.parse(file=key.value, format="turtle")
+        matching_key = key_map1[key.matching_tag]
         try:
-            aesgcm = AESGCM(base64.b64decode(matching_key))
+            nonce = base64.b64decode(key.nonce)
+            derivedKey = hashlib.pbkdf2_hmac(
+                "sha512",
+                matching_key,
+                nonce,
+                iterations=settings.SECRETGRAPH_ITERATIONS[0],
+                dklen=32
+            )
+            aesgcm = AESGCM(derivedKey)
             privkey = aesgcm.decrypt(
                 key.value.open("rb").read(),
-                base64.b64decode(key.nonce),
+                nonce,
                 None
             )
             privkey = load_der_private_key(privkey, None, default_backend())

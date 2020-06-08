@@ -20,11 +20,15 @@ class RegisterUrl(GenericScalar):
 
 class SecretgraphConfig(ObjectType):
     hashAlgorithms = graphene.List(graphene.String)
+    PBKDF2Iterations = graphene.List(graphene.Integer)
     injectedClusters = graphene.List(graphene.String)
     registerUrl = graphene.Field(RegisterUrl)
 
     def resolve_hashAlgorithms(self, info):
         return settings.SECRETGRAPH_HASH_ALGORITHMS
+
+    def resolve_PBKDF2Iterations(self, info):
+        return settings.SECRETGRAPH_ITERATIONS
 
     def resolve_injectedClusters(self, info):
         return getattr(
@@ -113,7 +117,7 @@ class ContentConnection(relay.Connection):
     includeInfo = graphene.List(graphene.String)
     excludeInfo = graphene.List(graphene.String)
     public = graphene.Boolean(required=False)
-    cluster = graphene.ID()
+    cluster = graphene.ID(required=False)
 
     class Meta:
         node = ContentNode
@@ -148,7 +152,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         interfaces = (relay.Node,)
         fields = ['publicInfo', 'contents']
     contents = ContentConnection()
-    user = relay.Node.Field()
+    user = relay.GlobalID(required=False)
 
     def resolve_contents(
         self, info, **kwargs

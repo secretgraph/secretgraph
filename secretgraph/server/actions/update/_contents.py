@@ -4,6 +4,7 @@ __all__ = [
 
 
 import base64
+import hashlib
 import logging
 from email.parser import BytesParser
 
@@ -14,6 +15,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import (
     load_der_private_key, load_der_public_key
 )
+from django.conf import settings
 from django.core.files.base import ContentFile, File
 from django.db import transaction
 from django.db.models import Q
@@ -25,7 +27,7 @@ from ....constants import TransferResult
 from ....utils.auth import retrieve_allowed_objects
 from ....utils.conf import get_requests_params
 from ....utils.encryption import default_padding, encrypt_into_file
-from ....utils.misc import calculate_hashes, hash_object, get_secrets
+from ....utils.misc import calculate_hashes, get_secrets, hash_object
 from ...models import Cluster, Content, ContentReference, ContentTag
 from ._actions import create_actions_func
 
@@ -72,7 +74,14 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
     if key and key_obj.get("privateKey"):
         if not key_obj.get("nonce"):
             raise ValueError("encrypted private key requires nonce")
-        aesgcm = AESGCM(key)
+        derivedKey = hashlib.pbkdf2_hmac(
+            "sha512",
+            key,
+            key_obj["nonce"],
+            iterations=settings.SECRETGRAPH_ITERATIONS[0],
+            dklen=32
+        )
+        aesgcm = AESGCM(derivedKey)
         privkey = aesgcm.decrypt(
             key_obj["privateKey"],
             key_obj["nonce"],
@@ -118,7 +127,7 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
     return (
         hashes,
         {
-            "nonce": "",
+            "nonce": b"",
             "value": key_obj["publicKey"],
             "info": ["type=PublicKey"].extend(info),
             "contentHash": hashes[0]
@@ -167,10 +176,12 @@ def _update_or_create_content_or_key(
                     objdata["value"],
                     key=objdata.get("key") or None
                 )
-        if len(checknonce) != 13:
-            raise ValueError("invalid nonce size")
-        if checknonce.count(b"\0") == len(checknonce):
-            raise ValueError("weak nonce")
+        # is public key? then ignore nonce checks
+        if not is_key or not objdata.get("contentHash"):
+            if len(checknonce) != 13:
+                raise ValueError("invalid nonce size")
+            if checknonce.count(b"\0") == len(checknonce):
+                raise ValueError("weak nonce")
         content.nonce = objdata["nonce"]
 
         if isinstance(objdata["value"], bytes):
@@ -320,8 +331,9 @@ def _update_or_create_content_or_key(
                 content.info.exclude(
                     Q(tag__startswith="id=")
                 ).delete()
-
             content.info.create_bulk(final_info_tags)
+            if content_state != "default":
+                content.info.create(tag="state=%s" % content_state)
 
         # create id tag after object was created or update it
         content.info.update_or_create(

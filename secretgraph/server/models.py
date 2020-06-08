@@ -60,6 +60,18 @@ class Cluster(FlexidModel):
         )
 
 
+class ContentManager(models.Manager):
+    def injected_keys(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        return queryset.filter(
+            info__tag="PublicKey",
+            cluster__in=getattr(
+                settings, "SECRETGRAPH_INJECT_CLUSTERS", None
+            ) or []
+        )
+
+
 class Content(FlexidModel):
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     markForDestruction: dt = models.DateTimeField(
@@ -81,6 +93,8 @@ class Content(FlexidModel):
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="contents"
     )
+
+    objects = ContentManager()
 
     class Meta:
         constraints = [

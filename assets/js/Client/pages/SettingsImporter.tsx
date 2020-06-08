@@ -12,10 +12,15 @@ import CardContent from '@material-ui/core/CardContent';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import Input from '@material-ui/core/Input';
+
+
+import { Environment, Network, RecordSource, Store, fetchQuery } from "relay-runtime";
+
 import { themeComponent } from "../theme";
 import { startHelp, startLabel, importStartLabel, importFileLabel, importHelp } from "../messages";
 import { ConfigInterface, SecretgraphEventInterface } from '../interfaces';
 import { loadConfig } from "../utils/config";
+import { createEnvironment } from "../utils/graphql";
 
 type Props = {
   classes: any,
@@ -27,14 +32,47 @@ type Props = {
 };
 
 function SettingsImporter(props: Props) {
-  const { classes, theme, mainContext, setMainContext } = props;
+  const { classes, theme, mainContext, setMainContext, config, setConfig } = props;
   const [open, setOpen] = React.useState(false);
-  const TextRef: React.RefObject<any> = React.createRef();
+  const ProviderUrlRef: React.RefObject<any> = React.createRef();
+  const PasswordRef: React.RefObject<any> = React.createRef();
 
-  const handleSecretgraphEvent = (event: SecretgraphEventInterface) => {
+  const handleSecretgraphEvent = async (event: any) => {
+    let newConfig: ConfigInterface | null = null;
+    let env: Environment | null = null;
     if (event.created){
+      newConfig = {
+        certificates: {},
+        tokens: {},
+        clusters: {},
+        baseUrl: event.configUrl ? event.configUrl : ProviderUrlRef.current.value
+      };
+      env = createEnvironment(newConfig.baseUrl);
+      let derivedKey = null;
+      let nonce = null;
+      if (PasswordRef.current.value) {
+        nonce = window.crypto.getRandomValues(new Uint8Array(16));
+        const keyMaterial = await window.crypto.subtle.importKey(
+          "raw" as const,
+          new TextEncoder().encode(PasswordRef.current.value),
+          { name: "PBKDF2" as const },
+          false,
+          ["deriveBits" as const, "deriveKey" as const]
+        );
+        derivedKey = await window.crypto.subtle.deriveBits(
+          {
+            "name": "PBKDF2",
+            salt: nonce,
+            "iterations": 100000,
+            "hash": "SHA-256"
+          },
+          keyMaterial,
+          104
+        );
+      }
+    } else {
       if (event.configUrl){
-        const config = loadConfig(
+        newConfig = await loadConfig(
           new Request(
             event.configUrl,
             {
@@ -44,17 +82,23 @@ function SettingsImporter(props: Props) {
             }
           )
         )
-      } else {
-        const config = null;
+        if (newConfig){
+          env = createEnvironment(newConfig.baseUrl);
+        }
       }
-    } else {
-      const config = null;
+      /* TODO: implement loader
+      if (!newConfig){}*/
     }
+    if (!newConfig){
+      return;
+    }
+
+    setConfig(newConfig);
     setOpen(false);
     setMainContext({
       ...mainContext,
       action: "add",
-      environment: createEnvironment(config.baseUrl)
+      environment: env
     })
   }
 
@@ -64,15 +108,15 @@ function SettingsImporter(props: Props) {
       <Dialog open={true} onClose={() => setOpen(false)} aria-labelledby="register-login-dialog-title">
         <DialogTitle id="register-login-dialog-title">Subscribe</DialogTitle>
         <DialogContent>
-          <iframe src={TextRef.current?.value}
+          <iframe src={ProviderUrlRef.current?.value}
           />
         </DialogContent>
       </Dialog>
     );
 
     React.useEffect(() => {
-      document.addEventListener("secretgraph", handleSecretgraphEvent);
-      return () => document.removeEventListener("secretgraph", handleSecretgraphEvent);
+      document.addEventListener("secretgraph" as const, handleSecretgraphEvent);
+      return () => document.removeEventListener("secretgraph" as const, handleSecretgraphEvent);
     })
   }
 
@@ -84,7 +128,8 @@ function SettingsImporter(props: Props) {
           <Typography className={classes.title} color="textSecondary" gutterBottom>
             {startHelp}
           </Typography>
-          <TextField variant="outlined" label="Provider" id="secretgraph-provider" ref={TextRef} />
+          <TextField variant="outlined" label="Password for encrypting config" id="secretgraph-encrypting" ref={PasswordRef} inputProps={{ input: "password" }} />
+          <TextField variant="outlined" label="Provider" id="secretgraph-provider" ref={ProviderUrlRef} />
         </CardContent>
         <CardActions>
           <Button size="small"

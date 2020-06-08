@@ -157,6 +157,9 @@ SECRETGRAPH_REQUEST_KWARGS_MAP = {
 
 # specify hash names from most current to most old
 SECRETGRAPH_HASH_ALGORITHMS = ["sha512"]
+# specify amount of iterations from most current to most old
+SECRETGRAPH_ITERATIONS = [100000]
+
 
 # for sites
 SITE_ID = 1

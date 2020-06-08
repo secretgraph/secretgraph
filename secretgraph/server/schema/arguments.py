@@ -56,6 +56,13 @@ class ContentInput(graphene.InputObjectType):
     actions = graphene.List(ActionInput, required=False)
 
 
+class PushContentInput(graphene.InputObjectType):
+    parent = graphene.ID(required=True)
+    value = ContentValueInput(required=True)
+    references = graphene.List(ReferenceInput, required=False)
+    info = graphene.List(graphene.String, required=False)
+
+
 class ClusterInput(graphene.InputObjectType):
     publicInfo = graphene.String(required=False)
     actions = graphene.List(ActionInput, required=False)

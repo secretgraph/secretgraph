@@ -60,8 +60,8 @@ class Query():
         return fetch_clusters(
             info.context,
             clusters,
-            info_include=kwargs.get("infoInclude", []),
-            info_exclude=kwargs.get("infoExclude", [])
+            info_include=kwargs.get("infoInclude"),
+            info_exclude=kwargs.get("infoExclude")
         )["objects"]
 
     def resolve_content(self, info, id, **kwargs):
@@ -89,8 +89,8 @@ class Query():
         return fetch_contents(
             info.context,
             contents,
-            info_include=kwargs.get("info_include"),
-            info_exclude=kwargs.get("info_exclude")
+            info_include=kwargs.get("infoInclude"),
+            info_exclude=kwargs.get("infoExclude")
         )["objects"]
 
 

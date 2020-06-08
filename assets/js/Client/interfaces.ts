@@ -1,7 +1,7 @@
 
 
 export interface ConfigClusterInterface {
-  hashes: string[]
+  hashes: { [hash: string]: string[] }
 }
 
 

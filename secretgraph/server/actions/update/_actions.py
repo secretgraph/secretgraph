@@ -66,7 +66,7 @@ def create_actions_func(
         aesgcm = AESGCM(action_key)
         nonce = os.urandom(13)
         # add content_action
-        group = action_value.pop("content_action_group") or ""
+        group = action_value.pop("contentActionGroup") or ""
         if content:
             c = ContentAction(
                 content=content,
