@@ -118,6 +118,10 @@ class ClusterMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         cluster = ClusterInput(required=False)
+        key = graphene.String(
+            required=False,
+            description="Key/PW for encrypting generated private key"
+        )
 
     cluster = graphene.Field(ClusterNode)
     publicKeyHash = graphene.String(required=False)

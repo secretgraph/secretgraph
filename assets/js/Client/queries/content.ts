@@ -1,10 +1,12 @@
 import { graphql } from "react-relay"
 
 export const createContentMutation = graphql`
-  mutation createServerEncryptedContent($cluster: ID!, $key: string, $info: [string!], $references: [ReferenceInput!], $value: Upload!, $contentHash: string) {
+  mutation contentCreateServerEncryptedMutation($cluster: ID!, $key: String, $info: [String!], $references: [ReferenceInput!], $value: Upload!, $contentHash: String) {
     updateOrCreateContent(
-      content={ cluster=$cluster, info=$info, value={ value: $value }, contentHash=$contentHash },
-      key=$key
+      input: {
+        content: { cluster: $cluster, info: $info, value: { value: $value }, contentHash: $contentHash, references: $references },
+        key: $key
+      }
     ) {
       content {
         nonce
@@ -13,11 +15,13 @@ export const createContentMutation = graphql`
     }
   }
 `
-export const findConfig = graphql`
-  queryConfigContent() {
+
+
+export const findConfig = `
+  query contentConfigQuery {
     contents(
-      public=false,
-      includeInfo=["type=Config", "type=PrivateKey"]
+      public: false,
+      includeInfo: ["type=Config", "type=PrivateKey"]
     ) {
       content {
         nonce

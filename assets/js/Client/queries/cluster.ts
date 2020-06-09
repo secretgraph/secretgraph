@@ -2,9 +2,11 @@
 import { graphql } from "react-relay"
 
 export const createClusterMutation = graphql`
-  mutation createSimpleCluster($key: string) {
+  mutation clusterCreateSimpleMutation($key: String) {
     updateOrCreateCluster(
-      key=$key
+      input: {
+        key: $key
+      }
     ) {
       cluster {
         id

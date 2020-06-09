@@ -2635,6 +2635,16 @@
             },
             {
               "defaultValue": null,
+              "description": "Key/PW for encrypting generated private key",
+              "name": "key",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "defaultValue": null,
               "description": null,
               "name": "clientMutationId",
               "type": {
