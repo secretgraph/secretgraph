@@ -20,7 +20,7 @@ class RegisterUrl(GenericScalar):
 
 class SecretgraphConfig(ObjectType):
     hashAlgorithms = graphene.List(graphene.String)
-    PBKDF2Iterations = graphene.List(graphene.Integer)
+    PBKDF2Iterations = graphene.List(graphene.Int)
     injectedClusters = graphene.List(graphene.String)
     registerUrl = graphene.Field(RegisterUrl)
 

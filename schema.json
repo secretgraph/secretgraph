@@ -752,13 +752,9 @@
               "isDeprecated": false,
               "name": "user",
               "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "ID",
-                  "ofType": null
-                }
+                "kind": "SCALAR",
+                "name": "ID",
+                "ofType": null
               }
             }
           ],
@@ -1365,6 +1361,22 @@
                 "ofType": {
                   "kind": "SCALAR",
                   "name": "String",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "PBKDF2Iterations",
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int",
                   "ofType": null
                 }
               }
@@ -2316,7 +2328,7 @@
           "inputFields": [
             {
               "defaultValue": null,
-              "description": "Cleartext public key (base64 encoded der key)",
+              "description": "Cleartext public key (base64 encoded DER key)",
               "name": "publicKey",
               "type": {
                 "kind": "NON_NULL",
@@ -2330,7 +2342,7 @@
             },
             {
               "defaultValue": null,
-              "description": "Encrypted private key (base64 encoded der key, requires nonce)",
+              "description": "Encrypted private key (base64 encoded DER key, requires nonce)",
               "name": "privateKey",
               "type": {
                 "kind": "SCALAR",
@@ -2534,6 +2546,18 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
+              "name": "publicKeyHash",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
               "name": "actionKey",
               "type": {
                 "kind": "SCALAR",
@@ -2725,7 +2749,52 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "id",
+              "name": "content",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "PushContentInput",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": null,
+              "name": "key",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": null,
+              "name": "clientMutationId",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            }
+          ],
+          "interfaces": null,
+          "kind": "INPUT_OBJECT",
+          "name": "PushContentMutationInput",
+          "possibleTypes": null
+        },
+        {
+          "description": null,
+          "enumValues": null,
+          "fields": null,
+          "inputFields": [
+            {
+              "defaultValue": null,
+              "description": null,
+              "name": "parent",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
@@ -2753,16 +2822,6 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "key",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            {
-              "defaultValue": null,
-              "description": null,
               "name": "references",
               "type": {
                 "kind": "LIST",
@@ -2777,17 +2836,21 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "clientMutationId",
+              "name": "info",
               "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
               }
             }
           ],
           "interfaces": null,
           "kind": "INPUT_OBJECT",
-          "name": "PushContentMutationInput",
+          "name": "PushContentInput",
           "possibleTypes": null
         },
         {

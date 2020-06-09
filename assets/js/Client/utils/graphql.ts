@@ -79,5 +79,8 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     }
   );
 
-  return cluster
+  return {
+    config,
+    clusterId: cluster.cluster.id
+  }
 }

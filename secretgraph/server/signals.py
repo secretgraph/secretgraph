@@ -32,7 +32,7 @@ def deleteContentCb(sender, instance, **kwargs):
     for content_id in sender.objects.filter(
         models.Q(references__in=nogroup_references)
     ).annotate(
-        relevant_groups=models.SubQuery(
+        relevant_groups=models.Subquery(
             nogroup_references.filter(
                 source=models.OuterRef("pk")
             ).annotate(

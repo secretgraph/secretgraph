@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_private_key
 from django.conf import settings
-from django.db.models import Exists, OuterRef, Q, SubQuery
+from django.db.models import Exists, OuterRef, Q, Subquery
 from graphql_relay import from_global_id
 from rdflib import Graph
 
@@ -103,7 +103,7 @@ def create_key_maps(contents, keyset=(), inject_public=True):
         info__tag="type=PrivateKey",
         info__tag__in=key_map1.keys(),
         references__in=reference_query
-    ).annotate(matching_tag=SubQuery(
+    ).annotate(matching_tag=Subquery(
         ContentTag.objects.filter(content_id=OuterRef("pk")).values("tag")[:1]
     ))
     content_key_map = {}

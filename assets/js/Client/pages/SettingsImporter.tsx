@@ -54,24 +54,6 @@ function SettingsImporter(props: Props) {
         b64key = utf8ToBase64(PasswordRef.current.value);
       }
       const cluster = await initializeCluster(env, newConfig, b64key);
-    } else {
-      if (event.configUrl){
-        newConfig = await loadConfig(
-          new Request(
-            event.configUrl,
-            {
-              method: "GET",
-              mode: "cors",
-              credentials: 'include',
-            }
-          )
-        )
-        if (newConfig){
-          env = createEnvironment(newConfig.baseUrl);
-        }
-      }
-      /* TODO: implement loader
-      if (!newConfig){}*/
     }
     if (!newConfig){
       return;
