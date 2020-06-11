@@ -3,14 +3,14 @@ declare module 'extract-files' {
   var extractFiles: any
 }
 
-import { Environment, Network, RecordSource, Store, fetchQuery } from "relay-runtime";
+import { Environment, Network, RecordSource, Store, fetchQuery, commitMutation } from "relay-runtime";
 import { extractFiles } from 'extract-files';
 import { createClusterMutation } from "../queries/cluster";
 import { createContentMutation } from "../queries/content";
 import { ConfigInterface } from "../interfaces";
 
 export const createEnvironment = (url: string) => {
-  async function fetchQuery(operation: any, variables: any) {
+  async function executeRequest(operation: any, variables: any) {
     const headers: object = variables["headers"];
     delete variables["headers"];
     const { clone, files } = extractFiles(variables);
@@ -36,7 +36,6 @@ export const createEnvironment = (url: string) => {
       mode: "cors",
       credentials: 'include',
       headers: {
-        "Content-Type": "application/json",
         ...headers
       },
       body: formData,
@@ -44,42 +43,62 @@ export const createEnvironment = (url: string) => {
     return response.json();
   }
   return new Environment({
-    network: Network.create(fetchQuery),
+    network: Network.create(executeRequest),
     store: new Store(new RecordSource()),
   });
 }
 
-export async function initializeCluster(env: Environment, config: ConfigInterface, key?: string | null) {
-  const cluster: any = await fetchQuery(
-    env, createClusterMutation, { "key": key }
-  );
-  const digest: string = String.fromCharCode(... new Uint8Array((await crypto.subtle.digest("sha512", cluster.actionKey))));
-  config["clusters"][config["baseUrl"]] = {};
-  config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
-    hashes: {}
-  }
-  config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
-    digest
-  ] = ["manage"];
-  config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
-    cluster.publicKeyHash
-  ] = [];
-  config["certificates"][cluster.publicKeyHash] = cluster.privateKey;
-  config["tokens"][digest] = cluster.actionKey;
-
-  const content = await fetchQuery(
-    env, createContentMutation, {
-      "key": cluster.privateKey,
-      "cluster": cluster.cluster.id,
-      "value": new File([JSON.stringify(config)], "value"),
-      "info": ["config", "state=internal"],
-      "headers": {
-        "Authorization": `${cluster.cluster.id}:${cluster.actionKey}`
+export function initializeCluster(env: Environment, config: ConfigInterface, key?: string | null) {
+  return new Promise((resolve, reject) => {
+    const createInit = async (cluster: any, errors: any) => {
+      if(errors) {
+        reject(errors);
       }
-    }
-  );
+      console.log(cluster);
+      const digest: string = String.fromCharCode(... new Uint8Array((await crypto.subtle.digest("sha512", cluster.actionKey))));
+      config["clusters"][config["baseUrl"]] = {};
+      config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
+        hashes: {}
+      }
+      config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
+        digest
+      ] = ["manage"];
+      config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
+        cluster.publicKeyHash
+      ] = [];
+      config["certificates"][cluster.publicKeyHash] = cluster.privateKey;
+      config["tokens"][digest] = cluster.actionKey;
 
-  return [
-    config, cluster.cluster.id as string
-  ]
+      commitMutation(
+        env, {
+          mutation: createContentMutation,
+          variables: {
+            "key": cluster.privateKey,
+            "cluster": cluster.cluster.id,
+            "info": ["config", "state=internal"],
+            "value": new File([JSON.stringify(config)], "value"),
+            "headers": {
+              "Authorization": `${cluster.cluster.id}:${cluster.actionKey}`
+            }
+          },
+          onError: (error: any) => {
+            reject(error);
+          },
+          onCompleted: () => resolve([
+            config, cluster.cluster.id as string
+          ])
+        }
+      );
+    }
+    commitMutation(
+      env, {
+        mutation: createClusterMutation,
+        variables: { "key": key },
+        onCompleted: createInit,
+        onError: (error: any) => {
+          reject(error);
+        }
+      }
+    );
+  });
 }

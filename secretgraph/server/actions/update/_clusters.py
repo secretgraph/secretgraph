@@ -23,7 +23,7 @@ def _update_or_create_cluster(
 ):
     if objdata.get("publicInfo"):
         g = Graph()
-        g.parse(objdata["publicInfo"], "turtle")
+        g.parse(data=objdata["publicInfo"], format="turtle")
         public_secret_hashes = set(map(hash_object, get_secrets(g)))
         cluster.publicInfo = objdata["publicInfo"]
         cluster.public = len(public_secret_hashes) > 0
@@ -65,7 +65,7 @@ def _update_or_create_cluster(
 
 
 def create_cluster(
-    request, objdata=None, key=None, user=None, authset=None
+    request, objdata=None, user=None, key=None, authset=None
 ):
     prebuild = {}
 
@@ -76,7 +76,7 @@ def create_cluster(
         prebuild["user"] = user
     action_key = None
     # no public key is set
-    if not objdata.get("key"):
+    if objdata is None or not objdata.get("key"):
         if not key:
             key = os.urandom(32)
     if isinstance(key, str):

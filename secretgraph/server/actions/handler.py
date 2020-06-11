@@ -10,7 +10,7 @@ from ..models import Content, Cluster, Action
 def _only_owned_helper(
     klass, linput, request, fields=("id",), check_field=None, scope="manage"
 ):
-    from ..utils.auth import retrieve_allowed_objects
+    from ...utils.auth import retrieve_allowed_objects
     if not check_field:
         check_field = "flexid"
     if check_field == "flexid" and not hasattr(klass, "flexid"):

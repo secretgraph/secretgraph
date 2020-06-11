@@ -7,7 +7,8 @@ export function secretgraphTheme(theme: Theme) {
   return {
     root: {
       display: "flex" as const,
-      flexDirection: "column" as const
+      flexDirection: "column" as const,
+      minHeight: "100vh" as const
     },
     appBar: {
       transition: theme.transitions.create(['margin', 'width'], {

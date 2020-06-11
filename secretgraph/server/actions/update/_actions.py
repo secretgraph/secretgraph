@@ -56,7 +56,7 @@ def create_actions_func(
 
         action_key_hash = hash_object(action_key)
         action_value = action["value"]
-        if isinstance(str, action_value):
+        if isinstance(action_value, str):
             action_value = json.loads(action_value)
         action_value = ActionHandler.clean_action(
             action_value, request, content

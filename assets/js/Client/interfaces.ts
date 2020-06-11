@@ -17,3 +17,9 @@ export interface SecretgraphEventInterface {
   created: boolean,
   configUrl?: string
 }
+
+
+export interface SnackMessageInterface {
+  severity: string,
+  message: string
+}

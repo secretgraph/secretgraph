@@ -28,4 +28,5 @@ INSTALLED_APPS += [  # noqa F405
 AUTH_USER_MODEL = "secretgraph_user.QuotaUser"
 
 # requires auth app
-SECRETGRAPH_BIND_TO_USER = True
+SECRETGRAPH_BIND_TO_USER = False
+SECRETGRAPH_ALLOW_REGISTER = True

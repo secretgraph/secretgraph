@@ -131,7 +131,7 @@ class ClusterMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, id=None, cluster=None, password=None
+        cls, root, info, id=None, cluster=None, key=None
     ):
         if id:
             if not cluster:
@@ -146,7 +146,7 @@ class ClusterMutation(relay.ClientIDMutation):
         else:
             user = None
             manage = retrieve_allowed_objects(
-                info.context, "manage", Cluster.actions.all()
+                info.context, "manage", Cluster.objects.all()
             )["objects"].first()
 
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
@@ -169,7 +169,7 @@ class ClusterMutation(relay.ClientIDMutation):
                 raise ValueError("Cannot register new cluster")
             _cluster, action_key, privateKey, key_for_privateKey = \
                 create_cluster(
-                    info.context, cluster, user
+                    info.context, cluster, user=user, key=key
                 )
             return cls(
                 cluster=_cluster,

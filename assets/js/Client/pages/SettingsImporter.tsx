@@ -3,6 +3,11 @@ import * as React from "react";
 import { Theme } from "@material-ui/core/styles";
 
 import TextField from '@material-ui/core/TextField';
+import FormControl from '@material-ui/core/FormControl';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import InputLabel from '@material-ui/core/InputLabel';
+import Snackbar from '@material-ui/core/Snackbar';
+import MuiAlert from '@material-ui/lab/Alert';
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import DialogContent from '@material-ui/core/DialogContent';
@@ -17,8 +22,18 @@ import Input from '@material-ui/core/Input';
 import { Environment, Network, RecordSource, Store, fetchQuery } from "relay-runtime";
 
 import { themeComponent } from "../theme";
-import { startHelp, startLabel, importStartLabel, importFileLabel, importHelp } from "../messages";
-import { ConfigInterface, SecretgraphEventInterface } from '../interfaces';
+import {
+  startHelp,
+  startLabel,
+  importStartLabel,
+  importFileLabel,
+  importHelp,
+  encryptingPasswordLabel,
+  encryptingPasswordHelp,
+  decryptingPasswordLabel,
+  decryptingPasswordHelp
+} from "../messages";
+import { ConfigInterface, SecretgraphEventInterface, SnackMessageInterface } from '../interfaces';
 import { loadConfig } from "../utils/config";
 import { createEnvironment, initializeCluster } from "../utils/graphql";
 import { utf8ToBinary } from "../utils/misc"
@@ -33,17 +48,20 @@ type Props = {
   setConfig: any
 };
 
+function Alert(props: any) {
+  return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
+
 function SettingsImporter(props: Props) {
   const { classes, theme, mainContext, setMainContext, config, setConfig } = props;
   const [registerUrl, setRegisterUrl] = React.useState(undefined);
-  const ProviderUrlRef: React.RefObject<any> = React.createRef();
-  const ImportFileRef: React.RefObject<any> = React.createRef();
-  const EncryptingRef: React.RefObject<any> = React.createRef();
-  const DecryptingRef: React.RefObject<any> = React.createRef();
+  const [message, setMessage] = React.useState(undefined) as [SnackMessageInterface | undefined, any];
   const mainElement = document.getElementById("content-main");
   const defaultPath: string | undefined = mainElement ? mainElement.dataset.serverPath : undefined;
 
   const handleSecretgraphEvent = async (event: any) => {
+    const providerUrl = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
+    const encryptingPw = (document.getElementById("secretgraph-encrypting") as HTMLInputElement).value;
     let newConfig: ConfigInterface | null = null;
     let env: Environment | null = null;
     if (event.created){
@@ -51,12 +69,12 @@ function SettingsImporter(props: Props) {
         certificates: {},
         tokens: {},
         clusters: {},
-        baseUrl: event.configUrl ? event.configUrl : ProviderUrlRef.current.value
+        baseUrl: event.configUrl ? event.configUrl : providerUrl
       };
       env = createEnvironment(newConfig.baseUrl);
       let b64key: string | null = null
-      if (EncryptingRef.current.value) {
-        b64key = btoa(utf8ToBinary(EncryptingRef.current.value));
+      if (encryptingPw) {
+        b64key = btoa(utf8ToBinary(encryptingPw));
       }
       await initializeCluster(env, newConfig, b64key);
     }
@@ -74,22 +92,28 @@ function SettingsImporter(props: Props) {
   }
 
   const handleStart = async (event: any) => {
-    const env = createEnvironment(ProviderUrlRef.current.value);
+    const providerUrl = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
+    const encryptingPw = (document.getElementById("secretgraph-encrypting") as HTMLInputElement).value;
+    const env = createEnvironment(providerUrl);
     let clusterId: string;
-    const sconfig: any = await fetchQuery(
+    const result: any = await fetchQuery(
       env, serverConfigQuery, {}
     );
+    if (!result){
+      return;
+    }
+    const sconfig = result.secretgraphConfig;
     if (sconfig.registerUrl === true) {
       let newConfig: ConfigInterface = {
         certificates: {},
         tokens: {},
         clusters: {},
-        baseUrl: event.configUrl ? event.configUrl : ProviderUrlRef.current.value
+        baseUrl: event.configUrl ? event.configUrl : providerUrl
       };
       const env = createEnvironment(newConfig.baseUrl);
       let b64key: string | null = null
-      if (EncryptingRef.current.value) {
-        b64key = btoa(utf8ToBinary(EncryptingRef.current.value));
+      if (encryptingPw) {
+        b64key = btoa(utf8ToBinary(encryptingPw));
       }
       await initializeCluster(env, newConfig, b64key);
       setRegisterUrl(undefined);
@@ -101,17 +125,28 @@ function SettingsImporter(props: Props) {
       });
     } else if (typeof(sconfig.registerUrl) === "string") {
       setRegisterUrl(sconfig.registerUrl);
+    } else {
+      setMessage({ severity: "warning", message: "cannot register here" });
     }
   }
 
   const handleImport = async (event: any) => {
+    const decryptingPw = (document.getElementById("secretgraph-decrypting") as HTMLInputElement).value;
+    const importFiles: FileList | null = (document.getElementById("secretgraph-import-file") as HTMLInputElement).files;
+    if(!importFiles){
+      return;
+    }
     //TODO: support encrypted config files
     let binary: string | null = null
-    if (DecryptingRef.current.value) {
-      binary = utf8ToBinary(DecryptingRef.current.value);
+    if (decryptingPw) {
+      binary = utf8ToBinary(decryptingPw);
     }
-    const newConfig = loadConfig(ImportFileRef.current.files[0])
-    const env = createEnvironment(ProviderUrlRef.current.value);
+    const newConfig = await loadConfig(importFiles[0]);
+    if (!newConfig){
+      setMessage({ severity: "error", message: "Configuration is invalid" });
+      return;
+    }
+    const env = createEnvironment(newConfig.baseUrl);
     setConfig(newConfig);
     setMainContext({
       ...mainContext,
@@ -134,34 +169,76 @@ function SettingsImporter(props: Props) {
           />
         </DialogContent>
       </Dialog>
-      <Card className={mainContext.action === "start" ? null : classes.hidden}>
+      <Snackbar
+        open={message ? true : false}
+        autoHideDuration={12000}
+        onClose={() => setMessage(undefined)}
+      >
+        <Alert onClose={() => setMessage(undefined)} severity={message ? message.severity : undefined}>
+          {message ? message.message : undefined}
+        </Alert>
+      </Snackbar>
+      <Card>
         <CardContent>
-          <Typography className={classes.title} color="textSecondary" gutterBottom>
-            {startHelp}
-          </Typography>
-          <div>
-          <TextField variant="outlined" label="Password for encrypting config" id="secretgraph-encrypting" ref={EncryptingRef} inputProps={{ input: "password" }} />
-          </div>
-          <div>
-          <TextField variant="outlined" defaultValue={defaultPath} label="Provider" id="secretgraph-provider" ref={ProviderUrlRef} />
-          </div>
+          <Card raised={true} className={mainContext.action === "start" ? null : classes.hidden}>
+            <CardContent>
+              <Typography className={classes.title} color="textPrimary" gutterBottom paragraph>
+                {startHelp}
+              </Typography>
+              <FormControl>
+                <TextField
+                  fullWidth={true}
+                  variant="outlined"
+                  label={encryptingPasswordLabel}
+                  id="secretgraph-encrypting"
+                  inputProps={{ 'aria-describedby': "secretgraph-encrypting-help", autoComplete: "new-password" }}
+                  type="password"
+                />
+                <FormHelperText id="secretgraph-encrypting-help">{encryptingPasswordHelp}</FormHelperText>
+              </FormControl>
+              <TextField
+                fullWidth={true}
+                variant="outlined"
+                defaultValue={defaultPath}
+                label="Provider"
+                id="secretgraph-provider"
+              />
+            </CardContent>
+            <CardActions>
+              <Button size="small" variant="contained" color="primary"
+                onClick={handleStart}
+              >{startLabel}</Button>
+            </CardActions>
+          </Card>
         </CardContent>
-        <CardActions>
-          <Button size="small" variant="outlined"
-            onClick={handleStart}
-          >{startLabel}</Button>
-        </CardActions>
       </Card>
       <Card>
         <CardContent>
-          <Typography className={classes.title} color="textSecondary" gutterBottom>
+          <Typography className={classes.title} color="textPrimary" gutterBottom paragraph>
             {importHelp}
           </Typography>
-          <TextField defaultValue={importFileLabel} inputProps={{ 'aria-label': importFileLabel, "input": "file" }}  id="secretgraph-import-file" ref={ImportFileRef} />
-          <TextField variant="outlined" label="Password for decrypting config" id="secretgraph-decrypting" ref={DecryptingRef} inputProps={{ input: "password" }} />
+          <FormControl>
+            <Input
+              disableUnderline={true}
+              type="file"
+              id="secretgraph-import-file"
+              aria-describedby="secretgraph-import-file-help"
+            />
+            <FormHelperText id="secretgraph-import-file-help">{importFileLabel}</FormHelperText>
+          </FormControl>
+          <FormControl>
+            <TextField
+              variant="outlined"
+              label={decryptingPasswordLabel}
+              id="secretgraph-decrypting"
+              inputProps={{ 'aria-describedby': "secretgraph-decrypting-help" }}
+              type="password"
+            />
+            <FormHelperText id="secretgraph-decrypting-help">{decryptingPasswordHelp}</FormHelperText>
+          </FormControl>
         </CardContent>
         <CardActions>
-          <Button size="small" variant="outlined"
+          <Button size="small" variant="contained" color="primary"
             onClick={handleImport}>{importStartLabel}</Button>
         </CardActions>
       </Card>

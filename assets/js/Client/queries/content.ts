@@ -16,16 +16,17 @@ export const createContentMutation = graphql`
   }
 `
 
-
-export const findConfig = `
+export const findConfig = graphql`
   query contentConfigQuery {
     contents(
       public: false,
       includeInfo: ["type=Config", "type=PrivateKey"]
     ) {
-      content {
-        nonce
-        link
+      edges {
+        node {
+          nonce
+          link
+        }
       }
     }
   }

@@ -64,7 +64,7 @@ function ActionBar(props: Props) {
               ...mainContext,
               state: event.target.value
             })}
-            value={mainContext.state}
+            value={mainContext.state || undefined}
             children={
               createOptionsIterator(contentStates)
             }
@@ -86,7 +86,7 @@ function ActionBar(props: Props) {
               action: "add",
               item: event.target.value
             })}
-            value={mainContext.item}
+            value={mainContext.item || undefined}
             children={
               createOptionsIterator(elements)
             }
