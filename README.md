@@ -21,6 +21,6 @@
 
 # TODO
 
-* handle in fetch requests uploads (extract files, use multipart and split into operations, map)
+* improve speed by resolving once for all contents, clusters auth informations (view), instead of while every operation
 * settings content(s) for sharing configuration, maybe use info tag "config"
 * maybe: encrypt some info tags

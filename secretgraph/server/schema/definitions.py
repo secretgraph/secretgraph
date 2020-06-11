@@ -1,12 +1,12 @@
 import graphene
 from django.conf import settings
 from django.shortcuts import resolve_url
-from graphene import relay, ObjectType
-from graphene_django import DjangoObjectType
-
+from graphene import ObjectType, relay
 from graphene.types.generic import GenericScalar
+from graphene_django import DjangoConnectionField, DjangoObjectType
+from graphql_relay import from_global_id
 
-from ..actions.view import fetch_contents
+from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
 
 
@@ -113,14 +113,43 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )
 
 
-class ContentConnection(relay.Connection):
-    includeInfo = graphene.List(graphene.String)
-    excludeInfo = graphene.List(graphene.String)
-    public = graphene.Boolean(required=False)
-    cluster = graphene.ID(required=False)
+class ContentConnectionField(DjangoConnectionField):
+    def __init__(self, type=ContentNode, *args, **kwargs):
+        kwargs.setdefault("includeInfo", graphene.List(
+            graphene.String, required=False
+        ))
+        kwargs.setdefault("excludeInfo", graphene.List(
+            graphene.String, required=False
+        ))
+        kwargs.setdefault("public", graphene.Boolean(required=False))
+        kwargs.setdefault("cluster", graphene.ID(required=False))
+        super().__init__(type, *args, **kwargs)
 
-    class Meta:
-        node = ContentNode
+    @classmethod
+    def resolve_queryset(cls, connection, queryset, info, args):
+        public = args.get("public")
+        cluster = args.get("cluster")
+        if cluster:
+            _type = "Cluster"
+            try:
+                _type, cluster = from_global_id(cluster)[1]
+            except Exception:
+                pass
+            if _type != "Cluster":
+                raise ValueError("Not a cluster id")
+            queryset = queryset.filter(flexid=cluster)
+        if public in {True, False}:
+            if public:
+                queryset = queryset.filter(info__tag="state=public")
+            else:
+                queryset = queryset.exclude(info__tag="state=public")
+
+        return fetch_contents(
+            info.context,
+            queryset,
+            info_include=args.get("infoInclude"),
+            info_exclude=args.get("infoExclude")
+        )["objects"]
 
 
 class ContentReferenceNode(DjangoObjectType):
@@ -151,7 +180,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Cluster
         interfaces = (relay.Node,)
         fields = ['publicInfo', 'contents']
-    contents = ContentConnection()
+    contents = ContentConnectionField()
     user = relay.GlobalID(required=False)
 
     def resolve_contents(
@@ -177,13 +206,40 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )
 
 
-class ClusterConnection(relay.Connection):
-    user = graphene.ID(required=False)
-    public = graphene.Boolean(required=False)
-    featured = graphene.Boolean(required=False)
+class ClusterConnectionField(DjangoConnectionField):
+    def __init__(self, type=ClusterNode, *args, **kwargs):
+        kwargs.setdefault("user", graphene.ID(required=False))
+        kwargs.setdefault("public", graphene.Boolean(required=False))
+        kwargs.setdefault("featured", graphene.Boolean(required=False))
+        super().__init__(type, *args, **kwargs)
 
-    class Meta:
-        node = ClusterNode
+    @classmethod
+    def resolve_queryset(cls, connection, queryset, info, args):
+        public = args.get("public")
+        featured = args.get("featured", False)
+        user = args.get("user")
+        if featured and public is None:
+            public = True
+        if user:
+            if (
+                not getattr(settings, "AUTH_USER_MODEL", None) and
+                not getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
+            ):
+                raise ValueError("Users are not supported")
+            try:
+                user = from_global_id(user)[1]
+            except Exception:
+                pass
+            queryset = queryset.filter(user__pk=user)
+        if public in {True, False}:
+            queryset = queryset.filter(public=public)
+
+        return fetch_clusters(
+            info.context,
+            queryset,
+            info_include=args.get("infoInclude"),
+            info_exclude=args.get("infoExclude")
+        )["objects"]
 
 
 class FlexidType(graphene.Union):

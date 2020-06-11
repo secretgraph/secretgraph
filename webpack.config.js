@@ -1,8 +1,8 @@
 const path = require("path");
 const webpack = require("webpack");
 const BundleTracker = require("webpack-bundle-tracker");
-// const RelayCompilerLanguageTypescript = require("relay-compiler-language-typescript");
-// const RelayCompilerWebpackPlugin = require("relay-compiler-webpack-plugin");
+const RelayCompilerLanguageTypescript = require("relay-compiler-language-typescript");
+const RelayCompilerWebpackPlugin = require("relay-compiler-webpack-plugin");
 const ServiceWorkerWebpackPlugin = require("serviceworker-webpack-plugin");
 
 module.exports = {
@@ -31,12 +31,12 @@ module.exports = {
   },
 
   plugins: [
-    /* new RelayCompilerWebpackPlugin({
+    new RelayCompilerWebpackPlugin({
       schema: path.resolve(__dirname, "./schema.json"),
       src: path.resolve(__dirname, "./assets/js/"),
       artifactDirectory: "./assets/js/__generated__",
       languagePlugin: RelayCompilerLanguageTypescript.default,
-    }),*/
+    }),
     new BundleTracker({
       filename: "./webpack-stats.json",
       path: __dirname,
