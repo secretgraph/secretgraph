@@ -145,21 +145,26 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
 
     if issubclass(query.model, Cluster):
         all_filters &= (
-            models.Q(flexid__in=clusters) |
+            models.Q(id__in=list(returnval["action_types_clusters"].keys())) |
             models.Q(public=True)
         )
-    else:
+    elif issubclass(query.model, Content):
         all_filters &= (
-            models.Q(cluster__flexid__in=clusters) |
-            models.Q(cluster__public=True)
+            models.Q(info__tag="state=public") |
+            models.Q(id__in=list(returnval["action_types_contents"].keys())) |
+            models.Q(
+                cluster_id__in=list(returnval[
+                    "action_types_clusters"
+                ].keys())
+            )
         )
-        all_filters &= (
-            (
-                models.Q(info__tag="type=PublicKey") &
-                models.Q(info__tag="state=public")
-            ) |
-            models.Q(action__in=actions) |
-            models.Q(action_id__isnull=True)
+    else:
+        assert issubclass(query.model, Action), \
+               "invalid type %r" % query.model
+        all_filters &= models.Q(
+            cluster_id__in=list(returnval[
+                "action_types_clusters"
+            ].keys())
         )
     returnval["objects"] = query.filter(all_filters)
     return returnval

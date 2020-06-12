@@ -55,7 +55,12 @@ export function initializeCluster(env: Environment, config: ConfigInterface, key
         reject(errors);
       }
       console.log(cluster);
-      const digest: string = String.fromCharCode(... new Uint8Array((await crypto.subtle.digest("sha512", cluster.actionKey))));
+      const digest: string = String.fromCharCode(... new Uint8Array((
+        await crypto.subtle.digest(
+          "sha512",
+          Uint8Array.from(atob(cluster.actionKey), c => c.charCodeAt(0))
+        )
+      )));
       config["clusters"][config["baseUrl"]] = {};
       config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
         hashes: {}

@@ -63,11 +63,11 @@ class ActionHandler():
             return None
         if issubclass(sender, Content):
             excl_filters = Q()
-            for i in action_dict.get("excludeInfo", []):
+            for i in action_dict["excludeInfo"]:
                 excl_filters |= Q(info__tag__startswith=i)
 
             incl_filters = Q()
-            for i in action_dict.get("includeInfo", []):
+            for i in action_dict["includeInfo"]:
                 incl_filters |= Q(info__tag__startswith=i)
 
             return {
@@ -81,14 +81,10 @@ class ActionHandler():
         result = {
             "action": "view"
         }
-        exclude_info = action_dict.get("excludeInfo", [])
-        if not all(map(lambda x: isinstance(str), exclude_info)):
-            raise ValueError()
-        result["excludeInfo"] = exclude_info
+        exclude_info = action_dict.get("excludeInfo", ["type=PrivateKey"])
+        result["excludeInfo"] = list(map(str, exclude_info))
         include_info = action_dict.get("includeInfo", [])
-        if not all(map(lambda x: isinstance(str), include_info)):
-            raise ValueError()
-        result["includeInfo"] = include_info
+        result["includeInfo"] = list(map(str, include_info))
         return result
 
     @staticmethod
@@ -121,15 +117,15 @@ class ActionHandler():
             "action": "update",
             "contentActionGroup": "update",
             "restricted": bool(action_dict.get("restricted")),
-            "ids": _only_owned_helper(
+            "ids": list(_only_owned_helper(
                 Content,
                 action_dict.get("ids", content and [content.id]),
                 request
-            ),
+            )),
             "form": {
                 "requiredKeys": [],
                 "injectInfo": [],
-                "allowInfo": action_dict.get("allowInfo", []),
+                "allowInfo": [],
                 "references": []
             }
         }
@@ -139,11 +135,16 @@ class ActionHandler():
                 Content, action_dict["requiredKeys"], request,
                 fields=("id",), check_field="contentHash", scope="view"
             ))
-        if action_dict.get("info"):
-            for i in action_dict["info"]:
+        if action_dict.get("injectInfo"):
+            for i in action_dict["injectInfo"]:
                 if i in {"type=PublicKey", "type=PrivateKey"}:
                     raise ValueError()
-            result["form"]["info"].extend(action_dict.get("info", []))
+            result["form"]["injectInfo"].extend(action_dict["injectInfo"])
+        if action_dict.get("allowInfo"):
+            for i in action_dict["allowInfo"]:
+                if i in {"type=PublicKey", "type=PrivateKey", "type="}:
+                    raise ValueError()
+            result["form"]["allowInfo"].extend(action_dict["allowInfo"])
         return result
 
     @staticmethod
@@ -176,7 +177,7 @@ class ActionHandler():
             "form": {
                 "requiredKeys": [],
                 "injectInfo": [],
-                "allowInfo": action_dict.get("allowInfo", []),
+                "allowInfo": [],
                 # create update action
                 "updateable": bool(action_dict.get("updateable")),
                 "injectReferences": [
@@ -188,12 +189,16 @@ class ActionHandler():
                 ]
             }
         }
-        for i in action_dict.get("injectInfo", []):
-            if i in {"type=PublicKey", "type=PrivateKey"}:
-                raise ValueError()
-        result["form"]["injectInfo"].extend(
-            action_dict.get("injectInfo", [])
-        )
+        if action_dict.get("injectInfo"):
+            for i in action_dict["injectInfo"]:
+                if i in {"type=PublicKey", "type=PrivateKey"}:
+                    raise ValueError()
+            result["form"]["injectInfo"].extend(action_dict["injectInfo"])
+        if action_dict.get("allowInfo"):
+            for i in action_dict["allowInfo"]:
+                if i in {"type=PublicKey", "type=PrivateKey", "type="}:
+                    raise ValueError()
+            result["form"]["allowInfo"].extend(action_dict["allowInfo"])
         references = action_dict.get("injectReferences") or {}
         if isinstance(references, list):
             references = dict(map(lambda x: (x["target"], x), references))
@@ -262,10 +267,10 @@ class ActionHandler():
             result["exclude"][type_name].append(id)
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
-            result["exclude"][type_name] = _only_owned_helper(
+            result["exclude"][type_name] = list(_only_owned_helper(
                 klass, result["exclude"][type_name], request,
                 check_field="keyHash" if type_name == "Action" else "flexid"
-            )
+            ))
         return result
 
     @staticmethod
@@ -315,10 +320,10 @@ class ActionHandler():
 
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
-            result["delete"][type_name] = _only_owned_helper(
+            result["delete"][type_name] = list(_only_owned_helper(
                 klass, result["delete"][type_name], request,
                 check_field="keyHash" if type_name == "Action" else None
-            )
+            ))
 
         _del_sets = {
             "Cluster": set(result["delete"]["Cluster"]),

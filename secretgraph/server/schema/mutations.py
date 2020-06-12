@@ -1,10 +1,13 @@
 
+import base64
 import logging
 import os
 import re
 from datetime import timedelta as td
+from itertools import chain
 
 import graphene
+from cryptography.hazmat.primitives import serialization
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
@@ -173,9 +176,17 @@ class ClusterMutation(relay.ClientIDMutation):
                 )
             return cls(
                 cluster=_cluster,
-                actionKey=action_key,
-                privateKey=privateKey,
-                keyForPrivateKey=key_for_privateKey,
+                actionKey=base64.b64encode(action_key).decode("ascii"),
+                privateKey=base64.b64encode(
+                    privateKey.private_bytes(
+                        encoding=serialization.Encoding.DER,
+                        format=serialization.PrivateFormat.PKCS8,
+                        encryption_algorithm=serialization.NoEncryption()
+                    )
+                ).decode("ascii"),
+                keyForPrivateKey=base64.b64encode(
+                    key_for_privateKey
+                ).decode("ascii"),
                 publicKeyHash=hash_object(privateKey)
             )
 
@@ -213,17 +224,18 @@ class ContentMutation(relay.ClientIDMutation):
                             lambda x: matcher.fullmatch(x),
                             content["info"]
                         )
-                    content["info"] = form.get("injectInfo", []).extend(
-                        content["info"]
-                    )
+                    content["info"] = [
+                        *form.get("injectInfo", []),
+                        *content["info"]
+                    ]
                 else:
                     # none should be possible
                     content["info"] = form.get("injectInfo", None)
                 if content.get("references") is not None:
-                    content["references"] = \
-                        form.get("injectReferences", []).extend(
-                            content["references"]
-                        )
+                    content["references"] = chain(
+                        form.get("injectReferences", []),
+                        content["references"]
+                    )
                 else:
                     # none should be possible
                     content["references"] = \
@@ -254,14 +266,16 @@ class ContentMutation(relay.ClientIDMutation):
             try:
                 form = next(iter(result["forms"].keys()))
                 if content.get("info") is not None:
-                    content["info"] = form.get("info", []).extend(
+                    content["info"] = chain(
+                        form.get("info", []),
                         content["info"]
                     )
                 if content.get("references") is not None:
-                    content["references"] = form.get("references", []).extend(
+                    content["references"] = chain(
+                        form.get("references", []),
                         content["references"]
                     )
-                required_keys.extends(form.get("requiredKeys", []))
+                required_keys.extend(form.get("requiredKeys", []))
             except StopIteration:
                 pass
             return cls(
@@ -304,17 +318,18 @@ class PushContentMutation(relay.ClientIDMutation):
                     lambda x: matcher.fullmatch(x),
                     content["info"]
                 )
-            content["info"] = form.get("injectInfo", []).extend(
+            content["info"] = chain(
+                form.get("injectInfo", []),
                 content["info"]
             )
         else:
             # none should be possible
             content["info"] = form.get("injectInfo", None)
         if content.get("references") is not None:
-            content["references"] = \
-                form.get("injectReferences", []).extend(
-                    content["references"]
-                )
+            content["references"] = chain(
+                form.get("injectReferences", []),
+                content["references"]
+            )
         else:
             # none should be possible
             content["references"] = \
@@ -324,7 +339,7 @@ class PushContentMutation(relay.ClientIDMutation):
                 "contentHash", flat=True
             )
         )
-        required_keys.extends(form.get("requiredKeys", []))
+        required_keys.extend(form.get("requiredKeys", []))
         action_key = None
         if form.pop("updateable", False):
             action_key = os.urandom(32)
@@ -337,4 +352,7 @@ class PushContentMutation(relay.ClientIDMutation):
         c = create_content(
             info.context, content, key=key, required_keys=required_keys
         )
-        return cls(content=c, actionKey=action_key)
+        return cls(
+            content=c,
+            actionKey=base64.b64encode(action_key).decode("ascii")
+        )

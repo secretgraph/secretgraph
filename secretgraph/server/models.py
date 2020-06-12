@@ -5,6 +5,7 @@ from datetime import datetime as dt
 from typing import Optional
 from uuid import UUID
 
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
 from django.core.files.base import File
@@ -25,7 +26,7 @@ def get_file_path(instance, filename) -> str:
             posixpath.join(
                 ret, str(instance.cluster_id),
                 "%s.store" % secrets.token_urlsafe(
-                    getattr(settings, "SECRETGRAPH_KEY_SIZE")
+                    getattr(settings, "SECRETGRAPH_FILETOKEN_LEN")
                 )
             )
         )
@@ -107,7 +108,10 @@ class Content(FlexidModel):
     def load_pubkey(self):
         """ Works only for public keys (special Content) """
         try:
-            return load_der_public_key(self.value.open("rb").read())
+            return load_der_public_key(
+                self.value.open("rb").read(),
+                default_backend()
+            )
         except Exception as exc:
             logger.error("Could not load public key", exc_info=exc)
         return None

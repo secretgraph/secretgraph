@@ -43,7 +43,7 @@ def _update_or_create_cluster(
         m_actions = filter(
             lambda x: x.action_type == "manage", action_save_func.actions
         )
-        m_actions = set(map(lambda x: x.key_hash, m_actions))
+        m_actions = set(map(lambda x: x.keyHash, m_actions))
 
         if created and "manage" not in action_save_func.action_types:
             raise ValueError("Requires \"manage\" Action")
@@ -113,6 +113,7 @@ def create_cluster(
 
     else:
         contentdata["key"] = objdata["key"]
+    contentdata["info"] = objdata.get("keyInfo")
     cluster = Cluster(**prebuild)
     cluster_func = _update_or_create_cluster(
         request, cluster, objdata
@@ -122,8 +123,8 @@ def create_cluster(
         request, contentdata, key=key, authset=authset
     )
     with transaction.atomic():
-        content_func()
         cluster = cluster_func()
+        content_func()
 
     return (
         cluster,

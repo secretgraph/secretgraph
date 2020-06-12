@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from ....utils.auth import retrieve_allowed_objects
-from ....utils.misc import hash_object
+from ....utils.misc import hash_object, refresh_fields
 from ...actions.handler import ActionHandler
 from ...models import (
     Action, Content, Cluster, ContentAction
@@ -66,29 +66,32 @@ def create_actions_func(
         aesgcm = AESGCM(action_key)
         nonce = os.urandom(13)
         # add content_action
-        group = action_value.pop("contentActionGroup") or ""
+        group = action_value.pop("contentActionGroup", "") or ""
+        contentAction = None
         if content:
-            c = ContentAction(
+            contentAction = ContentAction(
                 content=content,
                 group=group
             )
-            final_content_actions.append(c)
-
+            final_content_actions.append(contentAction)
         action = Action(
-            value=aesgcm.encode(
+            value=aesgcm.encrypt(
                 nonce,
                 json.dumps(action_value).encode("utf-8"),
                 None
             ),
             start=action.get("start", timezone.now()),
-            stop=action.stop,
+            stop=action.get("stop", None),
             keyHash=action_key_hash,
             nonce=base64.b64encode(nonce).decode("ascii"),
-            contentAction=c
+            contentAction=contentAction,
+            cluster=cluster
         )
         action.action_type = action_value["action"]
         action_types.add(action_value["action"])
         final_actions.append(action)
+
+    create = not cluster.pk
 
     def save_func():
         result = retrieve_allowed_objects(
@@ -107,7 +110,12 @@ def create_actions_func(
                 actions.delete()
         if content:
             ContentAction.objects.bulk_create(final_content_actions)
-        cluster.actions.bulk_create(final_actions)
+        if create:
+            Action.objects.bulk_create(refresh_fields(
+                final_actions, "cluster"
+            ))
+        else:
+            Action.objects.bulk_create(final_actions)
     setattr(save_func, "actions", final_actions)
     setattr(save_func, "action_types", action_types)
     setattr(save_func, "key", default_key)

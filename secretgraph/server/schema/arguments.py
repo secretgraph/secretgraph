@@ -33,6 +33,10 @@ class ContentKeyInput(graphene.InputObjectType):
         required=False,
         description="Nonce for private key (base64, 13 bytes)"
     )
+    info = graphene.List(
+        graphene.String, required=False,
+        description="Info for private key"
+    )
 
 
 class ReferenceInput(graphene.InputObjectType):

@@ -7,6 +7,13 @@ from cryptography.hazmat.primitives import serialization
 from ..constants import sgraph_cluster
 
 
+def refresh_fields(inp, *fields):
+    for i in inp:
+        for field in fields:
+            setattr(i, field, getattr(i, field))
+        yield i
+
+
 def hash_object(inp, algo=None):
     if not algo:
         algo = settings.SECRETGRAPH_HASH_ALGORITHMS[0]
@@ -21,11 +28,12 @@ def hash_object(inp, algo=None):
             inp = base64.b64decode(inp)
         except Exception:
             inp = inp.encode("utf8")
+    if hasattr(inp, "public_key"):
+        inp = inp.public_key()
     if hasattr(inp, "public_bytes"):
         inp = inp.public_bytes(
             encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-            encryption_algorithm=serialization.NoEncryption()
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
     algo.update(inp)
     return base64.b64encode(algo.digest()).decode("ascii")
@@ -37,11 +45,12 @@ def calculate_hashes(inp):
             inp = base64.b64decode(inp)
         except Exception:
             inp = inp.encode("utf8")
+    if hasattr(inp, "public_key"):
+        inp = inp.public_key()
     if hasattr(inp, "public_bytes"):
         inp = inp.public_bytes(
             encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-            encryption_algorithm=serialization.NoEncryption()
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
     hashes = []
     for algo in settings.SECRETGRAPH_HASH_ALGORITHMS:
@@ -55,7 +64,7 @@ def calculate_hashes(inp):
         hashes.append(
             base64.b64encode(algo.digest()).decode("ascii")
         )
-    return inp
+    return hashes
 
 
 def get_secrets(graph):
