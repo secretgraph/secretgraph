@@ -1624,7 +1624,7 @@
                 }
               ],
               "deprecationReason": null,
-              "description": null,
+              "description": "\n        ",
               "isDeprecated": false,
               "name": "updateOrCreateContent",
               "type": {
@@ -2062,7 +2062,7 @@
             },
             {
               "defaultValue": null,
-              "description": null,
+              "description": "key of content (can be used for server-side encryption)",
               "name": "key",
               "type": {
                 "kind": "SCALAR",
@@ -2138,20 +2138,6 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "info",
-              "type": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                }
-              }
-            },
-            {
-              "defaultValue": null,
-              "description": null,
               "name": "contentHash",
               "type": {
                 "kind": "SCALAR",
@@ -2220,8 +2206,22 @@
             },
             {
               "defaultValue": null,
-              "description": "Info for private key",
-              "name": "info",
+              "description": "Info tags for private key",
+              "name": "privateInfo",
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": "Info tags for public key",
+              "name": "publicInfo",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -2265,6 +2265,20 @@
                 "kind": "SCALAR",
                 "name": "String",
                 "ofType": null
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": null,
+              "name": "info",
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
               }
             }
           ],
@@ -2711,20 +2725,6 @@
                 "ofType": {
                   "kind": "INPUT_OBJECT",
                   "name": "ReferenceInput",
-                  "ofType": null
-                }
-              }
-            },
-            {
-              "defaultValue": null,
-              "description": null,
-              "name": "info",
-              "type": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
                   "ofType": null
                 }
               }

@@ -4,7 +4,7 @@ export const createContentMutation = graphql`
   mutation contentCreateServerEncryptedMutation($cluster: ID!, $info: [String!], $references: [ReferenceInput!], $value: Upload!, $contentHash: String) {
     updateOrCreateContent(
       input: {
-        content: { cluster: $cluster, info: $info, value: { value: $value }, contentHash: $contentHash, references: $references }
+        content: { cluster: $cluster, value: { info: $info, value: $value }, contentHash: $contentHash, references: $references }
       }
     ) {
       content {

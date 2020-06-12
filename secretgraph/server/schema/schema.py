@@ -41,7 +41,10 @@ class Query():
 
 
 class Mutation():
-    updateOrCreateContent = ContentMutation.Field()
+    updateOrCreateContent = ContentMutation.Field(
+        description="""
+        """
+    )
     updateOrCreateCluster = ClusterMutation.Field()
     pushContent = PushContentMutation.Field()
     regenerateFlexid = RegenerateFlexidMutation.Field()

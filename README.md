@@ -21,6 +21,8 @@
 
 # TODO
 
+* cleanup, document server side encryption and allow disabling it (maybe remove it completely at some state)
+  * specifying key allows to encrypt keys/values server side if nonce is not set
+* merge configuration client side in case of updates
 * improve speed by resolving once for all contents, clusters auth informations (view), instead of while every operation
-* settings content(s) for sharing configuration, maybe use info tag "config"
 * maybe: encrypt some info tags

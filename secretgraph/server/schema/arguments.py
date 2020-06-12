@@ -33,9 +33,14 @@ class ContentKeyInput(graphene.InputObjectType):
         required=False,
         description="Nonce for private key (base64, 13 bytes)"
     )
-    info = graphene.List(
+    privateInfo = graphene.List(
         graphene.String, required=False,
-        description="Info for private key"
+        description="Info tags for private key"
+    )
+
+    publicInfo = graphene.List(
+        graphene.String, required=False,
+        description="Info tags for public key"
     )
 
 
@@ -48,6 +53,7 @@ class ReferenceInput(graphene.InputObjectType):
 class ContentValueInput(graphene.InputObjectType):
     value = Upload(required=True)
     nonce = graphene.String(required=False)
+    info = graphene.List(graphene.String, required=False)
 
 
 class ContentInput(graphene.InputObjectType):
@@ -55,7 +61,6 @@ class ContentInput(graphene.InputObjectType):
     key = ContentKeyInput(required=False)
     value = ContentValueInput(required=False)
     references = graphene.List(ReferenceInput, required=False)
-    info = graphene.List(graphene.String, required=False)
     contentHash = graphene.String(required=False)
     actions = graphene.List(ActionInput, required=False)
 
@@ -64,7 +69,6 @@ class PushContentInput(graphene.InputObjectType):
     parent = graphene.ID(required=True)
     value = ContentValueInput(required=True)
     references = graphene.List(ReferenceInput, required=False)
-    info = graphene.List(graphene.String, required=False)
 
 
 class ClusterInput(graphene.InputObjectType):

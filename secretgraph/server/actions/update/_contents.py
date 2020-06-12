@@ -137,7 +137,8 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
             "value": key_obj["publicKey"],
             "info": chain(
                 ["type=PublicKey"],
-                hashes_info
+                hashes_info,
+                key_obj.get("publicInfo") or []
             ),
             "contentHash": hashes[0]
         },
@@ -147,7 +148,7 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
             "info": chain(
                 ["type=PrivateKey"],
                 hashes_info,
-                key_obj.get("info") or []
+                key_obj.get("privateInfo") or []
             ),
             "contentHash": None
         } if key_obj.get("privateKey") else None
@@ -436,22 +437,14 @@ def create_key_func(
             info__tag__in=map(lambda x: f"key_hash={x}", hashes)
         ).first()
     public_content = public_content or Content(cluster=objdata["cluster"])
-    _info = objdata.get("info") or []
     if key:
         private["info"] = chain(
             private["info"],
             ["key_hash={}".format(hash_object(key))]
         )
-    public["info"] = chain(public["info"], _info)
     public["references"] = objdata.get("references")
     public["actions"] = objdata.get("actions")
     if private:
-        private["info"] = chain(
-            private["info"],
-            filter(
-                lambda x: x.startswith("key_hash"), _info
-            )
-        )
         private["references"] = [{
             "target": public_content,
             "group": "public_key",
@@ -494,7 +487,7 @@ def create_content(
             "cluster": objdata.get("cluster"),
             "references": objdata.get("references"),
             "contentHash": objdata.get("contentHash"),
-            "info": objdata.get("info"),
+            "info": value_obj.get("info"),
             "actions": objdata.get("actions"),
             "key": key,
             **value_obj
@@ -524,7 +517,6 @@ def update_content(
         hashes, newdata, private = _transform_key_into_dataobj(
             key_obj, content=content, key=key
         )
-        newdata["info"].extend(objdata.get("info") or [])
     elif content.info.filter(tag="type=PrivateKey"):
         is_key = True
         key_obj = objdata.get("key")
@@ -536,15 +528,13 @@ def update_content(
         )
         if not newdata:
             raise ValueError()
-        newdata["info"].extend(objdata.get("info") or [])
     else:
         newdata = {
             "cluster": objdata.get("cluster"),
             "references": objdata.get("references"),
             "contentHash": objdata.get("contentHash"),
-            "info": objdata.get("info"),
             "key": key,
-            **objdata.get("value", {})
+            **(objdata.get("value") or {})
         }
     newdata["actions"] = objdata.get("actions")
     func = _update_or_create_content_or_key(
