@@ -2217,6 +2217,20 @@
                 "name": "String",
                 "ofType": null
               }
+            },
+            {
+              "defaultValue": null,
+              "description": "Info for private key",
+              "name": "info",
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
             }
           ],
           "interfaces": null,

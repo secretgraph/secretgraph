@@ -3,17 +3,17 @@ declare module 'extract-files' {
   var extractFiles: any
 }
 
-import { Environment, Network, RecordSource, Store, fetchQuery, commitMutation } from "relay-runtime";
+import { Environment, FetchFunction, Network, RecordSource, Store, fetchQuery, commitMutation } from "relay-runtime";
 import { extractFiles } from 'extract-files';
 import { createClusterMutation } from "../queries/cluster";
 import { createContentMutation } from "../queries/content";
 import { ConfigInterface } from "../interfaces";
 
 export const createEnvironment = (url: string) => {
-  async function executeRequest(operation: any, variables: any) {
+  const executeRequest: FetchFunction = async function(operation, variables) {
     const headers: object = variables["headers"];
     delete variables["headers"];
-    const { clone, files } = extractFiles(variables);
+    const { clone, files } = extractFiles(variables, "variables");
     const formData  = new FormData();
     formData.append(
       "operations",
@@ -50,14 +50,14 @@ export const createEnvironment = (url: string) => {
 
 export function initializeCluster(env: Environment, config: ConfigInterface, key?: string | null) {
   return new Promise((resolve, reject) => {
-    const createInit = async (cluster: any, errors: any) => {
+    const createInit = async (result: any, errors: any) => {
       if(errors) {
         reject(errors);
       }
-      console.log(cluster);
-      const digest: string = String.fromCharCode(... new Uint8Array((
+      const cluster = result.updateOrCreateCluster;
+      const digest: string = btoa(String.fromCharCode(... new Uint8Array(
         await crypto.subtle.digest(
-          "sha512",
+          "SHA-512",
           Uint8Array.from(atob(cluster.actionKey), c => c.charCodeAt(0))
         )
       )));
@@ -78,9 +78,8 @@ export function initializeCluster(env: Environment, config: ConfigInterface, key
         env, {
           mutation: createContentMutation,
           variables: {
-            "key": cluster.privateKey,
             "cluster": cluster.cluster.id,
-            "info": ["config", "state=internal"],
+            "info": ["type=Config", "state=internal"],
             "value": new File([JSON.stringify(config)], "value"),
             "headers": {
               "Authorization": `${cluster.cluster.id}:${cluster.actionKey}`

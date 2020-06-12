@@ -14,6 +14,7 @@ export const createClusterMutation = graphql`
       actionKey
       privateKey
       keyForPrivateKey
+      publicKeyHash
     }
   }
 `

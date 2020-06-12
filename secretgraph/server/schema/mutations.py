@@ -195,7 +195,12 @@ class ContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         content = graphene.Field(ContentInput, required=True)
-        key = graphene.String(required=False)
+        key = graphene.String(
+            required=False,
+            description=(
+                "key of content (can be used for server-side encryption)"
+            )
+        )
 
     content = graphene.Field(ContentNode)
 
