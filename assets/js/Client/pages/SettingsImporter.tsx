@@ -36,7 +36,7 @@ import {
 import { ConfigInterface, SecretgraphEventInterface, SnackMessageInterface } from '../interfaces';
 import { loadConfig } from "../utils/config";
 import { createEnvironment, initializeCluster } from "../utils/graphql";
-import { utf8ToBinary } from "../utils/misc"
+import { utf8ToBinary, utf8encoder } from "../utils/misc"
 import { serverConfigQuery } from "../queries/server"
 
 type Props = {
@@ -115,7 +115,7 @@ function SettingsImporter(props: Props) {
       if (encryptingPw) {
         b64key = btoa(utf8ToBinary(encryptingPw));
       }
-      await initializeCluster(env, newConfig, b64key);
+      await initializeCluster(env, newConfig, b64key, sconfig.PBKDF2Iterations);
       setRegisterUrl(undefined);
       setConfig(newConfig);
       setMainContext({

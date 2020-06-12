@@ -10,13 +10,20 @@ export function loadConfigSync(obj: Storage = window.localStorage): ConfigInterf
   return JSON.parse(result);
 }
 
-export async function loadConfig(obj: string | File | Request | Storage = window.localStorage, pw?: string): Promise<ConfigInterface | null> {
+export async function loadConfig(obj: string | File | Request | Storage = window.localStorage, nonce?: string, pw?: string): Promise<ConfigInterface | null> {
   if ( obj instanceof Storage ) {
     return loadConfigSync(obj);
   } else if ( obj instanceof File ) {
     let result = await obj.text();
-    if (pw){
-
+    if (nonce && pw){
+      result = await crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          length: 256,
+        },
+        key,
+        atob(result)
+      );
     }
     return JSON.parse(result);
   } else {
@@ -24,7 +31,7 @@ export async function loadConfig(obj: string | File | Request | Storage = window
     if (!result.ok){
       return null;
     }
-    if (pw){
+    if (nonce && pw){
 
     }
     return await result.json();

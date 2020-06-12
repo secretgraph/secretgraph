@@ -2,10 +2,22 @@
 import { graphql } from "react-relay"
 
 export const createClusterMutation = graphql`
-  mutation clusterCreateSimpleMutation($key: String) {
+  mutation clusterCreateSimpleMutation($actionKey: String!, $publicKey: String!, $privateKey: String!, $nonce: String!) {
     updateOrCreateCluster(
       input: {
-        key: $key
+        cluster: {
+          actions: [
+            {
+              value: "{\"action\": \"manage\"}"
+              key: $actionKey
+            }
+          ]
+          key: {
+            publicKey: $publicKey
+            privateKey: $privateKey
+            nonce: $nonce
+          }
+        }
       }
     ) {
       cluster {

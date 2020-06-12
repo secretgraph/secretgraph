@@ -8,6 +8,9 @@ import { extractFiles } from 'extract-files';
 import { createClusterMutation } from "../queries/cluster";
 import { createContentMutation } from "../queries/content";
 import { ConfigInterface } from "../interfaces";
+import { b64toarr, utf8ToBinary } from "./misc";
+import { PBKDF2PW, arrtogcmkey } from "./encryption";
+
 
 export const createEnvironment = (url: string) => {
   const executeRequest: FetchFunction = async function(operation, variables) {
@@ -48,8 +51,39 @@ export const createEnvironment = (url: string) => {
   });
 }
 
-export function initializeCluster(env: Environment, config: ConfigInterface, key?: string | null) {
-  return new Promise((resolve, reject) => {
+export async function initializeCluster(env: Environment, config: ConfigInterface, key: string, iterations: number) {
+  const nonce = crypto.getRandomValues(new Uint8Array(13));
+  const nonceb64 = btoa(String.fromCharCode(... nonce));
+  const warpedkey = await PBKDF2PW(key, nonce, iterations);
+  const { publicKey, privateKey } = await crypto.subtle.generateKey(
+    {
+      name: "RSA-OAEP",
+      modulusLength: 8192,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-512"
+    },
+    true,
+    ["wrapKey", "wrapKey", "encrypt"]
+  ) as CryptoKeyPair;
+  const encryptedPrivateKey = crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: nonce
+    },
+    await arrtogcmkey(warpedkey),
+    privateKey.to
+  );
+
+  /**crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: iv
+    },
+    key,
+    ciphertext
+  );
+}*/
+  return await new Promise((resolve, reject) => {
     const createInit = async (result: any, errors: any) => {
       if(errors) {
         reject(errors);
@@ -58,7 +92,7 @@ export function initializeCluster(env: Environment, config: ConfigInterface, key
       const digest: string = btoa(String.fromCharCode(... new Uint8Array(
         await crypto.subtle.digest(
           "SHA-512",
-          Uint8Array.from(atob(cluster.actionKey), c => c.charCodeAt(0))
+          b64toarr(cluster.actionKey)
         )
       )));
       config["clusters"][config["baseUrl"]] = {};
@@ -97,7 +131,13 @@ export function initializeCluster(env: Environment, config: ConfigInterface, key
     commitMutation(
       env, {
         mutation: createClusterMutation,
-        variables: { "key": key },
+        variables: {
+          key: key,
+          actionKey: ,
+          publicKey: ,
+          privateKey: ,
+          nonce:
+        },
         onCompleted: createInit,
         onError: (error: any) => {
           reject(error);
