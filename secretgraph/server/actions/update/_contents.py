@@ -199,15 +199,15 @@ def _update_or_create_content_or_key(
         content.nonce = objdata["nonce"]
 
         if isinstance(objdata["value"], bytes):
-            f = ContentFile(objdata["value"])
+            objdata["value"] = ContentFile(objdata["value"])
         elif isinstance(objdata["value"], str):
-            f = ContentFile(base64.b64decode(objdata["value"]))
+            objdata["value"] = ContentFile(base64.b64decode(objdata["value"]))
         else:
-            f = File(objdata["value"])
+            objdata["value"] = File(objdata["value"])
 
         def save_func_value():
             content.file.delete(False)
-            content.file.save("", f)
+            content.file.save("", objdata["value"])
     else:
         def save_func_value():
             content.save()
@@ -243,6 +243,7 @@ def _update_or_create_content_or_key(
         content_type = None
         content_state = None
 
+    # cannot change because of special key transformation
     chash = objdata.get("contentHash")
     if chash is not None:
         if len(chash) not in (0, len_default_hash):

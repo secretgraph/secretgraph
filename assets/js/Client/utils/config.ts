@@ -10,16 +10,22 @@ export function loadConfigSync(obj: Storage = window.localStorage): ConfigInterf
   return JSON.parse(result);
 }
 
-export async function loadConfig(obj: string | File | Request | Storage = window.localStorage): Promise<ConfigInterface | null> {
+export async function loadConfig(obj: string | File | Request | Storage = window.localStorage, pw?: string): Promise<ConfigInterface | null> {
   if ( obj instanceof Storage ) {
     return loadConfigSync(obj);
   } else if ( obj instanceof File ) {
     let result = await obj.text();
+    if (pw){
+
+    }
     return JSON.parse(result);
   } else {
     let result = await fetch(obj);
     if (!result.ok){
       return null;
+    }
+    if (pw){
+
     }
     return await result.json();
   }

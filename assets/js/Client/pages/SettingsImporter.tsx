@@ -64,12 +64,12 @@ function SettingsImporter(props: Props) {
     const encryptingPw = (document.getElementById("secretgraph-encrypting") as HTMLInputElement).value;
     let newConfig: ConfigInterface | null = null;
     let env: Environment | null = null;
-    if (event.created){
+    if (event.pingCreate){
       newConfig = {
         certificates: {},
         tokens: {},
         clusters: {},
-        baseUrl: event.configUrl ? event.configUrl : providerUrl
+        baseUrl: providerUrl
       };
       env = createEnvironment(newConfig.baseUrl);
       let b64key: string | null = null
@@ -137,11 +137,11 @@ function SettingsImporter(props: Props) {
       return;
     }
     //TODO: support encrypted config files
-    let binary: string | null = null
+    let binary: string | undefined = undefined;
     if (decryptingPw) {
       binary = utf8ToBinary(decryptingPw);
     }
-    const newConfig = await loadConfig(importFiles[0]);
+    const newConfig = await loadConfig(importFiles[0], binary);
     if (!newConfig){
       setMessage({ severity: "error", message: "Configuration is invalid" });
       return;

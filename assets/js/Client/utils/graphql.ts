@@ -78,11 +78,11 @@ export function initializeCluster(env: Environment, config: ConfigInterface, key
         env, {
           mutation: createContentMutation,
           variables: {
-            "cluster": cluster.cluster.id,
+            "cluster": cluster.cluster["id"],
             "info": ["type=Config", "state=internal"],
             "value": new File([JSON.stringify(config)], "value"),
             "headers": {
-              "Authorization": `${cluster.cluster.id}:${cluster.actionKey}`
+              "Authorization": `${cluster.cluster["id"]}:${cluster.actionKey}`
             }
           },
           onError: (error: any) => {

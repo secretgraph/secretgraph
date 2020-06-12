@@ -14,8 +14,7 @@ export interface ConfigInterface {
 
 
 export interface SecretgraphEventInterface {
-  created: boolean,
-  configUrl?: string
+  pingCreate?: boolean
 }
 
 
