@@ -28,18 +28,18 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
   if ( obj instanceof Storage ) {
     return loadConfigSync(obj);
   } else if ( obj instanceof File ) {
-    let result = JSON.parse(await obj.text());
+    let parsedResult = JSON.parse(await obj.text());
     if (pw && parsedResult.data){
-      result = await crypto.subtle.decrypt(
+      parsedResult = await crypto.subtle.decrypt(
         {
           name: "AES-GCM",
-          iv: result.nonce
+          iv: parsedResult.nonce
         },
-        await PBKDF2PW(pw, result.nonce, result.iterations).then((data) => arrtogcmkey(data)),
-        b64toarr(result.data)
+        await PBKDF2PW(pw, parsedResult.nonce, parsedResult.iterations).then((data) => arrtogcmkey(data)),
+        b64toarr(parsedResult.data)
       ).then((data) => String.fromCharCode(...new Uint8Array(data)));
     }
-    return checkConfig(result);
+    return checkConfig(parsedResult);
   } else {
     let result = await fetch(obj);
     if (!result.ok){
