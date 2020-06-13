@@ -22,6 +22,26 @@ export function arrtogcmkey(inp: ArrayBuffer){
   );
 }
 
+export function arrtorsaoepkey(inp: ArrayBuffer){
+  return crypto.subtle.importKey(
+    "pkcs8" as const,
+    inp,
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-512"
+    },
+    false,
+    ["encrypt" as const, "decrypt" as const]
+  );
+}
+
+export function rsaoepkeytoarr(publicKey: CryptoKey){
+  return crypto.subtle.exportKey(
+    "spki" as const,
+    publicKey
+  )
+}
+
 export async function PBKDF2PW(inp: string, salt: Uint8Array, iterations: number) {
   return await window.crypto.subtle.deriveBits(
     {
@@ -32,5 +52,5 @@ export async function PBKDF2PW(inp: string, salt: Uint8Array, iterations: number
     },
     await strtoPBKDF2key(inp),
     512
-  );
+  ).then((obj) => new Uint8Array(obj));
 }

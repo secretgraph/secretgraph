@@ -259,7 +259,7 @@ class ContentMutation(relay.ClientIDMutation):
             )
         else:
             result = id_to_result(
-                info.context, content.cluster, Cluster, "update"
+                info.context, content.cluster, Cluster, "create"
             )
             cluster_obj = result["objects"].first()
             if not cluster_obj:

@@ -1,40 +1,62 @@
-import { ConfigInterface } from "../interfaces"
+import { ConfigInterface } from "../interfaces";
+import { PBKDF2PW, arrtogcmkey } from "./encryption";
+import { b64toarr } from "./misc";
 import { saveAs } from 'file-saver';
 
 
-export function loadConfigSync(obj: Storage = window.localStorage): ConfigInterface | null {
+export function checkConfig(config: ConfigInterface | null | undefined) {
+  if(!config){
+    return null;
+  }
+  if (!config.baseUrl || !(config.clusters instanceof Object) || !(config.tokens instanceof Object) || !(config.certificates instanceof Object)){
+    return null;
+  }
+
+  return config;
+}
+
+
+export const loadConfigSync = (obj: Storage = window.localStorage): ConfigInterface | null => {
   let result = obj.getItem("secretgraphConfig");
   if (!result) {
     return null;
   }
-  return JSON.parse(result);
+  return checkConfig(JSON.parse(result));
 }
 
-export async function loadConfig(obj: string | File | Request | Storage = window.localStorage, nonce?: string, pw?: string): Promise<ConfigInterface | null> {
+export const loadConfig = async (obj: string | File | Request | Storage = window.localStorage, pw?: string): Promise<ConfigInterface | null> => {
   if ( obj instanceof Storage ) {
     return loadConfigSync(obj);
   } else if ( obj instanceof File ) {
-    let result = await obj.text();
-    if (nonce && pw){
+    let result = JSON.parse(await obj.text());
+    if (pw && parsedResult.data){
       result = await crypto.subtle.decrypt(
         {
           name: "AES-GCM",
-          length: 256,
+          iv: result.nonce
         },
-        key,
-        atob(result)
-      );
+        await PBKDF2PW(pw, result.nonce, result.iterations).then((data) => arrtogcmkey(data)),
+        b64toarr(result.data)
+      ).then((data) => String.fromCharCode(...new Uint8Array(data)));
     }
-    return JSON.parse(result);
+    return checkConfig(result);
   } else {
     let result = await fetch(obj);
     if (!result.ok){
       return null;
     }
-    if (nonce && pw){
-
+    let parsedResult = await result.json();
+    if (pw && parsedResult.data){
+      parsedResult = await crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv: parsedResult.nonce
+        },
+        await PBKDF2PW(pw, parsedResult.nonce, parsedResult.iterations).then((data) => arrtogcmkey(data)),
+        b64toarr(parsedResult.data)
+      ).then((data) => String.fromCharCode(...new Uint8Array(data)));
     }
-    return await result.json();
+    return checkConfig(parsedResult);
   }
 }
 

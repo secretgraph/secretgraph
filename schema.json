@@ -2172,25 +2172,25 @@
           "inputFields": [
             {
               "defaultValue": null,
-              "description": "Cleartext public key (base64 encoded DER key)",
+              "description": "Cleartext public key",
               "name": "publicKey",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
                 "ofType": {
                   "kind": "SCALAR",
-                  "name": "String",
+                  "name": "Upload",
                   "ofType": null
                 }
               }
             },
             {
               "defaultValue": null,
-              "description": "Encrypted private key (base64 encoded DER key, requires nonce)",
+              "description": "Encrypted private key (requires nonce)",
               "name": "privateKey",
               "type": {
                 "kind": "SCALAR",
-                "name": "String",
+                "name": "Upload",
                 "ofType": null
               }
             },
@@ -2236,6 +2236,16 @@
           "interfaces": null,
           "kind": "INPUT_OBJECT",
           "name": "ContentKeyInput",
+          "possibleTypes": null
+        },
+        {
+          "description": "Create scalar that ignores normal serialization/deserialization, since\nthat will be handled by the multipart request spec",
+          "enumValues": null,
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "kind": "SCALAR",
+          "name": "Upload",
           "possibleTypes": null
         },
         {
@@ -2288,23 +2298,13 @@
           "possibleTypes": null
         },
         {
-          "description": "Create scalar that ignores normal serialization/deserialization, since\nthat will be handled by the multipart request spec",
-          "enumValues": null,
-          "fields": null,
-          "inputFields": null,
-          "interfaces": null,
-          "kind": "SCALAR",
-          "name": "Upload",
-          "possibleTypes": null
-        },
-        {
           "description": null,
           "enumValues": null,
           "fields": null,
           "inputFields": [
             {
               "defaultValue": null,
-              "description": null,
+              "description": "Can be id, flexid of content or hash of key",
               "name": "target",
               "type": {
                 "kind": "NON_NULL",

@@ -1,5 +1,18 @@
 
 
+export interface ActionInterface {
+  start: string
+  stop: string
+  value: string
+  key: string
+}
+
+export interface ReferenceInterface {
+  target: string;
+  group: string;
+  extra: string;
+}
+
 export interface ConfigClusterInterface {
   hashes: { [hash: string]: string[] }
 }

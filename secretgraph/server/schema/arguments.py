@@ -17,16 +17,15 @@ class ActionInput(graphene.InputObjectType):
 
 
 class ContentKeyInput(graphene.InputObjectType):
-    publicKey = graphene.String(
+    publicKey = Upload(
         required=True,
-        description="Cleartext public key (base64 encoded DER key)"
+        description="Cleartext public key"
     )
     # encrypted!
-    privateKey = graphene.String(
+    privateKey = Upload(
         required=False,
         description=(
-            "Encrypted private key (base64 encoded DER key, "
-            "requires nonce)"
+            "Encrypted private key (requires nonce)"
         )
     )
     nonce = graphene.String(
@@ -45,7 +44,11 @@ class ContentKeyInput(graphene.InputObjectType):
 
 
 class ReferenceInput(graphene.InputObjectType):
-    target = graphene.ID(required=True)
+    target = graphene.ID(
+        required=True,
+        description="Can be id, flexid of content or hash of key"
+
+    )
     extra = graphene.String(required=False)
     group = graphene.String(required=False)
 

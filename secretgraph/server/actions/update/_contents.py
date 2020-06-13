@@ -69,6 +69,7 @@ def _transform_info_tags(content, objdata):
 
 
 def _transform_key_into_dataobj(key_obj, key=None, content=None):
+    skippubkeycheck = False
     if isinstance(key_obj.get("privateKey"), str):
         key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
     if isinstance(key_obj.get("publicKey"), str):
@@ -94,6 +95,10 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
                 key_obj["privateKey"] = load_der_private_key(
                     key_obj["privateKey"], None, default_backend()
                 )
+            elif isinstance(key_obj["privateKey"], File):
+                key_obj["privateKey"] = load_der_private_key(
+                    key_obj["privateKey"].read(), None, default_backend()
+                )
             key_obj["publicKey"] = \
                 key_obj["privateKey"].public_key().public_bytes(
                     encoding=serialization.Encoding.DER,
@@ -108,20 +113,26 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
                 key_obj["nonce"],
                 None
             )
+            skippubkeycheck = True
     if not key_obj.get("publicKey"):
         raise ValueError("No public key")
-    try:
-        if isinstance(key_obj["publicKey"], bytes):
-            key_obj["publicKey"] = load_der_public_key(
-                key_obj["publicKey"], default_backend()
+    if not skippubkeycheck:
+        try:
+            if isinstance(key_obj["publicKey"], bytes):
+                key_obj["publicKey"] = load_der_public_key(
+                    key_obj["publicKey"], default_backend()
+                )
+            elif isinstance(key_obj["publicKey"], File):
+                key_obj["publicKey"] = load_der_public_key(
+                    key_obj["publicKey"].read(), None, default_backend()
+                )
+            key_obj["publicKey"] = key_obj["publicKey"].public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
             )
-        key_obj["publicKey"] = key_obj["publicKey"].public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
-    except Exception as exc:
-        # logger.debug("loading public key failed", exc_info=exc)
-        raise ValueError("Invalid public key") from exc
+        except Exception as exc:
+            # logger.debug("loading public key failed", exc_info=exc)
+            raise ValueError("Invalid public key") from exc
     if content:
         if content.value.open("rb").read() != key_obj["publicKey"]:
             raise ValueError("Cannot change public key")
@@ -261,9 +272,20 @@ def _update_or_create_content_or_key(
             if isinstance(ref["target"], Content):
                 targetob = ref["target"]
             else:
+                type_name = "Content"
+                try:
+                    type_name, ref["target"] = from_global_id(ref["target"])
+                except Exception:
+                    pass
+                if type_name != "Content":
+                    raise ValueError("No Content Id")
                 targetob = Content.objects.filter(
                     Q(id=ref["target"]) |
-                    Q(flexid=ref["target"]),
+                    Q(flexid=ref["target"]) |
+                    (
+                        Q(info__tag=f"key_hash={ref['target']}") &
+                        Q(info__tag="type=PublicKey")
+                    ),
                     markForDestruction=None
                 ).first()
             if not targetob:

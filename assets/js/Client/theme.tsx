@@ -114,6 +114,9 @@ export function secretgraphTheme(theme: Theme) {
       }),
       marginLeft: theme.direction === "ltr" ? drawerWidth : 0,
     },
+    buttonProgress: {
+      color: "primary",
+    },
   }
 }
 

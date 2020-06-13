@@ -23,6 +23,7 @@ class SecretgraphConfig(ObjectType):
     PBKDF2Iterations = graphene.List(graphene.Int)
     injectedClusters = graphene.List(graphene.String)
     registerUrl = graphene.Field(RegisterUrl)
+    loginUrl = graphene.String(required=False)
 
     def resolve_hashAlgorithms(self, info):
         return settings.SECRETGRAPH_HASH_ALGORITHMS
@@ -49,6 +50,12 @@ class SecretgraphConfig(ObjectType):
         if signup_url:
             return resolve_url(signup_url)
         return True
+
+    def resolve_loginUrl(self, info):
+        login_url = getattr(settings, "LOGIN_URL", None)
+        if login_url:
+            return resolve_url(login_url)
+        return None
 
 
 class FlexidMixin():
