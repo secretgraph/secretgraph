@@ -84,7 +84,7 @@ def _transform_key_into_dataobj(key_obj, content=None):
             )
         elif isinstance(key_obj["publicKey"], File):
             key_obj["publicKey"] = load_der_public_key(
-                key_obj["publicKey"].read(), None, default_backend()
+                key_obj["publicKey"].read(), default_backend()
             )
         key_obj["publicKey"] = key_obj["publicKey"].public_bytes(
             encoding=serialization.Encoding.DER,
