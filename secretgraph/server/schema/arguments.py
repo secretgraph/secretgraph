@@ -18,8 +18,8 @@ class ActionInput(graphene.InputObjectType):
 
 class ContentKeyInput(graphene.InputObjectType):
     publicKey = Upload(
-        required=True,
-        description="Cleartext public key"
+        required=False,
+        description="Cleartext public key in der format"
     )
     # encrypted!
     privateKey = Upload(

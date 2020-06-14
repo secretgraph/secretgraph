@@ -48,9 +48,9 @@ export async function PBKDF2PW(inp: string, salt: Uint8Array, iterations: number
       "name": "PBKDF2",
       salt: salt,
       "iterations": iterations,
-      "hash": "SHA-256"
+      "hash": "SHA-512"
     },
     await strtoPBKDF2key(inp),
-    512
+    256
   ).then((obj) => new Uint8Array(obj));
 }

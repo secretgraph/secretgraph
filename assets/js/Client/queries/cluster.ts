@@ -6,9 +6,10 @@ export const createClusterMutation = graphql`
     updateOrCreateCluster(
       input: {
         cluster: {
+          publicInfo: " "
           actions: [
             {
-              value: { action: "manage" }
+              value: "{ \\\"action\\\": \\\"manage\\\" }"
               key: $actionKey
             }
           ]

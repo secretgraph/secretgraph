@@ -4,9 +4,7 @@ __all__ = [
 
 
 import base64
-import hashlib
 import logging
-import os
 from email.parser import BytesParser
 from itertools import chain
 
@@ -15,9 +13,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import (
-    load_der_private_key, load_der_public_key
+    load_der_public_key
 )
-from django.conf import settings
 from django.core.files.base import ContentFile, File
 from django.db import transaction
 from django.db.models import Q
@@ -68,8 +65,7 @@ def _transform_info_tags(content, objdata):
     return info_tags, key_hashes, content_type, content_state or "default"
 
 
-def _transform_key_into_dataobj(key_obj, key=None, content=None):
-    skippubkeycheck = False
+def _transform_key_into_dataobj(key_obj, content=None):
     if isinstance(key_obj.get("privateKey"), str):
         key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
     if isinstance(key_obj.get("publicKey"), str):
@@ -77,62 +73,26 @@ def _transform_key_into_dataobj(key_obj, key=None, content=None):
     if isinstance(key_obj.get("nonce"), str):
         key_obj["nonce"] = base64.b64decode(key_obj["nonce"])
     if key_obj.get("privateKey"):
-        if not key_obj.get("nonce") and not key:
-            raise ValueError("encrypted private key requires nonce or key")
-        elif key and not content:
-            # shortcut for encrypting key and creating public key
-            if not key_obj.get("nonce"):
-                key_obj["nonce"] = os.urandom(13)
-            derivedKey = hashlib.pbkdf2_hmac(
-                "sha512",
-                key,
-                key_obj["nonce"],
-                iterations=settings.SECRETGRAPH_ITERATIONS[0],
-                dklen=32
-            )
-            aesgcm = AESGCM(derivedKey)
-            if isinstance(key_obj["privateKey"], bytes):
-                key_obj["privateKey"] = load_der_private_key(
-                    key_obj["privateKey"], None, default_backend()
-                )
-            elif isinstance(key_obj["privateKey"], File):
-                key_obj["privateKey"] = load_der_private_key(
-                    key_obj["privateKey"].read(), None, default_backend()
-                )
-            key_obj["publicKey"] = \
-                key_obj["privateKey"].public_key().public_bytes(
-                    encoding=serialization.Encoding.DER,
-                    format=serialization.PublicFormat.SubjectPublicKeyInfo
-                )
-            key_obj["privateKey"] = aesgcm.encrypt(
-                key_obj["privateKey"].private_bytes(
-                    encoding=serialization.Encoding.DER,
-                    format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=serialization.NoEncryption()
-                ),
-                key_obj["nonce"],
-                None
-            )
-            skippubkeycheck = True
+        if not key_obj.get("nonce"):
+            raise ValueError("encrypted private key requires nonce")
     if not key_obj.get("publicKey"):
         raise ValueError("No public key")
-    if not skippubkeycheck:
-        try:
-            if isinstance(key_obj["publicKey"], bytes):
-                key_obj["publicKey"] = load_der_public_key(
-                    key_obj["publicKey"], default_backend()
-                )
-            elif isinstance(key_obj["publicKey"], File):
-                key_obj["publicKey"] = load_der_public_key(
-                    key_obj["publicKey"].read(), None, default_backend()
-                )
-            key_obj["publicKey"] = key_obj["publicKey"].public_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo
+    try:
+        if isinstance(key_obj["publicKey"], bytes):
+            key_obj["publicKey"] = load_der_public_key(
+                key_obj["publicKey"], default_backend()
             )
-        except Exception as exc:
-            # logger.debug("loading public key failed", exc_info=exc)
-            raise ValueError("Invalid public key") from exc
+        elif isinstance(key_obj["publicKey"], File):
+            key_obj["publicKey"] = load_der_public_key(
+                key_obj["publicKey"].read(), None, default_backend()
+            )
+        key_obj["publicKey"] = key_obj["publicKey"].public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+    except Exception as exc:
+        # logger.debug("loading public key failed", exc_info=exc)
+        raise ValueError("Invalid public key") from exc
     if content:
         if content.value.open("rb").read() != key_obj["publicKey"]:
             raise ValueError("Cannot change public key")
@@ -451,7 +411,7 @@ def create_key_func(
     if not objdata["cluster"]:
         raise ValueError()
 
-    hashes, public, private = _transform_key_into_dataobj(key_obj, key=key)
+    hashes, public, private = _transform_key_into_dataobj(key_obj)
     public_content = None
     if objdata["cluster"].id:
         public_content = Content.objects.filter(
@@ -531,6 +491,7 @@ def update_content(
 ):
     assert content.id
     is_key = False
+    # TODO: maybe allow updating both keys (only info)
     if content.info.filter(tag="type=PublicKey"):
         is_key = True
         key_obj = objdata.get("key")
@@ -538,7 +499,7 @@ def update_content(
             raise ValueError("Cannot transform key to content")
 
         hashes, newdata, private = _transform_key_into_dataobj(
-            key_obj, content=content, key=key
+            key_obj, content=content
         )
     elif content.info.filter(tag="type=PrivateKey"):
         is_key = True
@@ -547,7 +508,7 @@ def update_content(
             raise ValueError("Cannot transform key to content")
 
         hashes, public, newdata = _transform_key_into_dataobj(
-            key_obj, content=content, key=key
+            key_obj, content=content
         )
         if not newdata:
             raise ValueError()

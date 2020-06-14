@@ -109,8 +109,16 @@ function SettingsImporter(props: Props) {
   }
 
   const handleSecretgraphEvent = (event: any) => {
+    const oldConfig = config;
+    setConfig(null);
     setLoadingStart(true);
-    return handleSecretgraphEvent_inner(event).finally(
+    return handleSecretgraphEvent_inner(event).catch(
+      (errors: any) => {
+        setConfig(oldConfig);
+        console.error(errors);
+        setMessage({ severity: "error", message: "error while registration" });
+      }
+    ).finally(
       () => setLoadingStart(false)
     )
   }
@@ -158,8 +166,16 @@ function SettingsImporter(props: Props) {
     }
   }
   const handleStart = () => {
+    const oldConfig = config;
+    setConfig(null);
     setLoadingStart(true);
-    return handleStart_inner().finally(
+    return handleStart_inner().catch(
+      (errors: any) => {
+        setConfig(oldConfig);
+        console.error(errors);
+        setMessage({ severity: "error", message: "error while registration" });
+      }
+    ).finally(
       () => setLoadingStart(false)
     )
   }
@@ -193,8 +209,16 @@ function SettingsImporter(props: Props) {
     });
   }
   const handleImport = () => {
+    const oldConfig = config;
+    setConfig(null);
     setLoadingImport(true);
-    return handleImport_inner().finally(
+    return handleImport_inner().catch(
+      (errors: any) => {
+        setConfig(oldConfig);
+        console.error(errors);
+        setMessage({ severity: "error", message: "error while import" });
+      }
+    ).finally(
       () => setLoadingImport(false)
     )
   }

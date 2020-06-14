@@ -48,7 +48,7 @@ def create_actions_func(
         if isinstance(action_key, bytes):
             pass
         elif isinstance(action_key, str):
-            action_key = base64.base64_decode(action_key)
+            action_key = base64.b64decode(action_key)
         elif default_key:
             action_key = default_key
         else:
