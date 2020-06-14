@@ -248,9 +248,11 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
         digest
       ] = ["manage", "create", "update"];
       config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
-        cluster.publicKeyHash
+        // TODO
       ] = [];
-      config["certificates"][cluster.publicKeyHash] = cluster.privateKey;
+      config["certificates"][
+        // TODO
+      ] = cluster.privateKey;
       config["tokens"][digest] = cluster.actionKey;
       return await createContent(
         env,

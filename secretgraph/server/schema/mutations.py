@@ -7,14 +7,12 @@ from datetime import timedelta as td
 from itertools import chain
 
 import graphene
-from cryptography.hazmat.primitives import serialization
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 from graphene import relay
 
 from ...utils.auth import id_to_result, retrieve_allowed_objects
-from ...utils.misc import hash_object
 from ..actions.update import (
     create_cluster, create_content, update_cluster, update_content
 )
@@ -127,10 +125,7 @@ class ClusterMutation(relay.ClientIDMutation):
         )
 
     cluster = graphene.Field(ClusterNode)
-    publicKeyHash = graphene.String(required=False)
     actionKey = graphene.String(required=False)
-    privateKey = graphene.String(required=False)
-    keyForPrivateKey = graphene.String(required=False)
 
     @classmethod
     def mutate_and_get_payload(
@@ -170,24 +165,13 @@ class ClusterMutation(relay.ClientIDMutation):
                 settings, "SECRETGRAPH_ALLOW_REGISTER", False
             ) is not True:
                 raise ValueError("Cannot register new cluster")
-            _cluster, action_key, privateKey, key_for_privateKey = \
+            _cluster, action_key = \
                 create_cluster(
                     info.context, cluster, user=user, key=key
                 )
             return cls(
                 cluster=_cluster,
-                actionKey=base64.b64encode(action_key).decode("ascii"),
-                privateKey=base64.b64encode(
-                    privateKey.private_bytes(
-                        encoding=serialization.Encoding.DER,
-                        format=serialization.PrivateFormat.PKCS8,
-                        encryption_algorithm=serialization.NoEncryption()
-                    )
-                ).decode("ascii"),
-                keyForPrivateKey=base64.b64encode(
-                    key_for_privateKey
-                ).decode("ascii"),
-                publicKeyHash=hash_object(privateKey)
+                actionKey=base64.b64encode(action_key).decode("ascii")
             )
 
 

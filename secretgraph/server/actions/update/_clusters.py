@@ -3,8 +3,6 @@ __all__ = ["create_cluster", "update_cluster"]
 import base64
 import os
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from django.conf import settings
 from django.db import transaction
 from rdflib import RDF, BNode, Graph
@@ -100,20 +98,9 @@ def create_cluster(
 
     if not objdata.get("actions"):
         raise ValueError("Actions required")
-    contentdata = {}
-    if not objdata.get("key"):
-        privateKey = generate_private_key(
-            public_exponent=65537,
-            key_size=4096,
-            backend=default_backend()
-        )
-        contentdata["key"] = {
-            "privateKey": privateKey
-        }
-
-    else:
-        contentdata["key"] = objdata["key"]
-    contentdata["info"] = objdata.get("keyInfo")
+    contentdata = {
+        "key": objdata["key"]
+    }
     cluster = Cluster(**prebuild)
     cluster_func = _update_or_create_cluster(
         request, cluster, objdata
@@ -128,9 +115,7 @@ def create_cluster(
 
     return (
         cluster,
-        action_key,
-        privateKey,
-        key
+        action_key
     )
 
 

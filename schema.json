@@ -1530,6 +1530,18 @@
                 "name": "RegisterUrl",
                 "ofType": null
               }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "loginUrl",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
             }
           ],
           "inputFields": null,
@@ -2172,16 +2184,12 @@
           "inputFields": [
             {
               "defaultValue": null,
-              "description": "Cleartext public key",
+              "description": "Cleartext public key in der format",
               "name": "publicKey",
               "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Upload",
-                  "ofType": null
-                }
+                "kind": "SCALAR",
+                "name": "Upload",
+                "ofType": null
               }
             },
             {
@@ -2432,43 +2440,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "publicKeyHash",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
               "name": "actionKey",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "privateKey",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "keyForPrivateKey",
               "type": {
                 "kind": "SCALAR",
                 "name": "String",
