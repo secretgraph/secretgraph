@@ -182,7 +182,66 @@ export async function createContent(
         onError: (error: any) => {
           reject(error);
         },
-        onCompleted: (result: any) => resolve(result)
+        onCompleted: (result: any, errors: any) => {
+          if(errors){
+            reject(errors);
+          }
+          resolve(result);
+        }
+      }
+    );
+  });
+}
+
+export function createCluster(env: Environment, publicInfo: string, actions: ActionInterface[], publicKey: CryptoKey, privateKey?: CryptoKey, privateKeyKey?: Uint8Array){
+  let nonceb64 : null | string = null;
+
+  let privateKeyPromise: Promise<null | File>;
+  if(privateKey && privateKeyKey){
+    const nonce = crypto.getRandomValues(new Uint8Array(13));
+    nonceb64 = btoa(String.fromCharCode(... nonce));
+    privateKeyPromise = Promise.all([
+      arrtogcmkey(privateKeyKey),
+      crypto.subtle.exportKey(
+        "pkcs8" as const,
+        privateKey
+      )
+    ]).then((arr) => crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: nonce
+      },
+      arr[0],
+      arr[1]
+    ).then((obj) => new File([obj], "privateKey")));
+  } else {
+    privateKeyPromise = Promise.resolve(null);
+  }
+  const exportPublicKeyPromise = crypto.subtle.exportKey(
+    "spki" as const,
+    publicKey
+  ).then((obj) => new File([obj], "publicKey"));
+
+  return new Promise(async (resolve, reject) => {
+    commitMutation(
+      env, {
+        mutation: createClusterMutation,
+        variables: {
+          publicInfo: publicInfo,
+          publicKey: await exportPublicKeyPromise,
+          privateKey: await privateKeyPromise,
+          nonce: nonceb64,
+          actions: actions
+        },
+        onCompleted: (result: any, errors: any) => {
+          if(errors) {
+            return Promise.reject(errors);
+          }
+          resolve(result)
+        },
+        onError: (error: any) => {
+          reject(error);
+        }
       }
     );
   });
@@ -190,7 +249,6 @@ export async function createContent(
 
 export async function initializeCluster(env: Environment, config: ConfigInterface, key: string, iterations: number) {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
-  const nonceb64 = btoa(String.fromCharCode(... nonce));
   const warpedkeyPromise = PBKDF2PW(key, nonce, iterations);
   const { publicKey, privateKey } = await crypto.subtle.generateKey(
     {
@@ -202,85 +260,60 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     true,
     ["wrapKey", "wrapKey", "encrypt"]
   ) as CryptoKeyPair;
-
-  const exportPrivateKeyPromise = crypto.subtle.exportKey(
-    "pkcs8" as const,
-    privateKey
-  )
-  const exportPublicKeyPromise = crypto.subtle.exportKey(
+  const digestCertificatePromise = crypto.subtle.exportKey(
     "spki" as const,
     publicKey
-  ).then((obj) => new File([obj], "publicKey"));
-  const encryptedPrivateKeyPromise = Promise.all([
-    warpedkeyPromise.then(arrtogcmkey), exportPrivateKeyPromise
-  ]).then((arr) => crypto.subtle.encrypt(
-    {
-      name: "AES-GCM",
-      iv: nonce
-    },
-    arr[0],
-    arr[1]
-  ).then((obj) => new File([obj], "privateKey")));
+  ).then((keydata) => crypto.subtle.digest(
+    "SHA-512",
+    keydata
+  ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data)))));
 
-  const [PrivateKey, PublicKey, warpedkeyb64] = await Promise.all([
-    encryptedPrivateKeyPromise,
-    exportPublicKeyPromise,
-    warpedkeyPromise.then((data) => btoa(String.fromCharCode(...data)))
-  ]);
+  const warpedKey = await warpedkeyPromise;
 
-  return await new Promise((resolve, reject) => {
-    const createInit = async (result: any, errors: any) => {
-      if(errors) {
-        reject(errors);
-      }
-      const cluster = result.updateOrCreateCluster;
-      const digest: string = btoa(String.fromCharCode(... new Uint8Array(
-        await crypto.subtle.digest(
-          "SHA-512",
-          b64toarr(cluster.actionKey)
-        )
-      )));
-      config["clusters"][config["baseUrl"]] = {};
-      config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
-        hashes: {}
-      }
-      config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
-        digest
-      ] = ["manage", "create", "update"];
-      config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
-        // TODO
-      ] = [];
-      config["certificates"][
-        // TODO
-      ] = cluster.privateKey;
-      config["tokens"][digest] = cluster.actionKey;
-      return await createContent(
-        env,
-        config,
-        cluster.cluster["id"],
-        new File([JSON.stringify(config)], "value"),
-        [publicKey],
-        ["type=Config", "state=internal"]
-      ).then( () => resolve([
-            config, cluster.cluster.id as string
-          ])
-      );
+  const digestActionKeyPromise = crypto.subtle.digest(
+    "SHA-512",
+    warpedKey
+  ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
+  const warpedkeyb64 = btoa(String.fromCharCode(...warpedKey));
+
+  return await createCluster(
+    env,
+    " ",
+    [
+      { value: '{"action": "manage"}', key: warpedkeyb64 }
+    ],
+    publicKey,
+    privateKey,
+    warpedKey
+  ).then(async (result: any) => {
+    const cluster = result.updateOrCreateCluster;
+    const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
+    config["clusters"][config["baseUrl"]] = {};
+    config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
+      hashes: {}
     }
-    commitMutation(
-      env, {
-        mutation: createClusterMutation,
-        variables: {
-          key: key,
-          actionKey: warpedkeyb64,
-          publicKey: PublicKey,
-          privateKey: PrivateKey,
-          nonce: nonceb64
-        },
-        onCompleted: createInit,
-        onError: (error: any) => {
-          reject(error);
-        }
-      }
-    );
-  });
+    config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
+      digestActionKey
+    ] = ["manage", "create", "update"];
+    config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
+      digestCertificate
+    ] = [];
+    config["certificates"][
+      digestCertificate
+    ] = await crypto.subtle.exportKey(
+      "pkcs8" as const,
+      privateKey
+    ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
+    config["tokens"][digestActionKey] = warpedkeyb64;
+    return await createContent(
+      env,
+      config,
+      cluster.cluster["id"],
+      new File([JSON.stringify(config)], "value"),
+      [publicKey],
+      ["type=Config", "state=internal"]
+    ).then(() => {
+      return [config, cluster.cluster.id as string];
+    })
+  })
 }

@@ -1,8 +1,8 @@
 
 
 export interface ActionInterface {
-  start: string
-  stop: string
+  start?: string
+  stop?: string
   value: string
   key: string
 }
