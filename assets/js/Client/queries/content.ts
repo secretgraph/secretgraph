@@ -1,7 +1,10 @@
 import { graphql } from "react-relay"
 
 export const createContentMutation = graphql`
-  mutation contentEncryptedMutation($cluster: ID!, $info: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String) {
+  mutation contentEncryptedMutation($cluster: ID!, $info: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
+    secretgraphAuth(authorization: $authorization) {
+      ok
+    }
     updateOrCreateContent(
       input: {
         content: { cluster: $cluster, value: { info: $info, value: $value, nonce: $nonce }, contentHash: $contentHash, references: $references }

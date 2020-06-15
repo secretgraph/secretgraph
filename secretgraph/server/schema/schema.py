@@ -4,15 +4,13 @@ from graphene import relay
 
 from ..actions.view import fetch_clusters, fetch_contents
 from .definitions import (
-    ContentConnectionField, ClusterNode, ClusterConnectionField, ContentNode,
+    ClusterConnectionField, ClusterNode, ContentConnectionField, ContentNode,
     SecretgraphConfig
 )
 from .mutations import (
-    ClusterMutation, ContentMutation,
-    ResetDeletionContentOrClusterMutation,
-    DeleteContentOrClusterMutation,
-    PushContentMutation,
-    RegenerateFlexidMutation
+    AuthorizationMutation, ClusterMutation, ContentMutation,
+    DeleteContentOrClusterMutation, PushContentMutation,
+    RegenerateFlexidMutation, ResetDeletionContentOrClusterMutation
 )
 
 
@@ -41,6 +39,7 @@ class Query():
 
 
 class Mutation():
+    secretgraphAuth = AuthorizationMutation.Field()
     updateOrCreateContent = ContentMutation.Field(
         description="""
         """

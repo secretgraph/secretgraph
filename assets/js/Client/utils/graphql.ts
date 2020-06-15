@@ -53,7 +53,7 @@ export const createEnvironment = (url: string) => {
 
 
 export function createContentAuth(
-  config: ConfigInterface, clusters: string[], action: string="view", url?: string, keyuser?: any
+  config: ConfigInterface, clusters: string[], action: string="view", url?: string, keysink?: any
 ){
   const authkeys: string[] = [];
   const privkeys: PromiseLike<any>[] = [];
@@ -63,14 +63,14 @@ export function createContentAuth(
   } else {
     usedUrl=config.baseUrl;
   }
-  const checkActions =  (el: string) => el in [action, "manage"];
-  for(const clusterid in clusters){
+  const checkActions =  (el: string) => [action, "manage"].includes(el);
+  for(const clusterid of clusters){
     const c = config.clusters[usedUrl] ? config.clusters[usedUrl][clusterid] : undefined;
     if (c?.hashes){
       for(const hash in c.hashes) {
-        if(keyuser && hash in config.certificates){
-          privkeys.push(arrtorsaoepkey(b64toarr(config.certificates[hash])).then(keyuser));
-        } else if (c.hashes[hash].some(checkActions) && hash in config.tokens){
+        if(keysink && hash in config.certificates){
+          privkeys.push(arrtorsaoepkey(b64toarr(config.certificates[hash])).then(keysink));
+        } else if (c.hashes[hash].findIndex(checkActions) !== -1 && hash in config.tokens){
           authkeys.push(`${clusterid}:${config.tokens[hash]}`);
         }/** else if (!c.hashes[hash] && hash in config.tokens){
           authkeys.push(`${hash}:${config.tokens[hash]}`);
@@ -129,8 +129,8 @@ export async function createContent(
   pubkeys: CryptoKey[],
   info: string[]=[],
   contentHash: string | null = null,
-  actions: ActionInterface[]=[],
   references: ReferenceInterface[]=[],
+  actions: ActionInterface[]=[],
   url?: string
 ) {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
@@ -168,16 +168,14 @@ export async function createContent(
       env, {
         mutation: createContentMutation,
         variables: {
-          "cluster": cluster,
-          "references": newReferences.concat(references),
-          "info": newInfo.concat(info),
-          "nonce": nonceb64,
-          "value": await encryptedContentPromise,
-          "actions": actions,
-          "contentHash": contentHash,
-          "headers": {
-            "Authorization": actionkeys.join()
-          }
+          cluster: cluster,
+          references: newReferences.concat(references),
+          info: newInfo.concat(info),
+          nonce: nonceb64,
+          value: await encryptedContentPromise,
+          actions: actions,
+          contentHash: contentHash,
+          authorization: actionkeys
         },
         onError: (error: any) => {
           reject(error);
@@ -193,7 +191,15 @@ export async function createContent(
   });
 }
 
-export function createCluster(env: Environment, publicInfo: string, actions: ActionInterface[], publicKey: CryptoKey, privateKey?: CryptoKey, privateKeyKey?: Uint8Array){
+export function createCluster(
+  env: Environment,
+  actions: ActionInterface[],
+  publicKey: CryptoKey,
+  privateKey?: CryptoKey,
+  privateKeyKey?: Uint8Array,
+  publicInfo?: string,
+  authorization?: string[]
+){
   let nonceb64 : null | string = null;
 
   let privateKeyPromise: Promise<null | File>;
@@ -231,7 +237,8 @@ export function createCluster(env: Environment, publicInfo: string, actions: Act
           publicKey: await exportPublicKeyPromise,
           privateKey: await privateKeyPromise,
           nonce: nonceb64,
-          actions: actions
+          actions: actions,
+          authorization: authorization
         },
         onCompleted: (result: any, errors: any) => {
           if(errors) {
@@ -278,7 +285,6 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
 
   return await createCluster(
     env,
-    " ",
     [
       { value: '{"action": "manage"}', key: warpedkeyb64 }
     ],

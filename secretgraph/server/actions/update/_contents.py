@@ -239,14 +239,19 @@ def _update_or_create_content_or_key(
                     pass
                 if type_name != "Content":
                     raise ValueError("No Content Id")
+                if isinstance(ref["target"], int):
+                    q = Q(id=ref["target"])
+                else:
+                    q = (
+                        Q(info__tag=f"id={ref['target']}") |
+                        (
+                            Q(info__tag=f"key_hash={ref['target']}") &
+                            Q(info__tag="type=PublicKey")
+                        )
+                    )
+
                 targetob = Content.objects.filter(
-                    Q(id=ref["target"]) |
-                    Q(flexid=ref["target"]) |
-                    (
-                        Q(info__tag=f"key_hash={ref['target']}") &
-                        Q(info__tag="type=PublicKey")
-                    ),
-                    markForDestruction=None
+                    q, markForDestruction=None
                 ).first()
             if not targetob:
                 continue

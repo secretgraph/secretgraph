@@ -1,6 +1,7 @@
 import base64
 import logging
 import json
+from uuid import UUID
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db import models
@@ -15,11 +16,23 @@ from .misc import calculate_hashes
 logger = logging.getLogger(__name__)
 
 
+def initialize_cached_authset(request, inject=frozenset()):
+    if not getattr(request, "secretgraph_authorization", None):
+        setattr(
+            request,
+            "secretgraph_authorization",
+            set(
+                request.headers.get("Authorization", "").replace(
+                    " ", ""
+                ).split(",")
+            ) | set(inject)
+        )
+    return getattr(request, "secretgraph_authorization")
+
+
 def retrieve_allowed_objects(request, scope, query, authset=None):
     if not authset:
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
+        authset = initialize_cached_authset(request)
     now = timezone.now()
     pre_filtered_actions = Action.objects.select_related("cluster").filter(
         start__lte=now
@@ -54,6 +67,10 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         finally:
             if _type != "Cluster":
                 continue
+        try:
+            clusterflexid = UUID(clusterflexid)
+        except ValueError:
+            raise ValueError("Malformed cluster id")
         try:
             action_key = base64.b64decode(action_key)
         except Exception:
@@ -170,16 +187,21 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     return returnval
 
 
-def id_to_result(request, id, klasses, scope="view"):
+def id_to_result(request, id, klasses, scope="view", authset=None):
     if not isinstance(klasses, tuple):
         klasses = (klasses,)
     if isinstance(id, str):
         type_name, flexid = from_global_id(id)
+        try:
+            flexid = UUID(flexid)
+        except ValueError:
+            raise ValueError("Malformed id")
         result = None
         for klass in klasses:
             if type_name == klass.__name__:
                 result = retrieve_allowed_objects(
-                    request, scope, klass.objects.filter(flexid=flexid)
+                    request, scope, klass.objects.filter(flexid=flexid),
+                    authset=authset
                 )
                 break
         if not result:
@@ -196,6 +218,7 @@ def id_to_result(request, id, klasses, scope="view"):
         )
     else:
         result = retrieve_allowed_objects(
-            request, scope, type(id).objects.filter(id=id.id)
+            request, scope, type(id).objects.filter(id=id.id),
+            authset=authset
         )
     return result

@@ -23,6 +23,7 @@ class Migration(migrations.Migration):
                 ('publicInfo', models.TextField(db_column='public_info')),
                 ('public', models.BooleanField(blank=True, default=False)),
                 ('featured', models.BooleanField(blank=True, default=False)),
+                ('group', models.SmallIntegerField(default=0)),
             ],
             options={
                 'abstract': False,

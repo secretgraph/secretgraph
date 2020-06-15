@@ -50,6 +50,7 @@ class Cluster(FlexidModel):
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
+    group: int = models.SmallIntegerField(default=0)
 
     if (
         getattr(settings, "AUTH_USER_MODEL", None) or

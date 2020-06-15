@@ -1,6 +1,5 @@
 __all__ = ["create_cluster", "update_cluster"]
 
-import base64
 import os
 
 from django.conf import settings
@@ -63,7 +62,7 @@ def _update_or_create_cluster(
 
 
 def create_cluster(
-    request, objdata=None, user=None, key=None, authset=None
+    request, objdata=None, user=None, authset=None
 ):
     prebuild = {}
 
@@ -73,13 +72,7 @@ def create_cluster(
     if user:
         prebuild["user"] = user
     action_key = None
-    # no public key is set
-    if objdata is None or not objdata.get("key"):
-        if not key:
-            key = os.urandom(32)
-    if isinstance(key, str):
-        key = base64.b64decode(key)
-    if not isinstance(objdata, dict):
+    if not objdata:
         action_key = os.urandom(32)
         objdata = {
             "actions": [
@@ -91,6 +84,7 @@ def create_cluster(
                 }
             ]
         }
+    if not objdata.get("publicInfo"):
         g = Graph()
         root = BNode()
         g.add((root, RDF.type, sgraph_cluster["Cluster"]))
@@ -107,7 +101,7 @@ def create_cluster(
     )
     contentdata["cluster"] = cluster
     content_func = create_key_func(
-        request, contentdata, key=key, authset=authset
+        request, contentdata, authset=authset
     )
     with transaction.atomic():
         cluster = cluster_func()

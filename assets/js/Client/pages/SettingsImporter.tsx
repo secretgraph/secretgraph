@@ -291,7 +291,7 @@ function SettingsImporter(props: Props) {
                 <FormHelperText id="secretgraph-encrypting-help">{encryptingPasswordHelp}</FormHelperText>
               </FormControl>
               <TextField
-                 disabled={loadingStart || loadingImport}
+                disabled={loadingStart || loadingImport}
                 fullWidth={true}
                 variant="outlined"
                 defaultValue={defaultPath}
@@ -336,6 +336,7 @@ function SettingsImporter(props: Props) {
           <FormControl>
             <TextField
               variant="outlined"
+              disabled={loadingStart || loadingImport}
               label={decryptingPasswordLabel}
               id="secretgraph-decrypting"
               inputProps={{ 'aria-describedby': "secretgraph-decrypting-help" }}

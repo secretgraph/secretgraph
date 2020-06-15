@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 from datetime import timedelta as td
 
 from django.db.models import Q, QuerySet
@@ -24,6 +25,10 @@ def fetch_clusters(
             type_name, query = from_global_id(query)
         except Exception:
             pass
+        try:
+            query = UUID(query)
+        except ValueError:
+            raise ValueError("Malformed id")
         query = Cluster.objects.filter(flexid=query)
         if type_name != "Cluster":
             raise ValueError("No Cluster Id")

@@ -24,6 +24,19 @@ from .definitions import ClusterNode, ContentNode, FlexidType
 logger = logging.getLogger(__name__)
 
 
+class AuthorizationMutation(graphene.Mutation):
+    class Arguments:
+        authorization = graphene.List(graphene.String, required=False)
+    ok = graphene.Boolean(required=False)
+
+    def mutate(root, info, authorization=None):
+        if authorization:
+            setattr(
+                info.context, "secretgraph_authorization", set(authorization)
+            )
+        return AuthorizationMutation(bool(authorization))
+
+
 class RegenerateFlexidMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
@@ -40,7 +53,7 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
         #    )
         obj = result["objects"].first()
         if not obj:
-            raise ValueError()
+            raise ValueError("Object not found")
         generateFlexid(type(obj), obj, True)
         return cls(node=obj)
 
@@ -165,13 +178,14 @@ class ClusterMutation(relay.ClientIDMutation):
                 settings, "SECRETGRAPH_ALLOW_REGISTER", False
             ) is not True:
                 raise ValueError("Cannot register new cluster")
-            _cluster, action_key = \
-                create_cluster(
-                    info.context, cluster, user=user, key=key
-                )
+            _cluster, action_key = create_cluster(
+                info.context, cluster, user=user
+            )
             return cls(
                 cluster=_cluster,
-                actionKey=base64.b64encode(action_key).decode("ascii")
+                actionKey=(
+                    action_key and base64.b64encode(action_key).decode("ascii")
+                )
             )
 
 
@@ -247,7 +261,7 @@ class ContentMutation(relay.ClientIDMutation):
             )
             cluster_obj = result["objects"].first()
             if not cluster_obj:
-                raise ValueError()
+                raise ValueError("Cluster for Content not found")
 
             required_keys = list(
                 Content.objects.injected_keys().values_list(
@@ -255,7 +269,7 @@ class ContentMutation(relay.ClientIDMutation):
                 )
             )
             try:
-                form = next(iter(result["forms"].keys()))
+                form = next(iter(result["forms"].values()))
                 if content.get("info") is not None:
                     content["info"] = chain(
                         form.get("info", []),

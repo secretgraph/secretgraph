@@ -1,3 +1,4 @@
+from uuid import UUID
 import graphene
 from django.conf import settings
 from django.shortcuts import resolve_url
@@ -67,6 +68,10 @@ class FlexidMixin():
     @classmethod
     def get_node(cls, info, id):
         queryset = cls.get_queryset(cls._meta.model.objects, info)
+        try:
+            id = UUID(id)
+        except ValueError:
+            raise ValueError("Malformed id")
         try:
             return queryset.get(flexid=id)
         except cls._meta.model.DoesNotExist:
@@ -162,6 +167,7 @@ class ContentConnectionField(DjangoConnectionField):
 class ContentReferenceNode(DjangoObjectType):
     class Meta:
         model = ContentReference
+        name = "ContentReference"
         interfaces = (relay.Node,)
         fields = ['source', 'target', 'group', 'extra', 'deleteRecursive']
 
@@ -185,8 +191,9 @@ class ContentReferenceNode(DjangoObjectType):
 class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     class Meta:
         model = Cluster
+        name = "Cluster"
         interfaces = (relay.Node,)
-        fields = ['publicInfo', 'contents']
+        fields = ['publicInfo', 'contents', 'group']
     contents = ContentConnectionField()
     user = relay.GlobalID(required=False)
 
