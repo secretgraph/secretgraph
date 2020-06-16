@@ -1,9 +1,10 @@
 import base64
-import logging
 import json
+import logging
 from uuid import UUID
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from django.apps import apps
 from django.db import models
 from django.utils import timezone
 from graphql_relay import from_global_id
@@ -12,27 +13,61 @@ from ..server.actions.handler import ActionHandler
 from ..server.models import Action, Cluster, Content
 from .misc import calculate_hashes
 
-
 logger = logging.getLogger(__name__)
 
 
-def initialize_cached_authset(request, inject=frozenset()):
-    if not getattr(request, "secretgraph_authorization", None):
-        setattr(
-            request,
-            "secretgraph_authorization",
-            set(
+class LazyViewResult(object):
+    _result_dict = None
+    authset = None
+    request = None
+
+    def __init__(self, request, *viewResults, authset=None):
+        self._result_dict = {}
+        self.request = request
+        self.authset = authset
+        for r in viewResults:
+            if self.authset is None:
+                self.authset = r.get("authset")
+            self._result_dict[r["objects"].model.__name__] = r
+        if self.authset is None:
+            self.authset = \
                 request.headers.get("Authorization", "").replace(
                     " ", ""
                 ).split(",")
-            ) | set(inject)
+
+    def __getitem__(self, item):
+        if item in ["Content", "Cluster", "Action"]:
+            if item not in self._result_dict:
+                self._result_dict[item] = retrieve_allowed_objects(
+                    self.request, "view",
+                    apps.get_model("secretgraph", item).objects.all(),
+                    authset=self.authset
+                )
+            return self._result_dict[item]
+        if item == "authset":
+            return self.authset
+        return None
+
+
+def initializeCachedResult(
+    request, *viewResults, authset=None, name="secretgraphResult"
+):
+    if not getattr(request, name, None):
+        setattr(
+            request,
+            name,
+            LazyViewResult(request, *viewResults, authset=authset)
         )
-    return getattr(request, "secretgraph_authorization")
+    return getattr(request, name)
 
 
 def retrieve_allowed_objects(request, scope, query, authset=None):
-    if not authset:
-        authset = initialize_cached_authset(request)
+    if authset is None:
+        authset = \
+            request.headers.get("Authorization", "").replace(
+                " ", ""
+            ).split(",")
+    authset = set(authset)
     now = timezone.now()
     pre_filtered_actions = Action.objects.select_related("cluster").filter(
         start__lte=now
@@ -47,6 +82,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     clusters = set()
     all_filters = models.Q()
     returnval = {
+        "authset": authset,
         "rejecting_action": None,
         "clusters": {},
         "forms": {},
@@ -218,7 +254,7 @@ def id_to_result(request, id, klasses, scope="view", authset=None):
         )
     else:
         result = retrieve_allowed_objects(
-            request, scope, type(id).objects.filter(id=id.id),
+            request, scope, type(id).objects.filter(pk=id.pk),
             authset=authset
         )
     return result

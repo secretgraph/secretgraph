@@ -2,6 +2,13 @@ import graphene
 from graphene_file_upload.scalars import Upload
 
 
+class AuthList(graphene.List):
+    def __init__(
+        self, of_type=graphene.String, *args, required=False, **kwargs
+    ):
+        super().__init__(of_type, *args, required=required, **kwargs)
+
+
 class ActionInput(graphene.InputObjectType):
     start = graphene.DateTime(required=False)
     stop = graphene.DateTime(required=False)

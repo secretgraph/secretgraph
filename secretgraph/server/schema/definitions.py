@@ -1,4 +1,5 @@
 from uuid import UUID
+
 import graphene
 from django.conf import settings
 from django.shortcuts import resolve_url
@@ -7,6 +8,7 @@ from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
 
+from ...utils.auth import id_to_result, initializeCachedResult
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
 
@@ -86,10 +88,12 @@ class ActionEntry(graphene.ObjectType):
 class ActionMixin(object):
     availableActions = graphene.List(ActionEntry)
 
-    def resolve_availableActions(self, info, result_key):
-        result = getattr(info, "secretgraphResult", {})
+    def resolve_availableActions(self, info, result_key1, result_key2):
+        result = getattr(info.context, "secretgraphResult", {}).get(
+            result_key1, {}
+        )
         resultval = result.get(
-            result_key, {}
+            result_key2, {}
         ).get(self.id, {}).items()
         # only show some actions
         resultval = filter(lambda x: x[1][0] in {
@@ -112,6 +116,15 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     info = graphene.List(graphene.String)
     link = graphene.String()
 
+    def resolve_cluster(self, info):
+        return id_to_result(
+            info.context, self.cluster, ["Cluster"],
+            scope="manage",
+            authset=getattr(
+                info.context, "secretgraphResult", {}
+            ).get("authset")
+        )
+
     def resolve_info(self, info):
         return self.info.all().values_list("tag", flat=True)
 
@@ -121,7 +134,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
     def resolve_availableActions(self, info):
         return super().resolve_availableActions(
-            self, info, "action_types_contents"
+            self, info, "Content", "action_types_contents"
         )
 
 
@@ -156,12 +169,15 @@ class ContentConnectionField(DjangoConnectionField):
             else:
                 queryset = queryset.exclude(info__tag="state=public")
 
-        return fetch_contents(
+        result = fetch_contents(
             info.context,
             queryset,
             info_include=args.get("infoInclude"),
-            info_exclude=args.get("infoExclude")
-        )["objects"]
+            info_exclude=args.get("infoExclude"),
+            authset=args.get("authorization")
+        )
+        initializeCachedResult(info.context, authset=args.get("authorization"))
+        return result["objects"]
 
 
 class ContentReferenceNode(DjangoObjectType):
@@ -204,7 +220,10 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
             info.context,
             self.contents,
             info_include=kwargs.get("infoInclude"),
-            infoexclude=kwargs.get("infoExclude")
+            info_exclude=kwargs.get("infoExclude"),
+            authset=getattr(
+                info.context, "secretgraphResult", {}
+            ).get("authset")
         )
 
     def resolve_user(
@@ -216,7 +235,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
     def resolve_availableActions(self, info):
         return super().resolve_availableActions(
-            self, info, "action_types_clusters"
+            self, info, "Cluster", "action_types_clusters"
         )
 
 
@@ -248,12 +267,15 @@ class ClusterConnectionField(DjangoConnectionField):
         if public in {True, False}:
             queryset = queryset.filter(public=public)
 
-        return fetch_clusters(
+        result = fetch_clusters(
             info.context,
             queryset,
             info_include=args.get("infoInclude"),
-            info_exclude=args.get("infoExclude")
-        )["objects"]
+            info_exclude=args.get("infoExclude"),
+            authset=args.get("authorization")
+        )
+        initializeCachedResult(info.context, authset=args.get("authorization"))
+        return result["objects"]
 
 
 class FlexidType(graphene.Union):

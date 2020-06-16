@@ -345,7 +345,11 @@ class ActionHandler():
                                 name
                             )
                         )
-                    newob[name] = jsonob[name]
+                    if name == "flexid":
+                        # autogenerate new flexid
+                        newob[name] = None
+                    else:
+                        newob[name] = jsonob[name]
             update_mapper[type_name][idpart] = newob
 
         for klass in [Cluster, Content, Action]:

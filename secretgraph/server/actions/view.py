@@ -12,10 +12,27 @@ from ..models import Cluster, Content, ContentAction
 logger = logging.getLogger(__name__)
 
 
+def fetch_by_id(query, flexid):
+    try:
+        type_name, flexid = from_global_id(flexid)
+    except Exception:
+        pass
+    try:
+        flexid = UUID(flexid)
+    except ValueError:
+        raise ValueError("Malformed id")
+    if type_name != query.model.__name__:
+        raise ValueError(
+            "No {} Id ({})".format(query.model.__name__, type_name)
+        )
+    return query.filter(flexid=flexid)
+
+
 def fetch_clusters(
-    request, query=None,
+    request, query=None, authset=None,
     info_include=None, info_exclude=None
 ):
+    # TODO: seperate auth from fetch_clusters
     flexid = None
     if query is None:
         query = Cluster.objects.all()
@@ -25,13 +42,14 @@ def fetch_clusters(
             type_name, query = from_global_id(query)
         except Exception:
             pass
+        if type_name != "Cluster":
+            raise ValueError("No Cluster Id")
         try:
             query = UUID(query)
         except ValueError:
             raise ValueError("Malformed id")
+        flexid = query
         query = Cluster.objects.filter(flexid=query)
-        if type_name != "Cluster":
-            raise ValueError("No Cluster Id")
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(contents__info__tag__startswith=i)
@@ -40,7 +58,8 @@ def fetch_clusters(
     for i in info_exclude or []:
         excl_filters |= Q(contents__info__tag__startswith=i)
     result = retrieve_allowed_objects(
-        request, "view", query.filter(~excl_filters & incl_filters)
+        request, "view", query.filter(~excl_filters & incl_filters),
+        authset=authset
     )
     if flexid:
         result["objects"] = result["objects"].filter(flexid=flexid)
@@ -134,6 +153,7 @@ class ContentFetchQueryset(QuerySet):
 def fetch_contents(
     request, query=None, authset=None, info_include=None, info_exclude=None
 ) -> dict:
+    # TODO: seperate auth from fetch_contents
     # cleanup expired
     Content.objects.filter(
         markForDestruction__lte=timezone.now()
@@ -148,6 +168,10 @@ def fetch_contents(
             pass
         if type_name != "Content":
             raise ValueError("No Content id")
+        try:
+            query = UUID(query)
+        except ValueError:
+            raise ValueError("Malformed id")
 
         query = Content.objects.filter(flexid=query)
     incl_filters = Q()
