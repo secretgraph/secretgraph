@@ -16,18 +16,32 @@ from .misc import calculate_hashes
 logger = logging.getLogger(__name__)
 
 
+def fetch_by_flexid(query, flexid, field="flexid"):
+    type_name = query.model.__name__
+    try:
+        type_name, flexid = from_global_id(flexid)
+    except Exception:
+        pass
+    try:
+        flexid = UUID(flexid)
+    except ValueError:
+        raise ValueError("Malformed id")
+    if type_name and type_name != query.model.__name__:
+        raise ValueError(
+            "No {} Id ({})".format(query.model.__name__, type_name)
+        )
+    return query.filter(**{field: flexid})
+
+
 class LazyViewResult(object):
     _result_dict = None
-    authset = None
-    request = None
 
-    def __init__(self, request, *viewResults, authset=None):
+    def __init__(self, request, *viewResults, authset=None, scope="view"):
         self._result_dict = {}
         self.request = request
         self.authset = authset
+        self.scope = scope
         for r in viewResults:
-            if self.authset is None:
-                self.authset = r.get("authset")
             self._result_dict[r["objects"].model.__name__] = r
         if self.authset is None:
             self.authset = \
@@ -39,7 +53,7 @@ class LazyViewResult(object):
         if item in ["Content", "Cluster", "Action"]:
             if item not in self._result_dict:
                 self._result_dict[item] = retrieve_allowed_objects(
-                    self.request, "view",
+                    self.request, self.scope,
                     apps.get_model("secretgraph", item).objects.all(),
                     authset=self.authset
                 )
@@ -50,13 +64,15 @@ class LazyViewResult(object):
 
 
 def initializeCachedResult(
-    request, *viewResults, authset=None, name="secretgraphResult"
+    request, *viewResults, authset=None, scope="view", name="secretgraphResult"
 ):
     if not getattr(request, name, None):
         setattr(
             request,
             name,
-            LazyViewResult(request, *viewResults, authset=authset)
+            LazyViewResult(
+                request, *viewResults, scope=scope, authset=authset
+            )
         )
     return getattr(request, name)
 
@@ -69,6 +85,15 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             ).split(",")
     authset = set(authset)
     now = timezone.now()
+    # cleanup expired Contents
+    Content.objects.filter(
+        markForDestruction__lte=now
+    ).delete()
+    if query.model == Cluster:
+        Cluster.objects.annotate(models.Count("contents")).filter(
+            markForDestruction__lte=now,
+            contents__count=0
+        ).delete()
     pre_filtered_actions = Action.objects.select_related("cluster").filter(
         start__lte=now
     ).filter(
@@ -82,7 +107,6 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     clusters = set()
     all_filters = models.Q()
     returnval = {
-        "authset": authset,
         "rejecting_action": None,
         "clusters": {},
         "forms": {},

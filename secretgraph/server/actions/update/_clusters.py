@@ -16,7 +16,7 @@ len_default_hash = len(hash_object(b""))
 
 
 def _update_or_create_cluster(
-    request, cluster, objdata
+    request, cluster, objdata, authset
 ):
     if objdata.get("publicInfo"):
         g = Graph()
@@ -32,7 +32,7 @@ def _update_or_create_cluster(
     if objdata.get("actions"):
         created = not cluster.id
         action_save_func = create_actions_func(
-            cluster, objdata["actions"], request, created
+            cluster, objdata["actions"], request, created, authset=authset
         )
         assert created and not cluster.id, \
             "Don't save cluster in action clean"
@@ -97,11 +97,11 @@ def create_cluster(
     }
     cluster = Cluster(**prebuild)
     cluster_func = _update_or_create_cluster(
-        request, cluster, objdata
+        request, cluster, objdata, authset
     )
     contentdata["cluster"] = cluster
     content_func = create_key_func(
-        request, contentdata, authset=authset
+        request, contentdata, authset
     )
     with transaction.atomic():
         cluster = cluster_func()
@@ -113,11 +113,11 @@ def create_cluster(
     )
 
 
-def update_cluster(request, cluster, objdata, user=None):
+def update_cluster(request, cluster, objdata, user=None, authset=None):
     assert cluster.id
     if user:
         cluster.user = user
 
     return _update_or_create_cluster(
-        request, cluster, objdata
+        request, cluster, objdata, authset=authset
     )()

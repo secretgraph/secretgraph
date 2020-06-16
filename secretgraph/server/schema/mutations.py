@@ -63,10 +63,6 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(cls, root, info, id, authorization=None):
         now = timezone.now()
         now_plus_x = now + td(minutes=20)
-        # cleanup expired
-        Content.objects.filter(
-            markForDestruction__lte=now
-        ).delete()
         # TODO: admin permission
         # if not info.context.user.has_perm("TODO"):
         #    components = retrieve_allowed_objects(
@@ -78,7 +74,7 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         )
         obj = result["objects"].first()
         if not obj:
-            raise ValueError()
+            raise ValueError("Object does not exist")
         ret = cls(node=obj)
         if isinstance(obj, Content):
             if (
@@ -95,6 +91,9 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
                     Q(markForDestruction__isnull=True) |
                     Q(markForDestruction__gt=now_plus_x)
                 ).update(markForDestruction=now_plus_x)
+                if not obj.markForDestruction or obj.markForDestruction > now:
+                    obj.markForDestruction = now
+                    obj.save(update_fields=["markForDestruction"])
         initializeCachedResult(info.context, authset=authorization)
         return ret
 
@@ -119,17 +118,21 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
         )
         obj = result["objects"].first()
         if not obj:
-            raise ValueError()
-        ret = cls(node=obj)
+            raise ValueError("Object does not exist")
         if isinstance(obj, Content):
             obj.markForDestruction = None
             obj.save(update_fields=["markForDestruction"])
+            if obj.cluster.markForDestruction:
+                obj.cluster.markForDestruction = None
+                obj.cluster.save(update_fields=["markForDestruction"])
         elif isinstance(obj, Cluster):
             obj.contents.filter(
                 markForDestruction__isnull=False
             ).update(markForDestruction=None)
+            obj.markForDestruction = None
+            obj.save(update_fields=["markForDestruction"])
         initializeCachedResult(info.context, authset=authorization)
-        return ret
+        return cls(node=obj)
 
 
 class ClusterMutation(relay.ClientIDMutation):
@@ -224,7 +227,8 @@ class ContentMutation(relay.ClientIDMutation):
                 raise ValueError()
             required_keys = []
             try:
-                form = next(iter(result["objects"].keys()))
+                form = next(iter(result["forms"].values()))
+                # None should be possible here for not updating
                 if content.get("info") is not None:
                     allowed = form.get("allowInfo", None)
                     if allowed is not None:
@@ -238,22 +242,16 @@ class ContentMutation(relay.ClientIDMutation):
                             lambda x: matcher.fullmatch(x),
                             content["info"]
                         )
-                    content["info"] = [
-                        *form.get("injectInfo", []),
-                        *content["info"]
-                    ]
-                else:
-                    # none should be possible
-                    content["info"] = form.get("injectInfo", None)
+                    content["info"] = chain(
+                        form.get("injectInfo", []),
+                        content["info"]
+                    )
+                # None should be possible here for not updating
                 if content.get("references") is not None:
                     content["references"] = chain(
                         form.get("injectReferences", []),
                         content["references"]
                     )
-                else:
-                    # none should be possible
-                    content["references"] = \
-                        form.get("injectReferences", None)
                 required_keys = form.get("requiredKeys", [])
             except StopIteration:
                 pass
@@ -263,7 +261,8 @@ class ContentMutation(relay.ClientIDMutation):
                     content_obj,
                     content,
                     key=key,
-                    required_keys=required_keys
+                    required_keys=required_keys,
+                    authset=authorization
                 )
             )
         else:
@@ -282,16 +281,14 @@ class ContentMutation(relay.ClientIDMutation):
             )
             try:
                 form = next(iter(result["forms"].values()))
-                if content.get("info") is not None:
-                    content["info"] = chain(
-                        form.get("info", []),
-                        content["info"]
-                    )
-                if content.get("references") is not None:
-                    content["references"] = chain(
-                        form.get("references", []),
-                        content["references"]
-                    )
+                content["info"] = chain(
+                    form.get("info", []),
+                    content.get("info") or []
+                )
+                content["references"] = chain(
+                    form.get("injectReferences", []),
+                    content.get("references") or []
+                )
                 required_keys.extend(form.get("requiredKeys", []))
             except StopIteration:
                 pass
@@ -299,7 +296,7 @@ class ContentMutation(relay.ClientIDMutation):
                 content=create_content(
                     info.context, content,
                     key=key,
-                    required_keys=required_keys
+                    required_keys=required_keys, authset=authorization
                 )
             )
         initializeCachedResult(info.context, authset=authorization)
@@ -346,17 +343,14 @@ class PushContentMutation(relay.ClientIDMutation):
                 content["info"]
             )
         else:
-            # none should be possible
-            content["info"] = form.get("injectInfo", None)
+            content["info"] = form.get("injectInfo") or []
         if content.get("references") is not None:
             content["references"] = chain(
                 form.get("injectReferences", []),
                 content["references"]
             )
         else:
-            # none should be possible
-            content["references"] = \
-                form.get("injectReferences", None)
+            content["references"] = form.get("injectReferences") or []
         required_keys = list(
             Content.objects.injected_keys().values_list(
                 "contentHash", flat=True

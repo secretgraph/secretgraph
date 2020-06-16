@@ -8,7 +8,7 @@ from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
 
-from ...utils.auth import id_to_result, initializeCachedResult
+from ...utils.auth import initializeCachedResult
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
 
@@ -116,14 +116,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     info = graphene.List(graphene.String)
     link = graphene.String()
 
-    def resolve_cluster(self, info):
-        return id_to_result(
-            info.context, self.cluster, ["Cluster"],
-            scope="manage",
-            authset=getattr(
-                info.context, "secretgraphResult", {}
-            ).get("authset")
-        )
+    def resolve_cluster(self, info, authorization=None):
+        return initializeCachedResult(
+            info.context, authset=authorization
+        )["Cluster"]["objects"].filter(id=self.cluster_id).first()
 
     def resolve_info(self, info):
         return self.info.all().values_list("tag", flat=True)
@@ -162,22 +158,22 @@ class ContentConnectionField(DjangoConnectionField):
                 pass
             if _type != "Cluster":
                 raise ValueError("Not a cluster id")
-            queryset = queryset.filter(flexid=cluster)
+            queryset = queryset.filter(cluster__flexid=cluster)
         if public in {True, False}:
             if public:
                 queryset = queryset.filter(info__tag="state=public")
             else:
                 queryset = queryset.exclude(info__tag="state=public")
 
-        result = fetch_contents(
-            info.context,
-            queryset,
+        return fetch_contents(
+            queryset.filter(
+                id__in=initializeCachedResult(
+                    info.context, authset=args.get("authorization")
+                )["Content"]["objects"].values_list("id", flat=True)
+            ),
             info_include=args.get("infoInclude"),
-            info_exclude=args.get("infoExclude"),
-            authset=args.get("authorization")
+            info_exclude=args.get("infoExclude")
         )
-        initializeCachedResult(info.context, authset=args.get("authorization"))
-        return result["objects"]
 
 
 class ContentReferenceNode(DjangoObjectType):
@@ -209,7 +205,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Cluster
         name = "Cluster"
         interfaces = (relay.Node,)
-        fields = ['publicInfo', 'contents', 'group']
+        fields = ['publicInfo', 'group']
     contents = ContentConnectionField()
     user = relay.GlobalID(required=False)
 
@@ -217,13 +213,11 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         self, info, **kwargs
     ):
         return fetch_contents(
-            info.context,
-            self.contents,
+            initializeCachedResult(
+                info.context, authset=kwargs.get("authorization")
+            )["Content"]["objects"],
             info_include=kwargs.get("infoInclude"),
-            info_exclude=kwargs.get("infoExclude"),
-            authset=getattr(
-                info.context, "secretgraphResult", {}
-            ).get("authset")
+            info_exclude=kwargs.get("infoExclude")
         )
 
     def resolve_user(
@@ -267,15 +261,15 @@ class ClusterConnectionField(DjangoConnectionField):
         if public in {True, False}:
             queryset = queryset.filter(public=public)
 
-        result = fetch_clusters(
-            info.context,
-            queryset,
+        return fetch_clusters(
+            queryset.filter(
+                id__in=initializeCachedResult(
+                    info.context, authset=args.get("authorization")
+                )["Cluster"]["objects"].values_list("id", flat=True)
+            ),
             info_include=args.get("infoInclude"),
-            info_exclude=args.get("infoExclude"),
-            authset=args.get("authorization")
+            info_exclude=args.get("infoExclude")
         )
-        initializeCachedResult(info.context, authset=args.get("authorization"))
-        return result["objects"]
 
 
 class FlexidType(graphene.Union):

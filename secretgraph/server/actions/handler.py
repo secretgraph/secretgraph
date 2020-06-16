@@ -1,14 +1,18 @@
 
 import json
+from datetime import timedelta as td, datetime as dt
 from functools import lru_cache
+
 from django.db.models import Q
+from django.utils import timezone
 from graphql_relay import from_global_id
 
-from ..models import Content, Cluster, Action
+from ..models import Action, Cluster, Content
 
 
 def _only_owned_helper(
-    klass, linput, request, fields=("id",), check_field=None, scope="manage"
+    klass, linput, request, fields=("id",), check_field=None, scope="manage",
+    authset=None
 ):
     from ...utils.auth import retrieve_allowed_objects
     if not check_field:
@@ -19,7 +23,8 @@ def _only_owned_helper(
         fields = set(fields).difference({"flexid"})
     return retrieve_allowed_objects(
         request, scope,
-        klass.objects.filter(**{f"{check_field}__in": linput or []})
+        klass.objects.filter(**{f"{check_field}__in": linput or []}),
+        authset=authset
     )["objects"].values_list(*fields, flat=True)
 
 
@@ -45,11 +50,11 @@ class ActionHandler():
         )(action_dict, sender=sender, **kwargs)
 
     @classmethod
-    def clean_action(cls, action_dict, request, content=None):
+    def clean_action(cls, action_dict, request, authset, content=None):
         action = action_dict["action"]
         result = getattr(
             cls, "clean_%s" % action
-        )(action_dict, request, content)
+        )(action_dict, request, content, authset)
         assert result["action"] == action
         return result
 
@@ -77,7 +82,7 @@ class ActionHandler():
         return None
 
     @staticmethod
-    def clean_view(action_dict, request, content):
+    def clean_view(action_dict, request, content, authset):
         result = {
             "action": "view"
         }
@@ -112,7 +117,7 @@ class ActionHandler():
         return None
 
     @staticmethod
-    def clean_update(action_dict, request, content):
+    def clean_update(action_dict, request, content, authset):
         result = {
             "action": "update",
             "contentActionGroup": "update",
@@ -120,7 +125,7 @@ class ActionHandler():
             "ids": list(_only_owned_helper(
                 Content,
                 action_dict.get("ids", content and [content.id]),
-                request
+                request, authset=authset
             )),
             "form": {
                 "requiredKeys": [],
@@ -133,7 +138,8 @@ class ActionHandler():
         if action_dict.get("requiredKeys"):
             result["form"]["requiredKeys"] = list(_only_owned_helper(
                 Content, action_dict["requiredKeys"], request,
-                fields=("id",), check_field="contentHash", scope="view"
+                fields=("id",), check_field="contentHash", scope="view",
+                authset=authset
             ))
         if action_dict.get("injectInfo"):
             for i in action_dict["injectInfo"]:
@@ -166,7 +172,7 @@ class ActionHandler():
         return None
 
     @staticmethod
-    def clean_push(action_dict, request, content):
+    def clean_push(action_dict, request, content, authset):
         if not content:
             raise ValueError("Can only be specified for a content")
 
@@ -204,7 +210,8 @@ class ActionHandler():
             references = dict(map(lambda x: (x["target"], x), references))
         for _flexid, _id in _only_owned_helper(
             Content, references.keys(), request,
-            fields=("flexid",)
+            fields=("flexid",),
+            authset=authset
         ):
             result["form"]["injectReferences"].append({
                 "target": _id,
@@ -216,7 +223,8 @@ class ActionHandler():
         if action_dict.get("requiredKeys"):
             result["form"]["requiredKeys"] = list(_only_owned_helper(
                 Content, action_dict["requiredKeys"], request,
-                fields=("id",), check_field="contentHash", scope="view"
+                fields=("id",), check_field="contentHash", scope="view",
+                authset=authset
             ))
 
         return result
@@ -251,7 +259,7 @@ class ActionHandler():
         }
 
     @staticmethod
-    def clean_manage(action_dict, request, content):
+    def clean_manage(action_dict, request, content, authset):
         if content:
             raise ValueError("manage cannot be changed to content")
         result = {
@@ -269,17 +277,41 @@ class ActionHandler():
             type_name = klass.__name__
             result["exclude"][type_name] = list(_only_owned_helper(
                 klass, result["exclude"][type_name], request,
-                check_field="keyHash" if type_name == "Action" else "flexid"
+                check_field="keyHash" if type_name == "Action" else "flexid",
+                authset=authset
             ))
         return result
 
     @staticmethod
     def do_storedUpdate(action_dict, scope, **kwargs):
+        now = timezone.now()
+        mintime = dt.strptime(
+            action_dict["minExpire"], r"%a, %d %b %Y %H:%M:%S %z"
+        )
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
-            klass.objects.filter(
-                id__in=action_dict["delete"][type_name]
-            ).delete()
+            if action_dict["delete"][type_name]:
+                if type_name == "Action" or now >= mintime:
+                    klass.objects.filter(
+                        id__in=action_dict["delete"][type_name]
+                    ).delete()
+                elif type_name == "Content":
+                    Content.objects.filter(
+                        Q(markForDestruction__isnull=True) |
+                        Q(markForDestruction__gt=mintime),
+                        id__in=action_dict["delete"][type_name]
+                    ).update(markForDestruction=mintime)
+                elif type_name == "Component":
+                    Content.objects.filter(
+                        Q(markForDestruction__isnull=True) |
+                        Q(markForDestruction__gt=mintime),
+                        cluster_id__in=action_dict["delete"][type_name]
+                    ).update(markForDestruction=mintime)
+                    Cluster.objects.filter(
+                        Q(markForDestruction__isnull=True) |
+                        Q(markForDestruction__gt=mintime),
+                        id__in=action_dict["delete"][type_name]
+                    ).update(markForDestruction=mintime)
             for _id, updatevalues in action_dict["update"][type_name].items():
                 updatevalues.pop("id", None)
                 updatevalues.pop("cluster", None)
@@ -289,7 +321,8 @@ class ActionHandler():
         return None
 
     @staticmethod
-    def clean_storedUpdate(action_dict, request, content):
+    def clean_storedUpdate(action_dict, request, content, authset):
+        now_plus_x = timezone.now() + td(minutes=20)
         result = {
             "action": "storedUpdate",
             "delete": {
@@ -301,7 +334,8 @@ class ActionHandler():
                 "Cluster": {},
                 "Content": {},
                 "Action": {}
-            }
+            },
+            "minExpire": now_plus_x.strftime(r"%a, %d %b %Y %H:%M:%S %z")
         }
         update_mapper = {
             "Cluster": {},
@@ -322,7 +356,8 @@ class ActionHandler():
             type_name = klass.__name__
             result["delete"][type_name] = list(_only_owned_helper(
                 klass, result["delete"][type_name], request,
-                check_field="keyHash" if type_name == "Action" else None
+                check_field="keyHash" if type_name == "Action" else None,
+                authset=authset
             ))
 
         _del_sets = {
@@ -358,7 +393,7 @@ class ActionHandler():
                 klass, update_mapper[type_name].keys(), request,
                 fields=(
                     ("id", "id") if type_name == "Action" else ("flexid", "id")
-                )
+                ), authset=authset
             ):
                 if _id in _del_sets[type_name]:
                     continue

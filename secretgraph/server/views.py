@@ -4,6 +4,7 @@ from django.http import StreamingHttpResponse, Http404
 from graphene_file_upload.django import FileUploadGraphQLView
 
 from ..utils.encryption import iter_decrypt_contents
+from ..utils.auth import initializeCachedResult
 from .actions.view import fetch_contents, fetch_clusters
 from .forms import PushForm, UpdateForm
 
@@ -30,17 +31,20 @@ class ClustersView(AllowCORSMixin, View):
             " ", ""
         ).split(","))
         authset.update(request.GET.getlist("token"))
-        result = fetch_clusters(
-            request, query=kwargs.get("id"), authset=authset,
+        clusters = fetch_clusters(
+            initializeCachedResult(
+                request, authset=authset
+            )["Cluster"]["objects"],
+            kwargs.get("id"),
             info_include=request.GET.getlist("inclInfo"),
             info_exclude=request.GET.getlist("exclInfo")
         )
-        if not result["objects"]:
+        if not clusters:
             raise Http404()
 
         def gen():
             seperator = b""
-            for cluster in result["objects"]:
+            for cluster in clusters["objects"]:
                 yield seperator
                 # publicInfo cannot contain \0 because of TextField
                 yield cluster.publicInfo
@@ -57,18 +61,21 @@ class DocumentsView(AllowCORSMixin, View):
             " ", ""
         ).split(","))
         authset.update(request.GET.getlist("token"))
-        result = fetch_contents(
-            request, query=kwargs.get("id"), authset=authset,
+        contents = fetch_contents(
+            initializeCachedResult(
+                request, authset=authset
+            )["Content"]["objects"],
+            kwargs.get("id"),
             info_include=request.GET.getlist("inclInfo"),
             info_exclude=request.GET.getlist("exclInfo")
         )
-        if not result["objects"]:
+        if not contents:
             raise Http404()
 
         def gen():
             seperator = b""
             for document in iter_decrypt_contents(
-                result["objects"], authset
+                contents, authset
             ):
                 yield seperator
                 if kwargs.get("id"):

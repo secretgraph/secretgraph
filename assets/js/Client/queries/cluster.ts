@@ -2,7 +2,7 @@
 import { graphql } from "react-relay"
 
 export const createClusterMutation = graphql`
-  mutation clusterCreateMutation($publicInfo: String, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $nonce: String) {
+  mutation clusterCreateMutation($publicInfo: String, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $nonce: String, $authorization: [String!]) {
     updateOrCreateCluster(
       input: {
         cluster: {
@@ -14,6 +14,7 @@ export const createClusterMutation = graphql`
             nonce: $nonce
           }
         }
+        authorization: $authorization
       }
     ) {
       cluster {

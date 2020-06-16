@@ -1,55 +1,20 @@
 import logging
-from uuid import UUID
 from datetime import timedelta as td
 
 from django.db.models import Q, QuerySet
 from django.utils import timezone
-from graphql_relay import from_global_id
 
-from ...utils.auth import retrieve_allowed_objects
-from ..models import Cluster, Content, ContentAction
+from ...utils.auth import fetch_by_flexid
+from ..models import Content, ContentAction
 
 logger = logging.getLogger(__name__)
 
 
-def fetch_by_id(query, flexid):
-    try:
-        type_name, flexid = from_global_id(flexid)
-    except Exception:
-        pass
-    try:
-        flexid = UUID(flexid)
-    except ValueError:
-        raise ValueError("Malformed id")
-    if type_name != query.model.__name__:
-        raise ValueError(
-            "No {} Id ({})".format(query.model.__name__, type_name)
-        )
-    return query.filter(flexid=flexid)
-
-
 def fetch_clusters(
-    request, query=None, authset=None,
-    info_include=None, info_exclude=None
-):
-    # TODO: seperate auth from fetch_clusters
-    flexid = None
-    if query is None:
-        query = Cluster.objects.all()
-    elif isinstance(query, str):
-        type_name = "Cluster"
-        try:
-            type_name, query = from_global_id(query)
-        except Exception:
-            pass
-        if type_name != "Cluster":
-            raise ValueError("No Cluster Id")
-        try:
-            query = UUID(query)
-        except ValueError:
-            raise ValueError("Malformed id")
-        flexid = query
-        query = Cluster.objects.filter(flexid=query)
+    query, id=None, info_include=None, info_exclude=None
+) -> QuerySet:
+    if id:
+        query = fetch_by_flexid(query, id)
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(contents__info__tag__startswith=i)
@@ -57,13 +22,7 @@ def fetch_clusters(
     excl_filters = Q()
     for i in info_exclude or []:
         excl_filters |= Q(contents__info__tag__startswith=i)
-    result = retrieve_allowed_objects(
-        request, "view", query.filter(~excl_filters & incl_filters),
-        authset=authset
-    )
-    if flexid:
-        result["objects"] = result["objects"].filter(flexid=flexid)
-    return result
+    return query.filter(~excl_filters & incl_filters)
 
 
 class ContentFetchQueryset(QuerySet):
@@ -74,19 +33,18 @@ class ContentFetchQueryset(QuerySet):
 
     def __init__(
         self,
-        secretgraph_result=None,
+        query=None,
+        actions=None,
         only_direct_fetch_action_trigger=False,
         **kwargs
     ):
-        query = kwargs.get("query", None)
-        result = secretgraph_result or query.secretgraph_result
-        if result:
-            self.secretgraph_result = result
-            kwargs["query"] = query or result["objects"]
+        actions = actions or query.actions
+        if actions:
+            self.actions = actions
             kwargs["model"] = kwargs.get("model", None) or query.model
         self.only_direct_fetch_action_trigger = \
             only_direct_fetch_action_trigger
-        super().__init__(**kwargs)
+        super().__init__(query=query, **kwargs)
 
     def _clone(self):
         """
@@ -94,7 +52,7 @@ class ContentFetchQueryset(QuerySet):
         to deepcopy().
         """
         c = super()._clone()
-        c.secretgraph_result = self.secretgraph_result
+        c.actions = self.actions
         c.only_direct_fetch_action_trigger = \
             self.only_direct_fetch_action_trigger
         return c
@@ -108,11 +66,11 @@ class ContentFetchQueryset(QuerySet):
         if self.only_direct_fetch_action_trigger and not direct:
             return objects
         if isinstance(objects, Content):
-            used_actions = self.secretgraph_result["actions"].filter(
+            used_actions = self.actions.filter(
                 contentAction__content=objects
             ).select_related("contentAction")
         else:
-            used_actions = self.secretgraph_result["actions"].filter(
+            used_actions = self.actions.filter(
                 contentAction__content__in=objects
             ).select_related("contentAction")
         cactions = ContentAction.objects.filter(action__in=used_actions)
@@ -151,29 +109,10 @@ class ContentFetchQueryset(QuerySet):
 
 
 def fetch_contents(
-    request, query=None, authset=None, info_include=None, info_exclude=None
-) -> dict:
-    # TODO: seperate auth from fetch_contents
-    # cleanup expired
-    Content.objects.filter(
-        markForDestruction__lte=timezone.now()
-    ).delete()
-    if query is None:
-        query = Content.objects.all()
-    elif isinstance(query, str):
-        type_name = "Content"
-        try:
-            type_name, query = from_global_id(query)
-        except Exception:
-            pass
-        if type_name != "Content":
-            raise ValueError("No Content id")
-        try:
-            query = UUID(query)
-        except ValueError:
-            raise ValueError("Malformed id")
-
-        query = Content.objects.filter(flexid=query)
+    query, actions, id=None, info_include=None, info_exclude=None
+) -> QuerySet:
+    if id:
+        query = fetch_by_flexid(query, id)
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(info__tag__startswith=i)
@@ -181,21 +120,5 @@ def fetch_contents(
     excl_filters = Q()
     for i in info_exclude or []:
         excl_filters |= Q(info__tag__startswith=i)
-    result = retrieve_allowed_objects(
-        request, "view", query.filter(~excl_filters & incl_filters),
-        authset=authset
-    )
-    result["objects"] = result["objects"].filter(
-        info__tag__in=map(
-            lambda x: f"key_hash={x}", result["action_key_map"].keys()
-        )
-    )
-    keys = result["objects"].filter(info__tag="type=PrivateKey")
-    if keys:
-        result["objects"] = result["objects"].filter(
-            info__tag__in=map(
-                lambda x: f"key_hash={x}", result["content_key_map"].keys()
-            )
-        )
-    result["objects"] = ContentFetchQueryset(result)
-    return result
+    query = query.filter(~excl_filters & incl_filters)
+    return ContentFetchQueryset(query, actions)

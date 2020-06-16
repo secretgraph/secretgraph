@@ -51,6 +51,10 @@ class Cluster(FlexidModel):
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
     group: int = models.SmallIntegerField(default=0)
+    markForDestruction: dt = models.DateTimeField(
+        null=True, blank=True,
+        db_column="mark_for_destruction"
+    )
 
     if (
         getattr(settings, "AUTH_USER_MODEL", None) or

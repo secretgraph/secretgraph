@@ -22,6 +22,7 @@ class Migration(migrations.Migration):
                 ('flexid', models.UUIDField(blank=True, null=True, unique=True)),
                 ('publicInfo', models.TextField(db_column='public_info')),
                 ('public', models.BooleanField(blank=True, default=False)),
+                ('markForDestruction', models.DateTimeField(blank=True, db_column='mark_for_destruction', null=True)),
                 ('featured', models.BooleanField(blank=True, default=False)),
                 ('group', models.SmallIntegerField(default=0)),
             ],

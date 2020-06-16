@@ -2,7 +2,7 @@
 import graphene
 from graphene import relay
 
-from ...utils import initializeCachedResult
+from ...utils.auth import initializeCachedResult
 from ..actions.view import fetch_clusters, fetch_contents
 from .arguments import AuthList
 from .definitions import (
@@ -10,7 +10,7 @@ from .definitions import (
     SecretgraphConfig
 )
 from .mutations import (
-    AuthorizationMutation, ClusterMutation, ContentMutation,
+    ClusterMutation, ContentMutation,
     DeleteContentOrClusterMutation, PushContentMutation,
     RegenerateFlexidMutation, ResetDeletionContentOrClusterMutation
 )
@@ -30,26 +30,23 @@ class Query():
     def resolve_cluster(
         self, info, id, authorization=None, **kwargs
     ):
-        result = fetch_clusters(
-            info.context,
-            query=str(id),
-            authset=authorization
-        )
-        initializeCachedResult(info.context, authset=authorization)
-        return result["objects"].first()
+        return fetch_clusters(
+            initializeCachedResult(
+                info.context, authset=authorization
+            )["Cluster"]["objects"],
+            str(id)
+        ).first()
 
     def resolve_content(self, info, id, authorization=None, **kwargs):
-        result = fetch_contents(
-            info.context,
-            query=str(id),
-            authset=authorization
-        )
-        initializeCachedResult(info.context, authset=authorization)
-        return result["objects"].first()
+        return fetch_contents(
+            initializeCachedResult(
+                info.context, authset=authorization
+            )["Content"]["objects"],
+            str(id)
+        ).first()
 
 
 class Mutation():
-    secretgraphAuth = AuthorizationMutation.Field()
     updateOrCreateContent = ContentMutation.Field(
         description="""
         """

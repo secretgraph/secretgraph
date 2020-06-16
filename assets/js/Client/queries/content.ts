@@ -2,12 +2,19 @@ import { graphql } from "react-relay"
 
 export const createContentMutation = graphql`
   mutation contentEncryptedMutation($cluster: ID!, $info: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
-    secretgraphAuth(authorization: $authorization) {
-      ok
-    }
     updateOrCreateContent(
       input: {
-        content: { cluster: $cluster, value: { info: $info, value: $value, nonce: $nonce }, contentHash: $contentHash, references: $references }
+        content: {
+          cluster: $cluster
+          value: {
+            info: $info
+            value: $value
+            nonce: $nonce
+          }
+          contentHash: $contentHash
+          references: $references
+        }
+        authorization: $authorization
       }
     ) {
       content {
@@ -19,10 +26,11 @@ export const createContentMutation = graphql`
 `
 
 export const findConfig = graphql`
-  query contentConfigQuery {
+  query contentConfigQuery($authorization: [String!]) {
     contents(
       public: false,
-      includeInfo: ["type=Config", "type=PrivateKey"]
+      includeInfo: ["type=Config", "type=PrivateKey"],
+      authorization: $authorization
     ) {
       edges {
         node {

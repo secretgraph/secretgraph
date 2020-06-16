@@ -18,7 +18,7 @@ from ...models import (
 
 
 def create_actions_func(
-    obj, actionlist, request, addonly=False, default_key=None
+    obj, actionlist, request, addonly=False, default_key=None, authset=None
 ):
     final_actions = []
     final_content_actions = []
@@ -59,7 +59,7 @@ def create_actions_func(
         if isinstance(action_value, str):
             action_value = json.loads(action_value)
         action_value = ActionHandler.clean_action(
-            action_value, request, content
+            action_value, request, authset, content
         )
 
         # create Action object
