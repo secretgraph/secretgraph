@@ -50,7 +50,10 @@ class Cluster(FlexidModel):
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
-    group: int = models.SmallIntegerField(default=0)
+    # injection group (which clusters should be injected)
+    group: str = models.CharField(
+        default="", max_length=10, blank=True, null=False
+    )
     markForDestruction: dt = models.DateTimeField(
         null=True, blank=True,
         db_column="mark_for_destruction"
@@ -67,14 +70,16 @@ class Cluster(FlexidModel):
 
 
 class ContentManager(models.Manager):
-    def injected_keys(self, queryset=None):
+    def injected_keys(self, queryset=None, group=""):
         if queryset is None:
             queryset = self.get_queryset()
         return queryset.filter(
             info__tag="PublicKey",
-            cluster__in=getattr(
-                settings, "SECRETGRAPH_INJECT_CLUSTERS", None
-            ) or []
+            cluster__in=(
+                getattr(
+                    settings, "SECRETGRAPH_INJECT_CLUSTERS", None
+                ) or {}
+            ).get(group, [])
         )
 
 

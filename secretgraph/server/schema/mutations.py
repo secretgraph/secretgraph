@@ -12,11 +12,13 @@ from django.db.models import Q
 from django.utils import timezone
 from graphene import relay
 
+from ...constants import TransferResult
 from ...utils.auth import (
     id_to_result, initializeCachedResult, retrieve_allowed_objects
 )
 from ..actions.update import (
-    create_cluster, create_content, update_cluster, update_content
+    create_cluster, create_content, transfer_value, update_cluster,
+    update_content
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
@@ -275,7 +277,9 @@ class ContentMutation(relay.ClientIDMutation):
                 raise ValueError("Cluster for Content not found")
 
             required_keys = list(
-                Content.objects.injected_keys().values_list(
+                Content.objects.injected_keys(
+                    group=cluster_obj.group
+                ).values_list(
                     "contentHash", flat=True
                 )
             )
@@ -352,7 +356,9 @@ class PushContentMutation(relay.ClientIDMutation):
         else:
             content["references"] = form.get("injectReferences") or []
         required_keys = list(
-            Content.objects.injected_keys().values_list(
+            Content.objects.injected_keys(
+                group=source.cluster.group
+            ).values_list(
                 "contentHash", flat=True
             )
         )
@@ -374,3 +380,38 @@ class PushContentMutation(relay.ClientIDMutation):
             content=c,
             actionKey=base64.b64encode(action_key).decode("ascii")
         )
+
+
+class TransferMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+        url = graphene.String(required=False)
+        key = graphene.String(
+            required=False, description="Transfer Key"
+        )
+        authorization = AuthList()
+        headers = graphene.JSONString()
+
+    content = graphene.Field(ContentNode, required=False)
+
+    @classmethod
+    def mutate_and_get_payload(
+        cls, root, info, id,
+        url=None, key=None, authorization=None, headers=None
+    ):
+        result = id_to_result(
+            info.context, id, Content, "update",
+            authset=authorization
+        )
+        content_obj = result.objects.first()
+        if not content_obj:
+            raise ValueError()
+        if key and url:
+            raise ValueError()
+        tres = transfer_value(content_obj, key=key, url=url, headers=headers)
+
+        if tres == TransferResult.NOTFOUND:
+            content_obj.delete()
+        elif result == TransferResult.SUCCESS:
+            return cls(content=content_obj)
+        return cls(content=None)

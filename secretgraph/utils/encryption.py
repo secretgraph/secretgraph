@@ -157,7 +157,7 @@ def iter_decrypt_contents(
     content_map, transfer_map = create_key_maps(
         content_query, decryptset, inject_public=inject_public
     )
-    for content in content_query.filter(
+    query = content_query.filter(
         Q(info__tag="type=PublicKey") | Q(id__in=content_map.keys())
     ).annotate(
         is_transfer=Exists(
@@ -166,7 +166,8 @@ def iter_decrypt_contents(
                 group="transfer"
             )
         )
-    ):
+    )
+    for content in query.order_by("id"):
         if content.id in transfer_map:
             result = transfer_value(
                 content, key=transfer_map[content.id], transfer=True

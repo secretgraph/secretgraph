@@ -4,6 +4,7 @@ __all__ = [
 
 
 import base64
+import json
 import logging
 from email.parser import BytesParser
 from itertools import chain
@@ -15,7 +16,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.files.base import ContentFile, File
 from django.db import transaction
-from django.db.models import Q, Subquery, OuterRef
+from django.db.models import OuterRef, Q, Subquery
 from django.test import Client
 from graphql_relay import from_global_id
 from rdflib import Graph
@@ -571,6 +572,8 @@ def transfer_value(
             return TransferResult.ERROR
 
     if headers:
+        if isinstance(headers, str):
+            headers = json.loads(headers)
         _headers.update(headers)
 
     params, inline_domain = get_requests_params(url)
@@ -596,6 +599,13 @@ def transfer_value(
                 return TransferResult.NOTFOUND
             elif response.status_code != 200:
                 return TransferResult.ERROR
+            # should be only one nonce
+            checknonce = response.get("X-NONCES", "").strip(", ")
+            if checknonce != "":
+                if len(checknonce) != 20:
+                    logger.warning("Invalid nonce (not 13 bytes)")
+                    return TransferResult.ERROR
+                content.nonce = checknonce
             try:
                 with content.value.open("wb") as f:
                     for chunk in response.streaming_content:
@@ -620,6 +630,13 @@ def transfer_value(
                         return TransferResult.NOTFOUND
                     elif response.status_code != 200:
                         return TransferResult.ERROR
+                    # should be only one nonce
+                    checknonce = response.get("X-NONCES", "").strip(", ")
+                    if checknonce != "":
+                        if len(checknonce) != 20:
+                            logger.warning("Invalid nonce (not 13 bytes)")
+                            return TransferResult.ERROR
+                        content.nonce = checknonce
                     with content.value.open("wb") as f:
                         for chunk in response.iter_content(512):
                             f.write(chunk)

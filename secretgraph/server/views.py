@@ -88,7 +88,11 @@ class DocumentsView(AllowCORSMixin, View):
                         yield chunk.replace(b"\0", b"\\0")
                 seperator = b"\0"
 
-        return StreamingHttpResponse(gen())
+        ret = StreamingHttpResponse(gen())
+        ret["X-NONCES"] = ",".join(
+            contents.order_by("id").values_list("nonce", flat=True)
+        )
+        return ret
 
 
 class PushView(AllowCORSMixin, UpdateView):

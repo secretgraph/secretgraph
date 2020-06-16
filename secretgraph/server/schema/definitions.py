@@ -21,10 +21,15 @@ class RegisterUrl(GenericScalar):
     """
 
 
+class ClusterGroupEntry(graphene.ObjectType):
+    group = graphene.String()
+    clusters = graphene.List(graphene.String)
+
+
 class SecretgraphConfig(ObjectType):
     hashAlgorithms = graphene.List(graphene.String)
     PBKDF2Iterations = graphene.List(graphene.Int)
-    injectedClusters = graphene.List(graphene.String)
+    injectedClusters = graphene.List(ClusterGroupEntry)
     registerUrl = graphene.Field(RegisterUrl)
     loginUrl = graphene.String(required=False)
 
@@ -35,9 +40,14 @@ class SecretgraphConfig(ObjectType):
         return settings.SECRETGRAPH_ITERATIONS
 
     def resolve_injectedClusters(self, info):
-        return getattr(
-            settings, "SECRETGRAPH_INJECT_CLUSTERS", None
-        ) or []
+        return map(
+            lambda key, val: ClusterGroupEntry(group=key, clusters=val)
+            (
+                getattr(
+                    settings, "SECRETGRAPH_INJECT_CLUSTERS", None
+                ) or {}
+            ).items()
+        )
 
     def resolve_registerUrl(self, info):
         if getattr(
