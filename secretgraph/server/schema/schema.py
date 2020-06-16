@@ -1,6 +1,5 @@
 
-import graphene
-from graphene import relay
+from graphene import relay, Field
 
 from ...utils.auth import initializeCachedResult
 from ..actions.view import fetch_clusters, fetch_contents
@@ -17,7 +16,7 @@ from .mutations import (
 
 
 class Query():
-    secretgraphConfig = graphene.Field(SecretgraphConfig)
+    secretgraphConfig = Field(SecretgraphConfig)
     cluster = relay.Node.Field(ClusterNode, authorization=AuthList())
     clusters = ClusterConnectionField(authorization=AuthList())
 

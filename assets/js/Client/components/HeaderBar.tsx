@@ -7,16 +7,34 @@ import Menu from "@material-ui/core/Menu";
 import IconButton from "@material-ui/core/IconButton";
 import MenuIcon from "@material-ui/icons/Menu";
 import AccountCircle from "@material-ui/icons/AccountCircle";
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Button from '@material-ui/core/Button';
+import DialogContent from '@material-ui/core/DialogContent';
+import TextField from '@material-ui/core/TextField';
+import FormControl from '@material-ui/core/FormControl';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import Link from '@material-ui/core/Link';
 import { Theme } from "@material-ui/core/styles";
+import { fetchQuery, Environment } from "relay-runtime";
 import { themeComponent } from "../theme";
 import { exportConfig } from "../utils/config";
 import { elements } from './elements';
+import { serverConfigQuery } from "../queries/server"
+import { findConfigQuery } from "../queries/content"
+import { MainContextInterface } from '../interfaces';
+
+import {
+  encryptingPasswordLabel,
+  encryptingPasswordHelp,
+} from "../messages";
 
 type Props = {
   openState: any,
   classes: any,
   theme: Theme,
-  mainContext: any,
+  mainContext: MainContextInterface,
   setMainContext: any,
   config: any,
   setConfig: any
@@ -27,10 +45,13 @@ const menuRef: React.RefObject<any> = React.createRef();
 function HeaderBar(props: Props) {
   const { classes, theme, mainContext, setMainContext, openState, config, setConfig } = props;
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [exportOpen, setExportOpen] = React.useState(false);
+  const [exportUrl, setExportUrl] = React.useState("");
+  const [loadingExport, setLoadingExport] = React.useState(false);
   let title: string, documenttitle: string;
   switch (mainContext.action){
     case "add":
-      let temp = elements.get(mainContext.item);
+      let temp = elements.get(mainContext.item as string);
       title = `Add: ${temp ? temp.label : 'unknown'}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
@@ -51,16 +72,61 @@ function HeaderBar(props: Props) {
       documenttitle = title;
       break;
     default:
-      title = mainContext.item;
+      title = mainContext.item as string;
       documenttitle = `Secretgraph: ${title}`;
       break;
   }
 
 
-  const exportSettings = () => {
-    exportConfig(config);
-    setMenuOpen(false);
+  const exportSettingsFile = async () => {
+    setLoadingExport(true);
+    const encryptingPw = (document.getElementById("secretgraph-export-pw") as HTMLInputElement).value;
+    const sconfig: any = await fetchQuery(
+      mainContext.environment as Environment, serverConfigQuery, {}
+    ).then((data:any) => data.secretgraphConfig).catch(
+      () => setLoadingExport(false)
+    );
+    if (!sconfig){
+      setLoadingExport(false);
+      return;
+    }
+    exportConfig(config, encryptingPw, sconfig.PBKDF2Iterations[0], "secretgraph_settings.json");
+    setExportOpen(false);
+    setLoadingExport(false);
   }
+
+  const exportSettingsUrl = async () => {
+    await navigator.clipboard.writeText(exportUrl);
+    setExportOpen(false);
+  }
+
+  const exportSettingsOpener = () => {
+    setMenuOpen(false);
+    setExportOpen(true);
+    let action : string | null = null, certhash : string | null = null;
+    for(let hash in config.configHashes) {
+      if(config.tokens[hash]){
+        action = config.tokens[hash];
+      } else if (config.certificates[hash]){
+        certhash = hash;
+      }
+    }
+    return fetchQuery(
+      mainContext.environment as Environment,
+      findConfigQuery,
+      {
+        cluster: config.configCluster,
+        authorization: [`${config.configCluster}:${action}`]
+      }
+    ).then((data:any) => {
+      console.log(data)
+      data.contentConfigQuery
+
+    });
+    //const qr = qrcode(typeNumber, errorCorrectionLevel);
+  }
+
+
   const openImporter = () => {
     setMenuOpen(false);
     setMainContext({
@@ -93,6 +159,37 @@ function HeaderBar(props: Props) {
       position="sticky"
       className={openState.drawerOpen ? classes.appBarShift : classes.appBar}
     >
+      <Dialog open={exportOpen} onClose={() => setExportOpen(false)} aria-labelledby="export-dialog-title">
+        <DialogTitle id="export-dialog-title">Export</DialogTitle>
+        <DialogContent>
+          <FormControl>
+            <TextField
+              disabled={loadingExport}
+              fullWidth={true}
+              variant="outlined"
+              label={encryptingPasswordLabel}
+              id="secretgraph-export-pw"
+              inputProps={{ 'aria-describedby': "secretgraph-export-pw-help", autoComplete: "new-password" }}
+              type="password"
+            />
+            <FormHelperText id="secretgraph-export-pw-help">{encryptingPasswordHelp}</FormHelperText>
+          </FormControl>
+          <Link href={exportUrl} onClick={exportSettingsUrl}>
+            {exportUrl}
+          </Link>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setExportOpen(false)} color="secondary" disabled={loadingExport}>
+            Close
+          </Button>
+          <Button onClick={exportSettingsUrl} color="primary" disabled={loadingExport}>
+            Export as url
+          </Button>
+          <Button onClick={exportSettingsFile} color="primary" disabled={loadingExport}>
+            Export as file
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Toolbar className={classes.appBarToolBar}>
         {sidebarButton}
         <Typography variant="h6" className={classes.appBarTitle}>
@@ -124,7 +221,7 @@ function HeaderBar(props: Props) {
         >
           <MenuItem className={!config ? classes.hidden : null} onClick={() => setMenuOpen(false)}>Update Settings</MenuItem>
           <MenuItem className={!config ? classes.hidden : null} onClick={openImporter}>Load Settings</MenuItem>
-          <MenuItem className={!config ? classes.hidden : null} onClick={exportSettings}>Export Settings</MenuItem>
+          <MenuItem className={!config ? classes.hidden : null} onClick={exportSettingsOpener}>Export Settings</MenuItem>
           <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
         </Menu>
       </Toolbar>

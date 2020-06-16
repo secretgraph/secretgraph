@@ -8,7 +8,7 @@ import { extractFiles } from 'extract-files';
 import { createClusterMutation } from "../queries/cluster";
 import { createContentMutation } from "../queries/content";
 import { ConfigInterface, ReferenceInterface, ActionInterface } from "../interfaces";
-import { b64toarr, utf8ToBinary } from "./misc";
+import { b64toarr, sortedHash } from "./misc";
 import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey } from "./encryption";
 
 
@@ -64,10 +64,10 @@ export function createContentAuth(
     usedUrl=config.baseUrl;
   }
   const checkActions =  (el: string) => [action, "manage"].includes(el);
-  for(const clusterid of clusters){
+  for(let clusterid of clusters){
     const c = config.clusters[usedUrl] ? config.clusters[usedUrl][clusterid] : undefined;
     if (c?.hashes){
-      for(const hash in c.hashes) {
+      for(let hash in c.hashes) {
         if(keysink && hash in config.certificates){
           privkeys.push(arrtorsaoepkey(b64toarr(config.certificates[hash])).then(keysink));
         } else if (c.hashes[hash].findIndex(checkActions) !== -1 && hash in config.tokens){
@@ -254,7 +254,7 @@ export function createCluster(
   });
 }
 
-export async function initializeCluster(env: Environment, config: ConfigInterface, key: string, iterations: number) {
+export async function initializeCluster(env: Environment, config: ConfigInterface, key: string, algo: string, iterations: number) {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const warpedkeyPromise = PBKDF2PW(key, nonce, iterations);
   const { publicKey, privateKey } = await crypto.subtle.generateKey(
@@ -272,14 +272,14 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     "spki" as const,
     publicKey
   ).then((keydata) => crypto.subtle.digest(
-    "SHA-512",
+    algo,
     keydata
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data)))));
 
   const warpedKey = await warpedkeyPromise;
 
   const digestActionKeyPromise = crypto.subtle.digest(
-    "SHA-512",
+    algo,
     warpedKey
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
   const warpedkeyb64 = btoa(String.fromCharCode(...warpedKey));
@@ -295,6 +295,8 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
   ).then(async (result: any) => {
     const cluster = result.updateOrCreateCluster;
     const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
+    config.configCluster = cluster.id;
+    config.configHashes = [digestActionKey, digestCertificate];
     config["clusters"][config["baseUrl"]] = {};
     config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
       hashes: {}
@@ -312,13 +314,15 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
       privateKey
     ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
     config["tokens"][digestActionKey] = warpedkeyb64;
+    const digest = await sortedHash(["type=Config"], algo);
     return await createContent(
       env,
       config,
       cluster.cluster["id"],
       new File([JSON.stringify(config)], "value"),
       [publicKey],
-      ["type=Config", "state=internal"]
+      ["type=Config", "state=internal"],
+      digest
     ).then(() => {
       return [config, cluster.cluster.id as string];
     })

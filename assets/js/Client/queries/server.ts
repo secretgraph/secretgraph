@@ -5,7 +5,10 @@ export const serverConfigQuery = graphql`
     secretgraphConfig {
       hashAlgorithms
       PBKDF2Iterations
-      injectedClusters
+      injectedClusters {
+        group
+        clusters
+      }
       registerUrl
     }
   }

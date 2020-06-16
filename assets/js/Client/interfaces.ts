@@ -1,4 +1,5 @@
 
+import { Environment } from "relay-runtime";
 
 export interface ActionInterface {
   start?: string
@@ -23,6 +24,8 @@ export interface ConfigInterface {
   tokens: { [hash: string]: string };
   clusters: { [url: string]: { [flexid: string]: ConfigClusterInterface } };
   baseUrl: string;
+  configHashes: string[];
+  configCluster: string;
 }
 
 
@@ -34,4 +37,12 @@ export interface SecretgraphEventInterface {
 export interface SnackMessageInterface {
   severity: string,
   message: string
+}
+
+export interface MainContextInterface {
+  component: null | string;
+  action: string;
+  item: null | string;
+  state: string;
+  environment: Environment | null;
 }

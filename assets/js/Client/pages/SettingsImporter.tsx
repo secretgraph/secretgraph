@@ -21,7 +21,7 @@ import Typography from '@material-ui/core/Typography';
 import Input from '@material-ui/core/Input';
 
 
-import { Environment, Network, RecordSource, Store, fetchQuery } from "relay-runtime";
+import { fetchQuery } from "relay-runtime";
 
 import { themeComponent } from "../theme";
 import {
@@ -35,7 +35,7 @@ import {
   decryptingPasswordLabel,
   decryptingPasswordHelp
 } from "../messages";
-import { ConfigInterface, SecretgraphEventInterface, SnackMessageInterface } from '../interfaces';
+import { ConfigInterface, SnackMessageInterface } from '../interfaces';
 import { loadConfig } from "../utils/config";
 import { createEnvironment, initializeCluster } from "../utils/graphql";
 import { utf8ToBinary, utf8encoder } from "../utils/misc"
@@ -84,7 +84,9 @@ function SettingsImporter(props: Props) {
         certificates: {},
         tokens: {},
         clusters: {},
-        baseUrl: providerUrl
+        baseUrl: providerUrl,
+        configHashes: [],
+        configCluster: ""
       };
       let b64key: string | null = null
       if (encryptingPw) {
@@ -93,7 +95,7 @@ function SettingsImporter(props: Props) {
         const key = crypto.getRandomValues(new Uint8Array(32));
         b64key = btoa(String.fromCharCode(... key));
       }
-      await initializeCluster(env, newConfig, b64key, sconfig.PBKDF2Iterations);
+      await initializeCluster(env, newConfig, b64key, "SHA-512", sconfig.PBKDF2Iterations);
     }
     if (!newConfig){
       return;
@@ -119,7 +121,7 @@ function SettingsImporter(props: Props) {
         setMessage({ severity: "error", message: "error while registration" });
       }
     ).finally(
-      () => setLoadingStart(false)
+      () => mainContext.action === "start" && setLoadingStart(false)
     )
   }
 
@@ -140,7 +142,9 @@ function SettingsImporter(props: Props) {
         certificates: {},
         tokens: {},
         clusters: {},
-        baseUrl: providerUrl
+        baseUrl: providerUrl,
+        configHashes: [],
+        configCluster: ""
       };
       const env = createEnvironment(newConfig.baseUrl);
       let b64key: string;
@@ -150,7 +154,7 @@ function SettingsImporter(props: Props) {
         const key = crypto.getRandomValues(new Uint8Array(32));
         b64key = btoa(String.fromCharCode(... key));
       }
-      await initializeCluster(env, newConfig, b64key, sconfig.PBKDF2Iterations);
+      await initializeCluster(env, newConfig, b64key, "SHA-512", sconfig.PBKDF2Iterations[0]);
       // TODO: handle exceptions and try with login
       setRegisterUrl(undefined);
       setConfig(newConfig);
@@ -176,7 +180,7 @@ function SettingsImporter(props: Props) {
         setMessage({ severity: "error", message: "error while registration" });
       }
     ).finally(
-      () => setLoadingStart(false)
+      () => mainContext.action === "start" && setLoadingStart(false)
     )
   }
 
@@ -191,7 +195,7 @@ function SettingsImporter(props: Props) {
     if (decryptingPw) {
       binary = utf8ToBinary(decryptingPw);
     }
-    const newConfig = await loadConfig(importFiles ? importFiles[0] : importUrl, decryptingPw);
+    const newConfig = await loadConfig(importFiles ? importFiles[0] : importUrl, binary);
     if (!newConfig){
       /**if (importUrl && !importFiles){
 
@@ -219,7 +223,7 @@ function SettingsImporter(props: Props) {
         setMessage({ severity: "error", message: "error while import" });
       }
     ).finally(
-      () => setLoadingImport(false)
+      () => mainContext.action === "start" && setLoadingImport(false)
     )
   }
 
@@ -230,8 +234,8 @@ function SettingsImporter(props: Props) {
 
   return (
     <React.Fragment>
-      <Dialog open={registerUrl ? true : false} onClose={() => loadingStart && setRegisterUrl(undefined)} aria-labelledby="register-login-dialog-title">
-        <DialogTitle id="register-login-dialog-title">Register</DialogTitle>
+      <Dialog open={registerUrl ? true : false} onClose={() => loadingStart && setRegisterUrl(undefined)} aria-labelledby="register-dialog-title">
+        <DialogTitle id="register-dialog-title">Register</DialogTitle>
         <DialogContent>
           <iframe src={registerUrl}
           />
@@ -246,8 +250,8 @@ function SettingsImporter(props: Props) {
           </Button>
         </DialogActions>
       </Dialog>
-      <Dialog open={loginUrl ? true : false} onClose={() => loadingImport && setLoginUrl(undefined)} aria-labelledby="register-login-dialog-title">
-        <DialogTitle id="register-login-dialog-title">Login</DialogTitle>
+      <Dialog open={loginUrl ? true : false} onClose={() => loadingImport && setLoginUrl(undefined)} aria-labelledby="login-dialog-title">
+        <DialogTitle id="login-dialog-title">Login</DialogTitle>
         <DialogContent>
           <iframe src={loginUrl}
           />
