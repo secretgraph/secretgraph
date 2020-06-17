@@ -112,7 +112,7 @@ export async function exportConfig(config: ConfigInterface | string, pw?: string
   );
 }
 
-export function exportConfigAsUrl(env: Environment, config: ConfigInterface, withpw: boolean = true) {
+export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwtoken?: string) {
   let action : string | null = null, certhash : string | null = null;
   for(const hash of config.configHashes) {
     if(config.tokens[hash]){
@@ -135,11 +135,11 @@ export function exportConfigAsUrl(env: Environment, config: ConfigInterface, wit
     }
   ).then((data:any) => {
     console.log(data.contents.edges[0].node.link);
-    if (withpw){
+    if (pwtoken){
+      return `${data.secretgraphConfig.baseUrl}documents/${data.contents.edges[0].node.id}/?token=${token}&token=${certhash}:${pwtoken}`
     } else {
       return `${data.contents.edges[0].node.link}?token=${token}`
     }
-    return data.contents
 
   });
 }

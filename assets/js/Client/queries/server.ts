@@ -10,6 +10,7 @@ export const serverConfigQuery = graphql`
         clusters
       }
       registerUrl
+      baseUrl
     }
   }
 `
