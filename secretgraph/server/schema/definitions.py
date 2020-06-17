@@ -117,7 +117,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         name = "Content"
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'updated', 'cluster', 'references', 'referencedBy'
+            'nonce', 'updated', 'cluster', 'references', 'referencedBy',
+            'contentHash'
         ]
 
     info = graphene.List(graphene.String)

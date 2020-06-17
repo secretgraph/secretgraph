@@ -26,12 +26,13 @@ export const createContentMutation = graphql`
 `
 
 export const findConfigQuery = graphql`
-  query contentConfigQuery($cluster: ID, $authorization: [String!]) {
+  query contentConfigQuery($cluster: ID, $contentHashes: String, $authorization: [String!]) {
     contents(
-      public: false,
+      public: false
       cluster: $cluster
-      includeInfo: ["type=Config"],
+      includeInfo: ["type=Config"]
       authorization: $authorization
+      contentHashes: contentHashes
     ) {
       edges {
         node {

@@ -124,17 +124,22 @@ export function exportConfigAsUrl(env: Environment, config: ConfigInterface, wit
   if (!action){
     return;
   }
-  console.log(`${config.configCluster}:${action}`)
+  const token = `${config.configCluster}:${action}`;
   return fetchQuery(
     env,
     findConfigQuery,
     {
       cluster: config.configCluster,
-      authorization: [`${config.configCluster}:${action}`]
+      contentHashes: certhash ? [certhash] : null,
+      authorization: [token]
     }
   ).then((data:any) => {
-    console.log(data.contents);
-    data.contents
+    console.log(data.contents.edges[0].node.link);
+    if (withpw){
+    } else {
+      return `${data.contents.edges[0].node.link}?token=${token}`
+    }
+    return data.contents
 
   });
 }
