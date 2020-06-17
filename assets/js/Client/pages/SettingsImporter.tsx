@@ -121,7 +121,7 @@ function SettingsImporter(props: Props) {
         setMessage({ severity: "error", message: "error while registration" });
       }
     ).finally(
-      () => mainContext.action === "start" && setLoadingStart(false)
+      () => setLoadingStart(false)
     )
   }
 
@@ -180,7 +180,7 @@ function SettingsImporter(props: Props) {
         setMessage({ severity: "error", message: "error while registration" });
       }
     ).finally(
-      () => mainContext.action === "start" && setLoadingStart(false)
+      () => setLoadingStart(false)
     )
   }
 
@@ -223,7 +223,7 @@ function SettingsImporter(props: Props) {
         setMessage({ severity: "error", message: "error while import" });
       }
     ).finally(
-      () => mainContext.action === "start" && setLoadingImport(false)
+      () => setLoadingImport(false)
     )
   }
 

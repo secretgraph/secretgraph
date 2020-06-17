@@ -10,6 +10,7 @@ import { createContentMutation } from "../queries/content";
 import { ConfigInterface, ReferenceInterface, ActionInterface } from "../interfaces";
 import { b64toarr, sortedHash } from "./misc";
 import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey } from "./encryption";
+import { checkConfig } from "./config";
 
 
 export const createEnvironment = (url: string) => {
@@ -295,7 +296,7 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
   ).then(async (result: any) => {
     const cluster = result.updateOrCreateCluster;
     const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
-    config.configCluster = cluster.id;
+    config.configCluster = cluster.cluster["id"];
     config.configHashes = [digestActionKey, digestCertificate];
     config["clusters"][config["baseUrl"]] = {};
     config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
@@ -314,6 +315,10 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
       privateKey
     ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
     config["tokens"][digestActionKey] = warpedkeyb64;
+    if (!checkConfig(config)){
+      console.error("invalid config created");
+      return;
+    }
     const digest = await sortedHash(["type=Config"], algo);
     return await createContent(
       env,

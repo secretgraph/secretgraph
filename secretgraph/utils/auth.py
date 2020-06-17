@@ -16,17 +16,24 @@ from .misc import calculate_hashes
 logger = logging.getLogger(__name__)
 
 
-def fetch_by_flexid(query, flexid, field="flexid"):
-    type_name = query.model.__name__
+def fetch_by_id(
+    query, flexid, prefix="", type_name=None, check_content_hash=False
+):
+    type_name = type_name or query.model.__name__
+    name = type_name
+    field = f"{prefix}flexid"
     try:
-        type_name, flexid = from_global_id(flexid)
+        name, flexid = from_global_id(flexid)
     except Exception:
         pass
     try:
         flexid = UUID(flexid)
     except ValueError:
-        raise ValueError("Malformed id")
-    if type_name and type_name != query.model.__name__:
+        if check_content_hash:
+            field = f"{prefix}contentHash"
+        else:
+            raise ValueError("Malformed id")
+    if type_name != name:
         raise ValueError(
             "No {} Id ({})".format(query.model.__name__, type_name)
         )
@@ -60,7 +67,13 @@ class LazyViewResult(object):
             return self._result_dict[item]
         if item == "authset":
             return self.authset
-        return None
+        raise KeyError()
+
+    def get(self, item, default=None):
+        try:
+            return self.__getitem__(item)
+        except KeyError:
+            return default
 
 
 def initializeCachedResult(
@@ -120,7 +133,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         if len(spitem) != 2:
             continue
 
-        clusterflexid, action_key = spitem[-2:]
+        clusterflexid, action_key = spitem
         _type = "Cluster"
         try:
             _type, clusterflexid = from_global_id(clusterflexid)
@@ -130,11 +143,12 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         try:
             clusterflexid = UUID(clusterflexid)
         except ValueError:
-            raise ValueError("Malformed cluster id")
+            continue
         try:
             action_key = base64.b64decode(action_key)
-        except Exception:
-            continue
+        finally:
+            if not isinstance(action_key, bytes) or len(action_key) != 32:
+                continue
         aesgcm = AESGCM(action_key)
         keyhashes = calculate_hashes(action_key)
 

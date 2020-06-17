@@ -32,7 +32,7 @@ def _only_owned_helper(
 def get_valid_fields(klass):
     if isinstance(klass, str):
         from django.apps import apps
-        klass = apps.get_model("secretgraph_base", klass)
+        klass = apps.get_model("secretgraph", klass)
     return {
         name: klass.__annotations__[name] for name in set(map(
             lambda x: x.name, klass._meta.get_fields()

@@ -23,7 +23,7 @@ from rdflib import Graph
 
 from ....constants import TransferResult
 from ....utils.auth import (
-    fetch_by_flexid, initializeCachedResult, retrieve_allowed_objects
+    fetch_by_id, initializeCachedResult, retrieve_allowed_objects
 )
 from ....utils.conf import get_requests_params
 from ....utils.encryption import default_padding, encrypt_into_file
@@ -131,7 +131,7 @@ def _update_or_create_content_or_key(
     request, content, objdata, authset, is_key, required_keys
 ):
     if isinstance(objdata.get("cluster"), str):
-        objdata["cluster"] = fetch_by_flexid(
+        objdata["cluster"] = fetch_by_id(
             retrieve_allowed_objects(
                 request, "update", Cluster.objects.all(), authset=authset
             )["objects"],
@@ -218,7 +218,7 @@ def _update_or_create_content_or_key(
     if chash is not None:
         if len(chash) not in (0, len_default_hash):
             raise ValueError("Invalid hashing algorithm used for contentHash")
-        if len(chash) == 0:
+        if chash == "":
             content.contentHash = None
         else:
             content.contentHash = chash
@@ -420,7 +420,7 @@ def create_key_func(
         type_name, objdata["cluster"] = from_global_id(objdata["cluster"])
         if type_name != "Cluster":
             raise ValueError("Requires Cluster id")
-        objdata["cluster"] = fetch_by_flexid(
+        objdata["cluster"] = fetch_by_id(
             initializeCachedResult(
                 request, authset=authset
             )["Cluster"]["objects"],

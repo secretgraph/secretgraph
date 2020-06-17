@@ -1,28 +1,33 @@
 import logging
 from datetime import timedelta as td
 
-from django.db.models import Q, QuerySet
+from django.db.models import Q, QuerySet, Subquery
 from django.utils import timezone
 
-from ...utils.auth import fetch_by_flexid
+from ...utils.auth import fetch_by_id
 from ..models import Content, ContentAction
 
 logger = logging.getLogger(__name__)
 
 
 def fetch_clusters(
-    query, id=None, info_include=None, info_exclude=None
+    query, id=None, info_include=None, info_exclude=None, content_hashes=None
 ) -> QuerySet:
     if id:
-        query = fetch_by_flexid(query, id)
+        query = fetch_by_id(query, id)
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(contents__info__tag__startswith=i)
 
+    hash_filters = Q()
+    for i in content_hashes or []:
+        hash_filters |= Q(contents__contentHash=i)
+
     excl_filters = Q()
     for i in info_exclude or []:
         excl_filters |= Q(contents__info__tag__startswith=i)
-    return query.filter(~excl_filters & incl_filters)
+
+    return query.filter(~excl_filters & incl_filters & hash_filters)
 
 
 class ContentFetchQueryset(QuerySet):
@@ -30,6 +35,7 @@ class ContentFetchQueryset(QuerySet):
         Tracks usage of contents and mark accordingly Content for removal
     """
     only_direct_fetch_trigger = False
+    actions = None
 
     def __init__(
         self,
@@ -38,12 +44,13 @@ class ContentFetchQueryset(QuerySet):
         only_direct_fetch_action_trigger=False,
         **kwargs
     ):
-        actions = actions or query.actions
-        if actions:
+        if actions is None:
+            actions = getattr(query, "actions", None)
+        if actions is not None:
             self.actions = actions
-            kwargs["model"] = kwargs.get("model", None) or query.model
         self.only_direct_fetch_action_trigger = \
             only_direct_fetch_action_trigger
+        kwargs["model"] = kwargs.get("model", None) or query.model
         super().__init__(query=query, **kwargs)
 
     def _clone(self):
@@ -62,63 +69,84 @@ class ContentFetchQueryset(QuerySet):
             Trigger fetch handling stuff
             fetch=delete after read
         """
-        assert self.secretgraph_result
+        assert self.actions is not None, "actions is None"
         if self.only_direct_fetch_action_trigger and not direct:
             return objects
-        if isinstance(objects, Content):
-            used_actions = self.actions.filter(
-                contentAction__content=objects
-            ).select_related("contentAction")
+        if objects is None:
+            return objects
+        elif isinstance(objects, (Content,)):
+            used_actions = ContentAction.objects.filter(
+                content=objects,
+                action__in=self.actions
+            )
         else:
-            used_actions = self.actions.filter(
-                contentAction__content__in=objects
-            ).select_related("contentAction")
-        cactions = ContentAction.objects.filter(action__in=used_actions)
-        cactions.update(used=True)
-        markForDestruction = timezone.now() + td(hours=8)
-        contents = Content.objects.filter(
-            actions__in=cactions.filter(group="fetch", used=True)
-        ).exclude(actions__in=ContentAction.objects.filter(
-            group="fetch", used=False
-        ))
-        contents.update(markForDestruction=markForDestruction)
+            # is iterator
+            if hasattr(objects, "__next__"):
+                objects = list(objects)
+            used_actions = ContentAction.objects.filter(
+                content__in=objects,
+                action__in=self.actions
+            )
+        if used_actions:
+            used_actions.update(used=True)
+            markForDestruction = timezone.now() + td(hours=8)
+            Content.objects.filter(
+                Q(markForDestruction=None) |
+                Q(markForDestruction__gt=markForDestruction),
+                id__in=Subquery(
+                    used_actions.values("id")
+                )
+            ).exclude(actions__in=ContentAction.objects.filter(
+                group="fetch", used=False
+            )).update(markForDestruction=markForDestruction)
         return objects
 
     def __iter__(self):
         for i in self.fetch_action_trigger(super().__iter__(), False):
             yield i
 
-    def __len__(self):
-        return self._originalqs.__len__()
-
     def __getitem__(self, key):
         return self.fetch_action_trigger(
-            self._originalqs.__getitem__(key), False
+            super().__getitem__(key), False
         )
-
-    def __getattr__(self, key):
-        return getattr(self._originalqs, key)
 
     def get(self, *args, **kwargs):
         return self.fetch_action_trigger(
-            self._originalqs.get(*args, **kwargs), False
+            super().get(*args, **kwargs), False
         )
 
     def first(self):
-        return self.fetch_action_trigger(self._originalqs.first(), False)
+        return self.fetch_action_trigger(super().first(), False)
+
+    def last(self):
+        return self.fetch_action_trigger(super().last(), False)
+
+    def earliest(self):
+        return self.fetch_action_trigger(super().earliest(), False)
+
+    def latest(self):
+        return self.fetch_action_trigger(super().latest(), False)
 
 
 def fetch_contents(
-    query, actions, id=None, info_include=None, info_exclude=None
+    query, actions, id=None, info_include=None, info_exclude=None,
+    content_hashes=None
 ) -> QuerySet:
+    assert actions is not None, "actions is None"
     if id:
-        query = fetch_by_flexid(query, id)
+        query = fetch_by_id(query, id, check_content_hash=True)
     incl_filters = Q()
     for i in info_include or []:
         incl_filters |= Q(info__tag__startswith=i)
 
+    hash_filters = Q()
+    for i in content_hashes or []:
+        hash_filters |= Q(contentHash=i)
+
     excl_filters = Q()
     for i in info_exclude or []:
         excl_filters |= Q(info__tag__startswith=i)
-    query = query.filter(~excl_filters & incl_filters)
-    return ContentFetchQueryset(query, actions)
+    query = query.filter(
+        ~excl_filters & incl_filters & hash_filters
+    )
+    return ContentFetchQueryset(query.query, actions=actions)

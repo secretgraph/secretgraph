@@ -76,14 +76,15 @@ def generateFlexid(sender, instance, force=False, **kwargs):
             except IntegrityError:
                 pass
 
-        if issubclass(sender, Content):
-            fname = instance.file.name
-            instance.file.save("", instance.file.open("rb"))
-            instance.file.storage.delete(fname)
-            instance.info.filter(tag__startswith="id=").update(
-                tag=f"id={instance.flexid}"
-            )
-        elif issubclass(sender, Cluster) and force:
+        # if issubclass(sender, Content):
+        #    fname = instance.file.name
+        #    instance.file.save("", instance.file.open("rb"))
+        #    instance.file.storage.delete(fname)
+        #    instance.info.filter(tag__startswith="id=").update(
+        #        tag=f"id={instance.flexid}"
+        #    )
+        # el
+        if issubclass(sender, Cluster) and force:
             for c in instance.contents.all():
                 generateFlexid(Content, c, True)
 

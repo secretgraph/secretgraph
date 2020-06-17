@@ -19,7 +19,7 @@ import Link from '@material-ui/core/Link';
 import { Theme } from "@material-ui/core/styles";
 import { fetchQuery, Environment } from "relay-runtime";
 import { themeComponent } from "../theme";
-import { exportConfig } from "../utils/config";
+import { exportConfig, exportConfigAsUrl } from "../utils/config";
 import { elements } from './elements';
 import { serverConfigQuery } from "../queries/server"
 import { findConfigQuery } from "../queries/content"
@@ -100,29 +100,10 @@ function HeaderBar(props: Props) {
     setExportOpen(false);
   }
 
-  const exportSettingsOpener = () => {
+  const exportSettingsOpener = async () => {
     setMenuOpen(false);
     setExportOpen(true);
-    let action : string | null = null, certhash : string | null = null;
-    for(let hash in config.configHashes) {
-      if(config.tokens[hash]){
-        action = config.tokens[hash];
-      } else if (config.certificates[hash]){
-        certhash = hash;
-      }
-    }
-    return fetchQuery(
-      mainContext.environment as Environment,
-      findConfigQuery,
-      {
-        cluster: config.configCluster,
-        authorization: [`${config.configCluster}:${action}`]
-      }
-    ).then((data:any) => {
-      console.log(data)
-      data.contentConfigQuery
-
-    });
+    await exportConfigAsUrl(mainContext.environment as Environment, config);
     //const qr = qrcode(typeNumber, errorCorrectionLevel);
   }
 

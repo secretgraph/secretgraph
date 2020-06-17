@@ -1,11 +1,12 @@
+from django.conf import settings
+from django.http import FileResponse, Http404, StreamingHttpResponse
 from django.views.generic import View
 from django.views.generic.edit import UpdateView
-from django.http import StreamingHttpResponse, Http404
 from graphene_file_upload.django import FileUploadGraphQLView
 
+from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..utils.encryption import iter_decrypt_contents
-from ..utils.auth import initializeCachedResult
-from .actions.view import fetch_contents, fetch_clusters
+from .actions.view import fetch_clusters, fetch_contents
 from .forms import PushForm, UpdateForm
 
 
@@ -23,7 +24,7 @@ class AllowCORSMixin(object):
         return response
 
 
-class ClustersView(AllowCORSMixin, View):
+class ClustersView(View):
 
     def get(self, request, *args, **kwargs):
         # for authset
@@ -37,7 +38,8 @@ class ClustersView(AllowCORSMixin, View):
             )["Cluster"]["objects"],
             kwargs.get("id"),
             info_include=request.GET.getlist("inclInfo"),
-            info_exclude=request.GET.getlist("exclInfo")
+            info_exclude=request.GET.getlist("exclInfo"),
+            content_hashes=request.GET.getlist("contentHash")
         )
         if not clusters:
             raise Http404()
@@ -53,7 +55,7 @@ class ClustersView(AllowCORSMixin, View):
         return StreamingHttpResponse(gen())
 
 
-class DocumentsView(AllowCORSMixin, View):
+class DocumentsView(View):
 
     def get(self, request, *args, **kwargs):
         # for decryptset and authset
@@ -61,13 +63,16 @@ class DocumentsView(AllowCORSMixin, View):
             " ", ""
         ).split(","))
         authset.update(request.GET.getlist("token"))
+        result = initializeCachedResult(
+            request, authset=authset
+        )["Content"]
         contents = fetch_contents(
-            initializeCachedResult(
-                request, authset=authset
-            )["Content"]["objects"],
+            result["objects"],
+            result["actions"],
             kwargs.get("id"),
             info_include=request.GET.getlist("inclInfo"),
-            info_exclude=request.GET.getlist("exclInfo")
+            info_exclude=request.GET.getlist("exclInfo"),
+            content_hashes=request.GET.getlist("contentHash")
         )
         if not contents:
             raise Http404()
@@ -88,11 +93,31 @@ class DocumentsView(AllowCORSMixin, View):
                         yield chunk.replace(b"\0", b"\\0")
                 seperator = b"\0"
 
-        ret = StreamingHttpResponse(gen())
-        ret["X-NONCES"] = ",".join(
-            contents.order_by("id").values_list("nonce", flat=True)
-        )
-        return ret
+        return StreamingHttpResponse(gen())
+
+
+class RawView(View):
+    def get(self, request, *args, **kwargs):
+        # for decryptset and authset
+        authset = set(request.headers.get("Authorization", "").replace(
+            " ", ""
+        ).split(","))
+        authset.update(request.GET.getlist("token"))
+        result = initializeCachedResult(
+            request, authset=authset
+        )["Content"]
+        content = None
+        try:
+            content = fetch_by_id(
+                result["objects"], kwargs["id"]
+            ).first()
+        finally:
+            if not content:
+                raise Http404()
+        response = FileResponse(content.value.open("rb"))
+        response["X-NONCE"] = content.nonce
+        response["X-ITERATIONS"] = ",".join(settings.SECRETGRAPH_ITERATIONS)
+        return response
 
 
 class PushView(AllowCORSMixin, UpdateView):

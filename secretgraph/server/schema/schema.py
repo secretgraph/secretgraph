@@ -37,11 +37,11 @@ class Query():
         ).first()
 
     def resolve_content(self, info, id, authorization=None, **kwargs):
+        result = initializeCachedResult(
+            info.context, authset=authorization
+        )["Content"]
         return fetch_contents(
-            initializeCachedResult(
-                info.context, authset=authorization
-            )["Content"]["objects"],
-            str(id)
+            result["objects"], result["actions"], str(id)
         ).first()
 
 

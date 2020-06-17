@@ -39,6 +39,7 @@ export const findConfigQuery = graphql`
           nonce
           link
           info
+          contentHash
           availableActions {
             keyHash
             type

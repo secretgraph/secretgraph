@@ -1,14 +1,14 @@
-from uuid import UUID
-
 import graphene
+from django.db.models import Subquery
 from django.conf import settings
 from django.shortcuts import resolve_url
+from django.urls import reverse
 from graphene import ObjectType, relay
 from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
 
-from ...utils.auth import initializeCachedResult
+from ...utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
 
@@ -80,14 +80,10 @@ class FlexidMixin():
     @classmethod
     def get_node(cls, info, id):
         queryset = cls.get_queryset(cls._meta.model.objects, info)
-        try:
-            id = UUID(id)
-        except ValueError:
-            raise ValueError("Malformed id")
-        try:
-            return queryset.get(flexid=id)
-        except cls._meta.model.DoesNotExist:
-            return None
+        return fetch_by_id(
+            queryset,
+            id
+        ).first()
 
 
 class ActionEntry(graphene.ObjectType):
@@ -98,12 +94,13 @@ class ActionEntry(graphene.ObjectType):
 class ActionMixin(object):
     availableActions = graphene.List(ActionEntry)
 
-    def resolve_availableActions(self, info, result_key1, result_key2):
+    def resolve_availableActions(self, info):
+        name = self.__class__.__name__
         result = getattr(info.context, "secretgraphResult", {}).get(
-            result_key1, {}
+            name, {}
         )
         resultval = result.get(
-            result_key2, {}
+            "action_types_%ss" % name.lower(), {}
         ).get(self.id, {}).items()
         # only show some actions
         resultval = filter(lambda x: x[1][0] in {
@@ -135,12 +132,16 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.info.all().values_list("tag", flat=True)
 
     def resolve_link(self, info):
-        # url to
-        return self.file.url
+        # path to raw view
+        return reverse(
+            "secretgraph-rawcontentvalue", kwargs={
+                "id": self.flexid
+            }
+        )
 
     def resolve_availableActions(self, info):
-        return super().resolve_availableActions(
-            self, info, "Content", "action_types_contents"
+        return ActionMixin.resolve_availableActions(
+            self, info
         )
 
 
@@ -152,6 +153,9 @@ class ContentConnectionField(DjangoConnectionField):
         kwargs.setdefault("excludeInfo", graphene.List(
             graphene.String, required=False
         ))
+        kwargs.setdefault("contentHashes", graphene.List(
+            graphene.String, required=False
+        ))
         kwargs.setdefault("public", graphene.Boolean(required=False))
         kwargs.setdefault("cluster", graphene.ID(required=False))
         super().__init__(type, *args, **kwargs)
@@ -161,28 +165,29 @@ class ContentConnectionField(DjangoConnectionField):
         public = args.get("public")
         cluster = args.get("cluster")
         if cluster:
-            _type = "Cluster"
-            try:
-                _type, cluster = from_global_id(cluster)[1]
-            except Exception:
-                pass
-            if _type != "Cluster":
-                raise ValueError("Not a cluster id")
-            queryset = queryset.filter(cluster__flexid=cluster)
+            queryset = fetch_by_id(
+                queryset, cluster, prefix="cluster__", type_name="Cluster"
+            )
         if public in {True, False}:
             if public:
                 queryset = queryset.filter(info__tag="state=public")
             else:
                 queryset = queryset.exclude(info__tag="state=public")
+        result = initializeCachedResult(
+            info.context, authset=args.get("authorization")
+        )["Content"]
+        queryset = queryset.filter(
+            id__in=Subquery(
+                result["objects"].values("id")
+            )
+        )
 
         return fetch_contents(
-            queryset.filter(
-                id__in=initializeCachedResult(
-                    info.context, authset=args.get("authorization")
-                )["Content"]["objects"].values_list("id", flat=True)
-            ),
+            queryset,
+            result["actions"],
             info_include=args.get("infoInclude"),
-            info_exclude=args.get("infoExclude")
+            info_exclude=args.get("infoExclude"),
+            content_hashes=args.get("contentHashes")
         )
 
 
@@ -222,12 +227,15 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     def resolve_contents(
         self, info, **kwargs
     ):
+        result = initializeCachedResult(
+            info.context, authset=kwargs.get("authorization")
+        )["Content"]
         return fetch_contents(
-            initializeCachedResult(
-                info.context, authset=kwargs.get("authorization")
-            )["Content"]["objects"],
+            result["objects"],
+            result["actions"],
             info_include=kwargs.get("infoInclude"),
-            info_exclude=kwargs.get("infoExclude")
+            info_exclude=kwargs.get("infoExclude"),
+            content_hashes=kwargs.get("contentHashes")
         )
 
     def resolve_user(
@@ -238,13 +246,22 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.user
 
     def resolve_availableActions(self, info):
-        return super().resolve_availableActions(
-            self, info, "Cluster", "action_types_clusters"
+        return ActionMixin.resolve_availableActions(
+            self, info
         )
 
 
 class ClusterConnectionField(DjangoConnectionField):
     def __init__(self, type=ClusterNode, *args, **kwargs):
+        kwargs.setdefault("includeInfo", graphene.List(
+            graphene.String, required=False
+        ))
+        kwargs.setdefault("excludeInfo", graphene.List(
+            graphene.String, required=False
+        ))
+        kwargs.setdefault("contentHashes", graphene.List(
+            graphene.String, required=False
+        ))
         kwargs.setdefault("user", graphene.ID(required=False))
         kwargs.setdefault("public", graphene.Boolean(required=False))
         kwargs.setdefault("featured", graphene.Boolean(required=False))
@@ -262,23 +279,28 @@ class ClusterConnectionField(DjangoConnectionField):
                 not getattr(settings, "AUTH_USER_MODEL", None) and
                 not getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
             ):
-                raise ValueError("Users are not supported")
-            try:
-                user = from_global_id(user)[1]
-            except Exception:
-                pass
-            queryset = queryset.filter(user__pk=user)
+                # users are not supported so ignore them
+                user = None
+            else:
+                try:
+                    user = from_global_id(user)[1]
+                except Exception:
+                    pass
+                queryset = queryset.filter(user__pk=user)
         if public in {True, False}:
             queryset = queryset.filter(public=public)
 
         return fetch_clusters(
             queryset.filter(
-                id__in=initializeCachedResult(
-                    info.context, authset=args.get("authorization")
-                )["Cluster"]["objects"].values_list("id", flat=True)
+                id__in=Subquery(
+                    initializeCachedResult(
+                        info.context, authset=args.get("authorization")
+                    )["Cluster"]["objects"].values("id")
+                )
             ),
             info_include=args.get("infoInclude"),
-            info_exclude=args.get("infoExclude")
+            info_exclude=args.get("infoExclude"),
+            content_hashes=args.get("contentHashes")
         )
 
 

@@ -1,8 +1,7 @@
 from django.urls import path
 from .views import ClustersView, DocumentsView
 
-app_name = "secretgraph_base"
-
+app_name = "secretgraph"
 
 urlpatterns = [
     path(
@@ -24,5 +23,5 @@ urlpatterns = [
         "contents/<slug:id>/",
         DocumentsView.as_view(),
         name="documents"
-    )
+    ),
 ]

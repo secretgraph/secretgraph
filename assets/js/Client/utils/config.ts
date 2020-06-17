@@ -2,6 +2,8 @@ import { ConfigInterface } from "../interfaces";
 import { PBKDF2PW, arrtogcmkey } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
 import { saveAs } from 'file-saver';
+import { findConfigQuery } from "../queries/content"
+import { fetchQuery, Environment } from "relay-runtime";
 
 
 export function checkConfig(config: ConfigInterface | null | undefined) {
@@ -35,18 +37,18 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
   if ( obj instanceof Storage ) {
     return loadConfigSync(obj);
   } else if ( obj instanceof File ) {
-    console.log("sdsd1")
     let parsedResult = JSON.parse(await obj.text());
-    console.log("sdsd2")
     if (pw && parsedResult.data){
+      const nonce = b64toarr(parsedResult.nonce);
+      const gcmkey = await PBKDF2PW(pw, nonce, parsedResult.iterations).then((data) => arrtogcmkey(data));
       parsedResult = await crypto.subtle.decrypt(
         {
           name: "AES-GCM",
-          iv: parsedResult.nonce
+          iv: nonce
         },
-        await PBKDF2PW(pw, parsedResult.nonce, parsedResult.iterations).then((data) => arrtogcmkey(data)),
+        gcmkey,
         b64toarr(parsedResult.data)
-      ).then((data) => String.fromCharCode(...new Uint8Array(data)));
+      ).then((data) => JSON.parse(String.fromCharCode(...new Uint8Array(data))));
     }
     return checkConfig(parsedResult);
   } else {
@@ -108,4 +110,31 @@ export async function exportConfig(config: ConfigInterface | string, pw?: string
       {type: "text/plain;charset=utf-8"}
     )
   );
+}
+
+export function exportConfigAsUrl(env: Environment, config: ConfigInterface, withpw: boolean = true) {
+  let action : string | null = null, certhash : string | null = null;
+  for(const hash of config.configHashes) {
+    if(config.tokens[hash]){
+      action = config.tokens[hash];
+    } else if (config.certificates[hash]){
+      certhash = hash;
+    }
+  }
+  if (!action){
+    return;
+  }
+  console.log(`${config.configCluster}:${action}`)
+  return fetchQuery(
+    env,
+    findConfigQuery,
+    {
+      cluster: config.configCluster,
+      authorization: [`${config.configCluster}:${action}`]
+    }
+  ).then((data:any) => {
+    console.log(data.contents);
+    data.contents
+
+  });
 }
