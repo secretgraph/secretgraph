@@ -15,7 +15,7 @@ export interface ReferenceInterface {
 }
 
 export interface ConfigClusterInterface {
-  hashes: { [hash: string]: string[] }
+  hashes: { [hash: string]: string[] };
 }
 
 
@@ -26,6 +26,7 @@ export interface ConfigInterface {
   baseUrl: string;
   configHashes: string[];
   configCluster: string;
+  hashAlgorithm: string;
 }
 
 

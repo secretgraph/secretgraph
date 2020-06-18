@@ -26,9 +26,11 @@ export const createContentMutation = graphql`
 `
 
 export const findConfigQuery = graphql`
-  query contentConfigQuery($cluster: ID, $contentHashes: String, $authorization: [String!]) {
+  query contentConfigQuery($cluster: ID, $authorization: [String!]) {
     secretgraphConfig {
       baseUrl
+      PBKDF2Iterations
+      hashAlgorithms
     }
     contents(
       public: false
@@ -47,6 +49,27 @@ export const findConfigQuery = graphql`
           availableActions {
             keyHash
             type
+          }
+          references(group: "key") {
+            edges {
+              node {
+                extra
+                target {
+                  referencedBy(group: "private_key") {
+                    edges {
+                      node {
+                        extra
+                        target {
+                          id
+                          nonce
+                          link
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

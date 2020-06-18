@@ -40,6 +40,7 @@ import { loadConfig } from "../utils/config";
 import { createEnvironment, initializeCluster } from "../utils/graphql";
 import { utf8ToBinary, utf8encoder } from "../utils/misc"
 import { serverConfigQuery } from "../queries/server"
+import { mapHashNames } from "../constants"
 
 type Props = {
   classes: any,
@@ -59,6 +60,7 @@ function SettingsImporter(props: Props) {
   const [registerUrl, setRegisterUrl] = React.useState(undefined);
   const [loadingStart, setLoadingStart] = React.useState(false);
   const [loadingImport, setLoadingImport] = React.useState(false);
+  const [oldConfig, setOldConfig] = React.useState(null) as [ConfigInterface | null, any];
   const [loginUrl, setLoginUrl] = React.useState(undefined);
   const [message, setMessage] = React.useState(undefined) as [SnackMessageInterface | undefined, any];
   const mainElement = document.getElementById("content-main");
@@ -79,6 +81,11 @@ function SettingsImporter(props: Props) {
       return;
     }
     const sconfig = result.secretgraphConfig;
+    const hashAlgo = mapHashNames[sconfig.hashAlgorithms[0]];
+    if (!hashAlgo){
+      setMessage({ severity: "warning", message: "unsupported hash algorithm" });
+      return
+    }
     if (event.pingCreate){
       newConfig = {
         certificates: {},
@@ -86,7 +93,8 @@ function SettingsImporter(props: Props) {
         clusters: {},
         baseUrl: providerUrl,
         configHashes: [],
-        configCluster: ""
+        configCluster: "",
+        hashAlgorithm: hashAlgo
       };
       let b64key: string | null = null
       if (encryptingPw) {
@@ -95,7 +103,7 @@ function SettingsImporter(props: Props) {
         const key = crypto.getRandomValues(new Uint8Array(32));
         b64key = btoa(String.fromCharCode(... key));
       }
-      await initializeCluster(env, newConfig, b64key, "SHA-512", sconfig.PBKDF2Iterations);
+      await initializeCluster(env, newConfig, b64key, sconfig.PBKDF2Iterations);
     }
     if (!newConfig){
       return;
@@ -111,7 +119,7 @@ function SettingsImporter(props: Props) {
   }
 
   const handleSecretgraphEvent = (event: any) => {
-    const oldConfig = config;
+    setOldConfig(config);
     setConfig(null);
     setLoadingStart(true);
     return handleSecretgraphEvent_inner(event).catch(
@@ -129,7 +137,6 @@ function SettingsImporter(props: Props) {
     const providerUrl: string = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
     const encryptingPw = (document.getElementById("secretgraph-encrypting") as HTMLInputElement).value;
     const env = createEnvironment(providerUrl);
-    let clusterId: string;
     const result: any = await fetchQuery(
       env, serverConfigQuery, {}
     );
@@ -137,6 +144,11 @@ function SettingsImporter(props: Props) {
       return;
     }
     const sconfig = result.secretgraphConfig;
+    const hashAlgo = mapHashNames[sconfig.hashAlgorithms[0]];
+    if (!hashAlgo){
+      setMessage({ severity: "warning", message: "unsupported hash algorithm" });
+      return
+    }
     if (sconfig.registerUrl === true) {
       let newConfig: ConfigInterface = {
         certificates: {},
@@ -144,7 +156,8 @@ function SettingsImporter(props: Props) {
         clusters: {},
         baseUrl: providerUrl,
         configHashes: [],
-        configCluster: ""
+        configCluster: "",
+        hashAlgorithm: hashAlgo
       };
       const env = createEnvironment(newConfig.baseUrl);
       let b64key: string;
@@ -154,7 +167,9 @@ function SettingsImporter(props: Props) {
         const key = crypto.getRandomValues(new Uint8Array(32));
         b64key = btoa(String.fromCharCode(... key));
       }
-      await initializeCluster(env, newConfig, b64key, "SHA-512", sconfig.PBKDF2Iterations[0]);
+      await initializeCluster(
+        env, newConfig, b64key, sconfig.PBKDF2Iterations[0]
+      );
       // TODO: handle exceptions and try with login
       setRegisterUrl(undefined);
       setConfig(newConfig);
@@ -170,7 +185,7 @@ function SettingsImporter(props: Props) {
     }
   }
   const handleStart = () => {
-    const oldConfig = config;
+    setOldConfig(config);
     setConfig(null);
     setLoadingStart(true);
     return handleStart_inner().catch(
@@ -213,7 +228,7 @@ function SettingsImporter(props: Props) {
     });
   }
   const handleImport = () => {
-    const oldConfig = config;
+    setOldConfig(config);
     setConfig(null);
     setLoadingImport(true);
     return handleImport_inner().catch(

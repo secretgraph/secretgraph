@@ -1,4 +1,5 @@
 import graphene
+from graphene.relay import node as relay_node
 from graphene_file_upload.scalars import Upload
 
 
@@ -7,6 +8,27 @@ class AuthList(graphene.List):
         self, of_type=graphene.String, *args, required=False, **kwargs
     ):
         super().__init__(of_type, *args, required=required, **kwargs)
+
+
+class AuthRelayField(relay_node.NodeField):
+    def __init__(
+        self, type=False, node=relay_node.Node,
+        deprecation_reason=None, name=None, **kwargs
+    ):
+        assert issubclass(node, relay_node.Node), \
+               "NodeField can only operate in Nodes"
+        self.node_type = node
+        self.field_type = type
+        kwargs.setdefault("authorization", AuthList())
+        kwargs.setdefault("description", "The ID of the object")
+
+        super(relay_node.NodeField, self).__init__(
+            # If we don's specify a type, the field type will be the node
+            # interface
+            type or node,
+            id=graphene.ID(required=True),
+            **kwargs
+        )
 
 
 class ActionInput(graphene.InputObjectType):

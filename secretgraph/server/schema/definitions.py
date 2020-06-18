@@ -42,7 +42,7 @@ class SecretgraphConfig(ObjectType):
 
     def resolve_injectedClusters(self, info):
         return map(
-            lambda key, val: ClusterGroupEntry(group=key, clusters=val)
+            lambda key, val: ClusterGroupEntry(group=key, clusters=val),
             (
                 getattr(
                     settings, "SECRETGRAPH_INJECT_CLUSTERS", None
@@ -118,18 +118,148 @@ class ActionMixin(object):
         )
 
 
+class ContentReferenceNode(DjangoObjectType):
+    class Meta:
+        model = ContentReference
+        name = "ContentReference"
+        interfaces = (relay.Node,)
+        fields = ['source', 'target', 'group', 'extra', 'deleteRecursive']
+
+    def resolve_id(self, info):
+        return f"{self.source.flexid}:{self.target.flexid}:{self.group}"
+
+    @classmethod
+    def get_node(cls, info, id, authorization=None):
+        result = initializeCachedResult(
+            info.context, authset=authorization
+        )["Content"]
+        queryset = cls.get_queryset(cls._meta.model.objects, info)
+        try:
+            source, target, group = id.split(":", 2)
+            return queryset.get(
+                source__in=fetch_contents(
+                    result["objects"],
+                    result["actions"],
+                    source,
+                    no_fetch=True
+                ),
+                target__in=fetch_contents(
+                    result["objects"],
+                    result["actions"],
+                    target,
+                    no_fetch=True
+                ),
+                group=group,
+
+            )
+        except cls._meta.model.DoesNotExist:
+            return None
+        except ValueError:
+            return None
+
+    def resolve_source(
+        self, info, authorization=None, **kwargs
+    ):
+        result = initializeCachedResult(
+            info.context, authset=authorization
+        )["Content"]
+        return fetch_contents(
+            result["objects"].filter(references=self),
+            result["actions"],
+        ).first()
+
+    def resolve_target(
+        self, info, authorization=None, **kwargs
+    ):
+        result = initializeCachedResult(
+            info.context, authset=authorization
+        )["Content"]
+        return fetch_contents(
+            result["objects"].filter(referencedBy=self),
+            result["actions"],
+        ).first()
+
+
+class ContentReferenceConnectionField(DjangoConnectionField):
+    def __init__(
+        self, of_type=ContentReferenceNode, *args, **kwargs
+    ):
+        kwargs.setdefault("includeInfo", graphene.List(
+            graphene.String, required=False
+        ))
+        kwargs.setdefault("excludeInfo", graphene.List(
+            graphene.String, required=False
+        ))
+        kwargs.setdefault("contentHashes", graphene.List(
+            graphene.String, required=False
+        ))
+        kwargs.setdefault("group", graphene.List(
+            graphene.String, required=False
+        ))
+        super().__init__(of_type, *args, **kwargs)
+
+
 class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     class Meta:
         model = Content
         name = "Content"
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'updated', 'cluster', 'references', 'referencedBy',
-            'contentHash'
+            'nonce', 'updated', 'cluster', 'contentHash'
         ]
-
+    references = ContentReferenceConnectionField()
+    referencedBy = ContentReferenceConnectionField()
     info = graphene.List(graphene.String)
     link = graphene.String()
+
+    @classmethod
+    def get_node(cls, info, id, authorization=None, **kwargs):
+        result = initializeCachedResult(
+            info.context, authset=authorization
+        )["Content"]
+        return fetch_contents(
+            result["objects"],
+            result["actions"],
+            str(id)
+        ).first()
+
+    def resolve_references(
+        self, info, authorization=None, group=None, **kwargs
+    ):
+        result = initializeCachedResult(
+            info.context, authset=authorization
+        )["Content"]
+        return ContentReference.objects.filter(
+            source=self,
+            target__in=fetch_contents(
+                result["objects"],
+                result["actions"],
+                info_include=kwargs.get("infoInclude"),
+                info_exclude=kwargs.get("infoExclude"),
+                content_hashes=kwargs.get("contentHashes"),
+                no_fetch=True
+            ),
+            **({} if group is None else {"group": group})
+        )
+
+    def resolve_referencedBy(
+        self, info, authorization=None, group=None, **kwargs
+    ):
+        result = initializeCachedResult(
+            info.context, authset=authorization
+        )["Content"]
+        return ContentReference.objects.filter(
+            target=self,
+            self__in=fetch_contents(
+                result["objects"],
+                result["actions"],
+                info_include=kwargs.get("infoInclude"),
+                info_exclude=kwargs.get("infoExclude"),
+                content_hashes=kwargs.get("contentHashes"),
+                no_fetch=True
+            ),
+            **({} if group is None else {"group": group})
+        )
 
     def resolve_cluster(self, info, authorization=None):
         return initializeCachedResult(
@@ -199,30 +329,6 @@ class ContentConnectionField(DjangoConnectionField):
         )
 
 
-class ContentReferenceNode(DjangoObjectType):
-    class Meta:
-        model = ContentReference
-        name = "ContentReference"
-        interfaces = (relay.Node,)
-        fields = ['source', 'target', 'group', 'extra', 'deleteRecursive']
-
-    def resolve_id(self, info):
-        return f"{self.source.flexid}:{self.target.flexid}:{self.group}"
-
-    @classmethod
-    def get_node(cls, info, id):
-        queryset = cls.get_queryset(cls._meta.model.objects, info)
-        try:
-            source, target, group = id.split(":", 2)
-            return queryset.get(
-                source__flexid=source, target__flexid=target, group=group
-            )
-        except cls._meta.model.DoesNotExist:
-            return None
-        except ValueError:
-            return None
-
-
 class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     class Meta:
         model = Cluster
@@ -231,6 +337,15 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         fields = ['publicInfo', 'group']
     contents = ContentConnectionField()
     user = relay.GlobalID(required=False)
+
+    @classmethod
+    def get_node(cls, info, id, authorization=None, **kwargs):
+        return fetch_clusters(
+            initializeCachedResult(
+                info.context, authset=authorization
+            )["Cluster"]["objects"],
+            str(id)
+        ).first()
 
     def resolve_contents(
         self, info, **kwargs

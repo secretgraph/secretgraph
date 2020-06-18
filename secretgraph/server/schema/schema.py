@@ -1,9 +1,7 @@
 
-from graphene import relay, Field
+from graphene import Field
 
-from ...utils.auth import initializeCachedResult
-from ..actions.view import fetch_clusters, fetch_contents
-from .arguments import AuthList
+from .arguments import AuthList, AuthRelayField
 from .definitions import (
     ClusterConnectionField, ClusterNode, ContentConnectionField, ContentNode,
     SecretgraphConfig
@@ -17,32 +15,22 @@ from .mutations import (
 
 class Query():
     secretgraphConfig = Field(SecretgraphConfig)
-    cluster = relay.Node.Field(ClusterNode, authorization=AuthList())
+    cluster = AuthRelayField(ClusterNode)
     clusters = ClusterConnectionField(authorization=AuthList())
 
-    content = relay.Node.Field(ContentNode, authorization=AuthList())
+    content = AuthRelayField(ContentNode)
     contents = ContentConnectionField(authorization=AuthList())
 
     def resolve_secretgraphConfig(self, info, **kwargs):
         return SecretgraphConfig()
 
     def resolve_cluster(
-        self, info, id, authorization=None, **kwargs
+        self, info, **kwargs
     ):
-        return fetch_clusters(
-            initializeCachedResult(
-                info.context, authset=authorization
-            )["Cluster"]["objects"],
-            str(id)
-        ).first()
+        return ClusterNode.get_node(info, **kwargs)
 
-    def resolve_content(self, info, id, authorization=None, **kwargs):
-        result = initializeCachedResult(
-            info.context, authset=authorization
-        )["Content"]
-        return fetch_contents(
-            result["objects"], result["actions"], str(id)
-        ).first()
+    def resolve_content(self, info, **kwargs):
+        return ContentNode.get_node(info, **kwargs)
 
 
 class Mutation():

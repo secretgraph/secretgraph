@@ -1,10 +1,13 @@
+
+import { saveAs } from 'file-saver';
+import { fetchQuery, Environment } from "relay-runtime";
+
 import { ConfigInterface } from "../interfaces";
 import { PBKDF2PW, arrtogcmkey } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
-import { saveAs } from 'file-saver';
-import { findConfigQuery } from "../queries/content"
-import { fetchQuery, Environment } from "relay-runtime";
-
+import { findConfigQuery } from "../queries/content";
+import { mapHashNames } from "../constants";
+import { ListItemText } from '@material-ui/core';
 
 export function checkConfig(config: ConfigInterface | null | undefined) {
   if(!config){
@@ -16,7 +19,8 @@ export function checkConfig(config: ConfigInterface | null | undefined) {
     !(config.tokens instanceof Object) ||
     !(config.certificates instanceof Object) ||
     !(config.configHashes instanceof Array) ||
-    !(config.configCluster)
+    !config.configCluster ||
+    !config.hashAlgorithm
   ){
     return null;
   }
@@ -113,32 +117,50 @@ export async function exportConfig(config: ConfigInterface | string, pw?: string
 }
 
 export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwtoken?: string) {
-  let action : string | null = null, certhash : string | null = null;
+  let actions : string[] = [], cert : Uint8Array | null = null;
   for(const hash of config.configHashes) {
     if(config.tokens[hash]){
-      action = config.tokens[hash];
-    } else if (config.certificates[hash]){
-      certhash = hash;
+      actions.push(config.tokens[hash]);
+    } else if(config.certificates[hash]){
+      cert = b64toarr(config.certificates[hash]);
     }
   }
-  if (!action){
+  if (!actions){
     return;
   }
-  const token = `${config.configCluster}:${action}`;
+  const tokens = actions.map(action => `${config.configCluster}:${action}`);
   return fetchQuery(
     env,
     findConfigQuery,
     {
       cluster: config.configCluster,
-      contentHashes: certhash ? [certhash] : null,
-      authorization: [token]
+      authorization: tokens
     }
-  ).then((data:any) => {
-    console.log(data.contents.edges[0].node.link);
-    if (pwtoken){
-      return `${data.secretgraphConfig.baseUrl}documents/${data.contents.edges[0].node.id}/?token=${token}&token=${certhash}:${pwtoken}`
-    } else {
-      return `${data.contents.edges[0].node.link}?token=${token}`
+  ).then(async (data:any) => {
+    let certhashes: string[] = [];
+    if (pwtoken) {
+      const ncert = cert;
+      if (!ncert){
+        return Promise.reject("no cert found")
+      }
+      certhashes = await Promise.all(data.secretgraphConfig.hashAlgorithms.map(
+        (hash: string) => crypto.subtle.digest(mapHashNames[hash], ncert).then(
+          (data) => btoa(String.fromCharCode(... new Uint8Array(data)))
+        )
+      ));
+    }
+    for(const node of data.contents.edges){
+      if (pwtoken) {
+        if(!("type=Config" in node.node.info)){
+          continue;
+        }
+        return `${data.secretgraphConfig.baseUrl}documents/${data.contents.edges[0].node.id}/?token=${tokens.join("token=")}&token=${certhashes[0]}:${pwtoken}`
+      } else {
+        if(!("type=PrivateKey" in node.node.info)){
+          continue;
+        }
+        return `${data.contents.edges[0].node.link}?token=${tokens.join("token=")}`
+      }
     }
 
   });

@@ -15,19 +15,23 @@ def fetch_clusters(
 ) -> QuerySet:
     if id:
         query = fetch_by_id(query, id)
-    incl_filters = Q()
-    for i in info_include or []:
-        incl_filters |= Q(contents__info__tag__startswith=i)
 
-    hash_filters = Q()
-    for i in content_hashes or []:
-        hash_filters |= Q(contents__contentHash=i)
+    if info_include or info_exclude or content_hashes:
+        incl_filters = Q()
+        for i in info_include or []:
+            incl_filters |= Q(contents__info__tag__startswith=i)
 
-    excl_filters = Q()
-    for i in info_exclude or []:
-        excl_filters |= Q(contents__info__tag__startswith=i)
+        hash_filters = Q()
+        for i in content_hashes or []:
+            hash_filters |= Q(contents__contentHash=i)
 
-    return query.filter(~excl_filters & incl_filters & hash_filters)
+        excl_filters = Q()
+        for i in info_exclude or []:
+            excl_filters |= Q(contents__info__tag__startswith=i)
+
+        query = query.filter(~excl_filters & incl_filters & hash_filters)
+
+    return query
 
 
 class ContentFetchQueryset(QuerySet):
@@ -130,23 +134,28 @@ class ContentFetchQueryset(QuerySet):
 
 def fetch_contents(
     query, actions, id=None, info_include=None, info_exclude=None,
-    content_hashes=None
+    content_hashes=None, no_fetch=False
 ) -> QuerySet:
     assert actions is not None, "actions is None"
+    assert not isinstance(actions, str), "actions is str"
     if id:
         query = fetch_by_id(query, id, check_content_hash=True)
-    incl_filters = Q()
-    for i in info_include or []:
-        incl_filters |= Q(info__tag__startswith=i)
+    if info_include or info_exclude or content_hashes:
+        incl_filters = Q()
+        hash_filters = Q()
+        excl_filters = Q()
+        for i in info_include or []:
+            incl_filters |= Q(info__tag__startswith=i)
 
-    hash_filters = Q()
-    for i in content_hashes or []:
-        hash_filters |= Q(contentHash=i)
+        for i in content_hashes or []:
+            hash_filters |= Q(contentHash=i)
 
-    excl_filters = Q()
-    for i in info_exclude or []:
-        excl_filters |= Q(info__tag__startswith=i)
-    query = query.filter(
-        ~excl_filters & incl_filters & hash_filters
+        for i in info_exclude or []:
+            excl_filters |= Q(info__tag__startswith=i)
+        query = query.filter(
+            ~excl_filters & incl_filters & hash_filters
+        )
+    return ContentFetchQueryset(
+        query.query, actions=actions,
+        only_direct_fetch_action_trigger=no_fetch
     )
-    return ContentFetchQueryset(query.query, actions=actions)

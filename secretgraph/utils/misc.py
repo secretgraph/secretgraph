@@ -40,6 +40,8 @@ def hash_object(inp, algo=None):
 
 
 def calculate_hashes(inp):
+    assert len(settings.SECRETGRAPH_HASH_ALGORITHMS) > 0, \
+           "no hash algorithms specified"
     if isinstance(inp, str):
         try:
             inp = base64.b64decode(inp)

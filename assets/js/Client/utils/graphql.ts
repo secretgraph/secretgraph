@@ -44,7 +44,11 @@ export const createEnvironment = (url: string) => {
       },
       body: formData,
     });
-    return response.json();
+    const resultPromise = response.json();
+    if (!response.ok){
+      return Promise.reject(await resultPromise)
+    }
+    return await resultPromise;
   }
   return new Environment({
     network: Network.create(executeRequest),
@@ -255,7 +259,7 @@ export function createCluster(
   });
 }
 
-export async function initializeCluster(env: Environment, config: ConfigInterface, key: string, algo: string, iterations: number) {
+export async function initializeCluster(env: Environment, config: ConfigInterface, key: string, iterations: number) {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const warpedkeyPromise = PBKDF2PW(key, nonce, iterations);
   const { publicKey, privateKey } = await crypto.subtle.generateKey(
@@ -273,14 +277,14 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     "spki" as const,
     publicKey
   ).then((keydata) => crypto.subtle.digest(
-    algo,
+    config.hashAlgorithm,
     keydata
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data)))));
 
   const warpedKey = await warpedkeyPromise;
 
   const digestActionKeyPromise = crypto.subtle.digest(
-    algo,
+    config.hashAlgorithm,
     warpedKey
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
   const warpedkeyb64 = btoa(String.fromCharCode(...warpedKey));
@@ -319,7 +323,7 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
       console.error("invalid config created");
       return;
     }
-    const digest = await sortedHash(["type=Config"], algo);
+    const digest = await sortedHash(["type=Config"], config.hashAlgorithm);
     return await createContent(
       env,
       config,

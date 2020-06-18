@@ -117,6 +117,8 @@ class RawView(View):
         response = FileResponse(content.value.open("rb"))
         response["X-NONCE"] = content.nonce
         response["X-ITERATIONS"] = ",".join(settings.SECRETGRAPH_ITERATIONS)
+        _type = content.info.filter(tag__startswith="type=").first()
+        response["X-TYPE"] = _type.split("=", 1)[1] if _type else ""
         return response
 
 

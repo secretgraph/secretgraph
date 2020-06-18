@@ -1,4 +1,5 @@
 
+from itertools import product, islice
 import uuid
 
 from django.db import transaction, models
@@ -90,23 +91,51 @@ def generateFlexid(sender, instance, force=False, **kwargs):
 
 
 def regenerateKeyHash(sender, force=False, **kwargs):
-    from ..utils.misc import hash_object
-    from .models import Content
+    from ..utils.misc import hash_object, calculate_hashes
+    from .models import Content, ContentTag
     contents = Content.objects.filter(
-        models.Q(info__tag="type=PrivateKey") |
-        models.Q(info__tag="type=PublicKey")
+        info__tag="type=PublicKey"
     )
     # calculate for all old hashes
     if not force:
         contents = contents.exclude(
             contentHash__regex='^.{%d}$' % len(hash_object(b""))
         )
+
+    # distinct on contentHash field currently only for postgresql
     for content in contents:
-        chash = hash_object(content.load_pubkey())
-        if chash == content.contentHash:
+        chashes = calculate_hashes(content.load_pubkey())
+        add_to = 0
+        for i in chashes:
+            if i == content.contentHash:
+                break
+            add_to += 1
+        if add_to == 0:
             continue
-        content.contentHash = chash
-        content.save(update_fields=["contentHash"])
+
+        tags = map(lambda x: 'key_hash=%s' % x, chashes)
+        batch_size = 1000
+        final_tags = (
+            ContentTag(tag=tag, content=content)
+            for (tag, c) in product(
+                tags[:add_to],
+                Content.objects.exclude(
+                    info__tag=tags[0]
+                ).filter(
+                    models.Q(info__tag__in=tags[add_to:])
+                )
+            )
+        )
+        while True:
+            batch = list(islice(final_tags, batch_size))
+            if not batch:
+                break
+            # ignore duplicate key_hash entries
+            ContentTag.objects.bulk_create(batch, ignore_conflicts=True)
+        Content.objects.filter(
+            contentHash__in=chashes[1:],
+            info__tag="type=PublicKey"
+        ).update(contentHash=chashes[0])
 
 
 def fillEmptyFlexidsCb(sender, **kwargs):
