@@ -8,13 +8,14 @@ from itertools import chain
 
 import graphene
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Subquery
 from django.utils import timezone
 from graphene import relay
 
 from ...constants import TransferResult
 from ...utils.auth import (
-    id_to_result, initializeCachedResult, retrieve_allowed_objects
+    id_to_result, initializeCachedResult, retrieve_allowed_objects,
+    fetch_by_id
 )
 from ..actions.update import (
     create_cluster, create_content, transfer_value, update_cluster,
@@ -219,6 +220,7 @@ class ContentMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(
         cls, root, info, content, id=None, key=None, authorization=None
     ):
+        required_keys = []
         if id:
             result = id_to_result(
                 info.context, id, Content, "update",
@@ -227,7 +229,24 @@ class ContentMutation(relay.ClientIDMutation):
             content_obj = result["objects"].first()
             if not content_obj:
                 raise ValueError()
-            required_keys = []
+
+            if content.value:
+                if content.cluster:
+                    required_keys = Content.objects.injected_keys(
+                        group__in=Subquery(
+                            fetch_by_id(
+                                Cluster.objects.all(),
+                                content.cluster
+                            ).values("group")
+                        )
+                    )
+                else:
+                    required_keys = Content.objects.injected_keys(
+                        group=content_obj.group
+                    )
+                required_keys = list(required_keys.values_list(
+                    "contentHash", flat=True
+                ))
             try:
                 form = next(iter(result["forms"].values()))
                 # None should be possible here for not updating
@@ -254,7 +273,7 @@ class ContentMutation(relay.ClientIDMutation):
                         form.get("injectReferences", []),
                         content["references"]
                     )
-                required_keys = form.get("requiredKeys", [])
+                required_keys.extend(form.get("requiredKeys", []))
             except StopIteration:
                 pass
             returnval = cls(
@@ -276,13 +295,13 @@ class ContentMutation(relay.ClientIDMutation):
             if not cluster_obj:
                 raise ValueError("Cluster for Content not found")
 
-            required_keys = list(
-                Content.objects.injected_keys(
+            if not content.key:
+                required_keys = list(Content.objects.injected_keys(
                     group=cluster_obj.group
                 ).values_list(
                     "contentHash", flat=True
-                )
-            )
+                ))
+
             try:
                 form = next(iter(result["forms"].values()))
                 content["info"] = chain(
@@ -357,7 +376,7 @@ class PushContentMutation(relay.ClientIDMutation):
             content["references"] = form.get("injectReferences") or []
         required_keys = list(
             Content.objects.injected_keys(
-                group=source.cluster.group
+                group=source.group
             ).values_list(
                 "contentHash", flat=True
             )

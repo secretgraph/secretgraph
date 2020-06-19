@@ -11,8 +11,12 @@ from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 
+from .messages import (
+    contentaction_group_help, injection_group_help, reference_group_help
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +30,7 @@ def get_file_path(instance, filename) -> str:
             posixpath.join(
                 ret, str(instance.cluster_id),
                 "%s.store" % secrets.token_urlsafe(
-                    getattr(settings, "SECRETGRAPH_FILETOKEN_LEN")
+                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH")
                 )
             )
         )
@@ -52,7 +56,8 @@ class Cluster(FlexidModel):
     featured: bool = models.BooleanField(default=False, blank=True)
     # injection group (which clusters should be injected)
     group: str = models.CharField(
-        default="", max_length=10, blank=True, null=False
+        default="", max_length=10, blank=True, null=False,
+        help_text=injection_group_help
     )
     markForDestruction: dt = models.DateTimeField(
         null=True, blank=True,
@@ -82,6 +87,11 @@ class ContentManager(models.Manager):
             ).get(group, [])
         )
 
+    def get_queryset(self):
+        return super().get_queryset().annotate(
+            group=models.F("cluster__group")
+        )
+
 
 class Content(FlexidModel):
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
@@ -104,6 +114,7 @@ class Content(FlexidModel):
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="contents"
     )
+    # group virtual injection group attribute
 
     objects = ContentManager()
 
@@ -126,6 +137,15 @@ class Content(FlexidModel):
             logger.error("Could not load public key", exc_info=exc)
         return None
 
+    @property
+    def link(self):
+        # path to raw view
+        return reverse(
+            "secretgraph-rawcontentvalue", kwargs={
+                "id": self.flexid
+            }
+        )
+
 
 class ContentAction(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
@@ -135,7 +155,8 @@ class ContentAction(models.Model):
     )
     used: bool = models.BooleanField(default=False, blank=True)
     group: str = models.CharField(
-        max_length=255, null=False, default="", blank=True
+        max_length=255, null=False, default="", blank=True,
+        help_text=contentaction_group_help
     )
 
     class Meta:
@@ -217,7 +238,8 @@ class ContentReference(models.Model):
         on_delete=models.CASCADE
     )
     group: str = models.CharField(
-        max_length=255, default='', null=False, blank=True
+        max_length=255, default='', null=False, blank=True,
+        help_text=reference_group_help
     )
     extra: str = models.TextField(blank=True, null=False, default='')
     deleteRecursive: Optional[bool] = models.BooleanField(

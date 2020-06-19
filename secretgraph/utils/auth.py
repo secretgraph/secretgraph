@@ -16,28 +16,7 @@ from .misc import calculate_hashes
 logger = logging.getLogger(__name__)
 
 
-def fetch_by_id(
-    query, flexid, prefix="", type_name=None, check_content_hash=False
-):
-    type_name = type_name or query.model.__name__
-    name = type_name
-    field = f"{prefix}flexid"
-    try:
-        name, flexid = from_global_id(flexid)
-    except Exception:
-        pass
-    try:
-        flexid = UUID(flexid)
-    except ValueError:
-        if check_content_hash:
-            field = f"{prefix}contentHash"
-        else:
-            raise ValueError("Malformed id")
-    if type_name != name:
-        raise ValueError(
-            "No {} Id ({})".format(query.model.__name__, type_name)
-        )
-    return query.filter(**{field: flexid})
+_cached_classes = {"Content", "Cluster", "Action"}
 
 
 class LazyViewResult(object):
@@ -57,7 +36,7 @@ class LazyViewResult(object):
                 ).split(",")
 
     def __getitem__(self, item):
-        if item in ["Content", "Cluster", "Action"]:
+        if item in _cached_classes:
             if item not in self._result_dict:
                 self._result_dict[item] = retrieve_allowed_objects(
                     self.request, self.scope,
@@ -261,6 +240,30 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     return returnval
 
 
+def fetch_by_id(
+    query, flexid, prefix="", type_name=None, check_content_hash=False
+):
+    type_name = type_name or query.model.__name__
+    name = type_name
+    field = f"{prefix}flexid"
+    try:
+        name, flexid = from_global_id(flexid)
+    except Exception:
+        pass
+    try:
+        flexid = UUID(flexid)
+    except ValueError:
+        if check_content_hash:
+            field = f"{prefix}contentHash"
+        else:
+            raise ValueError("Malformed id")
+    if type_name != name:
+        raise ValueError(
+            "No {} Id ({})".format(query.model.__name__, type_name)
+        )
+    return query.filter(**{field: flexid})
+
+
 def id_to_result(request, id, klasses, scope="view", authset=None):
     if not isinstance(klasses, tuple):
         klasses = (klasses,)
@@ -273,10 +276,17 @@ def id_to_result(request, id, klasses, scope="view", authset=None):
         result = None
         for klass in klasses:
             if type_name == klass.__name__:
-                result = retrieve_allowed_objects(
-                    request, scope, klass.objects.filter(flexid=flexid),
-                    authset=authset
-                )
+                if scope == "view" and type(id).__name__ in _cached_classes:
+                    result = initializeCachedResult(
+                        request, authset=authset
+                    )[type(id).__name__]
+                    result = result.copy()
+                    result["objects"] = result["objects"].filter(flexid=flexid)
+                else:
+                    result = retrieve_allowed_objects(
+                        request, scope, klass.objects.filter(flexid=flexid),
+                        authset=authset
+                    )
                 break
         if not result:
             raise ValueError(
@@ -291,8 +301,15 @@ def id_to_result(request, id, klasses, scope="view", authset=None):
             )
         )
     else:
-        result = retrieve_allowed_objects(
-            request, scope, type(id).objects.filter(pk=id.pk),
-            authset=authset
-        )
+        if scope == "view" and type(id).__name__ in _cached_classes:
+            result = initializeCachedResult(
+                request, authset=authset
+            )[type(id).__name__]
+            result = result.copy()
+            result["objects"] = result["objects"].filter(pk=id.pk)
+        else:
+            result = retrieve_allowed_objects(
+                request, scope, type(id).objects.filter(pk=id.pk),
+                authset=authset
+            )
     return result

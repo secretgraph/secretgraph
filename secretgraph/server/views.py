@@ -1,10 +1,13 @@
 from django.conf import settings
-from django.http import FileResponse, Http404, StreamingHttpResponse
+from django.http import (
+    FileResponse, Http404, HttpResponse, StreamingHttpResponse
+)
+from django.shortcuts import get_object_or_404
 from django.views.generic import View
 from django.views.generic.edit import UpdateView
 from graphene_file_upload.django import FileUploadGraphQLView
 
-from ..utils.auth import initializeCachedResult, fetch_by_id
+from ..utils.auth import fetch_by_id, initializeCachedResult
 from ..utils.encryption import iter_decrypt_contents
 from .actions.view import fetch_clusters, fetch_contents
 from .forms import PushForm, UpdateForm
@@ -114,11 +117,29 @@ class RawView(View):
         finally:
             if not content:
                 raise Http404()
-        response = FileResponse(content.value.open("rb"))
+        if request.GET.get("signature"):
+            ref = get_object_or_404(
+                content.references.select_related("target"),
+                target__contentHash=request.GET["signature"],
+                group="verify"
+            )
+            response = HttpResponse(ref.extra)
+            response["X-PUBLICKEY"] = ref.target.link
+        else:
+            response = FileResponse(content.value.open("rb"))
+            _type = content.info.filter(tag__startswith="type=").first()
+            response["X-TYPE"] = _type.split("=", 1)[1] if _type else ""
+            verifiers = content.references.select_related("target").filter(
+                group="verify"
+            ).values_list("contentHash", flat=True)
+            response["X-VERIFIERS"] = ",".join(verifiers)
         response["X-NONCE"] = content.nonce
-        response["X-ITERATIONS"] = ",".join(settings.SECRETGRAPH_ITERATIONS)
-        _type = content.info.filter(tag__startswith="type=").first()
-        response["X-TYPE"] = _type.split("=", 1)[1] if _type else ""
+        response["X-ITERATIONS"] = ",".join(
+            settings.SECRETGRAPH_ITERATIONS
+        )
+        response["X-HASHALGORITHMS"] = ",".join(
+            settings.SECRETGRAPH_HASH_ALGORITHMS
+        )
         return response
 
 

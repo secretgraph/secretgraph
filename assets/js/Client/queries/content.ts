@@ -50,12 +50,12 @@ export const findConfigQuery = graphql`
             keyHash
             type
           }
-          references(group: "key") {
+          references(groups: ["key", "signature"]) {
             edges {
               node {
                 extra
                 target {
-                  referencedBy(group: "private_key") {
+                  referencedBy(groups: ["private_key"]) {
                     edges {
                       node {
                         extra

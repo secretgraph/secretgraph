@@ -2,13 +2,13 @@ import graphene
 from django.db.models import Subquery
 from django.conf import settings
 from django.shortcuts import resolve_url
-from django.urls import reverse
 from graphene import ObjectType, relay
 from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
 
 from ...utils.auth import initializeCachedResult, fetch_by_id
+from ..messages import injection_group_help
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
 
@@ -23,7 +23,18 @@ class RegisterUrl(GenericScalar):
 
 class ClusterGroupEntry(graphene.ObjectType):
     group = graphene.String()
-    clusters = graphene.List(graphene.String)
+    clusters = graphene.List(graphene.ID)
+    links = graphene.List(
+        graphene.String, description="Links to injected keys"
+    )
+
+    def resolve_links(self, info):
+        return map(
+            lambda x: x.link,
+            Content.objects.injected_keys(
+                group=self.group
+            ).only("flexid")
+        )
 
 
 class SecretgraphConfig(ObjectType):
@@ -193,7 +204,7 @@ class ContentReferenceConnectionField(DjangoConnectionField):
         kwargs.setdefault("contentHashes", graphene.List(
             graphene.String, required=False
         ))
-        kwargs.setdefault("group", graphene.List(
+        kwargs.setdefault("groups", graphene.List(
             graphene.String, required=False
         ))
         super().__init__(of_type, *args, **kwargs)
@@ -211,6 +222,9 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     referencedBy = ContentReferenceConnectionField()
     info = graphene.List(graphene.String)
     link = graphene.String()
+    group = graphene.String(
+        description=injection_group_help
+    )
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
@@ -224,7 +238,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         ).first()
 
     def resolve_references(
-        self, info, authorization=None, group=None, **kwargs
+        self, info, authorization=None, groups=None, **kwargs
     ):
         result = initializeCachedResult(
             info.context, authset=authorization
@@ -239,11 +253,11 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
                 content_hashes=kwargs.get("contentHashes"),
                 no_fetch=True
             ),
-            **({} if group is None else {"group": group})
+            **({} if groups is None else {"group__in": groups})
         )
 
     def resolve_referencedBy(
-        self, info, authorization=None, group=None, **kwargs
+        self, info, authorization=None, groups=None, **kwargs
     ):
         result = initializeCachedResult(
             info.context, authset=authorization
@@ -258,7 +272,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
                 content_hashes=kwargs.get("contentHashes"),
                 no_fetch=True
             ),
-            **({} if group is None else {"group": group})
+            **({} if groups is None else {"group__in": groups})
         )
 
     def resolve_cluster(self, info, authorization=None):
@@ -270,12 +284,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.info.all().values_list("tag", flat=True)
 
     def resolve_link(self, info):
-        # path to raw view
-        return reverse(
-            "secretgraph-rawcontentvalue", kwargs={
-                "id": self.flexid
-            }
-        )
+        self.link
+
+    def resolve_group(self, info):
+        return self.group
 
     def resolve_availableActions(self, info):
         return ActionMixin.resolve_availableActions(

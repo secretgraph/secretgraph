@@ -16,6 +16,12 @@ export interface ReferenceInterface {
 
 export interface ConfigClusterInterface {
   hashes: { [hash: string]: string[] };
+  injectedHashes: string[];
+}
+
+export interface ConfigContentInterface {
+  hashes: { [hash: string]: string[] };
+  injectedHashes: string[];
 }
 
 

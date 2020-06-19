@@ -849,7 +849,7 @@
             {
               "args": [],
               "deprecationReason": null,
-              "description": "",
+              "description": "injection group: group which injected keys must be used for mutations with content/cluster",
               "isDeprecated": false,
               "name": "group",
               "type": {
@@ -1298,7 +1298,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "group",
+                  "name": "groups",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1407,7 +1407,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "group",
+                  "name": "groups",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1491,6 +1491,18 @@
               "description": null,
               "isDeprecated": false,
               "name": "link",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "injection group: group which injected keys must be used for mutations with content/cluster",
+              "isDeprecated": false,
+              "name": "group",
               "type": {
                 "kind": "SCALAR",
                 "name": "String",
@@ -1645,7 +1657,7 @@
             {
               "args": [],
               "deprecationReason": null,
-              "description": "",
+              "description": "ContentReference group: references are clustered in groups. They are used to signal different functions of the connection",
               "isDeprecated": false,
               "name": "group",
               "type": {
@@ -1842,6 +1854,22 @@
               "description": null,
               "isDeprecated": false,
               "name": "clusters",
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Links to injected keys",
+              "isDeprecated": false,
+              "name": "links",
               "type": {
                 "kind": "LIST",
                 "name": null,

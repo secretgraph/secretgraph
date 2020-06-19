@@ -23,7 +23,7 @@ from rdflib import Graph
 
 from ....constants import TransferResult
 from ....utils.auth import (
-    fetch_by_id, initializeCachedResult, retrieve_allowed_objects
+    initializeCachedResult, id_to_result
 )
 from ....utils.conf import get_requests_params
 from ....utils.encryption import default_padding, encrypt_into_file
@@ -131,12 +131,13 @@ def _update_or_create_content_or_key(
     request, content, objdata, authset, is_key, required_keys
 ):
     if isinstance(objdata.get("cluster"), str):
-        objdata["cluster"] = fetch_by_id(
-            retrieve_allowed_objects(
-                request, "update", Cluster.objects.all(), authset=authset
-            )["objects"],
-            objdata["cluster"]
-        ).filter(markForDestruction=None).first()
+        objdata["cluster"] = id_to_result(
+            request,
+            objdata["cluster"],
+            Cluster,
+            scope="update",
+            authset=authset
+        )["objects"].filter(markForDestruction=None).first()
     if objdata.get("cluster"):
         content.cluster = objdata["cluster"]
     if not getattr(content, "cluster", None):
@@ -420,12 +421,12 @@ def create_key_func(
         type_name, objdata["cluster"] = from_global_id(objdata["cluster"])
         if type_name != "Cluster":
             raise ValueError("Requires Cluster id")
-        objdata["cluster"] = fetch_by_id(
-            initializeCachedResult(
-                request, authset=authset
-            )["Cluster"]["objects"],
-            objdata["cluster"]
-        ).filter(markForDestruction=None).first()
+        objdata["cluster"] = id_to_result(
+            request,
+            objdata["cluster"],
+            Cluster,
+            authset=authset
+        )["objects"].filter(markForDestruction=None).first()
     if not objdata.get("cluster"):
         raise ValueError("No cluster")
 
@@ -548,6 +549,11 @@ def update_content(
         return func()
 
 
+def verify_transfer(content, hash, url, key_hashes):
+    pass
+    # TODO: implement verification who signed the hash of a value
+
+
 def transfer_value(
     content, key=None, url=None, headers=None, transfer=True
 ):
@@ -600,7 +606,7 @@ def transfer_value(
             elif response.status_code != 200:
                 return TransferResult.ERROR
             # should be only one nonce
-            checknonce = response.get("X-NONCES", "").strip(", ")
+            checknonce = response.get("X-NONCE", "")
             if checknonce != "":
                 if len(checknonce) != 20:
                     logger.warning("Invalid nonce (not 13 bytes)")
@@ -631,7 +637,7 @@ def transfer_value(
                     elif response.status_code != 200:
                         return TransferResult.ERROR
                     # should be only one nonce
-                    checknonce = response.get("X-NONCES", "").strip(", ")
+                    checknonce = response.get("X-NONCE", "")
                     if checknonce != "":
                         if len(checknonce) != 20:
                             logger.warning("Invalid nonce (not 13 bytes)")

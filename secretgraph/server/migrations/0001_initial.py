@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('public', models.BooleanField(blank=True, default=False)),
                 ('markForDestruction', models.DateTimeField(blank=True, db_column='mark_for_destruction', null=True)),
                 ('featured', models.BooleanField(blank=True, default=False)),
-                ('group', models.CharField(default="", max_length=10, blank=True, null=False)),
+                ('group', models.CharField(default="", max_length=10, blank=True, null=False, help_text='injection group: group which injected keys must be used for mutations with content/cluster')),
             ],
             options={
                 'abstract': False,
@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
             name='ContentReference',
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
-                ('group', models.CharField(blank=True, default='', max_length=255)),
+                ('group', models.CharField(blank=True, default='', max_length=255, help_text='ContentReference group: references are clustered in groups. They are used to signal different functions of the connection')),
                 ('extra', models.TextField(blank=True, default='')),
                 ('deleteRecursive', models.BooleanField(blank=True, db_column='delete_recursive', default=True, null=True)),
                 ('source', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='references', to='secretgraph.Content')),
@@ -67,7 +67,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('used', models.BooleanField(blank=True, default=False)),
-                ('group', models.CharField(blank=True, default='', max_length=255)),
+                ('group', models.CharField(blank=True, default='', max_length=255, help_text='ContentAction group: ContentActions are clustered in groups. They are used to signal different functions of the connection')),
                 ('content', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='actions', to='secretgraph.Content')),
             ],
         ),
