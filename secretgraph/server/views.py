@@ -83,8 +83,10 @@ class DocumentsView(View):
 
         def gen():
             seperator = b""
+            # currently it would add unverified results for the second call
+            # and the client here has here no way to check them anyway
             for document in iter_decrypt_contents(
-                contents, authset
+                contents, authset, allow_unverified=True
             ):
                 yield seperator
                 if kwargs.get("id"):

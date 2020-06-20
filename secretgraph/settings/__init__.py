@@ -128,7 +128,9 @@ LOGOUT_REDIRECT_URL = "home"
 
 # required for serverside encryption
 # SECRETGRAPH_INJECT_CLUSTERS = []
-# requests parameter overwrites
+
+# requests parameter overwrites (for transfers)
+# note: timeout should be low as ddos is possible elsewise
 # * "hostname.foo": parameter for specific domain
 # * "".foo": parameter for a tld
 # * b"default": default parameters for request

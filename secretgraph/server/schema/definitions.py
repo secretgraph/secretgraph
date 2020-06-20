@@ -229,6 +229,12 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             graphene.String, required=False
         )
     )
+    signatures = graphene.Field(
+        graphene.List(graphene.String),
+        includeAlgos=graphene.List(
+            graphene.String, required=False
+        )
+    )
     link = graphene.String()
     group = graphene.String(
         description=injection_group_help
@@ -284,6 +290,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )
 
     def resolve_cluster(self, info, authorization=None):
+        # authorization often cannot be used, but it is ok, we have cache then
         return initializeCachedResult(
             info.context, authset=authorization
         )["Cluster"]["objects"].filter(id=self.cluster_id).first()
@@ -299,6 +306,18 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.info.filter(
             ~excl_filters & incl_filters
         ).values_list("tag", flat=True)
+
+    def resolve_signatures(self, info, authorization=None, includeAlgos=None):
+        # authorization often cannot be used, but it is ok, we have cache then
+        result = initializeCachedResult(
+            info.context, authset=authorization
+        )["Content"]
+        return self.signatures(
+            includeAlgos,
+            ContentReference.objects.filter(
+                target__in=result["objects"]
+            )
+        )
 
     def resolve_link(self, info):
         self.link

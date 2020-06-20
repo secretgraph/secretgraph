@@ -142,12 +142,13 @@ def _generate_transfer_info(content, hashes_remote, signatures):
             )
         )
     )
-    for key, val in (signatures or {}).items():
+    for remote_key_hash, val in (signatures or {}).items():
         yield ContentTag(
             content=content,
             tag=(
                 "signature=%s=%s" % (
-                    key, val["signature"]
+                    # = algo=signature=keyhash
+                    val["signature"], remote_key_hash
                 )
             )
         )
@@ -156,7 +157,7 @@ def _generate_transfer_info(content, hashes_remote, signatures):
                 content=content,
                 tag=(
                     "key_link=%s=%s" % (
-                        key, val["link"]
+                        remote_key_hash, val["link"]
                     )
                 )
             )
@@ -164,7 +165,7 @@ def _generate_transfer_info(content, hashes_remote, signatures):
 
 def transfer_value(
     content, key=None, url=None, headers=None, transfer=True, session=None,
-    keepalive=None
+    keepalive=None, contents=None
 ):
     _headers = {}
     if keepalive is None:
@@ -315,13 +316,18 @@ def transfer_value(
                 ),
                 ignore_conflict=True
             )
-            if not verify_signatures(
-                hashes_remote,
-                signatures,
-                Content.objects.filter(
-                    Q(cluster=content.cluster) |
-                    Q(referencedBy__source=content)
-                )
-            ):
-                return TransferResult.UNVERIFIED
+    if transfer:
+        if not contents:
+            # fallback to all related contents as user sees only result
+            # (could be verified or not)
+            contents = Content.objects.filter(
+                Q(cluster=content.cluster) |
+                Q(referencedBy__source=content)
+            )
+        if not verify_signatures(
+            hashes_remote,
+            signatures,
+            contents
+        ):
+            return TransferResult.UNVERIFIED
     return TransferResult.SUCCESS

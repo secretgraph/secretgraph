@@ -2,6 +2,7 @@ import logging
 import posixpath
 import secrets
 from datetime import datetime as dt
+from itertools import chain
 from typing import Optional
 from uuid import UUID
 
@@ -11,6 +12,7 @@ from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db import models
+from django.db.models.functions import Concat, Substr, Value
 from django.urls import reverse
 from django.utils import timezone
 
@@ -144,6 +146,34 @@ class Content(FlexidModel):
             "secretgraph-rawcontentvalue", kwargs={
                 "id": self.flexid
             }
+        )
+
+    def signatures(self, algos=None, references=None):
+        q = models.Q()
+        q2 = models.Q()
+        if references:
+            references = references.filter(id=self.id)
+        else:
+            references = self.references
+        if algos:
+            for algo in algos:
+                q |= models.Q(tag__startswith=f"signature={algo=}")
+                q2 |= models.Q(extra__startswith=f"{algo}=")
+        else:
+            q = models.Q(tag__startswith="signature=")
+        return chain(
+            self.info.filter(
+                q
+            ).annotate(
+                signature=Substr("tag", 10)
+            ).values_list("signature"),
+            references.filter(
+                q2, group="signature"
+            ).annotate(
+                signature=Concat(
+                    "extra", Value("="), "target__contentHash"
+                )
+            )
         )
 
 
