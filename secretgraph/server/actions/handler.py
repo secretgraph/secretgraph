@@ -3,7 +3,7 @@ import json
 from datetime import timedelta as td, datetime as dt
 from functools import lru_cache
 
-from django.db.models import Q
+from django.db.models import Q, Subquery
 from django.utils import timezone
 from graphql_relay import from_global_id
 
@@ -63,7 +63,7 @@ class ActionHandler():
         return None
 
     @staticmethod
-    def do_view(action_dict, scope, sender, accesslevel, **kwargs):
+    def do_view(action_dict, scope, sender, accesslevel, action, **kwargs):
         if accesslevel > 1 or scope != "view":
             return None
         if issubclass(sender, Content):
@@ -96,21 +96,30 @@ class ActionHandler():
     def do_update(action_dict, scope, sender, accesslevel, **kwargs):
         if action_dict.get("restricted") and scope == "update":
             ownaccesslevel = 3
+        elif scope == "update":
+            ownaccesslevel = 1
         else:
             ownaccesslevel = 0
         if accesslevel > ownaccesslevel or scope not in {"update", "view"}:
             return None
         if issubclass(sender, Content):
             incl_filters = Q(id__in=action_dict.get("ids", []))
+            excl_filters = Q()
+            if scope == "update" and action_dict.get("freeze"):
+                excl_filters = Q(
+                    action__in=Subquery(
+                        group="fetch", used=True
+                    ).values("id")
+                )
             return {
-                "filters": incl_filters,
+                "filters": ~excl_filters & incl_filters,
                 "form": action_dict["form"],
                 "accesslevel": ownaccesslevel
             }
         elif issubclass(sender, Cluster):
-            incl_filters = Q(content__id__in=action_dict.get("ids", []))
+            # disallow create new content / view cluster
             return {
-                "filters": incl_filters,
+                "filters": Q(),
                 "form": action_dict["form"],
                 "accesslevel": ownaccesslevel
             }
@@ -122,6 +131,7 @@ class ActionHandler():
             "action": "update",
             "contentActionGroup": "update",
             "restricted": bool(action_dict.get("restricted")),
+            "freeze": bool(action_dict.get("freeze")),
             "ids": list(_only_owned_helper(
                 Content,
                 action_dict.get("ids", content and [content.id]),
@@ -186,6 +196,8 @@ class ActionHandler():
                 "allowInfo": [],
                 # create update action
                 "updateable": bool(action_dict.get("updateable")),
+                # freeze when fetched
+                "freeze": bool(action_dict.get("freeze")),
                 "injectReferences": [
                     {
                         "group": "push",

@@ -1,31 +1,22 @@
 __all__ = [
-    "create_content", "update_content", "create_key_func", "transfer_value"
+    "create_content", "update_content", "create_key_func"
 ]
 
 
 import base64
-import json
 import logging
-from email.parser import BytesParser
 from itertools import chain
 
-import requests
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.files.base import ContentFile, File
 from django.db import transaction
 from django.db.models import OuterRef, Q, Subquery
-from django.test import Client
 from graphql_relay import from_global_id
 from rdflib import Graph
 
-from ....constants import TransferResult
-from ....utils.auth import (
-    initializeCachedResult, id_to_result
-)
-from ....utils.conf import get_requests_params
+from ....utils.auth import id_to_result, initializeCachedResult
 from ....utils.encryption import default_padding, encrypt_into_file
 from ....utils.misc import (
     calculate_hashes, get_secrets, hash_object, refresh_fields
@@ -547,108 +538,3 @@ def update_content(
     )
     with transaction.atomic():
         return func()
-
-
-def verify_transfer(content, hash, url, key_hashes):
-    pass
-    # TODO: implement verification who signed the hash of a value
-
-
-def transfer_value(
-    content, key=None, url=None, headers=None, transfer=True
-):
-    _headers = {}
-    if key:
-        assert not url, "can only specify key or url"
-        try:
-            _blob = AESGCM(key).decrypt(
-                content.value.open("rb").read(),
-                base64.b64decode(content.nonce),
-                None
-            ).split(b'\r\n', 1)
-            if len(_blob) == 1:
-                url = _blob[0]
-            else:
-                url = _blob[0]
-                _headers.update(
-                    BytesParser().parsebytes(_blob[1], headersonly=True)
-                )
-        except Exception as exc:
-            logger.error("Error while decoding url, headers", exc_info=exc)
-            return TransferResult.ERROR
-
-    if headers:
-        if isinstance(headers, str):
-            headers = json.loads(headers)
-        _headers.update(headers)
-
-    params, inline_domain = get_requests_params(url)
-    # block content while updating file
-    q = Q(id=content.id)
-    if transfer:
-        q &= Q(info__tag="transfer")
-    bcontents = Content.objects.filter(
-        q
-    ).select_for_update()
-    with transaction.atomic():
-        # 1. lock content, 2. check if content was deleted before updating
-        if not bcontents:
-            return TransferResult.ERROR
-        if inline_domain:
-            response = Client().get(
-                url,
-                Connection="close",
-                SERVER_NAME=inline_domain,
-                **_headers
-            )
-            if response.status_code == 404:
-                return TransferResult.NOTFOUND
-            elif response.status_code != 200:
-                return TransferResult.ERROR
-            # should be only one nonce
-            checknonce = response.get("X-NONCE", "")
-            if checknonce != "":
-                if len(checknonce) != 20:
-                    logger.warning("Invalid nonce (not 13 bytes)")
-                    return TransferResult.ERROR
-                content.nonce = checknonce
-            try:
-                with content.value.open("wb") as f:
-                    for chunk in response.streaming_content:
-                        f.write(chunk)
-                if transfer:
-                    content.references.filter(group="transfer").delete()
-                return TransferResult.SUCCESS
-            except Exception as exc:
-                logger.error("Error while transferring content", exc_info=exc)
-            return TransferResult.ERROR
-        else:
-            try:
-                with requests.get(
-                    url,
-                    headers={
-                        "Connection": "close",
-                        **_headers
-                    },
-                    **params
-                ):
-                    if response.status_code == 404:
-                        return TransferResult.NOTFOUND
-                    elif response.status_code != 200:
-                        return TransferResult.ERROR
-                    # should be only one nonce
-                    checknonce = response.get("X-NONCE", "")
-                    if checknonce != "":
-                        if len(checknonce) != 20:
-                            logger.warning("Invalid nonce (not 13 bytes)")
-                            return TransferResult.ERROR
-                        content.nonce = checknonce
-                    with content.value.open("wb") as f:
-                        for chunk in response.iter_content(512):
-                            f.write(chunk)
-                    if transfer:
-                        content.references.filter(group="transfer").delete()
-                    return TransferResult.SUCCESS
-            except Exception as exc:
-                logger.error("Error while transferring content", exc_info=exc)
-            return TransferResult.ERROR

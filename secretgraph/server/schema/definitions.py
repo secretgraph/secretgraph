@@ -1,5 +1,5 @@
 import graphene
-from django.db.models import Subquery
+from django.db.models import Subquery, Q
 from django.conf import settings
 from django.shortcuts import resolve_url
 from graphene import ObjectType, relay
@@ -220,7 +220,15 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         ]
     references = ContentReferenceConnectionField()
     referencedBy = ContentReferenceConnectionField()
-    info = graphene.List(graphene.String)
+    info = graphene.Field(
+        graphene.List(graphene.String),
+        includeInfo=graphene.List(
+            graphene.String, required=False
+        ),
+        excludeInfo=graphene.List(
+            graphene.String, required=False
+        )
+    )
     link = graphene.String()
     group = graphene.String(
         description=injection_group_help
@@ -280,8 +288,17 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             info.context, authset=authorization
         )["Cluster"]["objects"].filter(id=self.cluster_id).first()
 
-    def resolve_info(self, info):
-        return self.info.all().values_list("tag", flat=True)
+    def resolve_info(self, info, includeInfo=None, excludeInfo=None):
+        incl_filters = Q()
+        excl_filters = Q()
+        for i in includeInfo or []:
+            incl_filters |= Q(info__tag__startswith=i)
+
+        for i in excludeInfo or []:
+            excl_filters |= Q(info__tag__startswith=i)
+        return self.info.filter(
+            ~excl_filters & incl_filters
+        ).values_list("tag", flat=True)
 
     def resolve_link(self, info):
         self.link

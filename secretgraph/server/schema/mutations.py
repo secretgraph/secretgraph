@@ -384,11 +384,13 @@ class PushContentMutation(relay.ClientIDMutation):
         required_keys.extend(form.get("requiredKeys", []))
         action_key = None
         if form.pop("updateable", False):
+            freeze = form.pop("freeze", False)
             action_key = os.urandom(32)
             content["actions"] = [{
                 "key": action_key,
                 "action": "update",
                 "restrict": True,
+                "freeze": freeze,
                 "form": form
             }]
         c = create_content(

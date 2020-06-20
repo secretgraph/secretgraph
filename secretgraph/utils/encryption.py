@@ -150,7 +150,7 @@ def create_key_maps(contents, keyset=(), inject_public=True):
 
 
 def iter_decrypt_contents(
-    content_query, decryptset, inject_public=True
+    content_query, decryptset, inject_public=True, allow_unverified=False
 ) -> Iterable[Iterable[str]]:
     from ..actions.update import transfer_value
     content_query.only_direct_fetch_action_trigger = True
@@ -175,6 +175,8 @@ def iter_decrypt_contents(
             if result == TransferResult.NOTFOUND:
                 content.delete()
                 continue
+            elif allow_unverified and result == TransferResult.UNVERIFIED:
+                pass
             elif result != TransferResult.SUCCESS:
                 continue
         elif content.is_transfer:

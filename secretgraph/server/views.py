@@ -1,8 +1,9 @@
+import json
+
 from django.conf import settings
 from django.http import (
-    FileResponse, Http404, HttpResponse, StreamingHttpResponse
+    FileResponse, Http404, JsonResponse, StreamingHttpResponse
 )
-from django.shortcuts import get_object_or_404
 from django.views.generic import View
 from django.views.generic.edit import UpdateView
 from graphene_file_upload.django import FileUploadGraphQLView
@@ -117,27 +118,33 @@ class RawView(View):
         finally:
             if not content:
                 raise Http404()
-        if request.GET.get("signature"):
-            ref = get_object_or_404(
-                content.references.select_related("target"),
-                target__contentHash=request.GET["signature"],
+        if "signatures" in request.GET:
+            refs = content.references.select_related("target").filter(
                 group="verify"
             )
-            response = HttpResponse(ref.extra)
-            response["X-PUBLICKEY"] = ref.target.link
+            response = JsonResponse({
+                "signatures": {
+                    ref.target.contentHash: {
+                        "signature": ref.extra,
+                        "link": ref.target.link
+                    }
+                    for ref in refs
+                }
+            })
+            response["X-IS-VERIFIED"] = "false"
         else:
             response = FileResponse(content.value.open("rb"))
             _type = content.info.filter(tag__startswith="type=").first()
             response["X-TYPE"] = _type.split("=", 1)[1] if _type else ""
-            verifiers = content.references.select_related("target").filter(
+            verifiers = content.references.filter(
                 group="verify"
-            ).values_list("contentHash", flat=True)
-            response["X-VERIFIERS"] = ",".join(verifiers)
+            )
+            response["X-IS-VERIFIED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
         response["X-ITERATIONS"] = ",".join(
             settings.SECRETGRAPH_ITERATIONS
         )
-        response["X-HASHALGORITHMS"] = ",".join(
+        response["X-HASH-ALGORITHMS"] = ",".join(
             settings.SECRETGRAPH_HASH_ALGORITHMS
         )
         return response

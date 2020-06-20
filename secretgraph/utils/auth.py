@@ -156,7 +156,8 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 scope=scope,
                 action=action,
                 accesslevel=accesslevel,
-                request=request
+                request=request,
+                authset=authset
             )
             if result is None:
                 continue
