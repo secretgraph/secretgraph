@@ -86,7 +86,7 @@ class DocumentsView(View):
             # currently it would add unverified results for the second call
             # and the client here has here no way to check them anyway
             for document in iter_decrypt_contents(
-                contents, authset, allow_unverified=True
+                contents, authset
             ):
                 yield seperator
                 if kwargs.get("id"):

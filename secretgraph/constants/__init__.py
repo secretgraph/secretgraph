@@ -17,7 +17,7 @@ class TransferResult(enum.Enum):
     SUCCESS = "success"
     NOTFOUND = "notfound"
     ERROR = "error"
-    UNVERIFIED = "unverified"
+    FAILED_VERIFICATION = "failed_verification"
 
 
 sgraph_cluster = Namespace("/static/schemes/sgraph/cluster")

@@ -150,9 +150,10 @@ def create_key_maps(contents, keyset=(), inject_public=True):
 
 
 def iter_decrypt_contents(
-    content_query, decryptset, inject_public=True, allow_unverified=False
+    content_query, decryptset, inject_public=True, verifiers=None
 ) -> Iterable[Iterable[str]]:
     from ..actions.update import transfer_value
+    # per default verifiers=None, so that a failed verifications cannot happen
     content_query.only_direct_fetch_action_trigger = True
     content_map, transfer_map = create_key_maps(
         content_query, decryptset, inject_public=inject_public
@@ -167,16 +168,18 @@ def iter_decrypt_contents(
             )
         )
     )
+
     for content in query.order_by("id"):
         if content.id in transfer_map:
             result = transfer_value(
-                content, key=transfer_map[content.id], transfer=True
+                content, key=transfer_map[content.id], transfer=True,
+                verifiers=verifiers
             )
-            if result == TransferResult.NOTFOUND:
+            if result in {
+                TransferResult.NOTFOUND, TransferResult.FAILED_VERIFICATION
+            }:
                 content.delete()
                 continue
-            elif allow_unverified and result == TransferResult.UNVERIFIED:
-                pass
             elif result != TransferResult.SUCCESS:
                 continue
         elif content.is_transfer:

@@ -21,6 +21,9 @@
 
 # TODO
 
+* add verify parameter to result (and in actions)
+  * effect: require verification against specified keys
+  * eliminate verify parameter of TransferMutation
 * cleanup, document server side encryption and allow disabling it (maybe remove it completely at some point)
   * specifying key allows to encrypt keys/values server side if nonce is not set
 * merge configuration client side in case of updates
