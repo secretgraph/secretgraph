@@ -83,9 +83,13 @@ def retrieve_signatures(
         return None
 
 
-def verify_signatures(hashes, signatures, contents):
+def verify_signatures(hashobjects, signatures, contents):
     digest_dict = {
-        i.name: (i.finalize(), utils.Prehashed(i)) for i in hashes
+        i.name: (
+            getattr(i, "finalize", i.digest)(),
+            getattr(hashes, i.upper()),
+            utils.Prehashed(getattr(hashes, i.upper()))
+        ) for i in hashobjects
     }
     keys = contents.annotate(
         keyHash=Subquery(
@@ -115,10 +119,10 @@ def verify_signatures(hashes, signatures, contents):
                 base64.b64decode(sig),
                 digest_dict[algo][0],
                 padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
+                    mgf=padding.MGF1(digest_dict[algo][1]),
                     salt_length=padding.PSS.MAX_LENGTH
                 ),
-                digest_dict[algo][1]
+                digest_dict[algo][2]
             ):
                 return key
         except Exception as exc:
