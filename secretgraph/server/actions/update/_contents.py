@@ -102,7 +102,7 @@ def _transform_references(content, objdata, key_hashes_info, allowed_contents):
             target=targetob, group=ref.get("group") or "",
             extra=ref.get("extra") or ""
         )
-        if refob.group == "verify":
+        if refob.group == "signature":
             refob.deleteRecursive = None
             verifiers_ref.add(targetob.contentHash)
         if refob.group in {"key", "transfer"}:
@@ -283,7 +283,7 @@ def _update_or_create_content_or_key(
                     request, authset=authset
                 )["Content"]["objects"]
             )
-        if required_keys.isdisjoint(verifiers_ref):
+        if required_keys and required_keys.isdisjoint(verifiers_ref):
             raise ValueError("Not signed by required keys")
     elif create:
         final_references = []
@@ -524,11 +524,12 @@ def update_content(
     # TODO: maybe allow updating both keys (only info)
     if content.info.filter(tag="type=PublicKey"):
         is_key = True
+        required_keys = []
         key_obj = objdata.get("key")
         if not key_obj:
             raise ValueError("Cannot transform key to content")
 
-        hashes, newdata, private = _transform_key_into_dataobj(
+        hashes, newdata, _private = _transform_key_into_dataobj(
             key_obj, content=content
         )
     elif content.info.filter(tag="type=PrivateKey"):
@@ -537,11 +538,11 @@ def update_content(
         if not key_obj:
             raise ValueError("Cannot transform key to content")
 
-        hashes, public, newdata = _transform_key_into_dataobj(
+        hashes, _public, newdata = _transform_key_into_dataobj(
             key_obj, content=content
         )
         if not newdata:
-            raise ValueError()
+            raise ValueError("No data for private key")
     else:
         newdata = {
             "cluster": objdata.get("cluster"),

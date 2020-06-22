@@ -8,6 +8,10 @@ export const serverConfigQuery = graphql`
       injectedClusters {
         group
         clusters
+        links {
+          link
+          hash
+        }
       }
       registerUrl
       baseUrl

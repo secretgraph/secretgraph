@@ -86,11 +86,13 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             markForDestruction__lte=now,
             contents__count=0
         ).delete()
+    # for sorting. First action is always the most important action
+    # importance is higher by start date, newest (here id)
     pre_filtered_actions = Action.objects.select_related("cluster").filter(
         start__lte=now
     ).filter(
         models.Q(stop__isnull=True) | models.Q(stop__gte=now)
-    )
+    ).order_by("-start", "-id")
     if isinstance(query.model, Content):
         pre_filtered_actions = pre_filtered_actions.filter(
             models.Q(contentAction__isnull=True) |
@@ -104,8 +106,8 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "forms": {},
         "actions": Action.objects.none(),
         "action_key_map": {},
-        "action_types_clusters": {},
-        "action_types_contents": {}
+        "required_keys_clusters": {},
+        "required_keys_contents": {}
     }
     for item in authset:
         spitem = item.split(":", 1)
@@ -166,30 +168,48 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 returnval["objects"] = query.none()
                 return returnval
             if action.contentAction:
-                action_type_dict = \
-                    returnval["action_types_contents"].setdefault(
+                required_keys_dict = \
+                    returnval["required_keys_contents"].setdefault(
                         action.contentAction.content_id,
                         {}
                     )
             else:
-                action_type_dict = \
-                    returnval["action_types_clusters"].setdefault(
+                required_keys_dict = \
+                    returnval["required_keys_clusters"].setdefault(
                         action.cluster_id,
                         {}
                     )
-            action_type_dict[action.keyHash] = action_dict["action"]
 
             foundaccesslevel = result["accesslevel"]
 
             if accesslevel < foundaccesslevel:
                 accesslevel = foundaccesslevel
                 filters = result.get("filters", models.Q())
-                if result.get("form"):
-                    returnval["forms"] = {action.id: result["form"]}
+                form = result.get("form")
+                if form:
+                    returnval["forms"] = {action.id: form}
+
+                required_keys_dict[
+                    (action_dict["action"], action.keyHash)
+                ] = {
+                    "requiredKeys": form.get("requiredKeys", []),
+                    "allowedInfo": form.get("allowedInfo")
+                }
             elif accesslevel == foundaccesslevel:
                 filters &= result.get("filters", models.Q())
-                if result.get("form"):
-                    returnval["forms"][action.id] = result["form"]
+                form = result.get("form")
+                if form:
+                    returnval["forms"].setdefault(
+                        action.id,
+                        form
+                    )
+                required_keys_dict.setdefault(
+                    (action_dict["action"], action.keyHash),
+                    {
+                        "requiredKeys": form.get("requiredKeys", []),
+                        "allowedInfo": form.get("allowedInfo")
+                    }
+                )
 
             if action.keyHash != keyhashes[0]:
                 Action.objects.filter(keyHash=action.keyHash).update(
@@ -237,6 +257,11 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 "action_types_clusters"
             ].keys())
         )
+    # for sorting. First action is always the most important action
+    # importance is higher by start date, newest (here id)
+    returnval["actions"] = Action.objects.filter(
+        id__in=models.Subquery(returnval["actions"].values("id"))
+    ).order_by("-start", "-id")
     returnval["objects"] = query.filter(all_filters)
     return returnval
 

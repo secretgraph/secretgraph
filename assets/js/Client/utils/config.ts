@@ -16,6 +16,7 @@ export function checkConfig(config: ConfigInterface | null | undefined) {
   if (
     !config.baseUrl ||
     !(config.clusters instanceof Object) ||
+    !(config.contents instanceof Object) ||
     !(config.tokens instanceof Object) ||
     !(config.certificates instanceof Object) ||
     !(config.configHashes instanceof Array) ||

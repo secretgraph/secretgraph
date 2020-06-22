@@ -45,17 +45,12 @@ export const findConfigQuery = graphql`
           nonce
           link
           info
-          contentHash
-          availableActions {
-            keyHash
-            type
-          }
-          references(groups: ["key", "signature"]) {
+          references(groups: ["key"]) {
             edges {
               node {
                 extra
                 target {
-                  referencedBy(groups: ["private_key"]) {
+                  referencedBy(groups: ["public_key"]) {
                     edges {
                       node {
                         extra

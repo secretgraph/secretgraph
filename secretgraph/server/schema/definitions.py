@@ -21,19 +21,27 @@ class RegisterUrl(GenericScalar):
     """
 
 
+class InjectedKeyLink(graphene.ObjectType):
+    hash = graphene.String()
+    link = graphene.String()
+
+
 class ClusterGroupEntry(graphene.ObjectType):
     group = graphene.String()
     clusters = graphene.List(graphene.ID)
     links = graphene.List(
-        graphene.String, description="Links to injected keys"
+        InjectedKeyLink, description="Links to injected keys"
     )
 
     def resolve_links(self, info):
         return map(
-            lambda x: x.link,
+            lambda x: InjectedKeyLink(
+                link=x.link,
+                hash=x.contentHash
+            ),
             Content.objects.injected_keys(
                 group=self.group
-            ).only("flexid")
+            ).only("flexid", "contentHash")
         )
 
 
@@ -105,8 +113,12 @@ class FlexidMixin():
 
 
 class ActionEntry(graphene.ObjectType):
+    # of action key
     keyHash = graphene.String()
     type = graphene.String()
+    # of content keys
+    requiredKeys = graphene.List(graphene.String)
+    allowedInfo = graphene.List(graphene.String, required=False)
 
 
 class ActionMixin(object):
@@ -118,14 +130,19 @@ class ActionMixin(object):
             name, {}
         )
         resultval = result.get(
-            "action_types_%ss" % name.lower(), {}
+            "required_keys_%ss" % name.lower(), {}
         ).get(self.id, {}).items()
         # only show some actions
-        resultval = filter(lambda x: x[1][0] in {
+        resultval = filter(lambda key, val: key[0] in {
             "manage", "push", "view", "update"
-        }, resultval)
+        }, resultval.items())
         return map(
-            lambda x: ActionEntry(keyHash=x[0], type=x[1][0]), resultval
+            lambda key, val: ActionEntry(
+                keyHash=key[1], type=key[0],
+                requiredKeys=val["requiredKeys"],
+                allowedInfo=val["allowedInfo"] if key[0] != "view" else None,
+            ),
+            resultval
         )
 
 

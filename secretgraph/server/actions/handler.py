@@ -139,8 +139,8 @@ class ActionHandler():
             )),
             "form": {
                 "requiredKeys": [],
-                "injectInfo": [],
-                "allowInfo": [],
+                "injectedInfo": [],
+                "allowedInfo": [],
                 "references": []
             }
         }
@@ -151,16 +151,16 @@ class ActionHandler():
                 fields=("id",), check_field="contentHash", scope="view",
                 authset=authset
             ))
-        if action_dict.get("injectInfo"):
-            for i in action_dict["injectInfo"]:
+        if action_dict.get("injectedInfo"):
+            for i in action_dict["injectedInfo"]:
                 if i in {"type=PublicKey", "type=PrivateKey"}:
                     raise ValueError()
-            result["form"]["injectInfo"].extend(action_dict["injectInfo"])
-        if action_dict.get("allowInfo"):
-            for i in action_dict["allowInfo"]:
+            result["form"]["injectedInfo"].extend(action_dict["injectedInfo"])
+        if action_dict.get("allowedInfo"):
+            for i in action_dict["allowedInfo"]:
                 if i in {"type=PublicKey", "type=PrivateKey", "type="}:
                     raise ValueError()
-            result["form"]["allowInfo"].extend(action_dict["allowInfo"])
+            result["form"]["allowedInfo"].extend(action_dict["allowedInfo"])
         return result
 
     @staticmethod
@@ -193,8 +193,8 @@ class ActionHandler():
             "id": content.id,
             "form": {
                 "requiredKeys": [],
-                "injectInfo": [],
-                "allowInfo": [],
+                "injectedInfo": [],
+                "allowedInfo": [],
                 # create update action
                 "updateable": bool(action_dict.get("updateable")),
                 # freeze when fetched
@@ -208,16 +208,16 @@ class ActionHandler():
                 ]
             }
         }
-        if action_dict.get("injectInfo"):
-            for i in action_dict["injectInfo"]:
+        if action_dict.get("injectedInfo"):
+            for i in action_dict["injectedInfo"]:
                 if i in {"type=PublicKey", "type=PrivateKey"}:
                     raise ValueError()
-            result["form"]["injectInfo"].extend(action_dict["injectInfo"])
-        if action_dict.get("allowInfo"):
-            for i in action_dict["allowInfo"]:
+            result["form"]["injectedInfo"].extend(action_dict["injectedInfo"])
+        if action_dict.get("allowedInfo"):
+            for i in action_dict["allowedInfo"]:
                 if i in {"type=PublicKey", "type=PrivateKey", "type="}:
                     raise ValueError()
-            result["form"]["allowInfo"].extend(action_dict["allowInfo"])
+            result["form"]["allowedInfo"].extend(action_dict["allowedInfo"])
         references = action_dict.get("injectReferences") or {}
         if isinstance(references, list):
             references = dict(map(lambda x: (x["target"], x), references))
@@ -265,8 +265,8 @@ class ActionHandler():
             "accesslevel": 2,
             "form": {
                 "requiredKeys": [],
-                "injectInfo": [],
-                "allowInfo": None,
+                "injectedInfo": [],
+                "allowedInfo": None,
                 "injectReferences": []
             }
         }

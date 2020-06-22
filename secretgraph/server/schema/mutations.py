@@ -251,7 +251,7 @@ class ContentMutation(relay.ClientIDMutation):
                 form = next(iter(result["forms"].values()))
                 # None should be possible here for not updating
                 if content.get("info") is not None:
-                    allowed = form.get("allowInfo", None)
+                    allowed = form.get("allowedInfo", None)
                     if allowed is not None:
                         matcher = re.compile(
                             "^(?:%s)(?:(?<==)|$)" % "|".join(map(
@@ -264,7 +264,7 @@ class ContentMutation(relay.ClientIDMutation):
                             content["info"]
                         )
                     content["info"] = chain(
-                        form.get("injectInfo", []),
+                        form.get("injectedInfo", []),
                         content["info"]
                     )
                 # None should be possible here for not updating
@@ -349,7 +349,7 @@ class PushContentMutation(relay.ClientIDMutation):
             raise ValueError("Content not found")
         form = result["forms"][source.actions.get(group="push").id]
         if content.get("info") is not None:
-            allowed = form.get("allowInfo", None)
+            allowed = form.get("allowedInfo", None)
             if allowed is not None:
                 matcher = re.compile(
                     "^(?:%s)(?:(?<==)|$)" % "|".join(map(
@@ -362,11 +362,11 @@ class PushContentMutation(relay.ClientIDMutation):
                     content["info"]
                 )
             content["info"] = chain(
-                form.get("injectInfo", []),
+                form.get("injectedInfo", []),
                 content["info"]
             )
         else:
-            content["info"] = form.get("injectInfo") or []
+            content["info"] = form.get("injectedInfo") or []
         if content.get("references") is not None:
             content["references"] = chain(
                 form.get("injectReferences", []),
@@ -418,7 +418,7 @@ class TransferMutation(relay.ClientIDMutation):
     @classmethod
     def mutate_and_get_payload(
         cls, root, info, id,
-        url=None, key=None, authorization=None, headers=None, verify=False
+        url=None, key=None, authorization=None, headers=None
     ):
         result = id_to_result(
             info.context, id, Content, "update",

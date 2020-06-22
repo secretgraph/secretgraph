@@ -121,7 +121,7 @@ class RawView(View):
                 raise Http404()
         if "signatures" in request.GET:
             refs = content.references.select_related("target").filter(
-                group="verify"
+                group="signature"
             )
             response = JsonResponse({
                 "signatures": {
@@ -138,7 +138,7 @@ class RawView(View):
             _type = content.info.filter(tag__startswith="type=").first()
             response["X-TYPE"] = _type.split("=", 1)[1] if _type else ""
             verifiers = content.references.filter(
-                group="verify"
+                group="signature"
             )
             response["X-IS-VERIFIED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce

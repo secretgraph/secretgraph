@@ -7,10 +7,12 @@ import { Environment, FetchFunction, Network, RecordSource, Store, fetchQuery, c
 import { extractFiles } from 'extract-files';
 import { createClusterMutation } from "../queries/cluster";
 import { createContentMutation } from "../queries/content";
+import { serverConfigQuery } from "../queries/server";
 import { ConfigInterface, ReferenceInterface, ActionInterface } from "../interfaces";
 import { b64toarr, sortedHash } from "./misc";
 import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey } from "./encryption";
 import { checkConfig } from "./config";
+import { mapHashNames } from "../constants"
 
 
 export const createEnvironment = (url: string) => {
@@ -86,8 +88,63 @@ export function createContentAuth(
   return [authkeys, Promise.allSettled(privkeys)]
 }
 
+export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalgo: string, hashes?: string[]) : Promise<ReferenceInterface[]> {
+  const references: PromiseLike<ReferenceInterface>[] = [];
+  for(let counter=0; counter<privkeys.length;counter++){
+    const privkey = privkeys[counter];
+    let hash = hashes ? Promise.resolve(hashes[counter]): crypto.subtle.exportKey(
+      "jwk",
+      privkey
+    ).then(
+      (data) => {
+        // remove private data from JWK
+        delete data.d;
+        delete data.dp;
+        delete data.dq;
+        delete data.q;
+        delete data.qi;
+        data.key_ops = ["wrapKey"];
+        return crypto.subtle.importKey("jwk", data, { name: "RSA-OAEP",
+          hash: hashalgo }, true, ["wrapKey"]);
+        }
+    ).then(
+      (pubkey) => crypto.subtle.exportKey(
+        "spki" as const,
+        pubkey
+      )
+    ).then(
+      (exported) => crypto.subtle.digest(
+        hashalgo, exported
+      ).then(
+        (hashed) => btoa(String.fromCharCode(... new Uint8Array(hashed)))
+      )
+    );
+    references.push(
+      Promise.all([
+        hash,
+        crypto.subtle.sign(
+          {
+            name: "RSA-PSS",
+            saltLength: 32,
+          },
+          privkey,
+          content
+        )
+      ]).then((arr) : ReferenceInterface => {
+        return {
+          "target": arr[0],
+          "group": "key",
+          "extra": btoa(String.fromCharCode(... new Uint8Array(arr[1])))
+        }
+      })
+    )
+  }
 
-export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], hashes?: string[]) : [Promise<ReferenceInterface[]>, Promise<string[]>] {
+  return Promise.all(references);
+}
+
+
+export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], hashalgo?: string, hashes?: string[]) : [Promise<ReferenceInterface[]>, Promise<string[]>] {
   const references: PromiseLike<ReferenceInterface>[] = [];
   const info: PromiseLike<string>[] = [];
   for(let counter=0; counter<pubkeys.length;counter++){
@@ -97,7 +154,7 @@ export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], ha
       pubkey
     ).then(
       (exported) => crypto.subtle.digest(
-        "SHA-512", exported
+        hashalgo as string, exported
       ).then(
         (hashed) => btoa(String.fromCharCode(... new Uint8Array(hashed)))
       )
@@ -132,10 +189,12 @@ export async function createContent(
   cluster: string,
   value: File | Blob,
   pubkeys: CryptoKey[],
+  privkeys: CryptoKey[] = [],
   info: string[]=[],
   contentHash: string | null = null,
   references: ReferenceInterface[]=[],
   actions: ActionInterface[]=[],
+  hashalgo?: string,
   url?: string
 ) {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
@@ -158,13 +217,21 @@ export async function createContent(
       },
       arr[0],
       arr[1]
-    ).then((enc) => new File([enc], "value"))
+    )
   );
 
   const actionkeys = createContentAuth(
     config, [cluster], "manage", usedUrl
   )[0] as string[]
-  const [referencesPromise, infoPromise ] = encryptSharedKey(key, pubkeys);
+
+  const halgo = mapHashNames[hashalgo ? hashalgo : (await fetchQuery(
+    env, serverConfigQuery, {}
+  ) as any).secretgraphConfig.hashAlgorithms[0]];
+
+  const [referencesPromise, infoPromise ] = encryptSharedKey(key, pubkeys, halgo);
+  const referencesPromise2 = encryptedContentPromise.then(
+    (data) => hashContent(data, privkeys, halgo)
+  );
 
   return await new Promise(async (resolve, reject) => {
     const newInfo: string[] = await infoPromise;
@@ -174,10 +241,10 @@ export async function createContent(
         mutation: createContentMutation,
         variables: {
           cluster: cluster,
-          references: newReferences.concat(references),
+          references: newReferences.concat(await referencesPromise2, references),
           info: newInfo.concat(info),
           nonce: nonceb64,
-          value: await encryptedContentPromise,
+          value: await encryptedContentPromise.then((enc) => new File([enc], "value")),
           actions: actions,
           contentHash: contentHash,
           authorization: actionkeys
@@ -271,7 +338,7 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
       hash: "SHA-512"
     },
     true,
-    ["wrapKey", "wrapKey", "encrypt"]
+    ["wrapKey", "sign", "encrypt"]
   ) as CryptoKeyPair;
   const digestCertificatePromise = crypto.subtle.exportKey(
     "spki" as const,
@@ -298,18 +365,18 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     privateKey,
     warpedKey
   ).then(async (result: any) => {
-    const cluster = result.updateOrCreateCluster;
+    const clusterResult = result.updateOrCreateCluster;
     const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
-    config.configCluster = cluster.cluster["id"];
+    config.configCluster = clusterResult.cluster["id"];
     config.configHashes = [digestActionKey, digestCertificate];
     config["clusters"][config["baseUrl"]] = {};
-    config["clusters"][config["baseUrl"]][cluster.cluster["id"]] = {
+    config["clusters"][config["baseUrl"]][clusterResult.cluster["id"]] = {
       hashes: {}
     }
-    config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
+    config["clusters"][config["baseUrl"]][clusterResult.cluster["id"]].hashes[
       digestActionKey
     ] = ["manage", "create", "update"];
-    config["clusters"][config["baseUrl"]][cluster.cluster["id"]].hashes[
+    config["clusters"][config["baseUrl"]][clusterResult.cluster["id"]].hashes[
       digestCertificate
     ] = [];
     config["certificates"][
@@ -327,13 +394,17 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     return await createContent(
       env,
       config,
-      cluster.cluster["id"],
+      clusterResult.cluster["id"],
       new File([JSON.stringify(config)], "value"),
       [publicKey],
+      [privateKey],
       ["type=Config", "state=internal"],
-      digest
+      digest,
+      undefined,
+      [],
+      config.hashAlgorithm
     ).then(() => {
-      return [config, cluster.cluster.id as string];
+      return [config, clusterResult.cluster.id as string];
     })
   })
 }
