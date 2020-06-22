@@ -160,7 +160,11 @@ def iter_decrypt_contents(
     content_map, transfer_map = create_key_maps(
         content_query, decryptset, inject_public=inject_public
     )
-    content_query = content_query.annotate(
+
+    # main query, restricted to PublicKeys and decoded contents
+    query = content_query.filter(
+        Q(info__tag="type=PublicKey") | Q(id__in=content_map.keys())
+    ).annotate(
         is_transfer=Exists(
             ContentReference.objects.filter(
                 source=OuterRef("pk"),
@@ -176,11 +180,7 @@ def iter_decrypt_contents(
         )
     )
 
-    prefiltered_verifiers = Content.objects.filter(
-        info__tag="type=PublicKey"
-    )
-
-    for content in content_query:
+    for content in query:
         if content.id in transfer_map:
             verifiers = set()
             for action_id in content.active_action_ids:
@@ -190,7 +190,7 @@ def iter_decrypt_contents(
             if not verifiers:
                 verifiers = None
             else:
-                verifiers = prefiltered_verifiers.filter(
+                verifiers = content_query.filter(
                     id__in=verifiers
                 )
             result = transfer_value(
