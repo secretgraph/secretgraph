@@ -67,10 +67,11 @@ class DocumentsView(View):
             " ", ""
         ).split(","))
         authset.update(request.GET.getlist("token"))
+        # shallow copy initialization of result
         result = initializeCachedResult(
             request, authset=authset
-        )["Content"]
-        contents = fetch_contents(
+        )["Content"].copy()
+        result["objects"] = fetch_contents(
             result["objects"],
             result["actions"],
             kwargs.get("id"),
@@ -78,15 +79,13 @@ class DocumentsView(View):
             info_exclude=request.GET.getlist("exclInfo"),
             content_hashes=request.GET.getlist("contentHash")
         )
-        if not contents:
+        if not result["objects"]:
             raise Http404()
 
         def gen():
             seperator = b""
-            # currently it would add unverified results for the second call
-            # and the client here has here no way to check them anyway
             for document in iter_decrypt_contents(
-                contents, authset
+                result, authset
             ):
                 yield seperator
                 if kwargs.get("id"):

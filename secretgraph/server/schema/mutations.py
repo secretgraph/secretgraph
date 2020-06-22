@@ -412,17 +412,6 @@ class TransferMutation(relay.ClientIDMutation):
         )
         authorization = AuthList()
         headers = graphene.JSONString()
-        # verify on server
-        # useful for eliminating contents from not authorized senders in
-        # advance
-        verify = graphene.Boolean(
-            required=False,
-            description=(
-                "verify on server against cluster keys and "
-                "delete content if could not be verified by a cluster key "
-                "Note: every key is checked, regardless if visible for auth"
-            )
-        )
 
     content = graphene.Field(ContentNode, required=False)
 
@@ -441,9 +430,18 @@ class TransferMutation(relay.ClientIDMutation):
         if key and url:
             raise ValueError()
 
-        verifiers = None
-        if verify:
-            verifiers = Content.objects.filter(cluster=content_obj.cluster)
+        verifiers = set()
+        for action_id in content_obj.active_action_ids:
+            verifiers.update(
+                result["forms"][action_id].get("requiredKeys") or []
+            )
+        if not verifiers:
+            verifiers = None
+        else:
+            verifiers = Content.objects.filter(
+                id__in=verifiers,
+                info__tag="type=PublicKey"
+            )
 
         tres = transfer_value(
             content_obj, key=key, url=url, headers=headers,

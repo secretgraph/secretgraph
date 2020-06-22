@@ -150,27 +150,49 @@ def create_key_maps(contents, keyset=(), inject_public=True):
 
 
 def iter_decrypt_contents(
-    content_query, decryptset, inject_public=True, verifiers=None
+    result, decryptset, inject_public=True
 ) -> Iterable[Iterable[str]]:
     from ..actions.update import transfer_value
+    # copy query
+    content_query = result["objects"].all()
     # per default verifiers=None, so that a failed verifications cannot happen
     content_query.only_direct_fetch_action_trigger = True
     content_map, transfer_map = create_key_maps(
         content_query, decryptset, inject_public=inject_public
     )
-    query = content_query.filter(
-        Q(info__tag="type=PublicKey") | Q(id__in=content_map.keys())
-    ).annotate(
+    content_query = content_query.annotate(
         is_transfer=Exists(
             ContentReference.objects.filter(
                 source=OuterRef("pk"),
                 group="transfer"
             )
+        ),
+        active_action_ids=Subquery(
+            result["actions"].filter(
+                Q(contentAction__content_id=OuterRef("id")) |
+                Q(contentAction=None),
+                id__in=result["forms"].keys()
+            ).values("id")
         )
     )
 
-    for content in query.order_by("id"):
+    prefiltered_verifiers = Content.objects.filter(
+        info__tag="type=PublicKey"
+    )
+
+    for content in content_query:
         if content.id in transfer_map:
+            verifiers = set()
+            for action_id in content.active_action_ids:
+                verifiers.update(
+                    result["forms"][action_id].get("requiredKeys") or []
+                )
+            if not verifiers:
+                verifiers = None
+            else:
+                verifiers = prefiltered_verifiers.filter(
+                    id__in=verifiers
+                )
             result = transfer_value(
                 content, key=transfer_map[content.id], transfer=True,
                 verifiers=verifiers
@@ -210,7 +232,7 @@ def iter_decrypt_contents(
                             yield decryptor.update(chunk[:-16])
                             yield decryptor.finalize_with_tag(chunk[-16:])
                         chunk = nextchunk
-                content_query.fetch_action_trigger(content)
+                result["objects"].fetch_action_trigger(content)
         else:
             def _generator():
                 with content.value.open() as fileob:
@@ -218,7 +240,7 @@ def iter_decrypt_contents(
                     while chunk:
                         yield chunk
                         chunk = fileob.read(512)
-                content_query.fetch_action_trigger(content)
+                result["objects"].fetch_action_trigger(content)
         yield _generator()
 
 

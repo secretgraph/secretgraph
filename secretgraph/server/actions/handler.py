@@ -177,6 +177,7 @@ class ActionHandler():
                     Q(id=action_dict["id"]) |
                     Q(contentHash__in=action_dict["form"]["requiredKeys"])
                 ),
+                "form": action_dict["form"],
                 "accesslevel": 0
             }
         return None

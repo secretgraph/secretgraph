@@ -57,6 +57,64 @@ def _transform_info_tags(content, objdata):
     return info_tags, key_hashes, content_type, content_state or "default"
 
 
+def _transform_references(content, objdata, key_hashes_info, allowed_contents):
+    final_references = []
+    verifiers_ref = set()
+    key_hashes_ref = set()
+    for ref in objdata["references"]:
+        if isinstance(ref["target"], Content):
+            targetob = ref["target"]
+        else:
+            type_name = "Content"
+            try:
+                type_name, ref["target"] = from_global_id(ref["target"])
+            except Exception:
+                pass
+            if type_name != "Content":
+                raise ValueError("No Content Id")
+            if isinstance(ref["target"], int):
+                q = Q(id=ref["target"])
+            else:
+                _refs = Subquery(
+                    ContentTag.objects.filter(
+                        # for correct chaining
+                        tag="type=PublicKey",
+                        content_id=OuterRef("pk"),
+                        content__info__tag=f"key_hash={ref['target']}"
+                    ).values("pk")
+                )
+                # the direct way doesn't work
+                # subquery is necessary for chaining operations correctly
+                q = (
+                    Q(info__tag=f"id={ref['target']}") |
+                    Q(info__in=_refs)
+                )
+
+            targetob = allowed_contents.filter(
+                q, markForDestruction=None
+            ).first()
+        if not targetob:
+            continue
+        if ref.get("extra") and len(ref["extra"]) > 8000:
+            raise ValueError("Extra tag too big")
+        refob = ContentReference(
+            source=content,
+            target=targetob, group=ref.get("group") or "",
+            extra=ref.get("extra") or ""
+        )
+        if refob.group == "verify":
+            refob.deleteRecursive = None
+            verifiers_ref.add(targetob.contentHash)
+        if refob.group in {"key", "transfer"}:
+            refob.deleteRecursive = None
+            if refob.group == "key":
+                key_hashes_ref.add(targetob.contentHash)
+            if targetob.contentHash not in key_hashes_info:
+                raise ValueError("Key hash not found in info")
+        final_references.append(refob)
+    return final_references, key_hashes_ref, verifiers_ref
+
+
 def _transform_key_into_dataobj(key_obj, content=None):
     if isinstance(key_obj.get("privateKey"), str):
         key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
@@ -217,62 +275,16 @@ def _update_or_create_content_or_key(
 
     final_references = None
     key_hashes_ref = set()
+    verifiers_ref = set()
     if objdata.get("references") is not None:
-        final_references = []
-        for ref in objdata["references"]:
-            if isinstance(ref["target"], Content):
-                targetob = ref["target"]
-            else:
-                type_name = "Content"
-                try:
-                    type_name, ref["target"] = from_global_id(ref["target"])
-                except Exception:
-                    pass
-                if type_name != "Content":
-                    raise ValueError("No Content Id")
-                if isinstance(ref["target"], int):
-                    q = Q(id=ref["target"])
-                else:
-                    _refs1 = Subquery(
-                        ContentTag.objects.filter(
-                            tag=f"key_hash={ref['target']}",
-                            content_id=OuterRef("content_id")
-                        ).values("pk")
-                    )
-                    _refs2 = Subquery(
-                        ContentTag.objects.filter(
-                            # for correct chaining
-                            tag="type=PublicKey",
-                            content_id=OuterRef("pk"),
-                            content__info__in=_refs1
-                        ).values("pk")
-                    )
-                    # the direct way doesn't work
-                    # subquery is necessary for chaining operations correctly
-                    q = (
-                        Q(info__tag=f"id={ref['target']}") |
-                        Q(info__in=_refs2)
-                    )
-
-                targetob = Content.objects.filter(
-                    q, markForDestruction=None
-                ).first()
-            if not targetob:
-                continue
-            if ref.get("extra") and len(ref["extra"]) > 8000:
-                raise ValueError("Extra tag too big")
-            refob = ContentReference(
-                source=content,
-                target=targetob, group=ref.get("group") or "",
-                extra=ref.get("extra") or ""
+        final_references, key_hashes_ref, verifiers_ref = \
+            _transform_references(
+                content, objdata, key_hashes_info, initializeCachedResult(
+                    request, authset=authset
+                )["Content"]["objects"]
             )
-            if refob.group in {"key", "transfer"}:
-                refob.deleteRecursive = None
-                if refob.group == "key":
-                    key_hashes_ref.add(targetob.contentHash)
-                if targetob.contentHash not in key_hashes_info:
-                    raise ValueError("Key hash not found in info")
-            final_references.append(refob)
+        if required_keys.isdisjoint(verifiers_ref):
+            raise ValueError("Not signed by required keys")
     elif create:
         final_references = []
 
@@ -290,12 +302,19 @@ def _update_or_create_content_or_key(
             )
 
             if required_keys:
+                _refs = Subquery(
+                    ContentTag.objects.filter(
+                        # for correct chaining
+                        tag="type=PublicKey",
+                        content_id=OuterRef("pk"),
+                        content__info__tag__in=map(
+                            lambda x: f"key_hash={x}",
+                            required_keys
+                        )
+                    ).values("pk")
+                )
                 default_keys |= Content.objects.filter(
-                    info__tag="type=PublicKey",
-                    info__tag__in=map(
-                        lambda x: f"key_hash={x}",
-                        required_keys
-                    )
+                    info__in=_refs
                 )
 
             for keyob in default_keys.distinct():

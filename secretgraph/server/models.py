@@ -12,7 +12,7 @@ from django.conf import settings
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db import models
-from django.db.models.functions import Concat, Substr, Value
+from django.db.models.functions import Concat, Substr
 from django.urls import reverse
 from django.utils import timezone
 
@@ -171,7 +171,7 @@ class Content(FlexidModel):
                 q2, group="signature"
             ).annotate(
                 signature=Concat(
-                    "extra", Value("="), "target__contentHash"
+                    "extra", models.Value("="), "target__contentHash"
                 )
             )
         )
