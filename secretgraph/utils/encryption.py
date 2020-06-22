@@ -242,12 +242,3 @@ def iter_decrypt_contents(
                         chunk = fileob.read(512)
                 result["objects"].fetch_action_trigger(content)
         yield _generator()
-
-
-def encrypt_info_tag(keys, nonce, tag):
-    # TODO: maybe
-    ntags = []
-    for key in keys:
-        pass
-
-    return ntags
