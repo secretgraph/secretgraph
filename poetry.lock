@@ -12,10 +12,10 @@ description = "ASGI specs, helper code, and adapters"
 name = "asgiref"
 optional = false
 python-versions = ">=3.5"
-version = "3.2.7"
+version = "3.2.10"
 
 [package.extras]
-tests = ["pytest (>=4.3.0,<4.4.0)", "pytest-asyncio (>=0.10.0,<0.11.0)"]
+tests = ["pytest", "pytest-asyncio"]
 
 [[package]]
 category = "dev"
@@ -55,7 +55,7 @@ description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
 optional = false
 python-versions = "*"
-version = "2020.4.5.2"
+version = "2020.6.20"
 
 [[package]]
 category = "main"
@@ -138,7 +138,7 @@ description = "Django-MySQL extends Django's built-in MySQL and MariaDB support 
 name = "django-mysql"
 optional = true
 python-versions = ">=3.5"
-version = "3.6.0"
+version = "3.7.0"
 
 [package.dependencies]
 Django = ">=2.0"
@@ -410,7 +410,7 @@ description = "Python HTTP for Humans."
 name = "requests"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "2.23.0"
+version = "2.24.0"
 
 [package.dependencies]
 certifi = ">=2017.4.17"
@@ -607,8 +607,8 @@ aniso8601 = [
     {file = "aniso8601-7.0.0.tar.gz", hash = "sha256:513d2b6637b7853806ae79ffaca6f3e8754bdd547048f5ccc1420aec4b714f1e"},
 ]
 asgiref = [
-    {file = "asgiref-3.2.7-py2.py3-none-any.whl", hash = "sha256:9ca8b952a0a9afa61d30aa6d3d9b570bb3fd6bafcf7ec9e6bed43b936133db1c"},
-    {file = "asgiref-3.2.7.tar.gz", hash = "sha256:8036f90603c54e93521e5777b2b9a39ba1bad05773fcf2d208f0299d1df58ce5"},
+    {file = "asgiref-3.2.10-py3-none-any.whl", hash = "sha256:9fc6fb5d39b8af147ba40765234fa822b39818b12cc80b35ad9b0cef3a476aed"},
+    {file = "asgiref-3.2.10.tar.gz", hash = "sha256:7e51911ee147dd685c3c8b805c0ad0cb58d360987b56953878f8c06d2d1c6f1a"},
 ]
 astroid = [
     {file = "astroid-2.4.2-py3-none-any.whl", hash = "sha256:bc58d83eb610252fd8de6363e39d4f1d0619c894b0ed24603b881c02e64c7386"},
@@ -620,8 +620,8 @@ beautifulsoup4 = [
     {file = "beautifulsoup4-4.9.1.tar.gz", hash = "sha256:73cc4d115b96f79c7d77c1c7f7a0a8d4c57860d1041df407dd1aae7f07a77fd7"},
 ]
 certifi = [
-    {file = "certifi-2020.4.5.2-py2.py3-none-any.whl", hash = "sha256:9cd41137dc19af6a5e03b630eefe7d1f458d964d406342dd3edf625839b944cc"},
-    {file = "certifi-2020.4.5.2.tar.gz", hash = "sha256:5ad7e9a056d25ffa5082862e36f119f7f7cec6457fa07ee2f8c339814b80c9b1"},
+    {file = "certifi-2020.6.20-py2.py3-none-any.whl", hash = "sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"},
+    {file = "certifi-2020.6.20.tar.gz", hash = "sha256:5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3"},
 ]
 cffi = [
     {file = "cffi-1.14.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:1cae98a7054b5c9391eb3249b86e0e99ab1e02bb0cc0575da191aedadbdf4384"},
@@ -691,8 +691,8 @@ django-extensions = [
     {file = "django_extensions-2.2.9-py2.py3-none-any.whl", hash = "sha256:b19182d101a441fe001c5753553a901e2ef3ff60e8fbbe38881eb4a61fdd17c4"},
 ]
 django-mysql = [
-    {file = "django-mysql-3.6.0.tar.gz", hash = "sha256:ceba459b67edf3d42cc39d1655efbe9d9da374fe28b2a8f04c2c0fe24c30f8dc"},
-    {file = "django_mysql-3.6.0-py3-none-any.whl", hash = "sha256:856cf268fffd75694565ad427c907f96a1f3eec7d6a9b3f15c15ce05f9694b61"},
+    {file = "django-mysql-3.7.0.tar.gz", hash = "sha256:e839b71f897dd370b52293d5b0915570f07c3ebd602e9607684cb3655de8976f"},
+    {file = "django_mysql-3.7.0-py3-none-any.whl", hash = "sha256:861aa586c9a2fd22c38aaa119c1b2291036be5ad1154062192225097b4843e6d"},
 ]
 django-ranged-response = [
     {file = "django-ranged-response-0.2.0.tar.gz", hash = "sha256:f71fff352a37316b9bead717fc76e4ddd6c9b99c4680cdf4783b9755af1cf985"},
@@ -812,8 +812,8 @@ rdflib = [
     {file = "rdflib-5.0.0.tar.gz", hash = "sha256:78149dd49d385efec3b3adfbd61c87afaf1281c30d3fcaf1b323b34f603fb155"},
 ]
 requests = [
-    {file = "requests-2.23.0-py2.py3-none-any.whl", hash = "sha256:43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee"},
-    {file = "requests-2.23.0.tar.gz", hash = "sha256:b3f43d496c6daba4493e7c431722aeb7dbc6288f52a6e04e7b6023b0247817e6"},
+    {file = "requests-2.24.0-py2.py3-none-any.whl", hash = "sha256:fe75cc94a9443b9246fc7049224f75604b113c36acb93f87b80ed42c44cbb898"},
+    {file = "requests-2.24.0.tar.gz", hash = "sha256:b3559a131db72c33ee969480840fff4bb6dd111de7dd27c8ee1f820f4f00231b"},
 ]
 rope = [
     {file = "rope-0.17.0.tar.gz", hash = "sha256:658ad6705f43dcf3d6df379da9486529cf30e02d9ea14c5682aa80eb33b649e1"},
