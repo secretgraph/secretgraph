@@ -14,7 +14,7 @@ export const serverConfigQuery = graphql`
         }
       }
       registerUrl
-      baseUrl
+      restUrl
     }
   }
 `

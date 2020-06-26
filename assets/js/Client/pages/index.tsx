@@ -26,6 +26,9 @@ function MainPage(props: Props) {
   const [mainContext, setMainContext] = React.useState({
     "component": null,
     "action": config ? "add" : "start",
+    "subaction": "",
+    "filter": [],
+    "exclude": [],
     "item": elements.keys().next().value,
     "state": "draft",
     "environment": config ? createEnvironment(config.baseUrl) : null

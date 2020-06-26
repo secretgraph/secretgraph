@@ -833,22 +833,6 @@
             {
               "args": [],
               "deprecationReason": null,
-              "description": "",
-              "isDeprecated": false,
-              "name": "publicInfo",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                }
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
               "description": "injection group: group which injected keys must be used for mutations with content/cluster",
               "isDeprecated": false,
               "name": "group",
@@ -1018,6 +1002,18 @@
               "type": {
                 "kind": "SCALAR",
                 "name": "ID",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "publicInfo",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
                 "ofType": null
               }
             }
@@ -1910,7 +1906,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "baseUrl",
+              "name": "restUrl",
               "type": {
                 "kind": "SCALAR",
                 "name": "String",

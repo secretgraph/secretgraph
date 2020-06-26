@@ -7,6 +7,7 @@ import FormControl from '@material-ui/core/FormControl';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import InputLabel from '@material-ui/core/InputLabel';
+import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';
 import Dialog from '@material-ui/core/Dialog';
@@ -18,7 +19,7 @@ import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
-import Input from '@material-ui/core/Input';
+import CheckIcon from '@material-ui/icons/Check';
 
 
 import { fetchQuery } from "relay-runtime";
@@ -63,8 +64,9 @@ function SettingsImporter(props: Props) {
   const [oldConfig, setOldConfig] = React.useState(null) as [ConfigInterface | null, any];
   const [loginUrl, setLoginUrl] = React.useState(undefined);
   const [message, setMessage] = React.useState(undefined) as [SnackMessageInterface | undefined, any];
+  const [hasFile, setHasFile] = React.useState(false);
   const mainElement = document.getElementById("content-main");
-  const defaultPath: string | undefined = mainElement ? mainElement.dataset.serverPath : undefined;
+  const defaultPath: string | undefined = mainElement ? mainElement.dataset.graphqlPath : undefined;
 
   const handleSecretgraphEvent_inner = async (event: any) => {
     const providerUrl = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
@@ -210,7 +212,7 @@ function SettingsImporter(props: Props) {
     if (decryptingPw) {
       binary = utf8ToBinary(decryptingPw);
     }
-    const newConfig = await loadConfig(importFiles ? importFiles[0] : importUrl, binary);
+    const newConfig = await loadConfig(hasFile && importFiles ? importFiles[0] : importUrl, binary);
     if (!newConfig){
       /**if (importUrl && !importFiles){
 
@@ -336,17 +338,35 @@ function SettingsImporter(props: Props) {
             {importHelp}
           </Typography>
           <FormControl>
-            <Input
+            <input
               disabled={loadingStart || loadingImport}
-              disableUnderline={true}
+              className={classes.hidden}
               type="file"
               id="secretgraph-import-file"
               aria-describedby="secretgraph-import-file-help"
+              onChange={
+                () => {
+                  (document.getElementById("secretgraph-import-url") as HTMLInputElement).value="";
+                  setHasFile(true);
+                }
+              }
             />
+            <label htmlFor="secretgraph-import-file">
+              <Button variant="contained" color="primary" component="span">
+                Upload Config
+                {
+                  hasFile ? <CheckIcon/> : <CloudUploadIcon/>
+                }
+              </Button>
+            </label>
             <FormHelperText id="secretgraph-import-file-help">{importFileLabel}</FormHelperText>
           </FormControl>
           <TextField
-            disabled={loadingStart || loadingImport}
+            disabled={loadingStart || loadingImport} onChange={
+              (event) => {
+                setHasFile(event.target.value ? false : true);
+              }
+            }
             fullWidth={true}
             variant="outlined"
             label="Import from"

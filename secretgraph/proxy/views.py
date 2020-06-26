@@ -1,9 +1,13 @@
 from django.conf import settings
+from django.shortcuts import resolve_url
 from django.views.generic import TemplateView
 
 
 class ProxyView(TemplateView):
     template_name = "secretgraph_proxy/index.html"
-    extra_context = {
-        "server_path": getattr(settings, "SECRETGRAPH_SERVER_PATH", "/graphql")
-    }
+
+    def get_context_data(self, **kwargs):
+        kwargs["graphql_path"] = resolve_url(getattr(
+            settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql"
+        ))
+        return super().get_context_data(**kwargs)

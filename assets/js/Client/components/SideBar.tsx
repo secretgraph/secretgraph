@@ -13,22 +13,26 @@ import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
 import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
 import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
+import StarIcon from '@material-ui/icons/Star';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import InboxIcon from "@material-ui/icons/MoveToInbox";
+import MailOutlineIcon from '@material-ui/icons/MailOutline';
+import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../theme";
-import { ConfigInterface } from "../interfaces";
+import { ConfigInterface, MainContextInterface } from "../interfaces";
 
 type SideBarProps = {
   openState: any,
   classes: any,
   theme: Theme,
-  mainContext: any,
-  setMainContext: any
+  mainContext: MainContextInterface,
+  setMainContext: any,
+  config: ConfigInterface
 };
 
 type SideBarHeaderProps = {
@@ -41,13 +45,16 @@ type SideBarHeaderProps = {
 type SideBarPostboxProps = {
   classes: any,
   theme: Theme,
-  config: ConfigInterface
+  config: ConfigInterface,
+  mainContext: MainContextInterface,
+  setMainContext: any
 };
 
 type SideBarItemsProps = {
   classes: any,
   theme: Theme,
-  config: ConfigInterface
+  config: ConfigInterface,
+  mainContext: any
 };
 
 const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
@@ -80,7 +87,7 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
 
 
 const SideBarPostbox = themeComponent((props: SideBarPostboxProps) => {
-  const { classes, theme, config } = props;
+  const { classes, theme, config, setMainContext, mainContext } = props;
   return (
     <ExpansionPanel>
       <ExpansionPanelSummary
@@ -92,24 +99,40 @@ const SideBarPostbox = themeComponent((props: SideBarPostboxProps) => {
       </ExpansionPanelSummary>
       <ExpansionPanelDetails>
         <List>
-          <ListItem button key={"Inbox"}>
+          <ListItem button key={"Inbox"} onClick={() => setMainContext({
+            ...mainContext,
+            item: "Message",
+            action: "view",
+            subaction: "inbox",
+            filter: ["type=Message"],
+            exclude: []
+          })}>
             <ListItemIcon>
               <InboxIcon />
             </ListItemIcon>
           </ListItem>
-          <ListItem button key={"Starred"}>
+          <ListItem button key={"Outbox"} onClick={() => setMainContext({
+            ...mainContext,
+            item: "Message",
+            action: "edit",
+            subaction: "drafts",
+            filter: ["type=Message", "state=draft"],
+            exclude: []
+          })}>
             <ListItemIcon>
-              <InboxIcon />
+              <MailIcon />
             </ListItemIcon>
           </ListItem>
-          <ListItem button key={"Outbox"}>
+          <ListItem button key={"Drafts"} onClick={() => setMainContext({
+            ...mainContext,
+            item: "Message",
+            action: "edit",
+            subaction: "drafts",
+            filter: ["type=Message", "state=draft"],
+            exclude: []
+          })}>
             <ListItemIcon>
-              <InboxIcon />
-            </ListItemIcon>
-          </ListItem>
-          <ListItem button key={"Drafts"}>
-            <ListItemIcon>
-              <InboxIcon />
+              <DraftsIcon />
             </ListItemIcon>
           </ListItem>
         </List>
@@ -123,6 +146,11 @@ const SideBarItems = themeComponent((props: SideBarItemsProps) => {
   const { classes, theme, config } = props;
   return (
     <List>
+      <ListItem button key={"Starred"}>
+        <ListItemIcon>
+          <StarIcon />
+        </ListItemIcon>
+      </ListItem>
       {["All mail", "Trash", "Spam", "l2", "l", "l13", "Öösdsd"].map((text, index) => (
         <ListItem button key={text}>
           <ListItemIcon>
@@ -138,7 +166,7 @@ const SideBarItems = themeComponent((props: SideBarItemsProps) => {
 
 
 function SideBar(props: SideBarProps) {
-    const { classes, theme, mainContext, setMainContext, openState } = props;
+    const { classes, theme, openState, mainContext, setMainContext, config } = props;
     const closeButton = (
       <Hidden lgUp>
         <IconButton onClick={() => openState.setDrawerOpen(false)}>
@@ -164,8 +192,13 @@ function SideBar(props: SideBarProps) {
         <Divider />
         <div className={classes.sideBarBody}>
           <SideBarPostbox
+            mainContext={mainContext}
+            config={config}
           />
-          <SideBarItems/>
+          <SideBarItems
+            mainContext={mainContext}
+            config={config}
+          />
         </div>
       </Drawer>
 

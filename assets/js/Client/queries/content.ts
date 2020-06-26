@@ -28,7 +28,7 @@ export const createContentMutation = graphql`
 export const findConfigQuery = graphql`
   query contentConfigQuery($cluster: ID, $authorization: [String!], $contentHashes: [String!]) {
     secretgraphConfig {
-      baseUrl
+      restUrl
       PBKDF2Iterations
       hashAlgorithms
     }

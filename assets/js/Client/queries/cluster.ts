@@ -28,7 +28,7 @@ export const getClusterConfigurationQuery = graphql`
 
 
 export const createClusterMutation = graphql`
-  mutation clusterCreateMutation($publicInfo: String, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $nonce: String, $authorization: [String!]) {
+  mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $nonce: String, $authorization: [String!]) {
     updateOrCreateCluster(
       input: {
         cluster: {
@@ -55,16 +55,5 @@ export const createClusterMutation = graphql`
       }
       actionKey
     }
-  } (
-    secretgraphConfig {
-      injectedClusters {
-        group
-        clusters
-        links {
-          hash
-          link
-        }
-      }
-    }
-  )
+  }
 `

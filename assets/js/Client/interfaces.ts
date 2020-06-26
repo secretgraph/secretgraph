@@ -48,6 +48,9 @@ export interface SnackMessageInterface {
 export interface MainContextInterface {
   component: null | string;
   action: string;
+  subaction: string;
+  filter: string[];
+  exclude: string[];
   item: null | string;
   state: string;
   environment: Environment | null;

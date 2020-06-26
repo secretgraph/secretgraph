@@ -6,6 +6,7 @@ from django.db.models import OuterRef, Q, Subquery
 from django.http import (
     FileResponse, Http404, JsonResponse, StreamingHttpResponse
 )
+from django.shortcuts import resolve_url
 from django.views.generic import View
 from django.views.generic.edit import UpdateView
 from graphene_file_upload.django import FileUploadGraphQLView
@@ -63,6 +64,9 @@ class ClustersView(View):
                 "pages": page.paginator.num_pages,
                 "clusters": [c.flexid for c in page]
             })
+        response["X-GRAPHQL-PATH"] = resolve_url(getattr(
+            settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql"
+        ))
 
         return response
 
@@ -106,7 +110,11 @@ class DocumentsView(View):
                         yield chunk.replace(b"\0", b"\\0")
                 seperator = b"\0"
 
-        return StreamingHttpResponse(gen())
+        response = StreamingHttpResponse(gen())
+        response["X-GRAPHQL-PATH"] = resolve_url(getattr(
+            settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql"
+        ))
+        return response
 
 
 class RawView(View):
@@ -190,6 +198,10 @@ class RawView(View):
         response["X-HASH-ALGORITHMS"] = ",".join(
             settings.SECRETGRAPH_HASH_ALGORITHMS
         )
+        response["X-GRAPHQL-PATH"] = resolve_url(getattr(
+            settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql"
+        ))
+
         return response
 
 

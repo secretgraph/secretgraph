@@ -51,7 +51,7 @@ class SecretgraphConfig(ObjectType):
     injectedClusters = graphene.List(ClusterGroupEntry)
     registerUrl = graphene.Field(RegisterUrl)
     loginUrl = graphene.String(required=False)
-    baseUrl = graphene.String(required=False)
+    restUrl = graphene.String(required=False)
 
     def resolve_hashAlgorithms(self, info):
         return settings.SECRETGRAPH_HASH_ALGORITHMS
@@ -90,8 +90,8 @@ class SecretgraphConfig(ObjectType):
             return resolve_url(login_url)
         return None
 
-    def resolve_baseUrl(self, info):
-        baseUrl = getattr(settings, "SECRETGRAPH_BASE_URL", None)
+    def resolve_restUrl(self, info):
+        baseUrl = getattr(settings, "SECRETGRAPH_REST_URL", None)
         if baseUrl:
             return resolve_url(baseUrl)
         return None

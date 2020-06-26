@@ -39,7 +39,7 @@
     "serviceworker-webpack-plugin": "^1.0.1",
     "typescript": "^3.9.5",
     "webpack": "^4.43.0",
-    "webpack-bundle-tracker": "^1.0.0-alpha.1",
+    "webpack-bundle-tracker": "^0.4.3",
     "webpack-cli": "^3.3.12"
   },
   "scripts": {

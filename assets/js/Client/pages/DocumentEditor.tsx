@@ -16,6 +16,8 @@ export default themeComponent((props: Props) => {
   const { classes, theme, mainContext, setMainContext } = props;
 
   return (
-    <React.Fragment />
+    <form className={classes.root} noValidate autoComplete="off">
+
+    </form>
   );
 });
