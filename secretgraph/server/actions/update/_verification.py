@@ -24,7 +24,7 @@ def retrieve_signatures(
     if params is None or inline_domain is None:
         params, inline_domain = get_requests_params(url)
     prepared_url = url.rstrip("?&")
-    prepared_url = "%s%ssignatures" % (
+    prepared_url = "%s%skeys" % (
         prepared_url,
         "&" if "?" in prepared_url else "?"
     )

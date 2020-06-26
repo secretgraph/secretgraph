@@ -138,7 +138,7 @@ description = "Django-MySQL extends Django's built-in MySQL and MariaDB support 
 name = "django-mysql"
 optional = true
 python-versions = ">=3.5"
-version = "3.7.0"
+version = "3.7.1"
 
 [package.dependencies]
 Django = ">=2.0"
@@ -691,8 +691,8 @@ django-extensions = [
     {file = "django_extensions-2.2.9-py2.py3-none-any.whl", hash = "sha256:b19182d101a441fe001c5753553a901e2ef3ff60e8fbbe38881eb4a61fdd17c4"},
 ]
 django-mysql = [
-    {file = "django-mysql-3.7.0.tar.gz", hash = "sha256:e839b71f897dd370b52293d5b0915570f07c3ebd602e9607684cb3655de8976f"},
-    {file = "django_mysql-3.7.0-py3-none-any.whl", hash = "sha256:861aa586c9a2fd22c38aaa119c1b2291036be5ad1154062192225097b4843e6d"},
+    {file = "django-mysql-3.7.1.tar.gz", hash = "sha256:a1c33396175e631b022268c2947a154464a90d9d6da1016e5bb59b331e441f74"},
+    {file = "django_mysql-3.7.1-py3-none-any.whl", hash = "sha256:1e4f6b5b7b448716d1d47cca20d5fb407e8da309057ea8f8c74d352eee0d93cd"},
 ]
 django-ranged-response = [
     {file = "django-ranged-response-0.2.0.tar.gz", hash = "sha256:f71fff352a37316b9bead717fc76e4ddd6c9b99c4680cdf4783b9755af1cf985"},

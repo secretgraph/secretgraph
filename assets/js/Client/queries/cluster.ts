@@ -2,7 +2,7 @@
 import { graphql } from "react-relay"
 
 export const getClusterConfigurationQuery = graphql`
-  query getClusterConfigurationQuery($id: ID, $authorization: [String!]) {
+  query clusterGetConfigurationQuery($id: ID!, $authorization: [String!]) {
     secretgraphConfig {
       injectedClusters {
         group
@@ -13,16 +13,14 @@ export const getClusterConfigurationQuery = graphql`
         }
       }
     }
-    cluster(id: $id, authorization: $authorization) @includeif($id) {
-      cluster {
-        id
-        group
-        availableActions {
-          keyHash
-          type
-          requiredKeys
-          allowedInfo
-        }
+    cluster(id: $id, authorization: $authorization) {
+      id
+      group
+      availableActions {
+        keyHash
+        type
+        requiredKeys
+        allowedInfo
       }
     }
   }
@@ -31,13 +29,6 @@ export const getClusterConfigurationQuery = graphql`
 
 export const createClusterMutation = graphql`
   mutation clusterCreateMutation($publicInfo: String, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $nonce: String, $authorization: [String!]) {
-    secretgraphConfig {
-      injectedClusters {
-        group
-        clusters
-        links
-      }
-    }
     updateOrCreateCluster(
       input: {
         cluster: {
@@ -64,5 +55,16 @@ export const createClusterMutation = graphql`
       }
       actionKey
     }
-  }
+  } (
+    secretgraphConfig {
+      injectedClusters {
+        group
+        clusters
+        links {
+          hash
+          link
+        }
+      }
+    }
+  )
 `

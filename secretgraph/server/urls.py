@@ -17,11 +17,11 @@ urlpatterns = [
     path(
         "contents/",
         DocumentsView.as_view(),
-        name="documents"
+        name="contents"
     ),
     path(
         "contents/<slug:id>/",
         DocumentsView.as_view(),
-        name="documents"
+        name="contents"
     ),
 ]

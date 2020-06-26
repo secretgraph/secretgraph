@@ -1,6 +1,7 @@
 import json
 
 from django.conf import settings
+from django.db.models import Subquery, OuterRef
 from django.http import (
     FileResponse, Http404, JsonResponse, StreamingHttpResponse
 )
@@ -102,15 +103,7 @@ class DocumentsView(View):
 
 
 class RawView(View):
-    def get(self, request, *args, **kwargs):
-        # for decryptset and authset
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
-        authset.update(request.GET.getlist("token"))
-        result = initializeCachedResult(
-            request, authset=authset
-        )["Content"]
+    def handle_content(self, request, result, *args, **kwargs):
         content = None
         try:
             content = fetch_by_id(
@@ -119,17 +112,35 @@ class RawView(View):
         finally:
             if not content:
                 raise Http404()
-        if "signatures" in request.GET:
-            refs = content.references.select_related("target").filter(
-                group="signature"
-            )
+        if "keys" in request.GET:
+            refs = content.references.select_related("target")
             response = JsonResponse({
                 "signatures": {
                     ref.target.contentHash: {
                         "signature": ref.extra,
                         "link": ref.target.link
                     }
-                    for ref in refs
+                    for ref in refs.filter(
+                        group="signature",
+                        target__in=result["objects"]
+                    )
+                },
+                "keys": {
+                    ref.target.contentHash: {
+                        "key": ref.extra,
+                        "link": ref.privkey_link and ref.privkey_link[0]
+                    }
+                    for ref in refs.filter(
+                        group="key",
+                        target__in=result["objects"]
+                    ).annotate(
+                        privkey_link=Subquery(
+                            result["objects"].filter(
+                                info__tag="type=PrivateKey",
+                                referencedBy__source__referencedBy=OuterRef("pk")  # noqa: E501
+                            ).values("link")[:1]
+                        )
+                    )
                 }
             })
             response["X-IS-VERIFIED"] = "false"
@@ -142,6 +153,23 @@ class RawView(View):
             )
             response["X-IS-VERIFIED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
+
+        return response
+
+    def get(self, request, *args, **kwargs):
+        # for decryptset and authset
+        authset = set(request.headers.get("Authorization", "").replace(
+            " ", ""
+        ).split(","))
+        authset.update(request.GET.getlist("token"))
+        result = initializeCachedResult(
+            request, authset=authset
+        )["Content"]
+        # if kwargs.get("id"):
+        response = self.handle_content(request, result, *args, **kwargs)
+        # else:
+        #    response = self.handle_links(request, result, *args, **kwargs)
+
         response["X-ITERATIONS"] = ",".join(
             settings.SECRETGRAPH_ITERATIONS
         )

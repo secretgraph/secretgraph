@@ -1,9 +1,9 @@
 
 import { saveAs } from 'file-saver';
-import { fetchQuery, Environment } from "relay-runtime";
+import { fetchQuery, Environment, RecordSource } from "relay-runtime";
 
 import { ConfigInterface } from "../interfaces";
-import { PBKDF2PW, arrtogcmkey } from "./encryption";
+import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
@@ -16,7 +16,6 @@ export function checkConfig(config: ConfigInterface | null | undefined) {
   if (
     !config.baseUrl ||
     !(config.clusters instanceof Object) ||
-    !(config.contents instanceof Object) ||
     !(config.tokens instanceof Object) ||
     !(config.certificates instanceof Object) ||
     !(config.configHashes instanceof Array) ||
@@ -38,6 +37,7 @@ export const loadConfigSync = (obj: Storage = window.localStorage): ConfigInterf
   return checkConfig(JSON.parse(result));
 }
 
+
 export const loadConfig = async (obj: string | File | Request | Storage = window.localStorage, pw?: string): Promise<ConfigInterface | null> => {
   if ( obj instanceof Storage ) {
     return loadConfigSync(obj);
@@ -57,22 +57,18 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
     }
     return checkConfig(parsedResult);
   } else {
-    let result = await fetch(obj);
+    let url;
+    if(obj instanceof Request){
+      url = obj;
+    } else {
+      const foo;
+
+    }
+    const result = await fetch(url);
     if (!result.ok){
       return null;
     }
-    let parsedResult = await result.json();
-    if (pw && parsedResult.data){
-      parsedResult = await crypto.subtle.decrypt(
-        {
-          name: "AES-GCM",
-          iv: parsedResult.nonce
-        },
-        await PBKDF2PW(pw, parsedResult.nonce, parsedResult.iterations).then((data) => arrtogcmkey(data)),
-        b64toarr(parsedResult.data)
-      ).then((data) => String.fromCharCode(...new Uint8Array(data)));
-    }
-    return checkConfig(parsedResult);
+    return checkConfig(await result.json());
   }
 }
 
@@ -117,7 +113,7 @@ export async function exportConfig(config: ConfigInterface | string, pw?: string
   );
 }
 
-export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwtoken?: string) {
+export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwtoken?: ArrayBufferLike) {
   let actions : string[] = [], cert : Uint8Array | null = null;
   for(const hash of config.configHashes) {
     if(config.tokens[hash]){
@@ -151,18 +147,14 @@ export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwt
       ));
     }
     for(const node of data.contents.edges){
-      if (pwtoken) {
-        if(!("type=Config" in node.node.info)){
-          continue;
+      if("type=Config" in node.node.info){
+        if (pwtoken) {
+          return `${data.secretgraphConfig.baseUrl}contents/${node.node.id}/?token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(pwtoken)))}`
+        } else {
+          return `${data.secretgraphConfig.baseUrl}${node.node.link}/?token=${tokens.join("token=")}`;
         }
-        return `${data.secretgraphConfig.baseUrl}documents/${data.contents.edges[0].node.id}/?token=${tokens.join("token=")}&token=${certhashes[0]}:${pwtoken}`
-      } else {
-        if(!("type=PrivateKey" in node.node.info)){
-          continue;
-        }
-        return `${data.contents.edges[0].node.link}?token=${tokens.join("token=")}`
       }
     }
-
+    throw Error("Invalid response")
   });
 }
