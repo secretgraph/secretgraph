@@ -56,7 +56,7 @@ class ClustersView(View):
                 cluster.publicInfo
             )
         else:
-            page = Paginator(clusters.order_by("id"), 1000).get_page(
+            page = Paginator(clusters.order_by("id"), 500).get_page(
                 request.GET.get("page", 1)
             )
             response = JsonResponse({
@@ -123,46 +123,40 @@ class RawView(View):
             refs = content.references.select_related("target").filter(
                 group__in=["key", "signature"]
             )
-            q = Q()
+            q = Q(target__in=result["objects"])
             for k in request.GET.getlist("keys"):
                 # digests have a length > 10
                 if len(k) >= 10:
                     q |= Q(target__info__tag=f"key_hash={k}")
             # signatures first, should be maximal 20, so on first page
-            refs = refs.filter(q).order_by("-group", "id")
-            page = Paginator(refs, 1000).get_page(
+            refs = refs.filter(q).annotate(
+                privkey_link=Subquery(
+                    result["objects"].filter(
+                        info__tag="type=PrivateKey",
+                        referencedBy__source__referencedBy=OuterRef("pk")
+                    ).values("link")[:1]
+                )
+            ).order_by("-group", "id")
+            page = Paginator(refs, 500).get_page(
                 request.GET.get("page", 1)
             )
-            response = JsonResponse({
+            response = {
                 "pages": page.paginator.num_pages,
-                "signatures": {
-                    ref.target.contentHash: {
-                        "signature": ref.extra,
-                        "link": ref.target.link
-                    }
-                    for ref in page.filter(
-                        group="signature",
-                        target__in=result["objects"]
-                    )
-                },
-                "keys": {
-                    ref.target.contentHash: {
+                "signatures": {},
+                "keys": {}
+            }
+            for ref in refs:
+                if ref.group == "key":
+                    response["keys"][ref.target.contentHash] = {
                         "key": ref.extra,
                         "link": ref.privkey_link and ref.privkey_link[0]
                     }
-                    for ref in page.filter(
-                        group="key",
-                        target__in=result["objects"]
-                    ).annotate(
-                        privkey_link=Subquery(
-                            result["objects"].filter(
-                                info__tag="type=PrivateKey",
-                                referencedBy__source__referencedBy=OuterRef("pk")  # noqa: E501
-                            ).values("link")[:1]
-                        )
-                    )
-                }
-            })
+                else:
+                    response["signatures"][ref.target.contentHash] = {
+                        "signature": ref.extra,
+                        "link": ref.target.link
+                    }
+            response = JsonResponse(response)
             response["X-IS-VERIFIED"] = "false"
         else:
             response = FileResponse(content.value.open("rb"))
