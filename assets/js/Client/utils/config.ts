@@ -57,18 +57,93 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
     }
     return checkConfig(parsedResult);
   } else {
-    let url;
+    let request : Request;
     if(obj instanceof Request){
-      url = obj;
+      request = obj;
     } else {
-      const foo;
-
+      request = new Request(obj);
     }
-    const result = await fetch(url);
-    if (!result.ok){
+    const contentResult = await fetch(request);
+    if (!contentResult.ok){
       return null;
     }
-    return checkConfig(await result.json());
+    if (pw){
+      const decrypturl = new URL(request.url);
+      decrypturl.searchParams.set("keys", "")
+      const decryptResult = await fetch(new Request(
+        decrypturl.toString(), {
+          headers: request.headers
+        }
+      ));
+      decrypturl.searchParams.delete("keys")
+      if (!decryptResult.ok || !contentResult.headers.get("X-NONCE")){
+        return null;
+      }
+      const config = await new Promise<[CryptoKey, Uint8Array, string]>(async (resolve, reject) => {
+        const queries=[];
+        // support only one page
+        const page = await decryptResult.json();
+        for(const k of page.keys){
+          if (!k.link){
+            continue;
+          }
+          decrypturl.pathname = k.link;
+          queries.push(fetch(new Request(
+            decrypturl.toString(), {
+              headers: request.headers
+            }
+          )).then(async (response) => {
+            if (!response.ok || !response.headers.get("X-NONCE") || !response.headers.get("X-ITERATIONS")){
+              return;
+            }
+            const nonce = b64toarr(response.headers.get("X-NONCE") as string);
+            const data = await response.arrayBuffer();
+            for(const iterations of (response.headers.get("X-ITERATIONS") as string).split(",")){
+              const gcmkey = await PBKDF2PW(pw, nonce, parseInt(iterations)).then((data) => arrtogcmkey(data));
+              try {
+                return await crypto.subtle.decrypt(
+                  {
+                    name: "AES-GCM",
+                    iv: nonce
+                  },
+                  gcmkey,
+                  data
+                ).then(arrtorsaoepkey).then(
+                  (key) => resolve([key, nonce, k.extra])
+                )
+              } finally {}
+            }
+          }));
+        }
+        Promise.allSettled(queries).then(() => reject());
+      }).then(
+        arr => crypto.subtle.decrypt(
+          {
+            name: "AES-GCM",
+            iv: arr[1]
+          },
+          arr[0],
+          b64toarr(arr[2])
+        ).then(arrtogcmkey)
+      ).then(
+        async (key) => crypto.subtle.decrypt(
+          {
+            name: "AES-GCM",
+            iv: b64toarr(contentResult.headers.get("X-NONCE") as string)
+          },
+          key,
+          await contentResult.arrayBuffer()
+        ).then((data) => JSON.parse(String.fromCharCode(...new Uint8Array(data))))
+      )
+      return checkConfig(config);
+    }
+    try {
+      return checkConfig(await contentResult.json());
+    } catch(e) {
+      console.warn(e);
+      return null;
+    }
+
   }
 }
 

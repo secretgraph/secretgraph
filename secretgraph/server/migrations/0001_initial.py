@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('flexid', models.UUIDField(blank=True, null=True, unique=True)),
-                ('publicInfo', models.TextField(db_column='public_info')),
+                ('publicInfo', models.FileField(db_column='public_info', upload_to=secretgraph.server.models.get_publicInfo_file_path)),
                 ('public', models.BooleanField(blank=True, default=False)),
                 ('markForDestruction', models.DateTimeField(blank=True, db_column='mark_for_destruction', null=True)),
                 ('featured', models.BooleanField(blank=True, default=False)),
@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 ('updated', models.DateTimeField(auto_now=True)),
                 ('markForDestruction', models.DateTimeField(blank=True, db_column='mark_for_destruction', null=True)),
                 ('nonce', models.CharField(max_length=255)),
-                ('file', models.FileField(upload_to=secretgraph.server.models.get_file_path)),
+                ('file', models.FileField(upload_to=secretgraph.server.models.get_content_file_path)),
                 ('contentHash', models.CharField(blank=True, db_column='content_hash', max_length=255, null=True)),
                 ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='contents', to='secretgraph.Cluster')),
             ],

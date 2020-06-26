@@ -399,9 +399,10 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Cluster
         name = "Cluster"
         interfaces = (relay.Node,)
-        fields = ['publicInfo', 'group']
+        fields = ['group']
     contents = ContentConnectionField()
     user = relay.GlobalID(required=False)
+    publicInfo = graphene.String(required=False)
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
@@ -438,6 +439,9 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
             self, info
         )
 
+    def resolve_publicInfo(self, info):
+        return self.publicInfo.open("r").read()
+
 
 class ClusterConnectionField(DjangoConnectionField):
     def __init__(self, type=ClusterNode, *args, **kwargs):
@@ -467,7 +471,7 @@ class ClusterConnectionField(DjangoConnectionField):
                 not getattr(settings, "AUTH_USER_MODEL", None) and
                 not getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
             ):
-                # users are not supported so ignore them
+                # users are not supported in this configuration so ignore them
                 user = None
             else:
                 try:

@@ -19,11 +19,13 @@ logger = logging.getLogger(__name__)
 
 
 def retrieve_signatures(
-    url, headers, session=None, params=None, inline_domain=None, keepalive=True
+    url, headers, session=None, params=None, inline_domain=None,
+    keepalive=True
 ):
     if params is None or inline_domain is None:
         params, inline_domain = get_requests_params(url)
     prepared_url = url.rstrip("?&")
+    # signatures should be on first page
     prepared_url = "%s%skeys" % (
         prepared_url,
         "&" if "?" in prepared_url else "?"

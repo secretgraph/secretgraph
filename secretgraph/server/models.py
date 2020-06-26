@@ -23,7 +23,27 @@ from .messages import (
 logger = logging.getLogger(__name__)
 
 
-def get_file_path(instance, filename) -> str:
+def get_publicInfo_file_path(instance, filename) -> str:
+    ret = getattr(settings, "SECRETGRAPH_FILE_DIR", "cluster_files")
+    # try 100 times to find free filename
+    # but should not take more than 1 try
+    for _i in range(0, 100):
+        ret_path = default_storage.generate_filename(
+            posixpath.join(
+                ret, str(instance.id),
+                "%s.store" % secrets.token_urlsafe(
+                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH")
+                )
+            )
+        )
+        if not default_storage.exists(ret_path):
+            break
+    else:
+        raise FileExistsError("Unlikely event: no free filename")
+    return ret_path
+
+
+def get_content_file_path(instance, filename) -> str:
     ret = getattr(settings, "SECRETGRAPH_FILE_DIR", "content_files")
     # try 100 times to find free filename
     # but should not take more than 1 try
@@ -52,7 +72,9 @@ class FlexidModel(models.Model):
 
 
 class Cluster(FlexidModel):
-    publicInfo: str = models.TextField(db_column="public_info")
+    publicInfo: str = models.FileField(
+        upload_to=get_publicInfo_file_path, db_column="public_info"
+    )
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
@@ -105,7 +127,7 @@ class Content(FlexidModel):
     nonce: str = models.CharField(max_length=255)
     # can decrypt = correct key
     file: File = models.FileField(
-        upload_to=get_file_path
+        upload_to=get_content_file_path
     )
     # unique hash for content, e.g. generated from some info tags
     # null if multiple contents are allowed

@@ -9,7 +9,7 @@ import { createClusterMutation } from "../queries/cluster";
 import { createContentMutation } from "../queries/content";
 import { serverConfigQuery } from "../queries/server";
 import { ConfigInterface, ReferenceInterface, ActionInterface } from "../interfaces";
-import { b64toarr, sortedHash } from "./misc";
+import { b64toarr, sortedHash, utf8encoder } from "./misc";
 import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey } from "./encryption";
 import { checkConfig } from "./config";
 import { mapHashNames } from "../constants"
@@ -266,10 +266,10 @@ export async function createContent(
 export function createCluster(
   env: Environment,
   actions: ActionInterface[],
+  publicInfo: string,
   publicKey: CryptoKey,
   privateKey?: CryptoKey,
   privateKeyKey?: Uint8Array,
-  publicInfo?: string,
   authorization?: string[]
 ){
   let nonceb64 : null | string = null;
@@ -305,7 +305,7 @@ export function createCluster(
       env, {
         mutation: createClusterMutation,
         variables: {
-          publicInfo: publicInfo,
+          publicInfo: new File([utf8encoder.encode(publicInfo)], "publicInfo"),
           publicKey: await exportPublicKeyPromise,
           privateKey: await privateKeyPromise,
           nonce: nonceb64,
@@ -361,6 +361,7 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     [
       { value: '{"action": "manage"}', key: warpedkeyb64 }
     ],
+    "",
     publicKey,
     privateKey,
     warpedKey

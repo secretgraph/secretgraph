@@ -3010,7 +3010,7 @@
               "name": "publicInfo",
               "type": {
                 "kind": "SCALAR",
-                "name": "String",
+                "name": "Upload",
                 "ofType": null
               }
             },

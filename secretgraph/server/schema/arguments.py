@@ -104,6 +104,6 @@ class PushContentInput(graphene.InputObjectType):
 
 
 class ClusterInput(graphene.InputObjectType):
-    publicInfo = graphene.String(required=False)
+    publicInfo = Upload(required=False)
     actions = graphene.List(ActionInput, required=False)
     key = ContentKeyInput(required=False)

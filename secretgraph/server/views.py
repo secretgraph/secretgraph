@@ -1,7 +1,8 @@
 import json
 
 from django.conf import settings
-from django.db.models import Subquery, OuterRef
+from django.core.paginator import Paginator
+from django.db.models import OuterRef, Q, Subquery
 from django.http import (
     FileResponse, Http404, JsonResponse, StreamingHttpResponse
 )
@@ -49,15 +50,21 @@ class ClustersView(View):
         if not clusters:
             raise Http404()
 
-        def gen():
-            seperator = b""
-            for cluster in clusters["objects"]:
-                yield seperator
-                # publicInfo cannot contain \0 because of TextField
-                yield cluster.publicInfo
-                seperator = b"\0"
+        if kwargs.get("id"):
+            cluster = clusters[0]
+            response = FileResponse(
+                cluster.publicInfo
+            )
+        else:
+            page = Paginator(clusters.order_by("id"), 1000).get_page(
+                request.GET.get("page", 1)
+            )
+            response = JsonResponse({
+                "pages": page.paginator.num_pages,
+                "clusters": [c.flexid for c in page]
+            })
 
-        return StreamingHttpResponse(gen())
+        return response
 
 
 class DocumentsView(View):
@@ -113,14 +120,27 @@ class RawView(View):
             if not content:
                 raise Http404()
         if "keys" in request.GET:
-            refs = content.references.select_related("target")
+            refs = content.references.select_related("target").filter(
+                group__in=["key", "signature"]
+            )
+            q = Q()
+            for k in request.GET.getlist("keys"):
+                # digests have a length > 10
+                if len(k) >= 10:
+                    q |= Q(target__info__tag=f"key_hash={k}")
+            # signatures first, should be maximal 20, so on first page
+            refs = refs.filter(q).order_by("-group", "id")
+            page = Paginator(refs, 1000).get_page(
+                request.GET.get("page", 1)
+            )
             response = JsonResponse({
+                "pages": page.paginator.num_pages,
                 "signatures": {
                     ref.target.contentHash: {
                         "signature": ref.extra,
                         "link": ref.target.link
                     }
-                    for ref in refs.filter(
+                    for ref in page.filter(
                         group="signature",
                         target__in=result["objects"]
                     )
@@ -130,7 +150,7 @@ class RawView(View):
                         "key": ref.extra,
                         "link": ref.privkey_link and ref.privkey_link[0]
                     }
-                    for ref in refs.filter(
+                    for ref in page.filter(
                         group="key",
                         target__in=result["objects"]
                     ).annotate(

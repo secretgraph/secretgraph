@@ -3,6 +3,7 @@ __all__ = ["create_cluster", "update_cluster"]
 import os
 
 from django.conf import settings
+from django.core.files.base import ContentFile, File
 from django.db import transaction
 from rdflib import RDF, BNode, Graph
 
@@ -19,8 +20,20 @@ def _update_or_create_cluster(
     request, cluster, objdata, authset
 ):
     if objdata.get("publicInfo"):
+        if isinstance(objdata["publicInfo"], bytes):
+            objdata["publicInfo"] = \
+                ContentFile(objdata["publicInfo"])
+        elif isinstance(objdata["publicInfo"], str):
+            objdata["publicInfo"] = \
+                ContentFile(objdata["publicInfo"].encode("utf8"))
+        else:
+            objdata["publicInfo"] = \
+                File(objdata["publicInfo"])
+        # max = 2 MB
+        if objdata["publicInfo"].size > 2000000:
+            raise ValueError("Too big >2MB")
         g = Graph()
-        g.parse(data=objdata["publicInfo"], format="turtle")
+        g.parse(file=objdata["publicInfo"], format="turtle")
         public_secret_hashes = set(map(hash_object, get_secrets(g)))
         cluster.publicInfo = objdata["publicInfo"]
         cluster.public = len(public_secret_hashes) > 0
