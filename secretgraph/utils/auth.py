@@ -266,28 +266,39 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     return returnval
 
 
-def fetch_by_id(
-    query, flexid, prefix="", type_name=None, check_content_hash=False
+def fetch_by_ids(
+    query, flexids, prefix="", type_name=None, check_content_hash=False
 ):
     type_name = type_name or query.model.__name__
-    name = type_name
-    field = f"{prefix}flexid"
-    try:
-        name, flexid = from_global_id(flexid)
-    except Exception:
-        pass
-    try:
-        flexid = UUID(flexid)
-    except ValueError:
-        if check_content_hash:
-            field = f"{prefix}contentHash"
-        else:
-            raise ValueError("Malformed id")
-    if type_name != name:
-        raise ValueError(
-            "No {} Id ({})".format(query.model.__name__, type_name)
-        )
-    return query.filter(**{field: flexid})
+    if isinstance(flexids, str):
+        flexids = [flexids]
+    flexid_set = set()
+    chash_set = set()
+    for f in flexids:
+        name = type_name
+        try:
+            name, f = from_global_id(f)
+        except Exception:
+            pass
+        try:
+            f = UUID(f)
+            addto = flexid_set
+        except ValueError:
+            if check_content_hash:
+                addto = chash_set
+            else:
+                raise ValueError("Malformed id")
+        if type_name != name:
+            raise ValueError(
+                "No {} Id ({})".format(query.model.__name__, type_name)
+            )
+        addto.add(f)
+    filters = {
+        f"{prefix}flexid__in": flexid_set
+    }
+    if chash_set:
+        filters[f"{prefix}contentHash__in"] = chash_set
+    return query.filter(**filters)
 
 
 def id_to_result(request, id, klasses, scope="view", authset=None):

@@ -5,7 +5,7 @@ export const createContentMutation = graphql`
     updateOrCreateContent(
       input: {
         content: {
-          cluster: $cluster
+          clusters: [$cluster]
           value: {
             info: $info
             value: $value
@@ -34,7 +34,7 @@ export const findConfigQuery = graphql`
     }
     contents(
       public: false
-      cluster: $cluster
+      clusters: [$cluster]
       includeInfo: ["type=Config"]
       authorization: $authorization
       contentHashes: $contentHashes

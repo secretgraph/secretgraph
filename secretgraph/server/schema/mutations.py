@@ -15,7 +15,7 @@ from graphene import relay
 from ...constants import TransferResult
 from ...utils.auth import (
     id_to_result, initializeCachedResult, retrieve_allowed_objects,
-    fetch_by_id
+    fetch_by_ids
 )
 from ..actions.update import (
     create_cluster, create_content, transfer_value, update_cluster,
@@ -234,7 +234,7 @@ class ContentMutation(relay.ClientIDMutation):
                 if content.cluster:
                     required_keys = Content.objects.injected_keys(
                         group__in=Subquery(
-                            fetch_by_id(
+                            fetch_by_ids(
                                 Cluster.objects.all(),
                                 content.cluster
                             ).values("group")

@@ -381,11 +381,15 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "cluster",
+                  "name": "clusters",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "ID",
-                    "ofType": null
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "ID",
+                      "ofType": null
+                    }
                   }
                 },
                 {
@@ -935,11 +939,15 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "cluster",
+                  "name": "clusters",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "ID",
-                    "ofType": null
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "ID",
+                      "ofType": null
+                    }
                   }
                 },
                 {

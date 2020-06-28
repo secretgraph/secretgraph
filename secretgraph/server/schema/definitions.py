@@ -7,7 +7,7 @@ from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
 
-from ...utils.auth import initializeCachedResult, fetch_by_id
+from ...utils.auth import initializeCachedResult, fetch_by_ids
 from ..messages import injection_group_help
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
@@ -106,7 +106,7 @@ class FlexidMixin():
     @classmethod
     def get_node(cls, info, id):
         queryset = cls.get_queryset(cls._meta.model.objects, info)
-        return fetch_by_id(
+        return fetch_by_ids(
             queryset,
             id
         ).first()
@@ -360,16 +360,19 @@ class ContentConnectionField(DjangoConnectionField):
             graphene.String, required=False
         ))
         kwargs.setdefault("public", graphene.Boolean(required=False))
-        kwargs.setdefault("cluster", graphene.ID(required=False))
+        kwargs.setdefault("clusters", graphene.List(
+            graphene.ID, required=False
+        ))
         super().__init__(type, *args, **kwargs)
 
     @classmethod
     def resolve_queryset(cls, connection, queryset, info, args):
         public = args.get("public")
-        cluster = args.get("cluster")
-        if cluster:
-            queryset = fetch_by_id(
-                queryset, cluster, prefix="cluster__", type_name="Cluster"
+        clusters = args.get("clusters")
+        if clusters:
+            queryset = fetch_by_ids(
+                queryset, clusters[:10], prefix="cluster__",
+                type_name="Cluster"
             )
         if public in {True, False}:
             if public:

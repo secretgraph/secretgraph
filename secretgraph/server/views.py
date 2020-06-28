@@ -11,7 +11,7 @@ from django.views.generic import View
 from django.views.generic.edit import UpdateView
 from graphene_file_upload.django import FileUploadGraphQLView
 
-from ..utils.auth import fetch_by_id, initializeCachedResult
+from ..utils.auth import fetch_by_ids, initializeCachedResult
 from ..utils.encryption import iter_decrypt_contents
 from .actions.view import fetch_clusters, fetch_contents
 from .forms import PushForm, UpdateForm
@@ -121,7 +121,7 @@ class RawView(View):
     def handle_content(self, request, result, *args, **kwargs):
         content = None
         try:
-            content = fetch_by_id(
+            content = fetch_by_ids(
                 result["objects"], kwargs["id"]
             ).first()
         finally:
