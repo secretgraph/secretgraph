@@ -4,7 +4,7 @@ from datetime import timedelta as td
 from django.db.models import Q, QuerySet, Subquery
 from django.utils import timezone
 
-from ...utils.auth import fetch_by_ids
+from ...utils.auth import fetch_by_id
 from ..models import Content, ContentAction
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ def fetch_clusters(
     query, id=None, info_include=None, info_exclude=None, content_hashes=None
 ) -> QuerySet:
     if id:
-        query = fetch_by_ids(query, id)
+        query = fetch_by_id(query, id)
 
     if info_include or info_exclude or content_hashes:
         incl_filters = Q()
@@ -139,7 +139,7 @@ def fetch_contents(
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
     if id:
-        query = fetch_by_ids(query, id, check_content_hash=True)
+        query = fetch_by_id(query, id, check_content_hash=True)
     if info_include or info_exclude or content_hashes:
         incl_filters = Q()
         hash_filters = Q()

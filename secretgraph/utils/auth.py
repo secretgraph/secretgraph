@@ -266,12 +266,17 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     return returnval
 
 
-def fetch_by_ids(
-    query, flexids, prefix="", type_name=None, check_content_hash=False
+def fetch_by_id(
+    query, flexids, prefix="", type_name=None, check_content_hash=False,
+    limit_ids=1
 ):
     type_name = type_name or query.model.__name__
     if isinstance(flexids, str):
         flexids = [flexids]
+    else:
+        flexids = flexids[:limit_ids]
+    if not flexids:
+        raise ValueError("No id specified")
     flexid_set = set()
     chash_set = set()
     for f in flexids:
