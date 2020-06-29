@@ -60,6 +60,8 @@ class ContentView(AllowCORSMixin, FormView):
             request, kwargs["id"], Content, scope=self.action, authset=authset
         )
         if "decrypt" in kwargs:
+            if self.action != "view":
+                raise Http404()
             response = self.handle_decrypt(
                 request, authset, *args, **kwargs
             )
