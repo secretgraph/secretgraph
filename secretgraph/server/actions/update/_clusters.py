@@ -19,6 +19,7 @@ len_default_hash = len(hash_object(b""))
 def _update_or_create_cluster(
     request, cluster, objdata, authset
 ):
+    created = not cluster.id
     if objdata.get("publicInfo"):
         if isinstance(objdata["publicInfo"], bytes):
             objdata["publicInfo"] = \
@@ -35,15 +36,21 @@ def _update_or_create_cluster(
         g = Graph()
         g.parse(file=objdata["publicInfo"], format="turtle")
         public_secret_hashes = set(map(hash_object, get_secrets(g)))
-        cluster.publicInfo = objdata["publicInfo"]
         cluster.public = len(public_secret_hashes) > 0
+        if created:
+            def cluster_save_func():
+                cluster.publicInfo.save("", objdata["publicInfo"])
+        else:
+            def cluster_save_func():
+                cluster.publicInfo.delete(False)
+                cluster.publicInfo.save("", objdata["publicInfo"])
     elif cluster.id is not None:
         public_secret_hashes = {}
+        cluster_save_func = cluster.save
     else:
         raise ValueError("no public info")
 
     if objdata.get("actions"):
-        created = not cluster.id
         action_save_func = create_actions_func(
             cluster, objdata["actions"], request, created, authset=authset
         )
@@ -62,12 +69,12 @@ def _update_or_create_cluster(
             raise ValueError("\"manage\" action cannot be public")
 
         def save_func():
-            cluster.save()
+            cluster_save_func()
             action_save_func()
             return cluster
     elif cluster.id is not None and not public_secret_hashes:
         def save_func():
-            cluster.save()
+            cluster_save_func()
             return cluster
     else:
         raise ValueError("no actions for new cluster")

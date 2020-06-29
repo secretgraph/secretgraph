@@ -229,8 +229,7 @@ def _update_or_create_content_or_key(
             content.file.delete(False)
             content.file.save("", objdata["value"])
     else:
-        def save_func_value():
-            content.save()
+        save_func_value = content.save
 
     final_info_tags = None
     if objdata.get("info") is not None:
