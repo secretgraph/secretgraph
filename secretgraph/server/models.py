@@ -165,7 +165,7 @@ class Content(FlexidModel):
     def link(self):
         # path to raw view
         return reverse(
-            "secretgraph-rawcontentvalue", kwargs={
+            "secretgraph:contents", kwargs={
                 "id": self.flexid
             }
         )

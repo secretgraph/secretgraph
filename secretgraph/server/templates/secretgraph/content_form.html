@@ -1,0 +1,13 @@
+{% extends "secretgraph/base.html" %}
+{% load i18n %}
+
+{% block head_scripts %}{% endblock %}
+{% block layout %}
+  <form enctype="multipart/form-data" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <button>{% trans 'submit' %}</button>
+  </form>
+{% endblock %}
+
+{% block body_scripts %}{% endblock body_scripts %}

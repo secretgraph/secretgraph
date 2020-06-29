@@ -5,23 +5,18 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import RedirectView
 from django.views.i18n import JavaScriptCatalog
 
-from .server.views import CORSFileUploadGraphQLView, RawView
+from .server.views import CORSFileUploadGraphQLView
 from .proxy.views import ProxyView
 
 urlpatterns = [
-    # must be toplevel, without no contents can be retrieved
+    # without no contents can be retrieved
     path(
-        "secretgraph/raw/<slug:id>/",
-        RawView.as_view(),
-        name="secretgraph-rawcontentvalue"
+        "secretgraph/", include("secretgraph.server.urls"), name="secretgraph"
     ),
     path(
         "graphql",
         csrf_exempt(CORSFileUploadGraphQLView.as_view(graphiql=True)),
         name="graphql-plain"
-    ),
-    path(
-        "secretgraph/", include("secretgraph.server.urls"), name="secretgraph"
     ),
     # for general favicon, see also linked favicon in template
     path(

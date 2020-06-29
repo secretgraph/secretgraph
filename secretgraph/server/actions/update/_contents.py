@@ -1,5 +1,5 @@
 __all__ = [
-    "create_content", "update_content", "create_key_func"
+    "create_content_func", "update_content_func", "create_key_func"
 ]
 
 
@@ -476,7 +476,7 @@ def create_key_func(
     return func
 
 
-def create_content(
+def create_content_func(
     request, objdata, key=None, authset=None, required_keys=None
 ):
     value_obj = objdata.get("value", {})
@@ -488,12 +488,13 @@ def create_content(
 
     if key_obj:
         # has removed key argument for only allowing complete key
-        save_func = create_key_func(
+        _save_func = create_key_func(
             request, objdata, authset=authset
         )
 
-        with transaction.atomic():
-            return save_func()[0]
+        def save_func():
+            with transaction.atomic():
+                return _save_func()[0]
     else:
         newdata = {
             "cluster": objdata.get("cluster"),
@@ -505,16 +506,18 @@ def create_content(
             **value_obj
         }
         content_obj = Content()
-        save_func = _update_or_create_content_or_key(
+        _save_func = _update_or_create_content_or_key(
             request, content_obj, newdata, authset, False,
             required_keys or []
         )
 
-        with transaction.atomic():
-            return save_func()
+        def save_func():
+            with transaction.atomic():
+                return _save_func()
+    return save_func
 
 
-def update_content(
+def update_content_func(
     request, content, objdata, key=None, authset=None,
     required_keys=None
 ):
@@ -555,5 +558,8 @@ def update_content(
         request, content, newdata, authset, is_key,
         required_keys or []
     )
-    with transaction.atomic():
-        return func()
+
+    def save_func():
+        with transaction.atomic():
+            return func()
+    return save_func

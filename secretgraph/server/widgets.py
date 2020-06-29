@@ -80,7 +80,8 @@ class ListWidget(widgets.SelectMultiple):
                                         "style": "width:100%"
                                     },
                                     **x.get("options", {})
-                                }
+                                },
+                                **x.get("extras", {})
                             }
                         ) for x in self.items
                     )

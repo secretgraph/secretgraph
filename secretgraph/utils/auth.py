@@ -44,7 +44,7 @@ class LazyViewResult(object):
                     authset=self.authset
                 )
             return self._result_dict[item]
-        if item == "authset":
+        if item in {"authset", "scope"}:
             return self.authset
         raise KeyError()
 
@@ -101,6 +101,8 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     clusters = set()
     all_filters = models.Q()
     returnval = {
+        "authset": authset,
+        "scope": scope,
         "rejecting_action": None,
         "clusters": {},
         "forms": {},

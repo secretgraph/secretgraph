@@ -1,20 +1,23 @@
+import base64
 import json
 
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
 from django.http import (
-    FileResponse, Http404, JsonResponse, StreamingHttpResponse
+    FileResponse, Http404, HttpResponse, HttpResponseRedirect, JsonResponse,
+    StreamingHttpResponse
 )
 from django.shortcuts import resolve_url
-from django.views.generic import View
-from django.views.generic.edit import UpdateView
+from django.urls import reverse
+from django.views.generic.edit import FormView
 from graphene_file_upload.django import FileUploadGraphQLView
 
-from ..utils.auth import fetch_by_id, initializeCachedResult
+from ..utils.auth import fetch_by_id, id_to_result
 from ..utils.encryption import iter_decrypt_contents
-from .actions.view import fetch_clusters, fetch_contents
+from .actions.view import ContentFetchQueryset, fetch_contents
 from .forms import PushForm, UpdateForm
+from .models import Content
 
 
 class AllowCORSMixin(object):
@@ -31,58 +34,114 @@ class AllowCORSMixin(object):
         return response
 
 
-class ClustersView(View):
+class ContentView(AllowCORSMixin, FormView):
+    template_name = "secretgraph/content_form.html"
+    action = "view"
 
-    def get(self, request, *args, **kwargs):
-        # for authset
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
-        authset.update(request.GET.getlist("token"))
-        clusters = fetch_clusters(
-            initializeCachedResult(
-                request, authset=authset
-            )["Cluster"]["objects"],
-            kwargs.get("id"),
-            info_include=request.GET.getlist("inclInfo"),
-            info_exclude=request.GET.getlist("exclInfo"),
-            content_hashes=request.GET.getlist("contentHash")
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        response["X-ITERATIONS"] = ",".join(
+            settings.SECRETGRAPH_ITERATIONS
         )
-        if not clusters:
-            raise Http404()
-
-        if kwargs.get("id"):
-            cluster = clusters[0]
-            response = FileResponse(
-                cluster.publicInfo
-            )
-        else:
-            page = Paginator(clusters.order_by("id"), 500).get_page(
-                request.GET.get("page", 1)
-            )
-            response = JsonResponse({
-                "pages": page.paginator.num_pages,
-                "clusters": [c.flexid for c in page]
-            })
+        response["X-HASH-ALGORITHMS"] = ",".join(
+            settings.SECRETGRAPH_HASH_ALGORITHMS
+        )
         response["X-GRAPHQL-PATH"] = resolve_url(getattr(
             settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql"
         ))
-
         return response
 
-
-class DocumentsView(View):
-
     def get(self, request, *args, **kwargs):
-        # for decryptset and authset
         authset = set(request.headers.get("Authorization", "").replace(
             " ", ""
         ).split(","))
         authset.update(request.GET.getlist("token"))
+        self.result = id_to_result(
+            request, kwargs["id"], Content, scope=self.action, authset=authset
+        )
+        if "decrypt" in kwargs:
+            response = self.handle_decrypt(
+                request, authset, *args, **kwargs
+            )
+        elif kwargs.get("id"):
+            if self.action in {"push", "update"}:
+                response = self.render_to_response(self.get_context_data())
+            else:
+                response = self.handle_raw_singlecontent(
+                    request, *args, **kwargs
+                )
+        else:
+            raise Http404()
+        return response
+
+    def post(self, request, *args, **kwargs):
+        authset = set(request.headers.get("Authorization", "").replace(
+            " ", ""
+        ).split(","))
+        authset.update(request.GET.getlist("token"))
+        self.result = id_to_result(
+            request, kwargs["id"], Content, scope=self.action, authset=authset
+        )
+        return super().post(request, *args, **kwargs)
+
+    def get_form_class(self):
+        if self.request.method == "PUT" or "put" in self.request.GET:
+            return UpdateForm
+        else:
+            return PushForm
+
+    def get_form_kwargs(self):
+        """Return the keyword arguments for instantiating the form."""
+        kwargs = super().get_form_kwargs()
+        if hasattr(self, 'result'):
+            try:
+                content = ContentFetchQueryset(fetch_by_id(
+                    self.result["objects"], kwargs["id"]
+                ), self.result["actions"]).first()
+            finally:
+                if not content:
+                    raise Http404()
+            kwargs.update({
+                'result': self.result, 'instance': content,
+                'request': self.request
+            })
+        return kwargs
+
+    def form_invalid(self, form):
+        response = self.render_to_response(self.get_context_data(form=form))
+        return response
+
+    def form_valid(self, form):
+        """If the form is valid, redirect to the supplied URL."""
+        c, key = form.save()
+        if key:
+            response = HttpResponseRedirect(
+                "%s?token=%s" % (
+                    reverse(
+                        "secretgraph:contents-update",
+                        kwargs={
+                            "id": c.id
+                        }
+                    ),
+                    "token=".join([
+                        "%s:%s" % (c.cluster.flexid, base64.b64encode(key)),
+                        *self.result["authset"]
+                    ])
+                )
+            )
+        else:
+            response = HttpResponse(201)
+        return response
+
+    def handle_decrypt(self, request, *args, **kwargs):
         # shallow copy initialization of result
-        result = initializeCachedResult(
-            request, authset=authset
-        )["Content"].copy()
+        result = self.result.copy()
+        clusters = request.GET.getlist("cluster")
+        if clusters:
+            result["objects"] = fetch_by_id(
+                result["objects"], clusters, prefix="cluster__",
+                type_name="Cluster", limit_ids=10
+            )
         result["objects"] = fetch_contents(
             result["objects"],
             result["actions"],
@@ -97,7 +156,7 @@ class DocumentsView(View):
         def gen():
             seperator = b""
             for document in iter_decrypt_contents(
-                result, authset
+                result, self.result["authset"]
             ):
                 yield seperator
                 if kwargs.get("id"):
@@ -111,19 +170,17 @@ class DocumentsView(View):
                 seperator = b"\0"
 
         response = StreamingHttpResponse(gen())
-        response["X-GRAPHQL-PATH"] = resolve_url(getattr(
-            settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql"
-        ))
         return response
 
-
-class RawView(View):
-    def handle_content(self, request, result, *args, **kwargs):
+    def handle_raw_singlecontent(
+        self, request, *args, **kwargs
+    ):
         content = None
+        result = self.result
         try:
-            content = fetch_by_id(
+            content = ContentFetchQueryset(fetch_by_id(
                 result["objects"], kwargs["id"]
-            ).first()
+            ), result["actions"]).first()
         finally:
             if not content:
                 raise Http404()
@@ -175,56 +232,7 @@ class RawView(View):
             )
             response["X-IS-VERIFIED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
-
         return response
-
-    def get(self, request, *args, **kwargs):
-        # for decryptset and authset
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
-        authset.update(request.GET.getlist("token"))
-        result = initializeCachedResult(
-            request, authset=authset
-        )["Content"]
-        # if kwargs.get("id"):
-        response = self.handle_content(request, result, *args, **kwargs)
-        # else:
-        #    response = self.handle_links(request, result, *args, **kwargs)
-
-        response["X-ITERATIONS"] = ",".join(
-            settings.SECRETGRAPH_ITERATIONS
-        )
-        response["X-HASH-ALGORITHMS"] = ",".join(
-            settings.SECRETGRAPH_HASH_ALGORITHMS
-        )
-        response["X-GRAPHQL-PATH"] = resolve_url(getattr(
-            settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql"
-        ))
-
-        return response
-
-
-class PushView(AllowCORSMixin, UpdateView):
-    form_class = PushForm
-
-    def post(self, request, id, *args, **kwargs):
-        # for decryptset and authset
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
-        authset.update(request.GET.getlist("token"))
-
-
-class UpdateView(AllowCORSMixin, UpdateView):
-    form_class = UpdateForm
-
-    def post(self, request, id, *args, **kwargs):
-        # for decryptset and authset
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
-        authset.update(request.GET.getlist("token"))
 
 
 class CORSFileUploadGraphQLView(AllowCORSMixin, FileUploadGraphQLView):

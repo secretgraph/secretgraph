@@ -1,27 +1,27 @@
 from django.urls import path
-from .views import ClustersView, DocumentsView
+from .views import ContentView
 
 app_name = "secretgraph"
 
 urlpatterns = [
     path(
-        "clusters/",
-        ClustersView.as_view(),
-        name="clusters"
-    ),
-    path(
-        "clusters/<slug:id>/",
-        ClustersView.as_view(),
-        name="clusters"
-    ),
-    path(
         "contents/",
-        DocumentsView.as_view(),
+        ContentView.as_view(),
         name="contents"
     ),
     path(
         "contents/<slug:id>/",
-        DocumentsView.as_view(),
+        ContentView.as_view(),
         name="contents"
+    ),
+    path(
+        "contents/<slug:id>/push/",
+        ContentView.as_view(action="push"),
+        name="contents-push"
+    ),
+    path(
+        "contents/<slug:id>/update/",
+        ContentView.as_view(action="update"),
+        name="contents-update"
     ),
 ]

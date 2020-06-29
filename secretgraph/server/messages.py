@@ -5,6 +5,8 @@ server_key_label = _("Key for decoding value")
 info_label = _('Metadata for content')
 extra_info_label = _("Extra metadata for content")
 info_tag_label = _("Metadata Tag")
+nonce_label = _("Nonce")
+reference_label = _("Reference")
 
 
 injection_group_help = _(

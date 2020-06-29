@@ -18,8 +18,8 @@ from ...utils.auth import (
     fetch_by_id
 )
 from ..actions.update import (
-    create_cluster, create_content, transfer_value, update_cluster,
-    update_content
+    create_cluster, create_content_func, transfer_value, update_cluster,
+    update_content_func
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
@@ -277,14 +277,14 @@ class ContentMutation(relay.ClientIDMutation):
             except StopIteration:
                 pass
             returnval = cls(
-                content=update_content(
+                content=update_content_func(
                     info.context,
                     content_obj,
                     content,
                     key=key,
                     required_keys=required_keys,
                     authset=authorization
-                )
+                )()
             )
         else:
             result = id_to_result(
@@ -316,11 +316,11 @@ class ContentMutation(relay.ClientIDMutation):
             except StopIteration:
                 pass
             returnval = cls(
-                content=create_content(
+                content=create_content_func(
                     info.context, content,
                     key=key,
                     required_keys=required_keys, authset=authorization
-                )
+                )()
             )
         initializeCachedResult(info.context, authset=authorization)
         return returnval
@@ -393,9 +393,9 @@ class PushContentMutation(relay.ClientIDMutation):
                 "freeze": freeze,
                 "form": form
             }]
-        c = create_content(
+        c = create_content_func(
             info.context, content, key=key, required_keys=required_keys
-        )
+        )()
         initializeCachedResult(info.context, authset=authorization)
         return cls(
             content=c,
