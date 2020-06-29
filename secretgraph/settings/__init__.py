@@ -162,7 +162,7 @@ SECRETGRAPH_HASH_ALGORITHMS = ["sha512"]
 # specify amount of iterations from most current to most old
 SECRETGRAPH_ITERATIONS = [100000]
 # length of tokens used in file names
-SECRETGRAPH_FILETOKEN_LENGTH = 120
+SECRETGRAPH_FILETOKEN_LENGTH = 100
 SECRETGRAPH_REST_URL = "/secretgraph/"
 SECRETGRAPH_GRAPHQL_URL = "/graphql"
 

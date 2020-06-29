@@ -30,9 +30,9 @@ def get_publicInfo_file_path(instance, filename) -> str:
     for _i in range(0, 100):
         ret_path = default_storage.generate_filename(
             posixpath.join(
-                ret, str(instance.id),
-                "%s.store" % secrets.token_urlsafe(
-                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH")
+                ret,
+                "%s.info" % secrets.token_urlsafe(
+                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH", 100)
                 )
             )
         )
@@ -52,7 +52,7 @@ def get_content_file_path(instance, filename) -> str:
             posixpath.join(
                 ret, str(instance.cluster_id),
                 "%s.store" % secrets.token_urlsafe(
-                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH")
+                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH", 100)
                 )
             )
         )
