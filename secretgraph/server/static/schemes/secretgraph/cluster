@@ -1,4 +1,5 @@
-@prefix cluster: </static/schemes/sgraph/cluster#> .
+@prefix cluster: </static/schemes/secretgraph/cluster#> .
+@prefix graph: </static/schemes/secretgraph/secretgraph#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix cc: <https://creativecommons.org/ns#> .
@@ -6,35 +7,36 @@
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-</static/schemes/sgraph/cluster#> a owl:Ontology ;
+</static/schemes/secretgraph/cluster#> a owl:Ontology ;
   dc:title "Secretgraph Cluster" ;
   dc:description "This is ." ;
   cc:license <https://creativecommons.org/publicdomain/zero/1.0/> .
 
 cluster:Cluster a rdfs:Class ;
-  rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
+  rdfs:isDefinedBy </static/schemes/secretgraph/cluster#> ;
+  rdfs:subClassOf graph:Root ;
   rdfs:label "Cluster-Root" ;
   rdfs:comment "Root for a Cluster" ;
   rdfs:domain rdfs:Resource .
 
 cluster:PublicSecret a rdfs:Class ;
-  rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
+  rdfs:isDefinedBy </static/schemes/secretgraph/cluster#> ;
   rdfs:domain cluster:Cluster .
 
 cluster:PublicSecret.value a rdf:Property ;
-  rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
+  rdfs:isDefinedBy </static/schemes/secretgraph/cluster#> ;
   rdfs:label "Public secret value" ;
   rdfs:domain cluster:PublicSecret ;
   rdfs:range xsd:base64Binary .
 
 cluster:PublicSecret.actions a rdf:Bag ;
-  rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
+  rdfs:isDefinedBy </static/schemes/secretgraph/cluster#> ;
   rdfs:label "Optionally specify actions which can be triggered by open secret" ;
   rdfs:domain cluster:PublicSecret ;
   rdfs:range xsd:string .
 
 cluster:Cluster.publicsecret a rdf:Bag;
-  rdfs:isDefinedBy </static/schemes/sgraph/cluster#> ;
+  rdfs:isDefinedBy </static/schemes/secretgraph/cluster#> ;
   rdfs:comment "Public Secrets for a Cluster" ;
   rdfs:domain cluster:Cluster ;
   rdfs:range cluster:PublicSecret .

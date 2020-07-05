@@ -20,5 +20,6 @@ class TransferResult(enum.Enum):
     FAILED_VERIFICATION = "failed_verification"
 
 
-sgraph_cluster = Namespace("/static/schemes/sgraph/cluster")
-sgraph_simplecontent = Namespace("/static/schemes/sgraph/simplecontent")
+sgraph_secretgraph = Namespace("/static/schemes/secretgraph/secretgraph")
+sgraph_cluster = Namespace("/static/schemes/secretgraph/cluster")
+sgraph_simplecontent = Namespace("/static/schemes/secretgraph/simplecontent")

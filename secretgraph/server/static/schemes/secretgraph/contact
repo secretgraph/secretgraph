@@ -1,0 +1,32 @@
+@prefix contact: </static/schemes/secretgraph/contact#> .
+@prefix graph: </static/schemes/secretgraph/secretgraph#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix cc: <https://creativecommons.org/ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+</static/schemes/secretgraph/contact#> a owl:Ontology ;
+  dc:title "Secretgraph Contact" ;
+  dc:description "This is a contact." ;
+  cc:license <https://creativecommons.org/publicdomain/zero/1.0/> .
+
+contact:Contact a rdfs:Class ;
+  rdfs:isDefinedBy </static/schemes/secretgraph/contact#> ;
+  rdfs:subClassOf graph:Root ;
+  rdfs:label "Contact-Root" ;
+  rdfs:comment "Root of a Contact-entity" ;
+  rdfs:domain rdfs:Resource .
+
+contact:Contact.name a rdf:Property;
+  rdfs:isDefinedBy </static/schemes/secretgraph/contact#> ;
+  rdfs:comment "name of a contact" ;
+  rdfs:domain contact:Contact ;
+  rdfs:range xsd:string .
+
+contact:Contact.accounts a rdf:Bag;
+  rdfs:isDefinedBy </static/schemes/secretgraph/contact#> ;
+  rdfs:comment "accounts" ;
+  rdfs:domain contact:Contact ;
+  rdfs:range graph:Link .
