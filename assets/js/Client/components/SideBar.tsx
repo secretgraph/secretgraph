@@ -13,6 +13,7 @@ import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
 import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
 import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
+import GroupWorkIcon from '@material-ui/icons/GroupWork';
 import StarIcon from '@material-ui/icons/Star';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
@@ -23,6 +24,7 @@ import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
+import {createPaginationContainer, graphql} from 'react-relay';
 import { themeComponent } from "../theme";
 import { ConfigInterface, MainContextInterface } from "../interfaces";
 
@@ -42,7 +44,7 @@ type SideBarHeaderProps = {
 };
 
 
-type SideBarPostboxProps = {
+type SideBarControlProps = {
   classes: any,
   theme: Theme,
   config: ConfigInterface,
@@ -54,7 +56,8 @@ type SideBarItemsProps = {
   classes: any,
   theme: Theme,
   config: ConfigInterface,
-  mainContext: any
+  mainContext: MainContextInterface,
+  setMainContext: any
 };
 
 const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
@@ -86,24 +89,22 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
 })
 
 
-const SideBarPostbox = themeComponent((props: SideBarPostboxProps) => {
+const SideBarControl = themeComponent((props: SideBarControlProps) => {
   const { classes, theme, config, setMainContext, mainContext } = props;
   return (
     <ExpansionPanel>
       <ExpansionPanelSummary
         expandIcon={<ExpandMoreIcon />}
-        aria-controls="PostBox-content"
-        id="PostBox-header"
+        aria-controls="Control-content"
+        id="Control-header"
       >
-        <Typography className={classes.heading}>PostBox</Typography>
+        <Typography className={classes.heading}>Control</Typography>
       </ExpansionPanelSummary>
       <ExpansionPanelDetails>
         <List>
           <ListItem button key={"Inbox"} onClick={() => setMainContext({
             ...mainContext,
-            item: "Message",
-            action: "view",
-            subaction: "inbox",
+            action: "contents",
             filter: ["type=Message"],
             exclude: []
           })}>
@@ -111,28 +112,33 @@ const SideBarPostbox = themeComponent((props: SideBarPostboxProps) => {
               <InboxIcon />
             </ListItemIcon>
           </ListItem>
-          <ListItem button key={"Outbox"} onClick={() => setMainContext({
+          <ListItem button key={"Send"} onClick={() => setMainContext({
             ...mainContext,
             item: "Message",
             action: "edit",
-            subaction: "drafts",
-            filter: ["type=Message", "state=draft"],
-            exclude: []
           })}>
             <ListItemIcon>
-              <MailIcon />
+              <InboxIcon />
             </ListItemIcon>
           </ListItem>
           <ListItem button key={"Drafts"} onClick={() => setMainContext({
             ...mainContext,
-            item: "Message",
-            action: "edit",
-            subaction: "drafts",
-            filter: ["type=Message", "state=draft"],
+            action: "contents",
+            filter: ["state=draft"],
             exclude: []
           })}>
             <ListItemIcon>
               <DraftsIcon />
+            </ListItemIcon>
+          </ListItem>
+          <ListItem button key={"Cluster"} onClick={() => setMainContext({
+            ...mainContext,
+            action: "clusters",
+            filter: [],
+            exclude: []
+          })}>
+            <ListItemIcon>
+              <GroupWorkIcon />
             </ListItemIcon>
           </ListItem>
         </List>
@@ -141,24 +147,174 @@ const SideBarPostbox = themeComponent((props: SideBarPostboxProps) => {
   );
 });
 
+class ContentFeed extends React.Component {
+  render() {
+    return (
+      <List>
+        {this.props.user.feed.edges.map((text, index) => (
+          <ListItem button key={text}>
+            <ListItemIcon>
+              {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+            </ListItemIcon>
+            <ListItemText primary={text} />
+          </ListItem>
+        ))}
 
-const SideBarItems = themeComponent((props: SideBarItemsProps) => {
-  const { classes, theme, config } = props;
+        <Divider />
+        <ListItem button key={"loadmore"}
+          disabled={(!this.props.relay.hasMore() || this.props.relay.isLoading())}
+          onClick={() => {
+            this._loadMore();
+          }}
+        >
+          <ListItemText primary={"Load more..."} />
+        </ListItem>
+      </List>
+    );
+  }
+
+  _loadMore() {
+    if (!this.props.relay.hasMore() || this.props.relay.isLoading()) {
+      return;
+    }
+
+    this.props.relay.loadMore(
+      30,  // Fetch the next 10 feed items
+      error => {
+        console.log(error);
+      },
+    );
+  }
+}
+
+
+const SideBarContents = themeComponent((props: SideBarItemsProps) => {
+  const { classes, theme, config, mainContext, setMainContext } = props;
+  const pager = createPaginationContainer(
+    ,
+    {
+      user: graphql`
+        fragment Feed_user on User
+        @argumentDefinitions(
+          count: {type: "Int", defaultValue: 10}
+          cursor: {type: "ID"}
+        ) {
+          feed(
+            first: $count
+            after: $cursor
+            orderby: $orderBy # Non-pagination variables
+          ) @connection(key: "Feed_feed") {
+            edges {
+              node {
+                id
+                ...Story_story
+              }
+            }
+          }
+        }
+      `,
+    },
+    {
+      direction: 'forward',
+      getConnectionFromProps(props) {
+        return props.user && props.user.feed;
+      },
+      // This is also the default implementation of `getFragmentVariables` if it isn't provided.
+      getFragmentVariables(prevVars, totalCount) {
+        return {
+          ...prevVars,
+          count: totalCount,
+        };
+      },
+      getVariables(props, {count, cursor}, fragmentVariables) {
+        return {
+          count,
+          cursor,
+          orderBy: fragmentVariables.orderBy,
+          // userID isn't specified as an @argument for the fragment, but it should be a variable available for the fragment under the query root.
+          userID: fragmentVariables.userID,
+        };
+      },
+      query: graphql`
+        # Pagination query to be fetched upon calling 'loadMore'.
+        # Notice that we re-use our fragment, and the shape of this query matches our fragment spec.
+        query FeedPaginationQuery(
+          $count: Int!
+          $cursor: ID
+          $orderBy: [FriendsOrdering]!
+          $userID: ID!
+        ) {
+          user: node(id: $userID) {
+            ...Feed_user @arguments(count: $count, cursor: $cursor, orderBy: $orderBy)
+          }
+        }
+      `
+    }
+  );
+})
+
+const _genClusters = function*(config: ConfigInterface) {
+  for(const url in config.clusters) {
+    for(const id in config.clusters[url]) {
+      yield [url, id, config.clusters[url][id]]
+    }
+  }
+}
+
+
+class ClustersList {
+  rows: Array<[string, string, any]>;
+  iterator: any;
+
+  constructor(config: ConfigInterface, initialRows=30) {
+    this.rows = [];
+    this.iterator = _genClusters(config)
+    this.load(initialRows)
+  }
+
+  load(amountRows=30) {
+    const rows: Array<[string, string, any]> = [];
+    for(let counter=0;counter<amountRows; counter++){
+      rows.push(this.iterator.next())
+    }
+    this.rows = this.rows.concat(rows);
+    return this
+  }
+}
+
+const SideBarClusters = themeComponent((props: SideBarItemsProps) => {
+  const { classes, theme, config, mainContext, setMainContext } = props;
+  const [rows, setRows] = React.useState(new ClustersList(config));
+
   return (
     <List>
-      <ListItem button key={"Starred"}>
-        <ListItemIcon>
-          <StarIcon />
-        </ListItemIcon>
-      </ListItem>
-      {["All mail", "Trash", "Spam", "l2", "l", "l13", "Öösdsd"].map((text, index) => (
-        <ListItem button key={text}>
+      {rows.rows.map((value, index) => (
+        <ListItem button key={`${value[0]}:${value[1]}`}
+          onClick={() => {
+            setMainContext({
+              ...mainContext,
+              cluster: [value[0], value[1]],
+              item: "",
+              action: "view",
+              filter: [],
+              exclude: []
+            })
+          }}
+        >
           <ListItemIcon>
-            {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
+            <GroupWorkIcon />
           </ListItemIcon>
-          <ListItemText primary={text} />
+          <ListItemText primary={`${value[0]}:${value[1]}`} />
         </ListItem>
       ))}
+      <Divider />
+      <ListItem button key={"loadmore"}
+        onClick={() => {
+          setRows(rows.load());
+        }}
+      >
+        <ListItemText primary={"Load more..."} />
+      </ListItem>
     </List>
   );
 })
@@ -178,6 +334,13 @@ function SideBar(props: SideBarProps) {
         </IconButton>
       </Hidden>
     );
+    let sideBarItems = (
+      <SideBarClusters>
+        setMainContext={setMainContext}
+        mainContext={mainContext}
+        config={config}
+      </SideBarClusters>
+    );
     return (
       <Drawer
         className={classes.drawer}
@@ -191,14 +354,11 @@ function SideBar(props: SideBarProps) {
         <SideBarHeader closeButton={closeButton} />
         <Divider />
         <div className={classes.sideBarBody}>
-          <SideBarPostbox
+          <SideBarControl
             mainContext={mainContext}
             config={config}
           />
-          <SideBarItems
-            mainContext={mainContext}
-            config={config}
-          />
+          {sideBarItems}
         </div>
       </Drawer>
 

@@ -21,8 +21,13 @@
 
 # TODO
 
+* implement sidebar
+* implement form with send for Message
+* if type=Message switch strings to Inbox, Send
+* find out how Messages sent can be differed from messages received
+* contents handler for bigger list of contents
+
 * cleanup, document server side encryption and allow disabling it (maybe remove it completely at some point)
   * specifying key allows to encrypt keys/values server side if nonce is not set
 * merge configuration client side in case of updates
-* improve speed by resolving once for all contents, clusters auth informations (view), instead of while every operation
 * maybe: encrypt some info tags

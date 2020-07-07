@@ -24,7 +24,7 @@ function MainPage(props: Props) {
   const [drawerOpen, setDrawerOpen] = React.useState(true);
   const [config, setConfig] = React.useState(() => loadConfigSync());
   const [mainContext, setMainContext] = React.useState({
-    "component": null,
+    "cluster": null,
     "action": config ? "add" : "start",
     "subaction": "",
     "filter": [],
