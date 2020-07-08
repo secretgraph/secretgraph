@@ -5,7 +5,7 @@ export const createContentMutation = graphql`
     updateOrCreateContent(
       input: {
         content: {
-          clusters: [$cluster]
+          cluster: $cluster
           value: {
             info: $info
             value: $value
@@ -28,7 +28,6 @@ export const createContentMutation = graphql`
 export const findConfigQuery = graphql`
   query contentConfigQuery($cluster: ID, $authorization: [String!], $contentHashes: [String!]) {
     secretgraphConfig {
-      restUrl
       PBKDF2Iterations
       hashAlgorithms
     }

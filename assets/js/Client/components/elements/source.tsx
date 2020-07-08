@@ -4,7 +4,7 @@ import * as React from "react";
 import { Theme } from "@material-ui/core/styles";
 
 import { themeComponent } from "../../theme";
-import { newComponentLabel } from "../../messages";
+import { newClusterLabel } from "../../messages";
 
 type Props = {
   classes: any,

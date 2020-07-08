@@ -24,7 +24,7 @@ import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
-import {createPaginationContainer, graphql} from 'react-relay';
+import {createPaginationContainer, graphql, RelayPaginationProp} from 'react-relay';
 import { themeComponent } from "../theme";
 import { ConfigInterface, MainContextInterface } from "../interfaces";
 
@@ -147,16 +147,16 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
   );
 });
 
-class ContentFeed extends React.Component {
+class ContentFeed extends React.Component<{contents: any, relay: RelayPaginationProp, theme: any, classes: any}> {
   render() {
     return (
       <List>
-        {this.props.user.feed.edges.map((text, index) => (
-          <ListItem button key={text}>
+        {this.props.contents.edges.map((node: any, index: number) => (
+          <ListItem button key={node.id}>
             <ListItemIcon>
               {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
             </ListItemIcon>
-            <ListItemText primary={text} />
+            <ListItemText primary={node.id} />
           </ListItem>
         ))}
 
@@ -179,8 +179,8 @@ class ContentFeed extends React.Component {
     }
 
     this.props.relay.loadMore(
-      30,  // Fetch the next 10 feed items
-      error => {
+      30,
+      (error: any) => {
         console.log(error);
       },
     );
@@ -188,26 +188,46 @@ class ContentFeed extends React.Component {
 }
 
 
+export const contentFeedQuery = graphql`
+  query SideBarFeedQuery(
+    $clusters: [ID!], $authorization: [String!], $include: [String!], $exclude: [String!]
+    $count: Int
+    $cursor: String
+  ) {
+    contents: contents(
+      clusters: $clusters, includeInfo: $include, excludeInfo: $exclude, authorization: $authorization, first: $count, after: $cursor
+    ) @connection(key: "SideBar_contents", filters:["include", "exclude", "cluster"]) {
+      edges {
+        node {
+          ... SideBar_content @arguments(include: $include)
+        }
+      }
+    }
+  }
+`
+
+
 const SideBarContents = themeComponent((props: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = props;
-  const pager = createPaginationContainer(
-    ,
+  return createPaginationContainer(
+    ContentFeed,
     {
-      user: graphql`
-        fragment Feed_user on User
+      content: graphql`
+        fragment SideBar_content on Content
         @argumentDefinitions(
-          count: {type: "Int", defaultValue: 10}
-          cursor: {type: "ID"}
+          include: {type: "[String!]"}
         ) {
-          feed(
-            first: $count
-            after: $cursor
-            orderby: $orderBy # Non-pagination variables
-          ) @connection(key: "Feed_feed") {
+          id
+          nonce
+          link
+          info
+          references(groups: ["key"], includeInfo: $include) {
             edges {
               node {
-                id
-                ...Story_story
+                extra
+                target {
+                  info
+                }
               }
             }
           }
@@ -217,38 +237,16 @@ const SideBarContents = themeComponent((props: SideBarItemsProps) => {
     {
       direction: 'forward',
       getConnectionFromProps(props) {
-        return props.user && props.user.feed;
-      },
-      // This is also the default implementation of `getFragmentVariables` if it isn't provided.
-      getFragmentVariables(prevVars, totalCount) {
-        return {
-          ...prevVars,
-          count: totalCount,
-        };
+        return props.contents && props.contents.edges;
       },
       getVariables(props, {count, cursor}, fragmentVariables) {
         return {
+          classes, theme, config, mainContext, setMainContext,
           count,
           cursor,
-          orderBy: fragmentVariables.orderBy,
-          // userID isn't specified as an @argument for the fragment, but it should be a variable available for the fragment under the query root.
-          userID: fragmentVariables.userID,
         };
       },
-      query: graphql`
-        # Pagination query to be fetched upon calling 'loadMore'.
-        # Notice that we re-use our fragment, and the shape of this query matches our fragment spec.
-        query FeedPaginationQuery(
-          $count: Int!
-          $cursor: ID
-          $orderBy: [FriendsOrdering]!
-          $userID: ID!
-        ) {
-          user: node(id: $userID) {
-            ...Feed_user @arguments(count: $count, cursor: $cursor, orderBy: $orderBy)
-          }
-        }
-      `
+      query: contentFeedQuery
     }
   );
 })
