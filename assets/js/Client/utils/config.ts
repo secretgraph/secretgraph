@@ -223,10 +223,10 @@ export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwt
     }
     for(const node of data.contents.edges){
       if("type=Config" in node.node.info){
+        const url = new URL(config.baseUrl);
         if (pwtoken) {
-          return `${data.secretgraphConfig.restUrl}contents/${node.node.id}/?token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(pwtoken)))}`
+          return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(pwtoken)))}`
         } else {
-          const url = new URL(config.baseUrl);
           return `${url.origin}${node.node.link}?token=${tokens.join("token=")}`;
         }
       }

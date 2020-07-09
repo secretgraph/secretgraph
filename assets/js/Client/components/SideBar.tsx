@@ -191,6 +191,7 @@ class ContentFeed extends React.Component<{contents: any, relay: RelayPagination
 export const contentFeedQuery = graphql`
   query SideBarFeedQuery(
     $clusters: [ID!], $authorization: [String!], $include: [String!], $exclude: [String!]
+    $includeInfo: [String!]
     $count: Int
     $cursor: String
   ) {
@@ -199,7 +200,7 @@ export const contentFeedQuery = graphql`
     ) @connection(key: "SideBar_contents", filters:["include", "exclude", "cluster"]) {
       edges {
         node {
-          ... SideBar_content @arguments(include: $include)
+          ... SideBar_content @arguments(include: $include, includeInfo: $includeInfo)
         }
       }
     }
@@ -216,17 +217,18 @@ const SideBarContents = themeComponent((props: SideBarItemsProps) => {
         fragment SideBar_content on Content
         @argumentDefinitions(
           include: {type: "[String!]"}
+          includeInfo: {type: "[String!]"}
         ) {
           id
           nonce
           link
-          info
+          info(includeInfo: $includeInfo)
           references(groups: ["key"], includeInfo: $include) {
             edges {
               node {
                 extra
                 target {
-                  info
+                  info(includeInfo: ["key_hash="])
                 }
               }
             }
