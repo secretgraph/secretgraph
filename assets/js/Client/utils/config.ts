@@ -115,7 +115,8 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
             }
           }));
         }
-        Promise.allSettled(queries).then(() => reject());
+        await Promise.allSettled(queries);
+        reject();
       }).then(
         arr => crypto.subtle.decrypt(
           {

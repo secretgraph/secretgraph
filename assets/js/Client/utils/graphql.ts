@@ -10,7 +10,7 @@ import { createContentMutation } from "../queries/content";
 import { serverConfigQuery } from "../queries/server";
 import { ConfigInterface, ReferenceInterface, ActionInterface } from "../interfaces";
 import { b64toarr, sortedHash, utf8encoder } from "./misc";
-import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey } from "./encryption";
+import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey, rsakeytransform } from "./encryption";
 import { checkConfig } from "./config";
 import { mapHashNames } from "../constants"
 
@@ -92,22 +92,17 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
   const references: PromiseLike<ReferenceInterface>[] = [];
   for(let counter=0; counter<privkeys.length;counter++){
     const privkey = privkeys[counter];
-    let hash = hashes ? Promise.resolve(hashes[counter]): crypto.subtle.exportKey(
-      "jwk",
-      privkey
-    ).then(
-      (data) => {
-        // remove private data from JWK
-        delete data.d;
-        delete data.dp;
-        delete data.dq;
-        delete data.q;
-        delete data.qi;
-        data.key_ops = ["wrapKey"];
-        return crypto.subtle.importKey("jwk", data, { name: "RSA-OAEP",
-          hash: hashalgo }, true, ["wrapKey"]);
-        }
-    ).then(
+    let transforms;
+    if(!privkey.usages.includes("sign")) {
+      if (!privkey.extractable){
+        throw Error("missing key usages")
+      }
+      transforms = rsakeytransform(privkey, hashalgo, {signkey: true, pubkey: !(hashes)});
+    } else  {
+      transforms = rsakeytransform(privkey, hashalgo, {signkey: false, pubkey: !(hashes)});
+      transforms["signkey"] = Promise.resolve(privkey);
+    }
+    let hash = hashes ? Promise.resolve(hashes[counter]): (transforms["pubkey"] as PromiseLike<CryptoKey>).then(
       (pubkey) => crypto.subtle.exportKey(
         "spki" as const,
         pubkey
@@ -122,14 +117,16 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
     references.push(
       Promise.all([
         hash,
-        crypto.subtle.sign(
+        (transforms["signkey"] as PromiseLike<CryptoKey>).then(
+          signkey => crypto.subtle.sign(
           {
             name: "RSA-PSS",
             saltLength: 32,
           },
-          privkey,
+          signkey,
           content
         )
+      )
       ]).then((arr) : ReferenceInterface => {
         return {
           "target": arr[0],
@@ -338,7 +335,7 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
       hash: "SHA-512"
     },
     true,
-    ["wrapKey", "sign", "encrypt"]
+    ["wrapKey", "encrypt", "decrypt"]
   ) as CryptoKeyPair;
   const digestCertificatePromise = crypto.subtle.exportKey(
     "spki" as const,

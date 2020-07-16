@@ -120,19 +120,19 @@ function SettingsImporter(props: Props) {
     })
   }
 
-  const handleSecretgraphEvent = (event: any) => {
+  const handleSecretgraphEvent = async (event: any) => {
     setOldConfig(config);
     setConfig(null);
     setLoadingStart(true);
-    return handleSecretgraphEvent_inner(event).catch(
-      (errors: any) => {
-        setConfig(oldConfig);
-        console.error(errors);
-        setMessage({ severity: "error", message: "error while registration" });
-      }
-    ).finally(
-      () => setLoadingStart(false)
-    )
+    try {
+      return await handleSecretgraphEvent_inner(event);
+    } catch(errors) {
+      setConfig(oldConfig);
+      console.error(errors);
+      setMessage({ severity: "error", message: "error while registration" });
+    } finally{
+      setLoadingStart(false);
+    }
   }
 
   const handleStart_inner = async () => {
@@ -186,19 +186,19 @@ function SettingsImporter(props: Props) {
       setMessage({ severity: "warning", message: "cannot register here" });
     }
   }
-  const handleStart = () => {
+  const handleStart = async () => {
     setOldConfig(config);
     setConfig(null);
     setLoadingStart(true);
-    return handleStart_inner().catch(
-      (errors: any) => {
-        setConfig(oldConfig);
-        console.error(errors);
-        setMessage({ severity: "error", message: "error while registration" });
-      }
-    ).finally(
-      () => setLoadingStart(false)
-    )
+    try {
+      return await handleStart_inner();
+    } catch(errors) {
+      setConfig(oldConfig);
+      console.error(errors);
+      setMessage({ severity: "error", message: "error while registration" });
+    } finally {
+      setLoadingStart(false)
+    }
   }
 
   const handleImport_inner = async () => {
@@ -229,19 +229,19 @@ function SettingsImporter(props: Props) {
       environment: env
     });
   }
-  const handleImport = () => {
+  const handleImport = async () => {
     setOldConfig(config);
     setConfig(null);
     setLoadingImport(true);
-    return handleImport_inner().catch(
-      (errors: any) => {
-        setConfig(oldConfig);
-        console.error(errors);
-        setMessage({ severity: "error", message: "error while import" });
-      }
-    ).finally(
-      () => setLoadingImport(false)
-    )
+    try {
+      return await handleImport_inner();
+    } catch (errors) {
+      setConfig(oldConfig);
+      console.error(errors);
+      setMessage({ severity: "error", message: "error while import" });
+    } finally {
+      setLoadingImport(false)
+    }
   }
 
   React.useEffect(() => {

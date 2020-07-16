@@ -75,21 +75,28 @@ function MainPage(props: Props) {
       );
       break;
   }
+  let sidebar = null;
+  if (config){
+    sidebar = (
+      <SideBar
+        config={config}
+        mainContext={mainContext}
+        setMainContext={setMainContext}
+        openState={{drawerOpen, setDrawerOpen}}
+      />
+    );
+  }
 
   return (
     <div className={classes.root}>
       <HeaderBar
         config={config}
         setConfig={setConfig}
-        openState={{drawerOpen, setDrawerOpen}}
+        openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
         mainContext={mainContext}
         setMainContext={setMainContext}/>
-      <SideBar
-        mainContext={mainContext}
-        setMainContext={setMainContext}
-        openState={{drawerOpen, setDrawerOpen}}
-      />
-      <main className={drawerOpen ? classes.contentShift : classes.content}>
+      {sidebar}
+      <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
         <ActionBar
           mainContext={mainContext}
           setMainContext={setMainContext}

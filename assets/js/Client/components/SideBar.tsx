@@ -111,6 +111,7 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
             <ListItemIcon>
               <InboxIcon />
             </ListItemIcon>
+            <ListItemText primary={"Inbox"} />
           </ListItem>
           <ListItem button key={"Send"} onClick={() => setMainContext({
             ...mainContext,
@@ -120,6 +121,7 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
             <ListItemIcon>
               <InboxIcon />
             </ListItemIcon>
+            <ListItemText primary={"Send"} />
           </ListItem>
           <ListItem button key={"Drafts"} onClick={() => setMainContext({
             ...mainContext,
@@ -130,6 +132,7 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
             <ListItemIcon>
               <DraftsIcon />
             </ListItemIcon>
+            <ListItemText primary={"Drafts"} />
           </ListItem>
           <ListItem button key={"Cluster"} onClick={() => setMainContext({
             ...mainContext,
@@ -140,6 +143,7 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
             <ListItemIcon>
               <GroupWorkIcon />
             </ListItemIcon>
+            <ListItemText primary={"Cluster"} />
           </ListItem>
         </List>
       </ExpansionPanelDetails>

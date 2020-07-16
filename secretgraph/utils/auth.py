@@ -238,16 +238,16 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
 
     if issubclass(query.model, Cluster):
         all_filters &= (
-            models.Q(id__in=list(returnval["action_types_clusters"].keys())) |
+            models.Q(id__in=list(returnval["required_keys_clusters"].keys())) |
             models.Q(public=True)
         )
     elif issubclass(query.model, Content):
         all_filters &= (
             models.Q(info__tag="state=public") |
-            models.Q(id__in=list(returnval["action_types_contents"].keys())) |
+            models.Q(id__in=list(returnval["required_keys_contents"].keys())) |
             models.Q(
                 cluster_id__in=list(returnval[
-                    "action_types_clusters"
+                    "required_keys_clusters"
                 ].keys())
             )
         )
@@ -256,7 +256,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                "invalid type %r" % query.model
         all_filters &= models.Q(
             cluster_id__in=list(returnval[
-                "action_types_clusters"
+                "required_keys_clusters"
             ].keys())
         )
     # for sorting. First action is always the most important action

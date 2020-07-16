@@ -18,7 +18,7 @@ export function arrtogcmkey(inp: ArrayBuffer){
     inp,
     "AES-GCM" as const,
     false,
-    ["encrypt" as const, "decrypt" as const]
+    ["encrypt" as const, "decrypt" as const, "wrapKey", "unwrapKey"]
   );
 }
 
@@ -30,10 +30,56 @@ export function arrtorsaoepkey(inp: ArrayBuffer){
       name: "RSA-OAEP",
       hash: "SHA-512"
     },
-    false,
-    ["encrypt" as const, "decrypt" as const]
+    true,
+    ["encrypt", "unwrapKey", "decrypt", "wrapKey"]
   );
 }
+
+export function rsakeytransform(privKey:CryptoKey, hashalgo: string, options={pubkey: false, signkey: false}) {
+  const keyData = crypto.subtle.exportKey(
+    "jwk", privKey
+  );
+  const ret : {
+    pubkey?: PromiseLike<CryptoKey>,
+    signkey?: PromiseLike<CryptoKey>
+  } = {};
+  if (options["signkey"]){
+    ret["signkey"] = keyData.then((data) => {
+      data = new Object(data);
+      data.key_ops = ["sign", "verify"];
+      return crypto.subtle.importKey(
+        "jwk",
+        data,
+        {
+          name: "RSA-PSS",
+          hash: "SHA-512"
+        },
+        false,
+        ["sign", "verify"]
+      );
+    });
+  }
+  if (options["pubkey"]){
+    ret["pubkey"] = keyData.then((data) => {
+      data = new Object(data);
+      // remove private data from JWK
+      delete data.d;
+      delete data.dp;
+      delete data.dq;
+      delete data.q;
+      delete data.qi;
+      data.key_ops = ["wrapKey", "encrypt"];
+      return crypto.subtle.importKey(
+        "jwk", data, {
+          name: "RSA-OAEP",
+          hash: hashalgo
+        }, true, ["wrapKey", "encrypt"]);
+      }
+    );
+  }
+  return ret;
+}
+
 
 export function rsaoepkeytoarr(publicKey: CryptoKey){
   return crypto.subtle.exportKey(

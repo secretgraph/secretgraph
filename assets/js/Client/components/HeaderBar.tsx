@@ -117,7 +117,7 @@ function HeaderBar(props: Props) {
   }
 
   let sidebarButton = null;
-  if (!openState.drawerOpen){
+  if (!openState.drawerOpen && config){
     sidebarButton = (
       <IconButton
         edge="start"

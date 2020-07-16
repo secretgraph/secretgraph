@@ -128,7 +128,7 @@ class ActionMixin(object):
         # only show some actions
         resultval = filter(lambda key, val: key[0] in {
             "manage", "push", "view", "update"
-        }, resultval.items())
+        }, resultval)
         return map(
             lambda key, val: ActionEntry(
                 keyHash=key[1], type=key[0],

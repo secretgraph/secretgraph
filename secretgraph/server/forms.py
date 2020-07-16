@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from .fields import MultipleOpenChoiceField
 from .widgets import ListWidget
 from .models import Content
-from .actions.view import create_content_func
+from .actions.update import create_content_func
 from . import messages
 from ..utils.auth import initializeCachedResult
 
