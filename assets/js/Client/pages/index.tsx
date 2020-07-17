@@ -94,7 +94,8 @@ function MainPage(props: Props) {
         setConfig={setConfig}
         openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
         mainContext={mainContext}
-        setMainContext={setMainContext}/>
+        setMainContext={setMainContext}
+      />
       {sidebar}
       <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
         <ActionBar

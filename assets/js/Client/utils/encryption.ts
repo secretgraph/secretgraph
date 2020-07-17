@@ -36,32 +36,29 @@ export function arrtorsaoepkey(inp: ArrayBuffer){
 }
 
 export function rsakeytransform(privKey:CryptoKey, hashalgo: string, options={pubkey: false, signkey: false}) {
-  const keyData = crypto.subtle.exportKey(
-    "jwk", privKey
-  );
   const ret : {
     pubkey?: PromiseLike<CryptoKey>,
     signkey?: PromiseLike<CryptoKey>
   } = {};
   if (options["signkey"]){
-    ret["signkey"] = keyData.then((data) => {
-      data = new Object(data);
-      data.key_ops = ["sign", "verify"];
-      return crypto.subtle.importKey(
-        "jwk",
+    ret["signkey"] = crypto.subtle.exportKey(
+      "pkcs8", privKey
+    ).then((data) => crypto.subtle.importKey(
+        "pkcs8",
         data,
         {
           name: "RSA-PSS",
-          hash: "SHA-512"
+          hash: hashalgo
         },
         false,
-        ["sign", "verify"]
-      );
-    });
+        ["sign"]
+      )
+    );
   }
   if (options["pubkey"]){
-    ret["pubkey"] = keyData.then((data) => {
-      data = new Object(data);
+    ret["pubkey"] = crypto.subtle.exportKey(
+      "jwk", privKey
+    ).then((data) => {
       // remove private data from JWK
       delete data.d;
       delete data.dp;

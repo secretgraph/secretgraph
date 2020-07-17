@@ -198,6 +198,9 @@ class Content(FlexidModel):
             )
         )
 
+    def __repr__(self):
+        return "<Content: flexid(%s)>" % self.flexid
+
 
 class ContentAction(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
@@ -218,6 +221,11 @@ class ContentAction(models.Model):
                 name="%(class)s_unique"
             ),
         ]
+
+    def __repr__(self):
+        return "<ContentAction: (%r:\"%s\")>" % (
+            self.content, self.group
+        )
 
 
 class Action(models.Model):
@@ -320,3 +328,8 @@ class ContentReference(models.Model):
                 name="%(class)s_unique"
             ),
         ]
+
+    def __repr__(self):
+        return "<ContentReference: (%r:\"%s\":%r)>" % (
+            self.source, self.group, self.target
+        )

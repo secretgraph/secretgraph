@@ -6,8 +6,7 @@ import TextField from '@material-ui/core/TextField';
 import FormControl from '@material-ui/core/FormControl';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import InputLabel from '@material-ui/core/InputLabel';
-import CloudUploadIcon from '@material-ui/icons/CloudUpload';
+import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
 import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';
 import Dialog from '@material-ui/core/Dialog';
@@ -20,7 +19,6 @@ import CardContent from '@material-ui/core/CardContent';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import CheckIcon from '@material-ui/icons/Check';
-
 
 import { fetchQuery } from "relay-runtime";
 
@@ -352,11 +350,14 @@ function SettingsImporter(props: Props) {
               }
             />
             <label htmlFor="secretgraph-import-file">
-              <Button variant="contained" color="primary" component="span">
-                Upload Config
-                {
-                  hasFile ? <CheckIcon/> : <CloudUploadIcon/>
+              <Button
+                variant="contained"
+                component="span"
+                endIcon={
+                  hasFile ? <CheckIcon/> : <SystemUpdateAltIcon/>
                 }
+              >
+                Import from File
               </Button>
             </label>
             <FormHelperText id="secretgraph-import-file-help">{importFileLabel}</FormHelperText>
@@ -369,7 +370,7 @@ function SettingsImporter(props: Props) {
             }
             fullWidth={true}
             variant="outlined"
-            label="Import from"
+            label="Import from url"
             id="secretgraph-import-url"
           />
           <FormControl>

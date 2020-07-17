@@ -93,10 +93,10 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
   for(let counter=0; counter<privkeys.length;counter++){
     const privkey = privkeys[counter];
     let transforms;
+    if (!privkey.extractable && (!hashes || !privkey.usages.includes("sign"))){
+      throw Error("missing key usages")
+    }
     if(!privkey.usages.includes("sign")) {
-      if (!privkey.extractable){
-        throw Error("missing key usages")
-      }
       transforms = rsakeytransform(privkey, hashalgo, {signkey: true, pubkey: !(hashes)});
     } else  {
       transforms = rsakeytransform(privkey, hashalgo, {signkey: false, pubkey: !(hashes)});
@@ -130,7 +130,7 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
       ]).then((arr) : ReferenceInterface => {
         return {
           "target": arr[0],
-          "group": "key",
+          "group": "signature",
           "extra": btoa(String.fromCharCode(... new Uint8Array(arr[1])))
         }
       })

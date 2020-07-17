@@ -26,7 +26,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import {createPaginationContainer, graphql, RelayPaginationProp} from 'react-relay';
 import { themeComponent } from "../theme";
-import { ConfigInterface, MainContextInterface } from "../interfaces";
+import { ConfigInterface, ConfigClusterInterface, MainContextInterface } from "../interfaces";
 
 type SideBarProps = {
   openState: any,
@@ -119,7 +119,7 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
             action: "edit",
           })}>
             <ListItemIcon>
-              <InboxIcon />
+              <MailOutlineIcon />
             </ListItemIcon>
             <ListItemText primary={"Send"} />
           </ListItem>
@@ -265,34 +265,14 @@ const _genClusters = function*(config: ConfigInterface) {
   }
 }
 
-
-class ClustersList {
-  rows: Array<[string, string, any]>;
-  iterator: any;
-
-  constructor(config: ConfigInterface, initialRows=30) {
-    this.rows = [];
-    this.iterator = _genClusters(config)
-    this.load(initialRows)
-  }
-
-  load(amountRows=30) {
-    const rows: Array<[string, string, any]> = [];
-    for(let counter=0;counter<amountRows; counter++){
-      rows.push(this.iterator.next())
-    }
-    this.rows = this.rows.concat(rows);
-    return this
-  }
-}
-
 const SideBarClusters = themeComponent((props: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = props;
-  const [rows, setRows] = React.useState(new ClustersList(config));
-
+  if (!config){
+    return null;
+  }
   return (
     <List>
-      {rows.rows.map((value, index) => (
+      {Array.from(_genClusters(config), (value: [string, string, ConfigClusterInterface]) => (
         <ListItem button key={`${value[0]}:${value[1]}`}
           onClick={() => {
             setMainContext({
@@ -312,13 +292,6 @@ const SideBarClusters = themeComponent((props: SideBarItemsProps) => {
         </ListItem>
       ))}
       <Divider />
-      <ListItem button key={"loadmore"}
-        onClick={() => {
-          setRows(rows.load());
-        }}
-      >
-        <ListItemText primary={"Load more..."} />
-      </ListItem>
     </List>
   );
 })
@@ -338,13 +311,16 @@ function SideBar(props: SideBarProps) {
         </IconButton>
       </Hidden>
     );
-    let sideBarItems = (
-      <SideBarClusters>
-        setMainContext={setMainContext}
-        mainContext={mainContext}
-        config={config}
-      </SideBarClusters>
-    );
+    let sideBarItems = null;
+    if (config){
+      sideBarItems = (
+        <SideBarClusters>
+          setMainContext={setMainContext}
+          mainContext={mainContext}
+          config={config}
+        </SideBarClusters>
+      );
+    }
     return (
       <Drawer
         className={classes.drawer}
@@ -360,6 +336,7 @@ function SideBar(props: SideBarProps) {
         <div className={classes.sideBarBody}>
           <SideBarControl
             mainContext={mainContext}
+            setMainContext={setMainContext}
             config={config}
           />
           {sideBarItems}
