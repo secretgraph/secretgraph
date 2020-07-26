@@ -13,8 +13,11 @@ import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
 import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
 import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
+import DescriptionIcon from '@material-ui/icons/Description';
 import GroupWorkIcon from '@material-ui/icons/GroupWork';
+import MovieIcon from '@material-ui/icons/Movie';
 import StarIcon from '@material-ui/icons/Star';
+import { parse, graph } from 'rdflib';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
@@ -25,8 +28,10 @@ import MailIcon from "@material-ui/icons/Mail";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import {createPaginationContainer, graphql, RelayPaginationProp} from 'react-relay';
+import { RDFS, CLUSTER } from "../constants"
 import { themeComponent } from "../theme";
 import { ConfigInterface, ConfigClusterInterface, MainContextInterface } from "../interfaces";
+import { elements } from "./elements";
 
 type SideBarProps = {
   openState: any,
@@ -58,7 +63,7 @@ type SideBarItemsProps = {
   config: ConfigInterface,
   mainContext: MainContextInterface,
   setMainContext: any
-};
+}
 
 const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
   const { classes, theme, closeButton } = props;
@@ -104,7 +109,8 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
         <List>
           <ListItem button key={"Inbox"} onClick={() => setMainContext({
             ...mainContext,
-            action: "contents",
+            action: "view",
+            item: "content",
             filter: ["type=Message"],
             exclude: []
           })}>
@@ -125,7 +131,8 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
           </ListItem>
           <ListItem button key={"Drafts"} onClick={() => setMainContext({
             ...mainContext,
-            action: "contents",
+            action: "edit",
+            item: "content",
             filter: ["state=draft"],
             exclude: []
           })}>
@@ -136,7 +143,8 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
           </ListItem>
           <ListItem button key={"Cluster"} onClick={() => setMainContext({
             ...mainContext,
-            action: "clusters",
+            action: ["view", "edit"].includes(mainContext.action) ? mainContext.action : "view",
+            item: "cluster",
             filter: [],
             exclude: []
           })}>
@@ -151,19 +159,50 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
   );
 });
 
-class ContentFeed extends React.Component<{contents: any, relay: RelayPaginationProp, theme: any, classes: any}> {
+class ContentFeed extends React.Component<{classes: any, theme: any, config: ConfigInterface, mainContext: any, setMainContext:any,
+  contents: any, relay: RelayPaginationProp}> {
+  render_item(node: any) {
+    let type = node.info.find((info: string) => info.startsWith("type="))
+    let state = node.info.find((info: string) => info.startsWith("state="))
+    if (type){
+      type = type.split("=", 1)[1];
+    }
+    if (state){
+      state = state.split("=", 1)[1];
+    }
+    let icon;
+    switch(type){
+      case "Message":
+        icon = (<MailIcon />);
+        break;
+      case "File":
+        icon = (<MovieIcon />);
+        break;
+      default:
+        icon = (<DescriptionIcon />);
+    }
+    return (
+      <ListItem button key={`${this.props.mainContext.activeUrl}:${node.id}`}
+        onClick={() => {
+          this.props.setMainContext({
+            ...this.props.mainContext,
+            item: node.id,
+            action: "view"
+          })
+        }}
+      >
+        <ListItemIcon>
+          {icon}
+        </ListItemIcon>
+        {state== "draft" ? <ListItemIcon><DraftsIcon /></ListItemIcon> : null}
+        <ListItemText primary={`${elements.get(type)?.label || type}: ${node.id}`} />
+      </ListItem>
+    );
+  }
   render() {
     return (
       <List>
-        {this.props.contents.edges.map((node: any, index: number) => (
-          <ListItem button key={node.id}>
-            <ListItemIcon>
-              {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon>
-            <ListItemText primary={node.id} />
-          </ListItem>
-        ))}
-
+        {this.props.contents.edges.map(this.render_item)}
         <Divider />
         <ListItem button key={"loadmore"}
           disabled={(!this.props.relay.hasMore() || this.props.relay.isLoading())}
@@ -193,7 +232,7 @@ class ContentFeed extends React.Component<{contents: any, relay: RelayPagination
 
 
 export const contentFeedQuery = graphql`
-  query SideBarFeedQuery(
+  query SideBarContentFeedQuery(
     $clusters: [ID!], $authorization: [String!], $include: [String!], $exclude: [String!]
     $includeInfo: [String!]
     $count: Int
@@ -204,7 +243,7 @@ export const contentFeedQuery = graphql`
     ) @connection(key: "SideBar_contents", filters:["include", "exclude", "cluster"]) {
       edges {
         node {
-          ... SideBar_content @arguments(include: $include, includeInfo: $includeInfo)
+          ... SideBar_content @arguments(include: $include, includeInfo: ["type=", "state=", ...$includeInfo])
         }
       }
     }
@@ -227,7 +266,7 @@ const SideBarContents = themeComponent((props: SideBarItemsProps) => {
           nonce
           link
           info(includeInfo: $includeInfo)
-          references(groups: ["key"], includeInfo: $include) {
+          references(groups: ["key", "signature"], includeInfo: $include) {
             edges {
               node {
                 extra
@@ -257,45 +296,118 @@ const SideBarContents = themeComponent((props: SideBarItemsProps) => {
   );
 })
 
-const _genClusters = function*(config: ConfigInterface) {
-  for(const url in config.clusters) {
-    for(const id in config.clusters[url]) {
-      yield [url, id, config.clusters[url][id]]
+
+
+class ClusterFeed extends React.Component<{
+  classes: any, theme: any, config: ConfigInterface, mainContext: any, setMainContext:any,
+  clusters: any, relay: RelayPaginationProp}> {
+  render() {
+    return (
+      <List>
+        {this.props.clusters.edges.map((node: any) => {
+          const store = graph();
+          parse(node.publicInfo, store, "");
+          const results = store.querySync(`SELECT ?label, ?comment WHERE {_:cluster a ${CLUSTER("Cluster")}; ${RDFS("label")} ?label; ${RDFS("comment")} ?comment}`)
+          let label: string=node.id as string, comment: string="";
+          if(results.length > 0) {
+            label = results[0][0];
+            comment = results[0][0];
+          }
+          return (
+            <ListItem button key={`${this.props.mainContext.activeUrl}:${node.id}`}
+              onClick={() => {
+                this.props.setMainContext({
+                  ...this.props.mainContext,
+                  cluster: node.id,
+                  item: node.id,
+                  action: "view"
+                })
+              }}
+            >
+              <ListItemIcon>
+                <GroupWorkIcon />
+              </ListItemIcon>
+              <ListItemText primary={label} title={comment} />
+            </ListItem>
+          );
+        })}
+
+        <Divider />
+        <ListItem button key={"loadmore"}
+          disabled={(!this.props.relay.hasMore() || this.props.relay.isLoading())}
+          onClick={() => {
+            this._loadMore();
+          }}
+        >
+          <ListItemText primary={"Load more..."} />
+        </ListItem>
+      </List>
+    );
+  }
+
+  _loadMore() {
+    if (!this.props.relay.hasMore() || this.props.relay.isLoading()) {
+      return;
     }
+
+    this.props.relay.loadMore(
+      30,
+      (error: any) => {
+        console.log(error);
+      },
+    );
   }
 }
 
+
+export const clusterFeedQuery = graphql`
+  query SideBarClusterFeedQuery(
+    $clusters: [ID!], $authorization: [String!], $include: [String!], $exclude: [String!]
+    $count: Int
+    $cursor: String
+  ) {
+    clusters: clusters(
+      includeInfo: $include, excludeInfo: $exclude, authorization: $authorization, first: $count, after: $cursor
+    ) @connection(key: "SideBar_cluster", filters:["include", "exclude",]) {
+      edges {
+        node {
+          ... SideBar_cluster
+        }
+      }
+    }
+  }
+`
+
+
 const SideBarClusters = themeComponent((props: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = props;
-  if (!config){
-    return null;
-  }
-  return (
-    <List>
-      {Array.from(_genClusters(config), (value: [string, string, ConfigClusterInterface]) => (
-        <ListItem button key={`${value[0]}:${value[1]}`}
-          onClick={() => {
-            setMainContext({
-              ...mainContext,
-              cluster: [value[0], value[1]],
-              item: "",
-              action: "view",
-              filter: [],
-              exclude: []
-            })
-          }}
-        >
-          <ListItemIcon>
-            <GroupWorkIcon />
-          </ListItemIcon>
-          <ListItemText primary={`${value[0]}:${value[1]}`} />
-        </ListItem>
-      ))}
-      <Divider />
-    </List>
+  return createPaginationContainer(
+    ClusterFeed,
+    {
+      cluster: graphql`
+        fragment SideBar_cluster on Cluster
+        @argumentDefinitions(
+        ) {
+          id
+          publicInfo
+        }
+      `,
+    },
+    {
+      direction: 'forward',
+      getConnectionFromProps(props) {
+        return props.clusters && props.clusters.edges;
+      },
+      getVariables(props, {count, cursor}, fragmentVariables) {
+        return {
+          classes, theme, config, mainContext, setMainContext,
+          count, cursor
+        };
+      },
+      query: clusterFeedQuery
+    }
   );
 })
-
 
 
 function SideBar(props: SideBarProps) {
@@ -313,13 +425,23 @@ function SideBar(props: SideBarProps) {
     );
     let sideBarItems = null;
     if (config){
-      sideBarItems = (
-        <SideBarClusters>
-          setMainContext={setMainContext}
-          mainContext={mainContext}
-          config={config}
-        </SideBarClusters>
-      );
+      if(mainContext.item == "cluster"){
+        sideBarItems = (
+          <SideBarClusters>
+            setMainContext={setMainContext}
+            mainContext={mainContext}
+            config={config}
+          </SideBarClusters>
+        );
+      } else {
+        sideBarItems = (
+          <SideBarContents>
+            setMainContext={setMainContext}
+            mainContext={mainContext}
+            config={config}
+          </SideBarContents>
+        );
+      }
     }
     return (
       <Drawer

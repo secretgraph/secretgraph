@@ -46,12 +46,13 @@ export interface SnackMessageInterface {
 }
 
 export interface MainContextInterface {
-  cluster: null | [string, string];
+  cluster: null | string;
   action: string;
   subaction: string;
   filter: string[];
   exclude: string[];
   item: null | string;
   state: string;
-  environment: Environment | null;
+  activeUrl: string;
+  // environment: Environment | null;
 }

@@ -86,6 +86,22 @@ class ContentView(AllowCORSMixin, FormView):
         )
         return super().post(request, *args, **kwargs)
 
+    def put(self, request, *args, **kwargs):
+        # initialize POST dict also for PUT method
+        # delete cache
+        for attr in ("_post", "_files"):
+            try:
+                delattr(request, attr)
+            except AttributeError:
+                pass
+        oldmethod = request.method
+        request.method = "POST"
+        # trigger cache
+        request.POST
+        # reset method
+        request.method = oldmethod
+        return super().put(request, *args, **kwargs)
+
     def get_form_class(self):
         if self.request.method == "PUT" or "put" in self.request.GET:
             return UpdateForm

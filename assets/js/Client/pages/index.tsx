@@ -1,4 +1,5 @@
 import * as React from "react";
+import { RelayEnvironmentProvider } from 'react-relay/hooks';
 import { Theme } from "@material-ui/core/styles";
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
@@ -8,8 +9,7 @@ import { elements } from '../components/elements';
 import { loadConfigSync } from '../utils/config';
 import Help from './Help';
 import SettingsImporter from './SettingsImporter';
-import DocumentEditor from './DocumentEditor';
-import DocumentViewer from './DocumentViewer';
+import { DocumentViewer, DocumentForm } from './DocumentFrames';
 import { createEnvironment } from '../utils/graphql';
 import { MainContextInterface } from '../interfaces';
 
@@ -31,7 +31,7 @@ function MainPage(props: Props) {
     "exclude": [],
     "item": elements.keys().next().value,
     "state": "draft",
-    "environment": config ? createEnvironment(config.baseUrl) : null
+    "activeUrl": config ? config.baseUrl : null
   } as MainContextInterface);
   let frameElement = null;
   switch(mainContext.action){
@@ -48,7 +48,7 @@ function MainPage(props: Props) {
     case "add":
     case "update":
       frameElement = (
-        <DocumentEditor
+        <DocumentForm
           mainContext={mainContext}
           setMainContext={setMainContext}
           config={config}
@@ -87,7 +87,7 @@ function MainPage(props: Props) {
     );
   }
 
-  return (
+  let returnval = (
     <div className={classes.root}>
       <HeaderBar
         config={config}
@@ -108,5 +108,13 @@ function MainPage(props: Props) {
       </main>
     </div>
   );
+  if (mainContext.activeUrl) {
+    returnval = (
+      <RelayEnvironmentProvider environment={createEnvironment(mainContext.activeUrl)}>
+        {returnval}
+      </RelayEnvironmentProvider>
+    );
+  }
+  return returnval;
 };
 export default themeComponent(MainPage);

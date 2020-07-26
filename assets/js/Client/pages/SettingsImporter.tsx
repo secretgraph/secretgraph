@@ -176,7 +176,7 @@ function SettingsImporter(props: Props) {
       setMainContext({
         ...mainContext,
         action: "add",
-        environment: env
+        activeUrl: newConfig.baseUrl
       });
     } else if (typeof(sconfig.registerUrl) === "string") {
       setRegisterUrl(sconfig.registerUrl);
@@ -224,7 +224,7 @@ function SettingsImporter(props: Props) {
     setMainContext({
       ...mainContext,
       action: "add",
-      environment: env
+      activeUrl: newConfig.baseUrl
     });
   }
   const handleImport = async () => {

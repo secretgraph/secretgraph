@@ -25,6 +25,31 @@ export const createContentMutation = graphql`
   }
 `
 
+export const contentQuery = graphql`
+  query contentRetrieveQuery($id: ID!, keyhashes: [String!], $authorization: [String!]) {
+    content(
+      id: $id
+    ) {
+      content {
+        id
+        nonce
+        link
+        info
+        references(groups: ["key", "signature"]) {
+          edges {
+            node {
+              extra
+              target {
+                contentHash
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
 export const findConfigQuery = graphql`
   query contentConfigQuery($cluster: ID, $authorization: [String!], $contentHashes: [String!]) {
     secretgraphConfig {

@@ -30,3 +30,9 @@ contact:Contact.accounts a rdf:Bag;
   rdfs:comment "accounts" ;
   rdfs:domain contact:Contact ;
   rdfs:range graph:Link .
+
+contact:Contact.keyhashes a rdf:Property;
+  rdfs:isDefinedBy </static/schemes/secretgraph/contact#> ;
+  rdfs:comment "hashes of keys of a contact" ;
+  rdfs:domain contact:Contact ;
+  rdfs:range xsd:string .
