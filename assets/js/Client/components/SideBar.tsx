@@ -307,7 +307,7 @@ class ClusterFeed extends React.Component<{
         {this.props.clusters.edges.map((node: any) => {
           const store = graph();
           parse(node.publicInfo, store, "");
-          const results = store.querySync(`SELECT ?label, ?comment WHERE {_:cluster a ${CLUSTER("Cluster")}; ${RDFS("label")} ?label; ${RDFS("comment")} ?comment}`)
+          const results = store.querySync(`SELECT ?label, ?comment WHERE {_:cluster a ${CLUSTER("Cluster")}; ${RDFS("label")} ?label; ${RDFS("comment")} ?comment. }`)
           let label: string=node.id as string, comment: string="";
           if(results.length > 0) {
             label = results[0][0];
