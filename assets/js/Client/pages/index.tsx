@@ -1,5 +1,5 @@
 import * as React from "react";
-import { RelayEnvironmentProvider } from 'react-relay/hooks';
+import { RelayEnvironmentProvider } from 'relay-hooks';
 import { Theme } from "@material-ui/core/styles";
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";

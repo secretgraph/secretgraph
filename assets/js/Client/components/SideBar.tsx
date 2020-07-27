@@ -10,9 +10,9 @@ import IconButton from "@material-ui/core/IconButton";
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
-import ExpansionPanel from '@material-ui/core/ExpansionPanel';
-import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
-import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
+import Accordion from '@material-ui/core/Accordion';
+import AccordionDetails from '@material-ui/core/AccordionDetails';
+import AccordionSummary from '@material-ui/core/AccordionSummary';
 import DescriptionIcon from '@material-ui/icons/Description';
 import GroupWorkIcon from '@material-ui/icons/GroupWork';
 import MovieIcon from '@material-ui/icons/Movie';
@@ -97,15 +97,15 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
 const SideBarControl = themeComponent((props: SideBarControlProps) => {
   const { classes, theme, config, setMainContext, mainContext } = props;
   return (
-    <ExpansionPanel>
-      <ExpansionPanelSummary
+    <Accordion>
+      <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls="Control-content"
         id="Control-header"
       >
         <Typography className={classes.heading}>Control</Typography>
-      </ExpansionPanelSummary>
-      <ExpansionPanelDetails>
+      </AccordionSummary>
+      <AccordionDetails>
         <List>
           <ListItem button key={"Inbox"} onClick={() => setMainContext({
             ...mainContext,
@@ -154,8 +154,8 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
             <ListItemText primary={"Cluster"} />
           </ListItem>
         </List>
-      </ExpansionPanelDetails>
-    </ExpansionPanel>
+      </AccordionDetails>
+    </Accordion>
   );
 });
 
@@ -243,14 +243,14 @@ export const contentFeedQuery = graphql`
     ) @connection(key: "SideBar_contents", filters:["include", "exclude", "cluster"]) {
       edges {
         node {
-          ... SideBar_content @arguments(include: $include, includeInfo: ["type=", "state=", ...$includeInfo])
+          ... SideBar_content @arguments(include: $include, includeInfo: $includeInfo)
         }
       }
     }
   }
 `
 
-
+// ["type=", "state=", ...
 const SideBarContents = themeComponent((props: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = props;
   return createPaginationContainer(
@@ -362,11 +362,11 @@ class ClusterFeed extends React.Component<{
 
 export const clusterFeedQuery = graphql`
   query SideBarClusterFeedQuery(
-    $clusters: [ID!], $authorization: [String!], $include: [String!], $exclude: [String!]
+    $authorization: [String!], $include: [String!], $exclude: [String!]
     $count: Int
     $cursor: String
   ) {
-    clusters: clusters(
+    cluster: clusters(
       includeInfo: $include, excludeInfo: $exclude, authorization: $authorization, first: $count, after: $cursor
     ) @connection(key: "SideBar_cluster", filters:["include", "exclude",]) {
       edges {
@@ -385,9 +385,7 @@ const SideBarClusters = themeComponent((props: SideBarItemsProps) => {
     ClusterFeed,
     {
       cluster: graphql`
-        fragment SideBar_cluster on Cluster
-        @argumentDefinitions(
-        ) {
+        fragment SideBar_cluster on Cluster {
           id
           publicInfo
         }

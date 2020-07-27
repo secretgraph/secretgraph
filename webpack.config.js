@@ -25,9 +25,13 @@ module.exports = {
         exclude: /node_modules/,
       },
     ],
+    noParse: /browserfs\.js/
   },
   resolve: {
     extensions: [".tsx", ".ts", ".js", ".jsx"],
+    alias: {
+      'fs': 'browserfs/dist/shims/fs.js',
+    }
   },
 
   plugins: [

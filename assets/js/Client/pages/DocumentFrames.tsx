@@ -5,7 +5,7 @@ import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../theme";
 import { elements } from '../components/elements';
 import {QueryRenderer, graphql} from 'react-relay';
-import { useRelayEnvironment } from 'react-relay/hooks';
+import { useRelayEnvironment } from 'relay-hooks';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { contentQuery } from "../queries/content"

@@ -26,22 +26,20 @@ export const createContentMutation = graphql`
 `
 
 export const contentQuery = graphql`
-  query contentRetrieveQuery($id: ID!, keyhashes: [String!], $authorization: [String!]) {
+  query contentRetrieveQuery($id: ID!, $keyhashes: [String!], $authorization: [String!]) {
     content(
-      id: $id
+      id: $id, authorization: $authorization
     ) {
-      content {
-        id
-        nonce
-        link
-        info
-        references(groups: ["key", "signature"]) {
-          edges {
-            node {
-              extra
-              target {
-                contentHash
-              }
+      id
+      nonce
+      link
+      info
+      references(groups: ["key", "signature"], includeInfo: $keyhashes) {
+        edges {
+          node {
+            extra
+            target {
+              contentHash
             }
           }
         }
