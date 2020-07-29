@@ -31,6 +31,11 @@ module.exports = {
     extensions: [".tsx", ".ts", ".js", ".jsx"],
     alias: {
       'fs': 'browserfs/dist/shims/fs.js',
+      'buffer': 'browserfs/dist/shims/buffer.js',
+      'path': 'browserfs/dist/shims/path.js',
+      'processGlobal': 'browserfs/dist/shims/process.js',
+      'bufferGlobal': 'browserfs/dist/shims/bufferGlobal.js',
+      'bfsGlobal': require.resolve('browserfs')
     }
   },
 
@@ -45,6 +50,7 @@ module.exports = {
       filename: "./webpack-stats.json",
       path: __dirname,
     }),
+    new webpack.ProvidePlugin({ BrowserFS: 'bfsGlobal', process: 'processGlobal', Buffer: 'bufferGlobal' }),
     new ServiceWorkerWebpackPlugin({ // should be last
       entry: "./assets/js/ServiceWorker/index.tsx",
     }),

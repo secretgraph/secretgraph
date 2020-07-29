@@ -28,6 +28,7 @@ import MailIcon from "@material-ui/icons/Mail";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import {createPaginationContainer, graphql, RelayPaginationProp} from 'react-relay';
+// import { usePagination, graphql } from 'relay-hooks';
 import { RDFS, CLUSTER } from "../constants"
 import { themeComponent } from "../theme";
 import { ConfigInterface, ConfigClusterInterface, MainContextInterface } from "../interfaces";
@@ -202,7 +203,7 @@ class ContentFeed extends React.Component<{classes: any, theme: any, config: Con
   render() {
     return (
       <List>
-        {this.props.contents.edges.map(this.render_item)}
+        {this.props.contents.edges.map((edge: any) => this.render_item(edge.node))}
         <Divider />
         <ListItem button key={"loadmore"}
           disabled={(!this.props.relay.hasMore() || this.props.relay.isLoading())}
@@ -230,70 +231,102 @@ class ContentFeed extends React.Component<{classes: any, theme: any, config: Con
   }
 }
 
-
-export const contentFeedQuery = graphql`
-  query SideBarContentFeedQuery(
-    $clusters: [ID!], $authorization: [String!], $include: [String!], $exclude: [String!]
-    $includeInfo: [String!]
-    $count: Int
-    $cursor: String
-  ) {
-    contents: contents(
-      clusters: $clusters, includeInfo: $include, excludeInfo: $exclude, authorization: $authorization, first: $count, after: $cursor
-    ) @connection(key: "SideBar_contents", filters:["include", "exclude", "cluster"]) {
-      edges {
-        node {
-          ... SideBar_content @arguments(include: $include, includeInfo: $includeInfo)
-        }
-      }
-    }
-  }
-`
-
-// ["type=", "state=", ...
-const SideBarContents = themeComponent((props: SideBarItemsProps) => {
-  const { classes, theme, config, mainContext, setMainContext } = props;
-  return createPaginationContainer(
-    ContentFeed,
-    {
-      content: graphql`
-        fragment SideBar_content on Content
-        @argumentDefinitions(
-          include: {type: "[String!]"}
-          includeInfo: {type: "[String!]"}
-        ) {
-          id
-          nonce
-          link
-          info(includeInfo: $includeInfo)
-          references(groups: ["key", "signature"], includeInfo: $include) {
-            edges {
-              node {
-                extra
-                target {
-                  info(includeInfo: ["key_hash="])
+const PaginatedContentFeed = createPaginationContainer(
+  ContentFeed,
+  {
+    contents: graphql`
+      fragment SideBar_contents on SecretgraphQuery
+      @argumentDefinitions(
+        authorization: {type: "[String!]"}
+        clusters: {type: "[ID!]"}
+        include: {type: "[String!]"}
+        exclude: {type: "[String!]"}
+        includeInfo: {type: "[String!]"}
+        count: {type: "Int!"}
+        cursor: {type: "String!"}
+      ) {
+        contents: contents(
+          clusters: $clusters
+          includeInfo: $include
+          excludeInfo: $exclude
+          authorization: $authorization
+          first: $count
+          after: $cursor
+        )  @connection(key: "SideBar_contents", filters:["include", "exclude", "clusters"])  {
+          edges {
+            node {
+              id
+              nonce
+              link
+              info(includeInfo: $includeInfo)
+              references(groups: ["key", "signature"], includeInfo: $include) {
+                edges {
+                  node {
+                    extra
+                    target {
+                      info(includeInfo: ["key_hash="])
+                    }
+                  }
                 }
               }
             }
           }
         }
-      `,
+      }
+    `,
+  },
+  {
+    direction: 'forward',
+    getConnectionFromProps(props) {
+      return props.contents && props.contents.edges;
     },
-    {
-      direction: 'forward',
-      getConnectionFromProps(props) {
-        return props.contents && props.contents.edges;
-      },
-      getVariables(props, {count, cursor}, fragmentVariables) {
-        return {
-          classes, theme, config, mainContext, setMainContext,
-          count,
-          cursor,
-        };
-      },
-      query: contentFeedQuery
-    }
-  );
+    getVariables(props, {count, cursor}, fragmentVariables) {
+      return {
+        ...props,
+        count,
+        cursor,
+      };
+    },
+    query:  graphql`
+      query SideBarContentFeedQuery(
+        $clusters: [ID!]
+        $authorization: [String!]
+        $include: [String!]
+        $exclude: [String!]
+        $includeInfo: [String!]
+        $count: Int
+        $cursor: String
+      ) {
+        ...SideBar_contents @arguments(
+          authorization: $authorization
+          clusters: $clusters
+          include: $include
+          exclude: $exclude
+          includeInfo: $includeInfo
+          count: $count
+          cursor: $cursor
+        )
+      }
+  `
+  }
+);
+
+// ["type=", "state=", ...
+const SideBarContents = themeComponent((props: SideBarItemsProps) => {
+  const { classes, theme, config, mainContext, setMainContext } = props;
+  return (
+    <PaginatedContentFeed
+      classes={classes}
+      theme={theme}
+      config={config}
+      mainContext={mainContext}
+      setMainContext={setMainContext}
+      contents={{
+        include: mainContext.include,
+        authorization: []
+      }}
+    />
+  )
 })
 
 
@@ -304,22 +337,22 @@ class ClusterFeed extends React.Component<{
   render() {
     return (
       <List>
-        {this.props.clusters.edges.map((node: any) => {
+        {this.props.clusters.edges.map((edge: any) => {
           const store = graph();
-          parse(node.publicInfo, store, "");
+          parse(edge.node.publicInfo, store, "");
           const results = store.querySync(`SELECT ?label, ?comment WHERE {_:cluster a ${CLUSTER("Cluster")}; ${RDFS("label")} ?label; ${RDFS("comment")} ?comment. }`)
-          let label: string=node.id as string, comment: string="";
+          let label: string=edge.node.id as string, comment: string="";
           if(results.length > 0) {
             label = results[0][0];
             comment = results[0][0];
           }
           return (
-            <ListItem button key={`${this.props.mainContext.activeUrl}:${node.id}`}
+            <ListItem button key={`${this.props.mainContext.activeUrl}:${edge.node.id}`}
               onClick={() => {
                 this.props.setMainContext({
                   ...this.props.mainContext,
-                  cluster: node.id,
-                  item: node.id,
+                  cluster: edge.node.id,
+                  item: edge.snode.id,
                   action: "view"
                 })
               }}
@@ -362,48 +395,80 @@ class ClusterFeed extends React.Component<{
 
 export const clusterFeedQuery = graphql`
   query SideBarClusterFeedQuery(
-    $authorization: [String!], $include: [String!], $exclude: [String!]
+    $authorization: [String!]
+    $include: [String!]
+    $exclude: [String!]
     $count: Int
     $cursor: String
   ) {
-    cluster: clusters(
-      includeInfo: $include, excludeInfo: $exclude, authorization: $authorization, first: $count, after: $cursor
-    ) @connection(key: "SideBar_cluster", filters:["include", "exclude",]) {
-      edges {
-        node {
-          ... SideBar_cluster
-        }
-      }
-    }
+    ...SideBar_clusters @arguments(
+      authorization: $authorization,
+      include: $include,
+      exclude: $exclude,
+      count: $count,
+      cursor: $cursor
+    )
   }
 `
+const PaginatedClusterFeed = createPaginationContainer(
+  ClusterFeed,
+  {
+    clusters: graphql`
+      fragment SideBar_clusters on SecretgraphQuery
+      @argumentDefinitions(
+        authorization: {type: "[String!]"}
+        include: {type: "[String!]"}
+        exclude: {type: "[String!]"}
+        count: {type: "Int!"}
+        cursor: {type: "String!"}
+      ) {
+        clusters: clusters(
+          authorization: $authorization,
+          includeInfo: $include,
+          excludeInfo: $exclude,
+          first: $count,
+          after: $cursor
+        ) @connection(key: "SideBar_clusters", filters:["include", "exclude"]) {
+          edges {
+            node {
+              id
+              publicInfo
+            }
+          }
+        }
+      }
+    `,
+  },
+  {
+    direction: 'forward',
+    getConnectionFromProps(props) {
+      return props.clusters && props.clusters.edges;
+    },
+    getVariables(props, {count, cursor}, fragmentVariables) {
+      return {
+        ...props,
+        count, cursor
+      };
+    },
+    query: clusterFeedQuery
+  }
+);
 
 
 const SideBarClusters = themeComponent((props: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = props;
-  return createPaginationContainer(
-    ClusterFeed,
-    {
-      cluster: graphql`
-        fragment SideBar_cluster on Cluster {
-          id
-          publicInfo
-        }
-      `,
-    },
-    {
-      direction: 'forward',
-      getConnectionFromProps(props) {
-        return props.clusters && props.clusters.edges;
-      },
-      getVariables(props, {count, cursor}, fragmentVariables) {
-        return {
-          classes, theme, config, mainContext, setMainContext,
-          count, cursor
-        };
-      },
-      query: clusterFeedQuery
-    }
+  return (
+    <PaginatedClusterFeed
+      classes={classes}
+      theme={theme}
+      config={config}
+      mainContext={mainContext}
+      setMainContext={setMainContext}
+      clusters={{
+        include: mainContext.include,
+        authorization: []
+      }}
+    />
   );
 })
 
