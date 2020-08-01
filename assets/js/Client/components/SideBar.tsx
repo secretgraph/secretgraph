@@ -28,7 +28,7 @@ import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
-import {createPaginationContainer, RelayPaginationProp} from 'react-relay';
+import {RelayPaginationProp} from 'react-relay';
 import { usePagination, graphql, useLazyLoadQuery, useQuery } from 'relay-hooks';
 import { RDFS, CLUSTER } from "../constants"
 import { extract_authkeys } from "../utils/config"
@@ -164,77 +164,6 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
   );
 });
 
-class ContentFeed extends React.Component<{classes: any, theme: any, config: ConfigInterface, mainContext: any, setMainContext:any,
-  contents: any, relay: RelayPaginationProp}> {
-  render_item(node: any) {
-    let type = node.info.find((info: string) => info.startsWith("type="))
-    let state = node.info.find((info: string) => info.startsWith("state="))
-    if (type){
-      type = type.split("=", 1)[1];
-    }
-    if (state){
-      state = state.split("=", 1)[1];
-    }
-    let icon;
-    switch(type){
-      case "Message":
-        icon = (<MailIcon />);
-        break;
-      case "File":
-        icon = (<MovieIcon />);
-        break;
-      default:
-        icon = (<DescriptionIcon />);
-    }
-    return (
-      <ListItem button key={`${this.props.mainContext.activeUrl}:${node.id}`}
-        onClick={() => {
-          this.props.setMainContext({
-            ...this.props.mainContext,
-            item: node.id,
-            action: "view"
-          })
-        }}
-      >
-        <ListItemIcon>
-          {icon}
-        </ListItemIcon>
-        {state== "draft" ? <ListItemIcon><DraftsIcon /></ListItemIcon> : null}
-        <ListItemText primary={`${elements.get(type)?.label || type}: ${node.id}`} />
-      </ListItem>
-    );
-  }
-  render() {
-    return (
-      <React.Fragment>
-        {this.props.contents.contents.edges.map((edge: any) => this.render_item(edge.node))}
-        <Divider />
-        <ListItem button key={"loadmore"}
-          disabled={(!this.props.relay.hasMore() || this.props.relay.isLoading())}
-          onClick={() => {
-            this._loadMore();
-          }}
-        >
-          <ListItemText primary={"Load more..."} />
-        </ListItem>
-      </React.Fragment>
-    );
-  }
-
-  _loadMore() {
-    if (!this.props.relay.hasMore() || this.props.relay.isLoading()) {
-      return;
-    }
-
-    this.props.relay.loadMore(
-      30,
-      (error: any) => {
-        console.error(error);
-      },
-    );
-  }
-}
-
 const contentFeedQuery = graphql`
   query SideBarContentFeedQuery(
     $clusters: [ID!]
@@ -298,27 +227,6 @@ fragment SideBar_contents on SecretgraphQuery
 }
 `;
 
-const PaginatedContentFeed = createPaginationContainer(
-  ContentFeed,
-  {
-    contents: contentFeedFragment
-  },
-  {
-    direction: 'forward',
-    getConnectionFromProps(props) {
-      return props.contents && props.contents.edges;
-    },
-    getVariables(props, {count, cursor}, fragmentVariables) {
-      return {
-        ...props,
-        count,
-        cursor,
-      };
-    },
-    query: contentFeedQuery
-  }
-);
-
 // ["type=", "state=", ...
 const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = appProps;
@@ -341,6 +249,7 @@ const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
   if (!queryResults.props){
     return null;
   }
+  // wrong annotation, works
   const [ props, { isLoading, hasMore, loadMore } ] = usePagination(contentFeedFragment, queryResults.props);
   console.log('props', props);
   const _loadMore = () => {
@@ -485,7 +394,7 @@ class ClusterFeed extends React.Component<{
 }
 
 
-export const clusterFeedQuery = graphql`
+const clusterFeedQuery = graphql`
   query SideBarClusterFeedQuery(
     $authorization: [String!]
     $include: [String!]
@@ -502,74 +411,116 @@ export const clusterFeedQuery = graphql`
     )
   }
 `
-const PaginatedClusterFeed = createPaginationContainer(
-  ClusterFeed,
-  {
-    clusters: graphql`
-      fragment SideBar_clusters on SecretgraphQuery
-      @argumentDefinitions(
-        authorization: {type: "[String!]"}
-        include: {type: "[String!]"}
-        exclude: {type: "[String!]"}
-        count: {type: "Int!"}
-        cursor: {type: "String!"}
-      ) {
-        clusters: clusters(
-          authorization: $authorization,
-          includeInfo: $include,
-          excludeInfo: $exclude,
-          first: $count,
-          after: $cursor
-        ) @connection(key: "SideBar_clusters", filters:["include", "exclude"]) {
-          edges {
-            node {
-              id
-              publicInfo
-            }
-          }
+
+const clusterFeedFragment = graphql`
+  fragment SideBar_clusters on SecretgraphQuery
+  @argumentDefinitions(
+    authorization: {type: "[String!]"}
+    include: {type: "[String!]"}
+    exclude: {type: "[String!]"}
+    count: {type: "Int!"}
+    cursor: {type: "String!"}
+  ) {
+    clusters: clusters(
+      authorization: $authorization,
+      includeInfo: $include,
+      excludeInfo: $exclude,
+      first: $count,
+      after: $cursor
+    ) @connection(key: "SideBar_clusters", filters:["include", "exclude"]) {
+      edges {
+        node {
+          id
+          publicInfo
         }
       }
-    `,
-  },
-  {
-    direction: 'forward',
-    getConnectionFromProps(props) {
-      return props.clusters && props.clusters.edges;
-    },
-    getVariables(props, {count, cursor}, fragmentVariables) {
-      return {
-        ...props,
-        count, cursor
-      };
-    },
-    query: clusterFeedQuery
+    }
   }
-);
+`;
 
 
 const SideBarClusters = themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = appProps;
-  const {props, error, retry, cached} = useLazyLoadQuery(
+  const vars = {
+    authorization: extract_authkeys(config, mainContext.activeUrl),
+
+  }
+  const queryResults = useLazyLoadQuery(
     clusterFeedQuery,
-    {
-      id: mainContext.item,
-    }
+    vars
   );
-  if (error) {
-    return (<div>{error.message}</div>);
-  } else if (props) {
-    return (
-      <PaginatedClusterFeed
-        classes={classes}
-        theme={theme}
-        config={config}
-        mainContext={mainContext}
-        setMainContext={setMainContext}
-        clusters={props}
-      />
+
+  console.log('renderer', queryResults);
+  if (!queryResults.props){
+    return null;
+  }
+  // wrong annotation, works
+  const [ paginatedProps, { isLoading, hasMore, loadMore } ] = usePagination(clusterFeedFragment, queryResults.props);
+  console.log('props', paginatedProps);
+  const _loadMore = () => {
+    if (!hasMore() || isLoading()) {
+      return;
+    }
+    loadMore(
+      {
+        direction: 'forward',
+        getVariables(props: any, {count, cursor}, fragmentVariables) {
+          return {
+            ...props,
+            count,
+            cursor,
+          };
+        },
+        query: clusterFeedQuery
+      },
+      30,  // Fetch the next 30 feed items
+      error => {
+        console.log(error);
+      },
     );
   }
-  return (<CircularProgress />);
+
+  return (
+    <React.Fragment>
+      {paginatedProps.clusters.edges.map((edge: any) => {
+        const store = graph();
+        parse(edge.node.publicInfo, store, "");
+        const results = store.querySync(`SELECT ?label, ?comment WHERE {_:cluster a ${CLUSTER("Cluster")}; ${RDFS("label")} ?label; ${RDFS("comment")} ?comment. }`)
+        let label: string=edge.node.id as string, comment: string="";
+        if(results.length > 0) {
+          label = results[0][0];
+          comment = results[0][0];
+        }
+        return (
+          <ListItem button key={`${mainContext.activeUrl}:${edge.node.id}`}
+            onClick={() => {
+              setMainContext({
+                ...mainContext,
+                cluster: edge.node.id,
+                item: edge.snode.id,
+                action: "view"
+              })
+            }}
+          >
+            <ListItemIcon>
+              <GroupWorkIcon />
+            </ListItemIcon>
+            <ListItemText primary={label} title={comment} />
+          </ListItem>
+        );
+      })}
+
+      <Divider />
+      <ListItem button key={"loadmore"}
+        disabled={(!hasMore() || isLoading())}
+        onClick={() => {
+          _loadMore();
+        }}
+      >
+        <ListItemText primary={"Load more..."} />
+      </ListItem>
+    </React.Fragment>
+  );
 })
 
 class SideBar extends React.Component<SideBarProps> {
