@@ -309,10 +309,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         incl_filters = Q()
         excl_filters = Q()
         for i in includeInfo or []:
-            incl_filters |= Q(info__tag__startswith=i)
+            incl_filters |= Q(tag__startswith=i)
 
         for i in excludeInfo or []:
-            excl_filters |= Q(info__tag__startswith=i)
+            excl_filters |= Q(tag__startswith=i)
         return self.info.filter(
             ~excl_filters & incl_filters
         ).values_list("tag", flat=True)
