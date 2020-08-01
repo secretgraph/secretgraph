@@ -121,5 +121,5 @@ export function secretgraphTheme(theme: Theme) {
 }
 
 export function themeComponent(component: any) {
-  return withStyles(secretgraphTheme)(withTheme(component));
+  return withStyles(secretgraphTheme, {withTheme: true})(component);
 }

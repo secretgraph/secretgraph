@@ -1,11 +1,13 @@
 import * as React from "react";
 import { RelayEnvironmentProvider } from 'relay-hooks';
 import { Theme } from "@material-ui/core/styles";
+import CircularProgress from '@material-ui/core/CircularProgress';
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
 import SideBar from "../components/SideBar";
 import { themeComponent } from "../theme";
 import { elements } from '../components/elements';
+import { CapturingSuspense } from '../components/misc';
 import { loadConfigSync } from '../utils/config';
 import Help from './Help';
 import SettingsImporter from './SettingsImporter';
@@ -15,23 +17,24 @@ import { MainContextInterface } from '../interfaces';
 
 type Props = {
   classes: any,
-  theme: Theme
+  theme: Theme,
+  defaultPath?: string
 };
 
 
 function MainPage(props: Props) {
-  const {classes, theme} = props;
+  const {classes, theme, defaultPath} = props;
   const [drawerOpen, setDrawerOpen] = React.useState(true);
   const [config, setConfig] = React.useState(() => loadConfigSync());
   const [mainContext, setMainContext] = React.useState({
     "cluster": null,
     "action": config ? "add" : "start",
     "subaction": "",
-    "filter": [],
+    "include": [],
     "exclude": [],
     "item": elements.keys().next().value,
     "state": "draft",
-    "activeUrl": config ? config.baseUrl : null
+    "activeUrl": config ? config.baseUrl : defaultPath
   } as MainContextInterface);
   let frameElement = null;
   switch(mainContext.action){
@@ -87,34 +90,32 @@ function MainPage(props: Props) {
     );
   }
 
-  let returnval = (
-    <div className={classes.root}>
-      <HeaderBar
-        config={config}
-        setConfig={setConfig}
-        openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
-        mainContext={mainContext}
-        setMainContext={setMainContext}
-      />
-      {sidebar}
-      <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
-        <ActionBar
+  return (
+    <RelayEnvironmentProvider environment={createEnvironment(mainContext.activeUrl)}>
+      <div className={classes.root}>
+        <HeaderBar
+          config={config}
+          setConfig={setConfig}
+          openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
           mainContext={mainContext}
           setMainContext={setMainContext}
         />
-        <section className={classes.mainSection}>
-          {frameElement}
-        </section>
-      </main>
-    </div>
+        {sidebar}
+        <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
+          <ActionBar
+            mainContext={mainContext}
+            setMainContext={setMainContext}
+          />
+          <section className={classes.mainSection}>
+            <CapturingSuspense>
+              {frameElement}
+            </CapturingSuspense>
+          </section>
+        </main>
+      </div>
+    </RelayEnvironmentProvider>
   );
-  if (mainContext.activeUrl) {
-    returnval = (
-      <RelayEnvironmentProvider environment={createEnvironment(mainContext.activeUrl)}>
-        {returnval}
-      </RelayEnvironmentProvider>
-    );
-  }
-  return returnval;
 };
+
+
 export default themeComponent(MainPage);

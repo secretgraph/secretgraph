@@ -11,12 +11,13 @@ import NativeSelect from '@material-ui/core/NativeSelect';
 import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined';
 import { elements } from './elements';
 import { contentStates } from '../constants';
+import { MainContextInterface } from '../interfaces';
 
 
 type Props = {
   classes: any,
   theme: Theme,
-  mainContext: any,
+  mainContext: MainContextInterface,
   setMainContext: any
 };
 

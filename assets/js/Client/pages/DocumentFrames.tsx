@@ -4,8 +4,7 @@ import { Theme } from "@material-ui/core/styles";
 
 import { themeComponent } from "../theme";
 import { elements } from '../components/elements';
-import {QueryRenderer, graphql} from 'react-relay';
-import { useRelayEnvironment } from 'relay-hooks';
+import { useQuery, graphql } from 'relay-hooks';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { contentQuery } from "../queries/content"
@@ -30,36 +29,37 @@ const renderQueryWrapper = (props:any) => {
 }
 
 
-export const DocumentViewer = themeComponent((props: Props) => {
-  const { classes, theme, config, setConfig, mainContext, setMainContext } = props;
-  const environment = useRelayEnvironment();
-
-  return (
-    <QueryRenderer
-      environment={environment}
-      query={contentQuery}
-      variables={{
-        id: mainContext.item,
-      }}
-      render={(result: any) => renderQueryWrapper({...props, ...result})}
-    />
+export const DocumentViewer = themeComponent((appProps: Props) => {
+  const { classes, theme, config, setConfig, mainContext, setMainContext } = appProps;
+  const {props, error, retry, cached} = useQuery(
+    contentQuery,
+    {
+      id: mainContext.item,
+    }
   );
+  if (error) {
+    return (<div>{error.message}</div>);
+  } else if (props) {
+    return null;
+  }
+  return (<CircularProgress />);
 });
 
-export const DocumentForm = themeComponent((props: Props) => {
-  const { classes, theme, mainContext, setMainContext } = props;
-  const environment = useRelayEnvironment();
-
-  return (
-    <form className={classes.root} noValidate autoComplete="off">
-      <QueryRenderer
-        environment={environment}
-        query={contentQuery}
-        variables={{
-          id: mainContext.item,
-        }}
-        render={(result: any) => renderQueryWrapper({...props, ...result})}
-      />
-    </form>
+export const DocumentForm = themeComponent((appProps: Props) => {
+  const { classes, theme, mainContext, setMainContext } = appProps;
+  const {props, error, retry, cached} = useQuery(
+    contentQuery,
+    {
+      id: mainContext.item,
+    }
   );
+  if (error) {
+    return (<div>{error.message}</div>);
+  } else if (props) {
+    return (
+      <form className={classes.root} noValidate autoComplete="off">
+      </form>
+    );
+  }
+  return (<CircularProgress />);
 });

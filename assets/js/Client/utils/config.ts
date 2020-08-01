@@ -235,3 +235,18 @@ export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwt
     throw Error("Invalid response")
   });
 }
+
+
+export function extract_authkeys(config: ConfigInterface, url: string) {
+  const result = [];
+  for (const id in config.clusters[url]) {
+    const clusterconf = config.clusters[url][id];
+    for (const hash in clusterconf.hashes){
+      // const actions = clusterconf.hashes[hash]
+      if (config.tokens[hash]){
+        result.push(`${id}:${config.tokens[hash]}`);
+      }
+    }
+  }
+  return result;
+}

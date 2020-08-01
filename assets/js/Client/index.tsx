@@ -5,7 +5,13 @@ import runtime from "serviceworker-webpack-plugin/lib/runtime";
 
 let wrapper = document.getElementById("content-main");
 
-ReactDOM.render(<MainPage />, wrapper);
+const defaultPath: string | undefined = wrapper ? wrapper.dataset.graphqlPath : undefined;
+
+ReactDOM.render(
+  <MainPage
+    defaultPath={defaultPath}
+  />, wrapper
+);
 
 /**
 if ("serviceWorker" in navigator) {

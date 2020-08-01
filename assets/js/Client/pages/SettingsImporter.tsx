@@ -54,6 +54,13 @@ function Alert(props: any) {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
 
+function hasImportInput() {
+  return (
+    !(document.getElementById("secretgraph-import-url") as HTMLInputElement)?.value &&
+    !(document.getElementById("secretgraph-import-file") as HTMLInputElement)?.files
+  )
+}
+
 function SettingsImporter(props: Props) {
   const { classes, theme, mainContext, setMainContext, config, setConfig } = props;
   const [registerUrl, setRegisterUrl] = React.useState(undefined);
@@ -113,8 +120,7 @@ function SettingsImporter(props: Props) {
     setRegisterUrl(undefined);
     setMainContext({
       ...mainContext,
-      action: "add",
-      environment: env
+      action: "add"
     })
   }
 
@@ -219,7 +225,7 @@ function SettingsImporter(props: Props) {
       setMessage({ severity: "error", message: "Configuration is invalid" });
       return;
     }
-    const env = createEnvironment(newConfig.baseUrl);
+    // const env = createEnvironment(newConfig.baseUrl);
     setConfig(newConfig);
     setMainContext({
       ...mainContext,
@@ -319,7 +325,7 @@ function SettingsImporter(props: Props) {
               />
             </CardContent>
             <CardActions>
-              <Button size="small" variant="contained" color="primary"
+              <Button size="small" variant="contained" color="secondary"
                 onClick={handleStart}
                 disabled={loadingStart || loadingImport}
               >
@@ -353,6 +359,8 @@ function SettingsImporter(props: Props) {
               <Button
                 variant="contained"
                 component="span"
+                color="primary"
+                disabled={loadingStart || loadingImport }
                 endIcon={
                   hasFile ? <CheckIcon/> : <SystemUpdateAltIcon/>
                 }
@@ -387,7 +395,7 @@ function SettingsImporter(props: Props) {
         </CardContent>
         <CardActions>
           <Button size="small" variant="contained" color="primary"
-            disabled={loadingStart || loadingImport}
+            disabled={loadingStart || loadingImport || hasImportInput()}
             onClick={handleImport}>
               {importStartLabel}
               {(loadingImport) && <CircularProgress size={24} className={classes.buttonProgress} />}
