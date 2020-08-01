@@ -7,7 +7,6 @@ import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
-import { ListItemText } from '@material-ui/core';
 
 export function checkConfig(config: ConfigInterface | null | undefined) {
   if(!config){
