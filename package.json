@@ -39,6 +39,8 @@
     "relay-hooks": "^3.5.2",
     "roboto-fontface": "^0.10.0",
     "serviceworker-webpack-plugin": "^1.0.1",
+    "solid-auth-cli": "^1.0.14",
+    "solid-auth-client": "^2.5.0",
     "typescript": "^3.9.7",
     "webpack": "^4.44.1",
     "webpack-bundle-tracker": "^0.4.3",
