@@ -17,7 +17,8 @@ import FormControl from '@material-ui/core/FormControl';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import Link from '@material-ui/core/Link';
 import { Theme } from "@material-ui/core/styles";
-import { fetchQuery, Environment } from "relay-runtime";
+import { fetchQuery } from "relay-runtime";
+import { useRelayEnvironment } from 'relay-hooks';
 import { themeComponent } from "../theme";
 import { exportConfig, exportConfigAsUrl } from "../utils/config";
 import { elements } from './elements';
@@ -48,6 +49,7 @@ function HeaderBar(props: Props) {
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportUrl, setExportUrl] = React.useState("");
   const [loadingExport, setLoadingExport] = React.useState(false);
+  const environment = useRelayEnvironment();
   let title: string, documenttitle: string;
   switch (mainContext.action){
     case "add":
@@ -82,7 +84,7 @@ function HeaderBar(props: Props) {
     setLoadingExport(true);
     const encryptingPw = (document.getElementById("secretgraph-export-pw") as HTMLInputElement).value;
     const sconfig: any = await fetchQuery(
-      mainContext.environment as Environment, serverConfigQuery, {}
+      environment, serverConfigQuery, {}
     ).then((data:any) => data.secretgraphConfig).catch(
       () => setLoadingExport(false)
     );
@@ -103,7 +105,7 @@ function HeaderBar(props: Props) {
   const exportSettingsOpener = async () => {
     setMenuOpen(false);
     setExportOpen(true);
-    await exportConfigAsUrl(mainContext.environment as Environment, config);
+    await exportConfigAsUrl(environment, config);
     //const qr = qrcode(typeNumber, errorCorrectionLevel);
   }
 
