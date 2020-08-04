@@ -1,6 +1,7 @@
-import { graphql } from "react-relay"
+import { gql } from '@apollo/client';
 
-export const createContentMutation = graphql`
+
+export const createContentMutation = gql`
   mutation contentEncryptedMutation($cluster: ID!, $info: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
     updateOrCreateContent(
       input: {
@@ -25,7 +26,7 @@ export const createContentMutation = graphql`
   }
 `
 
-export const contentQuery = graphql`
+export const contentQuery = gql`
   query contentRetrieveQuery($id: ID!, $keyhashes: [String!], $authorization: [String!]) {
     content(
       id: $id, authorization: $authorization
@@ -48,7 +49,7 @@ export const contentQuery = graphql`
   }
 `
 
-export const findConfigQuery = graphql`
+export const findConfigQuery = gql`
   query contentConfigQuery($cluster: ID, $authorization: [String!], $contentHashes: [String!]) {
     secretgraphConfig {
       PBKDF2Iterations

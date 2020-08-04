@@ -17,8 +17,7 @@ import FormControl from '@material-ui/core/FormControl';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import Link from '@material-ui/core/Link';
 import { Theme } from "@material-ui/core/styles";
-import { fetchQuery } from "relay-runtime";
-import { useRelayEnvironment } from 'relay-hooks';
+import { useApolloClient } from '@apollo/client';
 import { themeComponent } from "../theme";
 import { exportConfig, exportConfigAsUrl } from "../utils/config";
 import { elements } from './elements';
@@ -49,8 +48,11 @@ function HeaderBar(props: Props) {
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportUrl, setExportUrl] = React.useState("");
   const [loadingExport, setLoadingExport] = React.useState(false);
-  const environment = useRelayEnvironment();
   let title: string, documenttitle: string;
+  let client: any = null;
+  try {
+    client = useApolloClient();
+  } catch(exc) {}
   switch (mainContext.action){
     case "add":
       let temp = elements.get(mainContext.item as string);
@@ -83,9 +85,11 @@ function HeaderBar(props: Props) {
   const exportSettingsFile = async () => {
     setLoadingExport(true);
     const encryptingPw = (document.getElementById("secretgraph-export-pw") as HTMLInputElement).value;
-    const sconfig: any = await fetchQuery(
-      environment, serverConfigQuery, {}
-    ).then((data:any) => data.secretgraphConfig).catch(
+    const sconfig: any = await client.query(
+      {
+        query: serverConfigQuery,
+      }
+    ).then((obj:any) => obj.data.secretgraphConfig).catch(
       () => setLoadingExport(false)
     );
     if (!sconfig){
@@ -105,7 +109,7 @@ function HeaderBar(props: Props) {
   const exportSettingsOpener = async () => {
     setMenuOpen(false);
     setExportOpen(true);
-    await exportConfigAsUrl(environment, config);
+    await exportConfigAsUrl(client, config);
     //const qr = qrcode(typeNumber, errorCorrectionLevel);
   }
 

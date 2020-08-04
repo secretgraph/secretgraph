@@ -16,8 +16,6 @@ import AccordionSummary from '@material-ui/core/AccordionSummary';
 import DescriptionIcon from '@material-ui/icons/Description';
 import GroupWorkIcon from '@material-ui/icons/GroupWork';
 import MovieIcon from '@material-ui/icons/Movie';
-import StarIcon from '@material-ui/icons/Star';
-import CircularProgress from '@material-ui/core/CircularProgress';
 import { parse, graph } from 'rdflib';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
@@ -28,14 +26,13 @@ import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
-import {RelayPaginationProp} from 'react-relay';
-import { usePagination, graphql, useLazyLoadQuery, useQuery } from 'relay-hooks';
 import { RDFS, CLUSTER } from "../constants"
 import { extract_authkeys } from "../utils/config"
 import { themeComponent } from "../theme";
 import { ConfigInterface, ConfigClusterInterface, MainContextInterface } from "../interfaces";
 import { elements } from "./elements";
 import { CapturingSuspense } from "./misc";
+import { gql, useQuery } from '@apollo/client';
 
 
 type SideBarProps = {
@@ -164,7 +161,7 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
   );
 });
 
-const contentFeedQuery = graphql`
+const contentFeedQuery = gql`
   query SideBarContentFeedQuery(
     $clusters: [ID!]
     $authorization: [String!]
@@ -174,49 +171,27 @@ const contentFeedQuery = graphql`
     $count: Int
     $cursor: String
   ) {
-    ...SideBar_contents @arguments(
-      authorization: $authorization
+    contents(
       clusters: $clusters
-      include: $include
-      exclude: $exclude
-      includeInfo: $includeInfo
-      count: $count
-      cursor: $cursor
-    )
-  }
-`;
-
-const contentFeedFragment = graphql`
-fragment SideBar_contents on SecretgraphQuery
-@argumentDefinitions(
-  authorization: {type: "[String!]"}
-  clusters: {type: "[ID!]"}
-  include: {type: "[String!]"}
-  exclude: {type: "[String!]"}
-  includeInfo: {type: "[String!]"}
-  count: {type: "Int!"}
-  cursor: {type: "String!"}
-) {
-  contents: contents(
-    clusters: $clusters
-    includeInfo: $include
-    excludeInfo: $exclude
-    authorization: $authorization
-    first: $count
-    after: $cursor
-  )  @connection(key: "SideBar_contents", filters:["include", "exclude", "clusters"])  {
-    edges {
-      node {
-        id
-        nonce
-        link
-        info(includeInfo: $includeInfo)
-        references(groups: ["key", "signature"], includeInfo: $include) {
-          edges {
-            node {
-              extra
-              target {
-                info(includeInfo: ["key_hash="])
+      includeInfo: $include
+      excludeInfo: $exclude
+      authorization: $authorization
+      first: $count
+      after: $cursor
+    ) {
+      edges {
+        node {
+          id
+          nonce
+          link
+          info(includeInfo: $includeInfo)
+          references(groups: ["key", "signature"], includeInfo: $include) {
+            edges {
+              node {
+                extra
+                target {
+                  info(includeInfo: ["key_hash="])
+                }
               }
             }
           }
@@ -224,55 +199,37 @@ fragment SideBar_contents on SecretgraphQuery
       }
     }
   }
-}
 `;
-
 // ["type=", "state=", ...
 const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = appProps;
 
-  const vars = {
-    authorization: extract_authkeys(config, mainContext.activeUrl),
-    include: mainContext.include,
-    exclude: mainContext.exclude,
-    count: 30
-  }
-  const queryResults = useLazyLoadQuery(
+  const { data, fetchMore, loading } = useQuery(
     contentFeedQuery,
-    vars,
     {
-        fetchPolicy: 'store-or-network',
-    },
-  )
-
-  console.log('renderer', queryResults);
-  if (!queryResults.props){
-    return null;
-  }
-  // wrong annotation, works
-  const [ props, { isLoading, hasMore, loadMore } ] = usePagination(contentFeedFragment, queryResults.props);
-  console.log('props', props);
-  const _loadMore = () => {
-    if (!hasMore() || isLoading()) {
-      return;
+      variables: {
+        authorization: extract_authkeys(config, mainContext.activeUrl),
+        include: mainContext.include,
+        exclude: mainContext.exclude,
+        count: 30
+      }
     }
-    loadMore(
-      {
-        direction: 'forward',
-        getVariables(props: any, {count, cursor}, fragmentVariables) {
-          return {
-            ...props,
-            count,
-            cursor,
-          };
-        },
-        query: contentFeedQuery
+  );
+  if (loading) return null;
+  const _loadMore = () => {
+    fetchMore({
+      variables: {
+        after: data.contents.edges[data.contents.edges.length-1]
       },
-      30,  // Fetch the next 10 feed items
-      error => {
-        console.log(error);
-      },
-    );
+      updateQuery: (prev: any, { fetchMoreResult } : {fetchMoreResult:any}) => {
+        if (!fetchMoreResult) return prev;
+        return Object.assign({}, prev, {
+          contents: {
+            edges: [...prev.contents.edges, ...fetchMoreResult.contents.edges]
+          }
+        });
+      }
+    })
   }
 
   const render_item = (node: any) => {
@@ -316,10 +273,10 @@ const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
 
   return (
     <React.Fragment>
-      {props.contents.edges.map((edge: any) => render_item(edge.node))}
+      {data.contents.edges.map((edge: any) => render_item(edge.node))}
       <Divider />
       <ListItem button key={"loadmore"}
-        disabled={(!hasMore() || isLoading())}
+        disabled={loading}
         onClick={() => {
           _loadMore();
         }}
@@ -332,69 +289,8 @@ const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
 
 
 
-class ClusterFeed extends React.Component<{
-  classes: any, theme: any, config: ConfigInterface, mainContext: any, setMainContext:any,
-  clusters: any, relay: RelayPaginationProp}> {
-  render() {
-    return (
-      <React.Fragment>
-        {this.props.clusters.clusters.edges.map((edge: any) => {
-          const store = graph();
-          parse(edge.node.publicInfo, store, "");
-          const results = store.querySync(`SELECT ?label, ?comment WHERE {_:cluster a ${CLUSTER("Cluster")}; ${RDFS("label")} ?label; ${RDFS("comment")} ?comment. }`)
-          let label: string=edge.node.id as string, comment: string="";
-          if(results.length > 0) {
-            label = results[0][0];
-            comment = results[0][0];
-          }
-          return (
-            <ListItem button key={`${this.props.mainContext.activeUrl}:${edge.node.id}`}
-              onClick={() => {
-                this.props.setMainContext({
-                  ...this.props.mainContext,
-                  cluster: edge.node.id,
-                  item: edge.snode.id,
-                  action: "view"
-                })
-              }}
-            >
-              <ListItemIcon>
-                <GroupWorkIcon />
-              </ListItemIcon>
-              <ListItemText primary={label} title={comment} />
-            </ListItem>
-          );
-        })}
 
-        <Divider />
-        <ListItem button key={"loadmore"}
-          disabled={(!this.props.relay.hasMore() || this.props.relay.isLoading())}
-          onClick={() => {
-            this._loadMore();
-          }}
-        >
-          <ListItemText primary={"Load more..."} />
-        </ListItem>
-      </React.Fragment>
-    );
-  }
-
-  _loadMore() {
-    if (!this.props.relay.hasMore() || this.props.relay.isLoading()) {
-      return;
-    }
-
-    this.props.relay.loadMore(
-      30,
-      (error: any) => {
-        console.error(error);
-      },
-    );
-  }
-}
-
-
-const clusterFeedQuery = graphql`
+const clusterFeedQuery = gql`
   query SideBarClusterFeedQuery(
     $authorization: [String!]
     $include: [String!]
@@ -402,32 +298,13 @@ const clusterFeedQuery = graphql`
     $count: Int
     $cursor: String
   ) {
-    ...SideBar_clusters @arguments(
-      authorization: $authorization,
-      include: $include,
-      exclude: $exclude,
-      count: $count,
-      cursor: $cursor
-    )
-  }
-`
-
-const clusterFeedFragment = graphql`
-  fragment SideBar_clusters on SecretgraphQuery
-  @argumentDefinitions(
-    authorization: {type: "[String!]"}
-    include: {type: "[String!]"}
-    exclude: {type: "[String!]"}
-    count: {type: "Int!"}
-    cursor: {type: "String!"}
-  ) {
-    clusters: clusters(
+    clusters(
       authorization: $authorization,
       includeInfo: $include,
       excludeInfo: $exclude,
       first: $count,
       after: $cursor
-    ) @connection(key: "SideBar_clusters", filters:["include", "exclude"]) {
+    ) {
       edges {
         node {
           id
@@ -436,53 +313,40 @@ const clusterFeedFragment = graphql`
       }
     }
   }
-`;
+`
 
 
 const SideBarClusters = themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = appProps;
-  const vars = {
-    authorization: extract_authkeys(config, mainContext.activeUrl),
-
-  }
-  const queryResults = useLazyLoadQuery(
+  const { data, fetchMore, loading } = useQuery(
     clusterFeedQuery,
-    vars
-  );
-
-  console.log('renderer', queryResults);
-  if (!queryResults.props){
-    return null;
-  }
-  // wrong annotation, works
-  const [ paginatedProps, { isLoading, hasMore, loadMore } ] = usePagination(clusterFeedFragment, queryResults.props);
-  console.log('props', paginatedProps);
-  const _loadMore = () => {
-    if (!hasMore() || isLoading()) {
-      return;
+    {
+      variables: {
+        authorization: extract_authkeys(config, mainContext.activeUrl)
+      }
     }
-    loadMore(
-      {
-        direction: 'forward',
-        getVariables(props: any, {count, cursor}, fragmentVariables) {
-          return {
-            ...props,
-            count,
-            cursor,
-          };
-        },
-        query: clusterFeedQuery
+  );
+  if (loading) return null;
+
+  const _loadMore = () => {
+    fetchMore({
+      variables: {
+        after: data.clusters.edges[data.clusters.edges.length-1]
       },
-      30,  // Fetch the next 30 feed items
-      error => {
-        console.log(error);
-      },
-    );
+      updateQuery: (prev: any, { fetchMoreResult } : {fetchMoreResult:any}) => {
+        if (!fetchMoreResult) return prev;
+        return Object.assign({}, prev, {
+          clusters: {
+            edges: [...prev.clusters.edges, ...fetchMoreResult.clusters.edges]
+          }
+        });
+      }
+    })
   }
 
   return (
     <React.Fragment>
-      {paginatedProps.clusters.edges.map((edge: any) => {
+      {data.clusters.edges.map((edge: any) => {
         const store = graph();
         parse(edge.node.publicInfo, store, "");
         const results = store.querySync(`SELECT ?label, ?comment WHERE {_:cluster a ${CLUSTER("Cluster")}; ${RDFS("label")} ?label; ${RDFS("comment")} ?comment. }`)
@@ -512,7 +376,7 @@ const SideBarClusters = themeComponent((appProps: SideBarItemsProps) => {
 
       <Divider />
       <ListItem button key={"loadmore"}
-        disabled={(!hasMore() || isLoading())}
+        disabled={loading}
         onClick={() => {
           _loadMore();
         }}

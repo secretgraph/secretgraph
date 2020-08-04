@@ -1,7 +1,7 @@
 
-import { graphql } from "react-relay"
+import { gql } from '@apollo/client';
 
-export const getClusterConfigurationQuery = graphql`
+export const getClusterConfigurationQuery = gql`
   query clusterGetConfigurationQuery($id: ID!, $authorization: [String!]) {
     secretgraphConfig {
       injectedClusters {
@@ -27,7 +27,7 @@ export const getClusterConfigurationQuery = graphql`
 `
 
 
-export const createClusterMutation = graphql`
+export const createClusterMutation = gql`
   mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $nonce: String, $authorization: [String!]) {
     updateOrCreateCluster(
       input: {

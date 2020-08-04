@@ -1,10 +1,10 @@
 
 import * as React from "react";
 import { Theme } from "@material-ui/core/styles";
+import { useQuery } from '@apollo/client';
 
 import { themeComponent } from "../theme";
 import { elements } from '../components/elements';
-import { useQuery, graphql } from 'relay-hooks';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { contentQuery } from "../queries/content"
@@ -31,15 +31,17 @@ const renderQueryWrapper = (props:any) => {
 
 export const DocumentViewer = themeComponent((appProps: Props) => {
   const { classes, theme, config, setConfig, mainContext, setMainContext } = appProps;
-  const {props, error, retry, cached} = useQuery(
+  const {data, error} = useQuery(
     contentQuery,
     {
-      id: mainContext.item,
+      variables: {
+        id: mainContext.item
+      }
     }
   );
   if (error) {
     return (<div>{error.message}</div>);
-  } else if (props) {
+  } else if (data) {
     return null;
   }
   return (<CircularProgress />);
@@ -47,15 +49,17 @@ export const DocumentViewer = themeComponent((appProps: Props) => {
 
 export const DocumentForm = themeComponent((appProps: Props) => {
   const { classes, theme, mainContext, setMainContext } = appProps;
-  const {props, error, retry, cached} = useQuery(
+  const {data, error} = useQuery(
     contentQuery,
     {
-      id: mainContext.item,
+      variables: {
+        id: mainContext.item
+      }
     }
   );
   if (error) {
     return (<div>{error.message}</div>);
-  } else if (props) {
+  } else if (data) {
     return (
       <form className={classes.root} noValidate autoComplete="off">
       </form>

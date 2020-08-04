@@ -1,6 +1,6 @@
-import { graphql } from "react-relay"
+import { gql } from '@apollo/client';
 
-export const serverConfigQuery = graphql`
+export const serverConfigQuery = gql`
   query serverSecretgraphConfigQuery {
     secretgraphConfig {
       hashAlgorithms

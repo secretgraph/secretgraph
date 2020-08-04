@@ -1,7 +1,6 @@
 import * as React from "react";
-import { RelayEnvironmentProvider } from 'relay-hooks';
+import { ApolloProvider } from "@apollo/client";
 import { Theme } from "@material-ui/core/styles";
-import CircularProgress from '@material-ui/core/CircularProgress';
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
 import SideBar from "../components/SideBar";
@@ -12,7 +11,7 @@ import { loadConfigSync } from '../utils/config';
 import Help from './Help';
 import SettingsImporter from './SettingsImporter';
 import { DocumentViewer, DocumentForm } from './DocumentFrames';
-import { createEnvironment } from '../utils/graphql';
+import { createClient } from '../utils/graphql';
 import { MainContextInterface } from '../interfaces';
 
 type Props = {
@@ -20,6 +19,7 @@ type Props = {
   theme: Theme,
   defaultPath?: string
 };
+
 
 
 function MainPage(props: Props) {
@@ -91,7 +91,7 @@ function MainPage(props: Props) {
   }
 
   return (
-    <RelayEnvironmentProvider environment={createEnvironment(mainContext.activeUrl)}>
+    <ApolloProvider client={createClient(mainContext.activeUrl)}>
       <div className={classes.root}>
         <HeaderBar
           config={config}
@@ -113,7 +113,7 @@ function MainPage(props: Props) {
           </section>
         </main>
       </div>
-    </RelayEnvironmentProvider>
+    </ApolloProvider>
   );
 };
 

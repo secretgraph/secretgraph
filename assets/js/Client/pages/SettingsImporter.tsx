@@ -20,8 +20,6 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import CheckIcon from '@material-ui/icons/Check';
 
-import { fetchQuery } from "relay-runtime";
-
 import { themeComponent } from "../theme";
 import {
   startHelp,
@@ -36,7 +34,7 @@ import {
 } from "../messages";
 import { ConfigInterface, SnackMessageInterface } from '../interfaces';
 import { loadConfig } from "../utils/config";
-import { createEnvironment, initializeCluster } from "../utils/graphql";
+import { createClient, initializeCluster } from "../utils/graphql";
 import { utf8ToBinary, utf8encoder } from "../utils/misc"
 import { serverConfigQuery } from "../queries/server"
 import { mapHashNames } from "../constants"
@@ -77,17 +75,17 @@ function SettingsImporter(props: Props) {
     const providerUrl = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
     const encryptingPw = (document.getElementById("secretgraph-encrypting") as HTMLInputElement).value;
     let newConfig: ConfigInterface | null = null;
-    const env = createEnvironment(providerUrl);
-    if (!env) {
+    const client = createClient(providerUrl);
+    if (!client) {
       return;
     }
-    const result: any = await fetchQuery(
-      env, serverConfigQuery, {}
+    const result: any = await client.query(
+      {query: serverConfigQuery}
     );
     if (!result){
       return;
     }
-    const sconfig = result.secretgraphConfig;
+    const sconfig = result.data.secretgraphConfig;
     const hashAlgo = mapHashNames[sconfig.hashAlgorithms[0]];
     if (!hashAlgo){
       setMessage({ severity: "warning", message: "unsupported hash algorithm" });
@@ -98,7 +96,7 @@ function SettingsImporter(props: Props) {
         certificates: {},
         tokens: {},
         clusters: {},
-        baseUrl: providerUrl,
+        baseUrl: (new URL(providerUrl, window.location.href)).href,
         configHashes: [],
         configCluster: "",
         hashAlgorithm: hashAlgo
@@ -110,7 +108,7 @@ function SettingsImporter(props: Props) {
         const key = crypto.getRandomValues(new Uint8Array(32));
         b64key = btoa(String.fromCharCode(... key));
       }
-      await initializeCluster(env, newConfig, b64key, sconfig.PBKDF2Iterations);
+      await initializeCluster(client, newConfig, b64key, sconfig.PBKDF2Iterations);
     }
     if (!newConfig){
       return;
@@ -142,14 +140,14 @@ function SettingsImporter(props: Props) {
   const handleStart_inner = async () => {
     const providerUrl: string = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
     const encryptingPw = (document.getElementById("secretgraph-encrypting") as HTMLInputElement).value;
-    const env = createEnvironment(providerUrl);
-    const result: any = await fetchQuery(
-      env, serverConfigQuery, {}
+    const client = createClient(providerUrl);
+    const result: any = await client.query(
+      {query: serverConfigQuery}
     );
     if (!result){
       return;
     }
-    const sconfig = result.secretgraphConfig;
+    const sconfig = result.data.secretgraphConfig;
     const hashAlgo = mapHashNames[sconfig.hashAlgorithms[0]];
     if (!hashAlgo){
       setMessage({ severity: "warning", message: "unsupported hash algorithm" });
@@ -160,12 +158,12 @@ function SettingsImporter(props: Props) {
         certificates: {},
         tokens: {},
         clusters: {},
-        baseUrl: providerUrl,
+        baseUrl: (new URL(providerUrl, window.location.href)).href,
         configHashes: [],
         configCluster: "",
         hashAlgorithm: hashAlgo
       };
-      const env = createEnvironment(newConfig.baseUrl);
+      const client = createClient(newConfig.baseUrl);
       let b64key: string;
       if (encryptingPw) {
         b64key = btoa(utf8ToBinary(encryptingPw));
@@ -174,7 +172,7 @@ function SettingsImporter(props: Props) {
         b64key = btoa(String.fromCharCode(... key));
       }
       await initializeCluster(
-        env, newConfig, b64key, sconfig.PBKDF2Iterations[0]
+        client, newConfig, b64key, sconfig.PBKDF2Iterations[0]
       );
       // TODO: handle exceptions and try with login
       setRegisterUrl(undefined);

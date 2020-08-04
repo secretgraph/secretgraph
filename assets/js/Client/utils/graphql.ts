@@ -1,61 +1,32 @@
-// TODO: remove when type description becomes better
-declare module 'extract-files' {
-  var extractFiles: any
-}
-
-import { Environment, FetchFunction, Network, RecordSource, Store, fetchQuery, commitMutation } from "relay-runtime";
-import { extractFiles } from 'extract-files';
 import { createClusterMutation } from "../queries/cluster";
 import { createContentMutation } from "../queries/content";
 import { serverConfigQuery } from "../queries/server";
 import { ConfigInterface, ReferenceInterface, ActionInterface } from "../interfaces";
 import { b64toarr, sortedHash, utf8encoder } from "./misc";
 import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey, rsakeytransform } from "./encryption";
+import { ApolloClient, InMemoryCache } from '@apollo/client';
+import { createUploadLink } from 'apollo-upload-client';
 import { checkConfig } from "./config";
 import { mapHashNames } from "../constants"
 
 
-export const createEnvironment = (url: string) => {
-  const executeRequest: FetchFunction = async function(operation, variables) {
-    const headers: object = variables["headers"];
-    delete variables["headers"];
-    const { clone, files } = extractFiles(variables, "variables");
-    const formData  = new FormData();
-    formData.append(
-      "operations",
-      JSON.stringify({
-        query: operation.text,
-        variables: clone,
-      })
-    )
-    const map: { [counter: string]: string[] } = {};
-    let i = 0;
-    files.forEach((paths: string[], file: File) => {
-      map[i.toString()] = paths;
-      formData.append(i.toString(), file);
-      i++;
-    });
-    formData.append('map', JSON.stringify(map));
-
-    const response = await fetch(url as string, {
-      method: "POST",
-      mode: "cors",
-      credentials: 'include',
-      headers: {
-        ...headers
-      },
-      body: formData,
-    });
-    const resultPromise = response.json();
-    if (!response.ok){
-      return Promise.reject(await resultPromise)
-    }
-    return await resultPromise;
-  }
-  return new Environment({
-    network: Network.create(executeRequest),
-    store: new Store(new RecordSource()),
+export const createClient = (url: string) => {
+  const link: any = createUploadLink({
+    uri: url
   });
+  return new ApolloClient({
+    cache: new InMemoryCache(),
+    link: link,
+    name: 'secretgraph',
+    version: '0.1',
+    queryDeduplication: false,
+    defaultOptions: {
+      watchQuery: {
+        fetchPolicy: 'cache-and-network',
+      },
+    },
+  });
+
 }
 
 
@@ -181,7 +152,7 @@ export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], ha
 
 
 export async function createContent(
-  env: Environment,
+  client: ApolloClient<any>,
   config: ConfigInterface,
   cluster: string,
   value: File | Blob,
@@ -221,47 +192,33 @@ export async function createContent(
     config, [cluster], "manage", usedUrl
   )[0] as string[]
 
-  const halgo = mapHashNames[hashalgo ? hashalgo : (await fetchQuery(
-    env, serverConfigQuery, {}
-  ) as any).secretgraphConfig.hashAlgorithms[0]];
+  const halgo = mapHashNames[hashalgo ? hashalgo : (await client.query(
+    {query: serverConfigQuery}
+  ) as any).data.secretgraphConfig.hashAlgorithms[0]];
 
   const [referencesPromise, infoPromise ] = encryptSharedKey(key, pubkeys, halgo);
   const referencesPromise2 = encryptedContentPromise.then(
     (data) => hashContent(data, privkeys, halgo)
   );
-
-  return await new Promise(async (resolve, reject) => {
-    const newInfo: string[] = await infoPromise;
-    const newReferences: ReferenceInterface[] = await referencesPromise;
-    commitMutation(
-      env, {
-        mutation: createContentMutation,
-        variables: {
-          cluster: cluster,
-          references: newReferences.concat(await referencesPromise2, references),
-          info: newInfo.concat(info),
-          nonce: nonceb64,
-          value: await encryptedContentPromise.then((enc) => new File([enc], "value")),
-          actions: actions,
-          contentHash: contentHash,
-          authorization: actionkeys
-        },
-        onError: (error: any) => {
-          reject(error);
-        },
-        onCompleted: (result: any, errors: any) => {
-          if(errors){
-            reject(errors);
-          }
-          resolve(result);
-        }
-      }
-    );
+  const newInfo: string[] = await infoPromise;
+  const newReferences: ReferenceInterface[] = await referencesPromise;
+  return await client.mutate({
+    mutation: createContentMutation,
+    variables: {
+      cluster: cluster,
+      references: newReferences.concat(await referencesPromise2, references),
+      info: newInfo.concat(info),
+      nonce: nonceb64,
+      value: await encryptedContentPromise.then((enc) => new File([enc], "value")),
+      actions: actions,
+      contentHash: contentHash,
+      authorization: actionkeys
+    }
   });
 }
 
-export function createCluster(
-  env: Environment,
+export async function createCluster(
+  client: ApolloClient<any>,
   actions: ActionInterface[],
   publicInfo: string,
   publicKey: CryptoKey,
@@ -296,34 +253,22 @@ export function createCluster(
     "spki" as const,
     publicKey
   ).then((obj) => new File([obj], "publicKey"));
-
-  return new Promise(async (resolve, reject) => {
-    commitMutation(
-      env, {
-        mutation: createClusterMutation,
-        variables: {
-          publicInfo: new File([utf8encoder.encode(publicInfo)], "publicInfo"),
-          publicKey: await exportPublicKeyPromise,
-          privateKey: await privateKeyPromise,
-          nonce: nonceb64,
-          actions: actions,
-          authorization: authorization
-        },
-        onCompleted: (result: any, errors: any) => {
-          if(errors) {
-            return Promise.reject(errors);
-          }
-          resolve(result)
-        },
-        onError: (error: any) => {
-          reject(error);
-        }
-      }
-    );
+  return await client.mutate({
+    mutation: createClusterMutation,
+    variables: {
+      publicInfo: new File([utf8encoder.encode(publicInfo)], "publicInfo"),
+      publicKey: await exportPublicKeyPromise,
+      privateKey: await privateKeyPromise,
+      nonce: nonceb64,
+      actions: actions,
+      authorization: authorization
+    }
   });
 }
 
-export async function initializeCluster(env: Environment, config: ConfigInterface, key: string, iterations: number) {
+export async function initializeCluster(
+  client: ApolloClient<any>, config: ConfigInterface, key: string, iterations: number
+) {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const warpedkeyPromise = PBKDF2PW(key, nonce, iterations);
   const { publicKey, privateKey } = await crypto.subtle.generateKey(
@@ -354,7 +299,7 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
   const warpedkeyb64 = btoa(String.fromCharCode(...warpedKey));
 
   return await createCluster(
-    env,
+    client,
     [
       { value: '{"action": "manage"}', key: warpedkeyb64 }
     ],
@@ -363,7 +308,7 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     privateKey,
     warpedKey
   ).then(async (result: any) => {
-    const clusterResult = result.updateOrCreateCluster;
+    const clusterResult = result.data.updateOrCreateCluster;
     const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
     config.configCluster = clusterResult.cluster["id"];
     config.configHashes = [digestActionKey, digestCertificate];
@@ -390,7 +335,7 @@ export async function initializeCluster(env: Environment, config: ConfigInterfac
     }
     const digest = await sortedHash(["type=Config"], config.hashAlgorithm);
     return await createContent(
-      env,
+      client,
       config,
       clusterResult.cluster["id"],
       new File([JSON.stringify(config)], "value"),

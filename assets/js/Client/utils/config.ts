@@ -1,12 +1,12 @@
 
 import { saveAs } from 'file-saver';
-import { fetchQuery, Environment, RecordSource } from "relay-runtime";
 
 import { ConfigInterface } from "../interfaces";
 import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
+import { ApolloClient } from '@apollo/client';
 
 export function checkConfig(config: ConfigInterface | null | undefined) {
   if(!config){
@@ -188,7 +188,7 @@ export async function exportConfig(config: ConfigInterface | string, pw?: string
   );
 }
 
-export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwtoken?: ArrayBufferLike) {
+export function exportConfigAsUrl(client: ApolloClient<any>, config: ConfigInterface, pwtoken?: ArrayBufferLike) {
   let actions : string[] = [], cert : Uint8Array | null = null;
   for(const hash of config.configHashes) {
     if(config.tokens[hash]){
@@ -201,28 +201,27 @@ export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwt
     return;
   }
   const tokens = actions.map(action => `${config.configCluster}:${action}`);
-  return fetchQuery(
-    env,
-    findConfigQuery,
-    {
+  return client.query({
+    query:  findConfigQuery,
+    variables: {
       cluster: config.configCluster,
       authorization: tokens
     }
-  ).then(async (data:any) => {
+  }).then(async (obj:any) => {
     let certhashes: string[] = [];
     if (pwtoken) {
       const ncert = cert;
       if (!ncert){
         return Promise.reject("no cert found")
       }
-      certhashes = await Promise.all(data.secretgraphConfig.hashAlgorithms.map(
+      certhashes = await Promise.all(obj.data.secretgraphConfig.hashAlgorithms.map(
         (hash: string) => crypto.subtle.digest(mapHashNames[hash], ncert).then(
           (data) => btoa(String.fromCharCode(... new Uint8Array(data)))
         )
       ));
     }
-    for(const node of data.contents.edges){
-      if("type=Config" in node.node.info){
+    for(const node of obj.data.contents.edges){
+      if(node.node.info.includes("type=Config")){
         const url = new URL(config.baseUrl);
         if (pwtoken) {
           return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(pwtoken)))}`
@@ -231,7 +230,7 @@ export function exportConfigAsUrl(env: Environment, config: ConfigInterface, pwt
         }
       }
     }
-    throw Error("Invalid response")
+    throw Error("no config found")
   });
 }
 
