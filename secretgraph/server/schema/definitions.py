@@ -330,7 +330,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )
 
     def resolve_link(self, info):
-        self.link
+        return self.link
 
     def resolve_group(self, info):
         return self.group

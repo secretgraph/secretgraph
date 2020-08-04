@@ -200,7 +200,7 @@ def _update_or_create_content_or_key(
         try:
             if isinstance(objdata["nonce"], bytes):
                 checknonce = objdata["nonce"]
-                objdata["nonce"] = base64.b64encode(checknonce)
+                objdata["nonce"] = base64.b64encode(checknonce).decode("ascii")
             else:
                 checknonce = base64.b64decode(objdata["nonce"])
         except Exception:
@@ -210,12 +210,15 @@ def _update_or_create_content_or_key(
                     objdata["value"],
                     key=objdata.get("key") or None
                 )
+            objdata["nonce"] = \
+                base64.b64encode(objdata["nonce"]).decode("ascii")
         # is public key? then ignore nonce checks
         if not is_key or not objdata.get("contentHash"):
             if len(checknonce) != 13:
                 raise ValueError("invalid nonce size")
             if checknonce.count(b"\0") == len(checknonce):
                 raise ValueError("weak nonce")
+        assert isinstance(objdata["nonce"], str), "nonce should be here base64 astring, %s" % type(objdata["nonce"])  # noqa E502
         content.nonce = objdata["nonce"]
 
         if isinstance(objdata["value"], bytes):
