@@ -288,7 +288,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )["Content"]
         return ContentReference.objects.filter(
             target=self,
-            self__in=fetch_contents(
+            source__in=fetch_contents(
                 result["objects"],
                 result["actions"],
                 info_include=kwargs.get("infoInclude"),
