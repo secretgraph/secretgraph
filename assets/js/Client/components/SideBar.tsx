@@ -161,7 +161,8 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
   );
 });
 
-const contentFeedQuery = gql`
+
+const contentFeedQuery =  gql`
   query SideBarContentFeedQuery(
     $clusters: [ID!]
     $authorization: [String!]
@@ -171,14 +172,14 @@ const contentFeedQuery = gql`
     $count: Int
     $cursor: String
   ) {
-    contents(
+    contents: contents(
       clusters: $clusters
       includeInfo: $include
       excludeInfo: $exclude
       authorization: $authorization
       first: $count
       after: $cursor
-    ) {
+    )  @connection(key: "SideBar_contents", filters:["include", "exclude", "clusters"])  {
       edges {
         node {
           id
@@ -197,12 +198,19 @@ const contentFeedQuery = gql`
           }
         }
       }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
     }
   }
 `;
+
+
 // ["type=", "state=", ...
 const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = appProps;
+  let hasNextPage = true;
 
   const { data, fetchMore, loading } = useQuery(
     contentFeedQuery,
@@ -211,24 +219,20 @@ const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
         authorization: extract_authkeys(config, mainContext.activeUrl),
         include: mainContext.include,
         exclude: mainContext.exclude,
-        count: 30
+        count: 30,
+        cursor: null
       }
     }
   );
   if (loading) return null;
+  hasNextPage = data.contents.pageInfo.hasNextPage;
   const _loadMore = () => {
     fetchMore({
       variables: {
-        after: data.contents.edges[data.contents.edges.length-1]
+        cursor: data.contents.pageInfo.endCursor
       },
-      updateQuery: (prev: any, { fetchMoreResult } : {fetchMoreResult:any}) => {
-        if (!fetchMoreResult) return prev;
-        return Object.assign({}, prev, {
-          contents: {
-            edges: [...prev.contents.edges, ...fetchMoreResult.contents.edges]
-          }
-        });
-      }
+    }).then((result: any) => {
+      hasNextPage = result.data.contents.pageInfo.hasNextPage
     })
   }
 
@@ -266,7 +270,7 @@ const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
           {icon}
         </ListItemIcon>
         {state== "draft" ? <ListItemIcon><DraftsIcon /></ListItemIcon> : null}
-        <ListItemText primary={`${elements.get(type)?.label || type}: ${node.id}`} />
+        <ListItemText primary={`${elements.get(type) ? elements.get(type)?.label : type}: ${node.id}`} />
       </ListItem>
     );
   }
@@ -276,7 +280,7 @@ const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
       {data.contents.edges.map((edge: any) => render_item(edge.node))}
       <Divider />
       <ListItem button key={"loadmore"}
-        disabled={loading}
+        disabled={(loading || !hasNextPage)}
         onClick={() => {
           _loadMore();
         }}
@@ -290,6 +294,7 @@ const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
 
 
 
+
 const clusterFeedQuery = gql`
   query SideBarClusterFeedQuery(
     $authorization: [String!]
@@ -298,26 +303,31 @@ const clusterFeedQuery = gql`
     $count: Int
     $cursor: String
   ) {
-    clusters(
+    clusters: clusters(
       authorization: $authorization,
       includeInfo: $include,
       excludeInfo: $exclude,
       first: $count,
       after: $cursor
-    ) {
+    ) @connection(key: "SideBar_clusters", filters:["include", "exclude"]) {
       edges {
         node {
           id
           publicInfo
         }
       }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
     }
   }
 `
 
-
 const SideBarClusters = themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, config, mainContext, setMainContext } = appProps;
+  let hasNextPage = true;
+
   const { data, fetchMore, loading } = useQuery(
     clusterFeedQuery,
     {
@@ -327,20 +337,16 @@ const SideBarClusters = themeComponent((appProps: SideBarItemsProps) => {
     }
   );
   if (loading) return null;
+  hasNextPage = data.clusters.pageInfo.hasNextPage;
+
 
   const _loadMore = () => {
     fetchMore({
       variables: {
-        after: data.clusters.edges[data.clusters.edges.length-1]
-      },
-      updateQuery: (prev: any, { fetchMoreResult } : {fetchMoreResult:any}) => {
-        if (!fetchMoreResult) return prev;
-        return Object.assign({}, prev, {
-          clusters: {
-            edges: [...prev.clusters.edges, ...fetchMoreResult.clusters.edges]
-          }
-        });
+        cursor: data.clusters.pageInfo.endCursor
       }
+    }).then((result: any) => {
+      hasNextPage = result.data.clusters.pageInfo.hasNextPage
     })
   }
 
@@ -376,7 +382,7 @@ const SideBarClusters = themeComponent((appProps: SideBarItemsProps) => {
 
       <Divider />
       <ListItem button key={"loadmore"}
-        disabled={loading}
+        disabled={(loading || !hasNextPage)}
         onClick={() => {
           _loadMore();
         }}
