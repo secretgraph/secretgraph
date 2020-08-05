@@ -8,7 +8,7 @@ from .user.schema import Query as UserQuery
 from .user.schema import Mutation as UserMutation
 
 
-class SecretgraphQuery(
+class Query(
     ServerQuery,
     UserQuery,
     graphene.ObjectType
@@ -17,7 +17,7 @@ class SecretgraphQuery(
     pass
 
 
-class SecretgraphMutation(
+class Mutation(
     ServerMutation,
     UserMutation,
     graphene.ObjectType
@@ -25,4 +25,4 @@ class SecretgraphMutation(
     pass
 
 
-schema = graphene.Schema(query=SecretgraphQuery, mutation=SecretgraphMutation)
+schema = graphene.Schema(query=Query, mutation=Mutation)

@@ -54,10 +54,10 @@
         }
       ],
       "mutationType": {
-        "name": "SecretgraphMutation"
+        "name": "Mutation"
       },
       "queryType": {
-        "name": "SecretgraphQuery"
+        "name": "Query"
       },
       "subscriptionType": null,
       "types": [
@@ -474,7 +474,7 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "SecretgraphQuery",
+          "name": "Query",
           "possibleTypes": null
         },
         {
@@ -2240,7 +2240,7 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "SecretgraphMutation",
+          "name": "Mutation",
           "possibleTypes": null
         },
         {
