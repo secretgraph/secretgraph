@@ -458,7 +458,7 @@ class TransferMutation(relay.ClientIDMutation):
         return cls(content=None)
 
 
-class TagsMutation(relay.ClientIDMutation):
+class TagsUpdateMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
         authorization = AuthList()
@@ -468,7 +468,7 @@ class TagsMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, id, authorization=None, headers=None
+        cls, root, info, id, tags, authorization=None, headers=None
     ):
         result = id_to_result(
             info.context, id, Content, "update",
@@ -477,3 +477,5 @@ class TagsMutation(relay.ClientIDMutation):
         content_obj = result.objects.first()
         if not content_obj:
             raise ValueError()
+
+        return cls(content=content_obj)

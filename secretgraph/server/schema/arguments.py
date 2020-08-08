@@ -2,6 +2,8 @@ import graphene
 from graphene.relay import node as relay_node
 from graphene_file_upload.scalars import Upload
 
+from ...constants import TagsOperations
+
 
 class AuthList(graphene.List):
     def __init__(
@@ -29,6 +31,13 @@ class AuthRelayField(relay_node.NodeField):
             id=graphene.ID(required=True),
             **kwargs
         )
+
+
+class TagsInput(graphene.InputObjectType):
+    tags = graphene.List(graphene.String, required=False)
+    operation = graphene.Enum.from_enum(
+        TagsOperations
+    )
 
 
 class ActionInput(graphene.InputObjectType):
@@ -85,10 +94,6 @@ class ReferenceInput(graphene.InputObjectType):
 class ContentValueInput(graphene.InputObjectType):
     value = Upload(required=True)
     nonce = graphene.String(required=False)
-    tags = graphene.List(graphene.String, required=False)
-
-
-class TagsInput(graphene.InputObjectType):
     tags = graphene.List(graphene.String, required=False)
 
 

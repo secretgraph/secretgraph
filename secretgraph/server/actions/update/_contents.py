@@ -1,5 +1,6 @@
 __all__ = [
-    "create_content_func", "update_content_func", "create_key_func"
+    "create_content_func", "update_content_func", "create_key_func",
+    "transform_tags"
 ]
 
 
@@ -18,6 +19,7 @@ from rdflib import Graph
 
 from ....utils.auth import id_to_result, initializeCachedResult
 from ....utils.encryption import default_padding, encrypt_into_file
+from ....constants import TagsOperations
 from ....utils.misc import (
     calculate_hashes, get_secrets, hash_object, refresh_fields
 )
@@ -29,7 +31,9 @@ logger = logging.getLogger(__name__)
 len_default_hash = len(hash_object(b""))
 
 
-def _transform_tags(content, tags):
+def transform_tags(
+    content, tags, oldtags=None, operation=TagsOperations.replace
+):
     tags = []
     key_hashes = set()
     content_type = None
@@ -237,7 +241,7 @@ def _update_or_create_content_or_key(
     final_tags = None
     if objdata.get("tags") is not None:
         final_tags, key_hashes_tags, content_type, content_state = \
-            _transform_tags(content, objdata.get("tags"))
+            transform_tags(content, objdata.get("tags"))
         if is_key:
             if content_state not in {"public", "internal", "default"}:
                 raise ValueError(

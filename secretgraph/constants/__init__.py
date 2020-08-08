@@ -13,10 +13,10 @@ class DeleteRecursive(enum.Enum):
     NO_GROUP = None
 
 
-class TagsEnum(enum.Enum):
-    APPEND = "append"
-    REMOVE = "remove"
-    REPLACE = "replace"
+class TagsOperations(enum.Enum):
+    append = "append"
+    remove = "remove"
+    replace = "replace"
 
 
 class TransferResult(enum.Enum):

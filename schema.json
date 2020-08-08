@@ -2684,7 +2684,7 @@
             },
             {
               "defaultValue": null,
-              "description": "Info tags for private key",
+              "description": "Metadata tags for private key",
               "name": "privateTags",
               "type": {
                 "kind": "LIST",
@@ -2698,8 +2698,8 @@
             },
             {
               "defaultValue": null,
-              "description": "Info tags for public key",
-              "name": "publicInfo",
+              "description": "Metadata tags for public key",
+              "name": "publicTags",
               "type": {
                 "kind": "LIST",
                 "name": null,
