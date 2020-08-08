@@ -100,8 +100,8 @@ def create_key_maps(contents, keyset=(), inject_public=True):
     )
 
     key_query = Content.objects.filter(
-        info__tag="type=PrivateKey",
-        info__tag__in=key_map1.keys(),
+        tags__tag="type=PrivateKey",
+        tags__tag__in=key_map1.keys(),
         references__in=reference_query
     ).annotate(matching_tag=Subquery(
         ContentTag.objects.filter(content_id=OuterRef("pk")).values("tag")[:1]
@@ -163,7 +163,7 @@ def iter_decrypt_contents(
 
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(
-        Q(info__tag="type=PublicKey") | Q(id__in=content_map.keys())
+        Q(tags__tag="type=PublicKey") | Q(id__in=content_map.keys())
     ).annotate(
         is_transfer=Exists(
             ContentReference.objects.filter(

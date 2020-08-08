@@ -164,8 +164,8 @@ class ContentView(AllowCORSMixin, FormView):
             result["objects"],
             result["actions"],
             kwargs.get("id"),
-            info_include=request.GET.getlist("inclInfo"),
-            info_exclude=request.GET.getlist("exclInfo"),
+            tags_include=request.GET.getlist("inclTags"),
+            tags_exclude=request.GET.getlist("exclTags"),
             content_hashes=request.GET.getlist("contentHash")
         )
         if not result["objects"]:
@@ -210,12 +210,12 @@ class ContentView(AllowCORSMixin, FormView):
             for k in request.GET.getlist("keys"):
                 # digests have a length > 10
                 if len(k) >= 10:
-                    q |= Q(target__info__tag=f"key_hash={k}")
+                    q |= Q(target__tags__tag=f"key_hash={k}")
             # signatures first, should be maximal 20, so on first page
             refs = refs.filter(q).annotate(
                 privkey_link=Subquery(
                     result["objects"].filter(
-                        info__tag="type=PrivateKey",
+                        tags__tag="type=PrivateKey",
                         referencedBy__source__referencedBy=OuterRef("pk")
                     ).values("link")[:1]
                 )
@@ -243,7 +243,7 @@ class ContentView(AllowCORSMixin, FormView):
             response["X-IS-VERIFIED"] = "false"
         else:
             response = FileResponse(content.value.open("rb"))
-            _type = content.info.filter(tag__startswith="type=").first()
+            _type = content.tags.filter(tag__startswith="type=").first()
             response["X-TYPE"] = _type.split("=", 1)[1] if _type else ""
             verifiers = content.references.filter(
                 group="signature"

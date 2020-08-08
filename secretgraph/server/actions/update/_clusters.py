@@ -48,7 +48,7 @@ def _update_or_create_cluster(
         public_secret_hashes = {}
         cluster_save_func = cluster.save
     else:
-        raise ValueError("no public info")
+        raise ValueError("no publicInfo")
 
     if objdata.get("actions"):
         action_save_func = create_actions_func(

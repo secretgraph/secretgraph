@@ -11,23 +11,23 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_clusters(
-    query, id=None, info_include=None, info_exclude=None, content_hashes=None
+    query, id=None, tags_include=None, tags_exclude=None, content_hashes=None
 ) -> QuerySet:
     if id:
         query = fetch_by_id(query, id)
 
-    if info_include or info_exclude or content_hashes:
+    if tags_include or tags_exclude or content_hashes:
         incl_filters = Q()
-        for i in info_include or []:
-            incl_filters |= Q(contents__info__tag__startswith=i)
+        for i in tags_include or []:
+            incl_filters |= Q(contents__tags__tag__startswith=i)
 
         hash_filters = Q()
         for i in content_hashes or []:
             hash_filters |= Q(contents__contentHash=i)
 
         excl_filters = Q()
-        for i in info_exclude or []:
-            excl_filters |= Q(contents__info__tag__startswith=i)
+        for i in tags_exclude or []:
+            excl_filters |= Q(contents__tags__tag__startswith=i)
 
         query = query.filter(~excl_filters & incl_filters & hash_filters)
 
@@ -133,25 +133,25 @@ class ContentFetchQueryset(QuerySet):
 
 
 def fetch_contents(
-    query, actions, id=None, info_include=None, info_exclude=None,
+    query, actions, id=None, tags_include=None, tags_exclude=None,
     content_hashes=None, no_fetch=False
 ) -> QuerySet:
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
     if id:
         query = fetch_by_id(query, id, check_content_hash=True)
-    if info_include or info_exclude or content_hashes:
+    if tags_include or tags_exclude or content_hashes:
         incl_filters = Q()
         hash_filters = Q()
         excl_filters = Q()
-        for i in info_include or []:
-            incl_filters |= Q(info__tag__startswith=i)
+        for i in tags_include or []:
+            incl_filters |= Q(tags__tag__startswith=i)
 
         for i in content_hashes or []:
             hash_filters |= Q(contentHash=i)
 
-        for i in info_exclude or []:
-            excl_filters |= Q(info__tag__startswith=i)
+        for i in tags_exclude or []:
+            excl_filters |= Q(tags__tag__startswith=i)
         query = query.filter(
             ~excl_filters & incl_filters & hash_filters
         )

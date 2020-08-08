@@ -114,7 +114,7 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
 
 export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], hashalgo?: string, hashes?: string[]) : [Promise<ReferenceInterface[]>, Promise<string[]>] {
   const references: PromiseLike<ReferenceInterface>[] = [];
-  const info: PromiseLike<string>[] = [];
+  const tags: PromiseLike<string>[] = [];
   for(let counter=0; counter<pubkeys.length;counter++){
     const pubkey = pubkeys[counter];
     let hash = hashes ? Promise.resolve(hashes[counter]): crypto.subtle.exportKey(
@@ -145,9 +145,9 @@ export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], ha
         }
       })
     )
-    info.push(hash.then((hashstr:string) : string => `key_hash=${hashstr}`));
+    tags.push(hash.then((hashstr:string) : string => `key_hash=${hashstr}`));
   }
-  return [Promise.all(references), Promise.all(info)]
+  return [Promise.all(references), Promise.all(tags)]
 }
 
 
@@ -158,7 +158,7 @@ export async function createContent(
   value: File | Blob,
   pubkeys: CryptoKey[],
   privkeys: CryptoKey[] = [],
-  info: string[]=[],
+  tags: string[]=[],
   contentHash: string | null = null,
   references: ReferenceInterface[]=[],
   actions: ActionInterface[]=[],
@@ -196,18 +196,18 @@ export async function createContent(
     {query: serverConfigQuery}
   ) as any).data.secretgraphConfig.hashAlgorithms[0]];
 
-  const [referencesPromise, infoPromise ] = encryptSharedKey(key, pubkeys, halgo);
+  const [referencesPromise, tagsPromise ] = encryptSharedKey(key, pubkeys, halgo);
   const referencesPromise2 = encryptedContentPromise.then(
     (data) => hashContent(data, privkeys, halgo)
   );
-  const newInfo: string[] = await infoPromise;
+  const newTags: string[] = await tagsPromise;
   const newReferences: ReferenceInterface[] = await referencesPromise;
   return await client.mutate({
     mutation: createContentMutation,
     variables: {
       cluster: cluster,
       references: newReferences.concat(await referencesPromise2, references),
-      info: newInfo.concat(info),
+      tags: newTags.concat(tags),
       nonce: nonceb64,
       value: await encryptedContentPromise.then((enc) => new File([enc], "value")),
       actions: actions,

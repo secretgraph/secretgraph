@@ -106,7 +106,7 @@ def verify_signatures(hashobjects, signatures, contents):
                 )
             ).values("content_id")
         ),
-        info__tag="type=PublicKey"
+        tags__tag="type=PublicKey"
     )
     for key in keys:
         try:

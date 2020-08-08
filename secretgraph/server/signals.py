@@ -81,7 +81,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
         #    fname = instance.file.name
         #    instance.file.save("", instance.file.open("rb"))
         #    instance.file.storage.delete(fname)
-        #    instance.info.filter(tag__startswith="id=").update(
+        #    instance.tags.filter(tag__startswith="id=").update(
         #        tag=f"id={instance.flexid}"
         #    )
         # el
@@ -94,7 +94,7 @@ def regenerateKeyHash(sender, force=False, **kwargs):
     from ..utils.misc import hash_object, calculate_hashes
     from .models import Content, ContentTag
     contents = Content.objects.filter(
-        info__tag="type=PublicKey"
+        tags__tag="type=PublicKey"
     )
     # calculate for all old hashes
     if not force:
@@ -120,9 +120,9 @@ def regenerateKeyHash(sender, force=False, **kwargs):
             for (tag, c) in product(
                 tags[:add_to],
                 Content.objects.exclude(
-                    info__tag=tags[0]
+                    tags__tag=tags[0]
                 ).filter(
-                    models.Q(info__tag__in=tags[add_to:])
+                    models.Q(tags__tag__in=tags[add_to:])
                 )
             )
         )
@@ -134,7 +134,7 @@ def regenerateKeyHash(sender, force=False, **kwargs):
             ContentTag.objects.bulk_create(batch, ignore_conflicts=True)
         Content.objects.filter(
             contentHash__in=chashes[1:],
-            info__tag="type=PublicKey"
+            tags__tag="type=PublicKey"
         ).update(contentHash=chashes[0])
 
 

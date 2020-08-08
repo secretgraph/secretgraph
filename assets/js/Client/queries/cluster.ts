@@ -20,7 +20,7 @@ export const getClusterConfigurationQuery = gql`
         keyHash
         type
         requiredKeys
-        allowedInfo
+        allowedTags
       }
     }
   }
@@ -50,7 +50,7 @@ export const createClusterMutation = gql`
           keyHash
           type
           requiredKeys
-          allowedInfo
+          allowedTags
         }
       }
       actionKey

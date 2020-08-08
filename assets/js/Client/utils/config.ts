@@ -221,7 +221,7 @@ export function exportConfigAsUrl(client: ApolloClient<any>, config: ConfigInter
       ));
     }
     for(const node of obj.data.contents.edges){
-      if(node.node.info.includes("type=Config")){
+      if(node.node.tags.includes("type=Config")){
         const url = new URL(config.baseUrl);
         if (pwtoken) {
           return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(pwtoken)))}`

@@ -149,7 +149,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "includeInfo",
+                  "name": "includeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -163,7 +163,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "excludeInfo",
+                  "name": "excludeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -329,7 +329,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "includeInfo",
+                  "name": "includeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -343,7 +343,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "excludeInfo",
+                  "name": "excludeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -887,7 +887,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "includeInfo",
+                  "name": "includeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -901,7 +901,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "excludeInfo",
+                  "name": "excludeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1087,7 +1087,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "allowedInfo",
+              "name": "allowedTags",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -1292,7 +1292,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "includeInfo",
+                  "name": "includeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1306,7 +1306,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "excludeInfo",
+                  "name": "excludeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1401,7 +1401,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "includeInfo",
+                  "name": "includeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1415,7 +1415,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "excludeInfo",
+                  "name": "excludeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1510,7 +1510,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "includeInfo",
+                  "name": "includeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1524,7 +1524,7 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "excludeInfo",
+                  "name": "excludeTags",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -1539,7 +1539,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "info",
+              "name": "tags",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -2685,7 +2685,7 @@
             {
               "defaultValue": null,
               "description": "Info tags for private key",
-              "name": "privateInfo",
+              "name": "privateTags",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -2758,7 +2758,7 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "info",
+              "name": "tags",
               "type": {
                 "kind": "LIST",
                 "name": null,

@@ -111,7 +111,7 @@ class ActionEntry(graphene.ObjectType):
     type = graphene.String()
     # of content keys
     requiredKeys = graphene.List(graphene.String)
-    allowedInfo = graphene.List(graphene.String, required=False)
+    allowedTags = graphene.List(graphene.String, required=False)
 
 
 class ActionMixin(object):
@@ -133,7 +133,7 @@ class ActionMixin(object):
             lambda key, val: ActionEntry(
                 keyHash=key[1], type=key[0],
                 requiredKeys=val["requiredKeys"],
-                allowedInfo=val["allowedInfo"] if key[0] != "view" else None,
+                allowedTags=val["allowedTags"] if key[0] != "view" else None,
             ),
             resultval
         )
@@ -205,10 +205,10 @@ class ContentReferenceConnectionField(DjangoConnectionField):
     def __init__(
         self, of_type=ContentReferenceNode, *args, **kwargs
     ):
-        kwargs.setdefault("includeInfo", graphene.List(
+        kwargs.setdefault("includeTags", graphene.List(
             graphene.String, required=False
         ))
-        kwargs.setdefault("excludeInfo", graphene.List(
+        kwargs.setdefault("excludeTags", graphene.List(
             graphene.String, required=False
         ))
         kwargs.setdefault("contentHashes", graphene.List(
@@ -230,12 +230,12 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         ]
     references = ContentReferenceConnectionField()
     referencedBy = ContentReferenceConnectionField()
-    info = graphene.Field(
+    tags = graphene.Field(
         graphene.List(graphene.String),
-        includeInfo=graphene.List(
+        includeTags=graphene.List(
             graphene.String, required=False
         ),
-        excludeInfo=graphene.List(
+        excludeTags=graphene.List(
             graphene.String, required=False
         )
     )
@@ -272,8 +272,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             target__in=fetch_contents(
                 result["objects"],
                 result["actions"],
-                info_include=kwargs.get("infoInclude"),
-                info_exclude=kwargs.get("infoExclude"),
+                tags_include=kwargs.get("tagsInclude"),
+                tags_exclude=kwargs.get("tagsExclude"),
                 content_hashes=kwargs.get("contentHashes"),
                 no_fetch=True
             ),
@@ -291,8 +291,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             source__in=fetch_contents(
                 result["objects"],
                 result["actions"],
-                info_include=kwargs.get("infoInclude"),
-                info_exclude=kwargs.get("infoExclude"),
+                tags_include=kwargs.get("tagsInclude"),
+                tags_exclude=kwargs.get("tagsExclude"),
                 content_hashes=kwargs.get("contentHashes"),
                 no_fetch=True
             ),
@@ -305,15 +305,15 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             info.context, authset=authorization
         )["Cluster"]["objects"].filter(id=self.cluster_id).first()
 
-    def resolve_info(self, info, includeInfo=None, excludeInfo=None):
+    def resolve_tags(self, info, includeTags=None, excludeTags=None):
         incl_filters = Q()
         excl_filters = Q()
-        for i in includeInfo or []:
+        for i in includeTags or []:
             incl_filters |= Q(tag__startswith=i)
 
-        for i in excludeInfo or []:
+        for i in excludeTags or []:
             excl_filters |= Q(tag__startswith=i)
-        return self.info.filter(
+        return self.tags.filter(
             ~excl_filters & incl_filters
         ).values_list("tag", flat=True)
 
@@ -343,10 +343,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
 class ContentConnectionField(DjangoConnectionField):
     def __init__(self, type=ContentNode, *args, **kwargs):
-        kwargs.setdefault("includeInfo", graphene.List(
+        kwargs.setdefault("includeTags", graphene.List(
             graphene.String, required=False
         ))
-        kwargs.setdefault("excludeInfo", graphene.List(
+        kwargs.setdefault("excludeTags", graphene.List(
             graphene.String, required=False
         ))
         kwargs.setdefault("contentHashes", graphene.List(
@@ -369,9 +369,9 @@ class ContentConnectionField(DjangoConnectionField):
             )
         if public in {True, False}:
             if public:
-                queryset = queryset.filter(info__tag="state=public")
+                queryset = queryset.filter(tags__tag="state=public")
             else:
-                queryset = queryset.exclude(info__tag="state=public")
+                queryset = queryset.exclude(tags__tag="state=public")
         result = initializeCachedResult(
             info.context, authset=args.get("authorization")
         )["Content"]
@@ -384,8 +384,8 @@ class ContentConnectionField(DjangoConnectionField):
         return fetch_contents(
             queryset,
             result["actions"],
-            info_include=args.get("infoInclude"),
-            info_exclude=args.get("infoExclude"),
+            tags_include=args.get("tagsInclude"),
+            tags_exclude=args.get("tagsExclude"),
             content_hashes=args.get("contentHashes")
         )
 
@@ -418,8 +418,8 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return fetch_contents(
             result["objects"],
             result["actions"],
-            info_include=kwargs.get("infoInclude"),
-            info_exclude=kwargs.get("infoExclude"),
+            tags_include=kwargs.get("tagsInclude"),
+            tags_exclude=kwargs.get("tagsExclude"),
             content_hashes=kwargs.get("contentHashes")
         )
 
@@ -441,10 +441,10 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
 class ClusterConnectionField(DjangoConnectionField):
     def __init__(self, type=ClusterNode, *args, **kwargs):
-        kwargs.setdefault("includeInfo", graphene.List(
+        kwargs.setdefault("includeTags", graphene.List(
             graphene.String, required=False
         ))
-        kwargs.setdefault("excludeInfo", graphene.List(
+        kwargs.setdefault("excludeTags", graphene.List(
             graphene.String, required=False
         ))
         kwargs.setdefault("contentHashes", graphene.List(
@@ -486,8 +486,8 @@ class ClusterConnectionField(DjangoConnectionField):
                     )["Cluster"]["objects"].values("id")
                 )
             ),
-            info_include=args.get("infoInclude"),
-            info_exclude=args.get("infoExclude"),
+            tags_include=args.get("tagsInclude"),
+            tags_exclude=args.get("tagsExclude"),
             content_hashes=args.get("contentHashes")
         )
 

@@ -93,7 +93,7 @@ def transfer_value(
     # block content while updating file
     q = Q(id=content.id)
     if transfer:
-        q &= Q(info__tag="transfer")
+        q &= Q(tags__tag="transfer")
     hashes_remote = []
     signatures = None
     blocked_contents = Content.objects.filter(q).select_for_update()
@@ -198,7 +198,7 @@ def transfer_value(
                     s.close()
         if transfer:
             content.references.filter(group="transfer").delete()
-            content.info.bulk_create(
+            content.tags.bulk_create(
                 _generate_transfer_info(
                     content,
                     hashes_remote,

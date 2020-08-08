@@ -168,14 +168,14 @@ const contentFeedQuery =  gql`
     $authorization: [String!]
     $include: [String!]
     $exclude: [String!]
-    $includeInfo: [String!]
+    $includeTags: [String!]
     $count: Int
     $cursor: String
   ) {
     contents: contents(
       clusters: $clusters
-      includeInfo: $include
-      excludeInfo: $exclude
+      includeTags: $include
+      excludeTags: $exclude
       authorization: $authorization
       first: $count
       after: $cursor
@@ -185,13 +185,13 @@ const contentFeedQuery =  gql`
           id
           nonce
           link
-          info(includeInfo: $includeInfo)
-          references(groups: ["key", "signature"], includeInfo: $include) {
+          tags(includeTags: $includeTags)
+          references(groups: ["key", "signature"], includeTags: $include) {
             edges {
               node {
                 extra
                 target {
-                  info(includeInfo: ["key_hash="])
+                  tags(includeTags: ["key_hash="])
                 }
               }
             }
@@ -237,8 +237,8 @@ const SideBarContents = themeComponent((appProps: SideBarItemsProps) => {
   }
 
   const render_item = (node: any) => {
-    let type = node.info.find((info: string) => info.startsWith("type="))
-    let state = node.info.find((info: string) => info.startsWith("state="))
+    let type = node.tags.find((flag: string) => flag.startsWith("type="))
+    let state = node.tags.find((flag: string) => flag.startsWith("state="))
     if (type){
       type = type.split("=", 1)[1];
     }
@@ -305,8 +305,8 @@ const clusterFeedQuery = gql`
   ) {
     clusters: clusters(
       authorization: $authorization,
-      includeInfo: $include,
-      excludeInfo: $exclude,
+      includeTags: $include,
+      excludeTags: $exclude,
       first: $count,
       after: $cursor
     ) @connection(key: "SideBar_clusters", filters:["include", "exclude"]) {

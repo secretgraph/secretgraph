@@ -15,13 +15,13 @@ from ..utils.auth import initializeCachedResult
 class PushForm(forms.Form):
     value = forms.FileField(required=True)
     nonce = forms.CharField(label=messages.nonce_label, required=False)
-    info = MultipleOpenChoiceField(
-        label=messages.extra_info_label, required=False,
+    tags = MultipleOpenChoiceField(
+        label=messages.extra_tags_label, required=False,
         widget=ListWidget(
             items={
                 "format_type": "text"
             },
-            item_label=messages.info_tag_label
+            item_label=messages.tags_tag_label
         )
     )
     references = MultipleOpenChoiceField(
@@ -65,8 +65,8 @@ class PushForm(forms.Form):
     def clean(self):
         ret = super().clean()
         form = self.result["forms"][self.instance.actions.get(group="push").id]
-        if ret.get("info") is not None:
-            allowed = form.get("allowedInfo", None)
+        if ret.get("tags") is not None:
+            allowed = form.get("allowedTags", None)
             if allowed is not None:
                 matcher = re.compile(
                     "^(?:%s)(?:(?<==)|$)" % "|".join(map(
@@ -74,16 +74,16 @@ class PushForm(forms.Form):
                         allowed
                     ))
                 )
-                ret["info"] = filter(
+                ret["tags"] = filter(
                     lambda x: matcher.fullmatch(x),
-                    ret["info"]
+                    ret["tags"]
                 )
-            ret["info"] = chain(
-                form.get("injectedInfo", []),
-                ret["info"]
+            ret["tags"] = chain(
+                form.get("injectedTags", []),
+                ret["tags"]
             )
         else:
-            ret["info"] = form.get("injectedInfo") or []
+            ret["tags"] = form.get("injectedTags") or []
         if ret.get("references") is not None:
             ret["references"] = chain(
                 form.get("injectReferences", []),
@@ -104,7 +104,7 @@ class PushForm(forms.Form):
             "content": {
                 "nonce": self.cleaned_data.get("nonce"),
                 "value": self.cleaned_data["value"],
-                "info": self.cleaned_data["info"]
+                "tags": self.cleaned_data["tags"]
             },
             "key": self.cleaned_data.get("key")
         }
@@ -135,13 +135,13 @@ class PushForm(forms.Form):
 
 class UpdateForm(forms.Form):
     value = forms.FileField(required=True)
-    info = MultipleOpenChoiceField(
-        label=messages.extra_info_label, required=False,
+    tags = MultipleOpenChoiceField(
+        label=messages.extra_tags_label, required=False,
         widget=ListWidget(
             items={
                 "format_type": "text"
             },
-            item_label=messages.info_tag_label
+            item_label=messages.tags_tag_label
         )
     )
     references = MultipleOpenChoiceField(

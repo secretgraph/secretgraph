@@ -61,14 +61,14 @@ class ContentKeyInput(graphene.InputObjectType):
         required=False,
         description="Nonce for private key (base64, 13 bytes)"
     )
-    privateInfo = graphene.List(
+    privateTags = graphene.List(
         graphene.String, required=False,
-        description="Info tags for private key"
+        description="Metadata tags for private key"
     )
 
-    publicInfo = graphene.List(
+    publicTags = graphene.List(
         graphene.String, required=False,
-        description="Info tags for public key"
+        description="Metadata tags for public key"
     )
 
 
@@ -85,7 +85,11 @@ class ReferenceInput(graphene.InputObjectType):
 class ContentValueInput(graphene.InputObjectType):
     value = Upload(required=True)
     nonce = graphene.String(required=False)
-    info = graphene.List(graphene.String, required=False)
+    tags = graphene.List(graphene.String, required=False)
+
+
+class TagsInput(graphene.InputObjectType):
+    tags = graphene.List(graphene.String, required=False)
 
 
 class ContentInput(graphene.InputObjectType):

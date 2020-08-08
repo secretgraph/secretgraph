@@ -103,7 +103,7 @@ class ContentManager(models.Manager):
         if queryset is None:
             queryset = self.get_queryset()
         return queryset.filter(
-            info__tag="PublicKey",
+            tags__tag="PublicKey",
             cluster__in=(
                 getattr(
                     settings, "SECRETGRAPH_INJECT_CLUSTERS", None
@@ -129,7 +129,7 @@ class Content(FlexidModel):
     file: File = models.FileField(
         upload_to=get_content_file_path
     )
-    # unique hash for content, e.g. generated from some info tags
+    # unique hash for content, e.g. generated from some tags
     # null if multiple contents are allowed
     contentHash: str = models.CharField(
         max_length=255, blank=True, null=True,
@@ -184,7 +184,7 @@ class Content(FlexidModel):
         else:
             q = models.Q(tag__startswith="signature=")
         return chain(
-            self.info.filter(
+            self.tags.filter(
                 q
             ).annotate(
                 signature=Substr("tag", 10)
@@ -272,10 +272,10 @@ class Action(models.Model):
 class ContentTag(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     content: Content = models.ForeignKey(
-        Content, related_name="info",
+        Content, related_name="tags",
         on_delete=models.CASCADE
     )
-    # searchable info
+    # searchable tag content
     tag: str = models.TextField(blank=False, null=False)
 
     class Meta:

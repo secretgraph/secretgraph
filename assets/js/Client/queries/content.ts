@@ -2,13 +2,13 @@ import { gql } from '@apollo/client';
 
 
 export const createContentMutation = gql`
-  mutation contentEncryptedMutation($cluster: ID!, $info: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
+  mutation contentEncryptedMutation($cluster: ID!, $tags: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
     updateOrCreateContent(
       input: {
         content: {
           cluster: $cluster
           value: {
-            info: $info
+            tags: $tags
             value: $value
             nonce: $nonce
           }
@@ -34,8 +34,8 @@ export const contentQuery = gql`
       id
       nonce
       link
-      info
-      references(groups: ["key", "signature"], includeInfo: $keyhashes) {
+      tags
+      references(groups: ["key", "signature"], includeTags: $keyhashes) {
         edges {
           node {
             extra
@@ -58,7 +58,7 @@ export const findConfigQuery = gql`
     contents(
       public: false
       clusters: [$cluster]
-      includeInfo: ["type=Config"]
+      includeTags: ["type=Config"]
       authorization: $authorization
       contentHashes: $contentHashes
     ) {
@@ -67,7 +67,7 @@ export const findConfigQuery = gql`
           id
           nonce
           link
-          info
+          tags
           references(groups: ["key"]) {
             edges {
               node {

@@ -14,8 +14,7 @@ from graphene import relay
 
 from ...constants import TransferResult
 from ...utils.auth import (
-    id_to_result, initializeCachedResult, retrieve_allowed_objects,
-    fetch_by_id
+    fetch_by_id, id_to_result, initializeCachedResult, retrieve_allowed_objects
 )
 from ..actions.update import (
     create_cluster, create_content_func, transfer_value, update_cluster,
@@ -23,7 +22,9 @@ from ..actions.update import (
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
-from .arguments import AuthList, ClusterInput, ContentInput, PushContentInput
+from .arguments import (
+    AuthList, ClusterInput, ContentInput, TagsInput, PushContentInput
+)
 from .definitions import ClusterNode, ContentNode, FlexidType
 
 logger = logging.getLogger(__name__)
@@ -250,8 +251,8 @@ class ContentMutation(relay.ClientIDMutation):
             try:
                 form = next(iter(result["forms"].values()))
                 # None should be possible here for not updating
-                if content.get("info") is not None:
-                    allowed = form.get("allowedInfo", None)
+                if content.get("tags") is not None:
+                    allowed = form.get("allowedTags", None)
                     if allowed is not None:
                         matcher = re.compile(
                             "^(?:%s)(?:(?<==)|$)" % "|".join(map(
@@ -259,13 +260,13 @@ class ContentMutation(relay.ClientIDMutation):
                                 allowed
                             ))
                         )
-                        content["info"] = filter(
+                        content["tags"] = filter(
                             lambda x: matcher.fullmatch(x),
-                            content["info"]
+                            content["tags"]
                         )
-                    content["info"] = chain(
-                        form.get("injectedInfo", []),
-                        content["info"]
+                    content["tags"] = chain(
+                        form.get("injectedTags", []),
+                        content["tags"]
                     )
                 # None should be possible here for not updating
                 if content.get("references") is not None:
@@ -304,9 +305,9 @@ class ContentMutation(relay.ClientIDMutation):
 
             try:
                 form = next(iter(result["forms"].values()))
-                content["info"] = chain(
-                    form.get("info", []),
-                    content.get("info") or []
+                content["tags"] = chain(
+                    form.get("tags", []),
+                    content.get("tags") or []
                 )
                 content["references"] = chain(
                     form.get("injectReferences", []),
@@ -348,8 +349,8 @@ class PushContentMutation(relay.ClientIDMutation):
         if not source:
             raise ValueError("Content not found")
         form = result["forms"][source.actions.get(group="push").id]
-        if content.get("info") is not None:
-            allowed = form.get("allowedInfo", None)
+        if content.get("tags") is not None:
+            allowed = form.get("allowedTags", None)
             if allowed is not None:
                 matcher = re.compile(
                     "^(?:%s)(?:(?<==)|$)" % "|".join(map(
@@ -357,16 +358,16 @@ class PushContentMutation(relay.ClientIDMutation):
                         allowed
                     ))
                 )
-                content["info"] = filter(
+                content["tags"] = filter(
                     lambda x: matcher.fullmatch(x),
-                    content["info"]
+                    content["tags"]
                 )
-            content["info"] = chain(
-                form.get("injectedInfo", []),
-                content["info"]
+            content["tags"] = chain(
+                form.get("injectedTags", []),
+                content["tags"]
             )
         else:
-            content["info"] = form.get("injectedInfo") or []
+            content["tags"] = form.get("injectedTags") or []
         if content.get("references") is not None:
             content["references"] = chain(
                 form.get("injectReferences", []),
@@ -440,7 +441,7 @@ class TransferMutation(relay.ClientIDMutation):
         else:
             verifiers = Content.objects.filter(
                 id__in=verifiers,
-                info__tag="type=PublicKey"
+                tags__tag="type=PublicKey"
             )
 
         tres = transfer_value(
@@ -455,3 +456,24 @@ class TransferMutation(relay.ClientIDMutation):
         elif result == TransferResult.SUCCESS:
             return cls(content=content_obj)
         return cls(content=None)
+
+
+class TagsMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+        authorization = AuthList()
+        tags = graphene.Field(TagsInput, required=True)
+
+    content = graphene.Field(ContentNode, required=False)
+
+    @classmethod
+    def mutate_and_get_payload(
+        cls, root, info, id, authorization=None, headers=None
+    ):
+        result = id_to_result(
+            info.context, id, Content, "update",
+            authset=authorization
+        )
+        content_obj = result.objects.first()
+        if not content_obj:
+            raise ValueError()
