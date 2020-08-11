@@ -294,7 +294,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
           pw,
           obj.data.secretgraphConfig.PBKDF2Iterations
         );
-        return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&prekey=${certhashes[0]}:${prekey}&prekey=${prekey2}`
+        return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&prekey=${certhashes[0]}:${prekey}&prekey=shared:${prekey2}`
       } else {
         return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(decrypttoken)))}`
       }

@@ -1,5 +1,4 @@
 import base64
-import hashlib
 import logging
 import os
 import tempfile
@@ -68,6 +67,8 @@ def create_key_maps(contents, keyset=(), inject_public=True):
     for i in keyset:
         i = i.split(":", 1)
         if len(i) == 2:
+            if i[0] == "shared":
+                continue
             _type = "Content"
             _key = base64.b64decode(i[1])
             try:
@@ -112,14 +113,7 @@ def create_key_maps(contents, keyset=(), inject_public=True):
         matching_key = key_map1[key.matching_tag]
         try:
             nonce = base64.b64decode(key.nonce)
-            derivedKey = hashlib.pbkdf2_hmac(
-                "sha512",
-                matching_key,
-                nonce,
-                iterations=settings.SECRETGRAPH_ITERATIONS[0],
-                dklen=32
-            )
-            aesgcm = AESGCM(derivedKey)
+            aesgcm = AESGCM(matching_key)
             privkey = aesgcm.decrypt(
                 key.value.open("rb").read(),
                 nonce,

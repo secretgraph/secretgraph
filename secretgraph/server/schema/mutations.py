@@ -18,12 +18,12 @@ from ...utils.auth import (
 )
 from ..actions.update import (
     create_cluster, create_content_func, transfer_value, update_cluster,
-    update_content_func
+    update_content_func, update_flags_func
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
 from .arguments import (
-    AuthList, ClusterInput, ContentInput, TagsInput, PushContentInput
+    AuthList, ClusterInput, ContentInput, PushContentInput, TagsInput
 )
 from .definitions import ClusterNode, ContentNode, FlexidType
 
@@ -476,6 +476,9 @@ class TagsUpdateMutation(relay.ClientIDMutation):
         )
         content_obj = result.objects.first()
         if not content_obj:
-            raise ValueError()
-
-        return cls(content=content_obj)
+            raise ValueError("no content object found")
+        return cls(
+            content=update_flags_func(
+                content_obj, tags.tags, tags.operation
+            )()
+        )

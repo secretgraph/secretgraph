@@ -3,7 +3,7 @@ import { createContentMutation } from "../queries/content";
 import { serverConfigQuery } from "../queries/server";
 import { ConfigInterface, ReferenceInterface, ActionInterface } from "../interfaces";
 import { b64toarr, sortedHash, utf8encoder } from "./misc";
-import { PBKDF2PW, arrtogcmkey, arrtorsaoepkey, rsakeytransform } from "./encryption";
+import { arrtogcmkey, arrtorsaoepkey, rsakeytransform } from "./encryption";
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { createUploadLink } from 'apollo-upload-client';
 import { checkConfig } from "./config";

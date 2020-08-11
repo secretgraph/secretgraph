@@ -21,7 +21,7 @@
 
 # TODO
 
-* implement sidebar
+* shared key decryption
 * implement form with send for Message
 * if type=Message switch strings to Inbox, Send
 * find out how Messages sent can be differed from messages received
