@@ -96,7 +96,7 @@ function HeaderBar(props: Props) {
       setLoadingExport(false);
       return;
     }
-    exportConfig(config, encryptingPw, sconfig.PBKDF2Iterations[0], "secretgraph_settings.json");
+    exportConfig(config, [encryptingPw], sconfig.PBKDF2Iterations[0], "secretgraph_settings.json");
     setExportOpen(false);
     setLoadingExport(false);
   }

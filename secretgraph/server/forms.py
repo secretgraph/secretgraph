@@ -151,3 +151,7 @@ class UpdateForm(forms.Form):
     def __init__(self, result, **kwargs):
         super().__init__(**kwargs)
         # TODO: find valid references
+
+
+class PreKeyForm(forms.Form):
+    password = forms.CharField(widget=forms.PasswordInput())

@@ -7,9 +7,16 @@
     "downlevelIteration": true,
     "jsx": "react",
     "lib": [
-      "ES2020",
+      "ESNext",
       "dom"
     ],
+    "plugins": [
+      {
+        "name": "ts-graphql-plugin",
+        "schema": "schema.json",
+        "tag": "gql"
+      }
+    ]
   },
   "exclude": [
     "node_modules",

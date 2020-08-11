@@ -73,12 +73,14 @@ export const findConfigQuery = gql`
               node {
                 extra
                 target {
+                  tags(includeTags=["key_hash"])
                   referencedBy(groups: ["public_key"]) {
                     edges {
                       node {
                         extra
                         target {
                           id
+                          tags(includeTags=["key="])
                           nonce
                           link
                         }

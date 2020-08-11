@@ -16,7 +16,7 @@ from graphene_file_upload.django import FileUploadGraphQLView
 from ..utils.auth import fetch_by_id, id_to_result
 from ..utils.encryption import iter_decrypt_contents
 from .actions.view import ContentFetchQueryset, fetch_contents
-from .forms import PushForm, UpdateForm
+from .forms import PushForm, UpdateForm, PreKeyForm
 from .models import Content
 
 
@@ -103,7 +103,9 @@ class ContentView(AllowCORSMixin, FormView):
         return super().put(request, *args, **kwargs)
 
     def get_form_class(self):
-        if self.request.method == "PUT" or "put" in self.request.GET:
+        if "prekey" in self.request.GET:
+            return PreKeyForm
+        elif self.request.method == "PUT" or "put" in self.request.GET:
             return UpdateForm
         else:
             return PushForm

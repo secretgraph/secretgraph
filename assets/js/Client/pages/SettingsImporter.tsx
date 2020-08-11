@@ -73,7 +73,6 @@ function SettingsImporter(props: Props) {
 
   const handleSecretgraphEvent_inner = async (event: any) => {
     const providerUrl = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
-    const encryptingPw = (document.getElementById("secretgraph-encrypting") as HTMLInputElement).value;
     let newConfig: ConfigInterface | null = null;
     const client = createClient(providerUrl);
     if (!client) {
@@ -101,14 +100,7 @@ function SettingsImporter(props: Props) {
         configCluster: "",
         hashAlgorithm: hashAlgo
       };
-      let b64key: string | null = null
-      if (encryptingPw) {
-        b64key = btoa(utf8ToBinary(encryptingPw));
-      } else {
-        const key = crypto.getRandomValues(new Uint8Array(32));
-        b64key = btoa(String.fromCharCode(... key));
-      }
-      await initializeCluster(client, newConfig, b64key, sconfig.PBKDF2Iterations);
+      await initializeCluster(client, newConfig);
     }
     if (!newConfig){
       return;
@@ -164,16 +156,7 @@ function SettingsImporter(props: Props) {
         hashAlgorithm: hashAlgo
       };
       const client = createClient(newConfig.baseUrl);
-      let b64key: string;
-      if (encryptingPw) {
-        b64key = btoa(utf8ToBinary(encryptingPw));
-      } else {
-        const key = crypto.getRandomValues(new Uint8Array(32));
-        b64key = btoa(String.fromCharCode(... key));
-      }
-      await initializeCluster(
-        client, newConfig, b64key, sconfig.PBKDF2Iterations[0]
-      );
+      await initializeCluster(client, newConfig);
       // TODO: handle exceptions and try with login
       setRegisterUrl(undefined);
       setConfig(newConfig);
@@ -210,11 +193,7 @@ function SettingsImporter(props: Props) {
     if(!importFiles && !importUrl){
       return;
     }
-    let binary: string | undefined = undefined;
-    if (decryptingPw) {
-      binary = utf8ToBinary(decryptingPw);
-    }
-    const newConfig = await loadConfig(hasFile && importFiles ? importFiles[0] : importUrl, binary);
+    const newConfig = await loadConfig(hasFile && importFiles ? importFiles[0] : importUrl, decryptingPw ? [decryptingPw] : undefined);
     if (!newConfig){
       /**if (importUrl && !importFiles){
 
@@ -301,18 +280,6 @@ function SettingsImporter(props: Props) {
               <Typography className={classes.title} color="textPrimary" gutterBottom paragraph>
                 {startHelp}
               </Typography>
-              <FormControl>
-                <TextField
-                  disabled={loadingStart || loadingImport}
-                  fullWidth={true}
-                  variant="outlined"
-                  label={encryptingPasswordLabel}
-                  id="secretgraph-encrypting"
-                  inputProps={{ 'aria-describedby': "secretgraph-encrypting-help", autoComplete: "new-password" }}
-                  type="password"
-                />
-                <FormHelperText id="secretgraph-encrypting-help">{encryptingPasswordHelp}</FormHelperText>
-              </FormControl>
               <TextField
                 disabled={loadingStart || loadingImport}
                 fullWidth={true}
@@ -379,7 +346,7 @@ function SettingsImporter(props: Props) {
             label="Import from url"
             id="secretgraph-import-url"
           />
-          <FormControl>
+          <FormControl className={classes.hidden}>
             <TextField
               variant="outlined"
               disabled={loadingStart || loadingImport}

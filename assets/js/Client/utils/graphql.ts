@@ -259,6 +259,7 @@ export async function createCluster(
       publicInfo: new File([utf8encoder.encode(publicInfo)], "publicInfo"),
       publicKey: await exportPublicKeyPromise,
       privateKey: await privateKeyPromise,
+      privateTags: [],
       nonce: nonceb64,
       actions: actions,
       authorization: authorization
@@ -267,10 +268,9 @@ export async function createCluster(
 }
 
 export async function initializeCluster(
-  client: ApolloClient<any>, config: ConfigInterface, key: string, iterations: number
+  client: ApolloClient<any>, config: ConfigInterface
 ) {
-  const nonce = crypto.getRandomValues(new Uint8Array(13));
-  const warpedkeyPromise = PBKDF2PW(key, nonce, iterations);
+  const key = crypto.getRandomValues(new Uint8Array(32));
   const { publicKey, privateKey } = await crypto.subtle.generateKey(
     {
       name: "RSA-OAEP",
@@ -289,24 +289,21 @@ export async function initializeCluster(
     config.hashAlgorithm,
     keydata
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data)))));
-
-  const warpedKey = await warpedkeyPromise;
-
   const digestActionKeyPromise = crypto.subtle.digest(
     config.hashAlgorithm,
-    warpedKey
+    crypto.getRandomValues(new Uint8Array(32))
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
-  const warpedkeyb64 = btoa(String.fromCharCode(...warpedKey));
+  const keyb64 = btoa(String.fromCharCode(...key));
 
   return await createCluster(
     client,
     [
-      { value: '{"action": "manage"}', key: warpedkeyb64 }
+      { value: '{"action": "manage"}', key: keyb64 }
     ],
     "",
     publicKey,
     privateKey,
-    warpedKey
+    key
   ).then(async (result: any) => {
     const clusterResult = result.data.updateOrCreateCluster;
     const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
@@ -328,7 +325,7 @@ export async function initializeCluster(
       "pkcs8" as const,
       privateKey
     ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
-    config["tokens"][digestActionKey] = warpedkeyb64;
+    config["tokens"][digestActionKey] = keyb64;
     if (!checkConfig(config)){
       console.error("invalid config created");
       return;
