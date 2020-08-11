@@ -222,7 +222,7 @@ export async function exportConfig(config: ConfigInterface | string, pws?: strin
   );
 }
 
-export async function exportConfigAsUrl(client: ApolloClient<any>, config: ConfigInterface, pw?: ArrayBuffer | string) {
+export async function exportConfigAsUrl(client: ApolloClient<any>, config: ConfigInterface, pw?: string) {
   let actions : string[] = [], cert : Uint8Array | null = null;
   for(const hash of config.configHashes) {
     if(config.tokens[hash]){
@@ -247,8 +247,6 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
     return Promise.reject("no cert found");
   }
   const ckeyPromise = arrtorsaoepkey(cert);
-
-  );
   certhashes = await Promise.all(obj.data.secretgraphConfig.hashAlgorithms.map(
     (hash: string) => crypto.subtle.digest(mapHashNames[hash], cert as Uint8Array).then(
       (data) => btoa(String.fromCharCode(... new Uint8Array(data)))
@@ -268,18 +266,35 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
       if(!privkeyrefnode){
         continue;
       }
-      const privkeykey = privkeyrefnode.node.target.tags.find((tag: string) => "key=").split("=")[1];
+      const privkeykey = privkeyrefnode.node.target.tags.find((tag: string) => "key=").split("=", 1)[1];
       const url = new URL(config.baseUrl);
       const decrypttoken = await crypto.subtle.decrypt(
         {
           name: "RSA-OAEP",
         },
         await ckeyPromise,
-        b64toarr(keyref.extra)
+        b64toarr(privkeykey)
       )
 
       if (pw) {
-        return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&prekey=${btoa(String.fromCharCode(... new Uint8Array(pwtoken)))}`
+        const decrypttoken2 = crypto.subtle.decrypt(
+          {
+            name: "RSA-OAEP",
+          },
+          await ckeyPromise,
+          b64toarr(keyref.extra)
+        )
+        const prekey = await pwencryptprekey(
+          decrypttoken,
+          pw,
+          obj.data.secretgraphConfig.PBKDF2Iterations
+        );
+        const prekey2 = await pwencryptprekey(
+          await decrypttoken2,
+          pw,
+          obj.data.secretgraphConfig.PBKDF2Iterations
+        );
+        return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&prekey=${certhashes[0]}:${prekey}&prekey=${prekey2}`
       } else {
         return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(decrypttoken)))}`
       }
