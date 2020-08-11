@@ -67,8 +67,6 @@ def create_key_maps(contents, keyset=(), inject_public=True):
     for i in keyset:
         i = i.split(":", 1)
         if len(i) == 2:
-            if i[0] == "shared":
-                continue
             _type = "Content"
             _key = base64.b64decode(i[1])
             try:
@@ -103,39 +101,65 @@ def create_key_maps(contents, keyset=(), inject_public=True):
     key_query = Content.objects.filter(
         tags__tag="type=PrivateKey",
         tags__tag__in=key_map1.keys(),
-        references__in=reference_query
     ).annotate(matching_tag=Subquery(
         ContentTag.objects.filter(content_id=OuterRef("pk")).values("tag")[:1]
     ))
     content_key_map = {}
     transfer_key_map = {}
-    for key in key_query:
-        matching_key = key_map1[key.matching_tag]
-        try:
-            nonce = base64.b64decode(key.nonce)
+    for ref in reference_query.annotate(matching_tag=Subquery(
+        ContentTag.objects.filter(
+            source_id=OuterRef("pk"),
+            tag__in=key_map1.keys()
+        ).values("tag")[:1]
+    )):
+        esharedkey = base64.b64decode(ref.extra)
+        sharedkey = None
+        if ref.matching_tag:
+            matching_key = key_map1[ref.matching_tag]
+            nonce = matching_key[:13]
+            matching_key = matching_key[13:]
             aesgcm = AESGCM(matching_key)
-            privkey = aesgcm.decrypt(
-                key.value.open("rb").read(),
-                nonce,
-                None
-            )
-            privkey = load_der_private_key(privkey, None, default_backend())
-        except Exception as exc:
-            logger.info("Could not decode private key", exc_info=exc)
-            continue
-        for ref in reference_query.filter(
-            target=key
-        ).only("group", "extra", "source_id"):
             try:
-                shared_key = privkey.decrypt(
-                    base64.b64decode(ref.extra),
-                    default_padding
+                aesgcm = AESGCM(matching_key)
+                sharedkey = aesgcm.decrypt(
+                    esharedkey,
+                    nonce,
+                    None
                 )
             except Exception as exc:
                 logger.warning(
-                    "Could not decode shared key", exc_info=exc
+                    "Could not decode shared key (direct)", exc_info=exc
                 )
-                continue
+        if not sharedkey:
+            for key in key_query.filter(referencedby__source__in=ref.target):
+                try:
+                    nonce = base64.b64decode(key.nonce)
+                    aesgcm = AESGCM(matching_key)
+                    privkey = aesgcm.decrypt(
+                        key.value.open("rb").read(),
+                        nonce,
+                        None
+                    )
+                    privkey = load_der_private_key(
+                        privkey, None, default_backend()
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Could not decrypt privkey key (privkey)", exc_info=exc
+                    )
+                    continue
+
+                try:
+                    shared_key = privkey.decrypt(
+                        esharedkey,
+                        default_padding
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Could not decrypt shared key (privkey)", exc_info=exc
+                    )
+                    continue
+        if shared_key:
             if ref.group == "key":
                 content_key_map[ref.source_id] = shared_key
             else:
