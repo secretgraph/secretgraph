@@ -2139,7 +2139,7 @@
                     "name": null,
                     "ofType": {
                       "kind": "INPUT_OBJECT",
-                      "name": "TagsUpdateMutationInput",
+                      "name": "MetadataUpdateMutationInput",
                       "ofType": null
                     }
                   }
@@ -2148,10 +2148,10 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "updateContentTags",
+              "name": "updateMetadata",
               "type": {
                 "kind": "OBJECT",
-                "name": "TagsUpdateMutationPayload",
+                "name": "MetadataUpdateMutationPayload",
                 "ofType": null
               }
             },
@@ -2292,30 +2292,6 @@
               "description": null,
               "isDeprecated": false,
               "name": "actionKey",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "privateKey",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "keyForPrivateKey",
               "type": {
                 "kind": "SCALAR",
                 "name": "String",
@@ -3095,7 +3071,7 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "TagsUpdateMutationPayload",
+          "name": "MetadataUpdateMutationPayload",
           "possibleTypes": null
         },
         {
@@ -3136,11 +3112,25 @@
               "description": null,
               "name": "tags",
               "type": {
-                "kind": "NON_NULL",
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": null,
+              "name": "references",
+              "type": {
+                "kind": "LIST",
                 "name": null,
                 "ofType": {
                   "kind": "INPUT_OBJECT",
-                  "name": "TagsInput",
+                  "name": "ReferenceInput",
                   "ofType": null
                 }
               }
@@ -3158,32 +3148,7 @@
           ],
           "interfaces": null,
           "kind": "INPUT_OBJECT",
-          "name": "TagsUpdateMutationInput",
-          "possibleTypes": null
-        },
-        {
-          "description": null,
-          "enumValues": null,
-          "fields": null,
-          "inputFields": [
-            {
-              "defaultValue": null,
-              "description": null,
-              "name": "tags",
-              "type": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                }
-              }
-            }
-          ],
-          "interfaces": null,
-          "kind": "INPUT_OBJECT",
-          "name": "TagsInput",
+          "name": "MetadataUpdateMutationInput",
           "possibleTypes": null
         },
         {

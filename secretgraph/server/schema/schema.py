@@ -10,7 +10,7 @@ from .mutations import (
     ClusterMutation, ContentMutation,
     DeleteContentOrClusterMutation, PushContentMutation,
     RegenerateFlexidMutation, ResetDeletionContentOrClusterMutation,
-    TagsUpdateMutation
+    MetadataUpdateMutation
 )
 
 
@@ -40,7 +40,7 @@ class Mutation():
         """
     )
     updateOrCreateCluster = ClusterMutation.Field()
-    updateContentTags = TagsUpdateMutation.Field()
+    updateMetadata = MetadataUpdateMutation.Field()
     pushContent = PushContentMutation.Field()
     regenerateFlexid = RegenerateFlexidMutation.Field()
     deleteContentOrCluster = DeleteContentOrClusterMutation.Field()

@@ -23,7 +23,9 @@ from ..actions.update import (
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
-from .arguments import AuthList, ClusterInput, ContentInput, PushContentInput
+from .arguments import (
+    AuthList, ClusterInput, ContentInput, PushContentInput, ReferenceInput
+)
 from .definitions import ClusterNode, ContentNode, FlexidType
 
 logger = logging.getLogger(__name__)
@@ -457,11 +459,12 @@ class TransferMutation(relay.ClientIDMutation):
         return cls(content=None)
 
 
-class TagsUpdateMutation(relay.ClientIDMutation):
+class MetadataUpdateMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
         authorization = AuthList()
         tags = graphene.List(graphene.String, required=False)
+        references = graphene.List(ReferenceInput, required=False)
         operation = graphene.Enum.from_enum(
             MetadataOperations
         )

@@ -3,13 +3,14 @@ from datetime import timedelta as td
 import graphene
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from graphene import relay
 from graphene_django import DjangoObjectType
 from graphql_relay import from_global_id
 
-from ..server.actions.update import create_cluster
+from ..server.actions.update import create_cluster_fn
 from ..server.models import Cluster, Content
 from ..utils.auth import id_to_result, retrieve_allowed_objects
 
@@ -25,7 +26,7 @@ class UserNode(DjangoObjectType):
 
 
 class UserInput(graphene.InputObjectType):
-    # TODO: use form
+    # TODO: use form, keys
     email = graphene.String(required=True)
     username = graphene.String(required=True)
 
@@ -36,8 +37,6 @@ class UserMutation(relay.ClientIDMutation):
         user = UserInput(required=False)
     user = graphene.Field(UserNode)
     actionKey = graphene.String(required=False)
-    privateKey = graphene.String(required=False)
-    keyForPrivateKey = graphene.String(required=False)
 
     @classmethod
     def mutate_and_get_payload(
@@ -79,15 +78,13 @@ class UserMutation(relay.ClientIDMutation):
             user_obj = get_user_model().create_user(
 
             )
-            _cluster, action_key, privateKey, key_for_privateKey = \
-                create_cluster(
+            action_key = \
+                create_cluster_fn(
                     info.context, None, user_obj
-                )
+                )(transaction.atomic)[1]
             return cls(
-                user=_cluster,
-                actionKey=action_key,
-                privateKey=privateKey,
-                keyForPrivateKey=key_for_privateKey
+                user=user_obj,
+                actionKey=action_key
             )
 
 
