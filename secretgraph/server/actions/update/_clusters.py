@@ -1,17 +1,17 @@
-__all__ = ["create_cluster", "update_cluster"]
+__all__ = ["create_cluster_fn", "update_cluster_fn"]
 
 import os
+from contextlib import nullcontext
 
 from django.conf import settings
 from django.core.files.base import ContentFile, File
-from django.db import transaction
 from rdflib import RDF, BNode, Graph
 
 from ....constants import sgraph_cluster
 from ....utils.misc import get_secrets, hash_object
 from ...models import Cluster
-from ._actions import create_actions_func
-from ._contents import create_key_func
+from ._actions import create_actions_fn
+from ._contents import create_key_fn
 
 len_default_hash = len(hash_object(b""))
 
@@ -38,50 +38,56 @@ def _update_or_create_cluster(
         public_secret_hashes = set(map(hash_object, get_secrets(g)))
         cluster.public = len(public_secret_hashes) > 0
         if created:
-            def cluster_save_func():
+            def cluster_save_fn():
                 cluster.publicInfo.save("", objdata["publicInfo"])
         else:
-            def cluster_save_func():
+            def cluster_save_fn():
                 cluster.publicInfo.delete(False)
                 cluster.publicInfo.save("", objdata["publicInfo"])
     elif cluster.id is not None:
         public_secret_hashes = {}
-        cluster_save_func = cluster.save
+        cluster_save_fn = cluster.save
     else:
         raise ValueError("no publicInfo")
 
     if objdata.get("actions"):
-        action_save_func = create_actions_func(
+        action_save_fn = create_actions_fn(
             cluster, objdata["actions"], request, created, authset=authset
         )
         assert created and not cluster.id, \
             "Don't save cluster in action clean"
 
         m_actions = filter(
-            lambda x: x.action_type == "manage", action_save_func.actions
+            lambda x: x.action_type == "manage", action_save_fn.actions
         )
         m_actions = set(map(lambda x: x.keyHash, m_actions))
 
-        if created and "manage" not in action_save_func.action_types:
+        if created and "manage" not in action_save_fn.action_types:
             raise ValueError("Requires \"manage\" Action")
 
         if m_actions.intersection(public_secret_hashes):
             raise ValueError("\"manage\" action cannot be public")
 
-        def save_func():
-            cluster_save_func()
-            action_save_func()
-            return cluster
+        def save_fn(context=nullcontext):
+            if callable(context):
+                context = context()
+            with context:
+                cluster_save_fn()
+                action_save_fn()
+                return cluster
     elif cluster.id is not None and not public_secret_hashes:
-        def save_func():
-            cluster_save_func()
-            return cluster
+        def save_fn(context=nullcontext):
+            if callable(context):
+                context = context()
+            with context:
+                cluster_save_fn()
+                return cluster
     else:
         raise ValueError("no actions for new cluster")
-    return save_func
+    return save_fn
 
 
-def create_cluster(
+def create_cluster_fn(
     request, objdata=None, user=None, authset=None
 ):
     prebuild = {}
@@ -116,28 +122,32 @@ def create_cluster(
         "key": objdata["key"]
     }
     cluster = Cluster(**prebuild)
-    cluster_func = _update_or_create_cluster(
+    cluster_fn = _update_or_create_cluster(
         request, cluster, objdata, authset
     )
     contentdata["cluster"] = cluster
-    content_func = create_key_func(
+    content_fn = create_key_fn(
         request, contentdata, authset
     )
-    with transaction.atomic():
-        cluster = cluster_func()
-        content_func()
 
-    return (
-        cluster,
-        action_key
-    )
+    def save_fn(context=nullcontext):
+        if callable(context):
+            context = context()
+        with context:
+            cluster = cluster_fn()
+            content_fn()
+            return (
+                cluster,
+                action_key
+            )
+    return save_fn
 
 
-def update_cluster(request, cluster, objdata, user=None, authset=None):
+def update_cluster_fn(request, cluster, objdata, user=None, authset=None):
     assert cluster.id
     if user:
         cluster.user = user
 
     return _update_or_create_cluster(
         request, cluster, objdata, authset=authset
-    )()
+    )

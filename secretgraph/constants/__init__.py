@@ -13,7 +13,7 @@ class DeleteRecursive(enum.Enum):
     NO_GROUP = None
 
 
-class TagsOperations(enum.Enum):
+class MetadataOperations(enum.Enum):
     append = "append"
     remove = "remove"
     replace = "replace"

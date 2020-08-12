@@ -1,90 +1,30 @@
 __all__ = [
-    "create_content_func", "update_content_func", "create_key_func",
-    "update_flags_func"
+    "create_content_fn", "update_content_fn", "create_key_fn"
 ]
 
 
 import base64
 import logging
 from itertools import chain
+from contextlib import nullcontext
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.files.base import ContentFile, File
-from django.db import transaction
 from django.db.models import OuterRef, Q, Subquery
 from graphql_relay import from_global_id
 
-from ....constants import TagsOperations
 from ....utils.auth import id_to_result, initializeCachedResult
 from ....utils.encryption import default_padding, encrypt_into_file
 from ....utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag
-from ._actions import create_actions_func
-from ._metadata import transform_tags
+from ._actions import create_actions_fn
+from ._metadata import transform_tags, transform_references
 
 logger = logging.getLogger(__name__)
 
 len_default_hash = len(hash_object(b""))
-
-
-def _transform_references(content, objdata, key_hashes_tags, allowed_contents):
-    final_references = []
-    verifiers_ref = set()
-    key_hashes_ref = set()
-    for ref in objdata["references"]:
-        if isinstance(ref["target"], Content):
-            targetob = ref["target"]
-        else:
-            type_name = "Content"
-            try:
-                type_name, ref["target"] = from_global_id(ref["target"])
-            except Exception:
-                pass
-            if type_name != "Content":
-                raise ValueError("No Content Id")
-            if isinstance(ref["target"], int):
-                q = Q(id=ref["target"])
-            else:
-                _refs = Subquery(
-                    ContentTag.objects.filter(
-                        # for correct chaining
-                        tag="type=PublicKey",
-                        content_id=OuterRef("pk"),
-                        content__tags__tag=f"key_hash={ref['target']}"
-                    ).values("pk")
-                )
-                # the direct way doesn't work
-                # subquery is necessary for chaining operations correctly
-                q = (
-                    Q(tags__tag=f"id={ref['target']}") |
-                    Q(tags__in=_refs)
-                )
-
-            targetob = allowed_contents.filter(
-                q, markForDestruction=None
-            ).first()
-        if not targetob:
-            continue
-        if ref.get("extra") and len(ref["extra"]) > 8000:
-            raise ValueError("Extra tag too big")
-        refob = ContentReference(
-            source=content,
-            target=targetob, group=ref.get("group") or "",
-            extra=ref.get("extra") or ""
-        )
-        if refob.group == "signature":
-            refob.deleteRecursive = None
-            verifiers_ref.add(targetob.contentHash)
-        if refob.group in {"key", "transfer"}:
-            refob.deleteRecursive = None
-            if refob.group == "key":
-                key_hashes_ref.add(targetob.contentHash)
-            if targetob.contentHash not in key_hashes_tags:
-                raise ValueError("Key hash not found in tags")
-        final_references.append(refob)
-    return final_references, key_hashes_ref, verifiers_ref
 
 
 def _transform_key_into_dataobj(key_obj, content=None):
@@ -200,16 +140,16 @@ def _update_or_create_content_or_key(
         else:
             objdata["value"] = File(objdata["value"])
 
-        def save_func_value():
+        def save_fn_value():
             content.file.delete(False)
             content.file.save("", objdata["value"])
     else:
-        save_func_value = content.save
+        save_fn_value = content.save
 
     tags_dict = None
-    key_hashes_tags = set()
     content_type = None
     content_state = None
+    key_hashes_tags = set()
     if objdata.get("tags") is not None:
         tags_dict, key_hashes_tags = transform_tags(objdata.get("tags"))
         content_state = next(iter(tags_dict.get("state", {None})))
@@ -235,6 +175,8 @@ def _update_or_create_content_or_key(
                 raise ValueError(
                     "%s is an invalid state for content", content_state
                 )
+    elif objdata.get("references") is not None:
+        key_hashes_tags = set()
 
     # cannot change because of special key transformation
     chash = objdata.get("contentHash")
@@ -249,12 +191,24 @@ def _update_or_create_content_or_key(
     final_references = None
     key_hashes_ref = set()
     verifiers_ref = set()
-    if objdata.get("references") is not None:
+    if (
+        objdata.get("references") is not None or
+        objdata.get("tags") is not None
+    ):
+        if objdata.get("references") is None:
+            refs = content.references.all()
+        else:
+            refs = objdata["references"]
+        # no_final_refs final_references => None
         final_references, key_hashes_ref, verifiers_ref = \
-            _transform_references(
-                content, objdata, key_hashes_tags, initializeCachedResult(
+            transform_references(
+                content,
+                refs,
+                key_hashes_tags,
+                initializeCachedResult(
                     request, authset=authset
-                )["Content"]["objects"]
+                )["Content"]["objects"],
+                no_final_refs=objdata.get("references") is None
             )
         if required_keys and required_keys.isdisjoint(verifiers_ref):
             raise ValueError("Not signed by required keys")
@@ -341,15 +295,15 @@ def _update_or_create_content_or_key(
                 ">=1 key references required for content"
             )
     if objdata.get("actions") is not None:
-        actions_save_func = create_actions_func(
+        actions_save_fn = create_actions_fn(
             content, objdata["actions"], request, authset=authset
         )
     else:
-        def actions_save_func():
+        def actions_save_fn():
             pass
 
-    def save_func():
-        save_func_value()
+    def save_fn():
+        save_fn_value()
         if final_tags is not None:
             if create:
                 ContentTag.objects.bulk_create(refresh_fields(
@@ -380,12 +334,12 @@ def _update_or_create_content_or_key(
             ContentReference.objects.bulk_create(refresh_fields(
                 final_references, "source", "target"
             ))
-        actions_save_func()
-    setattr(save_func, "content", content)
-    return save_func
+        actions_save_fn()
+    setattr(save_fn, "content", content)
+    return save_fn
 
 
-def create_key_func(
+def create_key_fn(
     request, objdata, key=None, authset=None
 ):
     key_obj = objdata.get("key")
@@ -441,7 +395,7 @@ def create_key_func(
     return func
 
 
-def create_content_func(
+def create_content_fn(
     request, objdata, key=None, authset=None, required_keys=None
 ):
     value_obj = objdata.get("value", {})
@@ -453,13 +407,15 @@ def create_content_func(
 
     if key_obj:
         # has removed key argument for only allowing complete key
-        _save_func = create_key_func(
+        _save_fn = create_key_fn(
             request, objdata, authset=authset
         )
 
-        def save_func():
-            with transaction.atomic():
-                return _save_func()[0]
+        def save_fn(context=nullcontext):
+            if callable(context):
+                context = context()
+            with context:
+                return _save_fn()[0]
     else:
         newdata = {
             "cluster": objdata.get("cluster"),
@@ -471,18 +427,20 @@ def create_content_func(
             **value_obj
         }
         content_obj = Content()
-        _save_func = _update_or_create_content_or_key(
+        _save_fn = _update_or_create_content_or_key(
             request, content_obj, newdata, authset, False,
             required_keys or []
         )
 
-        def save_func():
-            with transaction.atomic():
-                return _save_func()
-    return save_func
+        def save_fn(context=nullcontext):
+            if callable(context):
+                context = context()
+            with context:
+                return _save_fn()
+    return save_fn
 
 
-def update_content_func(
+def update_content_fn(
     request, content, objdata, key=None, authset=None,
     required_keys=None
 ):
@@ -524,73 +482,9 @@ def update_content_func(
         required_keys or []
     )
 
-    def save_func():
-        with transaction.atomic():
+    def save_fn(context=nullcontext):
+        if callable(context):
+            context = context()
+        with context:
             return func()
-    return save_func
-
-
-def update_flags_func(content, tags, operation=TagsOperations.append):
-    operation = operation or TagsOperations.append
-    oldtags = content.values_list("tags__tag", flat=True)
-    tags_dict, key_hashes_tags = transform_tags(
-        tags,
-        oldtags if operation != TagsOperations.append else None,
-        operation
-    )
-    content_state = next(iter(tags_dict.get("state", {None})))
-    content_type = next(iter(tags_dict.get("type", {None})))
-    if content_type in {"PrivateKey", "PublicKey"}:
-        if content_state not in {"public", "internal"}:
-            raise ValueError(
-                "%s is an invalid state for key", content_state
-            )
-    else:
-        if content_type == "Config" and content_state != "internal":
-            raise ValueError(
-                "%s is an invalid state for Config", content_type
-            )
-        elif content_state not in {
-            "draft", "public", "internal"
-        }:
-            raise ValueError(
-                "%s is an invalid state for content", content_state
-            )
-
-    remove_q = ~Q(tag__startswith="id=")
-    if operation in {TagsOperations.append, TagsOperations.replace}:
-        final_tags = []
-        for prefix, val in tags_dict.items():
-            if not val:
-                remove_q |= Q(tag__startswith=prefix)
-                final_tags.append(ContentTag(
-                    content=content,
-                    tag=prefix
-                ))
-            else:
-                for subval in val:
-                    composed = "%s=%s" % (prefix, subval)
-                    remove_q |= Q(tag__startswith=composed)
-                    final_tags.append(ContentTag(
-                        content=content,
-                        tag=composed
-                    ))
-    else:
-        for prefix, val in tags_dict.items():
-            if not val:
-                remove_q &= ~Q(tag__startswith=prefix)
-            else:
-                for subval in val:
-                    composed = "%s=%s" % (prefix, subval)
-                    remove_q &= ~Q(tag__startswith=composed)
-
-    def save_func():
-        with transaction.atomic():
-            if operation in {TagsOperations.delete, TagsOperations.replace}:
-                content.tags.filter(remove_q).delete()
-            if operation in {TagsOperations.append, TagsOperations.replace}:
-                ContentTag.objects.bulk_create(
-                    final_tags, ignore_conflicts=True
-                )
-            return content
-    return save_func
+    return save_fn

@@ -8,23 +8,22 @@ from itertools import chain
 
 import graphene
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q, Subquery
 from django.utils import timezone
 from graphene import relay
 
-from ...constants import TransferResult
+from ...constants import MetadataOperations, TransferResult
 from ...utils.auth import (
     fetch_by_id, id_to_result, initializeCachedResult, retrieve_allowed_objects
 )
 from ..actions.update import (
-    create_cluster, create_content_func, transfer_value, update_cluster,
-    update_content_func, update_flags_func
+    create_cluster_fn, create_content_fn, transfer_value, update_cluster_fn,
+    update_content_fn, update_metadata_fn
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
-from .arguments import (
-    AuthList, ClusterInput, ContentInput, PushContentInput, TagsInput
-)
+from .arguments import AuthList, ClusterInput, ContentInput, PushContentInput
 from .definitions import ClusterNode, ContentNode, FlexidType
 
 logger = logging.getLogger(__name__)
@@ -162,9 +161,9 @@ class ClusterMutation(relay.ClientIDMutation):
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError()
-            returnval = cls(cluster=update_cluster(
+            returnval = cls(cluster=update_cluster_fn(
                 cluster_obj, cluster, info.context
-            ))
+            )(transaction.atomic))
         else:
             user = None
             manage = retrieve_allowed_objects(
@@ -190,9 +189,9 @@ class ClusterMutation(relay.ClientIDMutation):
                 settings, "SECRETGRAPH_ALLOW_REGISTER", False
             ) is not True:
                 raise ValueError("Cannot register new cluster")
-            _cluster, action_key = create_cluster(
+            _cluster, action_key = create_cluster_fn(
                 info.context, cluster, user=user
-            )
+            )(transaction.atomic)
             returnval = cls(
                 cluster=_cluster,
                 actionKey=(
@@ -278,14 +277,14 @@ class ContentMutation(relay.ClientIDMutation):
             except StopIteration:
                 pass
             returnval = cls(
-                content=update_content_func(
+                content=update_content_fn(
                     info.context,
                     content_obj,
                     content,
                     key=key,
                     required_keys=required_keys,
                     authset=authorization
-                )()
+                )(transaction.atomic)
             )
         else:
             result = id_to_result(
@@ -317,11 +316,11 @@ class ContentMutation(relay.ClientIDMutation):
             except StopIteration:
                 pass
             returnval = cls(
-                content=create_content_func(
+                content=create_content_fn(
                     info.context, content,
                     key=key,
                     required_keys=required_keys, authset=authorization
-                )()
+                )(transaction.atomic)
             )
         initializeCachedResult(info.context, authset=authorization)
         return returnval
@@ -394,9 +393,9 @@ class PushContentMutation(relay.ClientIDMutation):
                 "freeze": freeze,
                 "form": form
             }]
-        c = create_content_func(
+        c = create_content_fn(
             info.context, content, key=key, required_keys=required_keys
-        )()
+        )(transaction.atomic)
         initializeCachedResult(info.context, authset=authorization)
         return cls(
             content=c,
@@ -462,13 +461,17 @@ class TagsUpdateMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
         authorization = AuthList()
-        tags = graphene.Field(TagsInput, required=True)
+        tags = graphene.List(graphene.String, required=False)
+        operation = graphene.Enum.from_enum(
+            MetadataOperations
+        )
 
     content = graphene.Field(ContentNode, required=False)
 
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, id, tags, authorization=None, headers=None
+        cls, root, info, id,
+        tags=None, operation=None, authorization=None, headers=None
     ):
         result = id_to_result(
             info.context, id, Content, "update",
@@ -478,7 +481,7 @@ class TagsUpdateMutation(relay.ClientIDMutation):
         if not content_obj:
             raise ValueError("no content object found")
         return cls(
-            content=update_flags_func(
-                content_obj, tags.tags, tags.operation
-            )()
+            content=update_metadata_fn(
+                info.context, content_obj, tags=tags, operation=operation
+            )(transaction.atomic)
         )

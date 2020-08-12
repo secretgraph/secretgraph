@@ -1,9 +1,10 @@
-__all__ = ["create_actions_func"]
+__all__ = ["create_actions_fn"]
 
 
 import base64
 import json
 import os
+from contextlib import nullcontext
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
@@ -17,7 +18,7 @@ from ...models import (
 )
 
 
-def create_actions_func(
+def create_actions_fn(
     obj, actionlist, request, addonly=False, default_key=None, authset=None
 ):
     final_actions = []
@@ -93,30 +94,33 @@ def create_actions_func(
 
     create = not cluster.pk
 
-    def save_func():
-        result = retrieve_allowed_objects(
-            request, "manage", cluster.actions.all()
-        )
-        if not addonly:
-            # delete old actions of obj, if allowed to
-            actions = result["objects"].filter(delete_q)
+    def save_fn(context=nullcontext):
+        if callable(context):
+            context = context()
+        with context:
+            result = retrieve_allowed_objects(
+                request, "manage", cluster.actions.all()
+            )
+            if not addonly:
+                # delete old actions of obj, if allowed to
+                actions = result["objects"].filter(delete_q)
+                if content:
+                    # recursive deletion
+                    ContentAction.objects.filter(
+                        action__in=actions
+                    ).delete()
+                else:
+                    # direct deletion
+                    actions.delete()
             if content:
-                # recursive deletion
-                ContentAction.objects.filter(
-                    action__in=actions
-                ).delete()
+                ContentAction.objects.bulk_create(final_content_actions)
+            if create:
+                Action.objects.bulk_create(refresh_fields(
+                    final_actions, "cluster"
+                ))
             else:
-                # direct deletion
-                actions.delete()
-        if content:
-            ContentAction.objects.bulk_create(final_content_actions)
-        if create:
-            Action.objects.bulk_create(refresh_fields(
-                final_actions, "cluster"
-            ))
-        else:
-            Action.objects.bulk_create(final_actions)
-    setattr(save_func, "actions", final_actions)
-    setattr(save_func, "action_types", action_types)
-    setattr(save_func, "key", default_key)
-    return save_func
+                Action.objects.bulk_create(final_actions)
+    setattr(save_fn, "actions", final_actions)
+    setattr(save_fn, "action_types", action_types)
+    setattr(save_fn, "key", default_key)
+    return save_fn

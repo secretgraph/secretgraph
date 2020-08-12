@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from .fields import MultipleOpenChoiceField
 from .widgets import ListWidget
 from .models import Content
-from .actions.update import create_content_func
+from .actions.update import create_content_fn
 from . import messages
 from ..utils.auth import initializeCachedResult
 
@@ -120,7 +120,7 @@ class PushForm(forms.Form):
                 "form": form
             }]
         self.save = lambda: (
-            create_content_func(
+            create_content_fn(
                 self.request, content,
                 key=self.cleaned_data.get("key"),
                 required_keys=required_keys
