@@ -531,11 +531,12 @@ def update_content_func(
 
 
 def update_flags_func(content, tags, operation=TagsOperations.append):
+    operation = operation or TagsOperations.append
     oldtags = content.values_list("tags__tag", flat=True)
     tags_dict, key_hashes_tags = transform_tags(
         tags,
-        oldtags,
-        operation or TagsOperations.append
+        oldtags if operation != TagsOperations.append else None,
+        operation
     )
     content_state = next(iter(tags_dict.get("state", {None})))
     content_type = next(iter(tags_dict.get("type", {None})))
@@ -555,28 +556,41 @@ def update_flags_func(content, tags, operation=TagsOperations.append):
             raise ValueError(
                 "%s is an invalid state for content", content_state
             )
-    final_tags = []
-    for prefix, val in tags_dict.items():
-        if not val:
-            final_tags.append(ContentTag(
-                content=content,
-                tag=prefix
-            ))
-        else:
-            for subval in val:
+
+    remove_q = ~Q(tag__startswith="id=")
+    if operation in {TagsOperations.append, TagsOperations.replace}:
+        final_tags = []
+        for prefix, val in tags_dict.items():
+            if not val:
+                remove_q |= Q(tag__startswith=prefix)
                 final_tags.append(ContentTag(
                     content=content,
-                    tag="%s=%s" % (prefix, subval)
+                    tag=prefix
                 ))
+            else:
+                for subval in val:
+                    composed = "%s=%s" % (prefix, subval)
+                    remove_q |= Q(tag__startswith=composed)
+                    final_tags.append(ContentTag(
+                        content=content,
+                        tag=composed
+                    ))
+    else:
+        for prefix, val in tags_dict.items():
+            if not val:
+                remove_q &= ~Q(tag__startswith=prefix)
+            else:
+                for subval in val:
+                    composed = "%s=%s" % (prefix, subval)
+                    remove_q &= ~Q(tag__startswith=composed)
 
     def save_func():
         with transaction.atomic():
-            # simply ignore id=, can only be changed in regenerateFlexid
-            content.tags.exclude(
-                Q(tag__startswith="id=")
-            ).delete()
-            ContentTag.objects.bulk_create(
-                final_tags, "content"
-            )
+            if operation in {TagsOperations.delete, TagsOperations.replace}:
+                content.tags.filter(remove_q).delete()
+            if operation in {TagsOperations.append, TagsOperations.replace}:
+                ContentTag.objects.bulk_create(
+                    final_tags, ignore_conflicts=True
+                )
             return content
     return save_func

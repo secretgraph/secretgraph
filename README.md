@@ -21,7 +21,11 @@
 
 # TODO
 
-* shared key decryption
+* metadata updates:
+  * verify required_keys still in metadata
+  * allow transforming references
+* prekey implement form
+* simplify config url export (no private key anymore)
 * implement form with send for Message
 * if type=Message switch strings to Inbox, Send
 * find out how Messages sent can be differed from messages received
