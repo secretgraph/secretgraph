@@ -131,7 +131,6 @@ function SettingsImporter(props: Props) {
 
   const handleStart_inner = async () => {
     const providerUrl: string = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
-    const encryptingPw = (document.getElementById("secretgraph-encrypting") as HTMLInputElement).value;
     const client = createClient(providerUrl);
     const result: any = await client.query(
       {query: serverConfigQuery}

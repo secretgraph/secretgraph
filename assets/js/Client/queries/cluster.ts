@@ -28,7 +28,7 @@ export const getClusterConfigurationQuery = gql`
 
 
 export const createClusterMutation = gql`
-  mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $privateTags: [String!], $nonce: String, $authorization: [String!]) {
+  mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $privateTags: [String!]!, $nonce: String, $authorization: [String!]) {
     updateOrCreateCluster(
       input: {
         cluster: {
@@ -36,6 +36,7 @@ export const createClusterMutation = gql`
           actions: $actions
           key: {
             publicKey: $publicKey
+            publicTags: ["state=public"]
             privateKey: $privateKey
             privateTags: $privateTags
             nonce: $nonce

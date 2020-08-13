@@ -259,7 +259,7 @@ export async function createCluster(
       publicInfo: new File([utf8encoder.encode(publicInfo)], "publicInfo"),
       publicKey: await exportPublicKeyPromise,
       privateKey: await privateKeyPromise,
-      privateTags: [],
+      privateTags: ["state=internal"],
       nonce: nonceb64,
       actions: actions,
       authorization: authorization

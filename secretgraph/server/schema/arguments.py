@@ -62,12 +62,12 @@ class ContentKeyInput(graphene.InputObjectType):
         description="Nonce for private key (base64, 13 bytes)"
     )
     privateTags = graphene.List(
-        graphene.String, required=False,
+        graphene.String, required=True,
         description="Metadata tags for private key"
     )
 
     publicTags = graphene.List(
-        graphene.String, required=False,
+        graphene.String, required=True,
         description="Metadata tags for public key"
     )
 

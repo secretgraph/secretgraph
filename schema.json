@@ -265,7 +265,7 @@
               "name": "clusters",
               "type": {
                 "kind": "OBJECT",
-                "name": "ClusterNodeConnection",
+                "name": "ClusterConnection",
                 "ofType": null
               }
             },
@@ -439,7 +439,7 @@
               "name": "contents",
               "type": {
                 "kind": "OBJECT",
-                "name": "ContentNodeConnection",
+                "name": "ContentConnection",
                 "ofType": null
               }
             },
@@ -565,7 +565,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "ClusterNodeConnection",
+                  "name": "ClusterConnection",
                   "ofType": null
                 }
               }
@@ -701,7 +701,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "ClusterNodeEdge",
+                    "name": "ClusterEdge",
                     "ofType": null
                   }
                 }
@@ -711,7 +711,7 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "ClusterNodeConnection",
+          "name": "ClusterConnection",
           "possibleTypes": null
         },
         {
@@ -792,7 +792,7 @@
           "possibleTypes": null
         },
         {
-          "description": "A Relay edge containing a `ClusterNode` and its cursor.",
+          "description": "A Relay edge containing a `Cluster` and its cursor.",
           "enumValues": null,
           "fields": [
             {
@@ -827,7 +827,7 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "ClusterNodeEdge",
+          "name": "ClusterEdge",
           "possibleTypes": null
         },
         {
@@ -997,7 +997,7 @@
               "name": "contents",
               "type": {
                 "kind": "OBJECT",
-                "name": "ContentNodeConnection",
+                "name": "ContentConnection",
                 "ofType": null
               }
             },
@@ -1139,7 +1139,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "ContentNodeEdge",
+                    "name": "ContentEdge",
                     "ofType": null
                   }
                 }
@@ -1149,11 +1149,11 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "ContentNodeConnection",
+          "name": "ContentConnection",
           "possibleTypes": null
         },
         {
-          "description": "A Relay edge containing a `ContentNode` and its cursor.",
+          "description": "A Relay edge containing a `Content` and its cursor.",
           "enumValues": null,
           "fields": [
             {
@@ -1188,7 +1188,7 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "ContentNodeEdge",
+          "name": "ContentEdge",
           "possibleTypes": null
         },
         {
@@ -1392,7 +1392,7 @@
               "name": "references",
               "type": {
                 "kind": "OBJECT",
-                "name": "ContentReferenceNodeConnection",
+                "name": "ContentReferenceConnection",
                 "ofType": null
               }
             },
@@ -1501,7 +1501,7 @@
               "name": "referencedBy",
               "type": {
                 "kind": "OBJECT",
-                "name": "ContentReferenceNodeConnection",
+                "name": "ContentReferenceConnection",
                 "ofType": null
               }
             },
@@ -1662,7 +1662,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "OBJECT",
-                    "name": "ContentReferenceNodeEdge",
+                    "name": "ContentReferenceEdge",
                     "ofType": null
                   }
                 }
@@ -1672,11 +1672,11 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "ContentReferenceNodeConnection",
+          "name": "ContentReferenceConnection",
           "possibleTypes": null
         },
         {
-          "description": "A Relay edge containing a `ContentReferenceNode` and its cursor.",
+          "description": "A Relay edge containing a `ContentReference` and its cursor.",
           "enumValues": null,
           "fields": [
             {
@@ -1711,7 +1711,7 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "ContentReferenceNodeEdge",
+          "name": "ContentReferenceEdge",
           "possibleTypes": null
         },
         {
@@ -2690,12 +2690,16 @@
               "description": "Metadata tags for private key",
               "name": "privateTags",
               "type": {
-                "kind": "LIST",
+                "kind": "NON_NULL",
                 "name": null,
                 "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 }
               }
             },
@@ -2704,12 +2708,16 @@
               "description": "Metadata tags for public key",
               "name": "publicTags",
               "type": {
-                "kind": "LIST",
+                "kind": "NON_NULL",
                 "name": null,
                 "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
                 }
               }
             }

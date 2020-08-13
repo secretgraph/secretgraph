@@ -148,10 +148,13 @@ class UpdateForm(forms.Form):
         label=_("References contents"), required=False
     )
 
-    def __init__(self, result, **kwargs):
+    def __init__(self, result, instance, request, **kwargs):
         super().__init__(**kwargs)
         # TODO: find valid references
 
 
 class PreKeyForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput())
+
+    def __init__(self, result, instance, request, **kwargs):
+        super().__init__(**kwargs)

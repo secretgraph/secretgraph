@@ -122,7 +122,8 @@ class ContentView(AllowCORSMixin, FormView):
                 if not content:
                     raise Http404()
             kwargs.update({
-                'result': self.result, 'instance': content,
+                'result': self.result,
+                'instance': content,
                 'request': self.request
             })
         return kwargs

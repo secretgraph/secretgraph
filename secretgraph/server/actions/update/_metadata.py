@@ -48,7 +48,7 @@ def transform_tags(tags, oldtags=None, operation=MetadataOperations.append):
     oldtags = oldtags or []
     operation = operation or MetadataOperations.append
     new_had_keyhash = False
-    if operation == MetadataOperations.delete and oldtags:
+    if operation == MetadataOperations.remove and oldtags:
         tags = filter(
             lambda x: not denied_remove_filter.match(x),
             tags
@@ -95,7 +95,7 @@ def transform_tags(tags, oldtags=None, operation=MetadataOperations.append):
             raise ValueError("Tag and Flag name collision")
         newtags_set.add(splitted_tag[0])
 
-    if operation != MetadataOperations.delete and oldtags:
+    if operation != MetadataOperations.remove and oldtags:
         for tag in oldtags:
             splitted_tag = tag.split("=", 1)
             if splitted_tag[0] == "id":
@@ -195,7 +195,7 @@ def transform_references(
         if (refob.group, refob.target.id) in deduplicate:
             continue
         deduplicate.add((refob.group, refob.target.id))
-        if refob.extra > 8000:
+        if len(refob.extra) > 8000:
             raise ValueError("Extra tag too big")
         if refob.group == "signature":
             refob.deleteRecursive = None
@@ -282,7 +282,7 @@ def update_metadata_fn(
 
     if references is None:
         _refs = content.references.all()
-    elif operation in {MetadataOperations.delete, MetadataOperations.replace}:
+    elif operation in {MetadataOperations.remove, MetadataOperations.replace}:
         _refs = []
         if MetadataOperations.replace:
             _refs = references
@@ -341,7 +341,7 @@ def update_metadata_fn(
         with context:
             if final_tags is not None:
                 if operation in {
-                    MetadataOperations.delete, MetadataOperations.replace
+                    MetadataOperations.remove, MetadataOperations.replace
                 }:
                     content.tags.filter(remove_tags_q).delete()
                 if operation in {
@@ -352,7 +352,7 @@ def update_metadata_fn(
                     )
             if final_references is not None:
                 if operation in {
-                    MetadataOperations.delete, MetadataOperations.replace
+                    MetadataOperations.remove, MetadataOperations.replace
                 }:
                     content.references.filter(remove_refs_q).delete()
                 if operation in {

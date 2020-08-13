@@ -7,10 +7,9 @@ from .definitions import (
     SecretgraphConfig
 )
 from .mutations import (
-    ClusterMutation, ContentMutation,
-    DeleteContentOrClusterMutation, PushContentMutation,
-    RegenerateFlexidMutation, ResetDeletionContentOrClusterMutation,
-    MetadataUpdateMutation
+    ClusterMutation, ContentMutation, DeleteContentOrClusterMutation,
+    MetadataUpdateMutation, PushContentMutation, RegenerateFlexidMutation,
+    ResetDeletionContentOrClusterMutation
 )
 
 

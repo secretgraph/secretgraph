@@ -22,6 +22,7 @@ export function checkConfig(config: ConfigInterface | null | undefined) {
     !config.configCluster ||
     !config.hashAlgorithm
   ){
+    console.error(config);
     return null;
   }
 
@@ -180,8 +181,11 @@ export function saveConfig(config: ConfigInterface | string, storage: Storage = 
   storage.setItem("secretgraphConfig", config);
 }
 
-export async function exportConfig(config: ConfigInterface | string, pws?: string[], iterations?: number, name?: string) {
+export async function exportConfig(config: ConfigInterface | string, pws?: string[] | string, iterations?: number, name?: string) {
   let newConfig: any;
+  if( pws && typeof(pws) === "string" ) {
+    pws = [pws];
+  }
   if( typeof(config) !== "string" ) {
     config = JSON.stringify(config);
   }
@@ -254,6 +258,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
   ));
   const searchcerthashes = new Set(actions.map(hash => `key_hash=${hash}`));
   for(const node of obj.data.contents.edges){
+    console.log(node.node);
     if(!node.node.tags.includes("type=Config")){
       continue;
     }
@@ -300,7 +305,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
       }
     }
   }
-  throw Error("no config found")
+  throw Error("no config content found")
 }
 
 

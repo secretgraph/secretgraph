@@ -96,7 +96,7 @@ function HeaderBar(props: Props) {
       setLoadingExport(false);
       return;
     }
-    exportConfig(config, [encryptingPw], sconfig.PBKDF2Iterations[0], "secretgraph_settings.json");
+    exportConfig(config, encryptingPw, sconfig.PBKDF2Iterations[0], "secretgraph_settings.json");
     setExportOpen(false);
     setLoadingExport(false);
   }
@@ -107,9 +107,13 @@ function HeaderBar(props: Props) {
   }
 
   const exportSettingsOpener = async () => {
+    if (!config) return;
+    const encryptingPw = (document.getElementById("secretgraph-export-pw") as HTMLInputElement | undefined)?.value;
+    let _exportUrl = await exportConfigAsUrl(client, config, encryptingPw);
+
+    setExportUrl(_exportUrl ? _exportUrl as string : "");
     setMenuOpen(false);
     setExportOpen(true);
-    await exportConfigAsUrl(client, config);
     //const qr = qrcode(typeNumber, errorCorrectionLevel);
   }
 

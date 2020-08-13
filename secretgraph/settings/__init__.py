@@ -20,7 +20,8 @@ GRAPHENE = {
     'SCHEMA': 'secretgraph.schema.schema',
     'SCHEMA_OUTPUT': 'schema.json',
     'SCHEMA_INDENT': 2,
-    'MIDDLEWARE': []
+    'MIDDLEWARE': [],
+    'RELAY_CONNECTION_MAX_LIMIT': 40
 }
 
 if DEBUG:
