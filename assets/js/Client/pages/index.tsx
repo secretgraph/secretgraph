@@ -8,11 +8,13 @@ import { themeComponent } from "../theme";
 import { elements } from '../components/elements';
 import { CapturingSuspense } from '../components/misc';
 import { loadConfigSync } from '../utils/config';
-import Help from './Help';
-import SettingsImporter from './SettingsImporter';
-import { DocumentViewer, DocumentForm } from './DocumentFrames';
 import { createClient } from '../utils/graphql';
-import { MainContextInterface } from '../interfaces';
+import { MainContextInterface, SearchContextInterface } from '../interfaces';
+import { MainContext, SearchContext, ConfigContext } from '../contexts';
+const SettingsImporter = React.lazy(() => import('./SettingsImporter'));
+const Help = React.lazy(() => import('./Help'));
+const DocumentViewer = React.lazy(() => import('./DocumentViewer'));
+const DocumentForm = React.lazy(() => import('./DocumentForm'));
 
 type Props = {
   classes: any,
@@ -26,55 +28,41 @@ function MainPage(props: Props) {
   const {classes, theme, defaultPath} = props;
   const [drawerOpen, setDrawerOpen] = React.useState(true);
   const [config, setConfig] = React.useState(() => loadConfigSync());
-  const [mainContext, setMainContext] = React.useState({
-    "cluster": null,
+  const [mainCtx, setMainCtx] = React.useState({
     "action": config ? "add" : "start",
-    "subaction": "",
-    "include": [],
-    "exclude": [],
     "item": elements.keys().next().value,
     "state": "draft",
-    "activeUrl": config ? config.baseUrl : defaultPath
+    "title": null,
   } as MainContextInterface);
+  const [searchCtx, setSearchCtx] = React.useState({
+    "cluster": null,
+    "include": [],
+    "exclude": [],
+    "activeUrl": config ? config.baseUrl : defaultPath
+  } as SearchContextInterface);
   let frameElement = null;
-  switch(mainContext.action){
+  switch(mainCtx.action){
     case "view":
       frameElement = (
         <DocumentViewer
-          mainContext={mainContext}
-          setMainContext={setMainContext}
-          config={config}
-          setConfig={setConfig}
         />
       );
       break;
     case "add":
     case "update":
       frameElement = (
-        <DocumentForm
-          mainContext={mainContext}
-          setMainContext={setMainContext}
-          config={config}
-          setConfig={setConfig}
-        />
+        <DocumentForm/>
       );
       break;
     case "start":
     case "import":
       frameElement = (
-        <SettingsImporter
-          mainContext={mainContext}
-          setMainContext={setMainContext}
-          config={config}
-          setConfig={setConfig}
-        />
+        <SettingsImporter/>
       );
       break;
     case "help":
       frameElement = (
-        <Help
-          mainContext={mainContext}
-        />
+        <Help/>
       );
       break;
   }
@@ -82,38 +70,39 @@ function MainPage(props: Props) {
   if (config){
     sidebar = (
       <SideBar
-        config={config}
-        mainContext={mainContext}
-        setMainContext={setMainContext}
         openState={{drawerOpen, setDrawerOpen}}
+        searchCtx={searchCtx}
+        mainCtx={mainCtx}
+        setMainCtx={setMainCtx}
+        config={config}
       />
     );
   }
 
   return (
-    <ApolloProvider client={createClient(mainContext.activeUrl)}>
-      <div className={classes.root}>
-        <HeaderBar
-          config={config}
-          setConfig={setConfig}
-          openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
-          mainContext={mainContext}
-          setMainContext={setMainContext}
-        />
-        {sidebar}
-        <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
-          <ActionBar
-            mainContext={mainContext}
-            setMainContext={setMainContext}
-          />
-          <section className={classes.mainSection}>
-            <CapturingSuspense>
-              {frameElement}
-            </CapturingSuspense>
-          </section>
-        </main>
-      </div>
-    </ApolloProvider>
+    <MainContext.Provider value={{mainCtx, setMainCtx}}>
+      <SearchContext.Provider value={{searchCtx, setSearchCtx}}>
+        <ConfigContext.Provider value={{config, setConfig}}>
+          <ApolloProvider client={createClient(searchCtx.activeUrl)}>
+            <div className={classes.root}>
+              <HeaderBar
+                openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
+              />
+              {sidebar}
+              <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
+                <ActionBar
+                />
+                <section className={classes.mainSection}>
+                  <CapturingSuspense>
+                    {frameElement}
+                  </CapturingSuspense>
+                </section>
+              </main>
+            </div>
+          </ApolloProvider>
+        </ConfigContext.Provider>
+      </SearchContext.Provider>
+    </MainContext.Provider>
   );
 };
 

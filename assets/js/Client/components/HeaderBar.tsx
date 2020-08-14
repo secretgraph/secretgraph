@@ -21,9 +21,8 @@ import { useApolloClient } from '@apollo/client';
 import { themeComponent } from "../theme";
 import { exportConfig, exportConfigAsUrl } from "../utils/config";
 import { elements } from './elements';
-import { serverConfigQuery } from "../queries/server"
-import { findConfigQuery } from "../queries/content"
-import { MainContextInterface } from '../interfaces';
+import { serverConfigQuery } from "../queries/server";
+import { MainContext, ConfigContext } from '../contexts';
 
 import {
   encryptingPasswordLabel,
@@ -34,37 +33,35 @@ type Props = {
   openState: any,
   classes: any,
   theme: Theme,
-  mainContext: MainContextInterface,
-  setMainContext: any,
-  config: any,
-  setConfig: any
 };
 const menuRef: React.RefObject<any> = React.createRef();
 
 
 function HeaderBar(props: Props) {
-  const { classes, theme, mainContext, setMainContext, openState, config, setConfig } = props;
+  const { classes, theme, openState } = props;
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportUrl, setExportUrl] = React.useState("");
   const [loadingExport, setLoadingExport] = React.useState(false);
+  const {mainCtx, setMainCtx} = React.useContext(MainContext);
+  const {config, setConfig} = React.useContext(ConfigContext);
   let title: string, documenttitle: string;
   let client: any = null;
   try {
     client = useApolloClient();
   } catch(exc) {}
-  switch (mainContext.action){
+  switch (mainCtx.action){
     case "add":
-      let temp = elements.get(mainContext.item as string);
+      let temp = elements.get(mainCtx.item as string);
       title = `Add: ${temp ? temp.label : 'unknown'}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "update":
-      title = `Update: ${mainContext.item}`;
+      title = `Update: ${mainCtx.item}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "help":
-      title = `Help: ${mainContext.item}`;
+      title = `Help: ${mainCtx.item}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "start":
@@ -76,13 +73,18 @@ function HeaderBar(props: Props) {
       documenttitle = title;
       break;
     default:
-      title = mainContext.item as string;
+      if (mainCtx.title) {
+        title = mainCtx.title as string;
+      } else {
+        title = mainCtx.item as string;
+      }
       documenttitle = `Secretgraph: ${title}`;
       break;
   }
 
 
   const exportSettingsFile = async () => {
+    if(!config) return;
     setLoadingExport(true);
     const encryptingPw = (document.getElementById("secretgraph-export-pw") as HTMLInputElement).value;
     const sconfig: any = await client.query(
@@ -120,8 +122,8 @@ function HeaderBar(props: Props) {
 
   const openImporter = () => {
     setMenuOpen(false);
-    setMainContext({
-      ...mainContext,
+    setMainCtx({
+      ...mainCtx,
       action: "import"
     })
   }

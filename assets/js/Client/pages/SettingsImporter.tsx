@@ -27,25 +27,19 @@ import {
   importStartLabel,
   importFileLabel,
   importHelp,
-  encryptingPasswordLabel,
-  encryptingPasswordHelp,
   decryptingPasswordLabel,
   decryptingPasswordHelp
 } from "../messages";
 import { ConfigInterface, SnackMessageInterface } from '../interfaces';
 import { loadConfig } from "../utils/config";
 import { createClient, initializeCluster } from "../utils/graphql";
-import { utf8ToBinary, utf8encoder } from "../utils/misc"
 import { serverConfigQuery } from "../queries/server"
 import { mapHashNames } from "../constants"
+import { MainContext, SearchContext, ConfigContext } from '../contexts';
 
 type Props = {
   classes: any,
-  theme: Theme,
-  mainContext: any,
-  setMainContext: any,
-  config: ConfigInterface,
-  setConfig: any
+  theme: Theme
 };
 
 function Alert(props: any) {
@@ -60,7 +54,7 @@ function hasImportInput() {
 }
 
 function SettingsImporter(props: Props) {
-  const { classes, theme, mainContext, setMainContext, config, setConfig } = props;
+  const { classes, theme } = props;
   const [registerUrl, setRegisterUrl] = React.useState(undefined);
   const [loadingStart, setLoadingStart] = React.useState(false);
   const [loadingImport, setLoadingImport] = React.useState(false);
@@ -70,6 +64,9 @@ function SettingsImporter(props: Props) {
   const [hasFile, setHasFile] = React.useState(false);
   const mainElement = document.getElementById("content-main");
   const defaultPath: string | undefined = mainElement ? mainElement.dataset.graphqlPath : undefined;
+  const {mainCtx, setMainCtx} = React.useContext(MainContext);
+  const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
+  const {config, setConfig} = React.useContext(ConfigContext);
 
   const handleSecretgraphEvent_inner = async (event: any) => {
     const providerUrl = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
@@ -105,11 +102,10 @@ function SettingsImporter(props: Props) {
     if (!newConfig){
       return;
     }
-
     setConfig(newConfig);
     setRegisterUrl(undefined);
-    setMainContext({
-      ...mainContext,
+    setMainCtx({
+      ...mainCtx,
       action: "add"
     })
   }
@@ -119,13 +115,14 @@ function SettingsImporter(props: Props) {
     setConfig(null);
     setLoadingStart(true);
     try {
-      return await handleSecretgraphEvent_inner(event);
+      await handleSecretgraphEvent_inner(event);
     } catch(errors) {
-      setConfig(oldConfig);
       console.error(errors);
+      setConfig(oldConfig);
       setMessage({ severity: "error", message: "error while registration" });
-    } finally{
-      setLoadingStart(false);
+      // in success case unmounted so this would be a noop
+      // because state is forgotten
+      setLoadingImport(false);
     }
   }
 
@@ -159,10 +156,13 @@ function SettingsImporter(props: Props) {
       // TODO: handle exceptions and try with login
       setRegisterUrl(undefined);
       setConfig(newConfig);
-      setMainContext({
-        ...mainContext,
-        action: "add",
+      setSearchCtx({
+        ...searchCtx,
         activeUrl: newConfig.baseUrl
+      });
+      setMainCtx({
+        ...mainCtx,
+        action: "add"
       });
     } else if (typeof(sconfig.registerUrl) === "string") {
       setRegisterUrl(sconfig.registerUrl);
@@ -175,13 +175,14 @@ function SettingsImporter(props: Props) {
     setConfig(null);
     setLoadingStart(true);
     try {
-      return await handleStart_inner();
+      await handleStart_inner();
     } catch(errors) {
-      setConfig(oldConfig);
       console.error(errors);
+      setConfig(oldConfig);
       setMessage({ severity: "error", message: "error while registration" });
-    } finally {
-      setLoadingStart(false)
+      // in success case unmounted so this would be a noop
+      // because state is forgotten
+      setLoadingImport(false);
     }
   }
 
@@ -203,8 +204,8 @@ function SettingsImporter(props: Props) {
     }
     // const env = createEnvironment(newConfig.baseUrl);
     setConfig(newConfig);
-    setMainContext({
-      ...mainContext,
+    setMainCtx({
+      ...mainCtx,
       action: "add",
       activeUrl: newConfig.baseUrl
     });
@@ -214,19 +215,21 @@ function SettingsImporter(props: Props) {
     setConfig(null);
     setLoadingImport(true);
     try {
-      return await handleImport_inner();
+      await handleImport_inner();
     } catch (errors) {
-      setConfig(oldConfig);
       console.error(errors);
+      setConfig(oldConfig);
       setMessage({ severity: "error", message: "error while import" });
-    } finally {
-      setLoadingImport(false)
+      // in success case unmounted so this would be a noop
+      // because state is forgotten
+      setLoadingImport(false);
     }
   }
 
   React.useEffect(() => {
     document.addEventListener("secretgraph" as const, handleSecretgraphEvent);
-    return () => document.removeEventListener("secretgraph" as const, handleSecretgraphEvent);
+    return () =>
+      document.removeEventListener("secretgraph" as const, handleSecretgraphEvent)
   })
 
   return (
@@ -274,7 +277,7 @@ function SettingsImporter(props: Props) {
       </Snackbar>
       <Card>
         <CardContent>
-          <Card raised={true} className={mainContext.action === "start" ? null : classes.hidden}>
+          <Card raised={(mainCtx.action === "start")}>
             <CardContent>
               <Typography className={classes.title} color="textPrimary" gutterBottom paragraph>
                 {startHelp}
