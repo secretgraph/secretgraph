@@ -143,6 +143,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
 class ClusterMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
+        updateId = graphene.ID(required=False)
         cluster = ClusterInput(required=False)
         authorization = AuthList()
 
@@ -152,11 +153,14 @@ class ClusterMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, id=None, cluster=None, authorization=None
+        cls, root, info,
+        id=None, updateId=None, cluster=None, authorization=None
     ):
         if id:
             if not cluster:
-                raise ValueError()
+                raise ValueError("no cluster update data")
+            if not updateId:
+                raise ValueError("updateId required")
             result = id_to_result(
                 info.context, id, Cluster, "manage",
                 authset=authorization
@@ -209,6 +213,7 @@ class ContentMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         content = graphene.Field(ContentInput, required=True)
+        updateId = graphene.ID(required=False)
         authorization = AuthList()
         key = graphene.String(
             required=False,
@@ -222,10 +227,13 @@ class ContentMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, content, id=None, key=None, authorization=None
+        cls, root, info, content,
+        id=None, updateId=None, key=None, authorization=None
     ):
         required_keys = []
         if id:
+            if not updateId:
+                raise ValueError("updateId required")
             result = id_to_result(
                 info.context, id, Content, "update",
                 authset=authorization

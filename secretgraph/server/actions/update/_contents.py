@@ -144,11 +144,11 @@ def _update_or_create_content_or_key(
 
         def save_fn_value():
             content.file.delete(False)
-            content.updateid = uuid4()
+            content.updateId = uuid4()
             content.file.save("", objdata["value"])
     else:
         def save_fn_value():
-            content.updateid = uuid4()
+            content.updateId = uuid4()
             content.save()
 
     tags_dict = None
@@ -450,14 +450,14 @@ def create_content_fn(
 
 
 def update_content_fn(
-    request, content, objdata, updateid, key=None, authset=None,
+    request, content, objdata, updateId, key=None, authset=None,
     required_keys=None
 ):
     assert content.id
     try:
-        updateid = UUID(updateid)
+        updateId = UUID(updateId)
     except Exception:
-        raise ValueError("updateid is not an uuid")
+        raise ValueError("updateId is not an uuid")
     is_key = False
     # TODO: maybe allow updating both keys (only tags)
     if content.tags.filter(tag="type=PublicKey"):
@@ -500,7 +500,7 @@ def update_content_fn(
             context = context()
         with context:
             try:
-                Content.objects.get(id=content.id, updateid=updateid)
+                Content.objects.get(id=content.id, updateId=updateId)
             except ObjectDoesNotExist:
                 return {
                     "content": Content.objects.filter(id=content.id).first(),

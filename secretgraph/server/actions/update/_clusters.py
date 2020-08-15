@@ -41,11 +41,11 @@ def _update_or_create_cluster(
         cluster.public = len(public_secret_hashes) > 0
         if created:
             def cluster_save_fn():
-                cluster.updateid = uuid4()
+                cluster.updateId = uuid4()
                 cluster.publicInfo.save("", objdata["publicInfo"])
         else:
             def cluster_save_fn():
-                cluster.updateid = uuid4()
+                cluster.updateId = uuid4()
                 cluster.publicInfo.delete(False)
                 cluster.publicInfo.save("", objdata["publicInfo"])
     elif cluster.id is not None:
@@ -143,13 +143,13 @@ def create_cluster_fn(
 
 
 def update_cluster_fn(
-    request, cluster, objdata, updateid, user=None, authset=None
+    request, cluster, objdata, updateId, user=None, authset=None
 ):
     assert cluster.id
     try:
-        updateid = UUID(updateid)
+        updateId = UUID(updateId)
     except Exception:
-        raise ValueError("updateid is not an uuid")
+        raise ValueError("updateId is not an uuid")
     if user:
         cluster.user = user
 
@@ -162,7 +162,7 @@ def update_cluster_fn(
             context = context()
         with context:
             try:
-                Cluster.objects.get(id=cluster.id, updateid=updateid)
+                Cluster.objects.get(id=cluster.id, updateId=updateId)
             except ObjectDoesNotExist:
                 return {
                     "cluster": Cluster.objects.filter(id=cluster.id).first(),

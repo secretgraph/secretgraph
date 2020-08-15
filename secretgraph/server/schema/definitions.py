@@ -226,7 +226,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         name = "Content"
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'updated', 'cluster', 'contentHash'
+            'nonce', 'updated', 'cluster', 'contentHash', 'updateId'
         ]
     references = ContentReferenceConnectionField()
     referencedBy = ContentReferenceConnectionField()
@@ -395,7 +395,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Cluster
         name = "Cluster"
         interfaces = (relay.Node,)
-        fields = ['group']
+        fields = ['group', 'updateId']
     contents = ContentConnectionField()
     user = relay.GlobalID(required=False)
     publicInfo = graphene.String(required=False)

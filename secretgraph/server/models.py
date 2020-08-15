@@ -78,7 +78,9 @@ class Cluster(FlexidModel):
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
-    updateid: UUID = models.UUIDField(blank=True, default=uuid4)
+    updateId: UUID = models.UUIDField(
+        blank=True, default=uuid4, db_column="update_id"
+    )
     # injection group (which clusters should be injected)
     group: str = models.CharField(
         default="", max_length=10, blank=True, null=False,
@@ -120,7 +122,9 @@ class ContentManager(models.Manager):
 
 class Content(FlexidModel):
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
-    updateid: UUID = models.UUIDField(blank=True, default=uuid4)
+    updateId: UUID = models.UUIDField(
+        blank=True, default=uuid4, db_column="update_id"
+    )
     markForDestruction: dt = models.DateTimeField(
         null=True, blank=True,
         db_column="mark_for_destruction"
