@@ -5,6 +5,7 @@ __all__ = [
 import base64
 import json
 import logging
+from uuid import uuid4
 from email.parser import BytesParser
 
 import requests
@@ -206,6 +207,8 @@ def transfer_value(
                 ),
                 ignore_conflict=True
             )
+            content.updateId = uuid4()
+            content.save(update_fields=["updateId"])
     if transfer and verifiers:
         if not verify_signatures(
             hashes_remote,

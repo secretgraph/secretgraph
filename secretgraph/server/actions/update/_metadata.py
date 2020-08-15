@@ -5,6 +5,7 @@ __all__ = [
 ]
 
 import logging
+from uuid import uuid4
 import re
 from contextlib import nullcontext
 
@@ -339,6 +340,8 @@ def update_metadata_fn(
         if callable(context):
             context = context()
         with context:
+            content.updateId = uuid4()
+            content.save(update_fields=["updateId"])
             if final_tags is not None:
                 if operation in {
                     MetadataOperations.remove, MetadataOperations.replace
