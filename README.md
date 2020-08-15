@@ -18,12 +18,12 @@
 
 - js is not mature enough for web servers. Dependency hell with security holes.
 
+# Why id for updates
+- fixes problem with lost updates, especially for hot files like config
+
 
 # TODO
-
-* metadata updates:
-  * verify required_keys still in metadata
-  * allow transforming references
+* updateId in form
 * prekey implement form
 * simplify config url export (no private key anymore)
 * implement form with send for Message
@@ -34,4 +34,4 @@
 * cleanup, document server side encryption and allow disabling it (maybe remove it completely at some point)
   * specifying key allows to encrypt keys/values server side if nonce is not set
 * merge configuration client side in case of updates
-* maybe: encrypt some tags tags
+* maybe: encrypt some content tags, like name
