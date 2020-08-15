@@ -55,9 +55,7 @@ type SideBarHeaderProps = {
 type SideBarControlProps = {
   classes: any,
   theme: Theme,
-  config: ConfigInterface,
-  mainContext: MainContextInterface,
-  setMainContext: any
+  config: ConfigInterface
 };
 
 const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {

@@ -11,14 +11,12 @@ import NativeSelect from '@material-ui/core/NativeSelect';
 import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined';
 import { elements } from './elements';
 import { contentStates } from '../constants';
-import { MainContextInterface } from '../interfaces';
+import { MainContext } from '../contexts';
 
 
 type Props = {
   classes: any,
   theme: Theme,
-  mainContext: MainContextInterface,
-  setMainContext: any
 };
 
 function createOptionsIterator(mapObject: Map<string, any>) {
@@ -35,9 +33,10 @@ function createOptionsIterator(mapObject: Map<string, any>) {
 
 
 function ActionBar(props: Props) {
-  const { classes, theme, mainContext, setMainContext } = props;
+  const { classes, theme } = props;
   const [actionOpen, setActionOpen] = React.useState(false);
   const [actionWeakOpen, setActionWeakOpen] = React.useState(false);
+  const {mainCtx, setMainCtx} = React.useContext(MainContext);
 
   const addAction = () => {
     if (!actionOpen){
@@ -60,12 +59,12 @@ function ActionBar(props: Props) {
       <Toolbar className={classes.actionToolBarInner}>
         <Tooltip title="Select state of content" arrow>
           <NativeSelect
-            className={(mainContext.action === "help" || !mainContext.item) ? classes.hidden : classes.contentStateSelect}
-            onChange={(event: any) => setMainContext({
-              ...mainContext,
+            className={(mainCtx.action === "help" || !mainCtx.item) ? classes.hidden : classes.contentStateSelect}
+            onChange={(event: any) => setMainCtx({
+              ...mainCtx,
               state: event.target.value
             })}
-            value={mainContext.state || undefined}
+            value={mainCtx.state || undefined}
             children={
               createOptionsIterator(contentStates)
             }
@@ -73,7 +72,7 @@ function ActionBar(props: Props) {
         </Tooltip>
         <Tooltip title="Edit" arrow>
           <IconButton
-            className={!(mainContext.item && mainContext.action === "view") ? classes.hidden : classes.actionToolBarButton}
+            className={!(mainCtx.item && mainCtx.action === "view") ? classes.hidden : classes.actionToolBarButton}
             aria-label="edit"
           >
             <EditIcon />
@@ -81,13 +80,13 @@ function ActionBar(props: Props) {
         </Tooltip>
         <Tooltip title="Add Element" arrow>
           <NativeSelect
-            className={(actionWeakOpen || actionOpen || mainContext.action === "add") ? classes.newItemSelect : classes.hidden}
-            onChange={(event: any) => setMainContext({
-              ...mainContext,
+            className={(actionWeakOpen || actionOpen || mainCtx.action === "add") ? classes.newItemSelect : classes.hidden}
+            onChange={(event: any) => setMainCtx({
+              ...mainCtx,
               action: "add",
               item: event.target.value
             })}
-            value={mainContext.item || undefined}
+            value={mainCtx.item || undefined}
             children={
               createOptionsIterator(elements)
             }
@@ -95,7 +94,7 @@ function ActionBar(props: Props) {
         </Tooltip>
         <Tooltip title="Add" arrow>
           <IconButton
-            className={(actionWeakOpen || actionOpen || mainContext.action === "add") ? classes.hidden : classes.actionToolBarButton}
+            className={(actionWeakOpen || actionOpen || mainCtx.action === "add") ? classes.hidden : classes.actionToolBarButton}
             aria-label="add"
             onClick={addAction}
             onMouseEnter={() => setActionWeakOpen(true)}

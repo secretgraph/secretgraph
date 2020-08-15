@@ -6,12 +6,11 @@ import { themeComponent } from "../theme";
 
 type Props = {
   classes: any,
-  theme: Theme,
-  mainContext: any
+  theme: Theme
 };
 
 function Help(props: Props) {
-  const { classes, theme, mainContext } = props;
+  const { classes, theme } = props;
 
   return (
     <React.Fragment />

@@ -9,11 +9,9 @@ import { newClusterLabel } from "../../messages";
 type Props = {
   classes: any,
   theme: Theme,
-  mainContext: any,
-  setMainContext: any
 };
 export const viewSource = themeComponent((props: Props) => {
-  const { classes, theme, mainContext, setMainContext } = props;
+  const { classes, theme } = props;
 
   return (
     <div />
@@ -21,7 +19,7 @@ export const viewSource = themeComponent((props: Props) => {
 });
 
 export const editSource = themeComponent((props: Props) => {
-  const { classes, theme, mainContext, setMainContext } = props;
+  const { classes, theme } = props;
 
   return (
     <div />
