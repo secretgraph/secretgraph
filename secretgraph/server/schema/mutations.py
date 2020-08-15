@@ -148,6 +148,7 @@ class ClusterMutation(relay.ClientIDMutation):
 
     cluster = graphene.Field(ClusterNode)
     actionKey = graphene.String(required=False)
+    writeok = graphene.Boolean()
 
     @classmethod
     def mutate_and_get_payload(
@@ -217,6 +218,7 @@ class ContentMutation(relay.ClientIDMutation):
         )
 
     content = graphene.Field(ContentNode)
+    writeok = graphene.Boolean()
 
     @classmethod
     def mutate_and_get_payload(
@@ -279,7 +281,7 @@ class ContentMutation(relay.ClientIDMutation):
             except StopIteration:
                 pass
             returnval = cls(
-                content=update_content_fn(
+                **update_content_fn(
                     info.context,
                     content_obj,
                     content,
@@ -318,7 +320,7 @@ class ContentMutation(relay.ClientIDMutation):
             except StopIteration:
                 pass
             returnval = cls(
-                content=create_content_fn(
+                **create_content_fn(
                     info.context, content,
                     key=key,
                     required_keys=required_keys, authset=authorization

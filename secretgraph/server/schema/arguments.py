@@ -75,7 +75,7 @@ class ContentKeyInput(graphene.InputObjectType):
 class ReferenceInput(graphene.InputObjectType):
     target = graphene.ID(
         required=True,
-        description="Can be id, flexid of content or hash of key"
+        description="Can be node id, direct id of content or hash of key"
 
     )
     extra = graphene.String(required=False)

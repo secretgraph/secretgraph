@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime as dt
 from itertools import chain
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_der_public_key
@@ -78,6 +78,7 @@ class Cluster(FlexidModel):
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
+    updateid: UUID = models.UUIDField(blank=True, default=uuid4)
     # injection group (which clusters should be injected)
     group: str = models.CharField(
         default="", max_length=10, blank=True, null=False,
@@ -119,6 +120,7 @@ class ContentManager(models.Manager):
 
 class Content(FlexidModel):
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
+    updateid: UUID = models.UUIDField(blank=True, default=uuid4)
     markForDestruction: dt = models.DateTimeField(
         null=True, blank=True,
         db_column="mark_for_destruction"

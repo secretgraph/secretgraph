@@ -5,22 +5,24 @@ __all__ = [
 
 import base64
 import logging
-from itertools import chain
 from contextlib import nullcontext
+from itertools import chain
+from uuid import UUID, uuid4
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.db.models import OuterRef, Q, Subquery
-from graphql_relay import from_global_id
+from graphql_relay import from_global_id, to_global_id
 
 from ....utils.auth import id_to_result, initializeCachedResult
 from ....utils.encryption import default_padding, encrypt_into_file
 from ....utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag
 from ._actions import create_actions_fn
-from ._metadata import transform_tags, transform_references
+from ._metadata import transform_references, transform_tags
 
 logger = logging.getLogger(__name__)
 
@@ -142,9 +144,12 @@ def _update_or_create_content_or_key(
 
         def save_fn_value():
             content.file.delete(False)
+            content.updateid = uuid4()
             content.file.save("", objdata["value"])
     else:
-        save_fn_value = content.save
+        def save_fn_value():
+            content.updateid = uuid4()
+            content.save()
 
     tags_dict = None
     content_type = None
@@ -320,7 +325,7 @@ def _update_or_create_content_or_key(
 
         # create id tag after object was created or update it
         content.tags.update_or_create(
-            defaults={"tag": f"id={content.flexid}"},
+            defaults={"tag": "id=%s" % to_global_id(content.flexid)},
             tag__startswith="id="
         )
         if final_references is not None:
@@ -335,6 +340,7 @@ def _update_or_create_content_or_key(
                 final_references, "source", "target"
             ))
         actions_save_fn()
+        return content
     setattr(save_fn, "content", content)
     return save_fn
 
@@ -436,15 +442,22 @@ def create_content_fn(
             if callable(context):
                 context = context()
             with context:
-                return _save_fn()
+                return {
+                    "content": _save_fn(),
+                    "writeok": True
+                }
     return save_fn
 
 
 def update_content_fn(
-    request, content, objdata, key=None, authset=None,
+    request, content, objdata, updateid, key=None, authset=None,
     required_keys=None
 ):
     assert content.id
+    try:
+        updateid = UUID(updateid)
+    except Exception:
+        raise ValueError("updateid is not an uuid")
     is_key = False
     # TODO: maybe allow updating both keys (only tags)
     if content.tags.filter(tag="type=PublicKey"):
@@ -486,5 +499,15 @@ def update_content_fn(
         if callable(context):
             context = context()
         with context:
-            return func()
+            try:
+                Content.objects.get(id=content.id, updateid=updateid)
+            except ObjectDoesNotExist:
+                return {
+                    "content": Content.objects.filter(id=content.id).first(),
+                    "writeok": False
+                }
+            return {
+                "content": func(),
+                "writeok": True
+            }
     return save_fn

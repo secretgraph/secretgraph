@@ -98,42 +98,43 @@ export default themeComponent((appProps: SideBarItemsProps) => {
   }
 
   const render_item = (node: any) => {
-  let type = node.tags.find((flag: string) => flag.startsWith("type="));
-  let state = node.tags.find((flag: string) => flag.startsWith("state="));
-  if (type){
-      // split works different in js, so 2
-      type = type.split("=", 2)[1];
-  }
-  if (state){
-      // split works different in js, so 2
-      state = state.split("=", 2)[1];
-  }
-  let icon;
-  switch(type){
-      case "Message":
-      icon = (<MailIcon />);
-      break;
-      case "File":
-      icon = (<MovieIcon />);
-      break;
-      default:
-      icon = (<DescriptionIcon />);
-  }
-  return (
-      <ListItem button key={`${searchCtx.activeUrl}:${node.id}`}
-        onClick={() => setItem(node.id)}
-      >
-        <ListItemIcon>
-            {icon}
-        </ListItemIcon>
-        {state== "draft" ? <ListItemIcon><DraftsIcon /></ListItemIcon> : null}
-        <ListItemText primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
-      </ListItem>
-  );
+    console.log(node)
+    let type = node.tags.find((flag: string) => flag.startsWith("type="));
+    let state = node.tags.find((flag: string) => flag.startsWith("state="));
+    if (type){
+        // split works different in js, so 2
+        type = type.split("=", 2)[1];
+    }
+    if (state){
+        // split works different in js, so 2
+        state = state.split("=", 2)[1];
+    }
+    let icon;
+    switch(type){
+        case "Message":
+        icon = (<MailIcon />);
+        break;
+        case "File":
+        icon = (<MovieIcon />);
+        break;
+        default:
+        icon = (<DescriptionIcon />);
+    }
+    return (
+        <ListItem button key={`${searchCtx.activeUrl}:${node.id}`}
+          onClick={() => setItem(node)}
+        >
+          <ListItemIcon>
+              {icon}
+          </ListItemIcon>
+          {state== "draft" ? <ListItemIcon><DraftsIcon /></ListItemIcon> : null}
+          <ListItemText primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
+        </ListItem>
+    );
   }
 
   return (
-  <React.Fragment>
+    <React.Fragment>
       {data.contents.edges.map((edge: any) => render_item(edge.node))}
       <Divider />
       <ListItem button key={"loadmore"}
@@ -144,6 +145,6 @@ export default themeComponent((appProps: SideBarItemsProps) => {
       >
       <ListItemText primary={"Load more..."} />
       </ListItem>
-  </React.Fragment>
+    </React.Fragment>
   );
 });

@@ -2,8 +2,10 @@ __all__ = ["create_cluster_fn", "update_cluster_fn"]
 
 import os
 from contextlib import nullcontext
+from uuid import UUID, uuid4
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from rdflib import RDF, BNode, Graph
 
@@ -39,9 +41,11 @@ def _update_or_create_cluster(
         cluster.public = len(public_secret_hashes) > 0
         if created:
             def cluster_save_fn():
+                cluster.updateid = uuid4()
                 cluster.publicInfo.save("", objdata["publicInfo"])
         else:
             def cluster_save_fn():
+                cluster.updateid = uuid4()
                 cluster.publicInfo.delete(False)
                 cluster.publicInfo.save("", objdata["publicInfo"])
     elif cluster.id is not None:
@@ -68,20 +72,14 @@ def _update_or_create_cluster(
         if m_actions.intersection(public_secret_hashes):
             raise ValueError("\"manage\" action cannot be public")
 
-        def save_fn(context=nullcontext):
-            if callable(context):
-                context = context()
-            with context:
-                cluster_save_fn()
-                action_save_fn()
-                return cluster
+        def save_fn():
+            cluster_save_fn()
+            action_save_fn()
+            return cluster
     elif cluster.id is not None and not public_secret_hashes:
-        def save_fn(context=nullcontext):
-            if callable(context):
-                context = context()
-            with context:
-                cluster_save_fn()
-                return cluster
+        def save_fn():
+            cluster_save_fn()
+            return cluster
     else:
         raise ValueError("no actions for new cluster")
     return save_fn
@@ -136,18 +134,42 @@ def create_cluster_fn(
         with context:
             cluster = cluster_fn()
             content_fn()
-            return (
-                cluster,
-                action_key
-            )
+            return {
+                "cluster": cluster,
+                "actionKey": action_key,
+                "writeok": True
+            }
     return save_fn
 
 
-def update_cluster_fn(request, cluster, objdata, user=None, authset=None):
+def update_cluster_fn(
+    request, cluster, objdata, updateid, user=None, authset=None
+):
     assert cluster.id
+    try:
+        updateid = UUID(updateid)
+    except Exception:
+        raise ValueError("updateid is not an uuid")
     if user:
         cluster.user = user
 
-    return _update_or_create_cluster(
+    cluster_fn = _update_or_create_cluster(
         request, cluster, objdata, authset=authset
     )
+
+    def save_fn(context=nullcontext):
+        if callable(context):
+            context = context()
+        with context:
+            try:
+                Cluster.objects.get(id=cluster.id, updateid=updateid)
+            except ObjectDoesNotExist:
+                return {
+                    "cluster": Cluster.objects.filter(id=cluster.id).first(),
+                    "writeok": False
+                }
+            return {
+                "cluster": cluster_fn(),
+                "writeok": True
+            }
+    return save_fn
