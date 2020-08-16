@@ -50,9 +50,9 @@ graphene-file-upload = "*"
 django-extensions = '*'
 Werkzeug = '*'
 pylint = "*"
+rope = "*"
 django-webpack-loader = "*"
 django-fast-ratelimit = "*"
-rope = "*"
 
 
 [tool.poetry.extras]

@@ -136,7 +136,7 @@ description = "Fast ratelimit implementation with django caches"
 name = "django-fast-ratelimit"
 optional = false
 python-versions = ">=3.5"
-version = "0.5.0.2"
+version = "0.5.0.3"
 
 [package.dependencies]
 django = ">=2.0"
@@ -690,8 +690,8 @@ django-extensions = [
     {file = "django_extensions-3.0.5-py2.py3-none-any.whl", hash = "sha256:40d4b7aec7bbe66dda8704fbfaf2e1b7e04ec4aea6b10dcbd78d8af7c37bfddb"},
 ]
 django-fast-ratelimit = [
-    {file = "django-fast-ratelimit-0.5.0.2.tar.gz", hash = "sha256:f6262c2fbd1aa868893a95da669a7e1ca0d353b71e557c13411bc6946a4a2f71"},
-    {file = "django_fast_ratelimit-0.5.0.2-py3-none-any.whl", hash = "sha256:05786cea9d313b84739d60993c3e1a02382169c6a730d84a91a87586af56ae09"},
+    {file = "django-fast-ratelimit-0.5.0.3.tar.gz", hash = "sha256:f8e3dbfe97fda0a248d15d57fe3be2fa93965097dfc5164f07b681a5afbd63a0"},
+    {file = "django_fast_ratelimit-0.5.0.3-py3-none-any.whl", hash = "sha256:072c1e448fe11bae1df469f0271a8feb4fc349c910cc5d6cb445f994b9602b16"},
 ]
 django-mysql = [
     {file = "django-mysql-3.8.1.tar.gz", hash = "sha256:c47065b347a59ef1e1e4b7330f32a17ac37b5fc286f31409551ee9581047f22b"},
