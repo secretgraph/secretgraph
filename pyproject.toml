@@ -28,7 +28,6 @@ python = ">=3.6"
 django = '>=3.0'
 cryptography = "*"
 rdflib = '*'
-django-ranged-response = "*"
 
 
 requests = "*"
@@ -39,10 +38,10 @@ flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 django-mysql = {version="*", optional = true}
 psycopg2 = {version="*", optional = true}
-spkcspider-domainauth = {version=">=0.4", optional = true}
 django-webtest = {version="*", optional = true}
 WSGIProxy2 = {version="*", optional = true}
 django-webpack-loader = {version="*", optional = true}
+django-fast-ratelimit = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
@@ -52,16 +51,17 @@ django-extensions = '*'
 Werkzeug = '*'
 pylint = "*"
 django-webpack-loader = "*"
+django-fast-ratelimit = "*"
 rope = "*"
 
 
 [tool.poetry.extras]
-server = ["graphene-django", "graphene-file-upload"]
+server = ["graphene-django", "graphene-file-upload", "django-fast-ratelimit"]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
 mysql = ["mysqlclient", "django-mysql"]
 #tasks = ["celery", "sqlalchemy"]
-test = ["django-webtest", "WSGIProxy2", "graphene-django"]
+test = ["django-webtest", "WSGIProxy2", "graphene-django", "graphene-file-upload", "django-fast-ratelimit"]
 
 [tool.tox]
 legacy_tox_ini = """
