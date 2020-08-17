@@ -22,6 +22,7 @@ export const createContentMutation = gql`
         nonce
         link
       }
+      writeok
     }
   }
 `

@@ -55,6 +55,7 @@ export const createClusterMutation = gql`
           allowedTags
         }
       }
+      writeok
       actionKey
     }
   }
