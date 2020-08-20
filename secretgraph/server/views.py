@@ -13,8 +13,8 @@ from django.urls import reverse
 from django.views.generic.edit import FormView
 from graphene_file_upload.django import FileUploadGraphQLView
 
-from ..utils.auth import fetch_by_id, id_to_result
-from ..utils.encryption import iter_decrypt_contents
+from .utils.auth import fetch_by_id, id_to_result
+from .utils.encryption import iter_decrypt_contents
 from .actions.view import ContentFetchQueryset, fetch_contents
 from .forms import PushForm, UpdateForm, PreKeyForm
 from .models import Content

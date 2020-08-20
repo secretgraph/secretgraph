@@ -17,7 +17,7 @@ from django.db.models import Q
 from django.test import Client
 
 from ....constants import TransferResult
-from ....utils.conf import get_requests_params
+from ...utils.conf import get_requests_params
 from ...models import Content, ContentTag
 
 from ._verification import retrieve_signatures, verify_signatures

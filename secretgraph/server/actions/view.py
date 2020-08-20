@@ -4,7 +4,7 @@ from datetime import timedelta as td
 from django.db.models import Q, QuerySet, Subquery
 from django.utils import timezone
 
-from ...utils.auth import fetch_by_id
+from ..utils.auth import fetch_by_id
 from ..models import Content, ContentAction
 
 logger = logging.getLogger(__name__)

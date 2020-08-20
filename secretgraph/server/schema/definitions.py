@@ -7,7 +7,7 @@ from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
 
-from ...utils.auth import initializeCachedResult, fetch_by_id
+from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..messages import injection_group_help
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference

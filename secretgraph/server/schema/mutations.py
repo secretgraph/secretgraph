@@ -14,7 +14,7 @@ from django.utils import timezone
 from graphene import relay
 
 from ...constants import MetadataOperations, TransferResult
-from ...utils.auth import (
+from ..utils.auth import (
     fetch_by_id, id_to_result, initializeCachedResult, retrieve_allowed_objects
 )
 from ..actions.update import (

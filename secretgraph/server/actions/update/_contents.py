@@ -17,9 +17,9 @@ from django.core.files.base import ContentFile, File
 from django.db.models import OuterRef, Q, Subquery
 from graphql_relay import from_global_id, to_global_id
 
-from ....utils.auth import id_to_result, initializeCachedResult
-from ....utils.encryption import default_padding, encrypt_into_file
-from ....utils.misc import calculate_hashes, hash_object, refresh_fields
+from ...utils.auth import id_to_result, initializeCachedResult
+from ...utils.encryption import default_padding, encrypt_into_file
+from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag
 from ._actions import create_actions_fn
 from ._metadata import transform_references, transform_tags

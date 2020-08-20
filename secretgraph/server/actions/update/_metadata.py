@@ -13,8 +13,8 @@ from django.db.models import OuterRef, Q, Subquery
 from graphql_relay import from_global_id
 
 from ....constants import MetadataOperations
-from ....utils.auth import initializeCachedResult
-from ....utils.misc import hash_object
+from ...utils.auth import initializeCachedResult
+from ...utils.misc import hash_object
 from ...models import Content, ContentReference, ContentTag
 
 logger = logging.getLogger(__name__)

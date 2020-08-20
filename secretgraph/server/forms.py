@@ -9,7 +9,7 @@ from .widgets import ListWidget
 from .models import Content
 from .actions.update import create_content_fn
 from . import messages
-from ..utils.auth import initializeCachedResult
+from .utils.auth import initializeCachedResult
 
 
 class PushForm(forms.Form):

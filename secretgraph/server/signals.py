@@ -91,7 +91,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
 
 
 def regenerateKeyHash(sender, force=False, **kwargs):
-    from ..utils.misc import hash_object, calculate_hashes
+    from .utils.misc import hash_object, calculate_hashes
     from .models import Content, ContentTag
     contents = Content.objects.filter(
         tags__tag="type=PublicKey"

@@ -10,7 +10,7 @@ from django.core.files.base import ContentFile, File
 from rdflib import RDF, BNode, Graph
 
 from ....constants import sgraph_cluster
-from ....utils.misc import get_secrets, hash_object
+from ...utils.misc import get_secrets, hash_object
 from ...models import Cluster
 from ._actions import create_actions_fn
 from ._contents import create_key_fn

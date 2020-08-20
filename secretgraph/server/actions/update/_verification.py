@@ -12,7 +12,7 @@ from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Substr
 from django.test import Client
 
-from ....utils.conf import get_requests_params
+from ...utils.conf import get_requests_params
 from ...models import ContentTag
 
 logger = logging.getLogger(__name__)

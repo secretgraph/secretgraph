@@ -154,29 +154,31 @@ export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], ha
 export async function createContent(
   client: ApolloClient<any>,
   config: ConfigInterface,
-  cluster: string,
-  value: File | Blob,
-  pubkeys: CryptoKey[],
-  privkeys: CryptoKey[] = [],
-  tags: string[]=[],
-  contentHash: string | null = null,
-  references: ReferenceInterface[]=[],
-  actions: ActionInterface[]=[],
-  hashalgo?: string,
-  url?: string
+  options: {
+    cluster: string,
+    value: File | Blob,
+    pubkeys: CryptoKey[],
+    privkeys?: CryptoKey[],
+    tags: string[],
+    contentHash?: string | null,
+    references?: ReferenceInterface[] | null,
+    actions?: ActionInterface[],
+    hashAlgorithm?: string,
+    url?: string
+  }
 ) {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const nonceb64 = btoa(String.fromCharCode(... nonce));
   const key = crypto.getRandomValues(new Uint8Array(32));
-  let usedUrl: string;
-  if(url){
-    usedUrl=url;
+  let url: string;
+  if(options.url){
+    url=options.url;
   } else {
-    usedUrl=config.baseUrl;
+    url=config.baseUrl;
   }
 
   const encryptedContentPromise = Promise.all([
-    arrtogcmkey(key), value.arrayBuffer()
+    arrtogcmkey(key), options.value.arrayBuffer()
   ]).then(
     (arr) => crypto.subtle.encrypt(
       {
@@ -189,29 +191,29 @@ export async function createContent(
   );
 
   const actionkeys = createContentAuth(
-    config, [cluster], "manage", usedUrl
+    config, [options.cluster], "manage", url
   )[0] as string[]
 
-  const halgo = mapHashNames[hashalgo ? hashalgo : (await client.query(
+  const halgo = mapHashNames[options.hashAlgorithm ? options.hashAlgorithm : (await client.query(
     {query: serverConfigQuery}
   ) as any).data.secretgraphConfig.hashAlgorithms[0]];
 
-  const [referencesPromise, tagsPromise ] = encryptSharedKey(key, pubkeys, halgo);
+  const [referencesPromise, tagsPromise ] = encryptSharedKey(key, options.pubkeys, halgo);
   const referencesPromise2 = encryptedContentPromise.then(
-    (data) => hashContent(data, privkeys, halgo)
+    (data) => hashContent(data, options.privkeys ? options.privkeys : [], halgo)
   );
   const newTags: string[] = await tagsPromise;
   const newReferences: ReferenceInterface[] = await referencesPromise;
   return await client.mutate({
     mutation: createContentMutation,
     variables: {
-      cluster: cluster,
-      references: newReferences.concat(await referencesPromise2, references),
-      tags: newTags.concat(tags),
+      cluster: options.cluster,
+      references: newReferences.concat(await referencesPromise2, options.references ? options.references : []),
+      tags: newTags.concat(options.tags),
       nonce: nonceb64,
       value: await encryptedContentPromise.then((enc) => new File([enc], "value")),
-      actions: actions,
-      contentHash: contentHash,
+      actions: options.actions,
+      contentHash: options.contentHash ? options.contentHash : null,
       authorization: actionkeys
     }
   });
@@ -334,15 +336,15 @@ export async function initializeCluster(
     return await createContent(
       client,
       config,
-      clusterResult.cluster["id"],
-      new File([JSON.stringify(config)], "value"),
-      [publicKey],
-      [privateKey],
-      ["type=Config", "state=internal"],
-      digest,
-      undefined,
-      [],
-      config.hashAlgorithm
+      {
+        cluster: clusterResult.cluster["id"],
+        value: new File([JSON.stringify(config)], "value"),
+        pubkeys: [publicKey],
+        privkeys: [privateKey],
+        tags: ["type=Config", "state=internal"],
+        contentHash: digest,
+        hashAlgorithm: config.hashAlgorithm
+      }
     ).then(() => {
       return [config, clusterResult.cluster.id as string];
     })
