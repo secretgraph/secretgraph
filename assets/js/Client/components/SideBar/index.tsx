@@ -41,6 +41,7 @@ type SideBarProps = {
   mainCtx: MainContextInterface,
   setMainCtx: any,
   searchCtx: SearchContextInterface,
+  setSearchCtx: any,
   config: ConfigInterface
 };
 
@@ -178,7 +179,7 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
 
 class SideBar extends React.Component<SideBarProps> {
   render(){
-    const { classes, theme, openState, config, mainCtx, setMainCtx, searchCtx} = this.props;
+    const { classes, theme, openState, config, mainCtx, setMainCtx, searchCtx, setSearchCtx} = this.props;
     const closeButton = (
       <Hidden lgUp>
         <IconButton onClick={() => openState.setDrawerOpen(false)}>
@@ -197,12 +198,27 @@ class SideBar extends React.Component<SideBarProps> {
         <SideBarClusters
           activeUrl={searchCtx.activeUrl}
           authkeys={authkeys}
-          setItem={
-            (cluster: any) => setMainCtx({
-              ...mainCtx,
-              item: cluster.id,
-              action: "view"
-            })
+          setItemComponent={
+            (cluster: any) => {
+              setMainCtx({
+                ...mainCtx,
+                item: null,
+                action: "view"
+              });
+              setSearchCtx({
+                ...searchCtx,
+                cluster: cluster.id
+              });
+            }
+          }
+          setItemContent={
+            (content: any) => {
+              setMainCtx({
+                ...mainCtx,
+                item: content.id,
+                action: "view"
+              });
+            }
           }
         />
       );

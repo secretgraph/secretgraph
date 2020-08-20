@@ -325,7 +325,9 @@ def _update_or_create_content_or_key(
 
         # create id tag after object was created or update it
         content.tags.update_or_create(
-            defaults={"tag": "id=%s" % to_global_id(content.flexid)},
+            defaults={
+                "tag": "id=%s" % to_global_id("Content", content.flexid)
+            },
             tag__startswith="id="
         )
         if final_references is not None:

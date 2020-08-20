@@ -16,8 +16,8 @@ from django.db.models import Exists, OuterRef, Q, Subquery
 from graphql_relay import from_global_id
 from rdflib import Graph
 
-from ..constants import TransferResult
-from ..server.models import Content, ContentReference
+from ...constants import TransferResult
+from ..models import Content, ContentReference
 from .misc import get_secrets, hash_object
 
 logger = logging.getLogger(__name__)

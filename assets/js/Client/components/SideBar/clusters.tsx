@@ -2,13 +2,16 @@ import * as React from "react";
 import Divider from "@material-ui/core/Divider";
 import GroupWorkIcon from '@material-ui/icons/GroupWork';
 import { parse, graph } from 'rdflib';
+import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
+import Collapse from '@material-ui/core/Collapse';
 import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
 import { RDFS, CLUSTER } from "../../constants"
 import { themeComponent } from "../../theme";
+import { CapturingSuspense } from "../misc";
 import { ConfigInterface, SearchContextInterface } from "../../interfaces";
 const SideBarContents = React.lazy(() => import("./contents"));
 
@@ -18,6 +21,7 @@ type SideBarItemsProps = {
   theme: Theme,
   authkeys: string[],
   activeUrl: string,
+  activeCluster?: string,
   setItemComponent: any,
   setItemContent: any
 }
@@ -55,7 +59,7 @@ const clusterFeedQuery = gql`
 `
 
 export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, activeUrl, authkeys, setItemComponent, setItemContent } = appProps;
+  const { classes, theme, activeUrl, authkeys, setItemComponent, setItemContent, activeCluster } = appProps;
   let hasNextPage = true;
 
   const { data, fetchMore, loading } = useQuery(
@@ -93,12 +97,22 @@ export default themeComponent((appProps: SideBarItemsProps) => {
         }
         return (
           <ListItem button key={`${activeUrl}:${edge.node.id}`}
-            onClick={() => setItem(edge.node)}
+            onClick={() => setItemComponent(edge.node)}
           >
             <ListItemIcon>
               <GroupWorkIcon />
             </ListItemIcon>
             <ListItemText primary={label ? label : `...${edge.node.id.substr(-48)}`} title={comment} />
+            <Collapse in={(edge.node.id == activeCluster)} timeout="auto" unmountOnExit>
+              <CapturingSuspense>
+                <List component="div" disablePadding>
+                  <SideBarContents
+                    setItem={setItemContent}
+
+                  />
+                </List>
+              </CapturingSuspense>
+            </Collapse>
           </ListItem>
         );
       })}

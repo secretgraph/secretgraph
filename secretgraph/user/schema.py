@@ -12,7 +12,7 @@ from graphql_relay import from_global_id
 
 from ..server.actions.update import create_cluster_fn
 from ..server.models import Cluster, Content
-from .utils.auth import id_to_result, retrieve_allowed_objects
+from ..server.utils.auth import id_to_result, retrieve_allowed_objects
 
 
 class UserNode(DjangoObjectType):

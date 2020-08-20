@@ -10,16 +10,16 @@ import MailIcon from "@material-ui/icons/Mail";
 import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
 import { themeComponent } from "../../theme";
-import { SearchContextInterface } from "../../interfaces";
 import { elements } from "../elements";
+import { SearchContext } from "../../contexts";
 
 
 type SideBarItemsProps = {
   classes: any,
   theme: Theme,
-  searchCtx: SearchContextInterface,
   authkeys: string[],
-  setItem: any
+  setItem: any,
+  cluster?: string
 }
 
 
@@ -70,20 +70,21 @@ query SideBarContentFeedQuery(
 
 // ["type=", "state=", ...
 export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, authkeys, searchCtx, setItem } = appProps;
+  const { classes, theme, authkeys, setItem, cluster } = appProps;
+  const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
   let hasNextPage = true;
 
   const { data, fetchMore, loading } = useQuery(
   contentFeedQuery,
   {
-      variables: {
+    variables: {
       authorization: authkeys,
       include: searchCtx.include,
       exclude: searchCtx.exclude,
-      clusters: [searchCtx.cluster],
+      clusters: cluster ? [cluster] : null,
       count: 30,
       cursor: null
-      }
+    }
   }
   );
   if (loading) return null;

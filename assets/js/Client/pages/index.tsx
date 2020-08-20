@@ -72,6 +72,7 @@ function MainPage(props: Props) {
       <SideBar
         openState={{drawerOpen, setDrawerOpen}}
         searchCtx={searchCtx}
+        setSearchCtx={setSearchCtx}
         mainCtx={mainCtx}
         setMainCtx={setMainCtx}
         config={config}

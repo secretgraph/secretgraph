@@ -168,7 +168,7 @@ class ClusterMutation(relay.ClientIDMutation):
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError()
-            returnval = cls(cluster=update_cluster_fn(
+            returnval = cls(**update_cluster_fn(
                 cluster_obj, cluster, info.context
             )(transaction.atomic))
         else:
@@ -196,14 +196,14 @@ class ClusterMutation(relay.ClientIDMutation):
                 settings, "SECRETGRAPH_ALLOW_REGISTER", False
             ) is not True:
                 raise ValueError("Cannot register new cluster")
-            _cluster, action_key = create_cluster_fn(
+            _cluster_res = create_cluster_fn(
                 info.context, cluster, user=user
             )(transaction.atomic)
+            if _cluster_res.get("actionKey"):
+                _cluster_res["actionKey"] = \
+                    base64.b64encode(_cluster_res["actionKey"]).decode("ascii")
             returnval = cls(
-                cluster=_cluster,
-                actionKey=(
-                    action_key and base64.b64encode(action_key).decode("ascii")
-                )
+                **_cluster_res,
             )
         initializeCachedResult(info.context, authset=authorization)
         return returnval
