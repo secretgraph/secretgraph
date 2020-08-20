@@ -80,6 +80,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
       authorization: authkeys,
       include: searchCtx.include,
       exclude: searchCtx.exclude,
+      clusters: [searchCtx.cluster],
       count: 30,
       cursor: null
       }

@@ -10,6 +10,7 @@ import { gql, useQuery } from '@apollo/client';
 import { RDFS, CLUSTER } from "../../constants"
 import { themeComponent } from "../../theme";
 import { ConfigInterface, SearchContextInterface } from "../../interfaces";
+const SideBarContents = React.lazy(() => import("./contents"));
 
 
 type SideBarItemsProps = {
@@ -17,7 +18,8 @@ type SideBarItemsProps = {
   theme: Theme,
   authkeys: string[],
   activeUrl: string,
-  setItem: any
+  setItemComponent: any,
+  setItemContent: any
 }
 
 
@@ -26,6 +28,7 @@ const clusterFeedQuery = gql`
     $authorization: [String!]
     $include: [String!]
     $exclude: [String!]
+    $public: Boolean
     $count: Int
     $cursor: String
   ) {
@@ -33,9 +36,10 @@ const clusterFeedQuery = gql`
       authorization: $authorization,
       includeTags: $include,
       excludeTags: $exclude,
+      public: $public,
       first: $count,
       after: $cursor
-    ) @connection(key: "SideBar_clusters", filters:["include", "exclude"]) {
+    ) @connection(key: "SideBar_clusters", filters:["include", "exclude", "public"]) {
       edges {
         node {
           id
@@ -51,7 +55,7 @@ const clusterFeedQuery = gql`
 `
 
 export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, activeUrl, authkeys, setItem } = appProps;
+  const { classes, theme, activeUrl, authkeys, setItemComponent, setItemContent } = appProps;
   let hasNextPage = true;
 
   const { data, fetchMore, loading } = useQuery(

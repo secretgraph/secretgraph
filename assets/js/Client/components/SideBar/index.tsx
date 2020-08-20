@@ -32,7 +32,6 @@ import { elements } from "../elements";
 import { extract_authkeys } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
 const SideBarClusters = React.lazy(() => import("./clusters"));
-const SideBarContents = React.lazy(() => import("./contents"));
 
 
 type SideBarProps = {
@@ -194,35 +193,19 @@ class SideBar extends React.Component<SideBarProps> {
     let sideBarItems = null;
     if (config){
       const authkeys = extract_authkeys(config, searchCtx.activeUrl);
-      if(mainCtx.item == "cluster"){
-        sideBarItems = (
-          <SideBarClusters
-            activeUrl={searchCtx.activeUrl}
-            authkeys={authkeys}
-            setItem={
-              (cluster: any) => setMainCtx({
-                ...mainCtx,
-                item: cluster.id,
-                action: "view"
-              })
-            }
-          />
-        );
-      } else {
-        sideBarItems = (
-          <SideBarContents
-            searchCtx={searchCtx}
-            authkeys={authkeys}
-            setItem={
-              (node: any) => setMainCtx({
-                ...mainCtx,
-                item: node.id,
-                action: "view"
-              })
-            }
-          />
-        );
-      }
+      sideBarItems = (
+        <SideBarClusters
+          activeUrl={searchCtx.activeUrl}
+          authkeys={authkeys}
+          setItem={
+            (cluster: any) => setMainCtx({
+              ...mainCtx,
+              item: cluster.id,
+              action: "view"
+            })
+          }
+        />
+      );
     }
     return (
       <Drawer
