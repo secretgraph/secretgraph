@@ -129,6 +129,9 @@ export function secretgraphTheme(theme: Theme) {
       width: "100%",
       transform: 'rotate(180deg)',
     },
+    sideBarContentList: {
+      paddingLeft: theme.spacing(4),
+    },
     import_Wrapper: {
       display: "flex",
       flexDirection: "row" as const,

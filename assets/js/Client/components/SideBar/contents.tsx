@@ -11,7 +11,7 @@ import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
 import { themeComponent } from "../../theme";
 import { elements } from "../elements";
-import { SearchContext, ActiveUrlContext } from "../../contexts";
+import { SearchContext, ActiveUrlContext, MainContext } from "../../contexts";
 
 
 type SideBarItemsProps = {
@@ -101,7 +101,6 @@ export default themeComponent((appProps: SideBarItemsProps) => {
   }
 
   const render_item = (node: any) => {
-    console.log(node)
     let type = node.tags.find((flag: string) => flag.startsWith("type="));
     let state = node.tags.find((flag: string) => flag.startsWith("state="));
     if (type){
@@ -146,7 +145,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
           _loadMore();
       }}
       >
-      <ListItemText primary={"Load more..."} />
+      <ListItemText primary={"Load more contents..."} />
       </ListItem>
     </React.Fragment>
   );

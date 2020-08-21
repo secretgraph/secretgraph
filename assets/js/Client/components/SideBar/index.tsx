@@ -314,6 +314,7 @@ const SideBar = (props: SideBarProps) => {
     sideBarItems = (
       <SideBarClusters
         authkeys={authkeys}
+        activeCluster={searchCtx.cluster}
         setItemComponent={
           (cluster: any) => {
             setMainCtx({
