@@ -168,9 +168,9 @@ class ClusterMutation(relay.ClientIDMutation):
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError()
-            returnval = cls(**update_cluster_fn(
+            _cluster_res = update_cluster_fn(
                 cluster_obj, cluster, info.context
-            )(transaction.atomic))
+            )(transaction.atomic)
         else:
             user = None
             manage = retrieve_allowed_objects(
@@ -199,12 +199,12 @@ class ClusterMutation(relay.ClientIDMutation):
             _cluster_res = create_cluster_fn(
                 info.context, cluster, user=user
             )(transaction.atomic)
-            if _cluster_res.get("actionKey"):
-                _cluster_res["actionKey"] = \
-                    base64.b64encode(_cluster_res["actionKey"]).decode("ascii")
-            returnval = cls(
-                **_cluster_res,
-            )
+        if _cluster_res.get("actionKey"):
+            _cluster_res["actionKey"] = \
+                base64.b64encode(_cluster_res["actionKey"]).decode("ascii")
+        returnval = cls(
+            **_cluster_res,
+        )
         initializeCachedResult(info.context, authset=authorization)
         return returnval
 

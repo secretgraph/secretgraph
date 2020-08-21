@@ -56,6 +56,5 @@ export interface SearchContextInterface {
   cluster: null | string;
   include: string[];
   exclude: string[];
-  activeUrl: string;
   // environment: Environment | null;
 }

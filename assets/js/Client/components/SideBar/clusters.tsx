@@ -12,7 +12,7 @@ import { gql, useQuery } from '@apollo/client';
 import { RDFS, CLUSTER } from "../../constants"
 import { themeComponent } from "../../theme";
 import { CapturingSuspense } from "../misc";
-import { ConfigInterface, SearchContextInterface } from "../../interfaces";
+import { ActiveUrlContext } from "../../contexts";
 const SideBarContents = React.lazy(() => import("./contents"));
 
 
@@ -20,7 +20,6 @@ type SideBarItemsProps = {
   classes: any,
   theme: Theme,
   authkeys: string[],
-  activeUrl: string,
   activeCluster?: string,
   setItemComponent: any,
   setItemContent: any
@@ -59,8 +58,10 @@ const clusterFeedQuery = gql`
 `
 
 export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, activeUrl, authkeys, setItemComponent, setItemContent, activeCluster } = appProps;
+  const { classes, theme, authkeys, setItemComponent, setItemContent, activeCluster } = appProps;
   let hasNextPage = true;
+  let openCluster : any = null;
+  const {activeUrl} = React.useContext(ActiveUrlContext);
 
   const { data, fetchMore, loading } = useQuery(
     clusterFeedQuery,
@@ -84,6 +85,19 @@ export default themeComponent((appProps: SideBarItemsProps) => {
     })
   }
 
+  if (activeCluster){
+    openCluster = (
+      <CapturingSuspense>
+        <List component="div" disablePadding>
+          <SideBarContents
+            setItem={setItemContent}
+
+          />
+        </List>
+      </CapturingSuspense>
+    );
+  }
+
   return (
     <React.Fragment>
       {data.clusters.edges.map((edge: any) => {
@@ -93,7 +107,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
         let label: string=edge.node.id as string, comment: string="";
         if(results.length > 0) {
           label = results[0][0];
-          comment = results[0][0];
+          comment = results[0][1];
         }
         return (
           <ListItem button key={`${activeUrl}:${edge.node.id}`}
@@ -103,16 +117,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
               <GroupWorkIcon />
             </ListItemIcon>
             <ListItemText primary={label ? label : `...${edge.node.id.substr(-48)}`} title={comment} />
-            <Collapse in={(edge.node.id == activeCluster)} timeout="auto" unmountOnExit>
-              <CapturingSuspense>
-                <List component="div" disablePadding>
-                  <SideBarContents
-                    setItem={setItemContent}
-
-                  />
-                </List>
-              </CapturingSuspense>
-            </Collapse>
+            {(edge.node.id == activeCluster) ? openCluster : null}
           </ListItem>
         );
       })}

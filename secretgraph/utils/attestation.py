@@ -2,7 +2,6 @@ __all__ = ["AttestationChecker"]
 
 import base64
 import binascii
-import sqlite3
 from itertools import repeat
 
 from cryptography.exceptions import InvalidSignature
@@ -87,8 +86,8 @@ def _extract_only_hash(val, algo=None, check_hash=False):
 class AttestationChecker(object):
     con = None
 
-    def __init__(self, dbfile):
-        self.con = sqlite3.connect(dbfile)
+    def __init__(self, config):
+        self.config = config
         self.create()
 
     def __del__(self):

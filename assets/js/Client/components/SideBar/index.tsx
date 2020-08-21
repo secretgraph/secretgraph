@@ -7,9 +7,12 @@ import TextField from '@material-ui/core/TextField';
 import Hidden from '@material-ui/core/Hidden';
 import Divider from "@material-ui/core/Divider";
 import IconButton from "@material-ui/core/IconButton";
+import Button from '@material-ui/core/Button';
 import Autocomplete from '@material-ui/lab/Autocomplete';
+import Chip from '@material-ui/core/Chip';
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
+import Collapse from '@material-ui/core/Collapse';
 import Accordion from '@material-ui/core/Accordion';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
@@ -26,8 +29,8 @@ import DraftsIcon from '@material-ui/icons/Drafts';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../../theme";
-import { ConfigInterface, MainContextInterface, SearchContextInterface } from "../../interfaces";
-import { MainContext, SearchContext } from "../../contexts";
+import { ConfigInterface } from "../../interfaces";
+import { MainContext, SearchContext, ActiveUrlContext, ConfigContext } from "../../contexts";
 import { elements } from "../elements";
 import { extract_authkeys } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
@@ -38,17 +41,14 @@ type SideBarProps = {
   openState: any,
   classes: any,
   theme: Theme,
-  mainCtx: MainContextInterface,
-  setMainCtx: any,
-  searchCtx: SearchContextInterface,
-  setSearchCtx: any,
-  config: ConfigInterface
 };
 
 type SideBarHeaderProps = {
   classes: any,
   theme: Theme,
-  closeButton: any
+  closeButton: any,
+  headerExpanded: boolean,
+  setHeaderExpanded: any
 };
 
 
@@ -59,30 +59,143 @@ type SideBarControlProps = {
 };
 
 const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
-  const { classes, theme, closeButton } = props;
+  const { classes, theme, closeButton, headerExpanded, setHeaderExpanded } = props;
+  const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
+  const { config, setConfig } = React.useContext(ConfigContext);
+  const { searchCtx, setSearchCtx } = React.useContext(SearchContext);
   const headerElements = (
     <Autocomplete
+      onFocus={() => setHeaderExpanded(true)}
       className={classes.sideBarHeaderSelect}
-      options={[]}
+      freeSolo
+      value={activeUrl}
+      options={Object.keys(config ? config.clusters : {})}
+      disableClearable
+      onChange={(event: any, value: any, reason: string) => {
+        if(!value) return;
+        switch (reason) {
+          case "create-option":
+            if(config && !config.clusters[value]){
+              const newConfig = {
+                ...config,
+                clusters: {
+                  ...config.clusters
+                }
+              };
+              newConfig.clusters[value] = {};
+              setConfig(newConfig)
+            }
+            setActiveUrl(value);
+            break;
+          case "select-option":
+            setActiveUrl(value);
+            break;
+          case "remove-option":
+            if (config && config.clusters[value] && Object.keys(config.clusters[value]).length === 0){
+              const newConfig = {
+                ...config,
+                clusters: {
+                  ...config.clusters
+                }
+              };
+              delete newConfig.clusters[value];
+              setConfig(newConfig)
+            }
+        }
+      }}
       renderInput={(params) => (
         <TextField
           {...params}
-          label="Search content"
+          label="Set Url"
           variant="outlined"
-          inputProps={{
-            ...params.inputProps,
-            autoComplete: 'new-password', // disable autocomplete and autofill
-          }}
+          size="small"
+          margin="dense"
         />
       )}
     />
   );
   return (
-    <div className={classes.sideBarHeader}>
-      {theme.direction === "ltr" ? headerElements: null}
-      {closeButton}
-      {theme.direction === "rtl" ? headerElements: null}
-    </div>
+    <React.Fragment>
+      <div>
+        <div className={classes.sideBarHeader}>
+          {theme.direction === "ltr" ? headerElements: null}
+          {closeButton}
+          {theme.direction === "rtl" ? headerElements: null}
+        </div>
+        <Button
+          className={classes.sideBarHeaderExpandButton}
+          onClick={() => setHeaderExpanded(!headerExpanded)}
+          size="small"
+        >
+          <ExpandMoreIcon
+            className={headerExpanded ? classes.sideBarHeaderExpandButtonIconExpanded : classes.sideBarHeaderExpandButtonIcon}
+          />
+        </Button>
+      </div>
+      <Collapse in={headerExpanded} timeout="auto" unmountOnExit>
+        <List>
+          <ListItem>
+            <Autocomplete
+              multiple
+              value={searchCtx.include}
+              freeSolo
+              fullWidth
+              options={searchCtx.include}
+              onChange={(event: any, value: any, reason: string) => {
+                if(!value) return;
+                setSearchCtx({...searchCtx, include:value});
+              }}
+              renderTags={(value: string[], getTagProps: any) =>
+                value.map((option: string, index: number) => (
+                  <Chip
+                  size="small" variant="outlined" label={option} {...getTagProps({ index })} />
+                ))
+              }
+              renderInput={(params: any) => (
+                <TextField
+                  {...params}
+                  label="Include Tags"
+                  variant="outlined"
+                  size="small"
+                  margin="dense"
+                  multiline
+                />
+              )}
+            />
+          </ListItem>
+          <ListItem>
+            <Autocomplete
+              multiple
+              value={searchCtx.exclude}
+              freeSolo
+              fullWidth
+              options={searchCtx.exclude}
+              id="tags-excluded"
+              onChange={(event: any, value: any, reason: string) => {
+                if(!value) return;
+                setSearchCtx({...searchCtx, exclude: value});
+              }}
+              renderTags={(value: string[], getTagProps: any) =>
+                value.map((option: string, index: number) => (
+                  <Chip size="small" variant="outlined" label={option} {...getTagProps({ index })} />
+                ))
+              }
+              renderInput={(params: any) => (
+                <TextField
+                  {...params}
+                  label="Exclude tags"
+                  variant="outlined"
+                  size="small"
+                  margin="dense"
+                  multiline
+                  value={activeUrl}
+                />
+              )}
+            />
+          </ListItem>
+        </List>
+      </Collapse>
+    </React.Fragment>
   )
 })
 
@@ -98,7 +211,7 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
         aria-controls="Control-content"
         id="Control-header"
       >
-        <Typography className={classes.heading}>Control</Typography>
+        <Typography className={classes.heading}>Shortcuts</Typography>
       </AccordionSummary>
       <AccordionDetails>
         <List>
@@ -177,79 +290,83 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
 });
 
 
-class SideBar extends React.Component<SideBarProps> {
-  render(){
-    const { classes, theme, openState, config, mainCtx, setMainCtx, searchCtx, setSearchCtx} = this.props;
-    const closeButton = (
-      <Hidden lgUp>
-        <IconButton onClick={() => openState.setDrawerOpen(false)}>
-          {theme.direction === "ltr" ? (
-            <ChevronLeftIcon />
-          ) : (
-            <ChevronRightIcon />
-          )}
-        </IconButton>
-      </Hidden>
-    );
-    let sideBarItems = null;
-    if (config){
-      const authkeys = extract_authkeys(config, searchCtx.activeUrl);
-      sideBarItems = (
-        <SideBarClusters
-          activeUrl={searchCtx.activeUrl}
-          authkeys={authkeys}
-          setItemComponent={
-            (cluster: any) => {
-              setMainCtx({
-                ...mainCtx,
-                item: null,
-                action: "view"
-              });
-              setSearchCtx({
-                ...searchCtx,
-                cluster: cluster.id
-              });
-            }
+const SideBar = (props: SideBarProps) => {
+  const { classes, theme, openState} = props;
+  const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
+  const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
+  const { mainCtx, setMainCtx } = React.useContext(MainContext)
+  const { config, setConfig } = React.useContext(ConfigContext)
+  const [headerExpanded, setHeaderExpanded] = React.useState(false);
+  const closeButton = (
+    <Hidden lgUp>
+      <IconButton onClick={() => openState.setDrawerOpen(false)}>
+        {theme.direction === "ltr" ? (
+          <ChevronLeftIcon />
+        ) : (
+          <ChevronRightIcon />
+        )}
+      </IconButton>
+    </Hidden>
+  );
+  let sideBarItems = null;
+  if (config){
+    const authkeys = extract_authkeys(config, activeUrl);
+    sideBarItems = (
+      <SideBarClusters
+        authkeys={authkeys}
+        setItemComponent={
+          (cluster: any) => {
+            setMainCtx({
+              ...mainCtx,
+              item: null,
+              action: "view"
+            });
+            setSearchCtx({
+              ...searchCtx,
+              cluster: cluster.id
+            });
+            setHeaderExpanded(false);
           }
-          setItemContent={
-            (content: any) => {
-              setMainCtx({
-                ...mainCtx,
-                item: content.id,
-                action: "view"
-              });
-            }
+        }
+        setItemContent={
+          (content: any) => {
+            setMainCtx({
+              ...mainCtx,
+              item: content.id,
+              action: "view"
+            });
+            setHeaderExpanded(false);
           }
-        />
-      );
-    }
-    return (
-      <Drawer
-        className={classes.drawer}
-        variant="persistent"
-        anchor={theme.direction === 'ltr' ? 'left' : 'right'}
-        open={openState.drawerOpen}
-        classes={{
-          paper: classes.drawerPaper,
-        }}
-      >
-        <SideBarHeader closeButton={closeButton} />
-        <Divider />
-        <div className={classes.sideBarBody}>
-          <SideBarControl/>
-          <List>
-          <CapturingSuspense>
-            {sideBarItems}
-          </CapturingSuspense>
-          </List>
-        </div>
-      </Drawer>
+        }
+      />
     );
   }
-
-  componentDidCatch(error: any, info: any) {
-    console.error(error, info);
-  }
+  return (
+    <Drawer
+      className={classes.drawer}
+      variant="persistent"
+      anchor={theme.direction === 'ltr' ? 'left' : 'right'}
+      open={openState.drawerOpen}
+      classes={{
+        paper: classes.drawerPaper,
+      }}
+    >
+      <SideBarHeader
+        closeButton={closeButton}
+        headerExpanded={headerExpanded}
+        setHeaderExpanded={setHeaderExpanded}
+      />
+      <Divider />
+      <div className={classes.sideBarBody}>
+        <List>
+        <CapturingSuspense>
+          {sideBarItems}
+        </CapturingSuspense>
+        </List>
+        <SideBarControl/>
+      </div>
+    </Drawer>
+  );
 }
 
 export default themeComponent(SideBar);

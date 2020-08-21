@@ -3,14 +3,14 @@ import { ApolloProvider } from "@apollo/client";
 import { Theme } from "@material-ui/core/styles";
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
-import SideBar from "../components/SideBar";
 import { themeComponent } from "../theme";
 import { elements } from '../components/elements';
 import { CapturingSuspense } from '../components/misc';
 import { loadConfigSync } from '../utils/config';
 import { createClient } from '../utils/graphql';
 import { MainContextInterface, SearchContextInterface } from '../interfaces';
-import { MainContext, SearchContext, ConfigContext } from '../contexts';
+import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
+const SideBar = React.lazy(() => import('../components/SideBar'));
 const SettingsImporter = React.lazy(() => import('./SettingsImporter'));
 const Help = React.lazy(() => import('./Help'));
 const DocumentViewer = React.lazy(() => import('./DocumentViewer'));
@@ -37,9 +37,9 @@ function MainPage(props: Props) {
   const [searchCtx, setSearchCtx] = React.useState({
     "cluster": null,
     "include": [],
-    "exclude": [],
-    "activeUrl": config ? config.baseUrl : defaultPath
+    "exclude": []
   } as SearchContextInterface);
+  const [activeUrl, setActiveUrl] = React.useState((config ? config.baseUrl : defaultPath) as string)
   let frameElement = null;
   switch(mainCtx.action){
     case "view":
@@ -69,41 +69,40 @@ function MainPage(props: Props) {
   let sidebar = null;
   if (config){
     sidebar = (
-      <SideBar
-        openState={{drawerOpen, setDrawerOpen}}
-        searchCtx={searchCtx}
-        setSearchCtx={setSearchCtx}
-        mainCtx={mainCtx}
-        setMainCtx={setMainCtx}
-        config={config}
-      />
+      <CapturingSuspense>
+        <SideBar
+          openState={{drawerOpen, setDrawerOpen}}
+        />
+      /</CapturingSuspense>
     );
   }
 
   return (
-    <MainContext.Provider value={{mainCtx, setMainCtx}}>
-      <SearchContext.Provider value={{searchCtx, setSearchCtx}}>
-        <ConfigContext.Provider value={{config, setConfig}}>
-          <ApolloProvider client={createClient(searchCtx.activeUrl)}>
-            <div className={classes.root}>
-              <HeaderBar
-                openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
-              />
-              {sidebar}
-              <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
-                <ActionBar
+    <ActiveUrlContext.Provider value={{activeUrl, setActiveUrl}}>
+      <MainContext.Provider value={{mainCtx, setMainCtx}}>
+        <SearchContext.Provider value={{searchCtx, setSearchCtx}}>
+          <ConfigContext.Provider value={{config, setConfig}}>
+            <ApolloProvider client={createClient(activeUrl)}>
+              <div className={classes.root}>
+                <HeaderBar
+                  openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
                 />
-                <section className={classes.mainSection}>
-                  <CapturingSuspense>
-                    {frameElement}
-                  </CapturingSuspense>
-                </section>
-              </main>
-            </div>
-          </ApolloProvider>
-        </ConfigContext.Provider>
-      </SearchContext.Provider>
-    </MainContext.Provider>
+                {sidebar}
+                <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
+                  <ActionBar
+                  />
+                  <section className={classes.mainSection}>
+                    <CapturingSuspense>
+                      {frameElement}
+                    </CapturingSuspense>
+                  </section>
+                </main>
+              </div>
+            </ApolloProvider>
+          </ConfigContext.Provider>
+        </SearchContext.Provider>
+      </MainContext.Provider>
+    </ActiveUrlContext.Provider>
   );
 };
 

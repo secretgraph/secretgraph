@@ -117,6 +117,31 @@ export function secretgraphTheme(theme: Theme) {
     buttonProgress: {
       color: "primary",
     },
+    sideBarHeaderExpandButton: {
+      width: "100%",
+    },
+    sideBarHeaderExpandButtonIcon: {
+      transition: theme.transitions.create('transform', {
+        duration: theme.transitions.duration.shortest,
+      }),
+    },
+    sideBarHeaderExpandButtonIconExpanded: {
+      width: "100%",
+      transform: 'rotate(180deg)',
+    },
+    import_Wrapper: {
+      display: "flex",
+      flexDirection: "row" as const,
+      alignItems: "stretch"
+    },
+    import_Item: {
+      padding: theme.spacing(0, 1),
+      textAlign: "center" as const
+    },
+    import_Url: {
+      flexGrow: 1,
+      padding: theme.spacing(0, 1),
+    }
   }
 }
 

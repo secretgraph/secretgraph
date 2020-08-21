@@ -11,7 +11,7 @@ import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
 import { themeComponent } from "../../theme";
 import { elements } from "../elements";
-import { SearchContext } from "../../contexts";
+import { SearchContext, ActiveUrlContext } from "../../contexts";
 
 
 type SideBarItemsProps = {
@@ -72,6 +72,7 @@ query SideBarContentFeedQuery(
 export default themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, authkeys, setItem, cluster } = appProps;
   const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
+  const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
   let hasNextPage = true;
 
   const { data, fetchMore, loading } = useQuery(
@@ -123,7 +124,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
         icon = (<DescriptionIcon />);
     }
     return (
-        <ListItem button key={`${searchCtx.activeUrl}:${node.id}`}
+        <ListItem button key={`${activeUrl}:${node.id}`}
           onClick={() => setItem(node)}
         >
           <ListItemIcon>

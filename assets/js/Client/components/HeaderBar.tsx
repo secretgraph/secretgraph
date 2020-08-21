@@ -111,7 +111,10 @@ function HeaderBar(props: Props) {
   const exportSettingsOpener = async () => {
     if (!config) return;
     const encryptingPw = (document.getElementById("secretgraph-export-pw") as HTMLInputElement | undefined)?.value;
-    let _exportUrl = await exportConfigAsUrl(client, config, encryptingPw);
+    let _exportUrl;
+    try{
+      _exportUrl = await exportConfigAsUrl(client, config, encryptingPw);
+    }catch(exc){}
 
     setExportUrl(_exportUrl ? _exportUrl as string : "");
     setMenuOpen(false);

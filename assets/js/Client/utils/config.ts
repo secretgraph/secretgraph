@@ -209,7 +209,7 @@ export async function exportConfig(config: ConfigInterface | string, pws?: strin
       ).then((data) => btoa(String.fromCharCode(...new Uint8Array(data)))),
       iterations: iterations,
       nonce: btoa(String.fromCharCode(... mainnonce)),
-      prekeys: Promise.all(prekeys)
+      prekeys: await Promise.all(prekeys)
     });
   } else {
     newConfig = config;

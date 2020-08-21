@@ -35,7 +35,7 @@ import { loadConfig } from "../utils/config";
 import { createClient, initializeCluster } from "../utils/graphql";
 import { serverConfigQuery } from "../queries/server"
 import { mapHashNames } from "../constants"
-import { MainContext, SearchContext, ConfigContext } from '../contexts';
+import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
 
 type Props = {
   classes: any,
@@ -46,10 +46,15 @@ function Alert(props: any) {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
 
-function hasImportInput() {
+function checkInputs(needsPw: boolean, hasPw: boolean) {
   return (
-    !(document.getElementById("secretgraph-import-url") as HTMLInputElement)?.value &&
-    !(document.getElementById("secretgraph-import-file") as HTMLInputElement)?.files
+    (document.getElementById("secretgraph-import-url") as HTMLInputElement)?.value ||
+    (
+      (document.getElementById("secretgraph-import-file") as HTMLInputElement)?.files &&
+      (
+        !needsPw || hasPw
+      )
+    )
   )
 }
 
@@ -58,6 +63,8 @@ function SettingsImporter(props: Props) {
   const [registerUrl, setRegisterUrl] = React.useState(undefined);
   const [loadingStart, setLoadingStart] = React.useState(false);
   const [loadingImport, setLoadingImport] = React.useState(false);
+  const [needsPw, setNeedsPw] = React.useState(false);
+  const [hasPw, setHasPw] = React.useState(false);
   const [oldConfig, setOldConfig] = React.useState(null) as [ConfigInterface | null, any];
   const [loginUrl, setLoginUrl] = React.useState(undefined);
   const [message, setMessage] = React.useState(undefined) as [SnackMessageInterface | undefined, any];
@@ -66,6 +73,7 @@ function SettingsImporter(props: Props) {
   const defaultPath: string | undefined = mainElement ? mainElement.dataset.graphqlPath : undefined;
   const {mainCtx, setMainCtx} = React.useContext(MainContext);
   const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
+  const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
   const {config, setConfig} = React.useContext(ConfigContext);
 
   const handleSecretgraphEvent_inner = async (event: any) => {
@@ -73,18 +81,21 @@ function SettingsImporter(props: Props) {
     let newConfig: ConfigInterface | null = null;
     const client = createClient(providerUrl);
     if (!client) {
+      setLoadingImport(false);
       return;
     }
     const result: any = await client.query(
       {query: serverConfigQuery}
     );
     if (!result){
+      setLoadingImport(false);
       return;
     }
     const sconfig = result.data.secretgraphConfig;
     const hashAlgo = mapHashNames[sconfig.hashAlgorithms[0]];
     if (!hashAlgo){
       setMessage({ severity: "warning", message: "unsupported hash algorithm" });
+      setLoadingImport(false);
       return
     }
     if (event.pingCreate){
@@ -100,10 +111,12 @@ function SettingsImporter(props: Props) {
       await initializeCluster(client, newConfig);
     }
     if (!newConfig){
+      setLoadingImport(false);
       return;
     }
     setConfig(newConfig);
     setRegisterUrl(undefined);
+    setActiveUrl(newConfig.baseUrl);
     setMainCtx({
       ...mainCtx,
       action: "add"
@@ -156,10 +169,7 @@ function SettingsImporter(props: Props) {
       // TODO: handle exceptions and try with login
       setRegisterUrl(undefined);
       setConfig(newConfig);
-      setSearchCtx({
-        ...searchCtx,
-        activeUrl: newConfig.baseUrl
-      });
+      setActiveUrl(newConfig.baseUrl);
       setMainCtx({
         ...mainCtx,
         action: "add"
@@ -200,14 +210,15 @@ function SettingsImporter(props: Props) {
         return;
       } else {*/
       setMessage({ severity: "error", message: "Configuration is invalid" });
+      setLoadingImport(false);
       return;
     }
     // const env = createEnvironment(newConfig.baseUrl);
     setConfig(newConfig);
+    setActiveUrl(newConfig.baseUrl);
     setMainCtx({
       ...mainCtx,
       action: "add",
-      activeUrl: newConfig.baseUrl
     });
   }
   const handleImport = async () => {
@@ -308,50 +319,72 @@ function SettingsImporter(props: Props) {
           <Typography className={classes.title} color="textPrimary" gutterBottom paragraph>
             {importHelp}
           </Typography>
-          <FormControl>
-            <input
-              disabled={loadingStart || loadingImport}
-              className={classes.hidden}
-              type="file"
-              id="secretgraph-import-file"
-              aria-describedby="secretgraph-import-file-help"
-              onChange={
-                () => {
-                  (document.getElementById("secretgraph-import-url") as HTMLInputElement).value="";
-                  setHasFile(true);
+          <div className={classes.import_Wrapper}>
+            <FormControl className={classes.import_Item}>
+              <input
+                disabled={loadingStart || loadingImport}
+                className={classes.hidden}
+                type="file"
+                id="secretgraph-import-file"
+                aria-describedby="secretgraph-import-file-help"
+                onChange={
+                  async () => {
+                    (document.getElementById("secretgraph-import-url") as HTMLInputElement).value="";
+                    const importFiles: FileList | null = (document.getElementById("secretgraph-import-file") as HTMLInputElement).files;
+                    try {
+                      if(importFiles){
+                        setNeedsPw(!!(JSON.parse(await importFiles[0].text()).prekeys));
+                        setHasFile(true);
+                      } else {
+                        throw Error();
+                      }
+                    } catch(exc){
+                      setHasFile(false);
+                    }
+                  }
                 }
-              }
-            />
-            <label htmlFor="secretgraph-import-file">
-              <Button
-                variant="contained"
-                component="span"
-                color="primary"
-                disabled={loadingStart || loadingImport }
-                endIcon={
-                  hasFile ? <CheckIcon/> : <SystemUpdateAltIcon/>
+              />
+              <label htmlFor="secretgraph-import-file">
+                <Button
+                  variant="contained"
+                  component="span"
+                  color="primary"
+                  disabled={loadingStart || loadingImport }
+                  endIcon={
+                    hasFile ? <CheckIcon/> : <SystemUpdateAltIcon/>
+                  }
+                >
+                  Import from File
+                </Button>
+              </label>
+              <FormHelperText id="secretgraph-import-file-help">{importFileLabel}</FormHelperText>
+            </FormControl>
+            <div className={classes.import_Item}>or</div>
+            <FormControl className={classes.import_Url}>
+              <TextField
+                disabled={loadingStart || loadingImport} onChange={
+                  (event) => {
+                    setHasFile(event.target.value ? false : true);
+                    setNeedsPw(true);
+                  }
                 }
-              >
-                Import from File
-              </Button>
-            </label>
-            <FormHelperText id="secretgraph-import-file-help">{importFileLabel}</FormHelperText>
-          </FormControl>
-          <TextField
-            disabled={loadingStart || loadingImport} onChange={
-              (event) => {
-                setHasFile(event.target.value ? false : true);
-              }
-            }
-            fullWidth={true}
-            variant="outlined"
-            label="Import from url"
-            id="secretgraph-import-url"
-          />
-          <FormControl className={classes.hidden}>
+                fullWidth={true}
+                variant="outlined"
+                size="small"
+                placeholder="Import from url"
+                id="secretgraph-import-url"
+              />
+              <FormHelperText id="secretgraph-import-url-help">Import from url</FormHelperText>
+            </FormControl>
+          </div>
+          <FormControl className={needsPw ? null : classes.hidden}>
             <TextField
               variant="outlined"
-              disabled={loadingStart || loadingImport}
+              disabled={loadingStart || loadingImport} onChange={
+                (event) => {
+                  setHasPw(event.target.value ? true : false);
+                }
+              }
               label={decryptingPasswordLabel}
               id="secretgraph-decrypting"
               inputProps={{ 'aria-describedby': "secretgraph-decrypting-help" }}
@@ -362,7 +395,7 @@ function SettingsImporter(props: Props) {
         </CardContent>
         <CardActions>
           <Button size="small" variant="contained" color="primary"
-            disabled={loadingStart || loadingImport || hasImportInput()}
+            disabled={loadingStart || loadingImport || !checkInputs(needsPw, hasPw)}
             onClick={handleImport}>
               {importStartLabel}
               {(loadingImport) && <CircularProgress size={24} className={classes.buttonProgress} />}
