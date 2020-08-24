@@ -130,7 +130,11 @@ export function secretgraphTheme(theme: Theme) {
       transform: 'rotate(180deg)',
     },
     sideBarContentList: {
-      paddingLeft: theme.spacing(4),
+      paddingLeft: theme.spacing(4)
+    },
+    sideBarEntry: {
+      overflowWrap: 'anywhere' as const,
+      wordWrap: 'break-word' as const
     },
     import_Wrapper: {
       display: "flex",

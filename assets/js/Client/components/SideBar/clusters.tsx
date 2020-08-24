@@ -106,7 +106,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
         if (edge.node.id === activeCluster) {
           return (
             <React.Fragment>
-              <ListSubheader title={comment}>{label ? label : `...${edge.node.id.substr(-48)}`}</ListSubheader>
+              <ListSubheader key={`${activeUrl}:cluster:header:${edge.node.id}`} className={classes.sideBarEntry} title={comment}>{label ? label : `...${edge.node.id.substr(-48)}`}</ListSubheader>
               <CapturingSuspense>
                 <List dense component="div" className={classes.sideBarContentList} disablePadding>
                   <SideBarContents
@@ -119,13 +119,13 @@ export default themeComponent((appProps: SideBarItemsProps) => {
           );
         } else {
           return (
-            <ListItem button key={`${activeUrl}:${edge.node.id}`}
+            <ListItem button key={`${activeUrl}:cluster:entry:${edge.node.id}`}
               onClick={() => setItemComponent(edge.node)}
             >
               <ListItemIcon>
                 <GroupWorkIcon />
               </ListItemIcon>
-              <ListItemText primary={label ? label : `...${edge.node.id.substr(-48)}`} title={comment} />
+              <ListItemText className={classes.sideBarEntry} primary={label ? label : `...${edge.node.id.substr(-48)}`} title={comment} />
               {(edge.node.id !== activeCluster) ? <ExpandMoreIcon/> : null}
             </ListItem>
           );
@@ -134,7 +134,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
       })}
 
       <Divider />
-      <ListItem button key={"loadmore"}
+      <ListItem button key={`${activeUrl}:cluster:loadmore`}
         disabled={(loading || !hasNextPage)}
         onClick={() => {
           _loadMore();

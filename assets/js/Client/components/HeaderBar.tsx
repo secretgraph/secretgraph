@@ -22,7 +22,7 @@ import { themeComponent } from "../theme";
 import { exportConfig, exportConfigAsUrl } from "../utils/config";
 import { elements } from './elements';
 import { serverConfigQuery } from "../queries/server";
-import { MainContext, ConfigContext } from '../contexts';
+import { MainContext, ConfigContext, ActiveItemContext } from '../contexts';
 
 import {
   encryptingPasswordLabel,
@@ -45,6 +45,7 @@ function HeaderBar(props: Props) {
   const [loadingExport, setLoadingExport] = React.useState(false);
   const {mainCtx, setMainCtx} = React.useContext(MainContext);
   const {config, setConfig} = React.useContext(ConfigContext);
+  const {activeItem, setActiveItem} = React.useContext(ActiveItemContext);
   let title: string, documenttitle: string;
   let client: any = null;
   try {
@@ -52,16 +53,16 @@ function HeaderBar(props: Props) {
   } catch(exc) {}
   switch (mainCtx.action){
     case "add":
-      let temp = elements.get(mainCtx.item as string);
+      let temp = elements.get(activeItem as string);
       title = `Add: ${temp ? temp.label : 'unknown'}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "update":
-      title = `Update: ${mainCtx.item}`;
+      title = `Update: ${activeItem}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "help":
-      title = `Help: ${mainCtx.item}`;
+      title = `Help: ${activeItem}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "start":
@@ -76,7 +77,7 @@ function HeaderBar(props: Props) {
       if (mainCtx.title) {
         title = mainCtx.title as string;
       } else {
-        title = mainCtx.item as string;
+        title = activeItem as string;
       }
       documenttitle = `Secretgraph: ${title}`;
       break;

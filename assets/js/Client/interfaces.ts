@@ -47,7 +47,6 @@ export interface SnackMessageInterface {
 
 export interface MainContextInterface {
   action: string;
-  item: null | string;
   title: null | string;
   state: string;
 }

@@ -11,7 +11,7 @@ import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
 import { themeComponent } from "../../theme";
 import { elements } from "../elements";
-import { SearchContext, ActiveUrlContext, MainContext } from "../../contexts";
+import { SearchContext, ActiveUrlContext, ActiveItemContext } from "../../contexts";
 
 
 type SideBarItemsProps = {
@@ -73,6 +73,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, authkeys, setItem, cluster } = appProps;
   const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
+  const {activeItem, setActiveItem} = React.useContext(ActiveItemContext);
   let hasNextPage = true;
 
   const { data, fetchMore, loading } = useQuery(
@@ -122,6 +123,13 @@ export default themeComponent((appProps: SideBarItemsProps) => {
         default:
         icon = (<DescriptionIcon />);
     }
+    if (activeItem == node.id){
+      return (
+        <ListItem>
+          <ListItemText className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
+        </ListItem>
+      )
+    }
     return (
         <ListItem button key={`${activeUrl}:${node.id}`}
           onClick={() => setItem(node)}
@@ -130,7 +138,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
               {icon}
           </ListItemIcon>
           {state== "draft" ? <ListItemIcon><DraftsIcon /></ListItemIcon> : null}
-          <ListItemText primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
+          <ListItemText className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
         </ListItem>
     );
   }
@@ -139,7 +147,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
     <React.Fragment>
       {data.contents.edges.map((edge: any) => render_item(edge.node))}
       <Divider />
-      <ListItem button key={"loadmore"}
+      <ListItem button key={`${activeUrl}:${cluster ? cluster : "none"}:content:loadmore`}
       disabled={(loading || !hasNextPage)}
       onClick={() => {
           _loadMore();

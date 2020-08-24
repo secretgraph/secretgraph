@@ -30,7 +30,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../../theme";
 import { ConfigInterface } from "../../interfaces";
-import { MainContext, SearchContext, ActiveUrlContext, ConfigContext } from "../../contexts";
+import { MainContext, SearchContext, ActiveUrlContext, ConfigContext, ActiveItemContext } from "../../contexts";
 import { elements } from "../elements";
 import { extract_authkeys } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
@@ -294,8 +294,9 @@ const SideBar = (props: SideBarProps) => {
   const { classes, theme, openState} = props;
   const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
-  const { mainCtx, setMainCtx } = React.useContext(MainContext)
-  const { config, setConfig } = React.useContext(ConfigContext)
+  const { mainCtx, setMainCtx } = React.useContext(MainContext);
+  const { config, setConfig } = React.useContext(ConfigContext);
+  const {activeItem, setActiveItem} = React.useContext(ActiveItemContext);
   const [headerExpanded, setHeaderExpanded] = React.useState(false);
   const closeButton = (
     <Hidden lgUp>
@@ -333,9 +334,9 @@ const SideBar = (props: SideBarProps) => {
           (content: any) => {
             setMainCtx({
               ...mainCtx,
-              item: content.id,
               action: "view"
             });
+            setActiveItem(content.id);
             setHeaderExpanded(false);
           }
         }
