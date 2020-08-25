@@ -30,9 +30,9 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../../theme";
 import { ConfigInterface } from "../../interfaces";
-import { MainContext, SearchContext, ActiveUrlContext, ConfigContext, ActiveItemContext } from "../../contexts";
+import { MainContext, SearchContext, ActiveUrlContext, ConfigContext } from "../../contexts";
 import { elements } from "../elements";
-import { extract_authkeys } from "../../utils/config"
+import { extract_authinfo } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
 const SideBarClusters = React.lazy(() => import("./clusters"));
 
@@ -296,7 +296,6 @@ const SideBar = (props: SideBarProps) => {
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
   const { mainCtx, setMainCtx } = React.useContext(MainContext);
   const { config, setConfig } = React.useContext(ConfigContext);
-  const {activeItem, setActiveItem} = React.useContext(ActiveItemContext);
   const [headerExpanded, setHeaderExpanded] = React.useState(false);
   const closeButton = (
     <Hidden lgUp>
@@ -311,10 +310,10 @@ const SideBar = (props: SideBarProps) => {
   );
   let sideBarItems = null;
   if (config){
-    const authkeys = extract_authkeys(config, activeUrl);
+    const authinfo = extract_authinfo(config, activeUrl);
     sideBarItems = (
       <SideBarClusters
-        authkeys={authkeys}
+        authinfo={authinfo}
         activeCluster={searchCtx.cluster}
         setItemComponent={
           (cluster: any) => {
@@ -334,9 +333,9 @@ const SideBar = (props: SideBarProps) => {
           (content: any) => {
             setMainCtx({
               ...mainCtx,
-              action: "view"
+              action: "view",
+              item: content.id
             });
-            setActiveItem(content.id);
             setHeaderExpanded(false);
           }
         }

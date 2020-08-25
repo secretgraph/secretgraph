@@ -9,7 +9,7 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 
 import { contentQuery } from "../queries/content"
 import { getClusterConfigurationQuery } from "../queries/cluster"
-import { MainContext, SearchContext, ActiveItemContext } from '../contexts';
+import { MainContext, SearchContext } from '../contexts';
 
 type Props = {
   classes: any,
@@ -20,14 +20,13 @@ export default themeComponent((appProps: Props) => {
   const { classes, theme } = appProps;
   const {mainCtx, setMainCtx} = React.useContext(MainContext);
   const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
-  const {activeItem, setActiveItem} = React.useContext(ActiveItemContext);
   let res : any;
-  if (activeItem) {
+  if (mainCtx.item) {
     res = useQuery(
       contentQuery,
       {
         variables: {
-          id: activeItem
+          id: mainCtx.item
         }
       }
     );

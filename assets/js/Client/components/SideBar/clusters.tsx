@@ -15,13 +15,15 @@ import { RDFS, CLUSTER } from "../../constants"
 import { themeComponent } from "../../theme";
 import { CapturingSuspense } from "../misc";
 import { ActiveUrlContext } from "../../contexts";
+import { AuthInfoInterface } from "../../interfaces";
+
 const SideBarContents = React.lazy(() => import("./contents"));
 
 
 type SideBarItemsProps = {
   classes: any,
   theme: Theme,
-  authkeys: string[],
+  authinfo: AuthInfoInterface,
   activeCluster?: string,
   setItemComponent: any,
   setItemContent: any
@@ -60,7 +62,7 @@ const clusterFeedQuery = gql`
 `
 
 export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, authkeys, setItemComponent, setItemContent, activeCluster } = appProps;
+  const { classes, theme, authinfo, setItemComponent, setItemContent, activeCluster } = appProps;
   let hasNextPage = true;
   const {activeUrl} = React.useContext(ActiveUrlContext);
 
@@ -68,7 +70,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
     clusterFeedQuery,
     {
       variables: {
-        authorization: authkeys
+        authorization: authinfo.keys
       }
     }
   );
@@ -109,9 +111,21 @@ export default themeComponent((appProps: SideBarItemsProps) => {
               <ListSubheader key={`${activeUrl}:cluster:header:${edge.node.id}`} className={classes.sideBarEntry} title={comment}>{label ? label : `...${edge.node.id.substr(-48)}`}</ListSubheader>
               <CapturingSuspense>
                 <List dense component="div" className={classes.sideBarContentList} disablePadding>
+                  <ListItem>
+                    <ListItemText className={classes.sideBarEntry} primary="public" />
+                  </ListItem>
                   <SideBarContents
                     setItem={setItemContent}
                     cluster={activeCluster}
+                  />
+                  <ListItem>
+                    <ListItemText className={classes.sideBarEntry} primary="internal" />
+                  </ListItem>
+                  <Divider/>
+                  <SideBarContents
+                    setItem={setItemContent}
+                    cluster={activeCluster}
+                    authinfo={authinfo}
                   />
                 </List>
               </CapturingSuspense>

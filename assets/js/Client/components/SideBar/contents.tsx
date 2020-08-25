@@ -11,13 +11,14 @@ import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
 import { themeComponent } from "../../theme";
 import { elements } from "../elements";
-import { SearchContext, ActiveUrlContext, ActiveItemContext } from "../../contexts";
+import { AuthInfoInterface } from "../../interfaces";
+import { SearchContext, ActiveUrlContext, MainContext } from "../../contexts";
 
 
 type SideBarItemsProps = {
   classes: any,
   theme: Theme,
-  authkeys: string[],
+  authinfo: AuthInfoInterface,
   setItem: any,
   cluster?: string
 }
@@ -70,19 +71,28 @@ query SideBarContentFeedQuery(
 
 // ["type=", "state=", ...
 export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, authkeys, setItem, cluster } = appProps;
+  const { classes, theme, authinfo, setItem, cluster } = appProps;
   const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
+  const {mainCtx, setMainCtx} = React.useContext(MainContext);
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
-  const {activeItem, setActiveItem} = React.useContext(ActiveItemContext);
   let hasNextPage = true;
+  const incl = searchCtx.include.concat([]);
+  if (authinfo.hashes instanceof Array){
+    if("default" !== mainCtx.state){
+      incl.push(`state=${mainCtx.state}`);
+    }
+    incl.push(...authinfo.hashes);
+  } else if ("default" === mainCtx.state){
+    incl.push("state=public");
+  }
 
   const { data, fetchMore, loading } = useQuery(
   contentFeedQuery,
   {
     variables: {
-      authorization: authkeys,
-      include: searchCtx.include,
-      exclude: searchCtx.exclude,
+      authorization: authinfo.keys,
+      include: [...searchCtx.include, ...((authinfo.hashes instanceof Array) ?  authinfo.hashes : ["state=public"])],
+      exclude: [...searchCtx.exclude, ...((authinfo.hashes instanceof Array) ? ["state=public"] : [])],
       clusters: cluster ? [cluster] : null,
       count: 30,
       cursor: null
@@ -123,7 +133,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
         default:
         icon = (<DescriptionIcon />);
     }
-    if (activeItem == node.id){
+    if (mainCtx.item == node.id){
       return (
         <ListItem>
           <ListItemText className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />

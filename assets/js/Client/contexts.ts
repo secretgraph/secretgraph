@@ -4,5 +4,4 @@ import { MainContextInterface, SearchContextInterface, ConfigInterface } from '.
 export const MainContext = <unknown>createContext(undefined) as Context<{mainCtx: MainContextInterface, setMainCtx: any}>;
 export const ActiveUrlContext = <unknown>createContext(undefined) as Context<{activeUrl: string, setActiveUrl: any}>;
 export const SearchContext = <unknown>createContext(undefined) as Context<{searchCtx: SearchContextInterface, setSearchCtx: any}>;
-export const ActiveItemContext = <unknown>createContext(undefined) as Context<{activeItem: string | null, setActiveItem: any}>;
 export const ConfigContext = <unknown>createContext(undefined) as Context<{config: ConfigInterface | null, setConfig: any} >;

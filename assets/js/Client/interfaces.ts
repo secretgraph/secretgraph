@@ -49,6 +49,7 @@ export interface MainContextInterface {
   action: string;
   title: null | string;
   state: string;
+  item: null | string;
 }
 
 export interface SearchContextInterface {
@@ -56,4 +57,9 @@ export interface SearchContextInterface {
   include: string[];
   exclude: string[];
   // environment: Environment | null;
+}
+
+export interface AuthInfoInterface {
+  keys: string[];
+  hashes: string[];
 }

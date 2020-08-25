@@ -9,7 +9,7 @@ import { CapturingSuspense } from '../components/misc';
 import { loadConfigSync } from '../utils/config';
 import { createClient } from '../utils/graphql';
 import { MainContextInterface, SearchContextInterface } from '../interfaces';
-import { MainContext, SearchContext, ConfigContext, ActiveUrlContext, ActiveItemContext } from '../contexts';
+import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
 const SideBar = React.lazy(() => import('../components/SideBar'));
 const SettingsImporter = React.lazy(() => import('./SettingsImporter'));
 const Help = React.lazy(() => import('./Help'));
@@ -79,31 +79,29 @@ function MainPage(props: Props) {
 
   return (
     <ActiveUrlContext.Provider value={{activeUrl, setActiveUrl}}>
-      <ActiveItemContext.Provider value={{activeItem, setActiveItem}}>
-        <MainContext.Provider value={{mainCtx, setMainCtx}}>
-          <SearchContext.Provider value={{searchCtx, setSearchCtx}}>
-            <ConfigContext.Provider value={{config, setConfig}}>
-              <ApolloProvider client={createClient(activeUrl)}>
-                <div className={classes.root}>
-                  <HeaderBar
-                    openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
+      <MainContext.Provider value={{mainCtx, setMainCtx}}>
+        <SearchContext.Provider value={{searchCtx, setSearchCtx}}>
+          <ConfigContext.Provider value={{config, setConfig}}>
+            <ApolloProvider client={createClient(activeUrl)}>
+              <div className={classes.root}>
+                <HeaderBar
+                  openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
+                />
+                {sidebar}
+                <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
+                  <ActionBar
                   />
-                  {sidebar}
-                  <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
-                    <ActionBar
-                    />
-                    <section className={classes.mainSection}>
-                      <CapturingSuspense>
-                        {frameElement}
-                      </CapturingSuspense>
-                    </section>
-                  </main>
-                </div>
-              </ApolloProvider>
-            </ConfigContext.Provider>
-          </SearchContext.Provider>
-        </MainContext.Provider>
-      </ActiveItemContext.Provider>
+                  <section className={classes.mainSection}>
+                    <CapturingSuspense>
+                      {frameElement}
+                    </CapturingSuspense>
+                  </section>
+                </main>
+              </div>
+            </ApolloProvider>
+          </ConfigContext.Provider>
+        </SearchContext.Provider>
+      </MainContext.Provider>
     </ActiveUrlContext.Provider>
   );
 };

@@ -1,7 +1,7 @@
 
 import { saveAs } from 'file-saver';
 
-import { ConfigInterface } from "../interfaces";
+import { ConfigInterface, AuthInfoInterface } from "../interfaces";
 import { arrtogcmkey, arrtorsaoepkey, pwencryptprekey, pwsdecryptprekeys_first, pwsdecryptprekeys } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
@@ -309,16 +309,18 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
 }
 
 
-export function extract_authkeys(config: ConfigInterface, url: string) {
-  const result = [];
+export function extract_authinfo(config: ConfigInterface, url: string) : AuthInfoInterface {
+  const keys = [];
+  const hashes = [];
   for (const id in config.clusters[url]) {
     const clusterconf = config.clusters[url][id];
     for (const hash in clusterconf.hashes){
       // const actions = clusterconf.hashes[hash]
       if (config.tokens[hash]){
-        result.push(`${id}:${config.tokens[hash]}`);
+        hashes.push(hash);
+        keys.push(`${id}:${config.tokens[hash]}`);
       }
     }
   }
-  return result;
+  return {hashes, keys};
 }
