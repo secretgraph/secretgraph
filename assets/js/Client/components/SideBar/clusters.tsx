@@ -11,7 +11,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
-import { RDFS, CLUSTER } from "../../constants"
+import { RDFS, CLUSTER, contentStates } from "../../constants"
 import { themeComponent } from "../../theme";
 import { CapturingSuspense } from "../misc";
 import { ActiveUrlContext } from "../../contexts";
@@ -24,6 +24,7 @@ type SideBarItemsProps = {
   classes: any,
   theme: Theme,
   authinfo: AuthInfoInterface,
+  state: string,
   activeCluster?: string,
   setItemComponent: any,
   setItemContent: any
@@ -62,7 +63,7 @@ const clusterFeedQuery = gql`
 `
 
 export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, authinfo, setItemComponent, setItemContent, activeCluster } = appProps;
+  const { classes, theme, state, authinfo, setItemComponent, setItemContent, activeCluster } = appProps;
   let hasNextPage = true;
   const {activeUrl} = React.useContext(ActiveUrlContext);
 
@@ -106,22 +107,46 @@ export default themeComponent((appProps: SideBarItemsProps) => {
           }
         }
         if (edge.node.id === activeCluster) {
+          let preambleStuff;
+          if (state == "default"){
+            preambleStuff = (
+              <React.Fragment>
+                <ListItem key="preamblepublic">
+                  <ListItemText className={classes.sideBarEntry} primary={contentStates.get("public")?.label} />
+                </ListItem>
+                <SideBarContents
+                  setItem={setItemContent}
+                  cluster={activeCluster}
+                />
+                <ListItem key="preambleinternal">
+                  <ListItemText className={classes.sideBarEntry} primary={contentStates.get("internal")?.label} />
+                </ListItem>
+                <Divider/>
+              </React.Fragment>
+            )
+          } else {
+            preambleStuff = (
+              <React.Fragment>
+                <ListItem key="preamblestate">
+                  <ListItemText className={classes.sideBarEntry} primary={contentStates.get(state)?.label} />
+                </ListItem>
+                <Divider/>
+              </React.Fragment>
+            )
+          }
           return (
             <React.Fragment>
-              <ListSubheader key={`${activeUrl}:cluster:header:${edge.node.id}`} className={classes.sideBarEntry} title={comment}>{label ? label : `...${edge.node.id.substr(-48)}`}</ListSubheader>
+              <ListSubheader
+                key={`${activeUrl}:cluster:header:${edge.node.id}`}
+                className={classes.sideBarEntry}
+                title={comment}
+                onClick={() => setItemComponent(edge.node)}
+              >
+                {label ? label : `...${edge.node.id.substr(-48)}`}
+              </ListSubheader>
               <CapturingSuspense>
                 <List dense component="div" className={classes.sideBarContentList} disablePadding>
-                  <ListItem>
-                    <ListItemText className={classes.sideBarEntry} primary="public" />
-                  </ListItem>
-                  <SideBarContents
-                    setItem={setItemContent}
-                    cluster={activeCluster}
-                  />
-                  <ListItem>
-                    <ListItemText className={classes.sideBarEntry} primary="internal" />
-                  </ListItem>
-                  <Divider/>
+                  {preambleStuff}
                   <SideBarContents
                     setItem={setItemContent}
                     cluster={activeCluster}

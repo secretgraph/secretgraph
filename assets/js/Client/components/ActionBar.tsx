@@ -59,7 +59,7 @@ function ActionBar(props: Props) {
       <Toolbar className={classes.actionToolBarInner}>
         <Tooltip title="Select state of content" arrow>
           <NativeSelect
-            className={(mainCtx.action === "help" || !mainCtx.item) ? classes.hidden : classes.contentStateSelect}
+            className={classes.contentStateSelect}
             onChange={(event: any) => setMainCtx({
               ...mainCtx,
               state: event.target.value

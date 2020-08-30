@@ -18,7 +18,7 @@ import { SearchContext, ActiveUrlContext, MainContext } from "../../contexts";
 type SideBarItemsProps = {
   classes: any,
   theme: Theme,
-  authinfo: AuthInfoInterface,
+  authinfo?: AuthInfoInterface,
   setItem: any,
   cluster?: string
 }
@@ -30,6 +30,7 @@ query SideBarContentFeedQuery(
   $authorization: [String!]
   $include: [String!]
   $exclude: [String!]
+  $public: Boolean
   $includeTags: [String!]
   $count: Int
   $cursor: String
@@ -38,10 +39,11 @@ query SideBarContentFeedQuery(
     clusters: $clusters
     includeTags: $include
     excludeTags: $exclude
+    public: $public
     authorization: $authorization
     first: $count
     after: $cursor
-  )  @connection(key: "SideBar_contents", filters:["include", "exclude", "clusters"])  {
+  )  @connection(key: "SideBar_contents", filters:["include", "exclude", "clusters", "public"])  {
     edges {
       node {
         id
@@ -76,24 +78,27 @@ export default themeComponent((appProps: SideBarItemsProps) => {
   const {mainCtx, setMainCtx} = React.useContext(MainContext);
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
   let hasNextPage = true;
+  let usePublic = null;
   const incl = searchCtx.include.concat([]);
-  if (authinfo.hashes instanceof Array){
+  if (authinfo && authinfo.hashes instanceof Array){
+    usePublic = false;
     if("default" !== mainCtx.state){
       incl.push(`state=${mainCtx.state}`);
     }
     incl.push(...authinfo.hashes);
   } else if ("default" === mainCtx.state){
-    incl.push("state=public");
+    usePublic = true;
   }
 
   const { data, fetchMore, loading } = useQuery(
   contentFeedQuery,
   {
     variables: {
-      authorization: authinfo.keys,
-      include: [...searchCtx.include, ...((authinfo.hashes instanceof Array) ?  authinfo.hashes : ["state=public"])],
-      exclude: [...searchCtx.exclude, ...((authinfo.hashes instanceof Array) ? ["state=public"] : [])],
+      authorization: authinfo ? authinfo.keys : null,
+      include: incl,
+      exclude: searchCtx.exclude,
       clusters: cluster ? [cluster] : null,
+      public: usePublic,
       count: 30,
       cursor: null
     }

@@ -315,12 +315,14 @@ const SideBar = (props: SideBarProps) => {
       <SideBarClusters
         authinfo={authinfo}
         activeCluster={searchCtx.cluster}
+        state={mainCtx.state}
         setItemComponent={
           (cluster: any) => {
             setMainCtx({
               ...mainCtx,
               item: null,
-              action: "view"
+              action: "view",
+              state: "default"
             });
             setSearchCtx({
               ...searchCtx,

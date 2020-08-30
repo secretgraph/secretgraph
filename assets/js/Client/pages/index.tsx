@@ -30,7 +30,7 @@ function MainPage(props: Props) {
   const [config, setConfig] = React.useState(() => loadConfigSync());
   const [mainCtx, setMainCtx] = React.useState({
     "action": config ? "add" : "start",
-    "state": "draft",
+    "state": "default",
     "title": null,
   } as MainContextInterface);
   const [activeItem, setActiveItem] = React.useState(() => elements.keys().next().value);
