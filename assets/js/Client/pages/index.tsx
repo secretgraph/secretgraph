@@ -10,7 +10,8 @@ import { loadConfigSync } from '../utils/config';
 import { createClient } from '../utils/graphql';
 import { MainContextInterface, SearchContextInterface } from '../interfaces';
 import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
-const SideBar = React.lazy(() => import('../components/SideBar'));
+import SideBar from '../components/SideBar';
+// const SideBar = React.lazy(() => import('../components/SideBar'));
 const SettingsImporter = React.lazy(() => import('./SettingsImporter'));
 const Help = React.lazy(() => import('./Help'));
 const DocumentViewer = React.lazy(() => import('./DocumentViewer'));
@@ -69,11 +70,9 @@ function MainPage(props: Props) {
   let sidebar = null;
   if (config){
     sidebar = (
-      <CapturingSuspense>
-        <SideBar
-          openState={{drawerOpen, setDrawerOpen}}
-        />
-      /</CapturingSuspense>
+      <SideBar
+        openState={{drawerOpen, setDrawerOpen}}
+      />
     );
   }
 

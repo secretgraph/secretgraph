@@ -29,11 +29,12 @@ import DraftsIcon from '@material-ui/icons/Drafts';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { Theme } from "@material-ui/core/styles";
 import { themeComponent } from "../../theme";
-import { ConfigInterface } from "../../interfaces";
+import { ConfigInterface, AuthInfoInterface } from "../../interfaces";
 import { MainContext, SearchContext, ActiveUrlContext, ConfigContext } from "../../contexts";
 import { elements } from "../elements";
 import { extract_authinfo } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
+import { lightBaseTheme } from "material-ui/styles";
 const SideBarClusters = React.lazy(() => import("./clusters"));
 
 
@@ -297,6 +298,10 @@ const SideBar = (props: SideBarProps) => {
   const { mainCtx, setMainCtx } = React.useContext(MainContext);
   const { config, setConfig } = React.useContext(ConfigContext);
   const [headerExpanded, setHeaderExpanded] = React.useState(false);
+  let authinfo : AuthInfoInterface | null = null;
+  if (config){
+    authinfo = extract_authinfo(config, activeUrl);
+  }
   const closeButton = (
     <Hidden lgUp>
       <IconButton onClick={() => openState.setDrawerOpen(false)}>
@@ -310,7 +315,6 @@ const SideBar = (props: SideBarProps) => {
   );
   let sideBarItems = null;
   if (config){
-    const authinfo = extract_authinfo(config, activeUrl);
     sideBarItems = (
       <SideBarClusters
         authinfo={authinfo}
@@ -342,7 +346,7 @@ const SideBar = (props: SideBarProps) => {
           }
         }
       />
-    );
+    )
   }
   return (
     <Drawer
@@ -370,6 +374,7 @@ const SideBar = (props: SideBarProps) => {
       </div>
     </Drawer>
   );
+  // }, [searchCtx.cluster, authinfo, activeUrl, headerExpanded, openState.drawerOpen]);
 }
 
 export default themeComponent(SideBar);

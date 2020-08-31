@@ -102,8 +102,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
       count: 30,
       cursor: null
     }
-  }
-  );
+  });
   if (loading) return null;
   hasNextPage = data.contents.pageInfo.hasNextPage;
   const _loadMore = () => {
@@ -140,7 +139,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
     }
     if (mainCtx.item == node.id){
       return (
-        <ListItem>
+        <ListItem key={`${activeUrl}:${node.id}:active`}>
           <ListItemText className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
         </ListItem>
       )
