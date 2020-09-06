@@ -1,14 +1,15 @@
 declare var gettext: any;
 
 import * as React from "react"
+import { ElementEntryInterface } from "../../interfaces"
 
-import { editSource, viewSource } from "./source"
 
 export const elements = new Map([
-  ['Source', { label: gettext('Source'), edit: editSource, view: viewSource }],
-  ['Cluster', { label: gettext('Cluster') }],
-  ['File', { label: gettext('File') }],
-  ['Postbox', { label: gettext('Postbox') }],
-  ['Contact', { label: gettext('Contact') }],
-  ['Message', { label: gettext('Message') }]
-]);
+  ['Source', { label: gettext('Source'), component: React.lazy(() => import("./source")) }],
+  ['Cluster', { label: gettext('Cluster'), component: React.lazy(() => import("./cluster")) }],
+  ['File', { label: gettext('File'), component: React.lazy(() => import("./file")) }],
+  ['Postbox', { label: gettext('Postbox'), component: React.lazy(() => import("./source")) }],
+  ['Contact', { label: gettext('Contact'), component: React.lazy(() => import("./source")) }],
+  ['Message', { label: gettext('Message'), component: React.lazy(() => import("./source")) }],
+  ['undefined', { label: gettext('Custom'), component: React.lazy(() => import("./custom")) }]
+] as [string, ElementEntryInterface][]);

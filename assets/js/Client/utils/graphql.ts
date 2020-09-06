@@ -1,12 +1,12 @@
 import { createClusterMutation } from "../queries/cluster";
-import { createContentMutation } from "../queries/content";
+import { createContentMutation, contentQuery } from "../queries/content";
 import { serverConfigQuery } from "../queries/server";
-import { ConfigInterface, ReferenceInterface, ActionInterface } from "../interfaces";
+import { ConfigInterface, ReferenceInterface, ActionInterface, AuthInfoInterface } from "../interfaces";
 import { b64toarr, sortedHash, utf8encoder } from "./misc";
-import { arrtogcmkey, arrtorsaoepkey, rsakeytransform } from "./encryption";
+import { arrToGCMKey, arrToRSAOEPkey, rsaKeyTransform } from "./encryption";
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { createUploadLink } from 'apollo-upload-client';
-import { checkConfig } from "./config";
+import { checkConfig, extractAuthInfo, findCertCandidatesForRefs } from "./config";
 import { mapHashNames } from "../constants"
 
 
@@ -47,7 +47,7 @@ export function createContentAuth(
     if (c?.hashes){
       for(let hash in c.hashes) {
         if(keysink && hash in config.certificates){
-          privkeys.push(arrtorsaoepkey(b64toarr(config.certificates[hash])).then(keysink));
+          privkeys.push(arrToRSAOEPkey(b64toarr(config.certificates[hash])).then(keysink));
         } else if (c.hashes[hash].findIndex(checkActions) !== -1 && hash in config.tokens){
           authkeys.push(`${clusterid}:${config.tokens[hash]}`);
         }/** else if (!c.hashes[hash] && hash in config.tokens){
@@ -68,9 +68,9 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
       throw Error("missing key usages")
     }
     if(!privkey.usages.includes("sign")) {
-      transforms = rsakeytransform(privkey, hashalgo, {signkey: true, pubkey: !(hashes)});
+      transforms = rsaKeyTransform(privkey, hashalgo, {signkey: true, pubkey: !(hashes)});
     } else  {
-      transforms = rsakeytransform(privkey, hashalgo, {signkey: false, pubkey: !(hashes)});
+      transforms = rsaKeyTransform(privkey, hashalgo, {signkey: false, pubkey: !(hashes)});
       transforms["signkey"] = Promise.resolve(privkey);
     }
     let hash = hashes ? Promise.resolve(hashes[counter]): (transforms["pubkey"] as PromiseLike<CryptoKey>).then(
@@ -178,7 +178,7 @@ export async function createContent(
   }
 
   const encryptedContentPromise = Promise.all([
-    arrtogcmkey(key), options.value.arrayBuffer()
+    arrToGCMKey(key), options.value.arrayBuffer()
   ]).then(
     (arr) => crypto.subtle.encrypt(
       {
@@ -235,7 +235,7 @@ export async function createCluster(
     const nonce = crypto.getRandomValues(new Uint8Array(13));
     nonceb64 = btoa(String.fromCharCode(... nonce));
     privateKeyPromise = Promise.all([
-      arrtogcmkey(privateKeyKey),
+      arrToGCMKey(privateKeyKey),
       crypto.subtle.exportKey(
         "pkcs8" as const,
         privateKey
@@ -349,4 +349,54 @@ export async function initializeCluster(
       return [config, clusterResult.cluster.id as string];
     })
   })
+}
+
+export async function decryptContentObject(config: ConfigInterface, nodeData: any, blob : Blob | null=null){
+  let arrPromise;
+  if (!blob) {
+    arrPromise = fetch(nodeData.link).then((result) => result.arrayBuffer());
+  } else {
+    arrPromise = blob.arrayBuffer();
+  }
+  const found = findCertCandidatesForRefs(config, nodeData);
+  if (!found){
+    return null;
+  }
+  const sharedkeyPromise = Promise.any(found.map((value) => arrToRSAOEPkey(value[0]).then(
+    (privkey) => crypto.subtle.decrypt(
+      {
+        name: "RSA-OAEP",
+      },
+      privkey,
+      value[1]
+    )
+  ))).then(arrToRSAOEPkey);
+  return Promise.all(
+    [sharedkeyPromise, arrPromise]
+  ).then(([sharedkey, arr]) => crypto.subtle.decrypt(
+    {
+      name: "RSA-OAEP",
+    },
+    sharedkey,
+    arr
+  ));
+}
+
+export async function decryptContentUrl(client: ApolloClient<any>, config: ConfigInterface, activeUrl: string, contentId: string){
+  const authinfo : AuthInfoInterface = extractAuthInfo(config, activeUrl);
+  let result;
+  // TODO: maybe remove try catch
+  try{
+    result = await client.query({
+      query: contentQuery,
+      variables: {
+        id: contentId,
+        keyhashes: authinfo.hashes.map((value) => `hash=${value}`)
+      }
+    });
+  }catch(error){
+    console.error("fetching failed", error);
+    return null;
+  }
+  return await decryptContentObject(config, result.content, activeUrl);
 }

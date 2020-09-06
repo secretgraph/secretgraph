@@ -23,6 +23,7 @@
 
 
 # TODO
+* cleanup js structure, harmonize naming, modulize more
 * updateId in form
 * prekey implement form
 * simplify config url export (no private key anymore)
@@ -35,10 +36,3 @@
   * specifying key allows to encrypt keys/values server side if nonce is not set
 * merge configuration client side in case of updates
 * maybe: encrypt some content tags, like name
-
-
-```` exclude not executed:
-{'authorization': ['Q2x1c3Rlcjo3YjEzM2VlNy1jYjUzLTQ1YTAtOGM5OS1jZDVmMTg5NzdhNjk=:B53zc7ZHqvSPyI83yGfmY5wOPNwG3f/3wLGycyguWpg='], 'includeTags': ['uYjzc5QE05r63M+nSWcivMPxQg5BElbdJkb5ZeGVhXTzYZYLT530NMqiy7bgJOFn1W71W1kzGlX1cIIfSfp24w=='], 'excludeTags': ['state=public'], 'clusters': ['Q2x1c3Rlcjo3YjEzM2VlNy1jYjUzLTQ1YTAtOGM5OS1jZDVmMTg5NzdhNjk='], 'first': 30}
-127.0.0.1 - - [30/Aug/2020 08:55:20] "POST /graphql HTTP/1.1" 200 -
-{'includeTags': ['state=public'], 'excludeTags': [], 'clusters': ['Q2x1c3Rlcjo3YjEzM2VlNy1jYjUzLTQ1YTAtOGM5OS1jZDVmMTg5NzdhNjk='], 'first': 30}
-````

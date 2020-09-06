@@ -36,12 +36,15 @@ export const contentQuery = gql`
       nonce
       link
       tags
+      cluster {
+        publicInfo
+      }
       references(groups: ["key", "signature"], includeTags: $keyhashes) {
         edges {
           node {
             extra
             target {
-              contentHash
+              tags(includeTags: ["hash"])
             }
           }
         }

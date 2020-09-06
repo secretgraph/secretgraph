@@ -2,7 +2,7 @@
 import { saveAs } from 'file-saver';
 
 import { ConfigInterface, AuthInfoInterface } from "../interfaces";
-import { arrtogcmkey, arrtorsaoepkey, pwencryptprekey, pwsdecryptprekeys_first, pwsdecryptprekeys } from "./encryption";
+import { arrToGCMKey, arrToRSAOEPkey, pwencryptprekey, pwsdecryptprekeys_first, pwsdecryptprekeys } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
@@ -54,7 +54,7 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
           if (data[1]){
             return Promise.reject("not for decryption");
           }
-          return arrtogcmkey(data[0]).then((gcmkey) => crypto.subtle.decrypt(
+          return arrToGCMKey(data[0]).then((gcmkey) => crypto.subtle.decrypt(
             {
               name: "AES-GCM",
               iv: nonce
@@ -121,7 +121,7 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
                       if (data[1]){
                         return Promise.reject("not for decryption");
                       }
-                      return await arrtogcmkey(data[0]).then(
+                      return await arrToGCMKey(data[0]).then(
                       (gcmkey) => crypto.subtle.decrypt(
                         {
                           name: "AES-GCM",
@@ -129,7 +129,7 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
                         },
                         gcmkey,
                         respdata
-                      ).then(arrtorsaoepkey).then(
+                      ).then(arrToRSAOEPkey).then(
                         (key) => resolve([key, nonce, k.extra])
                       )
                     )
@@ -149,7 +149,7 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
           },
           arr[0],
           b64toarr(arr[2])
-        ).then(arrtogcmkey)
+        ).then(arrToGCMKey)
       ).then(
         async (key) => crypto.subtle.decrypt(
           {
@@ -204,7 +204,7 @@ export async function exportConfig(config: ConfigInterface | string, pws?: strin
           name: "AES-GCM",
           iv: mainnonce
         },
-        await arrtogcmkey(mainkey),
+        await arrToGCMKey(mainkey),
         utf8encoder.encode(config)
       ).then((data) => btoa(String.fromCharCode(...new Uint8Array(data)))),
       iterations: iterations,
@@ -250,7 +250,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
   if (!cert){
     return Promise.reject("no cert found");
   }
-  const ckeyPromise = arrtorsaoepkey(cert);
+  const ckeyPromise = arrToRSAOEPkey(cert);
   certhashes = await Promise.all(obj.data.secretgraphConfig.hashAlgorithms.map(
     (hash: string) => crypto.subtle.digest(mapHashNames[hash], cert as Uint8Array).then(
       (data) => btoa(String.fromCharCode(... new Uint8Array(data)))
@@ -309,7 +309,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
 }
 
 
-export function extract_authinfo(config: ConfigInterface, url: string) : AuthInfoInterface {
+export function extractAuthInfo(config: ConfigInterface, url: string) : AuthInfoInterface {
   const keys = [];
   const hashes = [];
   for (const id in config.clusters[url]) {
@@ -323,4 +323,21 @@ export function extract_authinfo(config: ConfigInterface, url: string) : AuthInf
     }
   }
   return {hashes, keys};
+}
+
+
+export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any) : [Uint8Array, Uint8Array][] {
+  const found: [Uint8Array, Uint8Array][] = [];
+  for(const refnode of nodeData.references){
+    for(const dirtyhash of refnode.target.tags){
+      const cleanhash = dirtyhash.split("=", 2)[1];
+      if(cleanhash && config.certificates[cleanhash]){
+        found.push([
+          b64toarr(config.certificates[cleanhash]),
+          b64toarr(refnode.extra)
+        ]);
+      }
+    }
+  }
+  return found;
 }

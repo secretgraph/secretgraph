@@ -8,7 +8,7 @@ import { elements } from '../components/elements';
 import { CapturingSuspense } from '../components/misc';
 import { loadConfigSync } from '../utils/config';
 import { createClient } from '../utils/graphql';
-import { MainContextInterface, SearchContextInterface } from '../interfaces';
+import { MainContextInterface, SearchContextInterface, ElementEntryInterface } from '../interfaces';
 import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
 import SideBar from '../components/SideBar';
 // const SideBar = React.lazy(() => import('../components/SideBar'));
@@ -44,15 +44,15 @@ function MainPage(props: Props) {
   let frameElement = null;
   switch(mainCtx.action){
     case "view":
-      frameElement = (
-        <DocumentViewer
-        />
-      );
-      break;
     case "add":
     case "update":
+      let FrameElementWrapper = elements.get(mainCtx.type ? mainCtx.type : "undefined");
+      if (!FrameElementWrapper){
+        FrameElementWrapper = elements.get("undefined") as ElementEntryInterface;
+      }
+      const FrameElementType = (FrameElementWrapper as ElementEntryInterface).component;
       frameElement = (
-        <DocumentForm/>
+        <FrameElementType/>
       );
       break;
     case "start":

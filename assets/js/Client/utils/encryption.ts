@@ -12,7 +12,7 @@ function strtoPBKDF2key(inp: string){
   );
 }
 
-export function arrtogcmkey(inp: ArrayBuffer | string){
+export function arrToGCMKey(inp: ArrayBuffer | string){
   if (typeof inp === "string"){
     inp = Uint8Array.from(atob(inp), c => c.charCodeAt(0)).buffer;
   }
@@ -33,7 +33,7 @@ export async function pwencryptprekey(prekey: ArrayBuffer, pw: string, iteration
       name: "AES-GCM",
       iv: nonce
     },
-    await arrtogcmkey(key),
+    await arrToGCMKey(key),
     prekey
   );
   return btoa(String.fromCharCode(...nonce, ...new Uint8Array(encrypted_prekey)));
@@ -60,7 +60,7 @@ async function _pwsdecryptprekey(prekey: ArrayBuffer | string, pws: string[], it
           name: "AES-GCM",
           iv: nonce
         },
-        await PBKDF2PW(pw, nonce, iterations).then((key) => arrtogcmkey(key)),
+        await PBKDF2PW(pw, nonce, iterations).then((key) => arrToGCMKey(key)),
         realkey
       )
     )
@@ -95,7 +95,7 @@ export async function pwsdecryptprekeys_first(prekeys: ArrayBuffer[] | string[],
   return await Promise.any(decryptprocesses);
 }
 
-export function arrtorsaoepkey(inp: ArrayBuffer){
+export function arrToRSAOEPkey(inp: ArrayBuffer){
   return crypto.subtle.importKey(
     "pkcs8" as const,
     inp,
@@ -108,7 +108,7 @@ export function arrtorsaoepkey(inp: ArrayBuffer){
   );
 }
 
-export function rsakeytransform(privKey:CryptoKey, hashalgo: string, options={pubkey: false, signkey: false}) {
+export function rsaKeyTransform(privKey:CryptoKey, hashalgo: string, options={pubkey: false, signkey: false}) {
   const ret : {
     pubkey?: PromiseLike<CryptoKey>,
     signkey?: PromiseLike<CryptoKey>

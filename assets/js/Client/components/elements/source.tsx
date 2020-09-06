@@ -10,7 +10,7 @@ type Props = {
   classes: any,
   theme: Theme,
 };
-export const viewSource = themeComponent((props: Props) => {
+const viewSource = themeComponent((props: Props) => {
   const { classes, theme } = props;
 
   return (
@@ -18,10 +18,17 @@ export const viewSource = themeComponent((props: Props) => {
   );
 });
 
-export const editSource = themeComponent((props: Props) => {
+const editSource = themeComponent((props: Props) => {
   const { classes, theme } = props;
 
   return (
     <div />
   );
 });
+
+
+export default function sourceComponent(props: Props) {
+  return (
+    <div />
+  );
+};

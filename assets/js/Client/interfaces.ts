@@ -50,6 +50,7 @@ export interface MainContextInterface {
   title: null | string;
   state: string;
   item: null | string;
+  type: null | string;
 }
 
 export interface SearchContextInterface {
@@ -62,4 +63,9 @@ export interface SearchContextInterface {
 export interface AuthInfoInterface {
   keys: string[];
   hashes: string[];
+}
+
+export interface ElementEntryInterface {
+  label: string;
+  component: React.LazyExoticComponent<any>;
 }

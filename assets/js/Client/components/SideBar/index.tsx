@@ -32,7 +32,7 @@ import { themeComponent } from "../../theme";
 import { ConfigInterface, AuthInfoInterface } from "../../interfaces";
 import { MainContext, SearchContext, ActiveUrlContext, ConfigContext } from "../../contexts";
 import { elements } from "../elements";
-import { extract_authinfo } from "../../utils/config"
+import { extractAuthInfo } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
 import { lightBaseTheme } from "material-ui/styles";
 const SideBarClusters = React.lazy(() => import("./clusters"));
@@ -300,7 +300,7 @@ const SideBar = (props: SideBarProps) => {
   const [headerExpanded, setHeaderExpanded] = React.useState(false);
   let authinfo : AuthInfoInterface | null = null;
   if (config){
-    authinfo = extract_authinfo(config, activeUrl);
+    authinfo = extractAuthInfo(config, activeUrl);
   }
   const closeButton = (
     <Hidden lgUp>
@@ -325,6 +325,7 @@ const SideBar = (props: SideBarProps) => {
             setMainCtx({
               ...mainCtx,
               item: null,
+              type: "Cluster",
               action: "view",
               state: "default"
             });
@@ -337,9 +338,15 @@ const SideBar = (props: SideBarProps) => {
         }
         setItemContent={
           (content: any) => {
+            let type = content.tags.find((flag: string) => flag.startsWith("type="));
+            if (type){
+              // split works different in js, so 2
+              type = type.split("=", 2)[1];
+            }
             setMainCtx({
               ...mainCtx,
               action: "view",
+              type: type,
               item: content.id
             });
             setHeaderExpanded(false);

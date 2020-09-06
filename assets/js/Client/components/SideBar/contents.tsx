@@ -74,9 +74,9 @@ query SideBarContentFeedQuery(
 // ["type=", "state=", ...
 export default themeComponent((appProps: SideBarItemsProps) => {
   const { classes, theme, authinfo, setItem, cluster } = appProps;
-  const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
-  const {mainCtx, setMainCtx} = React.useContext(MainContext);
-  const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
+  const {searchCtx} = React.useContext(SearchContext);
+  const {mainCtx} = React.useContext(MainContext);
+  const {activeUrl} = React.useContext(ActiveUrlContext);
   let hasNextPage = true;
   let usePublic = null;
   const incl = searchCtx.include.concat([]);
@@ -85,7 +85,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
     if("default" !== mainCtx.state){
       incl.push(`state=${mainCtx.state}`);
     }
-    incl.push(...authinfo.hashes);
+    incl.push(...authinfo.hashes.map((value) => `hash=${value}`));
   } else if ("default" === mainCtx.state){
     usePublic = true;
   }

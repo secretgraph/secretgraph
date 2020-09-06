@@ -84,7 +84,8 @@ function ActionBar(props: Props) {
             onChange={(event: any) => setMainCtx({
               ...mainCtx,
               action: "add",
-              item: event.target.value
+              item: null,
+              type: event.target.value
             })}
             value={mainCtx.item || undefined}
             children={
