@@ -112,6 +112,9 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "required_keys_contents": {}
     }
     for item in authset:
+        # harden against invalid input, e.g. object view produces empty strings
+        if not item:
+            continue
         spitem = item.split(":", 1)
         if len(spitem) != 2:
             continue
@@ -272,6 +275,7 @@ def fetch_by_id(
     query, flexids, prefix="", type_name=None, check_content_hash=False,
     limit_ids=1
 ):
+    # without auth check! do it before
     type_name = type_name or query.model.__name__
     if isinstance(flexids, str):
         flexids = [flexids]

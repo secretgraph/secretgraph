@@ -67,15 +67,6 @@ function MainPage(props: Props) {
       );
       break;
   }
-  let sidebar = null;
-  if (config){
-    sidebar = (
-      <SideBar
-        openState={{drawerOpen, setDrawerOpen}}
-      />
-    );
-  }
-
   return (
     <ActiveUrlContext.Provider value={{activeUrl, setActiveUrl}}>
       <MainContext.Provider value={{mainCtx, setMainCtx}}>
@@ -83,19 +74,23 @@ function MainPage(props: Props) {
           <ConfigContext.Provider value={{config, setConfig}}>
             <ApolloProvider client={createClient(activeUrl)}>
               <div className={classes.root}>
-                <HeaderBar
-                  openState={{drawerOpen: (drawerOpen && config), setDrawerOpen}}
+                <SideBar
+                  openState={{drawerOpen, setDrawerOpen}}
                 />
-                {sidebar}
-                <main className={(drawerOpen && config) ? classes.contentShift : classes.content}>
-                  <ActionBar
+                <div className={classes.subRoot}>
+                  <HeaderBar
+                    openState={{drawerOpen: !!(drawerOpen && config), setDrawerOpen}}
                   />
-                  <section className={classes.mainSection}>
-                    <CapturingSuspense>
-                      {frameElement}
-                    </CapturingSuspense>
-                  </section>
-                </main>
+                  <main className={classes.content}>
+                    <ActionBar
+                    />
+                    <section className={classes.mainSection}>
+                      <CapturingSuspense>
+                        {frameElement}
+                      </CapturingSuspense>
+                    </section>
+                  </main>
+                </div>
               </div>
             </ApolloProvider>
           </ConfigContext.Provider>

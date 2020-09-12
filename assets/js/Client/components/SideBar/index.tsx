@@ -332,6 +332,9 @@ const SideBar = (props: SideBarProps) => {
               // split works different in js, so 2
               type = type.split("=", 2)[1];
             }
+            if (type == "PrivateKey" ) {
+              type = "PublicKey";
+            }
             setMainCtx({
               ...mainCtx,
               action: "view",
@@ -347,7 +350,7 @@ const SideBar = (props: SideBarProps) => {
   }
   return (
     <Drawer
-      className={classes.drawer}
+      className={openState.drawerOpen ? classes.drawerOpen : classes.drawerClosed}
       variant="persistent"
       anchor={theme.direction === 'ltr' ? 'left' : 'right'}
       open={openState.drawerOpen}

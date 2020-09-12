@@ -102,7 +102,7 @@ const EditFile = (props: Props) => {
   );
 }
 
-export default function fileComponent(props: Props) {
+export default function FileComponent(props: Props) {
   const {mainCtx} = React.useContext(MainContext);
   if (mainCtx.action == "view" && mainCtx.item) {
     return (

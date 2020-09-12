@@ -13,6 +13,7 @@ import { contentStates } from '../constants';
 import { MainContext } from '../contexts';
 import { useStylesAndTheme } from '../theme';
 
+import { ElementEntryInterface } from "../interfaces";
 
 type Props = {
 };

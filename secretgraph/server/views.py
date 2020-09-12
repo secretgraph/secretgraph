@@ -13,11 +13,13 @@ from django.urls import reverse
 from django.views.generic.edit import FormView
 from graphene_file_upload.django import FileUploadGraphQLView
 
-from .utils.auth import fetch_by_id, id_to_result
-from .utils.encryption import iter_decrypt_contents
 from .actions.view import ContentFetchQueryset, fetch_contents
-from .forms import PushForm, UpdateForm, PreKeyForm
+from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
+from .utils.auth import (
+    fetch_by_id, initializeCachedResult, retrieve_allowed_objects
+)
+from .utils.encryption import iter_decrypt_contents
 
 
 class AllowCORSMixin(object):
@@ -56,9 +58,16 @@ class ContentView(AllowCORSMixin, FormView):
             " ", ""
         ).split(","))
         authset.update(request.GET.getlist("token"))
-        self.result = id_to_result(
-            request, kwargs["id"], Content, scope=self.action, authset=authset
+        # authset can contain: ""
+        # why not id_to_result => uses flexid directly
+        self.result = initializeCachedResult(
+            request, authset=authset
+        )["Content"]
+        self.result = self.result.copy()
+        self.result["objects"] = self.result["objects"].filter(
+            flexid=kwargs["id"]
         )
+
         if "decrypt" in kwargs:
             if self.action != "view":
                 raise Http404()
@@ -81,8 +90,12 @@ class ContentView(AllowCORSMixin, FormView):
             " ", ""
         ).split(","))
         authset.update(request.GET.getlist("token"))
-        self.result = id_to_result(
-            request, kwargs["id"], Content, scope=self.action, authset=authset
+        # authset can contain: ""
+        # why not id_to_result => uses flexid directly
+        self.result = retrieve_allowed_objects(
+            request, Content.objects.filter(
+                flexid=kwargs["id"]
+            ), scope=self.action, authset=authset
         )
         return super().post(request, *args, **kwargs)
 

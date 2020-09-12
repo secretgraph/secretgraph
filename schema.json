@@ -329,6 +329,20 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "clusters",
+                  "type": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "ID",
+                      "ofType": null
+                    }
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "includeTags",
                   "type": {
                     "kind": "LIST",
@@ -376,20 +390,6 @@
                     "kind": "SCALAR",
                     "name": "Boolean",
                     "ofType": null
-                  }
-                },
-                {
-                  "defaultValue": null,
-                  "description": null,
-                  "name": "clusters",
-                  "type": {
-                    "kind": "LIST",
-                    "name": null,
-                    "ofType": {
-                      "kind": "SCALAR",
-                      "name": "ID",
-                      "ofType": null
-                    }
                   }
                 },
                 {
@@ -955,20 +955,6 @@
                 {
                   "defaultValue": null,
                   "description": null,
-                  "name": "clusters",
-                  "type": {
-                    "kind": "LIST",
-                    "name": null,
-                    "ofType": {
-                      "kind": "SCALAR",
-                      "name": "ID",
-                      "ofType": null
-                    }
-                  }
-                },
-                {
-                  "defaultValue": null,
-                  "description": null,
                   "name": "before",
                   "type": {
                     "kind": "SCALAR",
@@ -1284,22 +1270,6 @@
             {
               "args": [],
               "deprecationReason": null,
-              "description": "",
-              "isDeprecated": false,
-              "name": "cluster",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "Cluster",
-                  "ofType": null
-                }
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
               "description": "The ID of the object.",
               "isDeprecated": false,
               "name": "id",
@@ -1327,6 +1297,18 @@
                   "name": "ActionEntry",
                   "ofType": null
                 }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "cluster",
+              "type": {
+                "kind": "OBJECT",
+                "name": "Cluster",
+                "ofType": null
               }
             },
             {

@@ -9,7 +9,7 @@ import { newClusterLabel } from "../../messages";
 type Props = {
 };
 
-const viewSource = (props: Props) => {
+const ViewSource = (props: Props) => {
   const {classes, theme} = useStylesAndTheme();
 
   return (
@@ -17,7 +17,7 @@ const viewSource = (props: Props) => {
   );
 }
 
-const editSource = (props: Props) => {
+const EditSource = (props: Props) => {
   const {classes, theme} = useStylesAndTheme();
 
   return (
@@ -26,7 +26,7 @@ const editSource = (props: Props) => {
 }
 
 
-export default function sourceComponent(props: Props) {
+export default function SourceComponent(props: Props) {
   return (
     <div />
   );

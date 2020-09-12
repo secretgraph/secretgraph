@@ -1,27 +1,32 @@
 
-import { fade, withStyles, makeStyles, createStyles, Theme, useTheme } from "@material-ui/core/styles";
+import {
+  fade,
+  withStyles,
+  makeStyles,
+  createStyles,
+  Theme,
+  useTheme
+} from "@material-ui/core/styles";
 
 const drawerWidth = "16rem";
 
 export function secretgraphTheme(theme: Theme) {
   return {
     root: {
-      display: "flex" as const,
-      flexDirection: "column" as const,
+      display: "grid",
+      gridTemplateColumns: "auto 1fr",
+    },
+    subRoot: {
+      display: "grid",
+      gridTemplateRows: "auto auto 1fr",
       minHeight: "100vh" as const
     },
     appBar: {
+      gridRowStart: 1,
+      gridRowEnd: 1,
       transition: theme.transitions.create(['margin', 'width'], {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
-      }),
-    },
-    appBarShift: {
-      width: `calc(100% - ${drawerWidth})`,
-      marginLeft: theme.direction === "ltr" ? drawerWidth : 0,
-      transition: theme.transitions.create(['margin', 'width'], {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
       }),
     },
     appBarToolBar : {
@@ -48,12 +53,24 @@ export function secretgraphTheme(theme: Theme) {
       direction: "rtl" as const,
       fontSize: "120%" as const
     },
-    drawer: {
+    drawerOpen: {
+      gridColumnStart: 1,
+      gridColumnEnd: 1,
+      gridRowStart: 1,
+      gridRowEnd: 2,
       width: drawerWidth,
-      flexShrink: 0,
+      height: "100vh"
+    },
+    draweClosed: {
+      gridColumnStart: 1,
+      gridColumnEnd: 1,
+      gridRowStart: 1,
+      gridRowEnd: 2,
+      width: 0
     },
     drawerPaper: {
       width: drawerWidth,
+      overflowY: "auto" as const
     },
     sideBarHeaderSelect: {
       width: "100%" as const,
@@ -94,25 +111,15 @@ export function secretgraphTheme(theme: Theme) {
       flexGrow: 1,
     },
     content: {
+      gridRowStart: 2,
+      gridRowEnd: 2,
       display: "flex" as const,
       flexDirection: "column" as const,
-      flexGrow: 1,
       padding: theme.spacing(1),
       transition: theme.transitions.create(['margin', 'width'], {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
       }),
-    },
-    contentShift: {
-      display: "flex" as const,
-      flexDirection: "column" as const,
-      flexGrow: 1,
-      padding: theme.spacing(1),
-      transition: theme.transitions.create(['margin', 'width'], {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      marginLeft: theme.direction === "ltr" ? drawerWidth : 0,
     },
     buttonProgress: {
       color: "primary",

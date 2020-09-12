@@ -151,7 +151,7 @@ function HeaderBar(props: Props) {
   return (
     <AppBar
       position="sticky"
-      className={openState.drawerOpen ? classes.appBarShift : classes.appBar}
+      className={classes.appBar}
     >
       <Dialog open={exportOpen} onClose={() => setExportOpen(false)} aria-labelledby="export-dialog-title">
         <DialogTitle id="export-dialog-title">Export</DialogTitle>

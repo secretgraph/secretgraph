@@ -1,5 +1,5 @@
 
-from graphene import Field
+from graphene import Field, List, ID
 
 from .arguments import AuthList, AuthRelayField
 from .definitions import (
@@ -16,10 +16,17 @@ from .mutations import (
 class Query():
     secretgraphConfig = Field(SecretgraphConfig)
     cluster = AuthRelayField(ClusterNode)
-    clusters = ClusterConnectionField(authorization=AuthList())
+    clusters = ClusterConnectionField(
+        authorization=AuthList()
+    )
 
     content = AuthRelayField(ContentNode)
-    contents = ContentConnectionField(authorization=AuthList())
+    contents = ContentConnectionField(
+        authorization=AuthList(),
+        clusters=List(
+            ID, required=False
+        )
+    )
 
     def resolve_secretgraphConfig(self, info, **kwargs):
         return SecretgraphConfig()

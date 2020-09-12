@@ -226,8 +226,9 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         name = "Content"
         interfaces = (relay.Node,)
         fields = [
-            'nonce', 'updated', 'cluster', 'contentHash', 'updateId'
+            'nonce', 'updated', 'contentHash', 'updateId'
         ]
+    cluster = graphene.Field(lambda: ClusterNode)
     references = ContentReferenceConnectionField()
     referencedBy = ContentReferenceConnectionField()
     tags = graphene.Field(
@@ -353,9 +354,6 @@ class ContentConnectionField(DjangoConnectionField):
             graphene.String, required=False
         ))
         kwargs.setdefault("public", graphene.Boolean(required=False))
-        kwargs.setdefault("clusters", graphene.List(
-            graphene.ID, required=False
-        ))
         super().__init__(type, *args, **kwargs)
 
     @classmethod

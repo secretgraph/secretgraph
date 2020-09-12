@@ -351,10 +351,20 @@ export async function initializeCluster(
   })
 }
 
-export async function decryptContentObject(config: ConfigInterface, nodeData: any, blob : Blob | null=null){
+export async function decryptContentObject(
+  config: ConfigInterface,
+  authinfo: AuthInfoInterface,
+  nodeData: any, blob : Blob | null=null)
+{
   let arrPromise;
   if (!blob) {
-    arrPromise = fetch(nodeData.link).then((result) => result.arrayBuffer());
+    arrPromise = fetch(
+      nodeData.link, {
+        headers: {
+          "Authorization": authinfo.keys.join(",")
+        }
+      }
+    ).then((result) => result.arrayBuffer());
   } else {
     arrPromise = blob.arrayBuffer();
   }
@@ -401,5 +411,7 @@ export async function decryptContentId(client: ApolloClient<any>, config: Config
   if(!result.data){
     return null;
   }
-  return await decryptContentObject(config, result.data.content);
+  return await decryptContentObject(
+    config, result.data.content, authinfo, null
+  );
 }

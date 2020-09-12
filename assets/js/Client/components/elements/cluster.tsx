@@ -36,7 +36,7 @@ const EditCluster = (props: Props) => {
   );
 }
 
-export default function clusterComponent(props: Props) {
+export default function ClusterComponent(props: Props) {
   const {mainCtx} = React.useContext(MainContext);
   if (mainCtx.action == "view" && mainCtx.item) {
     return (<ViewCluster/>)

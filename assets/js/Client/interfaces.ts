@@ -69,5 +69,6 @@ export interface AuthInfoInterface {
 
 export interface ElementEntryInterface {
   label: string;
+  ignore?: boolean;
   component: React.LazyExoticComponent<any>;
 }
