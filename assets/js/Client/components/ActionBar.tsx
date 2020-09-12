@@ -1,6 +1,5 @@
 
 import * as React from "react";
-import { themeComponent } from "../theme";
 import Toolbar from "@material-ui/core/Toolbar";
 import Tooltip from '@material-ui/core/Tooltip';
 import { Theme } from "@material-ui/core/styles";
@@ -12,11 +11,10 @@ import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined';
 import { elements } from './elements';
 import { contentStates } from '../constants';
 import { MainContext } from '../contexts';
+import { useStylesAndTheme } from '../theme';
 
 
 type Props = {
-  classes: any,
-  theme: Theme,
 };
 
 function createOptionsIterator(mapObject: Map<string, any>) {
@@ -33,7 +31,7 @@ function createOptionsIterator(mapObject: Map<string, any>) {
 
 
 function ActionBar(props: Props) {
-  const { classes, theme } = props;
+  const {classes, theme} = useStylesAndTheme();
   const [actionOpen, setActionOpen] = React.useState(false);
   const [actionWeakOpen, setActionWeakOpen] = React.useState(false);
   const {mainCtx, setMainCtx} = React.useContext(MainContext);
@@ -114,4 +112,4 @@ function ActionBar(props: Props) {
   );
 }
 
-export default themeComponent(ActionBar);
+export default ActionBar;

@@ -1,5 +1,5 @@
 
-import { fade, withStyles, withTheme, Theme } from "@material-ui/core/styles";
+import { fade, withStyles, makeStyles, createStyles, Theme, useTheme } from "@material-ui/core/styles";
 
 const drawerWidth = "16rem";
 
@@ -154,4 +154,16 @@ export function secretgraphTheme(theme: Theme) {
 
 export function themeComponent(component: any) {
   return withStyles(secretgraphTheme, {withTheme: true})(component);
+}
+
+
+export const useStyles = makeStyles(
+  (theme: Theme) => createStyles(secretgraphTheme(theme))
+);
+
+export const useStylesAndTheme = () : {classes: any, theme:Theme} => {
+  return {
+    classes: useStyles(),
+    theme: useTheme()
+  };
 }

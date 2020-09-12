@@ -6,9 +6,7 @@ import { Theme } from "@material-ui/core/styles";
 import { useStylesAndTheme } from "../../theme";
 import { newClusterLabel } from "../../messages";
 
-type Props = {
-};
-
+type Props = {};
 const viewSource = (props: Props) => {
   const {classes, theme} = useStylesAndTheme();
 
@@ -26,7 +24,7 @@ const editSource = (props: Props) => {
 }
 
 
-export default function sourceComponent(props: Props) {
+export default function customComponent(props: Props) {
   return (
     <div />
   );

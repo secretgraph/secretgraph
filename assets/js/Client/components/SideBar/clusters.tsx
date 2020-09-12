@@ -11,8 +11,8 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
-import { RDFS, CLUSTER, contentStates } from "../../constants"
-import { themeComponent } from "../../theme";
+import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../../constants"
+import { useStylesAndTheme } from "../../theme";
 import { CapturingSuspense } from "../misc";
 import { ActiveUrlContext } from "../../contexts";
 import { AuthInfoInterface } from "../../interfaces";
@@ -21,8 +21,6 @@ const SideBarContents = React.lazy(() => import("./contents"));
 
 
 type SideBarItemsProps = {
-  classes: any,
-  theme: Theme,
   authinfo: AuthInfoInterface,
   state: string,
   activeCluster?: string,
@@ -62,8 +60,9 @@ const clusterFeedQuery = gql`
   }
 `
 
-export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, state, authinfo, setItemComponent, setItemContent, activeCluster } = appProps;
+export default (appProps: SideBarItemsProps) => {
+  const {classes, theme} = useStylesAndTheme();
+  const { state, authinfo, setItemComponent, setItemContent, activeCluster } = appProps;
   let hasNextPage = true;
   const {activeUrl} = React.useContext(ActiveUrlContext);
 
@@ -92,15 +91,15 @@ export default themeComponent((appProps: SideBarItemsProps) => {
   return (
     <React.Fragment>
       {data.clusters.edges.map((edge: any) => {
-        let label: string | undefined, comment: string="";
+        let name: string | undefined, note: string="";
         if (edge.node.publicInfo){
           try {
             const store = graph();
             parse(edge.node.publicInfo, store, "");
-            const results = store.querySync(`SELECT ?label, ?comment WHERE {_:cluster a ${CLUSTER("Cluster")}; ${RDFS("label")} ?label; ${RDFS("comment")} ?comment. }`)
+            const results = store.querySync(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`)
             if(results.length > 0) {
-              label = results[0][0];
-              comment = results[0][1];
+              name = results[0][0];
+              note = results[0][1] ? results[0][1] : "";
             }
           } catch(exc){
             console.warn("Could not parse publicInfo", exc)
@@ -121,7 +120,6 @@ export default themeComponent((appProps: SideBarItemsProps) => {
                 <ListItem key="preambleinternal">
                   <ListItemText className={classes.sideBarEntry} primary={contentStates.get("internal")?.label} />
                 </ListItem>
-                <Divider/>
               </React.Fragment>
             )
           } else {
@@ -139,10 +137,10 @@ export default themeComponent((appProps: SideBarItemsProps) => {
               <ListSubheader
                 key={`${activeUrl}:cluster:header:${edge.node.id}`}
                 className={classes.sideBarEntry}
-                title={comment}
+                title={note}
                 onClick={() => setItemComponent(edge.node)}
               >
-                {label ? label : `...${edge.node.id.substr(-48)}`}
+                {name ? name : `...${edge.node.id.substr(-48)}`}
               </ListSubheader>
               <CapturingSuspense>
                 <List dense component="div" className={classes.sideBarContentList} disablePadding>
@@ -164,7 +162,7 @@ export default themeComponent((appProps: SideBarItemsProps) => {
               <ListItemIcon>
                 <GroupWorkIcon />
               </ListItemIcon>
-              <ListItemText className={classes.sideBarEntry} primary={label ? label : `...${edge.node.id.substr(-48)}`} title={comment} />
+              <ListItemText className={classes.sideBarEntry} primary={name ? name : `...${edge.node.id.substr(-48)}`} title={note} />
               {(edge.node.id !== activeCluster) ? <ExpandMoreIcon/> : null}
             </ListItem>
           );
@@ -183,4 +181,4 @@ export default themeComponent((appProps: SideBarItemsProps) => {
       </ListItem>
     </React.Fragment>
   );
-})
+}

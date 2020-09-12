@@ -16,10 +16,7 @@ import Collapse from '@material-ui/core/Collapse';
 import Accordion from '@material-ui/core/Accordion';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
-import DescriptionIcon from '@material-ui/icons/Description';
 import GroupWorkIcon from '@material-ui/icons/GroupWork';
-import MovieIcon from '@material-ui/icons/Movie';
-import { parse, graph } from 'rdflib';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
@@ -27,26 +24,19 @@ import InboxIcon from "@material-ui/icons/MoveToInbox";
 import MailOutlineIcon from '@material-ui/icons/MailOutline';
 import DraftsIcon from '@material-ui/icons/Drafts';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import { Theme } from "@material-ui/core/styles";
-import { themeComponent } from "../../theme";
+import { useStylesAndTheme } from "../../theme";
 import { ConfigInterface, AuthInfoInterface } from "../../interfaces";
 import { MainContext, SearchContext, ActiveUrlContext, ConfigContext } from "../../contexts";
-import { elements } from "../elements";
 import { extractAuthInfo } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
-import { lightBaseTheme } from "material-ui/styles";
 const SideBarClusters = React.lazy(() => import("./clusters"));
 
 
 type SideBarProps = {
   openState: any,
-  classes: any,
-  theme: Theme,
 };
 
 type SideBarHeaderProps = {
-  classes: any,
-  theme: Theme,
   closeButton: any,
   headerExpanded: boolean,
   setHeaderExpanded: any
@@ -54,13 +44,11 @@ type SideBarHeaderProps = {
 
 
 type SideBarControlProps = {
-  classes: any,
-  theme: Theme,
-  config: ConfigInterface
 };
 
-const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
-  const { classes, theme, closeButton, headerExpanded, setHeaderExpanded } = props;
+const SideBarHeader = (props: SideBarHeaderProps) => {
+  const {classes, theme} = useStylesAndTheme();
+  const { closeButton, headerExpanded, setHeaderExpanded } = props;
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
   const { config, setConfig } = React.useContext(ConfigContext);
   const { searchCtx, setSearchCtx } = React.useContext(SearchContext);
@@ -198,11 +186,11 @@ const SideBarHeader = themeComponent((props: SideBarHeaderProps) => {
       </Collapse>
     </React.Fragment>
   )
-})
+}
 
 
-const SideBarControl = themeComponent((props: SideBarControlProps) => {
-  const { classes, theme } = props;
+const SideBarControl = (props: SideBarControlProps) => {
+  const {classes, theme} = useStylesAndTheme();
   const { mainCtx, setMainCtx } = React.useContext(MainContext)
   const { searchCtx, setSearchCtx } = React.useContext(SearchContext)
   return (
@@ -288,11 +276,12 @@ const SideBarControl = themeComponent((props: SideBarControlProps) => {
       </AccordionDetails>
     </Accordion>
   );
-});
+}
 
 
 const SideBar = (props: SideBarProps) => {
-  const { classes, theme, openState} = props;
+  const {classes, theme} = useStylesAndTheme();
+  const { openState} = props;
   const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
   const { mainCtx, setMainCtx } = React.useContext(MainContext);
@@ -314,11 +303,11 @@ const SideBar = (props: SideBarProps) => {
     </Hidden>
   );
   let sideBarItems = null;
-  if (config){
+  if (config && authinfo !== null){
     sideBarItems = (
       <SideBarClusters
         authinfo={authinfo}
-        activeCluster={searchCtx.cluster}
+        activeCluster={searchCtx.cluster as string}
         state={mainCtx.state}
         setItemComponent={
           (cluster: any) => {
@@ -347,7 +336,8 @@ const SideBar = (props: SideBarProps) => {
               ...mainCtx,
               action: "view",
               type: type,
-              item: content.id
+              item: content.id,
+              url: activeUrl
             });
             setHeaderExpanded(false);
           }
@@ -384,4 +374,4 @@ const SideBar = (props: SideBarProps) => {
   // }, [searchCtx.cluster, authinfo, activeUrl, headerExpanded, openState.drawerOpen]);
 }
 
-export default themeComponent(SideBar);
+export default SideBar;

@@ -3,7 +3,7 @@ import { ApolloProvider } from "@apollo/client";
 import { Theme } from "@material-ui/core/styles";
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
-import { themeComponent } from "../theme";
+import { useStylesAndTheme } from "../theme";
 import { elements } from '../components/elements';
 import { CapturingSuspense } from '../components/misc';
 import { loadConfigSync } from '../utils/config';
@@ -14,25 +14,25 @@ import SideBar from '../components/SideBar';
 // const SideBar = React.lazy(() => import('../components/SideBar'));
 const SettingsImporter = React.lazy(() => import('./SettingsImporter'));
 const Help = React.lazy(() => import('./Help'));
-const DocumentViewer = React.lazy(() => import('./DocumentViewer'));
-const DocumentForm = React.lazy(() => import('./DocumentForm'));
 
 type Props = {
-  classes: any,
-  theme: Theme,
   defaultPath?: string
 };
 
 
 
 function MainPage(props: Props) {
-  const {classes, theme, defaultPath} = props;
+  const {defaultPath} = props;
+  const {classes, theme} = useStylesAndTheme();
   const [drawerOpen, setDrawerOpen] = React.useState(true);
   const [config, setConfig] = React.useState(() => loadConfigSync());
   const [mainCtx, setMainCtx] = React.useState({
     "action": config ? "add" : "start",
     "state": "default",
     "title": null,
+    "item": null,
+    "url": null,
+    "type": null
   } as MainContextInterface);
   const [activeItem, setActiveItem] = React.useState(() => elements.keys().next().value);
   const [searchCtx, setSearchCtx] = React.useState({
@@ -106,4 +106,4 @@ function MainPage(props: Props) {
 };
 
 
-export default themeComponent(MainPage);
+export default MainPage;

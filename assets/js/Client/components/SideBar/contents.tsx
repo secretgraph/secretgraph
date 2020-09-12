@@ -9,15 +9,13 @@ import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
 import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
-import { themeComponent } from "../../theme";
+import { useStylesAndTheme } from "../../theme";
 import { elements } from "../elements";
 import { AuthInfoInterface } from "../../interfaces";
 import { SearchContext, ActiveUrlContext, MainContext } from "../../contexts";
 
 
 type SideBarItemsProps = {
-  classes: any,
-  theme: Theme,
   authinfo?: AuthInfoInterface,
   setItem: any,
   cluster?: string
@@ -72,8 +70,9 @@ query SideBarContentFeedQuery(
 
 
 // ["type=", "state=", ...
-export default themeComponent((appProps: SideBarItemsProps) => {
-  const { classes, theme, authinfo, setItem, cluster } = appProps;
+export default (appProps: SideBarItemsProps) => {
+  const {classes, theme} = useStylesAndTheme();
+  const { authinfo, setItem, cluster } = appProps;
   const {searchCtx} = React.useContext(SearchContext);
   const {mainCtx} = React.useContext(MainContext);
   const {activeUrl} = React.useContext(ActiveUrlContext);
@@ -171,4 +170,4 @@ export default themeComponent((appProps: SideBarItemsProps) => {
       </ListItem>
     </React.Fragment>
   );
-});
+}

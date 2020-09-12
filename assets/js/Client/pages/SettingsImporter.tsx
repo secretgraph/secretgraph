@@ -20,7 +20,7 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import CheckIcon from '@material-ui/icons/Check';
 
-import { themeComponent } from "../theme";
+import { useStylesAndTheme } from "../theme";
 import {
   startHelp,
   startLabel,
@@ -37,10 +37,6 @@ import { serverConfigQuery } from "../queries/server"
 import { mapHashNames } from "../constants"
 import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
 
-type Props = {
-  classes: any,
-  theme: Theme
-};
 
 function Alert(props: any) {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
@@ -58,8 +54,8 @@ function checkInputs(needsPw: boolean, hasPw: boolean) {
   )
 }
 
-function SettingsImporter(props: Props) {
-  const { classes, theme } = props;
+function SettingsImporter() {
+  const {classes, theme} = useStylesAndTheme();
   const [registerUrl, setRegisterUrl] = React.useState(undefined);
   const [loadingStart, setLoadingStart] = React.useState(false);
   const [loadingImport, setLoadingImport] = React.useState(false);
@@ -406,4 +402,4 @@ function SettingsImporter(props: Props) {
   );
 }
 
-export default themeComponent(SettingsImporter);
+export default SettingsImporter;

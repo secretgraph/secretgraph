@@ -16,9 +16,8 @@ import TextField from '@material-ui/core/TextField';
 import FormControl from '@material-ui/core/FormControl';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import Link from '@material-ui/core/Link';
-import { Theme } from "@material-ui/core/styles";
 import { useApolloClient } from '@apollo/client';
-import { themeComponent } from "../theme";
+import { useStylesAndTheme } from "../theme";
 import { exportConfig, exportConfigAsUrl } from "../utils/config";
 import { elements } from './elements';
 import { serverConfigQuery } from "../queries/server";
@@ -31,14 +30,13 @@ import {
 
 type Props = {
   openState: any,
-  classes: any,
-  theme: Theme,
 };
 const menuRef: React.RefObject<any> = React.createRef();
 
 
 function HeaderBar(props: Props) {
-  const { classes, theme, openState } = props;
+  const { openState } = props;
+  const {classes, theme} = useStylesAndTheme();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportUrl, setExportUrl] = React.useState("");
@@ -226,4 +224,4 @@ function HeaderBar(props: Props) {
 }
 
 
-export default themeComponent(HeaderBar);
+export default HeaderBar;

@@ -3,31 +3,47 @@
 import * as React from "react";
 import { Theme } from "@material-ui/core/styles";
 
-import { themeComponent } from "../../theme";
+import { MainContext, ConfigContext } from "../../contexts"
+import { getClusterQuery } from "../../queries/cluster"
+import { useStylesAndTheme } from "../../theme";
 import { newClusterLabel } from "../../messages";
 
+
 type Props = {
-  classes: any,
-  theme: Theme,
 };
-export const viewSource = themeComponent((props: Props) => {
-  const { classes, theme } = props;
+
+const ViewCluster = (props: Props) => {
+  const {classes, theme} = useStylesAndTheme();
 
   return (
     <div />
   );
-});
+}
 
-const editSource = themeComponent((props: Props) => {
-  const { classes, theme } = props;
+const AddCluster = (props: Props) => {
+  const {classes, theme} = useStylesAndTheme();
 
   return (
     <div />
   );
-});
+}
+
+const EditCluster = (props: Props) => {
+  const {classes, theme} = useStylesAndTheme();
+
+  return (
+    <div />
+  );
+}
 
 export default function clusterComponent(props: Props) {
-  return (
-      <div />
-  );
+  const {mainCtx} = React.useContext(MainContext);
+  if (mainCtx.action == "view" && mainCtx.item) {
+    return (<ViewCluster/>)
+  } else if (mainCtx.action == "edit" && mainCtx.item) {
+    return (<EditCluster/>)
+  } else if (mainCtx.action == "add") {
+    return (<AddCluster/>)
+  }
+  return null;
 };

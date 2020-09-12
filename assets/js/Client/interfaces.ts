@@ -50,6 +50,8 @@ export interface MainContextInterface {
   title: null | string;
   state: string;
   item: null | string;
+  // activeUrl can be changed without changing active element, so cache it here
+  url: null | string;
   type: null | string;
 }
 

@@ -382,7 +382,7 @@ export async function decryptContentObject(config: ConfigInterface, nodeData: an
   ));
 }
 
-export async function decryptContentUrl(client: ApolloClient<any>, config: ConfigInterface, activeUrl: string, contentId: string){
+export async function decryptContentId(client: ApolloClient<any>, config: ConfigInterface, activeUrl: string, contentId: string){
   const authinfo : AuthInfoInterface = extractAuthInfo(config, activeUrl);
   let result;
   // TODO: maybe remove try catch
@@ -398,5 +398,8 @@ export async function decryptContentUrl(client: ApolloClient<any>, config: Confi
     console.error("fetching failed", error);
     return null;
   }
-  return await decryptContentObject(config, result.content, activeUrl);
+  if(!result.data){
+    return null;
+  }
+  return await decryptContentObject(config, result.data.content);
 }
