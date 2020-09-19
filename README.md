@@ -23,6 +23,7 @@
 
 
 # TODO
+* implement hidden, for administrative hidding of contents
 * cleanup js structure, harmonize naming, modulize more
 * updateId in form
 * prekey implement form

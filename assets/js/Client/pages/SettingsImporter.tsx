@@ -88,8 +88,14 @@ function SettingsImporter() {
       return;
     }
     const sconfig = result.data.secretgraphConfig;
-    const hashAlgo = mapHashNames[sconfig.hashAlgorithms[0]];
-    if (!hashAlgo){
+    const hashAlgos = [];
+    for(const algo of sconfig.hashAlgorithms){
+      const mappedName = mapHashNames[algo];
+      if (mappedName){
+        hashAlgos.push(mappedName);
+      }
+    }
+    if (!hashAlgos){
       setMessage({ severity: "warning", message: "unsupported hash algorithm" });
       setLoadingImport(false);
       return
@@ -98,12 +104,12 @@ function SettingsImporter() {
       newConfig = {
         certificates: {},
         tokens: {},
-        clusters: {},
+        hosts: {},
         baseUrl: (new URL(providerUrl, window.location.href)).href,
         configHashes: [],
-        configCluster: "",
-        hashAlgorithm: hashAlgo
+        configCluster: ""
       };
+      newConfig.hosts[newConfig.baseUrl] = {hashAlgorithms: hashAlgos, clusters: {}}
       await initializeCluster(client, newConfig);
     }
     if (!newConfig){
@@ -145,21 +151,27 @@ function SettingsImporter() {
       return;
     }
     const sconfig = result.data.secretgraphConfig;
-    const hashAlgo = mapHashNames[sconfig.hashAlgorithms[0]];
-    if (!hashAlgo){
+    const hashAlgos = [];
+    for(const algo of sconfig.hashAlgorithms){
+      const mappedName = mapHashNames[algo];
+      if (mappedName){
+        hashAlgos.push(mappedName);
+      }
+    }
+    if (!hashAlgos){
       setMessage({ severity: "warning", message: "unsupported hash algorithm" });
       return
     }
     if (sconfig.registerUrl === true) {
-      let newConfig: ConfigInterface = {
+      const newConfig: ConfigInterface = {
         certificates: {},
         tokens: {},
-        clusters: {},
+        hosts: {},
         baseUrl: (new URL(providerUrl, window.location.href)).href,
         configHashes: [],
-        configCluster: "",
-        hashAlgorithm: hashAlgo
+        configCluster: ""
       };
+      newConfig.hosts[newConfig.baseUrl] = {hashAlgorithms: hashAlgos, clusters: {}}
       const client = createClient(newConfig.baseUrl);
       await initializeCluster(client, newConfig);
       // TODO: handle exceptions and try with login

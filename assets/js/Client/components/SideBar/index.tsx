@@ -24,8 +24,13 @@ import InboxIcon from "@material-ui/icons/MoveToInbox";
 import MailOutlineIcon from '@material-ui/icons/MailOutline';
 import DraftsIcon from '@material-ui/icons/Drafts';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+
+import { useApolloClient } from '@apollo/client';
+
 import { useStylesAndTheme } from "../../theme";
-import { ConfigInterface, AuthInfoInterface } from "../../interfaces";
+import { mapHashNames } from "../../constants";
+import {  AuthInfoInterface } from "../../interfaces";
+import { serverConfigQuery } from "../../queries/server";
 import { MainContext, SearchContext, ActiveUrlContext, ConfigContext } from "../../contexts";
 import { extractAuthInfo } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
@@ -52,42 +57,64 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
   const { config, setConfig } = React.useContext(ConfigContext);
   const { searchCtx, setSearchCtx } = React.useContext(SearchContext);
+  const client = useApolloClient();
   const headerElements = (
     <Autocomplete
       onFocus={() => setHeaderExpanded(true)}
       className={classes.sideBarHeaderSelect}
       freeSolo
       value={activeUrl}
-      options={Object.keys(config ? config.clusters : {})}
+      options={Object.keys(config ? config.hosts : {})}
       disableClearable
-      onChange={(event: any, value: any, reason: string) => {
+      onChange={async (event: any, value: any, reason: string) => {
         if(!value) return;
         switch (reason) {
           case "create-option":
-            if(config && !config.clusters[value]){
+            if(config && !config.hosts[value]){
+              const hashAlgos = [];
+              try{
+                const result = await client.query({
+                  query: serverConfigQuery
+                });
+                for(const algo of result.data.secretgraphConfig.hashAlgorithms){
+                  const mappedName = mapHashNames[algo];
+                  if (mappedName){
+                    hashAlgos.push(mappedName);
+                  }
+                }
+              } catch(exc){
+                console.warn("Cannot add host", exc);
+                return
+              }
+              if (!hashAlgos){
+                console.warn("Cannot add host, no fitting hash algos found");
+                return
+              }
               const newConfig = {
                 ...config,
-                clusters: {
-                  ...config.clusters
+                hosts: {
+                  ...config.hosts
                 }
               };
-              newConfig.clusters[value] = {};
+              hashAlgos
+              newConfig.hosts[value] = {hashAlgorithms: hashAlgos, clusters: {}};
               setConfig(newConfig)
             }
             setActiveUrl(value);
             break;
           case "select-option":
+            // TODO: update hash list
             setActiveUrl(value);
             break;
           case "remove-option":
-            if (config && config.clusters[value] && Object.keys(config.clusters[value]).length === 0){
+            if (config && config.hosts[value] && Object.keys(config.hosts[value]).length === 0){
               const newConfig = {
                 ...config,
                 clusters: {
-                  ...config.clusters
+                  ...config.hosts
                 }
               };
-              delete newConfig.clusters[value];
+              delete newConfig.hosts[value];
               setConfig(newConfig)
             }
         }

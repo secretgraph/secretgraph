@@ -15,12 +15,11 @@ export function checkConfig(config: ConfigInterface | null | undefined) {
   }
   if (
     !config.baseUrl ||
-    !(config.clusters instanceof Object) ||
+    !(config.hosts instanceof Object) ||
     !(config.tokens instanceof Object) ||
     !(config.certificates instanceof Object) ||
     !(config.configHashes instanceof Array) ||
-    !config.configCluster ||
-    !config.hashAlgorithm
+    !config.configCluster
   ){
     console.error(config);
     return null;
@@ -258,7 +257,6 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
   ));
   const searchcerthashes = new Set(actions.map(hash => `key_hash=${hash}`));
   for(const node of obj.data.contents.edges){
-    console.log(node.node);
     if(!node.node.tags.includes("type=Config")){
       continue;
     }
@@ -312,8 +310,9 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
 export function extractAuthInfo(config: ConfigInterface, url: string) : AuthInfoInterface {
   const keys = [];
   const hashes = [];
-  for (const id in config.clusters[url]) {
-    const clusterconf = config.clusters[url][id];
+  const clusters = config.hosts[url].clusters;
+  for (const id in clusters) {
+    const clusterconf = clusters[id];
     for (const hash in clusterconf.hashes){
       // const actions = clusterconf.hashes[hash]
       if (config.tokens[hash]){

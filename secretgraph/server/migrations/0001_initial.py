@@ -38,6 +38,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(editable=False, primary_key=True, serialize=False)),
                 ('flexid', models.UUIDField(blank=True, null=True, unique=True)),
+                ('hidden', models.BooleanField(blank=True, default=False)),
                 ('updated', models.DateTimeField(auto_now=True)),
                 ('updateId', models.UUIDField(blank=True, db_column='update_id', default=uuid.uuid4)),
                 ('markForDestruction', models.DateTimeField(blank=True, db_column='mark_for_destruction', null=True)),

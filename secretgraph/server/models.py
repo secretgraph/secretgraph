@@ -129,6 +129,8 @@ class Content(FlexidModel):
         null=True, blank=True,
         db_column="mark_for_destruction"
     )
+    # doesn't appear in non-admin searches
+    hidden: bool = models.BooleanField(blank=True, default=False)
 
     nonce: str = models.CharField(max_length=255)
     # can decrypt = correct key

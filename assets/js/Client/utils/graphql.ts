@@ -43,7 +43,7 @@ export function createContentAuth(
   }
   const checkActions =  (el: string) => [action, "manage"].includes(el);
   for(let clusterid of clusters){
-    const c = config.clusters[usedUrl] ? config.clusters[usedUrl][clusterid] : undefined;
+    const c = config.hosts[usedUrl] ? config.hosts[usedUrl].clusters[clusterid] : undefined;
     if (c?.hashes){
       for(let hash in c.hashes) {
         if(keysink && hash in config.certificates){
@@ -74,30 +74,31 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
       transforms["signkey"] = Promise.resolve(privkey);
     }
     let hash = hashes ? Promise.resolve(hashes[counter]): (transforms["pubkey"] as PromiseLike<CryptoKey>).then(
-      (pubkey) => crypto.subtle.exportKey(
-        "spki" as const,
-        pubkey
-      )
-    ).then(
-      (exported) => crypto.subtle.digest(
-        hashalgo, exported
-      ).then(
-        (hashed) => btoa(String.fromCharCode(... new Uint8Array(hashed)))
-      )
-    );
+      async (pubkey) => {
+        const exported = await crypto.subtle.exportKey(
+          "spki" as const,
+          pubkey
+        );
+        return await crypto.subtle.digest(
+          hashalgo, exported
+        ).then(
+          (hashed) => btoa(String.fromCharCode(... new Uint8Array(hashed)))
+        )
+      }
+    ) as PromiseLike<string>;
     references.push(
       Promise.all([
         hash,
         (transforms["signkey"] as PromiseLike<CryptoKey>).then(
-          signkey => crypto.subtle.sign(
-          {
-            name: "RSA-PSS",
-            saltLength: 32,
-          },
-          signkey,
-          content
-        )
-      )
+          (signkey) => crypto.subtle.sign(
+            {
+              name: "RSA-PSS",
+              saltLength: 32,
+            },
+            signkey,
+            content
+          )
+        ) as PromiseLike<ArrayBufferLike>
       ]).then((arr) : ReferenceInterface => {
         return {
           "target": arr[0],
@@ -288,11 +289,11 @@ export async function initializeCluster(
     "spki" as const,
     publicKey
   ).then((keydata) => crypto.subtle.digest(
-    config.hashAlgorithm,
+    config.hosts[config.baseUrl].hashAlgorithms[0],
     keydata
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data)))));
   const digestActionKeyPromise = crypto.subtle.digest(
-    config.hashAlgorithm,
+    config.hosts[config.baseUrl].hashAlgorithms[0],
     crypto.getRandomValues(new Uint8Array(32))
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
   const keyb64 = btoa(String.fromCharCode(...key));
@@ -311,14 +312,13 @@ export async function initializeCluster(
     const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
     config.configCluster = clusterResult.cluster["id"];
     config.configHashes = [digestActionKey, digestCertificate];
-    config["clusters"][config["baseUrl"]] = {};
-    config["clusters"][config["baseUrl"]][clusterResult.cluster["id"]] = {
+    config["hosts"][config["baseUrl"]].clusters[clusterResult.cluster["id"]] = {
       hashes: {}
     }
-    config["clusters"][config["baseUrl"]][clusterResult.cluster["id"]].hashes[
+    config["hosts"][config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
       digestActionKey
     ] = ["manage", "create", "update"];
-    config["clusters"][config["baseUrl"]][clusterResult.cluster["id"]].hashes[
+    config["hosts"][config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
       digestCertificate
     ] = [];
     config["certificates"][
@@ -332,7 +332,7 @@ export async function initializeCluster(
       console.error("invalid config created");
       return;
     }
-    const digest = await sortedHash(["type=Config"], config.hashAlgorithm);
+    const digest = await sortedHash(["type=Config"], config["hosts"][config["baseUrl"]].hashAlgorithms[0]);
     return await createContent(
       client,
       config,
@@ -343,7 +343,7 @@ export async function initializeCluster(
         privkeys: [privateKey],
         tags: ["type=Config", "state=internal"],
         contentHash: digest,
-        hashAlgorithm: config.hashAlgorithm
+        hashAlgorithm: config["hosts"][config["baseUrl"]].hashAlgorithms[0]
       }
     ).then(() => {
       return [config, clusterResult.cluster.id as string];
@@ -353,20 +353,21 @@ export async function initializeCluster(
 
 export async function decryptContentObject(
   config: ConfigInterface,
-  authinfo: AuthInfoInterface,
-  nodeData: any, blob : Blob | null=null)
+  nodeData: any, blobOrAuthinfo : Blob | string | AuthInfoInterface)
 {
-  let arrPromise;
-  if (!blob) {
+  let arrPromise : PromiseLike<ArrayBufferLike>;
+  if (blobOrAuthinfo instanceof Blob) {
+    arrPromise = blobOrAuthinfo.arrayBuffer();
+  } else if (typeof(blobOrAuthinfo) == "string") {
+    arrPromise = Promise.resolve(b64toarr(blobOrAuthinfo).buffer)
+  } else {
     arrPromise = fetch(
       nodeData.link, {
         headers: {
-          "Authorization": authinfo.keys.join(",")
+          "Authorization": blobOrAuthinfo.keys.join(",")
         }
       }
     ).then((result) => result.arrayBuffer());
-  } else {
-    arrPromise = blob.arrayBuffer();
   }
   const found = findCertCandidatesForRefs(config, nodeData);
   if (!found){
@@ -412,6 +413,6 @@ export async function decryptContentId(client: ApolloClient<any>, config: Config
     return null;
   }
   return await decryptContentObject(
-    config, result.data.content, authinfo, null
+    config, result.data.content, authinfo
   );
 }
