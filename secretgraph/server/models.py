@@ -78,6 +78,7 @@ class Cluster(FlexidModel):
     # internal field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
+    updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(
         blank=True, default=uuid4, db_column="update_id"
     )

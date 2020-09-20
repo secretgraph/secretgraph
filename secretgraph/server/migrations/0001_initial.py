@@ -25,6 +25,7 @@ class Migration(migrations.Migration):
                 ('publicInfo', models.FileField(db_column='public_info', upload_to=secretgraph.server.models.get_publicInfo_file_path)),
                 ('public', models.BooleanField(blank=True, default=False)),
                 ('featured', models.BooleanField(blank=True, default=False)),
+                ('updated', models.DateTimeField(auto_now=True)),
                 ('updateId', models.UUIDField(blank=True, db_column='update_id', default=uuid.uuid4)),
                 ('group', models.CharField(blank=True, default='', help_text='injection group: group which injected keys must be used for mutations with content/cluster', max_length=10)),
                 ('markForDestruction', models.DateTimeField(blank=True, db_column='mark_for_destruction', null=True)),

@@ -310,7 +310,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
 export function extractAuthInfo(config: ConfigInterface, url: string) : AuthInfoInterface {
   const keys = [];
   const hashes = [];
-  const clusters = config.hosts[url].clusters;
+  const clusters = config.hosts[(new URL(url, window.location.href)).href].clusters;
   for (const id in clusters) {
     const clusterconf = clusters[id];
     for (const hash in clusterconf.hashes){
@@ -327,8 +327,11 @@ export function extractAuthInfo(config: ConfigInterface, url: string) : AuthInfo
 
 export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any) : [Uint8Array, Uint8Array][] {
   const found: [Uint8Array, Uint8Array][] = [];
-  for(const refnode of nodeData.references){
-    for(const dirtyhash of refnode.target.tags){
+  console.log(nodeData);
+  for(const _refnode in nodeData.references){
+    const refnode =  nodeData.references[_refnode];
+    for(const _dirtyhash of refnode.target.tags){
+      const dirtyhash = refnode.target.tag[_dirtyhash];
       const cleanhash = dirtyhash.split("=", 2)[1];
       if(cleanhash && config.certificates[cleanhash]){
         found.push([

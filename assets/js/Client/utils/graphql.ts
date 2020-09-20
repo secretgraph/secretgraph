@@ -312,13 +312,13 @@ export async function initializeCluster(
     const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
     config.configCluster = clusterResult.cluster["id"];
     config.configHashes = [digestActionKey, digestCertificate];
-    config["hosts"][config["baseUrl"]].clusters[clusterResult.cluster["id"]] = {
+    config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]] = {
       hashes: {}
     }
-    config["hosts"][config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
+    config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
       digestActionKey
     ] = ["manage", "create", "update"];
-    config["hosts"][config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
+    config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
       digestCertificate
     ] = [];
     config["certificates"][
@@ -327,7 +327,7 @@ export async function initializeCluster(
       "pkcs8" as const,
       privateKey
     ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
-    config["tokens"][digestActionKey] = keyb64;
+    config.tokens[digestActionKey] = keyb64;
     if (!checkConfig(config)){
       console.error("invalid config created");
       return;

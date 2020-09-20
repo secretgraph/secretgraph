@@ -393,7 +393,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Cluster
         name = "Cluster"
         interfaces = (relay.Node,)
-        fields = ['group', 'updateId']
+        fields = ['group', 'updated', 'updateId']
     contents = ContentConnectionField()
     user = relay.GlobalID(required=False)
     publicInfo = graphene.String(required=False)

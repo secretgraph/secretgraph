@@ -2,11 +2,17 @@ const path = require("path");
 const webpack = require("webpack");
 const BundleTracker = require("webpack-bundle-tracker");
 const ServiceWorkerWebpackPlugin = require("serviceworker-webpack-plugin");
+const TsGraphQLPlugin = require('ts-graphql-plugin/webpack');
+
+const tsgqlPlugin = new TsGraphQLPlugin({
+  /* plugin options */
+});
+
 
 module.exports = {
   context: __dirname,
   entry: "./assets/js/Client/index.tsx",
-  devtool: "inline-source-map",
+  devtool: "eval-source-map",
   mode: "development",
   output: {
     path: path.resolve(__dirname, "./webpack_bundles/"),
@@ -18,6 +24,15 @@ module.exports = {
         test: /\.(ts|js)x?$/,
         loader: "ts-loader",
         exclude: /node_modules/,
+        options: {
+          getCustomTransformers: () => ({
+            before: [
+              tsgqlPlugin.getTransformer({
+                /* transformer options */
+              }),
+            ],
+          }),
+        },
       }
     ],
     noParse: /browserfs\.js/
@@ -40,6 +55,7 @@ module.exports = {
       path: __dirname,
     }),
     new webpack.ProvidePlugin({ BrowserFS: 'bfsGlobal', process: 'processGlobal', Buffer: 'bufferGlobal' }),
+    tsgqlPlugin,
     new ServiceWorkerWebpackPlugin({ // should be last
       entry: "./assets/js/ServiceWorker/index.tsx",
     }),
