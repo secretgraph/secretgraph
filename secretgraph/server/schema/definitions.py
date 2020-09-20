@@ -354,6 +354,8 @@ class ContentConnectionField(DjangoConnectionField):
             graphene.String, required=False
         ))
         kwargs.setdefault("public", graphene.Boolean(required=False))
+        kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
+        kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
         super().__init__(type, *args, **kwargs)
 
     @classmethod
@@ -384,6 +386,8 @@ class ContentConnectionField(DjangoConnectionField):
             result["actions"],
             tags_include=args.get("tagsInclude"),
             tags_exclude=args.get("tagsExclude"),
+            min_updated=args.get("minUpdated"),
+            max_updated=args.get("maxUpdated"),
             content_hashes=args.get("contentHashes")
         )
 
@@ -451,6 +455,8 @@ class ClusterConnectionField(DjangoConnectionField):
         kwargs.setdefault("user", graphene.ID(required=False))
         kwargs.setdefault("public", graphene.Boolean(required=False))
         kwargs.setdefault("featured", graphene.Boolean(required=False))
+        kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
+        kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
         super().__init__(type, *args, **kwargs)
 
     @classmethod
@@ -486,6 +492,8 @@ class ClusterConnectionField(DjangoConnectionField):
             ),
             tags_include=args.get("tagsInclude"),
             tags_exclude=args.get("tagsExclude"),
+            min_updated=args.get("minUpdated"),
+            max_updated=args.get("maxUpdated"),
             content_hashes=args.get("contentHashes")
         )
 

@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta as td
+from datetime import timedelta as td, datetime as dt
 
 from django.db.models import Q, QuerySet, Subquery
 from django.utils import timezone
@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_clusters(
-    query, id=None, tags_include=None, tags_exclude=None, content_hashes=None
+    query, id=None, tags_include=None, tags_exclude=None, content_hashes=None,
+    min_updated=None, max_updated=None
 ) -> QuerySet:
     if id:
         query = fetch_by_id(query, id)
@@ -30,6 +31,17 @@ def fetch_clusters(
             excl_filters |= Q(contents__tags__tag__startswith=i)
 
         query = query.filter(~excl_filters & incl_filters & hash_filters)
+
+    if min_updated and not max_updated:
+        max_updated = dt.max
+    elif max_updated and not min_updated:
+        min_updated = dt.min
+
+    if min_updated or max_updated:
+        query = query.filter(
+            Q(updated__range=(min_updated, max_updated)) |
+            Q(contents__updated__range=(min_updated, max_updated))
+        )
 
     return query
 
@@ -134,7 +146,8 @@ class ContentFetchQueryset(QuerySet):
 
 def fetch_contents(
     query, actions, id=None, tags_include=None, tags_exclude=None,
-    content_hashes=None, no_fetch=False
+    content_hashes=None, no_fetch=False,
+    min_updated=None, max_updated=None
 ) -> QuerySet:
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
@@ -155,6 +168,14 @@ def fetch_contents(
         query = query.filter(
             ~excl_filters & incl_filters & hash_filters
         )
+
+    if min_updated and not max_updated:
+        max_updated = dt.max
+    elif max_updated and not min_updated:
+        min_updated = dt.min
+
+    if min_updated or max_updated:
+        query = query.filter(updated__range=(min_updated, max_updated))
     return ContentFetchQueryset(
         query.query, actions=actions,
         only_direct_fetch_action_trigger=no_fetch
