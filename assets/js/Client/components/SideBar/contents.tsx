@@ -2,23 +2,27 @@ import * as React from "react";
 import Divider from "@material-ui/core/Divider";
 import DescriptionIcon from '@material-ui/icons/Description';
 import MovieIcon from '@material-ui/icons/Movie';
+import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
-import { Theme } from "@material-ui/core/styles";
+import ListSubheader from '@material-ui/core/ListSubheader';
 import { gql, useQuery } from '@apollo/client';
 import { useStylesAndTheme } from "../../theme";
 import { elements } from "../elements";
 import { AuthInfoInterface } from "../../interfaces";
-import { SearchContext, ActiveUrlContext, MainContext } from "../../contexts";
+import { SearchContext, ActiveUrlContext } from "../../contexts";
 
 
 type SideBarItemsProps = {
   authinfo?: AuthInfoInterface,
-  setItem: any,
-  cluster?: string
+  selectItem: any,
+  state: string,
+  activeContent: string | null,
+  activeCluster: string | null
+  header?: any
 }
 
 
@@ -72,20 +76,19 @@ query SideBarContentFeedQuery(
 // ["type=", "state=", ...
 export default (appProps: SideBarItemsProps) => {
   const {classes, theme} = useStylesAndTheme();
-  const { authinfo, setItem, cluster } = appProps;
+  const { authinfo, selectItem, activeCluster, activeContent, state, header } = appProps;
   const {searchCtx} = React.useContext(SearchContext);
-  const {mainCtx} = React.useContext(MainContext);
   const {activeUrl} = React.useContext(ActiveUrlContext);
   let hasNextPage = true;
   let usePublic = null;
   const incl = searchCtx.include.concat([]);
   if (authinfo && authinfo.hashes instanceof Array){
     usePublic = false;
-    if("default" !== mainCtx.state){
-      incl.push(`state=${mainCtx.state}`);
+    if("default" !== state){
+      incl.push(`state=${state}`);
     }
     incl.push(...authinfo.hashes.map((value) => `hash=${value}`));
-  } else if ("default" === mainCtx.state){
+  } else if ("default" === state){
     usePublic = true;
   }
 
@@ -96,7 +99,7 @@ export default (appProps: SideBarItemsProps) => {
       authorization: authinfo ? authinfo.keys : null,
       include: incl,
       exclude: searchCtx.exclude,
-      clusters: cluster ? [cluster] : null,
+      clusters: activeCluster ? [activeCluster] : null,
       public: usePublic,
       count: 30,
       cursor: null
@@ -136,7 +139,7 @@ export default (appProps: SideBarItemsProps) => {
         default:
         icon = (<DescriptionIcon />);
     }
-    if (mainCtx.item == node.id){
+    if (activeContent && activeContent == node.id){
       return (
         <ListItem key={`${activeUrl}:${node.id}:active`}>
           <ListItemText className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
@@ -145,7 +148,7 @@ export default (appProps: SideBarItemsProps) => {
     }
     return (
         <ListItem button key={`${activeUrl}:${node.id}`}
-          onClick={() => setItem(node)}
+          onClick={() => selectItem(node)}
         >
           <ListItemIcon>
               {icon}
@@ -155,12 +158,24 @@ export default (appProps: SideBarItemsProps) => {
         </ListItem>
     );
   }
+  let _header = null;
+  if (header){
+    _header = (
+      <ListSubheader
+        key="header"
+        className={classes.sideBarEntry}
+      >
+        {header}
+      </ListSubheader>
+    )
+  }
 
   return (
-    <React.Fragment>
+    <List>
+      {_header}
       {data.contents.edges.map((edge: any) => render_item(edge.node))}
       <Divider />
-      <ListItem button key={`${activeUrl}:${cluster ? cluster : "none"}:content:loadmore`}
+      <ListItem button key={`${activeUrl}:${activeCluster ? activeCluster : "none"}:content:loadmore`}
       disabled={(loading || !hasNextPage)}
       onClick={() => {
           _loadMore();
@@ -168,6 +183,6 @@ export default (appProps: SideBarItemsProps) => {
       >
       <ListItemText primary={"Load more contents..."} />
       </ListItem>
-    </React.Fragment>
+    </List>
   );
 }

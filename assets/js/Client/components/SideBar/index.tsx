@@ -35,6 +35,7 @@ import { MainContext, SearchContext, ActiveUrlContext, ConfigContext } from "../
 import { extractAuthInfo } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
 const SideBarClusters = React.lazy(() => import("./clusters"));
+const SideBarContents = React.lazy(() => import("./contents"));
 
 
 type SideBarProps = {
@@ -314,6 +315,7 @@ const SideBar = (props: SideBarProps) => {
   const { mainCtx, setMainCtx } = React.useContext(MainContext);
   const { config, setConfig } = React.useContext(ConfigContext);
   const [headerExpanded, setHeaderExpanded] = React.useState(false);
+  const [openMenu, setOpenMenu] = React.useState("notifications");
   let authinfo : AuthInfoInterface | null = null;
   if (config){
     authinfo = extractAuthInfo(config, activeUrl);
@@ -329,51 +331,217 @@ const SideBar = (props: SideBarProps) => {
       </IconButton>
     </Hidden>
   );
-  let sideBarItems = null;
+  let activeElements = [];
+  if (searchCtx.cluster) {
+    activeElements.push((
+      <ListItem
+        button
+        key="cluster:show"
+        onClick={() => {
+          if(openMenu === "clusters") {
+            setOpenMenu("notifications");
+          } else {
+            setOpenMenu("clusters")
+          }
+          setMainCtx({
+            ...mainCtx,
+            item: null,
+            type: "Cluster",
+            action: "view",
+            state: "default"
+          });
+          setSearchCtx({
+            ...searchCtx,
+            cluster: searchCtx.cluster
+          });
+          setHeaderExpanded(false);
+        }}
+      >
+        <ListItemText
+          className={classes.sideBarEntry}
+          primary={`${searchCtx.cluster}`} />
+      </ListItem>
+    ))
+  } else {
+    activeElements.push((
+      <ListItem
+        button
+        key="cluster:show"
+        onClick={() => {
+          if(openMenu === "clusters") {
+            setOpenMenu("notifications");
+          } else {
+            setOpenMenu("clusters")
+          }
+          setMainCtx({
+            ...mainCtx,
+            item: null,
+            type: "Cluster",
+            action: "view",
+            state: "default"
+          });
+          setSearchCtx({
+            ...searchCtx,
+            cluster: null
+          });
+          setHeaderExpanded(false);
+        }}
+      >
+        <ListItemText
+          className={classes.sideBarEntry}
+          primary="Show Clusters" />
+      </ListItem>
+    ))
+  }
+  let sideBarItems = [];
   if (config && authinfo !== null){
-    sideBarItems = (
-      <SideBarClusters
-        authinfo={authinfo}
-        activeCluster={searchCtx.cluster as string}
-        state={mainCtx.state}
-        setItemComponent={
-          (cluster: any) => {
-            setMainCtx({
-              ...mainCtx,
-              item: null,
-              type: "Cluster",
-              action: "view",
-              state: "default"
-            });
-            setSearchCtx({
-              ...searchCtx,
-              cluster: cluster.id
-            });
-            setHeaderExpanded(false);
-          }
+    switch (openMenu){
+      case "notifications":
+        sideBarItems.push((
+          <List>
+            <ListItem>
+              <ListItemText primary="TODO"></ListItemText>
+            </ListItem>
+          </List>
+        ));
+        break;
+      case "contents":
+        if (mainCtx.state == "default"){
+          sideBarItems.push((
+            <SideBarContents
+              activeCluster={searchCtx.cluster}
+              activeContent={mainCtx.item}
+              state={mainCtx.state}
+              header="Public"
+              selectItem={
+                (content: any) => {
+                  let type = content.tags.find((flag: string) => flag.startsWith("type="));
+                  if (type){
+                    // split works different in js, so 2
+                    type = type.split("=", 2)[1];
+                  }
+                  if (type == "PrivateKey" ) {
+                    type = "PublicKey";
+                  }
+                  setMainCtx({
+                    ...mainCtx,
+                    action: "view",
+                    type: type,
+                    item: content.id,
+                    url: activeUrl
+                  });
+                  setHeaderExpanded(false);
+                }
+              }
+            />
+          ))
+          sideBarItems.push((
+            <SideBarContents
+              authinfo={authinfo}
+              activeCluster={searchCtx.cluster}
+              activeContent={mainCtx.item}
+              header="Internal"
+              state={mainCtx.state}
+              selectItem={
+                (content: any) => {
+                  let type = content.tags.find((flag: string) => flag.startsWith("type="));
+                  if (type){
+                    // split works different in js, so 2
+                    type = type.split("=", 2)[1];
+                  }
+                  if (type == "PrivateKey" ) {
+                    type = "PublicKey";
+                  }
+                  setMainCtx({
+                    ...mainCtx,
+                    action: "view",
+                    type: type,
+                    item: content.id,
+                    url: activeUrl
+                  });
+                  setHeaderExpanded(false);
+                }
+              }
+            />
+          ))
+        } else {
+          sideBarItems.push((
+            <SideBarContents
+              authinfo={authinfo}
+              activeContent={mainCtx.item}
+              activeCluster={searchCtx.cluster}
+              state={mainCtx.state}
+              selectItem={
+                (content: any) => {
+                  let type = content.tags.find((flag: string) => flag.startsWith("type="));
+                  if (type){
+                    // split works different in js, so 2
+                    type = type.split("=", 2)[1];
+                  }
+                  if (type == "PrivateKey" ) {
+                    type = "PublicKey";
+                  }
+                  setMainCtx({
+                    ...mainCtx,
+                    action: "view",
+                    type: type,
+                    item: content.id,
+                    url: activeUrl
+                  });
+                  setHeaderExpanded(false);
+                }
+              }
+            />
+          ))
         }
-        setItemContent={
-          (content: any) => {
-            let type = content.tags.find((flag: string) => flag.startsWith("type="));
-            if (type){
-              // split works different in js, so 2
-              type = type.split("=", 2)[1];
+        break;
+      case "clusters":
+        sideBarItems.push((
+          <SideBarClusters
+            authinfo={authinfo}
+            state={mainCtx.state}
+            activeCluster={searchCtx.cluster}
+            header="Clusters"
+            selectItem={
+              (cluster: any) => {
+                setMainCtx({
+                  ...mainCtx,
+                  item: null,
+                  type: "Cluster",
+                  action: "view",
+                  state: "default"
+                });
+                setSearchCtx({
+                  ...searchCtx,
+                  cluster: cluster.id
+                });
+                setHeaderExpanded(false);
+              }
             }
-            if (type == "PrivateKey" ) {
-              type = "PublicKey";
-            }
-            setMainCtx({
-              ...mainCtx,
-              action: "view",
-              type: type,
-              item: content.id,
-              url: activeUrl
-            });
-            setHeaderExpanded(false);
+          />
+        ))
+        break
+    }
+  }
+  if (mainCtx.item && mainCtx.type != "Cluster") {
+    activeElements.push((
+      <ListItem
+        button
+        className={classes.sideBarContentList}
+        key="content:show"
+        onClick={() => {
+          if(openMenu === "contents") {
+            setOpenMenu("notifications");
+          } else {
+            setOpenMenu("contents")
           }
-        }
-      />
-    )
+        }}
+      >
+        <ListItemText
+          className={classes.sideBarEntry}
+          primary={`${mainCtx.type}: ${mainCtx.item}`} />
+      </ListItem>
+    ));
   }
   return (
     <Drawer
@@ -391,12 +559,14 @@ const SideBar = (props: SideBarProps) => {
         setHeaderExpanded={setHeaderExpanded}
       />
       <Divider />
+      <List>
+        {activeElements}
+      </List>
+      <Divider />
       <div className={classes.sideBarBody}>
-        <List>
         <CapturingSuspense>
           {sideBarItems}
         </CapturingSuspense>
-        </List>
         <SideBarControl/>
       </div>
     </Drawer>

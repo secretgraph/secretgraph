@@ -23,9 +23,9 @@ const SideBarContents = React.lazy(() => import("./contents"));
 type SideBarItemsProps = {
   authinfo: AuthInfoInterface,
   state: string,
-  activeCluster?: string,
-  setItemComponent: any,
-  setItemContent: any
+  selectItem: any,
+  activeCluster: string | null,
+  header?: string
 }
 
 
@@ -62,7 +62,7 @@ const clusterFeedQuery = gql`
 
 export default (appProps: SideBarItemsProps) => {
   const {classes, theme} = useStylesAndTheme();
-  const { state, authinfo, setItemComponent, setItemContent, activeCluster } = appProps;
+  const { state, authinfo, selectItem, activeCluster, header } = appProps;
   let hasNextPage = true;
   const {activeUrl} = React.useContext(ActiveUrlContext);
 
@@ -88,8 +88,22 @@ export default (appProps: SideBarItemsProps) => {
     })
   }
 
+  let _header = null;
+  if (header){
+    _header = (
+      <ListSubheader
+        key="header"
+        className={classes.sideBarEntry}
+      >
+        {header}
+      </ListSubheader>
+    )
+  }
+
+
   return (
-    <React.Fragment>
+    <List>
+      {_header}
       {data.clusters.edges.map((edge: any) => {
         let name: string | undefined, note: string="";
         if (edge.node.publicInfo){
@@ -106,58 +120,19 @@ export default (appProps: SideBarItemsProps) => {
           }
         }
         if (edge.node.id === activeCluster) {
-          let preambleStuff;
-          if (state == "default"){
-            preambleStuff = (
-              <React.Fragment>
-                <ListItem key="preamblepublic">
-                  <ListItemText className={classes.sideBarEntry} primary={contentStates.get("public")?.label} />
-                </ListItem>
-                <SideBarContents
-                  setItem={setItemContent}
-                  cluster={activeCluster}
-                />
-                <ListItem key="preambleinternal">
-                  <ListItemText className={classes.sideBarEntry} primary={contentStates.get("internal")?.label} />
-                </ListItem>
-              </React.Fragment>
-            )
-          } else {
-            preambleStuff = (
-              <React.Fragment>
-                <ListItem key="preamblestate">
-                  <ListItemText className={classes.sideBarEntry} primary={contentStates.get(state)?.label} />
-                </ListItem>
-                <Divider/>
-              </React.Fragment>
-            )
-          }
           return (
-            <React.Fragment>
-              <ListSubheader
-                key={`${activeUrl}:cluster:header:${edge.node.id}`}
-                className={classes.sideBarEntry}
-                title={note}
-                onClick={() => setItemComponent(edge.node)}
-              >
-                {name ? name : `...${edge.node.id.substr(-48)}`}
-              </ListSubheader>
-              <CapturingSuspense>
-                <List dense component="div" className={classes.sideBarContentList} disablePadding>
-                  {preambleStuff}
-                  <SideBarContents
-                    setItem={setItemContent}
-                    cluster={activeCluster}
-                    authinfo={authinfo}
-                  />
-                </List>
-              </CapturingSuspense>
-            </React.Fragment>
+            <ListItem key={`${activeUrl}:cluster:entry:${edge.node.id}`}>
+              <ListItemIcon>
+                <GroupWorkIcon />
+              </ListItemIcon>
+              <ListItemText className={classes.sideBarEntry} primary={name ? name : `...${edge.node.id.substr(-48)}`} title={note} />
+              {(edge.node.id !== activeCluster) ? <ExpandMoreIcon/> : null}
+            </ListItem>
           );
         } else {
           return (
             <ListItem button key={`${activeUrl}:cluster:entry:${edge.node.id}`}
-              onClick={() => setItemComponent(edge.node)}
+              onClick={() => selectItem(edge.node)}
             >
               <ListItemIcon>
                 <GroupWorkIcon />
@@ -166,7 +141,6 @@ export default (appProps: SideBarItemsProps) => {
               {(edge.node.id !== activeCluster) ? <ExpandMoreIcon/> : null}
             </ListItem>
           );
-
         }
       })}
 
@@ -179,6 +153,6 @@ export default (appProps: SideBarItemsProps) => {
       >
         <ListItemText primary={"Load more clusters..."} />
       </ListItem>
-    </React.Fragment>
+    </List>
   );
 }
