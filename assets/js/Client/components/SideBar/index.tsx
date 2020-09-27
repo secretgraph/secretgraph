@@ -37,6 +37,7 @@ import { extractAuthInfo } from "../../utils/config"
 import { CapturingSuspense } from "../misc";
 const SideBarClusters = React.lazy(() => import("./clusters"));
 const SideBarContents = React.lazy(() => import("./contents"));
+const SideBarNotifications = React.lazy(() => import("./notifications"));
 
 
 type SideBarProps = {
@@ -320,6 +321,11 @@ const SideBar = (props: SideBarProps) => {
   let authinfo : AuthInfoInterface | null = null;
   let activeElements = [];
   let sideBarItems = [];
+  const closedSymbol = theme.direction === "ltr" ? (
+    <ChevronRightIcon />
+  ) : (
+    <ChevronLeftIcon />
+  )
   const closeButton = (
     <Hidden lgUp>
       <IconButton onClick={() => openState.setDrawerOpen(false)}>
@@ -358,7 +364,7 @@ const SideBar = (props: SideBarProps) => {
             setHeaderExpanded(false);
           }}
         >
-          {(openMenu === "clusters") ? (<ExpandLessIcon/>) : (<ExpandMoreIcon/>)}
+          {(openMenu === "clusters") ? (<ExpandMoreIcon/>) : closedSymbol}
           <ListItemText
             className={classes.sideBarEntry}
             primary={`${searchCtx.cluster}`} />
@@ -389,7 +395,7 @@ const SideBar = (props: SideBarProps) => {
             setHeaderExpanded(false);
           }}
         >
-          <ExpandMoreIcon/>
+          {closedSymbol}
           <ListItemText
             className={classes.sideBarEntry}
             primary={(openMenu === "clusters") ? "Show Notifications" : "Show Clusters"} />
@@ -410,37 +416,20 @@ const SideBar = (props: SideBarProps) => {
             }
           }}
         >
-          {(openMenu === "contents") ? (<ExpandLessIcon/>) : (<ExpandMoreIcon/>)}
+          {(openMenu === "contents") ? (<ExpandMoreIcon/>) : closedSymbol}
           <ListItemText
             className={classes.sideBarEntry}
             primary={`${mainCtx.type}: ${mainCtx.item}`} />
-        </ListItem>
-      ));
-    } else if(searchCtx.cluster && openMenu !== "contents") {
-      activeElements.push((
-        <ListItem
-          button
-          className={classes.sideBarContentList}
-          key="content:show:fallback"
-          onClick={() => {
-            setOpenMenu("contents")
-          }}
-        >
-          <ExpandMoreIcon/>
-          <ListItemText
-            className={classes.sideBarEntry}
-            primary={"List Contents"} />
         </ListItem>
       ));
     }
     switch (openMenu){
       case "notifications":
         sideBarItems.push((
-          <List>
-            <ListItem key="stub">
-              <ListItemText primary="TODO"></ListItemText>
-            </ListItem>
-          </List>
+          <SideBarNotifications
+            authinfo={authinfo}
+            header={"Notifications"}
+          />
         ));
         break;
       case "contents":
@@ -449,8 +438,14 @@ const SideBar = (props: SideBarProps) => {
             <SideBarContents
               activeCluster={searchCtx.cluster}
               activeContent={mainCtx.item}
-              state={mainCtx.state}
+              usePublic
               header="Public"
+              loadMoreExtra={
+                () => setMainCtx({
+                  ...mainCtx,
+                  state: "public"
+                })
+              }
               selectItem={
                 (content: any) => {
                   let type = content.tags.find((flag: string) => flag.startsWith("type="));
@@ -466,9 +461,11 @@ const SideBar = (props: SideBarProps) => {
                     action: "view",
                     type: type,
                     item: content.id,
-                    url: activeUrl
+                    url: activeUrl,
+                    state: "public"
                   });
                   setHeaderExpanded(false);
+                  setOpenMenu("notifications");
                 }
               }
             />
@@ -479,7 +476,13 @@ const SideBar = (props: SideBarProps) => {
               activeCluster={searchCtx.cluster}
               activeContent={mainCtx.item}
               header="Internal"
-              state={mainCtx.state}
+              state="internal"
+              loadMoreExtra={
+                () => setMainCtx({
+                  ...mainCtx,
+                  state: "internal"
+                })
+              }
               selectItem={
                 (content: any) => {
                   let type = content.tags.find((flag: string) => flag.startsWith("type="));
@@ -495,10 +498,11 @@ const SideBar = (props: SideBarProps) => {
                     action: "view",
                     type: type,
                     item: content.id,
-                    url: activeUrl
+                    url: activeUrl,
+                    state: "internal"
                   });
                   setHeaderExpanded(false);
-                  setOpenMenu("contents");
+                  setOpenMenu("notifications");
                 }
               }
             />
@@ -528,7 +532,7 @@ const SideBar = (props: SideBarProps) => {
                     url: activeUrl
                   });
                   setHeaderExpanded(false);
-                  setOpenMenu("contents");
+                  setOpenMenu("notifications");
                 }
               }
             />
@@ -556,6 +560,7 @@ const SideBar = (props: SideBarProps) => {
                   cluster: cluster.id
                 });
                 setHeaderExpanded(false);
+                setOpenMenu("contents");
               }
             }
           />

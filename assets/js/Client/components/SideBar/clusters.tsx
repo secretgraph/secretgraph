@@ -24,6 +24,7 @@ type SideBarItemsProps = {
   authinfo: AuthInfoInterface,
   state: string,
   selectItem: any,
+  loadMoreExtra?: any,
   activeCluster: string | null,
   header?: string
 }
@@ -62,7 +63,7 @@ const clusterFeedQuery = gql`
 
 export default (appProps: SideBarItemsProps) => {
   const {classes, theme} = useStylesAndTheme();
-  const { state, authinfo, selectItem, activeCluster, header } = appProps;
+  const { state, authinfo, selectItem, activeCluster, header, loadMoreExtra } = appProps;
   let hasNextPage = true;
   const {activeUrl} = React.useContext(ActiveUrlContext);
 
@@ -85,6 +86,9 @@ export default (appProps: SideBarItemsProps) => {
       }
     }).then((result: any) => {
       hasNextPage = result.data.clusters.pageInfo.hasNextPage
+      if(loadMoreExtra){
+        loadMoreExtra();
+      }
     })
   }
 
@@ -121,11 +125,13 @@ export default (appProps: SideBarItemsProps) => {
         }
         if (edge.node.id === activeCluster) {
           return (
-            <ListItem key={`${activeUrl}:cluster:entry:${edge.node.id}`}>
+            <ListItem button key={`${activeUrl}:cluster:entry:${edge.node.id}`}
+              onClick={() => selectItem(edge.node)}
+            >
               <ListItemIcon>
                 <GroupWorkIcon />
               </ListItemIcon>
-              <ListItemText className={classes.sideBarEntry} primary={name ? name : `...${edge.node.id.substr(-48)}`} title={note} />
+              <ListItemText className={classes.sideBarEntry} primaryTypographyProps={{variant:"body2"}} primary={name ? name : `...${edge.node.id.substr(-48)}`} title={note} />
               {(edge.node.id !== activeCluster) ? <ExpandMoreIcon/> : null}
             </ListItem>
           );
@@ -138,7 +144,6 @@ export default (appProps: SideBarItemsProps) => {
                 <GroupWorkIcon />
               </ListItemIcon>
               <ListItemText className={classes.sideBarEntry} primary={name ? name : `...${edge.node.id.substr(-48)}`} title={note} />
-              {(edge.node.id !== activeCluster) ? <ExpandMoreIcon/> : null}
             </ListItem>
           );
         }

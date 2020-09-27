@@ -6,9 +6,9 @@ import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
+import ListSubheader from '@material-ui/core/ListSubheader';
 import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
-import ListSubheader from '@material-ui/core/ListSubheader';
 import { gql, useQuery } from '@apollo/client';
 import { useStylesAndTheme } from "../../theme";
 import { elements } from "../elements";
@@ -17,12 +17,14 @@ import { SearchContext, ActiveUrlContext } from "../../contexts";
 
 
 type SideBarItemsProps = {
-  authinfo?: AuthInfoInterface,
-  selectItem: any,
-  state: string,
-  activeContent: string | null,
+  authinfo?: AuthInfoInterface
+  selectItem: any
+  state?: string
+  activeContent: string | null
   activeCluster: string | null
   header?: any
+  loadMoreExtra?: any
+  usePublic?: boolean
 }
 
 
@@ -76,22 +78,18 @@ query SideBarContentFeedQuery(
 // ["type=", "state=", ...
 export default (appProps: SideBarItemsProps) => {
   const {classes, theme} = useStylesAndTheme();
-  const { authinfo, selectItem, activeCluster, activeContent, state, header } = appProps;
+  const { authinfo, selectItem, loadMoreExtra, activeCluster, activeContent, state, header, usePublic } = appProps;
   const {searchCtx} = React.useContext(SearchContext);
   const {activeUrl} = React.useContext(ActiveUrlContext);
   let hasNextPage = true;
-  let usePublic = null;
+  const _usePublic = (usePublic === undefined) ? null : usePublic;
   const incl = searchCtx.include.concat([]);
-  if (authinfo && authinfo.hashes instanceof Array){
-    usePublic = false;
-    if("default" !== state){
-      incl.push(`state=${state}`);
-    }
-    incl.push(...authinfo.hashes.map((value) => `hash=${value}`));
-  } else if ("default" === state){
-    usePublic = true;
+  if(state){
+    incl.push(`state=${state}`)
   }
-
+  if (authinfo){
+    incl.push(...authinfo.hashes.map((value) => `hash=${value}`));
+  }
   const { data, fetchMore, loading } = useQuery(
   contentFeedQuery,
   {
@@ -100,7 +98,7 @@ export default (appProps: SideBarItemsProps) => {
       include: incl,
       exclude: searchCtx.exclude,
       clusters: activeCluster ? [activeCluster] : null,
-      public: usePublic,
+      public: _usePublic,
       count: 30,
       cursor: null
     }
@@ -114,6 +112,9 @@ export default (appProps: SideBarItemsProps) => {
       },
   }).then((result: any) => {
       hasNextPage = result.data.contents.pageInfo.hasNextPage
+      if(loadMoreExtra){
+        loadMoreExtra();
+      }
   })
   }
 
