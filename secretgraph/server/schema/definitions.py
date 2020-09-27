@@ -162,13 +162,13 @@ class ContentReferenceNode(DjangoObjectType):
                     result["objects"],
                     result["actions"],
                     source,
-                    no_fetch=True
+                    noFetch=True
                 ),
                 target__in=fetch_contents(
                     result["objects"],
                     result["actions"],
                     target,
-                    no_fetch=True
+                    noFetch=True
                 ),
                 group=group,
 
@@ -273,10 +273,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             target__in=fetch_contents(
                 result["objects"],
                 result["actions"],
-                tags_include=kwargs.get("tagsInclude"),
-                tags_exclude=kwargs.get("tagsExclude"),
-                content_hashes=kwargs.get("contentHashes"),
-                no_fetch=True
+                includeTags=kwargs.get("tagsInclude"),
+                excludeTags=kwargs.get("tagsExclude"),
+                contentHashes=kwargs.get("contentHashes"),
+                noFetch=True
             ),
             **({} if groups is None else {"group__in": groups})
         )
@@ -292,10 +292,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             source__in=fetch_contents(
                 result["objects"],
                 result["actions"],
-                tags_include=kwargs.get("tagsInclude"),
-                tags_exclude=kwargs.get("tagsExclude"),
-                content_hashes=kwargs.get("contentHashes"),
-                no_fetch=True
+                includeTags=kwargs.get("tagsInclude"),
+                excludeTags=kwargs.get("tagsExclude"),
+                contentHashes=kwargs.get("contentHashes"),
+                noFetch=True
             ),
             **({} if groups is None else {"group__in": groups})
         )
@@ -384,11 +384,11 @@ class ContentConnectionField(DjangoConnectionField):
         return fetch_contents(
             queryset,
             result["actions"],
-            tags_include=args.get("tagsInclude"),
-            tags_exclude=args.get("tagsExclude"),
-            min_updated=args.get("minUpdated"),
-            max_updated=args.get("maxUpdated"),
-            content_hashes=args.get("contentHashes")
+            includeTags=args.get("includeTags"),
+            excludeTags=args.get("excludeTags"),
+            minUpdated=args.get("minUpdated"),
+            maxUpdated=args.get("maxUpdated"),
+            contentHashes=args.get("contentHashes")
         )
 
 
@@ -420,9 +420,9 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return fetch_contents(
             result["objects"],
             result["actions"],
-            tags_include=kwargs.get("tagsInclude"),
-            tags_exclude=kwargs.get("tagsExclude"),
-            content_hashes=kwargs.get("contentHashes")
+            includeTags=kwargs.get("tagsInclude"),
+            excludeTags=kwargs.get("tagsExclude"),
+            contentHashes=kwargs.get("contentHashes")
         )
 
     def resolve_user(
@@ -490,11 +490,11 @@ class ClusterConnectionField(DjangoConnectionField):
                     )["Cluster"]["objects"].values("id")
                 )
             ),
-            tags_include=args.get("tagsInclude"),
-            tags_exclude=args.get("tagsExclude"),
-            min_updated=args.get("minUpdated"),
-            max_updated=args.get("maxUpdated"),
-            content_hashes=args.get("contentHashes")
+            includeTags=args.get("includeTags"),
+            excludeTags=args.get("excludeTags"),
+            minUpdated=args.get("minUpdated"),
+            maxUpdated=args.get("maxUpdated"),
+            contentHashes=args.get("contentHashes")
         )
 
 

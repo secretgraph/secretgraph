@@ -11,36 +11,36 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_clusters(
-    query, id=None, tags_include=None, tags_exclude=None, content_hashes=None,
-    min_updated=None, max_updated=None
+    query, id=None, includeTags=None, excludeTags=None, contentHashes=None,
+    minUpdated=None, maxUpdated=None
 ) -> QuerySet:
     if id:
         query = fetch_by_id(query, id)
 
-    if tags_include or tags_exclude or content_hashes:
+    if includeTags or excludeTags or contentHashes:
         incl_filters = Q()
-        for i in tags_include or []:
+        for i in includeTags or []:
             incl_filters |= Q(contents__tags__tag__startswith=i)
 
         hash_filters = Q()
-        for i in content_hashes or []:
+        for i in contentHashes or []:
             hash_filters |= Q(contents__contentHash=i)
 
         excl_filters = Q()
-        for i in tags_exclude or []:
+        for i in excludeTags or []:
             excl_filters |= Q(contents__tags__tag__startswith=i)
 
         query = query.filter(~excl_filters & incl_filters & hash_filters)
 
-    if min_updated and not max_updated:
-        max_updated = dt.max
-    elif max_updated and not min_updated:
-        min_updated = dt.min
+    if minUpdated and not maxUpdated:
+        maxUpdated = dt.max
+    elif maxUpdated and not minUpdated:
+        minUpdated = dt.min
 
-    if min_updated or max_updated:
+    if minUpdated or maxUpdated:
         query = query.filter(
-            Q(updated__range=(min_updated, max_updated)) |
-            Q(contents__updated__range=(min_updated, max_updated))
+            Q(updated__range=(minUpdated, maxUpdated)) |
+            Q(contents__updated__range=(minUpdated, maxUpdated))
         )
 
     return query
@@ -145,38 +145,38 @@ class ContentFetchQueryset(QuerySet):
 
 
 def fetch_contents(
-    query, actions, id=None, tags_include=None, tags_exclude=None,
-    content_hashes=None, no_fetch=False,
-    min_updated=None, max_updated=None
+    query, actions, id=None, includeTags=None, excludeTags=None,
+    contentHashes=None, noFetch=False,
+    minUpdated=None, maxUpdated=None
 ) -> QuerySet:
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
     if id:
         query = fetch_by_id(query, id, check_content_hash=True)
-    if tags_include or tags_exclude or content_hashes:
+    if includeTags or excludeTags or contentHashes:
         incl_filters = Q()
         hash_filters = Q()
         excl_filters = Q()
-        for i in tags_include or []:
+        for i in includeTags or []:
             incl_filters |= Q(tags__tag__startswith=i)
 
-        for i in content_hashes or []:
+        for i in contentHashes or []:
             hash_filters |= Q(contentHash=i)
 
-        for i in tags_exclude or []:
+        for i in excludeTags or []:
             excl_filters |= Q(tags__tag__startswith=i)
         query = query.filter(
-            ~excl_filters & incl_filters & hash_filters
+            (~excl_filters) & incl_filters & hash_filters
         )
 
-    if min_updated and not max_updated:
-        max_updated = dt.max
-    elif max_updated and not min_updated:
-        min_updated = dt.min
+    if minUpdated and not maxUpdated:
+        maxUpdated = dt.max
+    elif maxUpdated and not minUpdated:
+        minUpdated = dt.min
 
-    if min_updated or max_updated:
-        query = query.filter(updated__range=(min_updated, max_updated))
+    if minUpdated or maxUpdated:
+        query = query.filter(updated__range=(minUpdated, maxUpdated))
     return ContentFetchQueryset(
         query.query, actions=actions,
-        only_direct_fetch_action_trigger=no_fetch
+        only_direct_fetch_action_trigger=noFetch
     )

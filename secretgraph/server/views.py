@@ -180,9 +180,9 @@ class ContentView(AllowCORSMixin, FormView):
             result["objects"],
             result["actions"],
             kwargs.get("id"),
-            tags_include=request.GET.getlist("inclTags"),
-            tags_exclude=request.GET.getlist("exclTags"),
-            content_hashes=request.GET.getlist("contentHash")
+            includeTags=request.GET.getlist("inclTags"),
+            excludeTags=request.GET.getlist("exclTags"),
+            contentHashes=request.GET.getlist("contentHash")
         )
         if not result["objects"]:
             raise Http404()
