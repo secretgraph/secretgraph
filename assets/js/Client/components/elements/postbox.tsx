@@ -12,7 +12,7 @@ import { useQuery, useApolloClient } from '@apollo/client';
 
 import { ConfigInterface} from "../../interfaces"
 import { MainContext, ConfigContext } from "../../contexts"
-import { decryptContentId } from "../../utils/graphql"
+import { decryptContentId } from "../../utils/operations"
 
 import { contentQuery } from "../../queries/content"
 import { useStylesAndTheme } from "../../theme";

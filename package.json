@@ -4,7 +4,7 @@
     "@json-editor/json-editor": "^2.3.0"
   },
   "devDependencies": {
-    "@apollo/client": "^3.2.0",
+    "@apollo/client": "^3.2.1",
     "@material-ui/core": "^4.11.0",
     "@material-ui/icons": "^4.9.1",
     "@material-ui/lab": "^4.0.0-alpha.56",
@@ -28,7 +28,7 @@
     "solid-auth-cli": "^1.0.15",
     "solid-auth-client": "^2.5.1",
     "subscriptions-transport-ws": "^0.9.18",
-    "ts-graphql-plugin": "^2.0.0",
+    "ts-graphql-plugin": "^2.0.1",
     "ts-loader": "^8.0.4",
     "typescript": "^3.9.7",
     "webpack": "^4.44.2",

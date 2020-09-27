@@ -6,6 +6,7 @@ import { arrToGCMKey, arrToRSAOEPkey, pwencryptprekey, pwsdecryptprekeys_first, 
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
+import { createClient } from "./graphql";
 import { ApolloClient } from '@apollo/client';
 
 
@@ -28,6 +29,35 @@ export function checkConfig(config: ConfigInterface | null | undefined) {
   return config;
 }
 
+export async function checkConfigObject(client: ApolloClient<any>, config: ConfigInterface){
+  let actions : string[] = [], cert : Uint8Array | null = null;
+  for(const hash of config.configHashes) {
+    if(config.tokens[hash]){
+      actions.push(config.tokens[hash]);
+    } else if(config.certificates[hash]){
+      cert = b64toarr(config.certificates[hash]);
+    }
+  }
+  if (!actions || !cert){
+    return false;
+  }
+  const tokens = actions.map(action => `${config.configCluster}:${action}`);
+  const result = await client.query({
+    query:  findConfigQuery,
+    variables: {
+      cluster: config.configCluster,
+      authorization: tokens
+    }
+  });
+  if (!result || result.data.contents.edges.length < 1){
+    return false;
+  }
+  if (result.data.contents.edges.length > 1){
+    console.error("Too many config objects found", result.data.contents.edges);
+    return false;
+  }
+  return true;
+}
 
 export const loadConfigSync = (obj: Storage = window.localStorage): ConfigInterface | null => {
   let result = obj.getItem("secretgraphConfig");
@@ -327,7 +357,6 @@ export function extractAuthInfo(config: ConfigInterface, url: string) : AuthInfo
 
 export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any) : [Uint8Array, Uint8Array][] {
   const found: [Uint8Array, Uint8Array][] = [];
-  console.log(nodeData);
   for(const _refnode in nodeData.references){
     const refnode =  nodeData.references[_refnode];
     for(const _dirtyhash of refnode.target.tags){

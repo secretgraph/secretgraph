@@ -1,6 +1,5 @@
 
 import * as React from "react";
-import { Theme } from "@material-ui/core/styles";
 
 import TextField from '@material-ui/core/TextField';
 import FormControl from '@material-ui/core/FormControl';
@@ -31,11 +30,12 @@ import {
   decryptingPasswordHelp
 } from "../messages";
 import { ConfigInterface, SnackMessageInterface } from '../interfaces';
-import { loadConfig } from "../utils/config";
-import { createClient, initializeCluster } from "../utils/graphql";
+import { loadConfig, checkConfigObject } from "../utils/config";
+import { createClient } from "../utils/graphql";
+import { initializeCluster } from "../utils/operations";
 import { serverConfigQuery } from "../queries/server"
 import { mapHashNames } from "../constants"
-import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
+import { MainContext, ConfigContext, ActiveUrlContext } from '../contexts';
 
 
 function Alert(props: any) {
@@ -68,7 +68,6 @@ function SettingsImporter() {
   const mainElement = document.getElementById("content-main");
   const defaultPath: string | undefined = mainElement ? mainElement.dataset.graphqlPath : undefined;
   const {mainCtx, setMainCtx} = React.useContext(MainContext);
-  const {searchCtx, setSearchCtx} = React.useContext(SearchContext);
   const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
   const {config, setConfig} = React.useContext(ConfigContext);
 
@@ -221,6 +220,13 @@ function SettingsImporter() {
       setLoadingImport(false);
       return;
     }
+    const newClient = createClient(newConfig.baseUrl);
+    if(!await checkConfigObject(newClient, newConfig)){
+      setMessage({ severity: "error", message: "Configuration is invalid (server-side)" });
+      setLoadingImport(false);
+      return;
+    }
+
     // const env = createEnvironment(newConfig.baseUrl);
     setConfig(newConfig);
     setActiveUrl(newConfig.baseUrl);

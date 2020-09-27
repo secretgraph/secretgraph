@@ -24,6 +24,7 @@ import InboxIcon from "@material-ui/icons/MoveToInbox";
 import MailOutlineIcon from '@material-ui/icons/MailOutline';
 import DraftsIcon from '@material-ui/icons/Drafts';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 
 import { useApolloClient } from '@apollo/client';
 
@@ -317,9 +318,8 @@ const SideBar = (props: SideBarProps) => {
   const [headerExpanded, setHeaderExpanded] = React.useState(false);
   const [openMenu, setOpenMenu] = React.useState("notifications");
   let authinfo : AuthInfoInterface | null = null;
-  if (config){
-    authinfo = extractAuthInfo(config, activeUrl);
-  }
+  let activeElements = [];
+  let sideBarItems = [];
   const closeButton = (
     <Hidden lgUp>
       <IconButton onClick={() => openState.setDrawerOpen(false)}>
@@ -331,75 +331,113 @@ const SideBar = (props: SideBarProps) => {
       </IconButton>
     </Hidden>
   );
-  let activeElements = [];
-  if (searchCtx.cluster) {
-    activeElements.push((
-      <ListItem
-        button
-        key="cluster:show"
-        onClick={() => {
-          if(openMenu === "clusters") {
-            setOpenMenu("notifications");
-          } else {
-            setOpenMenu("clusters")
-          }
-          setMainCtx({
-            ...mainCtx,
-            item: null,
-            type: "Cluster",
-            action: "view",
-            state: "default"
-          });
-          setSearchCtx({
-            ...searchCtx,
-            cluster: searchCtx.cluster
-          });
-          setHeaderExpanded(false);
-        }}
-      >
-        <ListItemText
-          className={classes.sideBarEntry}
-          primary={`${searchCtx.cluster}`} />
-      </ListItem>
-    ))
-  } else {
-    activeElements.push((
-      <ListItem
-        button
-        key="cluster:show"
-        onClick={() => {
-          if(openMenu === "clusters") {
-            setOpenMenu("notifications");
-          } else {
-            setOpenMenu("clusters")
-          }
-          setMainCtx({
-            ...mainCtx,
-            item: null,
-            type: "Cluster",
-            action: "view",
-            state: "default"
-          });
-          setSearchCtx({
-            ...searchCtx,
-            cluster: null
-          });
-          setHeaderExpanded(false);
-        }}
-      >
-        <ListItemText
-          className={classes.sideBarEntry}
-          primary="Show Clusters" />
-      </ListItem>
-    ))
-  }
-  let sideBarItems = [];
-  if (config && authinfo !== null){
+  if (config){
+    authinfo = extractAuthInfo(config, activeUrl);
+    if (searchCtx.cluster) {
+      activeElements.push((
+        <ListItem
+          button
+          key="clusters:show:known"
+          onClick={() => {
+            if(openMenu === "clusters") {
+              setOpenMenu("notifications");
+            } else {
+              setOpenMenu("clusters")
+            }
+            setMainCtx({
+              ...mainCtx,
+              item: null,
+              type: "Cluster",
+              action: "view",
+              state: "default"
+            });
+            setSearchCtx({
+              ...searchCtx,
+              cluster: searchCtx.cluster
+            });
+            setHeaderExpanded(false);
+          }}
+        >
+          {(openMenu === "clusters") ? (<ExpandLessIcon/>) : (<ExpandMoreIcon/>)}
+          <ListItemText
+            className={classes.sideBarEntry}
+            primary={`${searchCtx.cluster}`} />
+        </ListItem>
+      ))
+    } else {
+      activeElements.push((
+        <ListItem
+          button
+          key="clusters:show:unknown"
+          onClick={() => {
+            if(openMenu === "clusters") {
+              setOpenMenu("notifications");
+            } else {
+              setOpenMenu("clusters")
+            }
+            setMainCtx({
+              ...mainCtx,
+              item: null,
+              type: "Cluster",
+              action: "view",
+              state: "default"
+            });
+            setSearchCtx({
+              ...searchCtx,
+              cluster: null
+            });
+            setHeaderExpanded(false);
+          }}
+        >
+          <ExpandMoreIcon/>
+          <ListItemText
+            className={classes.sideBarEntry}
+            primary={(openMenu === "clusters") ? "Show Notifications" : "Show Clusters"} />
+        </ListItem>
+      ))
+    }
+    if (mainCtx.item && mainCtx.type != "Cluster") {
+      activeElements.push((
+        <ListItem
+          button
+          className={classes.sideBarContentList}
+          key="content:show"
+          onClick={() => {
+            if(openMenu === "contents") {
+              setOpenMenu("notifications");
+            } else {
+              setOpenMenu("contents")
+            }
+          }}
+        >
+          {(openMenu === "contents") ? (<ExpandLessIcon/>) : (<ExpandMoreIcon/>)}
+          <ListItemText
+            className={classes.sideBarEntry}
+            primary={`${mainCtx.type}: ${mainCtx.item}`} />
+        </ListItem>
+      ));
+    } else if(searchCtx.cluster && openMenu !== "contents") {
+      activeElements.push((
+        <ListItem
+          button
+          className={classes.sideBarContentList}
+          key="content:show:fallback"
+          onClick={() => {
+            setOpenMenu("contents")
+          }}
+        >
+          <ExpandMoreIcon/>
+          <ListItemText
+            className={classes.sideBarEntry}
+            primary={"List Contents"} />
+        </ListItem>
+      ));
+    }
     switch (openMenu){
       case "notifications":
         sideBarItems.push((
           <List>
-            <ListItem>
+            <ListItem key="stub">
               <ListItemText primary="TODO"></ListItemText>
             </ListItem>
           </List>
@@ -460,6 +498,7 @@ const SideBar = (props: SideBarProps) => {
                     url: activeUrl
                   });
                   setHeaderExpanded(false);
+                  setOpenMenu("contents");
                 }
               }
             />
@@ -489,6 +528,7 @@ const SideBar = (props: SideBarProps) => {
                     url: activeUrl
                   });
                   setHeaderExpanded(false);
+                  setOpenMenu("contents");
                 }
               }
             />
@@ -523,32 +563,12 @@ const SideBar = (props: SideBarProps) => {
         break
     }
   }
-  if (mainCtx.item && mainCtx.type != "Cluster") {
-    activeElements.push((
-      <ListItem
-        button
-        className={classes.sideBarContentList}
-        key="content:show"
-        onClick={() => {
-          if(openMenu === "contents") {
-            setOpenMenu("notifications");
-          } else {
-            setOpenMenu("contents")
-          }
-        }}
-      >
-        <ListItemText
-          className={classes.sideBarEntry}
-          primary={`${mainCtx.type}: ${mainCtx.item}`} />
-      </ListItem>
-    ));
-  }
   return (
     <Drawer
-      className={openState.drawerOpen ? classes.drawerOpen : classes.drawerClosed}
+      className={openState.drawerOpen && config ? classes.drawerOpen : classes.drawerClosed}
       variant="persistent"
       anchor={theme.direction === 'ltr' ? 'left' : 'right'}
-      open={openState.drawerOpen}
+      open={!!(openState.drawerOpen && config)}
       classes={{
         paper: classes.drawerPaper,
       }}
@@ -567,7 +587,6 @@ const SideBar = (props: SideBarProps) => {
         <CapturingSuspense>
           {sideBarItems}
         </CapturingSuspense>
-        <SideBarControl/>
       </div>
     </Drawer>
   );
