@@ -1,7 +1,7 @@
 {
   "private": true,
   "dependencies": {
-    "@json-editor/json-editor": "^2.3.0"
+    "@json-editor/json-editor": "^2.4.0"
   },
   "devDependencies": {
     "@apollo/client": "^3.2.1",

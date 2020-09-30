@@ -28,7 +28,9 @@ export default (appProps: SideBarItemsProps) => {
   return (
     <List>
       {_header}
-      <ListItem>
+      <ListItem
+        key="examplenotification"
+      >
         <ListItemText
           primary="TODO..."
         />

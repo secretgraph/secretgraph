@@ -152,8 +152,6 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
         </Button>
       </div>
       <Collapse in={headerExpanded} timeout="auto" unmountOnExit>
-        <List>
-          <ListItem>
             <Autocomplete
               multiple
               value={searchCtx.include}
@@ -181,8 +179,6 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
                 />
               )}
             />
-          </ListItem>
-          <ListItem>
             <Autocomplete
               multiple
               value={searchCtx.exclude}
@@ -211,8 +207,6 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
                 />
               )}
             />
-          </ListItem>
-        </List>
       </Collapse>
     </React.Fragment>
   )
@@ -234,7 +228,7 @@ const SideBarControl = (props: SideBarControlProps) => {
       </AccordionSummary>
       <AccordionDetails>
         <List>
-          <ListItem button key={"Inbox"} onClick={() => {
+          <ListItem button key="Inbox" onClick={() => {
             setMainCtx({
               ...mainCtx,
               action: "view",
@@ -251,7 +245,7 @@ const SideBarControl = (props: SideBarControlProps) => {
             </ListItemIcon>
             <ListItemText primary={"Inbox"} />
           </ListItem>
-          <ListItem button key={"Send"} onClick={() =>  {
+          <ListItem button key="Send" onClick={() =>  {
             setMainCtx({
               ...mainCtx,
               action: "add",
@@ -268,7 +262,7 @@ const SideBarControl = (props: SideBarControlProps) => {
             </ListItemIcon>
             <ListItemText primary={"Send"} />
           </ListItem>
-          <ListItem button key={"Drafts"} onClick={() =>  {
+          <ListItem button key="Drafts" onClick={() =>  {
             setMainCtx({
               ...mainCtx,
               action: "edit",
@@ -285,7 +279,7 @@ const SideBarControl = (props: SideBarControlProps) => {
             </ListItemIcon>
             <ListItemText primary={"Drafts"} />
           </ListItem>
-          <ListItem button key={"Cluster"} onClick={() =>  {
+          <ListItem button key="Cluster" onClick={() =>  {
             setMainCtx({
               ...mainCtx,
               action: "edit",
