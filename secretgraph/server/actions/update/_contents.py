@@ -180,12 +180,18 @@ def _update_or_create_content_or_key(
                 raise ValueError(
                     "%s is an invalid state for content", content_state
                 )
-    elif objdata.get("references") is not None:
-        key_hashes_tags = set()
+    elif not content.id:
+        raise ValueError(
+                "Content tags are missing"
+            )
+    else:
+        if objdata.get("references") is not None:
+            key_hashes_tags = set()
 
     # cannot change because of special key transformation
     chash = objdata.get("contentHash")
     if chash is not None:
+        # either blank or in length of default hash output
         if len(chash) not in (0, len_default_hash):
             raise ValueError("Invalid hashing algorithm used for contentHash")
         if chash == "":

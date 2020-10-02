@@ -3,6 +3,7 @@
 import os
 import base64
 import hashlib
+import json
 import argparse
 
 from cryptography.hazmat.primitives.asymmetric import rsa, dsa
@@ -57,6 +58,32 @@ mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $p
   }
 """  # noqa E502
 
+configCreateMutation_mutation = """
+  mutation contentConfigMutation($cluster: ID!, $tags: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
+    updateOrCreateContent(
+      input: {
+        content: {
+          cluster: $cluster
+          value: {
+            tags: $tags
+            value: $value
+            nonce: $nonce
+          }
+          contentHash: $contentHash
+          references: $references
+        }
+        authorization: $authorization
+      }
+    ) {
+      content {
+        nonce
+        link
+      }
+      writeok
+    }
+  }
+"""  # noqa E502
+
 
 def main(argv=None):
     argv = parser.parse_args(argv)
@@ -67,6 +94,7 @@ def main(argv=None):
 
     action_key = os.urandom(32)
     action_key_b64 = base64.b64encode(action_key).decode("ascii")
+    config_key = os.urandom(32)
     if argv.algo == "rsa":
         priv_key = rsa.generate_private_key(
             public_exponent=65537,
@@ -118,35 +146,47 @@ def main(argv=None):
         )
     result.raise_for_status()
     jsob = result.json()["data"]
-    print(jsob)
     hash_algo = hashlib.new(jsob["secretgraphConfig"]["hashAlgorithms"][0])
     certhash = hash_algo.clone()
     certhash.update(priv_key_bytes)
     certhash = certhash.digest()
     certhash_b64 = base64.b64encode(certhash).decode("ascii")
-    actionkey_hash = hash_algo.clone()
-    actionkey_hash.update(action_key)
-    action_key = action_key.digest()
-    actionkey_hash = base64.b64encode(action_key).decode("ascii")
+    action_key_hash = hash_algo.clone()
+    action_key_hash.update(action_key)
+    action_key_hash = action_key_hash.digest()
+    action_key_hash = base64.b64encode(action_key_hash).decode("ascii")
+    # config format by standard client
     config = {
         "certificates": {
             certhash_b64: base64.b64encode(priv_key_bytes).decode("ascii")
         },
-        "tokens": {},
+        "tokens": {
+            action_key_hash: action_key_b64
+        },
         "hosts": {
             argv.url: {
                 "hashAlgorithms": jsob["secretgraphConfig"]["hashAlgorithms"],
                 "clusters": {
                     jsob["updateOrCreateCluster"]["cluster"]["id"]: {
-
+                        "hashes": {
+                            action_key_hash: ["manage", "view", "update"]
+                        }
                     }
                 }
             }
         },
         "baseUrl": argv.url,
-        "configHashes": [certhash_b64, actionkey_hash],
+        "configHashes": [certhash_b64, action_key_hash],
         "configCluster": jsob["updateOrCreateCluster"]["cluster"]["id"]
     }
+    encrypted_content = AESGCM(config_key).encrypt(
+        nonce, json.dumps(config).encode("utf8"), None
+    )
+
+    prepared_content = {
+
+    }
+    configCreateMutation_mutation
 
 
 if __name__ == "__main__":
