@@ -28,8 +28,6 @@ python = ">=3.6"
 django = '>=3.0'
 cryptography = "*"
 rdflib = '*'
-
-
 requests = "*"
 certifi = "*"
 graphene-django = {version="*", optional = true}
