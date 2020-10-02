@@ -1,5 +1,7 @@
 
 from graphene import Field, List, ID
+from django.utils.translation import gettext_lazy as _
+
 
 from .arguments import AuthList, AuthRelayField
 from .definitions import (
@@ -42,10 +44,17 @@ class Query():
 
 class Mutation():
     updateOrCreateContent = ContentMutation.Field(
-        description="""
-        """
+        description=_(
+            "Supports creation or update of:\n"
+            "  public key or key-pair (key): used for further encryption.\n"
+            "  content (value): a content encrypted by public key"
+        )
     )
-    updateOrCreateCluster = ClusterMutation.Field()
+    updateOrCreateCluster = ClusterMutation.Field(
+        description=_(
+            "Create a cluster, optionally initialize with a key-(pair)"
+        )
+    )
     updateMetadata = MetadataUpdateMutation.Field()
     pushContent = PushContentMutation.Field()
     regenerateFlexid = RegenerateFlexidMutation.Field()
