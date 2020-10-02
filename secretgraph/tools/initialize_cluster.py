@@ -2,6 +2,7 @@
 
 import os
 import base64
+import hashlib
 import argparse
 
 from cryptography.hazmat.primitives.asymmetric import rsa, dsa
@@ -49,7 +50,9 @@ mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $p
         }
       }
       writeok
-      actionKey
+    }
+    secretgraphConfig {
+      hashAlgorithms
     }
   }
 """  # noqa E502
@@ -87,14 +90,14 @@ def main(argv=None):
             }
         ]
     }
+    priv_key_bytes = priv_key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
     if True:
-        prepared["privateKey"] = priv_key.private_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        )
         prepared["privateKey"] = AESGCM(privkey_key).encrypt(
-            nonce, prepared["privateKey"], None
+            nonce, priv_key_bytes, None
         )
         prepared["nonce"] = nonce_b64
         prepared["privateTags"] = ["state=internal"]
@@ -114,23 +117,35 @@ def main(argv=None):
             argv.url, data=body, files=files
         )
     result.raise_for_status()
-    jsob = result.json()
+    jsob = result.json()["data"]
+    print(jsob)
+    hash_algo = hashlib.new(jsob["secretgraphConfig"]["hashAlgorithms"][0])
+    certhash = hash_algo.clone()
+    certhash.update(priv_key_bytes)
+    certhash = certhash.digest()
+    certhash_b64 = base64.b64encode(certhash).decode("ascii")
+    actionkey_hash = hash_algo.clone()
+    actionkey_hash.update(action_key)
+    action_key = action_key.digest()
+    actionkey_hash = base64.b64encode(action_key).decode("ascii")
     config = {
-        "certificates": {},
+        "certificates": {
+            certhash_b64: base64.b64encode(priv_key_bytes).decode("ascii")
+        },
         "tokens": {},
         "hosts": {
             argv.url: {
-                "hashAlgorithms": [],  # TODO
+                "hashAlgorithms": jsob["secretgraphConfig"]["hashAlgorithms"],
                 "clusters": {
-                    # TODO
+                    jsob["updateOrCreateCluster"]["cluster"]["id"]: {
+
+                    }
                 }
             }
         },
         "baseUrl": argv.url,
-        "configHashes": [
-
-        ],
-        "configCluster": None
+        "configHashes": [certhash_b64, actionkey_hash],
+        "configCluster": jsob["updateOrCreateCluster"]["cluster"]["id"]
     }
 
 
