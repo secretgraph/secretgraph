@@ -23,6 +23,7 @@
 
 
 # TODO
+* specialized Config accessor with update routine
 * implement hidden, for administrative hidding of contents
 * cleanup js structure, harmonize naming, modulize more
 * updateId in form

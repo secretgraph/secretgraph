@@ -228,6 +228,9 @@ export async function createContent(
         }
       ).then((result) => result.arrayBuffer());
     }
+    if (nodeData.tags.includes("type=PublicKey")){
+      return await arrPromise;
+    }
     const found = findCertCandidatesForRefs(config, nodeData);
     if (!found){
       return null;
@@ -241,7 +244,7 @@ export async function createContent(
         value[1]
       )
     ))).then(arrToRSAOEPkey);
-    return Promise.all(
+    return await Promise.all(
       [sharedkeyPromise, arrPromise]
     ).then(([sharedkey, arr]) => crypto.subtle.decrypt(
       {

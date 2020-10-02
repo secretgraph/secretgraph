@@ -357,7 +357,6 @@ export function extractAuthInfo(config: ConfigInterface, url: string) : AuthInfo
 
 export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any) : [Uint8Array, Uint8Array][] {
   const found: [Uint8Array, Uint8Array][] = [];
-
   for(const refnode of nodeData.references.edges){
     for(const dirtyhash of refnode.target.tags){
       const cleanhash = dirtyhash.split("=", 2)[1];

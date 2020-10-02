@@ -30,7 +30,7 @@ import {
   decryptingPasswordHelp
 } from "../messages";
 import { ConfigInterface, SnackMessageInterface } from '../interfaces';
-import { loadConfig, checkConfigObject } from "../utils/config";
+import { loadConfig, saveConfig, checkConfigObject } from "../utils/config";
 import { createClient } from "../utils/graphql";
 import { initializeCluster } from "../utils/operations";
 import { serverConfigQuery } from "../queries/server"
@@ -175,6 +175,7 @@ function SettingsImporter() {
       await initializeCluster(client, newConfig);
       // TODO: handle exceptions and try with login
       setRegisterUrl(undefined);
+      saveConfig(newConfig);
       setConfig(newConfig);
       setActiveUrl(newConfig.baseUrl);
       setMainCtx({
@@ -226,6 +227,7 @@ function SettingsImporter() {
       setLoadingImport(false);
       return;
     }
+    saveConfig(newConfig);
 
     // const env = createEnvironment(newConfig.baseUrl);
     setConfig(newConfig);
