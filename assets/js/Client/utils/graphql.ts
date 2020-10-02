@@ -1,12 +1,9 @@
 
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { createUploadLink } from 'apollo-upload-client';
-import { createClusterMutation } from "../queries/cluster";
-import { createContentMutation, contentQuery } from "../queries/content";
-import { serverConfigQuery } from "../queries/server";
-import { ConfigInterface, ReferenceInterface, ActionInterface, AuthInfoInterface } from "../interfaces";
+import { ConfigInterface, ReferenceInterface} from "../interfaces";
 import { b64toarr } from "./misc";
-import { arrToGCMKey, arrToRSAOEPkey, rsaKeyTransform } from "./encryption";
+import { arrToRSAOEPkey, rsaKeyTransform } from "./encryption";
 
 
 export const createClient = (url: string) => {

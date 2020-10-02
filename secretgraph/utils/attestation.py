@@ -5,7 +5,6 @@ import binascii
 from itertools import repeat
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
@@ -48,7 +47,7 @@ def _extract_hash_key2(val, algo=None):
 
     # third analysis (check if v is public key)
     if hasattr(v, "public_bytes"):
-        digest = hashes.Hash(algo, backend=default_backend())
+        digest = hashes.Hash(algo)
         digest.update(
             v.public_bytes(
                 encoding=serialization.Encoding.PEM,
@@ -67,7 +66,7 @@ def _extract_hash_key2(val, algo=None):
 def _extract_hash_key(val, algo=None, check_hash=False):
     ret = _extract_hash_key2(val, algo=algo)
     if check_hash and algo and ret[1] and len(val) >= 2:
-        digest = hashes.Hash(algo, backend=default_backend())
+        digest = hashes.Hash(algo)
         digest.update(
             ret[1].public_bytes(
                 encoding=serialization.Encoding.PEM,
@@ -138,7 +137,7 @@ class AttestationChecker(object):
                     use hash of key
             embed: assert correct triple format. Disables checks, conversions
         """
-        hasher = hashes.Hash(algo, backend=default_backend())
+        hasher = hashes.Hash(algo)
         if not embed:
             def func(x):
                 return _extract_only_hash(x, algo)

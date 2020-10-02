@@ -8,7 +8,6 @@ import os
 from urllib.parse import parse_qs, urlencode
 
 import requests
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -142,7 +141,7 @@ class EncryptedContents(object):
         for h in hash_algos:
             algo = getattr(hashes, h.upper())
             for pub, k in self.keys:
-                digest = hashes.Hash(algo, backend=default_backend())
+                digest = hashes.Hash(algo)
                 digest.update(pub)
                 digest = digest.finalize().hex()
                 multimap[f"{algo.name}={digest}"] = k
@@ -234,8 +233,7 @@ class EncryptedContents(object):
 
         cipher = Cipher(
             algorithms.AES(aes_key),
-            modes.GCM(nonce),
-            backend=default_backend()
+            modes.GCM(nonce)
         )
         for k, item in newob["encrypted"]["values"].items():
             assert nonce_name != k

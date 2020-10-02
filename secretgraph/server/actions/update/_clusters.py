@@ -25,13 +25,13 @@ def _update_or_create_cluster(
     if objdata.get("publicInfo"):
         if isinstance(objdata["publicInfo"], bytes):
             objdata["publicInfo"] = \
-                ContentFile(objdata["publicInfo"])
+                ContentFile(objdata["publicInfo"], "publicInfo")
         elif isinstance(objdata["publicInfo"], str):
             objdata["publicInfo"] = \
-                ContentFile(objdata["publicInfo"].encode("utf8"))
+                ContentFile(objdata["publicInfo"].encode("utf8"), "publicInfo")
         else:
             objdata["publicInfo"] = \
-                File(objdata["publicInfo"])
+                File(objdata["publicInfo"], "publicInfo")
         # max = 2 MB
         if objdata["publicInfo"].size > 2000000:
             raise ValueError("Too big >2MB")
