@@ -21,8 +21,16 @@
 # Why id for updates
 - fixes problem with lost updates, especially for hot files like config
 
+# Permissions
+* manage: can change and create clusters, full access like admin
+* cluster: can add and update contents
+* update: update contents
+* push: create subcontents via push
+* view: view contents and or clusters (depending on scope)
+
 
 # TODO
+* document permissions, specialize
 * specialized Config accessor with update routine
 * implement hidden, for administrative hidding of contents
 * cleanup js structure, harmonize naming, modulize more
