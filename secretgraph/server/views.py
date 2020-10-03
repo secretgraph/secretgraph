@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import pprint
 
 from django.conf import settings
 from django.core.paginator import Paginator
@@ -275,6 +276,12 @@ class ContentView(AllowCORSMixin, FormView):
 
 class CORSFileUploadGraphQLView(AllowCORSMixin, FileUploadGraphQLView):
     def dispatch(self, request, *args, **kwargs):
-        if settings.DEBUG:
-            logger.info("POST: %s, FILES: %s", request.POST, request.FILES)
+        if settings.DEBUG and "operations" in request.POST:
+            operations = json.loads(request.POST.get("operations", "{}"))
+            logger.debug(
+                "operations:\n%s\nmap:\n%s\nFILES:\n%s",
+                pprint.pformat(operations),
+                pprint.pformat(json.loads(request.POST.get("map", "{}"))),
+                pprint.pformat(request.FILES),
+            )
         return super().dispatch(request, *args, **kwargs)

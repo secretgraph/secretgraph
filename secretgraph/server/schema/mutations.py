@@ -14,19 +14,21 @@ from django.utils import timezone
 from graphene import relay
 
 from ...constants import MetadataOperations, TransferResult
-from ..utils.auth import (
-    fetch_by_id, id_to_result, initializeCachedResult, retrieve_allowed_objects
-)
 from ..actions.update import (
     create_cluster_fn, create_content_fn, transfer_value, update_cluster_fn,
     update_content_fn, update_metadata_fn
 )
 from ..models import Cluster, Content
 from ..signals import generateFlexid
+from ..utils.auth import (
+    fetch_by_id, id_to_result, initializeCachedResult, retrieve_allowed_objects
+)
 from .arguments import (
     AuthList, ClusterInput, ContentInput, PushContentInput, ReferenceInput
 )
-from .definitions import ClusterNode, ContentNode, FlexidType
+from .definitions import (
+    ClusterNode, ContentNode, FlexidType, SecretgraphConfig
+)
 
 logger = logging.getLogger(__name__)
 
@@ -148,8 +150,8 @@ class ClusterMutation(relay.ClientIDMutation):
         authorization = AuthList()
 
     cluster = graphene.Field(ClusterNode)
-    actionKey = graphene.String(required=False)
     writeok = graphene.Boolean()
+    config = graphene.Field(SecretgraphConfig)
 
     @classmethod
     def mutate_and_get_payload(
@@ -199,14 +201,11 @@ class ClusterMutation(relay.ClientIDMutation):
             _cluster_res = create_cluster_fn(
                 info.context, cluster, user=user
             )(transaction.atomic)
-        if _cluster_res.get("actionKey"):
-            _cluster_res["actionKey"] = \
-                base64.b64encode(_cluster_res["actionKey"]).decode("ascii")
-        returnval = cls(
-            **_cluster_res,
-        )
         initializeCachedResult(info.context, authset=authorization)
-        return returnval
+        return cls(
+            **_cluster_res,
+            config=object()
+        )
 
 
 class ContentMutation(relay.ClientIDMutation):

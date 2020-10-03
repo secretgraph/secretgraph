@@ -136,7 +136,6 @@ def create_cluster_fn(
             content_fn()
             return {
                 "cluster": cluster,
-                "actionKey": action_key,
                 "writeok": True
             }
     return save_fn

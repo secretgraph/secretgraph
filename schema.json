@@ -2192,7 +2192,7 @@
                 }
               ],
               "deprecationReason": null,
-              "description": "\n        ",
+              "description": "Supports creation or update of:\n  public key or key-pair (key): used for further encryption.\n  content (value): a content encrypted by public key",
               "isDeprecated": false,
               "name": "updateOrCreateContent",
               "type": {
@@ -2219,7 +2219,7 @@
                 }
               ],
               "deprecationReason": null,
-              "description": null,
+              "description": "Create a cluster, optionally initialize with a key-(pair)",
               "isDeprecated": false,
               "name": "updateOrCreateCluster",
               "type": {
@@ -3043,10 +3043,10 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "actionKey",
+              "name": "writeok",
               "type": {
                 "kind": "SCALAR",
-                "name": "String",
+                "name": "Boolean",
                 "ofType": null
               }
             },
@@ -3055,10 +3055,10 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "writeok",
+              "name": "config",
               "type": {
-                "kind": "SCALAR",
-                "name": "Boolean",
+                "kind": "OBJECT",
+                "name": "SecretgraphConfig",
                 "ofType": null
               }
             },

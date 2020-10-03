@@ -39,7 +39,7 @@ mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $p
             }
             authorization: $authorization
           }
-      ) {
+    ) {
         cluster {
           id
           group
@@ -51,15 +51,15 @@ mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $p
           }
         }
         writeok
-      }
-      secretgraphConfig {
-          hashAlgorithms
-      }
-  }
+        config {
+            hashAlgorithms
+        }
+    }
+}
 """  # noqa E502
 
 configCreateMutation_mutation = """
-  mutation contentConfigMutation($cluster: ID!, $tags: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
+mutation contentConfigMutation($cluster: ID!, $tags: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
     updateOrCreateContent(
       input: {
         content: {
@@ -81,7 +81,7 @@ configCreateMutation_mutation = """
         }
         writeok
     }
-  }
+}
 """  # noqa E502
 
 
@@ -133,7 +133,6 @@ def main(argv=None):
         clusterCreateMutation_mutation,
         prepared
     )
-
     session = requests.Session()
     result = session.post(
         argv.url, data=body, files=files
@@ -146,12 +145,15 @@ def main(argv=None):
         )
     result.raise_for_status()
     jsob = result.json()["data"]
-    hash_algo = hashlib.new(jsob["secretgraphConfig"]["hashAlgorithms"][0])
-    certhash = hash_algo.clone()
+    hash_algos = jsob["updateOrCreateCluster"]["config"]["hashAlgorithms"]
+    hash_algo = hashlib.new(
+        hash_algos[0]
+    )
+    certhash = hash_algo.copy()
     certhash.update(priv_key_bytes)
     certhash = certhash.digest()
     certhash_b64 = base64.b64encode(certhash).decode("ascii")
-    action_key_hash = hash_algo.clone()
+    action_key_hash = hash_algo.copy()
     action_key_hash.update(action_key)
     action_key_hash = action_key_hash.digest()
     action_key_hash = base64.b64encode(action_key_hash).decode("ascii")
@@ -165,7 +167,7 @@ def main(argv=None):
         },
         "hosts": {
             argv.url: {
-                "hashAlgorithms": jsob["secretgraphConfig"]["hashAlgorithms"],
+                "hashAlgorithms": hash_algos,
                 "clusters": {
                     jsob["updateOrCreateCluster"]["cluster"]["id"]: {
                         "hashes": {
@@ -187,12 +189,12 @@ def main(argv=None):
         nonce, json.dumps(config).encode("utf8"), None
     )
 
-    encrypted_content_hash = hash_algo.clone()
-    encrypted_content_hash.update(encrypted_content)
-    encrypted_content_hash = action_key_hash.digest()
+    encrypted_content_hash_raw = hash_algo.copy()
+    encrypted_content_hash_raw.update(encrypted_content)
+    encrypted_content_hash_raw = encrypted_content_hash_raw.digest()
     chosen_hash = getattr(hashes, hash_algo.name.upper())()
     signature = priv_key.sign(
-        encrypted_content,
+        encrypted_content_hash_raw,
         padding.PSS(
             mgf=padding.MGF1(chosen_hash),
             salt_length=padding.PSS.MAX_LENGTH
@@ -200,22 +202,32 @@ def main(argv=None):
         utils.Prehashed(chosen_hash)
     )
 
-    config_key = priv_key.encrypt(
+    config_key = pub_key.encrypt(
         config_shared_key,
         padding.OAEP(
             mgf=padding.MGF1(algorithm=chosen_hash),
-            algorithm=chosen_hash
+            algorithm=chosen_hash,
+            label=None
         )
     )
 
-    config_hash = hash_algo.clone()
+    config_hash = hash_algo.copy()
     config_hash.update(b"type=Config")
     config_hash = config_hash.digest()
     config_hash = base64.b64encode(config_hash).decode("ascii")
-
+    tags = [
+        "type=Config",
+        "state=internal",
+        "key_hash={}".format(
+            action_key_hash
+        ),
+        "key_hash={}".format(
+            certhash_b64
+        ),
+    ]
     prepared_content = {
         "cluster": config["configCluster"],
-        "tags": ["type=Config", "state=internal"],
+        "tags": tags,
         "references": [
             {
                 "group": "key",
