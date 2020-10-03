@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 
 from django.conf import settings
 from django.core.paginator import Paginator
@@ -20,6 +21,9 @@ from .utils.auth import (
     fetch_by_id, initializeCachedResult, retrieve_allowed_objects
 )
 from .utils.encryption import iter_decrypt_contents
+
+
+logger = logging.getLogger(__name__)
 
 
 class AllowCORSMixin(object):
@@ -270,4 +274,7 @@ class ContentView(AllowCORSMixin, FormView):
 
 
 class CORSFileUploadGraphQLView(AllowCORSMixin, FileUploadGraphQLView):
-    pass
+    def dispatch(self, request, *args, **kwargs):
+        if settings.DEBUG:
+            logger.info("POST: %s, FILES: %s", request.POST, request.FILES)
+        return super().dispatch(request, *args, **kwargs)
