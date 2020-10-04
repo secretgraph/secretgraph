@@ -23,7 +23,7 @@ parser.add_argument("--algo", "-t", choices=[
 
 
 clusterCreateMutation_mutation = """
-mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $privateTags: [String!]!, $nonce: String, $authorization: [String!]) {
+mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $publicTags: [String!]!, $privateTags: [String!]!, $nonce: String, $authorization: [String!]) {
     updateOrCreateCluster(
         input: {
             cluster: {
@@ -31,7 +31,7 @@ mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $p
                 actions: $actions
                 key: {
                     publicKey: $publicKey
-                    publicTags: ["state=public"]
+                    publicTags: $publicTags
                     privateKey: $privateKey
                     privateTags: $privateTags
                     nonce: $nonce
@@ -106,11 +106,20 @@ def main(argv=None):
             key_size=argv.bits
         )
     pub_key = priv_key.public_key()
-    prepared = {
-        "publicKey": pub_key.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        ),
+    pub_key_bytes = pub_key.public_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    priv_key_bytes = priv_key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+    prepared_cluster = {
+        "publicKey": pub_key_bytes,
+        "publicTags": [
+            "state=public"
+        ],
         "actions": [
             {
                 "value": '{"action": "manage"}',
@@ -118,20 +127,15 @@ def main(argv=None):
             }
         ]
     }
-    priv_key_bytes = priv_key.private_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption()
-    )
     if True:
-        prepared["privateKey"] = AESGCM(privkey_key).encrypt(
+        prepared_cluster["privateKey"] = AESGCM(privkey_key).encrypt(
             nonce, priv_key_bytes, None
         )
-        prepared["nonce"] = nonce_b64
-        prepared["privateTags"] = ["state=internal"]
+        prepared_cluster["nonce"] = nonce_b64
+        prepared_cluster["privateTags"] = ["state=internal"]
     body, files = transform_payload(
         clusterCreateMutation_mutation,
-        prepared
+        prepared_cluster
     )
     session = requests.Session()
     result = session.post(
@@ -150,7 +154,7 @@ def main(argv=None):
         hash_algos[0]
     )
     certhash = hash_algo.copy()
-    certhash.update(priv_key_bytes)
+    certhash.update(pub_key_bytes)
     certhash = certhash.digest()
     certhash_b64 = base64.b64encode(certhash).decode("ascii")
     action_key_hash = hash_algo.copy()
@@ -232,12 +236,12 @@ def main(argv=None):
             {
                 "group": "key",
                 "target": certhash_b64,
-                "extra": base64.b64encode(config_key)
+                "extra": base64.b64encode(config_key).decode("ascii")
             },
             {
                 "group": "signature",
                 "target": certhash_b64,
-                "extra": base64.b64encode(signature)
+                "extra": base64.b64encode(signature).decode("ascii")
             }
         ],
         "value": encrypted_content,
@@ -259,7 +263,7 @@ def main(argv=None):
         argv.url, data=body, files=files
     )
     result.raise_for_status()
-    print(result.json())
+    print(config)
 
 
 if __name__ == "__main__":

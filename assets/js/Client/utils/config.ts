@@ -6,7 +6,6 @@ import { arrToGCMKey, arrToRSAOEPkey, pwencryptprekey, pwsdecryptprekeys_first, 
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
-import { createClient } from "./graphql";
 import { ApolloClient } from '@apollo/client';
 
 
