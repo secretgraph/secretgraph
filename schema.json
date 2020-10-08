@@ -2588,6 +2588,18 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
+              "name": "contentKey",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
               "name": "writeok",
               "type": {
                 "kind": "SCALAR",
@@ -2665,16 +2677,6 @@
                   "name": "String",
                   "ofType": null
                 }
-              }
-            },
-            {
-              "defaultValue": null,
-              "description": "key of content (can be used for server-side encryption)",
-              "name": "key",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
               }
             },
             {
@@ -3055,18 +3057,6 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "config",
-              "type": {
-                "kind": "OBJECT",
-                "name": "SecretgraphConfig",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
               "name": "clientMutationId",
               "type": {
                 "kind": "SCALAR",
@@ -3324,6 +3314,18 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
+              "name": "contentKey",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
               "name": "actionKey",
               "type": {
                 "kind": "SCALAR",
@@ -3381,16 +3383,6 @@
                   "name": "String",
                   "ofType": null
                 }
-              }
-            },
-            {
-              "defaultValue": null,
-              "description": null,
-              "name": "key",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
               }
             },
             {

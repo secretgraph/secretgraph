@@ -27,7 +27,7 @@ from .arguments import (
     AuthList, ClusterInput, ContentInput, PushContentInput, ReferenceInput
 )
 from .definitions import (
-    ClusterNode, ContentNode, FlexidType, SecretgraphConfig
+    ClusterNode, ContentNode, FlexidType
 )
 
 logger = logging.getLogger(__name__)
@@ -151,7 +151,6 @@ class ClusterMutation(relay.ClientIDMutation):
 
     cluster = graphene.Field(ClusterNode)
     writeok = graphene.Boolean()
-    config = graphene.Field(SecretgraphConfig)
 
     @classmethod
     def mutate_and_get_payload(
@@ -203,8 +202,7 @@ class ClusterMutation(relay.ClientIDMutation):
             )(transaction.atomic)
         initializeCachedResult(info.context, authset=authorization)
         return cls(
-            **_cluster_res,
-            config=object()
+            **_cluster_res
         )
 
 
@@ -216,7 +214,7 @@ class ContentMutation(relay.ClientIDMutation):
         authorization = AuthList()
 
     content = graphene.Field(ContentNode)
-    sharedKey = graphene.String(required=False)
+    contentKey = graphene.String(required=False)
     writeok = graphene.Boolean()
 
     @classmethod
@@ -337,7 +335,7 @@ class PushContentMutation(relay.ClientIDMutation):
         authorization = AuthList()
 
     content = graphene.Field(ContentNode)
-    sharedKey = graphene.String(required=False)
+    contentKey = graphene.String(required=False)
     actionKey = graphene.String(required=False)
 
     @classmethod

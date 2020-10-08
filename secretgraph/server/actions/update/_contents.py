@@ -350,7 +350,7 @@ def _update_or_create_content_or_key(
         actions_save_fn()
         return {
             "content": content,
-            "sharedKey": base64.b64encode(inner_key).decode("ascii")
+            "contentKey": base64.b64encode(inner_key).decode("ascii")
         }
     setattr(save_fn, "content", content)
     return save_fn
@@ -511,7 +511,7 @@ def update_content_fn(
             except ObjectDoesNotExist:
                 return {
                     "content": Content.objects.filter(id=content.id).first(),
-                    "sharedKey": None,
+                    "contentKey": None,
                     "writeok": False
                 }
             return {

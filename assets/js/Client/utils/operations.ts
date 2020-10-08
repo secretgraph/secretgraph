@@ -78,203 +78,218 @@ export async function createContent(
     });
   }
 
-  export async function createCluster(
-    client: ApolloClient<any>,
-    actions: ActionInterface[],
-    publicInfo: string,
-    publicKey: CryptoKey,
-    privateKey?: CryptoKey,
-    privateKeyKey?: Uint8Array,
-    authorization?: string[]
-  ){
-    let nonceb64 : null | string = null;
+export async function createCluster(
+  client: ApolloClient<any>,
+  actions: ActionInterface[],
+  publicInfo: string,
+  publicKey: CryptoKey,
+  privateKey?: CryptoKey,
+  privateKeyKey?: Uint8Array,
+  authorization?: string[]
+){
+  let nonceb64 : null | string = null;
 
-    let privateKeyPromise: Promise<null | File>;
-    if(privateKey && privateKeyKey){
-      const nonce = crypto.getRandomValues(new Uint8Array(13));
-      nonceb64 = btoa(String.fromCharCode(... nonce));
-      privateKeyPromise = Promise.all([
-        arrToGCMKey(privateKeyKey),
-        crypto.subtle.exportKey(
-          "pkcs8" as const,
-          privateKey
-        )
-      ]).then((arr) => crypto.subtle.encrypt(
-        {
-          name: "AES-GCM",
-          iv: nonce
-        },
-        arr[0],
-        arr[1]
-      ).then((obj) => new File([obj], "privateKey")));
-    } else {
-      privateKeyPromise = Promise.resolve(null);
-    }
-    const exportPublicKeyPromise = crypto.subtle.exportKey(
-      "spki" as const,
-      publicKey
-    ).then((obj) => new File([obj], "publicKey"));
-    return await client.mutate({
-      mutation: createClusterMutation,
-      variables: {
-        publicInfo: new File([utf8encoder.encode(publicInfo)], "publicInfo"),
-        publicKey: await exportPublicKeyPromise,
-        privateKey: await privateKeyPromise,
-        privateTags: ["state=internal"],
-        nonce: nonceb64,
-        actions: actions,
-        authorization: authorization
-      }
-    });
-  }
-
-  export async function initializeCluster(
-    client: ApolloClient<any>, config: ConfigInterface
-  ) {
-    const key = crypto.getRandomValues(new Uint8Array(32));
-    const { publicKey, privateKey } = await crypto.subtle.generateKey(
-      {
-        name: "RSA-OAEP",
-        //modulusLength: 8192,
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: "SHA-512"
-      },
-      true,
-      ["wrapKey", "encrypt", "decrypt"]
-    ) as CryptoKeyPair;
-    const digestCertificatePromise = crypto.subtle.exportKey(
-      "spki" as const,
-      publicKey
-    ).then((keydata) => crypto.subtle.digest(
-      config.hosts[config.baseUrl].hashAlgorithms[0],
-      keydata
-    ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data)))));
-    const digestActionKeyPromise = crypto.subtle.digest(
-      config.hosts[config.baseUrl].hashAlgorithms[0],
-      crypto.getRandomValues(new Uint8Array(32))
-    ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
-    const keyb64 = btoa(String.fromCharCode(...key));
-
-    return await createCluster(
-      client,
-      [
-        { value: '{"action": "manage"}', key: keyb64 }
-      ],
-      "",
-      publicKey,
-      privateKey,
-      key
-    ).then(async (result: any) => {
-      const clusterResult = result.data.updateOrCreateCluster;
-      const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
-      config.configCluster = clusterResult.cluster["id"];
-      config.configHashes = [digestActionKey, digestCertificate];
-      config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]] = {
-        hashes: {}
-      }
-      config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
-        digestActionKey
-      ] = ["manage", "create", "update"];
-      config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
-        digestCertificate
-      ] = [];
-      config["certificates"][
-        digestCertificate
-      ] = await crypto.subtle.exportKey(
+  let privateKeyPromise: Promise<null | File>;
+  let privateKeyKeyPromise: Promise<null | string>;
+  if(privateKey && privateKeyKey){
+    const nonce = crypto.getRandomValues(new Uint8Array(13));
+    nonceb64 = btoa(String.fromCharCode(... nonce));
+    const GCMKeyPromise = arrToGCMKey(privateKeyKey)
+    privateKeyPromise = Promise.all([
+      GCMKeyPromise,
+      crypto.subtle.exportKey(
         "pkcs8" as const,
         privateKey
-      ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
-      config.tokens[digestActionKey] = keyb64;
-      if (!checkConfig(config)){
-        console.error("invalid config created");
-        return;
-      }
-      const digest = await sortedHash(["type=Config"], config["hosts"][config["baseUrl"]].hashAlgorithms[0]);
-      return await createContent(
-        client,
-        config,
-        {
-          cluster: clusterResult.cluster["id"],
-          value: new File([JSON.stringify(config)], "value"),
-          pubkeys: [publicKey],
-          privkeys: [privateKey],
-          tags: ["type=Config", "state=internal"],
-          contentHash: digest,
-          hashAlgorithm: config["hosts"][config["baseUrl"]].hashAlgorithms[0]
-        }
-      ).then(() => {
-        return [config, clusterResult.cluster.id as string];
-      })
-    })
-  }
-
-
-  export async function decryptContentObject(
-    config: ConfigInterface,
-    nodeData: any, blobOrAuthinfo : Blob | string | AuthInfoInterface)
-  {
-    let arrPromise : PromiseLike<ArrayBufferLike>;
-    if (blobOrAuthinfo instanceof Blob) {
-      arrPromise = blobOrAuthinfo.arrayBuffer();
-    } else if (typeof(blobOrAuthinfo) == "string") {
-      arrPromise = Promise.resolve(b64toarr(blobOrAuthinfo).buffer)
-    } else {
-      arrPromise = fetch(
-        nodeData.link, {
-          headers: {
-            "Authorization": blobOrAuthinfo.keys.join(",")
-          }
-        }
-      ).then((result) => result.arrayBuffer());
-    }
-    if (nodeData.tags.includes("type=PublicKey")){
-      return await arrPromise;
-    }
-    const found = findCertCandidatesForRefs(config, nodeData);
-    if (!found){
-      return null;
-    }
-    const sharedkeyPromise = Promise.any(found.map((value) => arrToRSAOEPkey(value[0]).then(
-      (privkey) => crypto.subtle.decrypt(
-        {
-          name: "RSA-OAEP",
-        },
-        privkey,
-        value[1]
       )
-    ))).then(arrToRSAOEPkey);
-    return await Promise.all(
-      [sharedkeyPromise, arrPromise]
-    ).then(([sharedkey, arr]) => crypto.subtle.decrypt(
+    ]).then((arr) => crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: nonce
+      },
+      arr[0],
+      arr[1]
+    ).then((obj) => new File([obj], "privateKey")));
+    privateKeyKeyPromise = GCMKeyPromise.then((key) => crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: nonce
+      },
+      key,
+      privateKeyKey
+    ).then((obj) => "key="+btoa(String.fromCharCode(... new Uint8Array(obj)))));
+  } else {
+    privateKeyPromise = Promise.resolve(null);
+    privateKeyKeyPromise = Promise.resolve(null);
+  }
+  const privateTags = ["state=internal"];
+  const encprivateKeyKey = await privateKeyKeyPromise;
+  if (encprivateKeyKey){
+    privateTags.push(encprivateKeyKey);
+  }
+  const exportPublicKeyPromise = crypto.subtle.exportKey(
+    "spki" as const,
+    publicKey
+  ).then((obj) => new File([obj], "publicKey"));
+  return await client.mutate({
+    mutation: createClusterMutation,
+    variables: {
+      publicInfo: new File([utf8encoder.encode(publicInfo)], "publicInfo"),
+      publicKey: await exportPublicKeyPromise,
+      privateKey: await privateKeyPromise,
+      privateTags: privateTags,
+      nonce: nonceb64,
+      actions: actions,
+      authorization: authorization
+    }
+  });
+}
+
+export async function initializeCluster(
+  client: ApolloClient<any>, config: ConfigInterface
+) {
+  const key = crypto.getRandomValues(new Uint8Array(32));
+  const { publicKey, privateKey } = await crypto.subtle.generateKey(
+    {
+      name: "RSA-OAEP",
+      //modulusLength: 8192,
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-512"
+    },
+    true,
+    ["wrapKey", "encrypt", "decrypt"]
+  ) as CryptoKeyPair;
+  const digestCertificatePromise = crypto.subtle.exportKey(
+    "spki" as const,
+    publicKey
+  ).then((keydata) => crypto.subtle.digest(
+    config.hosts[config.baseUrl].hashAlgorithms[0],
+    keydata
+  ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data)))));
+  const digestActionKeyPromise = crypto.subtle.digest(
+    config.hosts[config.baseUrl].hashAlgorithms[0],
+    crypto.getRandomValues(new Uint8Array(32))
+  ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
+  const keyb64 = btoa(String.fromCharCode(...key));
+
+  const clusterResponse = await createCluster(
+    client,
+    [
+      { value: '{"action": "manage"}', key: keyb64 }
+    ],
+    "",
+    publicKey,
+    privateKey,
+    key
+  );
+  const clusterResult = clusterResponse.data.updateOrCreateCluster;
+  const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
+  config.configCluster = clusterResult.cluster["id"];
+  config.configHashes = [digestActionKey, digestCertificate];
+  config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]] = {
+    hashes: {}
+  }
+  config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
+    digestActionKey
+  ] = ["manage", "create", "update"];
+  config.hosts[config["baseUrl"]].clusters[clusterResult.cluster["id"]].hashes[
+    digestCertificate
+  ] = [];
+  config["certificates"][
+    digestCertificate
+  ] = await crypto.subtle.exportKey(
+    "pkcs8" as const,
+    privateKey
+  ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
+  config.tokens[digestActionKey] = keyb64;
+  if (!checkConfig(config)){
+    console.error("invalid config created");
+    return;
+  }
+  const digest = await sortedHash(["type=Config"], config["hosts"][config["baseUrl"]].hashAlgorithms[0]);
+  return await createContent(
+    client,
+    config,
+    {
+      cluster: clusterResult.cluster["id"],
+      value: new File([JSON.stringify(config)], "value"),
+      pubkeys: [publicKey],
+      privkeys: [privateKey],
+      tags: ["type=Config", "state=internal"],
+      contentHash: digest,
+      hashAlgorithm: config["hosts"][config["baseUrl"]].hashAlgorithms[0]
+    }
+  ).then(() => {
+    return [config, clusterResult.cluster.id as string];
+    })
+}
+
+
+export async function decryptContentObject(
+  config: ConfigInterface,
+  nodeData: any, blobOrAuthinfo : Blob | string | AuthInfoInterface)
+{
+  let arrPromise : PromiseLike<ArrayBufferLike>;
+  if (blobOrAuthinfo instanceof Blob) {
+    arrPromise = blobOrAuthinfo.arrayBuffer();
+  } else if (typeof(blobOrAuthinfo) == "string") {
+    arrPromise = Promise.resolve(b64toarr(blobOrAuthinfo).buffer)
+  } else {
+    arrPromise = fetch(
+      nodeData.link, {
+        headers: {
+          "Authorization": blobOrAuthinfo.keys.join(",")
+        }
+      }
+    ).then((result) => result.arrayBuffer());
+  }
+  if (nodeData.tags.includes("type=PublicKey")){
+    return await arrPromise;
+  }
+  const found = findCertCandidatesForRefs(config, nodeData);
+  if (!found){
+    return null;
+  }
+  const sharedkeyPromise = Promise.any(found.map((value) => arrToRSAOEPkey(value[0]).then(
+    (privkey) => crypto.subtle.decrypt(
       {
         name: "RSA-OAEP",
       },
-      sharedkey,
-      arr
-    ));
+      privkey,
+      value[1]
+    )
+  ))).then(arrToRSAOEPkey);
+  return await Promise.all(
+    [sharedkeyPromise, arrPromise]
+  ).then(([sharedkey, arr]) => crypto.subtle.decrypt(
+    {
+      name: "RSA-OAEP",
+    },
+    sharedkey,
+    arr
+  ));
   }
 
-  export async function decryptContentId(client: ApolloClient<any>, config: ConfigInterface, activeUrl: string, contentId: string){
-    const authinfo : AuthInfoInterface = extractAuthInfo(config, activeUrl);
-    let result;
-    // TODO: maybe remove try catch
-    try{
-      result = await client.query({
-        query: contentQuery,
-        variables: {
-          id: contentId,
-          keyhashes: authinfo.hashes.map((value) => `hash=${value}`)
-        }
-      });
-    }catch(error){
-      console.error("fetching failed", error);
-      return null;
-    }
-    if(!result.data){
-      return null;
-    }
-    return await decryptContentObject(
-      config, result.data.content, authinfo
-    );
+export async function decryptContentId(client: ApolloClient<any>, config: ConfigInterface, activeUrl: string, contentId: string){
+  const authinfo : AuthInfoInterface = extractAuthInfo(config, activeUrl);
+  let result;
+  // TODO: maybe remove try catch
+  try{
+    result = await client.query({
+      query: contentQuery,
+      variables: {
+        id: contentId,
+        keyhashes: authinfo.hashes.map((value) => `hash=${value}`)
+      }
+    });
+  }catch(error){
+    console.error("fetching failed", error);
+    return null;
+  }
+  if(!result.data){
+    return null;
+  }
+  return await decryptContentObject(
+    config, result.data.content, authinfo
+  );
   }

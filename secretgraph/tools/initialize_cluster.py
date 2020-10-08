@@ -21,6 +21,23 @@ parser.add_argument("--algo", "-t", choices=[
     "rsa", "dsa"
 ], default="rsa")
 
+serverConfigQuery_query = """
+  query serverSecretgraphConfigQuery {
+    secretgraphConfig {
+      hashAlgorithms
+      PBKDF2Iterations
+      injectedClusters {
+        group
+        clusters
+        links {
+          link
+          hash
+        }
+      }
+      registerUrl
+    }
+  }
+"""
 
 clusterCreateMutation_mutation = """
 mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $publicTags: [String!]!, $privateTags: [String!]!, $nonce: String, $authorization: [String!]) {
@@ -51,9 +68,6 @@ mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $p
           }
         }
         writeok
-        config {
-            hashAlgorithms
-        }
     }
 }
 """  # noqa E502
@@ -115,6 +129,14 @@ def main(argv=None):
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
+    result = serverConfigQuery_query
+
+    result = session.post(
+        argv.url, data=body, files=files
+    )
+    if not result.ok and not argv.url.endswith("/graphql"):
+        reset_files(files)
+        argv.url = "%s/graphql" % argv.url.rstrip("/")
     prepared_cluster = {
         "publicKey": pub_key_bytes,
         "publicTags": [
@@ -130,6 +152,14 @@ def main(argv=None):
     if True:
         prepared_cluster["privateKey"] = AESGCM(privkey_key).encrypt(
             nonce, priv_key_bytes, None
+        )
+        encSharedKey = pub_key.encrypt(
+            config_shared_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=chosen_hash),
+                algorithm=chosen_hash,
+                label=None
+            )
         )
         prepared_cluster["nonce"] = nonce_b64
         prepared_cluster["privateTags"] = ["state=internal"]
