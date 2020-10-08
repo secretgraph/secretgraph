@@ -214,20 +214,15 @@ class ContentMutation(relay.ClientIDMutation):
         content = graphene.Field(ContentInput, required=True)
         updateId = graphene.ID(required=False)
         authorization = AuthList()
-        key = graphene.String(
-            required=False,
-            description=(
-                "key of content (can be used for server-side encryption)"
-            )
-        )
 
     content = graphene.Field(ContentNode)
+    sharedKey = graphene.String(required=False)
     writeok = graphene.Boolean()
 
     @classmethod
     def mutate_and_get_payload(
         cls, root, info, content,
-        id=None, updateId=None, key=None, authorization=None
+        id=None, updateId=None, authorization=None
     ):
         required_keys = []
         if id:
@@ -292,7 +287,6 @@ class ContentMutation(relay.ClientIDMutation):
                     info.context,
                     content_obj,
                     content,
-                    key=key,
                     required_keys=required_keys,
                     authset=authorization
                 )(transaction.atomic)
@@ -306,6 +300,7 @@ class ContentMutation(relay.ClientIDMutation):
             if not cluster_obj:
                 raise ValueError("Cluster for Content not found")
 
+            # is a key spec
             if not content.key:
                 required_keys = list(Content.objects.injected_keys(
                     group=cluster_obj.group
@@ -329,7 +324,6 @@ class ContentMutation(relay.ClientIDMutation):
             returnval = cls(
                 **create_content_fn(
                     info.context, content,
-                    key=key,
                     required_keys=required_keys, authset=authorization
                 )(transaction.atomic)
             )
@@ -341,14 +335,14 @@ class PushContentMutation(relay.ClientIDMutation):
     class Input:
         content = graphene.Field(PushContentInput, required=True)
         authorization = AuthList()
-        key = graphene.String(required=False)
 
     content = graphene.Field(ContentNode)
+    sharedKey = graphene.String(required=False)
     actionKey = graphene.String(required=False)
 
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, content, key=False, authorization=None
+        cls, root, info, content, authorization=None
     ):
         parent_id = content.pop("parent")
         result = id_to_result(
@@ -405,7 +399,7 @@ class PushContentMutation(relay.ClientIDMutation):
                 "form": form
             }]
         c = create_content_fn(
-            info.context, content, key=key, required_keys=required_keys
+            info.context, content, required_keys=required_keys
         )(transaction.atomic)
         initializeCachedResult(info.context, authset=authorization)
         return cls(

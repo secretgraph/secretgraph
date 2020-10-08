@@ -129,7 +129,7 @@ def transform_tags(tags, oldtags=None, operation=MetadataOperations.append):
                 pass
 
     if (
-        newtags.get("content_type") == {"PrivateKey"} and
+        newtags.get("type") == {"PrivateKey"} and
         not newtags.get("key")
     ):
         raise ValueError("PrivateKey has no key=<foo> tag")

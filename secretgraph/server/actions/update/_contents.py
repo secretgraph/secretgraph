@@ -108,6 +108,7 @@ def _update_or_create_content_or_key(
 
     create = not content.id
 
+    inner_key = None
     # if create checked in parent function
     if objdata.get("value"):
         # normalize nonce and check constraints
@@ -119,10 +120,10 @@ def _update_or_create_content_or_key(
                 checknonce = base64.b64decode(objdata["nonce"])
         except Exception:
             # no nonce == trigger encryption
-            objdata["value"], objdata["nonce"], objdata["key"] = \
+            objdata["value"], objdata["nonce"], inner_key = \
                 encrypt_into_file(
                     objdata["value"],
-                    key=objdata.get("key") or None
+                    key=None
                 )
             objdata["nonce"] = \
                 base64.b64encode(objdata["nonce"]).decode("ascii")
@@ -226,7 +227,6 @@ def _update_or_create_content_or_key(
     elif create:
         final_references = []
 
-    inner_key = objdata.get("key")
     if inner_key:
         if isinstance(inner_key, str):
             inner_key = base64.b64decode(inner_key)
@@ -348,13 +348,16 @@ def _update_or_create_content_or_key(
                 final_references, "source", "target"
             ))
         actions_save_fn()
-        return content
+        return {
+            "content": content,
+            "sharedKey": base64.b64encode(inner_key).decode("ascii")
+        }
     setattr(save_fn, "content", content)
     return save_fn
 
 
 def create_key_fn(
-    request, objdata, key=None, authset=None
+    request, objdata, authset=None
 ):
     key_obj = objdata.get("key")
     if not key_obj:
@@ -382,11 +385,6 @@ def create_key_fn(
         ).first()
     publickey_content = \
         publickey_content or Content(cluster=objdata["cluster"])
-    if key:
-        private["tags"] = chain(
-            private["tags"],
-            ["key_hash={}".format(hash_object(key))]
-        )
     public["references"] = objdata.get("references")
     public["actions"] = objdata.get("actions")
     public = _update_or_create_content_or_key(
@@ -404,13 +402,16 @@ def create_key_fn(
         )
 
     def func():
-        return public(), private and private()
+        return {
+            "public": public(),
+            "private": private() if private else None
+        }
 
     return func
 
 
 def create_content_fn(
-    request, objdata, key=None, authset=None, required_keys=None
+    request, objdata, authset=None, required_keys=None
 ):
     value_obj = objdata.get("value", {})
     key_obj = objdata.get("key")
@@ -429,7 +430,7 @@ def create_content_fn(
             if callable(context):
                 context = context()
             with context:
-                return _save_fn()[0]
+                return _save_fn()["public"]
     else:
         newdata = {
             "cluster": objdata.get("cluster"),
@@ -437,7 +438,6 @@ def create_content_fn(
             "contentHash": objdata.get("contentHash"),
             "tags": value_obj.get("tags"),
             "actions": objdata.get("actions"),
-            "key": key,
             **value_obj
         }
         content_obj = Content()
@@ -451,14 +451,14 @@ def create_content_fn(
                 context = context()
             with context:
                 return {
-                    "content": _save_fn(),
+                    **_save_fn(),
                     "writeok": True
                 }
     return save_fn
 
 
 def update_content_fn(
-    request, content, objdata, updateId, key=None, authset=None,
+    request, content, objdata, updateId, authset=None,
     required_keys=None
 ):
     assert content.id
@@ -494,7 +494,6 @@ def update_content_fn(
             "cluster": objdata.get("cluster"),
             "references": objdata.get("references"),
             "contentHash": objdata.get("contentHash"),
-            "key": key,
             **(objdata.get("value") or {})
         }
     newdata["actions"] = objdata.get("actions")
@@ -512,10 +511,11 @@ def update_content_fn(
             except ObjectDoesNotExist:
                 return {
                     "content": Content.objects.filter(id=content.id).first(),
+                    "sharedKey": None,
                     "writeok": False
                 }
             return {
-                "content": func(),
+                **func(),
                 "writeok": True
             }
     return save_fn
