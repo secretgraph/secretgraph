@@ -350,7 +350,11 @@ def _update_or_create_content_or_key(
         actions_save_fn()
         return {
             "content": content,
-            "contentKey": base64.b64encode(inner_key).decode("ascii")
+            "contentKey": (
+                base64.b64encode(inner_key).decode("ascii") if
+                inner_key else
+                None
+            )
         }
     setattr(save_fn, "content", content)
     return save_fn

@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import requests
 
-from ..utils.graphql import transform_payload, reset_files
+from ..utils.graphql import transform_payload
 
 parser = argparse.ArgumentParser()
 parser.add_argument("url")
@@ -129,14 +129,27 @@ def main(argv=None):
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
-    result = serverConfigQuery_query
 
+    session = requests.Session()
+    body, files = transform_payload(
+        serverConfigQuery_query, {}
+    )
     result = session.post(
         argv.url, data=body, files=files
     )
     if not result.ok and not argv.url.endswith("/graphql"):
-        reset_files(files)
         argv.url = "%s/graphql" % argv.url.rstrip("/")
+        result = session.post(
+            argv.url, data=body, files=files
+        )
+    if not result.ok:
+        raise
+    serverConfig = result.json()["data"]["secretgraphConfig"]
+    hash_algos = serverConfig["hashAlgorithms"]
+    hash_algo = hashlib.new(
+        hash_algos[0]
+    )
+    chosen_hash = getattr(hashes, hash_algo.name.upper())()
     prepared_cluster = {
         "publicKey": pub_key_bytes,
         "publicTags": [
@@ -162,27 +175,21 @@ def main(argv=None):
             )
         )
         prepared_cluster["nonce"] = nonce_b64
-        prepared_cluster["privateTags"] = ["state=internal"]
+        prepared_cluster["privateTags"] = [
+            "state=internal",
+            "key={}".format(
+                base64.b64encode(encSharedKey)
+            )
+        ]
     body, files = transform_payload(
         clusterCreateMutation_mutation,
         prepared_cluster
     )
-    session = requests.Session()
     result = session.post(
         argv.url, data=body, files=files
     )
-    if not result.ok and not argv.url.endswith("/graphql"):
-        reset_files(files)
-        argv.url = "%s/graphql" % argv.url.rstrip("/")
-        result = session.post(
-            argv.url, data=body, files=files
-        )
     result.raise_for_status()
     jsob = result.json()["data"]
-    hash_algos = jsob["updateOrCreateCluster"]["config"]["hashAlgorithms"]
-    hash_algo = hashlib.new(
-        hash_algos[0]
-    )
     certhash = hash_algo.copy()
     certhash.update(pub_key_bytes)
     certhash = certhash.digest()
@@ -226,7 +233,6 @@ def main(argv=None):
     encrypted_content_hash_raw = hash_algo.copy()
     encrypted_content_hash_raw.update(encrypted_content)
     encrypted_content_hash_raw = encrypted_content_hash_raw.digest()
-    chosen_hash = getattr(hashes, hash_algo.name.upper())()
     signature = priv_key.sign(
         encrypted_content_hash_raw,
         padding.PSS(
