@@ -91,7 +91,7 @@ function SettingsImporter() {
     for(const algo of sconfig.hashAlgorithms){
       const mappedName = mapHashNames[algo];
       if (mappedName){
-        hashAlgos.push(mappedName);
+        hashAlgos.push(mappedName.name);
       }
     }
     if (!hashAlgos){
@@ -154,7 +154,7 @@ function SettingsImporter() {
     for(const algo of sconfig.hashAlgorithms){
       const mappedName = mapHashNames[algo];
       if (mappedName){
-        hashAlgos.push(mappedName);
+        hashAlgos.push(mappedName.name);
       }
     }
     if (!hashAlgos){

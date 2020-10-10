@@ -2,8 +2,8 @@
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { createUploadLink } from 'apollo-upload-client';
 import { ConfigInterface, ReferenceInterface} from "../interfaces";
-import { b64toarr } from "./misc";
-import { arrToRSAOEPkey, rsaKeyTransform } from "./encryption";
+import { rsaKeyTransform, serializeToBase64, unserializeToArrayBuffer, encryptRSAOEAP } from "./encryption";
+import { mapHashNames } from "../constants";
 
 
 export const createClient = (url: string) => {
@@ -43,7 +43,7 @@ export function createContentAuth(
     if (c?.hashes){
       for(let hash in c.hashes) {
         if(keysink && hash in config.certificates){
-          privkeys.push(arrToRSAOEPkey(b64toarr(config.certificates[hash])).then(keysink));
+          privkeys.push(keysink(config.certificates[hash]));
         } else if (c.hashes[hash].findIndex(checkActions) !== -1 && hash in config.tokens){
           authkeys.push(`${clusterid}:${config.tokens[hash]}`);
         }/** else if (!c.hashes[hash] && hash in config.tokens){
@@ -56,7 +56,7 @@ export function createContentAuth(
 }
 
 export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalgo: string, hashes?: string[]) : Promise<ReferenceInterface[]> {
-  const references: PromiseLike<ReferenceInterface>[] = [];
+  const references: Promise<ReferenceInterface>[] = [];
   for(let counter=0; counter<privkeys.length;counter++){
     const privkey = privkeys[counter];
     let transforms;
@@ -69,37 +69,35 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
       transforms = rsaKeyTransform(privkey, hashalgo, {signkey: false, pubkey: !(hashes)});
       transforms["signkey"] = Promise.resolve(privkey);
     }
-    let hash = hashes ? Promise.resolve(hashes[counter]): (transforms["pubkey"] as PromiseLike<CryptoKey>).then(
+    let hash = hashes ? hashes[counter]: (transforms["pubkey"] as Promise<CryptoKey>).then(
       async (pubkey) => {
         const exported = await crypto.subtle.exportKey(
           "spki" as const,
           pubkey
         );
-        return await crypto.subtle.digest(
+        return await serializeToBase64(crypto.subtle.digest(
           hashalgo, exported
-        ).then(
-          (hashed) => btoa(String.fromCharCode(... new Uint8Array(hashed)))
-        )
+        ))
       }
-    ) as PromiseLike<string>;
+    ) as Promise<string>;
     references.push(
       Promise.all([
         hash,
-        (transforms["signkey"] as PromiseLike<CryptoKey>).then(
-          (signkey) => crypto.subtle.sign(
+        (transforms["signkey"] as Promise<CryptoKey>).then(
+          (signkey) => serializeToBase64(crypto.subtle.sign(
             {
               name: "RSA-PSS",
-              saltLength: 32,
+              saltLength: mapHashNames[hashalgo].length,
             },
             signkey,
             content
-          )
-        ) as PromiseLike<ArrayBufferLike>
+          ))
+        ) as Promise<string>
       ]).then((arr) : ReferenceInterface => {
         return {
           "target": arr[0],
           "group": "signature",
-          "extra": btoa(String.fromCharCode(... new Uint8Array(arr[1])))
+          "extra": arr[1]
         }
       })
     )
@@ -114,31 +112,27 @@ export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], ha
   const tags: PromiseLike<string>[] = [];
   for(let counter=0; counter<pubkeys.length;counter++){
     const pubkey = pubkeys[counter];
-    let hash = hashes ? Promise.resolve(hashes[counter]): crypto.subtle.exportKey(
-      "spki" as const,
+    let hash = hashes ? Promise.resolve(hashes[counter]): unserializeToArrayBuffer(
       pubkey
     ).then(
-      (exported) => crypto.subtle.digest(
+      (exported) => serializeToBase64(crypto.subtle.digest(
         hashalgo as string, exported
-      ).then(
-        (hashed) => btoa(String.fromCharCode(... new Uint8Array(hashed)))
-      )
+      ))
     );
     references.push(
       Promise.all([
         hash,
-        crypto.subtle.encrypt(
+        encryptRSAOEAP(
           {
-            name: "RSA-OAEP",
-          },
-          pubkey,
-          sharedkey
-        )
+            key: pubkey,
+            data: sharedkey
+          }
+        ).then((data) => serializeToBase64(data.data))
       ]).then((arr) : ReferenceInterface => {
         return {
           "target": arr[0],
           "group": "key",
-          "extra": btoa(String.fromCharCode(... new Uint8Array(arr[1])))
+          "extra": arr[1]
         }
       })
     )

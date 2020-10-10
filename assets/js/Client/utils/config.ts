@@ -2,7 +2,7 @@
 import { saveAs } from 'file-saver';
 
 import { ConfigInterface, AuthInfoInterface } from "../interfaces";
-import { arrToGCMKey, arrToRSAOEPkey, pwencryptprekey, pwsdecryptprekeys_first, pwsdecryptprekeys } from "./encryption";
+import { pwencryptprekey, pwsdecryptprekeys_first, decryptAESGCM, decryptRSAOEAP, encryptAESGCM } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
@@ -73,7 +73,6 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
   } else if ( obj instanceof File ) {
     let parsedResult = JSON.parse(await obj.text());
     if (pws && parsedResult.data){
-      const nonce = b64toarr(parsedResult.nonce);
       const parsedResult2 : ArrayBuffer = await pwsdecryptprekeys_first(
         parsedResult.prekeys,
         pws,
@@ -82,14 +81,11 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
           if (data[1]){
             return Promise.reject("not for decryption");
           }
-          return arrToGCMKey(data[0]).then((gcmkey) => crypto.subtle.decrypt(
-            {
-              name: "AES-GCM",
-              iv: nonce
-            },
-            gcmkey,
-            b64toarr(parsedResult.data)
-          ));
+          return (await decryptAESGCM({
+            data: parsedResult.data,
+            key: data[0],
+            nonce: parsedResult.nonce
+          })).data;
         }
       ) as any;
       return checkConfig(JSON.parse(String.fromCharCode(...new Uint8Array(parsedResult2))));
@@ -120,7 +116,7 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
       if (!decryptResult.ok || !contentResult.headers.get("X-NONCE")){
         return null;
       }
-      const config = await new Promise<[CryptoKey, Uint8Array, string]>(async (resolve, reject) => {
+      const keyArr = await new Promise<[CryptoKey, Uint8Array, string]>(async (resolve, reject) => {
         const queries=[];
         // support only one page
         const page = await decryptResult.json();
@@ -146,21 +142,16 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
                   pws,
                   parseInt(iterations),
                   async (data: [ArrayBuffer, string | null]) => {
-                      if (data[1]){
-                        return Promise.reject("not for decryption");
-                      }
-                      return await arrToGCMKey(data[0]).then(
-                      (gcmkey) => crypto.subtle.decrypt(
-                        {
-                          name: "AES-GCM",
-                          iv: nonce
-                        },
-                        gcmkey,
-                        respdata
-                      ).then(arrToRSAOEPkey).then(
-                        (key) => resolve([key, nonce, k.extra])
-                      )
-                    )
+                    if (data[1]){
+                      return Promise.reject("not for decryption");
+                    }
+                    return await decryptAESGCM({
+                      key: data[0],
+                      nonce: nonce,
+                      data: respdata
+                    }).then(
+                      (data) => resolve([data.key, nonce, k.extra])
+                    );
                   }
                 );
               } finally {}
@@ -169,24 +160,19 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
         }
         await Promise.allSettled(queries);
         reject();
-      }).then(
-        arr => crypto.subtle.decrypt(
-          {
-            name: "AES-GCM",
-            iv: arr[1]
-          },
-          arr[0],
-          b64toarr(arr[2])
-        ).then(arrToGCMKey)
-      ).then(
-        async (key) => crypto.subtle.decrypt(
-          {
-            name: "AES-GCM",
-            iv: b64toarr(contentResult.headers.get("X-NONCE") as string)
-          },
-          key,
-          await contentResult.arrayBuffer()
-        ).then((data) => JSON.parse(String.fromCharCode(...new Uint8Array(data))))
+      });
+      const sharedKey = await decryptAESGCM({
+        key: keyArr[0],
+        nonce: keyArr[1],
+        data: keyArr[2]
+
+      });
+      const config = await decryptAESGCM({
+          key: sharedKey.data,
+          nonce: b64toarr(contentResult.headers.get("X-NONCE") as string),
+          data: contentResult.arrayBuffer()
+
+        }).then((data) => checkConfig(JSON.parse(String.fromCharCode(...new Uint8Array(data.data))))
       )
       return checkConfig(config);
     } else if(prekeys) {
@@ -227,14 +213,11 @@ export async function exportConfig(config: ConfigInterface | string, pws?: strin
       );
     }
     newConfig = JSON.stringify({
-      data: await crypto.subtle.encrypt(
-        {
-          name: "AES-GCM",
-          iv: mainnonce
-        },
-        await arrToGCMKey(mainkey),
-        utf8encoder.encode(config)
-      ).then((data) => btoa(String.fromCharCode(...new Uint8Array(data)))),
+      data: await encryptAESGCM({
+        nonce: mainnonce,
+        key: mainkey,
+        data: utf8encoder.encode(config)
+      }).then((data) => btoa(String.fromCharCode(...new Uint8Array(data.data)))),
       iterations: iterations,
       nonce: btoa(String.fromCharCode(... mainnonce)),
       prekeys: await Promise.all(prekeys)
@@ -278,7 +261,6 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
   if (!cert){
     return Promise.reject("no cert found");
   }
-  const ckeyPromise = arrToRSAOEPkey(cert);
   certhashes = await Promise.all(obj.data.secretgraphConfig.hashAlgorithms.map(
     (hash: string) => crypto.subtle.digest(mapHashNames[hash], cert as Uint8Array).then(
       (data) => btoa(String.fromCharCode(... new Uint8Array(data)))
@@ -298,37 +280,30 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
       if(!privkeyrefnode){
         continue;
       }
-      const privkeykey = privkeyrefnode.node.target.tags.find((tag: string) => "key=").split("=", 1)[1];
+      const privkeykey = privkeyrefnode.node.target.tags.find((tag: string) => tag.startsWith("key=")).split("=", 2)[1];
       const url = new URL(config.baseUrl);
-      const decrypttoken = await crypto.subtle.decrypt(
-        {
-          name: "RSA-OAEP",
-        },
-        await ckeyPromise,
-        b64toarr(privkeykey)
-      )
-
+      const sharedKeyPrivateKeyRes = await decryptRSAOEAP({
+        key: cert,
+        data: privkeykey
+      })
       if (pw) {
-        const decrypttoken2 = crypto.subtle.decrypt(
-          {
-            name: "RSA-OAEP",
-          },
-          await ckeyPromise,
-          b64toarr(keyref.extra)
-        )
+        const sharedKeyConfigRes =  decryptRSAOEAP({
+          key: sharedKeyPrivateKeyRes.key,
+          data:keyref.extra
+        })
         const prekey = await pwencryptprekey(
-          decrypttoken,
+          sharedKeyPrivateKeyRes.data,
           pw,
           obj.data.secretgraphConfig.PBKDF2Iterations
         );
         const prekey2 = await pwencryptprekey(
-          await decrypttoken2,
+          (await sharedKeyConfigRes).data,
           pw,
           obj.data.secretgraphConfig.PBKDF2Iterations
         );
         return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&prekey=${certhashes[0]}:${prekey}&prekey=shared:${prekey2}`
       } else {
-        return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(decrypttoken)))}`
+        return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(sharedKeyPrivateKeyRes.data)))}`
       }
     }
   }
@@ -356,6 +331,27 @@ export function extractAuthInfo(config: ConfigInterface, url: string) : AuthInfo
 
 export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any) : [Uint8Array, Uint8Array][] {
   const found: [Uint8Array, Uint8Array][] = [];
+  if (nodeData.tags.includes("type=PrivateKey")){
+    const hashes = [];
+    for(const tag of nodeData.tags){
+      if (tag.startsWith("key_hash=")){
+        const cleanhash = tag.split("=", 2)[1];
+        if(cleanhash && config.certificates[cleanhash]){
+          hashes.push(b64toarr(cleanhash))
+        }
+      }
+    }
+    for(const tag of nodeData.tags){
+      if (tag.startsWith("key=")){
+        for(const hash of hashes){
+          found.push([
+            hash,
+            b64toarr(tag.split("=", 2)[1])
+          ]);
+        }
+      }
+    }
+  }
   for(const refnode of nodeData.references.edges){
     for(const dirtyhash of refnode.target.tags){
       const cleanhash = dirtyhash.split("=", 2)[1];

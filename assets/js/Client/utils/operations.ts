@@ -3,7 +3,7 @@ import { createContentMutation, contentQuery } from "../queries/content";
 import { serverConfigQuery } from "../queries/server";
 import { ConfigInterface, ReferenceInterface, ActionInterface, AuthInfoInterface } from "../interfaces";
 import { b64toarr, sortedHash, utf8encoder } from "./misc";
-import { arrToGCMKey, arrToRSAOEPkey, rsaKeyTransform } from "./encryption";
+import { decryptRSAOEAP, encryptRSAOEAP, decryptAESGCM, encryptAESGCM, serializeToBase64, unserializeToArrayBuffer} from "./encryption";
 import { ApolloClient } from '@apollo/client';
 import { checkConfig, extractAuthInfo, findCertCandidatesForRefs } from "./config";
 import { createContentAuth, encryptSharedKey, hashContent } from "./graphql";
@@ -11,9 +11,9 @@ import { mapHashNames } from "../constants"
 
 
 export async function createContent(
-    client: ApolloClient<any>,
-    config: ConfigInterface,
     options: {
+      client: ApolloClient<any>,
+      config: ConfigInterface,
       cluster: string,
       value: File | Blob,
       pubkeys: CryptoKey[],
@@ -27,50 +27,39 @@ export async function createContent(
     }
   ) {
     const nonce = crypto.getRandomValues(new Uint8Array(13));
-    const nonceb64 = btoa(String.fromCharCode(... nonce));
     const key = crypto.getRandomValues(new Uint8Array(32));
     let url: string;
     if(options.url){
       url=options.url;
     } else {
-      url=config.baseUrl;
+      url=options.config.baseUrl;
     }
 
-    const encryptedContentPromise = Promise.all([
-      arrToGCMKey(key), options.value.arrayBuffer()
-    ]).then(
-      (arr) => crypto.subtle.encrypt(
-        {
-          name: "AES-GCM",
-          iv: nonce
-        },
-        arr[0],
-        arr[1]
-      )
-    );
-
+    const encryptedContentPromise = encryptAESGCM({
+      key, nonce, data: options.value.arrayBuffer()
+    })
     const actionkeys = createContentAuth(
-      config, [options.cluster], "manage", url
+      options.config, [options.cluster], "manage", url
     )[0] as string[]
 
-    const halgo = mapHashNames[options.hashAlgorithm ? options.hashAlgorithm : (await client.query(
+    const halgo = mapHashNames[options.hashAlgorithm ? options.hashAlgorithm : (await options.client.query(
       {query: serverConfigQuery}
-    ) as any).data.secretgraphConfig.hashAlgorithms[0]];
+    ) as any).data.secretgraphConfig.hashAlgorithms[0]].name;
 
     const [referencesPromise, tagsPromise ] = encryptSharedKey(key, options.pubkeys, halgo);
     const referencesPromise2 = encryptedContentPromise.then(
-      (data) => hashContent(data, options.privkeys ? options.privkeys : [], halgo)
+      (data) => hashContent(data.data, options.privkeys ? options.privkeys : [], halgo)
     );
     const newTags: string[] = await tagsPromise;
     const newReferences: ReferenceInterface[] = await referencesPromise;
-    return await client.mutate({
+    return await options.client.mutate({
       mutation: createContentMutation,
       variables: {
         cluster: options.cluster,
         references: newReferences.concat(await referencesPromise2, options.references ? options.references : []),
         tags: newTags.concat(options.tags),
-        nonce: nonceb64,
-        value: await encryptedContentPromise.then((enc) => new File([enc], "value")),
+        nonce: serializeToBase64(nonce),
+        value: await encryptedContentPromise.then((data) => new File([data.data], "value")),
         actions: options.actions,
         contentHash: options.contentHash ? options.contentHash : null,
         authorization: actionkeys
@@ -79,67 +68,48 @@ export async function createContent(
   }
 
 export async function createCluster(
-  client: ApolloClient<any>,
-  actions: ActionInterface[],
-  publicInfo: string,
-  publicKey: CryptoKey,
-  privateKey?: CryptoKey,
-  privateKeyKey?: Uint8Array,
-  authorization?: string[]
+  options: {
+    client: ApolloClient<any>,
+    actions: ActionInterface[],
+    hashAlgorithm: string,
+    publicInfo: string,
+    publicKey: CryptoKey,
+    privateKey?: CryptoKey,
+    privateKeyKey?: Uint8Array,
+    authorization?: string[]
+  }
 ){
-  let nonceb64 : null | string = null;
+  let nonce : null | Uint8Array = null;
 
   let privateKeyPromise: Promise<null | File>;
-  let privateKeyKeyPromise: Promise<null | string>;
-  if(privateKey && privateKeyKey){
-    const nonce = crypto.getRandomValues(new Uint8Array(13));
-    nonceb64 = btoa(String.fromCharCode(... nonce));
-    const GCMKeyPromise = arrToGCMKey(privateKeyKey)
-    privateKeyPromise = Promise.all([
-      GCMKeyPromise,
-      crypto.subtle.exportKey(
-        "pkcs8" as const,
-        privateKey
-      )
-    ]).then((arr) => crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: nonce
-      },
-      arr[0],
-      arr[1]
-    ).then((obj) => new File([obj], "privateKey")));
-    privateKeyKeyPromise = GCMKeyPromise.then((key) => crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: nonce
-      },
-      key,
-      privateKeyKey
-    ).then((obj) => "key="+btoa(String.fromCharCode(... new Uint8Array(obj)))));
+  const publicKeyPromise = unserializeToArrayBuffer(
+    options.publicKey
+  ).then((obj) => new File([obj], "publicKey"));
+  const privateTags = ["state=internal"];
+  if(options.privateKey && options.privateKeyKey){
+    nonce = crypto.getRandomValues(new Uint8Array(13));
+    privateKeyPromise = encryptAESGCM({
+      key: options.privateKeyKey,
+      data: options.privateKey
+    }).then((obj) => new File([obj.data], "privateKey"));
+    privateTags.push(await serializeToBase64(encryptRSAOEAP({
+      key: options.privateKey,
+      data: options.privateKeyKey,
+      hashAlgorithm: options.hashAlgorithm
+    })).then((obj) => `key=${obj}`));
   } else {
     privateKeyPromise = Promise.resolve(null);
-    privateKeyKeyPromise = Promise.resolve(null);
   }
-  const privateTags = ["state=internal"];
-  const encprivateKeyKey = await privateKeyKeyPromise;
-  if (encprivateKeyKey){
-    privateTags.push(encprivateKeyKey);
-  }
-  const exportPublicKeyPromise = crypto.subtle.exportKey(
-    "spki" as const,
-    publicKey
-  ).then((obj) => new File([obj], "publicKey"));
-  return await client.mutate({
+  return await options.client.mutate({
     mutation: createClusterMutation,
     variables: {
-      publicInfo: new File([utf8encoder.encode(publicInfo)], "publicInfo"),
-      publicKey: await exportPublicKeyPromise,
+      publicInfo: new File([utf8encoder.encode(options.publicInfo)], "publicInfo"),
+      publicKey: await publicKeyPromise,
       privateKey: await privateKeyPromise,
       privateTags: privateTags,
-      nonce: nonceb64,
-      actions: actions,
-      authorization: authorization
+      nonce: nonce ? serializeToBase64(nonce) : null,
+      actions: options.actions,
+      authorization: options.authorization
     }
   });
 }
@@ -157,7 +127,7 @@ export async function initializeCluster(
       hash: "SHA-512"
     },
     true,
-    ["wrapKey", "encrypt", "decrypt"]
+    ["wrapKey", "unwrapKey", "encrypt", "decrypt"]
   ) as CryptoKeyPair;
   const digestCertificatePromise = crypto.subtle.exportKey(
     "spki" as const,
@@ -172,16 +142,17 @@ export async function initializeCluster(
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
   const keyb64 = btoa(String.fromCharCode(...key));
 
-  const clusterResponse = await createCluster(
+  const clusterResponse = await createCluster({
     client,
-    [
+    actions: [
       { value: '{"action": "manage"}', key: keyb64 }
     ],
-    "",
+    publicInfo: "",
+    hashAlgorithm: config.hosts[config.baseUrl].hashAlgorithms[0],
     publicKey,
     privateKey,
-    key
-  );
+    privateKeyKey: key
+  });
   const clusterResult = clusterResponse.data.updateOrCreateCluster;
   const [digestActionKey, digestCertificate] = await Promise.all([digestActionKeyPromise, digestCertificatePromise]);
   config.configCluster = clusterResult.cluster["id"];
@@ -208,9 +179,9 @@ export async function initializeCluster(
   }
   const digest = await sortedHash(["type=Config"], config["hosts"][config["baseUrl"]].hashAlgorithms[0]);
   return await createContent(
-    client,
-    config,
     {
+      client,
+      config,
       cluster: clusterResult.cluster["id"],
       value: new File([JSON.stringify(config)], "value"),
       pubkeys: [publicKey],
@@ -250,25 +221,15 @@ export async function decryptContentObject(
   if (!found){
     return null;
   }
-  const sharedkeyPromise = Promise.any(found.map((value) => arrToRSAOEPkey(value[0]).then(
-    (privkey) => crypto.subtle.decrypt(
-      {
-        name: "RSA-OAEP",
-      },
-      privkey,
-      value[1]
-    )
-  ))).then(arrToRSAOEPkey);
-  return await Promise.all(
-    [sharedkeyPromise, arrPromise]
-  ).then(([sharedkey, arr]) => crypto.subtle.decrypt(
-    {
-      name: "RSA-OAEP",
-    },
-    sharedkey,
-    arr
-  ));
-  }
+  const sharedkeyPromise = Promise.any(found.map((value) => decryptRSAOEAP({
+    key: value[0], data: value[1]
+  })));
+  return await decryptAESGCM({
+    key: (await sharedkeyPromise).data,
+    nonce: nodeData.nonce,
+    data: arrPromise
+  });
+}
 
 export async function decryptContentId(client: ApolloClient<any>, config: ConfigInterface, activeUrl: string, contentId: string){
   const authinfo : AuthInfoInterface = extractAuthInfo(config, activeUrl);

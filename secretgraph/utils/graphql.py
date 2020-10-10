@@ -75,7 +75,8 @@ def transform_payload(query, variables):
 
 def reset_files(files):
     for f in files.values():
-        f.seek(0)
+        if hasattr(f, "seek"):
+            f.seek(0)
 
 
 def sortedHash(inp: List[str], algo: str):

@@ -83,7 +83,6 @@ export const createClusterMutation = gql`
         }
       }
       writeok
-      actionKey
     }
   }
 `

@@ -44,7 +44,7 @@ export const contentQuery = gql`
           node {
             extra
             target {
-              tags(includeTags: ["hash"])
+              tags(includeTags: ["hash=", "key="])
             }
           }
         }
@@ -84,7 +84,7 @@ export const findConfigQuery = gql`
                         extra
                         target {
                           id
-                          tags(includeTags: ["key="])
+                          tags(includeTags: ["key=", "key_hash="])
                           nonce
                           link
                         }
