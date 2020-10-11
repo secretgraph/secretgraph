@@ -37,7 +37,7 @@ export interface PWInterface {
   readonly pw: NonKeyInput | PromiseLike<NonKeyInput>
   readonly salt: NonKeyInput | PromiseLike<NonKeyInput>
   readonly iterations: number | string | PromiseLike<number | string>
-  readonly hashalgo?: string | PromiseLike<string>
+  readonly hashAlgorithm?: string | PromiseLike<string>
 }
 
 

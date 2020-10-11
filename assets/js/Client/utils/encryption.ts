@@ -9,6 +9,7 @@ import {
   PWInterface,
   RawInput,
   KeyInput,
+  NonKeyInput,
   KeyOutInterface
 } from "../interfaces"
 import { mapHashNames, mapEncryptionAlgorithms } from "../constants";
@@ -322,6 +323,7 @@ export async function encryptAESGCM(options: CryptoGCMInInterface | Promise<Cryp
   const key = await unserializeToCryptoKey(_options.key, {
     name: "AES-GCM"
   }, "publicKey")
+  const data = await unserializeToArrayBuffer(_options.data);
   return {
     data: await crypto.subtle.encrypt(
       {
@@ -329,7 +331,7 @@ export async function encryptAESGCM(options: CryptoGCMInInterface | Promise<Cryp
         iv: nonce
       },
       key,
-      await unserializeToArrayBuffer(_options.data)
+      data
     ),
     key,
     nonce
@@ -388,11 +390,15 @@ export async function decryptAESGCM(options: CryptoGCMInInterface | Promise<Cryp
   }
 }
 
-export async function derivePW(options: PWInterface) : Promise<{data: ArrayBuffer, key: CryptoKey}> {
-  const key = await toPBKDF2key(options.pw)
-  const salt = await unserializeToArrayBuffer(options.salt);
-  const iterations = parseInt(""+await options.iterations);
-  const hashalgo = await options.hashalgo;
+export async function derivePW(options: PWInterface | PromiseLike<PWInterface>) : Promise<{data: ArrayBuffer, key: CryptoKey}> {
+  const _options = await options;
+  const key = await toPBKDF2key(_options.pw)
+  const salt = await unserializeToArrayBuffer(_options.salt);
+  const iterations = parseInt(""+await _options.iterations);
+  const _hashalgo = await _options.hashAlgorithm;
+  if(!mapHashNames[""+_hashalgo]){
+    throw Error("hashalgorithm not supported: "+_hashalgo)
+  }
 
   return {
     "data": await crypto.subtle.deriveBits(
@@ -400,19 +406,19 @@ export async function derivePW(options: PWInterface) : Promise<{data: ArrayBuffe
         "name": "PBKDF2",
         salt: salt,
         "iterations": iterations,
-        "hash": mapHashNames[""+hashalgo] ? mapHashNames[""+hashalgo].name : "SHA-512"
+        "hash": mapHashNames[""+_hashalgo].name
       },
       key,
-      mapHashNames[""+hashalgo] ? mapHashNames[""+hashalgo].length : 512
+      256  // cap at 256 for AESGCM compatibility
     ),
     "key": key
   }
 }
 
 
-export async function pwencryptprekey(prekey: ArrayBuffer, pw: string, iterations: number){
+export async function encryptPreKey({prekey, pw, hashAlgorithm, iterations}: {prekey: ArrayBuffer, pw: NonKeyInput, hashAlgorithm: string, iterations: number}){
   const nonce = crypto.getRandomValues(new Uint8Array(13));
-  const key = (await derivePW({pw, salt: nonce, iterations})).data;
+  const key = (await derivePW({pw, salt: nonce, hashAlgorithm, iterations})).data;
   const { data } = await encryptAESGCM(
     {
       nonce, key, data: prekey
@@ -421,25 +427,28 @@ export async function pwencryptprekey(prekey: ArrayBuffer, pw: string, iteration
   return `${btoa(String.fromCharCode(...nonce))}${btoa(String.fromCharCode(...new Uint8Array(data)))}`
 }
 
-async function _pwsdecryptprekey(prekey: ArrayBuffer | string, pws: string[], iterations: number){
-  let prefix = null;
-  if (typeof prekey === "string"){
-    const _prekey = prekey.split(':', 1);
+async function _pwsdecryptprekey(options : {readonly prekey: ArrayBuffer | string, pws: NonKeyInput[], hashAlgorithm: string, iterations: number | string}){
+  let prefix = null, prekey;
+  if (typeof options.prekey === "string"){
+    const _prekey = options.prekey.split(':', 1);
     if(_prekey.length > 1){
       prefix = _prekey[0];
       prekey = Uint8Array.from(atob(_prekey[1]), c => c.charCodeAt(0));
     } else {
       prekey = Uint8Array.from(atob(_prekey[0]), c => c.charCodeAt(0));
     }
+  } else {
+    prekey = options.prekey;
   }
   const nonce = new Uint8Array(prekey.slice(0, 13));
   const realkey = prekey.slice(13);
   const decryptprocesses = [];
-  for(const pw of pws){
+  for(const pw of options.pws){
     decryptprocesses.push(
       decryptAESGCM({
         data: realkey,
-        key: (await derivePW({pw, salt: nonce, iterations})).data,
+        key: (await derivePW({pw, salt: nonce, hashAlgorithm:
+          options.hashAlgorithm, iterations: options.iterations})).data,
         nonce: nonce
       })
     )
@@ -447,10 +456,10 @@ async function _pwsdecryptprekey(prekey: ArrayBuffer | string, pws: string[], it
   return [await Promise.any(decryptprocesses).then(obj => obj.data), prefix];
 }
 
-export async function pwsdecryptprekeys(prekeys: ArrayBuffer[] | string[], pws: string[], iterations: number){
+export async function decryptPreKeys(options: {prekeys: ArrayBuffer[] | string[], pws: NonKeyInput[], hashAlgorithm: string, iterations: number | string}){
   const decryptprocesses = [];
-  for(const prekey of prekeys){
-    decryptprocesses.push(_pwsdecryptprekey(prekey, pws, iterations));
+  for(const prekey of options.prekeys){
+    decryptprocesses.push(_pwsdecryptprekey({...options, prekey}));
   }
   const results = [];
   for(const res of await Promise.allSettled(decryptprocesses)){
@@ -461,13 +470,13 @@ export async function pwsdecryptprekeys(prekeys: ArrayBuffer[] | string[], pws: 
   return results;
 }
 
-export async function pwsdecryptprekeys_first(prekeys: ArrayBuffer[] | string[], pws: string[], iterations: number, fn?: any){
+export async function decryptFirstPreKey(options: {prekeys: ArrayBuffer[] | string[], pws: NonKeyInput[], hashAlgorithm: string, iterations: number | string, fn?: any}){
   const decryptprocesses = [];
-  for(const prekey of prekeys){
-    if (fn){
-      decryptprocesses.push(_pwsdecryptprekey(prekey, pws, iterations).then(fn));
+  for(const prekey of options.prekeys){
+    if (options.fn){
+      decryptprocesses.push(_pwsdecryptprekey({...options, prekey}).then(options.fn));
     } else {
-      decryptprocesses.push(_pwsdecryptprekey(prekey, pws, iterations));
+      decryptprocesses.push(_pwsdecryptprekey({...options, prekey}));
     }
 
   }

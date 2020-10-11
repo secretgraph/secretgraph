@@ -2,7 +2,7 @@
 import { saveAs } from 'file-saver';
 
 import { ConfigInterface, AuthInfoInterface } from "../interfaces";
-import { pwencryptprekey, pwsdecryptprekeys_first, decryptAESGCM, decryptRSAOEAP, encryptAESGCM } from "./encryption";
+import { encryptPreKey, decryptFirstPreKey, decryptAESGCM, decryptRSAOEAP, encryptAESGCM, serializeToBase64 } from "./encryption";
 import { b64toarr, utf8encoder } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
@@ -73,11 +73,12 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
   } else if ( obj instanceof File ) {
     let parsedResult = JSON.parse(await obj.text());
     if (pws && parsedResult.data){
-      const parsedResult2 : ArrayBuffer = await pwsdecryptprekeys_first(
-        parsedResult.prekeys,
+      const parsedResult2 : ArrayBuffer = await decryptFirstPreKey({
+        prekeys: parsedResult.prekeys,
         pws,
-        parsedResult.iterations,
-        async (data: [ArrayBuffer, string | null]) => {
+        hashAlgorithm: "SHA-512",
+        iterations: parsedResult.iterations,
+        fn: async (data: [ArrayBuffer, string | null]) => {
           if (data[1]){
             return Promise.reject("not for decryption");
           }
@@ -87,7 +88,7 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
             nonce: parsedResult.nonce
           })).data;
         }
-      ) as any;
+      }) as any;
       return checkConfig(JSON.parse(String.fromCharCode(...new Uint8Array(parsedResult2))));
     }
     return checkConfig(parsedResult);
@@ -137,11 +138,12 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
             const respdata = await response.arrayBuffer();
             for(const iterations of (response.headers.get("X-ITERATIONS") as string).split(",")){
               try {
-                return await pwsdecryptprekeys_first(
+                return await decryptFirstPreKey({
                   prekeys,
                   pws,
-                  parseInt(iterations),
-                  async (data: [ArrayBuffer, string | null]) => {
+                  hashAlgorithm: "SHA-512",
+                  iterations,
+                  fn: async (data: [ArrayBuffer, string | null]) => {
                     if (data[1]){
                       return Promise.reject("not for decryption");
                     }
@@ -153,7 +155,7 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
                       (data) => resolve([data.key, nonce, k.extra])
                     );
                   }
-                );
+                });
               } finally {}
             }
           }));
@@ -204,22 +206,23 @@ export async function exportConfig(config: ConfigInterface | string, pws?: strin
     config = JSON.stringify(config);
   }
   if (pws && iterations){
-    const mainnonce = crypto.getRandomValues(new Uint8Array(13));
     const mainkey = crypto.getRandomValues(new Uint8Array(32));
+    const encrypted = await encryptAESGCM({
+      key: mainkey,
+      data: utf8encoder.encode(config)
+    })
     const prekeys = [];
     for(const pw of pws){
       prekeys.push(
-        pwencryptprekey(mainkey, pw, iterations)
+        encryptPreKey({
+          prekey: mainkey, pw, hashAlgorithm: "SHA-512", iterations
+        })
       );
     }
     newConfig = JSON.stringify({
-      data: await encryptAESGCM({
-        nonce: mainnonce,
-        key: mainkey,
-        data: utf8encoder.encode(config)
-      }).then((data) => btoa(String.fromCharCode(...new Uint8Array(data.data)))),
+      data: await serializeToBase64(encrypted.data),
       iterations: iterations,
-      nonce: btoa(String.fromCharCode(... mainnonce)),
+      nonce: await serializeToBase64(encrypted.nonce),
       prekeys: await Promise.all(prekeys)
     });
   } else {
@@ -291,16 +294,18 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
           key: sharedKeyPrivateKeyRes.key,
           data:keyref.extra
         })
-        const prekey = await pwencryptprekey(
-          sharedKeyPrivateKeyRes.data,
+        const prekey = await encryptPreKey({
+          prekey: sharedKeyPrivateKeyRes.data,
           pw,
-          obj.data.secretgraphConfig.PBKDF2Iterations
-        );
-        const prekey2 = await pwencryptprekey(
-          (await sharedKeyConfigRes).data,
+          hashAlgorithm: "SHA-512",
+          iterations: obj.data.secretgraphConfig.PBKDF2Iterations
+        });
+        const prekey2 = await encryptPreKey({
+          prekey: (await sharedKeyConfigRes).data,
           pw,
-          obj.data.secretgraphConfig.PBKDF2Iterations
-        );
+          hashAlgorithm: "SHA-512",
+          iterations: obj.data.secretgraphConfig.PBKDF2Iterations
+        });
         return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&prekey=${certhashes[0]}:${prekey}&prekey=shared:${prekey2}`
       } else {
         return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&token=${certhashes[0]}:${btoa(String.fromCharCode(... new Uint8Array(sharedKeyPrivateKeyRes.data)))}`
