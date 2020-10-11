@@ -200,7 +200,7 @@ function SettingsImporter() {
       setMessage({ severity: "error", message: "error while registration" });
       // in success case unmounted so this would be a noop
       // because state is forgotten
-      setLoadingImport(false);
+      setLoadingStart(false);
     }
   }
 

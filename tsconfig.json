@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./webpack_bundles/",
+    "sourceMap": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
     "strictNullChecks": true,

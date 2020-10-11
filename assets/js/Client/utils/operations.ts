@@ -38,9 +38,12 @@ export async function createContent(
     const encryptedContentPromise = encryptAESGCM({
       key, nonce, data: options.value.arrayBuffer()
     })
-    const actionkeys = createContentAuth(
-      options.config, [options.cluster], "manage", url
-    )[0] as string[]
+    const actionkeys = createContentAuth({
+      config: options.config,
+      clusters: [options.cluster],
+      action: "manage",
+      url
+    })[0] as string[]
 
     const halgo = mapHashNames[options.hashAlgorithm ? options.hashAlgorithm : (await options.client.query(
       {query: serverConfigQuery}
@@ -58,7 +61,7 @@ export async function createContent(
         cluster: options.cluster,
         references: newReferences.concat(await referencesPromise2, options.references ? options.references : []),
         tags: newTags.concat(options.tags),
-        nonce: serializeToBase64(nonce),
+        nonce: await serializeToBase64(nonce),
         value: await encryptedContentPromise.then((data) => new File([data.data], "value")),
         actions: options.actions,
         contentHash: options.contentHash ? options.contentHash : null,
@@ -168,10 +171,7 @@ export async function initializeCluster(
   ] = [];
   config["certificates"][
     digestCertificate
-  ] = await crypto.subtle.exportKey(
-    "pkcs8" as const,
-    privateKey
-  ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
+  ] = await serializeToBase64(privateKey);
   config.tokens[digestActionKey] = keyb64;
   if (!checkConfig(config)){
     console.error("invalid config created");
@@ -197,27 +197,29 @@ export async function initializeCluster(
 
 
 export async function decryptContentObject(
-  config: ConfigInterface,
-  nodeData: any, blobOrAuthinfo : Blob | string | AuthInfoInterface)
+  config: ConfigInterface | PromiseLike<ConfigInterface>,
+  nodeData: any | PromiseLike<any>, blobOrAuthinfo : Blob | string | AuthInfoInterface | PromiseLike<Blob | string | AuthInfoInterface>)
 {
   let arrPromise : PromiseLike<ArrayBufferLike>;
-  if (blobOrAuthinfo instanceof Blob) {
-    arrPromise = blobOrAuthinfo.arrayBuffer();
-  } else if (typeof(blobOrAuthinfo) == "string") {
-    arrPromise = Promise.resolve(b64toarr(blobOrAuthinfo).buffer)
+  const _info = await blobOrAuthinfo;
+  const _node = await nodeData;
+  if (_info instanceof Blob) {
+    arrPromise = _info.arrayBuffer();
+  } else if (typeof(_info) == "string") {
+    arrPromise = Promise.resolve(b64toarr(_info).buffer)
   } else {
     arrPromise = fetch(
-      nodeData.link, {
+      _node.link, {
         headers: {
-          "Authorization": blobOrAuthinfo.keys.join(",")
+          "Authorization": _info.keys.join(",")
         }
       }
     ).then((result) => result.arrayBuffer());
   }
-  if (nodeData.tags.includes("type=PublicKey")){
+  if (_node.tags.includes("type=PublicKey")){
     return await arrPromise;
   }
-  const found = findCertCandidatesForRefs(config, nodeData);
+  const found = findCertCandidatesForRefs(await config, _node);
   if (!found){
     return null;
   }
@@ -226,13 +228,14 @@ export async function decryptContentObject(
   })));
   return await decryptAESGCM({
     key: (await sharedkeyPromise).data,
-    nonce: nodeData.nonce,
+    nonce: _node.nonce,
     data: arrPromise
   });
 }
 
-export async function decryptContentId(client: ApolloClient<any>, config: ConfigInterface, activeUrl: string, contentId: string){
-  const authinfo : AuthInfoInterface = extractAuthInfo(config, activeUrl);
+export async function decryptContentId(client: ApolloClient<any>, config: ConfigInterface | PromiseLike<ConfigInterface>, activeUrl: string, contentId: string){
+  const _config = await config;
+  const authinfo : AuthInfoInterface = extractAuthInfo(_config, activeUrl);
   let result;
   // TODO: maybe remove try catch
   try{
@@ -251,6 +254,6 @@ export async function decryptContentId(client: ApolloClient<any>, config: Config
     return null;
   }
   return await decryptContentObject(
-    config, result.data.content, authinfo
+    _config, result.data.content, authinfo
   );
   }

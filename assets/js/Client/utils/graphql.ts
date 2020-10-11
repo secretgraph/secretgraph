@@ -2,7 +2,7 @@
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { createUploadLink } from 'apollo-upload-client';
 import { ConfigInterface, ReferenceInterface} from "../interfaces";
-import { rsaKeyTransform, serializeToBase64, unserializeToArrayBuffer, encryptRSAOEAP } from "./encryption";
+import { unserializeToCryptoKey, serializeToBase64, unserializeToArrayBuffer, encryptRSAOEAP } from "./encryption";
 import { mapHashNames } from "../constants";
 
 
@@ -27,25 +27,31 @@ export const createClient = (url: string) => {
 
 
 export function createContentAuth(
-  config: ConfigInterface, clusters: string[], action: string="view", url?: string, keysink?: any
+  options: {
+    readonly config: ConfigInterface,
+    readonly clusters: string[],
+    readonly action?: string,
+    url?: string,
+    keysink?: any
+  }
 ){
   const authkeys: string[] = [];
   const privkeys: PromiseLike<any>[] = [];
   let usedUrl: string;
-  if(url){
-    usedUrl=url;
+  if(options.url){
+    usedUrl=options.url;
   } else {
-    usedUrl=config.baseUrl;
+    usedUrl=options.config.baseUrl;
   }
-  const checkActions =  (el: string) => [action, "manage"].includes(el);
-  for(let clusterid of clusters){
-    const c = config.hosts[usedUrl] ? config.hosts[usedUrl].clusters[clusterid] : undefined;
+  const checkActions =  (el: string) => [options.action ? options.action : "view", "manage"].includes(el);
+  for(let clusterid of options.clusters){
+    const c = options.config.hosts[usedUrl] ? options.config.hosts[usedUrl].clusters[clusterid] : undefined;
     if (c?.hashes){
       for(let hash in c.hashes) {
-        if(keysink && hash in config.certificates){
-          privkeys.push(keysink(config.certificates[hash]));
-        } else if (c.hashes[hash].findIndex(checkActions) !== -1 && hash in config.tokens){
-          authkeys.push(`${clusterid}:${config.tokens[hash]}`);
+        if(options.keysink && hash in options.config.certificates){
+          privkeys.push(options.keysink(options.config.certificates[hash]));
+        } else if (c.hashes[hash].findIndex(checkActions) !== -1 && hash in options.config.tokens){
+          authkeys.push(`${clusterid}:${options.config.tokens[hash]}`);
         }/** else if (!c.hashes[hash] && hash in config.tokens){
           authkeys.push(`${hash}:${config.tokens[hash]}`);
         } */
@@ -57,37 +63,41 @@ export function createContentAuth(
 
 export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalgo: string, hashes?: string[]) : Promise<ReferenceInterface[]> {
   const references: Promise<ReferenceInterface>[] = [];
+  if(!mapHashNames[hashalgo]){
+    throw Error("hashalgorithm not supported: "+hashalgo)
+  }
+  const hashalgo2 = mapHashNames[hashalgo].name;
+  const hashalgo2_len = mapHashNames[hashalgo].length;
   for(let counter=0; counter<privkeys.length;counter++){
     const privkey = privkeys[counter];
-    let transforms;
-    if (!privkey.extractable && (!hashes || !privkey.usages.includes("sign"))){
-      throw Error("missing key usages")
-    }
-    if(!privkey.usages.includes("sign")) {
-      transforms = rsaKeyTransform(privkey, hashalgo, {signkey: true, pubkey: !(hashes)});
-    } else  {
-      transforms = rsaKeyTransform(privkey, hashalgo, {signkey: false, pubkey: !(hashes)});
-      transforms["signkey"] = Promise.resolve(privkey);
-    }
-    let hash = hashes ? hashes[counter]: (transforms["pubkey"] as Promise<CryptoKey>).then(
-      async (pubkey) => {
-        const exported = await crypto.subtle.exportKey(
-          "spki" as const,
-          pubkey
-        );
-        return await serializeToBase64(crypto.subtle.digest(
-          hashalgo, exported
-        ))
+    const signKey = unserializeToCryptoKey(privkey, {
+      name: "RSA-PSS",
+      hash: hashalgo2
+    }, "privateKey");
+    const hashfn = async () => {
+      if (hashes){
+        return hashes[counter];
       }
-    ) as Promise<string>;
+      const exported = await crypto.subtle.exportKey(
+        "spki" as const,
+        await unserializeToCryptoKey(privkey, {
+          name: "RSA-OAEP",
+          hash: hashalgo2
+        }, "publicKey")
+      );
+      return await serializeToBase64(crypto.subtle.digest(
+        hashalgo2,
+        exported
+      ))
+    }
     references.push(
       Promise.all([
-        hash,
-        (transforms["signkey"] as Promise<CryptoKey>).then(
+        hashfn(),
+        signKey.then(
           (signkey) => serializeToBase64(crypto.subtle.sign(
             {
               name: "RSA-PSS",
-              saltLength: mapHashNames[hashalgo].length,
+              saltLength: hashalgo2_len / 8,
             },
             signkey,
             content

@@ -50,6 +50,9 @@ export async function toPublicKey(inp: KeyInput | PromiseLike<KeyInput>, params:
     _key = (_inp as CryptoKeyPair).privateKey;
   } else if(params.name.startsWith("AES-")){
     // symmetric
+    if(!mapEncryptionAlgorithms[params.name]){
+      throw Error("Algorithm not supported: "+params.name)
+    }
     return await crypto.subtle.importKey(
       "raw" as const,
       await unserializeToArrayBuffer(_inp as RawInput),
@@ -58,6 +61,9 @@ export async function toPublicKey(inp: KeyInput | PromiseLike<KeyInput>, params:
       mapEncryptionAlgorithms[params.name].usages
     );
   } else {
+    if(!mapEncryptionAlgorithms[`${params.name}private`]){
+      throw Error("Algorithm not supported: "+params.name)
+    }
     _key = await crypto.subtle.importKey(
       "pkcs8" as const,
       await unserializeToArrayBuffer(_inp as RawInput),
@@ -76,33 +82,13 @@ export async function toPublicKey(inp: KeyInput | PromiseLike<KeyInput>, params:
   delete tempkey.q;
   delete tempkey.qi;
   tempkey.key_ops = ["sign", "verify", "encrypt", "decrypt"];
+  if(!mapEncryptionAlgorithms[`${params.name}public`]){
+    throw Error(`Public version not available, should not happen: ${params.name} (private: ${mapEncryptionAlgorithms[`${params.name}private`]})`)
+  }
   return await crypto.subtle.importKey(
     "jwk", tempkey, params, true,
     mapEncryptionAlgorithms[`${params.name}public`].usages
   );
-}
-
-export function rsaKeyTransform(privKey:CryptoKey, hashalgo: string, options={pubkey: false, signkey: false}) {
-  const ret : {
-    pubkey?: Promise<CryptoKey>,
-    signkey?: Promise<CryptoKey>
-  } = {};
-  if (options["signkey"]){
-    ret["signkey"] = unserializeToCryptoKey(
-      privKey, {
-        name: "RSA-PSS",
-        hash: hashalgo
-      }
-    );
-  }
-  if (options["pubkey"]){
-    ret["pubkey"] = toPublicKey(privKey, {
-        name: "RSA-OAEP",
-        hash: hashalgo
-      }
-    );
-  }
-  return ret;
 }
 
 export async function unserializeToArrayBuffer(
@@ -125,6 +111,9 @@ export async function unserializeToArrayBuffer(
     } else if ( _data instanceof File ) {
       _result = await (_data as File).arrayBuffer();
     } else if ( _data instanceof CryptoKey ) {
+      if (!_data.extractable){
+        throw Error("Cannot extract key (extractable=false)")
+      }
       switch (_data.type){
         case "public":
           // serialize publicKey
@@ -187,6 +176,9 @@ export async function unserializeToCryptoKey(inp: KeyInput | PromiseLike<KeyInpu
     _data = await unserializeToArrayBuffer(temp1 as RawInput);
   }
   if (params.name.startsWith("AES-")){
+    if(!mapEncryptionAlgorithms[params.name]){
+      throw Error("Algorithm not supported: "+params.name)
+    }
     // symmetric
     _result = await crypto.subtle.importKey(
       "raw" as const,
@@ -196,6 +188,9 @@ export async function unserializeToCryptoKey(inp: KeyInput | PromiseLike<KeyInpu
       mapEncryptionAlgorithms[params.name].usages
     )
   } else {
+    if(!mapEncryptionAlgorithms[`${params.name}private`] || !mapEncryptionAlgorithms[`${params.name}public`]){
+      throw Error("Algorithm not supported: "+params.name)
+    }
     try {
       _result = await crypto.subtle.importKey(
         "pkcs8" as const,

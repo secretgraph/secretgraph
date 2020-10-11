@@ -12,7 +12,7 @@ const tsgqlPlugin = new TsGraphQLPlugin({
 module.exports = {
   context: __dirname,
   entry: "./assets/js/Client/index.tsx",
-  devtool: "eval-source-map",
+  devtool: "source-map",
   mode: "development",
   output: {
     path: path.resolve(__dirname, "./webpack_bundles/"),
