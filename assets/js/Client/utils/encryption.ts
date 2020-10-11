@@ -18,22 +18,17 @@ export async function toPBKDF2key(inp: RawInput | PromiseLike<RawInput>) : Promi
   const _inp = await inp;
   if (typeof(_inp) === "string"){
     data = utf8encoder.encode(_inp)
-  } else {
-    switch (_inp.constructor) {
-      case File:
-        data = await (_inp as File).arrayBuffer();
-        break;
-      case ArrayBuffer:
-        data = _inp as ArrayBuffer;
-        break;
-      case CryptoKey:
-        if ((_inp as CryptoKey).algorithm.name != "PBKDF2"){
-          throw Error("Invalid algorithm: "+(_inp as CryptoKey).algorithm.name)
-        }
-        return _inp as CryptoKey;
-      default:
-        throw Error("Invalid input: "+_inp)
+  } else if ( _inp instanceof ArrayBuffer || (_inp as any).buffer instanceof ArrayBuffer ) {
+    data = _inp as ArrayBuffer;
+  } else if ( _inp instanceof File ) {
+    data = await (_inp as File).arrayBuffer();
+  } else if ( _inp instanceof CryptoKey ) {
+    if ((_inp as CryptoKey).algorithm.name != "PBKDF2"){
+      throw Error("Invalid algorithm: "+(_inp as CryptoKey).algorithm.name)
     }
+    return _inp as CryptoKey;
+  } else {
+    throw Error(`Invalid input: ${_inp} (${(_inp as RawInput).constructor})`)
   }
 
   return crypto.subtle.importKey(
@@ -53,6 +48,15 @@ export async function toPublicKey(inp: KeyInput | PromiseLike<KeyInput>, params:
     _key = _inp;
   } else if ((_inp as CryptoKeyPair).privateKey && (_inp as CryptoKeyPair).publicKey){
     _key = (_inp as CryptoKeyPair).privateKey;
+  } else if(params.name.startsWith("AES-")){
+    // symmetric
+    return await crypto.subtle.importKey(
+      "raw" as const,
+      await unserializeToArrayBuffer(_inp as RawInput),
+      params,
+      true,
+      mapEncryptionAlgorithms[params.name].usages
+    );
   } else {
     _key = await crypto.subtle.importKey(
       "pkcs8" as const,
@@ -104,38 +108,45 @@ export function rsaKeyTransform(privKey:CryptoKey, hashalgo: string, options={pu
 export async function unserializeToArrayBuffer(
   inp: RawInput | KeyOutInterface| PromiseLike<RawInput | KeyOutInterface>
 ) : Promise<ArrayBuffer> {
-  let _data = await inp;
+  const _inp = await inp;
   let _result : ArrayBuffer;
-  if (typeof(_data) === "string"){
-    _result = Uint8Array.from(atob(_data), c => c.charCodeAt(0));
+  if (typeof(_inp) === "string"){
+    _result = Uint8Array.from(atob(_inp), c => c.charCodeAt(0));
   } else {
-    if (typeof(_data) === "object" && (_data as KeyOutInterface).data instanceof ArrayBuffer){
-      _data = (_data as KeyOutInterface).data;
+    let _data;
+    const _finp = (_inp as KeyOutInterface).data
+    if (_finp && (_finp instanceof ArrayBuffer || (_finp as any).buffer instanceof ArrayBuffer)){
+      _data = _finp;
+    } else {
+      _data = _inp
     }
-    switch (_data.constructor) {
-      case File:
-        _result = await (_data as File).arrayBuffer()
-        break
-      case ArrayBuffer:
-        _result = _data as ArrayBuffer;
-        break;
-      case CryptoKey:
-        // more likely that a privatekey is serialized, so try that first
-        try {
-          _result = await crypto.subtle.exportKey(
-            "pkcs8" as const,
-            _data as CryptoKey
-          )
-        } catch(exc){
+    if ( _data instanceof ArrayBuffer || (_data as any).buffer instanceof ArrayBuffer ) {
+      _result = _data as ArrayBuffer;
+    } else if ( _data instanceof File ) {
+      _result = await (_data as File).arrayBuffer();
+    } else if ( _data instanceof CryptoKey ) {
+      switch (_data.type){
+        case "public":
           // serialize publicKey
           _result = await crypto.subtle.exportKey(
             "spki" as const,
-            _data as CryptoKey
+            _data
+          );
+          break
+        case "private":
+          _result = await crypto.subtle.exportKey(
+            "pkcs8" as const,
+            _data
+          );
+          break
+        default:
+          _result = await crypto.subtle.exportKey(
+            "raw" as const,
+            _data
           )
-        }
-        break;
-      default:
-        throw Error("Invalid type: "+_data.constructor)
+      }
+    } else {
+      throw Error(`Invalid input: ${_inp} (${(_inp as RawInput).constructor})`)
     }
   }
   return _result;
@@ -175,31 +186,42 @@ export async function unserializeToCryptoKey(inp: KeyInput | PromiseLike<KeyInpu
   } else {
     _data = await unserializeToArrayBuffer(temp1 as RawInput);
   }
-  try {
+  if (params.name.startsWith("AES-")){
+    // symmetric
     _result = await crypto.subtle.importKey(
-      "pkcs8" as const,
+      "raw" as const,
       _data,
       params,
       true,
-      mapEncryptionAlgorithms[`${params.name}private`].usages
+      mapEncryptionAlgorithms[params.name].usages
     )
-    if (type == "publicKey"){
-      _result = await toPublicKey(_result, params);
-    }
-  } catch(exc){
-    if (type == "publicKey"){
-      // serialize publicKey
+  } else {
+    try {
       _result = await crypto.subtle.importKey(
-        "spki" as const,
+        "pkcs8" as const,
         _data,
         params,
         true,
-        mapEncryptionAlgorithms[`${params.name}public`].usages
+        mapEncryptionAlgorithms[`${params.name}private`].usages
       )
-    } else {
-      throw Error("Not a PrivateKey")
+      if (type == "publicKey"){
+        _result = await toPublicKey(_result, params);
+      }
+    } catch(exc){
+      if (type == "publicKey"){
+        // serialize publicKey
+        _result = await crypto.subtle.importKey(
+          "spki" as const,
+          _data,
+          params,
+          true,
+          mapEncryptionAlgorithms[`${params.name}public`].usages
+        )
+      } else {
+        throw Error("Not a PrivateKey")
+      }
     }
-  }
+}
   return _result;
 }
 
@@ -303,13 +325,13 @@ export async function encryptAESGCM(options: CryptoGCMInInterface | Promise<Cryp
   const _options = await options;
   const nonce = _options.nonce ? await unserializeToArrayBuffer(_options.nonce) : crypto.getRandomValues(new Uint8Array(13));
   const key = await unserializeToCryptoKey(_options.key, {
-    name: "AES-GCM",
-    iv: nonce
+    name: "AES-GCM"
   }, "publicKey")
   return {
-    data: await crypto.subtle.decrypt(
+    data: await crypto.subtle.encrypt(
       {
-        name: "AES-GCM"
+        name: "AES-GCM",
+        iv: nonce
       },
       key,
       await unserializeToArrayBuffer(_options.data)
@@ -333,21 +355,18 @@ export async function decryptAESGCM(options: CryptoGCMInInterface | Promise<Cryp
         nonce = _nonce;
         key = await unserializeToCryptoKey(split[0], {
           name: "AES-GCM",
-          iv: nonce
         }, "privateKey")
         break
       case 2:
         nonce = await unserializeToArrayBuffer(split[0]);
         key = await unserializeToCryptoKey(split[1], {
           name: "AES-GCM",
-          iv: nonce
         }, "privateKey");
         break
       default:
         nonce = await unserializeToArrayBuffer(split[1]);
         key = await unserializeToCryptoKey(split[2], {
           name: "AES-GCM",
-          iv: nonce
         }, "privateKey");
         break
     }
@@ -358,13 +377,13 @@ export async function decryptAESGCM(options: CryptoGCMInInterface | Promise<Cryp
     nonce = _nonce;
     key = await unserializeToCryptoKey(_key, {
       name: "AES-GCM",
-      iv: nonce
     }, "privateKey")
   }
   return {
     data: await crypto.subtle.decrypt(
       {
-        name: "AES-GCM"
+        name: "AES-GCM",
+        iv: nonce
       },
       key,
       await unserializeToArrayBuffer(_options.data)

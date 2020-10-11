@@ -107,7 +107,7 @@ export async function createCluster(
       publicKey: await publicKeyPromise,
       privateKey: await privateKeyPromise,
       privateTags: privateTags,
-      nonce: nonce ? serializeToBase64(nonce) : null,
+      nonce: nonce ? await serializeToBase64(nonce) : null,
       actions: options.actions,
       authorization: options.authorization
     }
@@ -124,7 +124,7 @@ export async function initializeCluster(
       //modulusLength: 8192,
       modulusLength: 2048,
       publicExponent: new Uint8Array([1, 0, 1]),
-      hash: "SHA-512"
+      hash: config.hosts[config.baseUrl].hashAlgorithms[0]
     },
     true,
     ["wrapKey", "unwrapKey", "encrypt", "decrypt"]

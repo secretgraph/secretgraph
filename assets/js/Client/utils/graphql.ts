@@ -125,7 +125,8 @@ export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], ha
         encryptRSAOEAP(
           {
             key: pubkey,
-            data: sharedkey
+            data: sharedkey,
+            hashAlgorithm: hashalgo
           }
         ).then((data) => serializeToBase64(data.data))
       ]).then((arr) : ReferenceInterface => {

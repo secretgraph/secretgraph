@@ -26,6 +26,7 @@ export const mapEncryptionAlgorithms: {readonly [algo: string]: {readonly usages
   "ECDSApublic":  {usages: ["verify", "deriveKey", "deriveBits"]},
   "RSA-OAEPprivate": {usages: ["decrypt"]},
   "RSA-OAEPpublic": {usages: ["encrypt"]},
+  "AES-GCM": {usages: ["encrypt", "decrypt"]},
 }
 
 export const RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
