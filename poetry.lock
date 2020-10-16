@@ -85,7 +85,7 @@ marker = "sys_platform == \"win32\""
 name = "colorama"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "0.4.3"
+version = "0.4.4"
 
 [[package]]
 category = "main"
@@ -148,7 +148,7 @@ description = "Django-MySQL extends Django's built-in MySQL and MariaDB support 
 name = "django-mysql"
 optional = true
 python-versions = ">=3.5"
-version = "3.8.1"
+version = "3.9.0"
 
 [package.dependencies]
 Django = ">=2.2"
@@ -664,8 +664,8 @@ chardet = [
     {file = "chardet-3.0.4.tar.gz", hash = "sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"},
 ]
 colorama = [
-    {file = "colorama-0.4.3-py2.py3-none-any.whl", hash = "sha256:7d73d2a99753107a36ac6b455ee49046802e59d9d076ef8e47b61499fa29afff"},
-    {file = "colorama-0.4.3.tar.gz", hash = "sha256:e96da0d330793e2cb9485e9ddfd918d456036c7149416295932478192f4436a1"},
+    {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
+    {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 cryptography = [
     {file = "cryptography-3.1.1-cp27-cp27m-macosx_10_10_x86_64.whl", hash = "sha256:65beb15e7f9c16e15934569d29fb4def74ea1469d8781f6b3507ab896d6d8719"},
@@ -704,8 +704,8 @@ django-fast-ratelimit = [
     {file = "django_fast_ratelimit-0.5.0.3-py3-none-any.whl", hash = "sha256:072c1e448fe11bae1df469f0271a8feb4fc349c910cc5d6cb445f994b9602b16"},
 ]
 django-mysql = [
-    {file = "django-mysql-3.8.1.tar.gz", hash = "sha256:c47065b347a59ef1e1e4b7330f32a17ac37b5fc286f31409551ee9581047f22b"},
-    {file = "django_mysql-3.8.1-py3-none-any.whl", hash = "sha256:473e3b01acbc14a85b65e8a8d628ab6957dff0409cf782dde4830726b3731df3"},
+    {file = "django-mysql-3.9.0.tar.gz", hash = "sha256:2f70c348b539f75753b56d7f952b6c6b153b984477220c1dd59763c030ddbba0"},
+    {file = "django_mysql-3.9.0-py3-none-any.whl", hash = "sha256:a70704f8c2f18a02991ad926a2cfe37ab418f034ebda88f2547b96099dbff5ed"},
 ]
 django-webpack-loader = [
     {file = "django-webpack-loader-0.7.0.tar.gz", hash = "sha256:7a3c88201aa54481f9399465615cbe7b9aece8081496a6d0287b7cb8e232f447"},
