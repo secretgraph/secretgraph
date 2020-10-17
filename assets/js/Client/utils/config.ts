@@ -264,7 +264,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
   if (!cert){
     return Promise.reject("no cert found");
   }
-  certhashes = await Promise.all(obj.data.secretgraphConfig.hashAlgorithms.map(
+  certhashes = await Promise.all(obj.data.secretgraph.config.hashAlgorithms.map(
     (hash: string) => crypto.subtle.digest(mapHashNames[hash], cert as Uint8Array).then(
       (data) => btoa(String.fromCharCode(... new Uint8Array(data)))
     )
@@ -298,13 +298,13 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
           prekey: sharedKeyPrivateKeyRes.data,
           pw,
           hashAlgorithm: "SHA-512",
-          iterations: obj.data.secretgraphConfig.PBKDF2Iterations
+          iterations: obj.data.secretgraph.config.PBKDF2Iterations
         });
         const prekey2 = await encryptPreKey({
           prekey: (await sharedKeyConfigRes).data,
           pw,
           hashAlgorithm: "SHA-512",
-          iterations: obj.data.secretgraphConfig.PBKDF2Iterations
+          iterations: obj.data.secretgraph.config.PBKDF2Iterations
         });
         return `${url.origin}${node.node.link}?decrypt&token=${tokens.join("token=")}&prekey=${certhashes[0]}:${prekey}&prekey=shared:${prekey2}`
       } else {

@@ -39,23 +39,24 @@ const clusterFeedQuery = gql`
     $count: Int
     $cursor: String
   ) {
-    clusters: clusters(
-      authorization: $authorization,
-      includeTags: $include,
-      excludeTags: $exclude,
-      public: $public,
-      first: $count,
-      after: $cursor
-    ) @connection(key: "SideBar_clusters", filters:["include", "exclude", "public"]) {
-      edges {
-        node {
-          id
-          publicInfo
+    clusters: secretgraph(authorization: $authorization) {
+      clusters(
+        includeTags: $include,
+        excludeTags: $exclude,
+        public: $public,
+        first: $count,
+        after: $cursor
+      ) @connection(key: "SideBar_clusters", filters:["include", "exclude", "public"]) {
+        edges {
+          node {
+            id
+            publicInfo
+          }
         }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
   }
@@ -76,16 +77,16 @@ export default (appProps: SideBarItemsProps) => {
     }
   );
   if (loading) return null;
-  hasNextPage = data.clusters.pageInfo.hasNextPage;
+  hasNextPage = data.clusters.clusters.pageInfo.hasNextPage;
 
 
   const _loadMore = () => {
     fetchMore({
       variables: {
-        cursor: data.clusters.pageInfo.endCursor
+        cursor: data.clusters.clusters.pageInfo.endCursor
       }
     }).then((result: any) => {
-      hasNextPage = result.data.clusters.pageInfo.hasNextPage
+      hasNextPage = result.data.clusters.clusters.pageInfo.hasNextPage
       if(loadMoreExtra){
         loadMoreExtra();
       }
@@ -108,7 +109,7 @@ export default (appProps: SideBarItemsProps) => {
   return (
     <List>
       {_header}
-      {data.clusters.edges.map((edge: any) => {
+      {data.clusters.clusters.edges.map((edge: any) => {
         let name: string | undefined, note: string="";
         if (edge.node.publicInfo){
           try {

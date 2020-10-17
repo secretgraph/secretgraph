@@ -3,24 +3,28 @@ import { gql } from '@apollo/client';
 
 export const getClusterConfigurationQuery = gql`
   query clusterGetConfigurationQuery($id: ID!, $authorization: [String!]) {
-    secretgraphConfig {
-      injectedClusters {
-        group
-        clusters
-        links {
-          link
-          hash
+    secretgraph(authorization: $authorization){
+      config {
+        injectedClusters {
+          group
+          clusters
+          links {
+            link
+            hash
+          }
         }
-      }
-    }
-    cluster(id: $id, authorization: $authorization) {
-      id
-      group
-      availableActions {
-        keyHash
-        type
-        requiredKeys
-        allowedTags
+        node(id: $id) {
+          ... on Cluster{
+            id
+            group
+            availableActions {
+              keyHash
+              type
+              requiredKeys
+              allowedTags
+            }
+          }
+        }
       }
     }
   }
@@ -29,26 +33,30 @@ export const getClusterConfigurationQuery = gql`
 // has also publicInfo
 export const getClusterQuery = gql`
   query clusterGetClusterQuery($id: ID!, $authorization: [String!]) {
-    secretgraphConfig {
-      injectedClusters {
-        group
-        clusters
-        links {
-          link
-          hash
+    secretgraph(authorization: $authorization){
+      config {
+        injectedClusters {
+          group
+          clusters
+          links {
+            link
+            hash
+          }
         }
       }
-    }
-    cluster(id: $id, authorization: $authorization) {
-      id
-      link
-      group
-      publicInfo
-      availableActions {
-        keyHash
-        type
-        requiredKeys
-        allowedTags
+      node(id: $id) {
+        ... on Cluster {
+          id
+          link
+          group
+          publicInfo
+          availableActions {
+            keyHash
+            type
+            requiredKeys
+            allowedTags
+          }
+        }
       }
     }
   }

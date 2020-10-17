@@ -39,36 +39,37 @@ query SideBarContentFeedQuery(
   $count: Int
   $cursor: String
 ) {
-  contents: contents(
-    clusters: $clusters
-    includeTags: $include
-    excludeTags: $exclude
-    public: $public
-    authorization: $authorization
-    first: $count
-    after: $cursor
-  )  @connection(key: "SideBar_contents", filters:["include", "exclude", "clusters", "public"])  {
-    edges {
-      node {
-        id
-        nonce
-        link
-        tags(includeTags: $includeTags)
-        references(groups: ["key", "signature"], includeTags: $include) {
-          edges {
-            node {
-              extra
-              target {
-                tags(includeTags: ["key_hash="])
+  contents: secretgraph(authorization: $authorization) {
+    contents(
+      clusters: $clusters
+      includeTags: $include
+      excludeTags: $exclude
+      public: $public
+      first: $count
+      after: $cursor
+    )  @connection(key: "SideBar_contents", filters:["include", "exclude", "clusters", "public"])  {
+      edges {
+        node {
+          id
+          nonce
+          link
+          tags(includeTags: $includeTags)
+          references(groups: ["key", "signature"], includeTags: $include) {
+            edges {
+              node {
+                extra
+                target {
+                  tags(includeTags: ["key_hash="])
+                }
               }
             }
           }
         }
       }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
     }
   }
 }
@@ -104,14 +105,14 @@ export default (appProps: SideBarItemsProps) => {
     }
   });
   if (loading) return null;
-  hasNextPage = data.contents.pageInfo.hasNextPage;
+  hasNextPage = data.contents.contents.pageInfo.hasNextPage;
   const _loadMore = () => {
   fetchMore({
       variables: {
-      cursor: data.contents.pageInfo.endCursor
+      cursor: data.contents.contents.pageInfo.endCursor
       },
   }).then((result: any) => {
-      hasNextPage = result.data.contents.pageInfo.hasNextPage
+      hasNextPage = result.data.contents.contents.pageInfo.hasNextPage
       if(loadMoreExtra){
         loadMoreExtra();
       }
@@ -180,7 +181,7 @@ export default (appProps: SideBarItemsProps) => {
   return (
     <List>
       {_header}
-      {data.contents.edges.map((edge: any) => render_item(edge.node))}
+      {data.contents.contents.edges.map((edge: any) => render_item(edge.node))}
       <Divider />
       <ListItem button key={`${activeUrl}:${activeCluster ? activeCluster : "none"}:content:loadmore`}
       disabled={(loading || !hasNextPage)}

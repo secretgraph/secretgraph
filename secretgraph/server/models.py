@@ -105,7 +105,7 @@ class Cluster(FlexidModel):
     def link(self):
         # path to raw view
         return reverse(
-            "secretgraph:cluster", kwargs={
+            "secretgraph:clusters", kwargs={
                 "id": self.flexid
             }
         )

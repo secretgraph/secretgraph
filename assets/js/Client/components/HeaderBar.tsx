@@ -89,7 +89,7 @@ function HeaderBar(props: Props) {
       {
         query: serverConfigQuery,
       }
-    ).then((obj:any) => obj.data.secretgraphConfig).catch(
+    ).then((obj:any) => obj.data.secretgraph.config).catch(
       () => setLoadingExport(false)
     );
     if (!sconfig){

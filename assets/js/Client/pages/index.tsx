@@ -51,7 +51,7 @@ function MainPage(props: Props) {
         FrameElementWrapper = elements.get("undefined") as ElementEntryInterface;
       }
       const FrameElementType = (FrameElementWrapper as ElementEntryInterface).component;
-      if (true || activeUrl === mainCtx.url || !mainCtx.url){
+      if (activeUrl == mainCtx.url || !mainCtx.url){
         frameElement = (
           <FrameElementType
             mainCtx={mainCtx}

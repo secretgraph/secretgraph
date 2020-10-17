@@ -79,7 +79,7 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
                 const result = await client.query({
                   query: serverConfigQuery
                 });
-                for(const algo of result.data.secretgraphConfig.hashAlgorithms){
+                for(const algo of result.data.secretgraph.config.hashAlgorithms){
                   const mappedName = mapHashNames[algo].name;
                   if (mappedName){
                     hashAlgos.push(mappedName);

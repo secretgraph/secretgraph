@@ -86,7 +86,7 @@ function SettingsImporter() {
       setLoadingImport(false);
       return;
     }
-    const sconfig = result.data.secretgraphConfig;
+    const sconfig = result.data.secretgraph.config;
     const hashAlgos = [];
     for(const algo of sconfig.hashAlgorithms){
       const mappedName = mapHashNames[algo];
@@ -149,7 +149,7 @@ function SettingsImporter() {
     if (!result){
       return;
     }
-    const sconfig = result.data.secretgraphConfig;
+    const sconfig = result.data.secretgraph.config;
     const hashAlgos = [];
     for(const algo of sconfig.hashAlgorithms){
       const mappedName = mapHashNames[algo];

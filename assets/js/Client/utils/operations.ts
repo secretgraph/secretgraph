@@ -47,7 +47,7 @@ export async function createContent(
 
     const halgo = mapHashNames[options.hashAlgorithm ? options.hashAlgorithm : (await options.client.query(
       {query: serverConfigQuery}
-    ) as any).data.secretgraphConfig.hashAlgorithms[0]].name;
+    ) as any).data.secretgraph.configg.hashAlgorithms[0]].name;
 
     const [referencesPromise, tagsPromise ] = encryptSharedKey(key, options.pubkeys, halgo);
     const referencesPromise2 = encryptedContentPromise.then(
