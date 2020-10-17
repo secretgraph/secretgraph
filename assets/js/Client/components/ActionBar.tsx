@@ -71,8 +71,12 @@ function ActionBar(props: Props) {
         </Tooltip>
         <Tooltip title="Edit" arrow>
           <IconButton
-            className={!(mainCtx.item && mainCtx.action === "view") ? classes.hidden : classes.actionToolBarButton}
+            className={mainCtx.item  && mainCtx.action === "view" ? classes.actionToolBarButton : classes.hidden}
             aria-label="edit"
+            onClick={() => setMainCtx({
+              ...mainCtx,
+              action: "edit"
+            })}
           >
             <EditIcon />
           </IconButton>

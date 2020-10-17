@@ -544,10 +544,11 @@ const SideBar = (props: SideBarProps) => {
               (cluster: any) => {
                 setMainCtx({
                   ...mainCtx,
-                  item: null,
+                  item: cluster.id,
                   type: "Cluster",
                   action: "view",
-                  state: "default"
+                  state: "default",
+                  url: activeUrl
                 });
                 setSearchCtx({
                   ...searchCtx,

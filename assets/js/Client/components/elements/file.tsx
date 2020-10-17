@@ -24,8 +24,8 @@ type Props = {};
 const ViewFile = (props: Props) => {
   const {classes, theme} = useStylesAndTheme();
   const { mainCtx } = React.useContext(MainContext);
-  const client = useApolloClient();
   const { config } = React.useContext(ConfigContext);
+  const client = useApolloClient();
   const { data, error } = useAsync({
     promise: decryptContentId(
       client,

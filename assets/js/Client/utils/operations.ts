@@ -233,9 +233,9 @@ export async function decryptContentObject(
   });
 }
 
-export async function decryptContentId(client: ApolloClient<any>, config: ConfigInterface | PromiseLike<ConfigInterface>, activeUrl: string, contentId: string){
+export async function decryptContentId(client: ApolloClient<any>, config: ConfigInterface | PromiseLike<ConfigInterface>, url: string, contentId: string){
   const _config = await config;
-  const authinfo : AuthInfoInterface = extractAuthInfo(_config, activeUrl);
+  const authinfo : AuthInfoInterface = extractAuthInfo(_config, url);
   let result;
   // TODO: maybe remove try catch
   try{
@@ -243,7 +243,7 @@ export async function decryptContentId(client: ApolloClient<any>, config: Config
       query: contentQuery,
       variables: {
         id: contentId,
-        keyhashes: authinfo.hashes.map((value) => `hash=${value}`)
+        authorization: authinfo.keys
       }
     });
   }catch(error){
