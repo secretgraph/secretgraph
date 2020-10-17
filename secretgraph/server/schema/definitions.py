@@ -99,12 +99,8 @@ class FlexidMixin():
         return self.flexid
 
     @classmethod
-    def get_node(cls, info, id):
-        queryset = cls.get_queryset(cls._meta.model.objects, info)
-        return fetch_by_id(
-            queryset,
-            id
-        ).first()
+    def get_node(cls, info, id, **kwargs):
+        raise NotImplementedError()
 
 
 class ActionEntry(graphene.ObjectType):

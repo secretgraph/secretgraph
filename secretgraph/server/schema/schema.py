@@ -1,12 +1,11 @@
-
-from graphene import Field, List, ID
+from graphene import Field, List, ID, ObjectType, relay
 from django.utils.translation import gettext_lazy as _
 
 
-from .arguments import AuthList, AuthRelayField
+from .arguments import AuthList
+from ..utils.auth import initializeCachedResult
 from .definitions import (
-    ClusterConnectionField, ClusterNode, ContentConnectionField, ContentNode,
-    SecretgraphConfig
+    ClusterConnectionField, ContentConnectionField, SecretgraphConfig
 )
 from .mutations import (
     ClusterMutation, ContentMutation, DeleteContentOrClusterMutation,
@@ -15,31 +14,32 @@ from .mutations import (
 )
 
 
-class Query():
-    secretgraphConfig = Field(SecretgraphConfig)
-    cluster = AuthRelayField(ClusterNode)
-    clusters = ClusterConnectionField(
-        authorization=AuthList()
-    )
-
-    content = AuthRelayField(ContentNode)
+class SecretgraphObject(ObjectType):
+    node = relay.Node.Field()
+    config = Field(SecretgraphConfig)
+    clusters = ClusterConnectionField()
     contents = ContentConnectionField(
-        authorization=AuthList(),
         clusters=List(
             ID, required=False
         )
     )
 
-    def resolve_secretgraphConfig(self, info, **kwargs):
+    def resolve_config(self, info, **kwargs):
         return SecretgraphConfig()
 
-    def resolve_cluster(
-        self, info, **kwargs
-    ):
-        return ClusterNode.get_node(info, **kwargs)
 
-    def resolve_content(self, info, **kwargs):
-        return ContentNode.get_node(info, **kwargs)
+class Query():
+    secretgraph = Field(
+        SecretgraphObject, authorization=AuthList()
+    )
+
+    def resolve_secretgraph(
+        self, info, authorization=None, **kwargs
+    ):
+        initializeCachedResult(
+            info.context, authset=authorization
+        )
+        return SecretgraphObject()
 
 
 class Mutation():
