@@ -2,7 +2,6 @@
 import * as React from "react";
 import Toolbar from "@material-ui/core/Toolbar";
 import Tooltip from '@material-ui/core/Tooltip';
-import { Theme } from "@material-ui/core/styles";
 import IconButton from "@material-ui/core/IconButton";
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
@@ -12,8 +11,6 @@ import { elements } from './elements';
 import { contentStates } from '../constants';
 import { MainContext } from '../contexts';
 import { useStylesAndTheme } from '../theme';
-
-import { ElementEntryInterface } from "../interfaces";
 
 type Props = {
 };

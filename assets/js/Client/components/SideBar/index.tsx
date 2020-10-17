@@ -212,97 +212,6 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
   )
 }
 
-
-const SideBarControl = (props: SideBarControlProps) => {
-  const {classes, theme} = useStylesAndTheme();
-  const { mainCtx, setMainCtx } = React.useContext(MainContext)
-  const { searchCtx, setSearchCtx } = React.useContext(SearchContext)
-  return (
-    <Accordion>
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        aria-controls="Control-content"
-        id="Control-header"
-      >
-        <Typography className={classes.heading}>Shortcuts</Typography>
-      </AccordionSummary>
-      <AccordionDetails>
-        <List>
-          <ListItem button key="Inbox" onClick={() => {
-            setMainCtx({
-              ...mainCtx,
-              action: "view",
-              item: "content",
-            });
-            setSearchCtx({
-              ...searchCtx,
-              filter: ["type=Message"],
-              exclude: []
-            });
-          }}>
-            <ListItemIcon>
-              <InboxIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Inbox"} />
-          </ListItem>
-          <ListItem button key="Send" onClick={() =>  {
-            setMainCtx({
-              ...mainCtx,
-              action: "add",
-              item: "Message",
-            });
-            setSearchCtx({
-              ...searchCtx,
-              filter: ["type=Message", "state=draft"],
-              exclude: []
-            });
-          }}>
-            <ListItemIcon>
-              <MailOutlineIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Send"} />
-          </ListItem>
-          <ListItem button key="Drafts" onClick={() =>  {
-            setMainCtx({
-              ...mainCtx,
-              action: "edit",
-              item: "content",
-            });
-            setSearchCtx({
-              ...searchCtx,
-              filter: ["type=Message", "state=draft"],
-              exclude: []
-            });
-          }}>
-            <ListItemIcon>
-              <DraftsIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Drafts"} />
-          </ListItem>
-          <ListItem button key="Cluster" onClick={() =>  {
-            setMainCtx({
-              ...mainCtx,
-              action: "edit",
-              item: "cluster",
-            });
-            setSearchCtx({
-              ...searchCtx,
-              filter: [],
-              exclude: []
-            });
-          }}>
-            <ListItemIcon>
-              <GroupWorkIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Cluster"} />
-          </ListItem>
-        </List>
-      </AccordionDetails>
-    </Accordion>
-  );
-}
-
-
 const SideBar = (props: SideBarProps) => {
   const {classes, theme} = useStylesAndTheme();
   const { openState} = props;
@@ -360,6 +269,7 @@ const SideBar = (props: SideBarProps) => {
         >
           {(openMenu === "clusters") ? (<ExpandMoreIcon/>) : closedSymbol}
           <ListItemText
+            key={"clusters:show:known.text"}
             className={classes.sideBarEntry}
             primary={`${searchCtx.cluster}`} />
         </ListItem>
@@ -391,6 +301,7 @@ const SideBar = (props: SideBarProps) => {
         >
           {closedSymbol}
           <ListItemText
+            key="clusters:show:unknown.text"
             className={classes.sideBarEntry}
             primary={(openMenu === "clusters") ? "Show Notifications" : "Show Clusters"} />
         </ListItem>
@@ -412,6 +323,7 @@ const SideBar = (props: SideBarProps) => {
         >
           {(openMenu === "contents") ? (<ExpandMoreIcon/>) : closedSymbol}
           <ListItemText
+            key="content:show.text"
             className={classes.sideBarEntry}
             primary={`${mainCtx.type}: ${mainCtx.item}`} />
         </ListItem>

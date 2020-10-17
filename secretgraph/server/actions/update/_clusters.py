@@ -37,6 +37,17 @@ def _update_or_create_cluster(
             raise ValueError("Too big >2MB")
         g = Graph()
         g.parse(file=objdata["publicInfo"], format="turtle")
+        cluster_main = g.value(
+            predicate=RDF.type, object=sgraph_cluster["Cluster"], any=False
+        )
+        if not cluster_main:
+            raise ValueError(
+                "Invalid publicInfo, not a valid cluster definition"
+            )
+        g.remove((cluster_main, sgraph_cluster["Cluster.contents"], None))
+        objdata["publicInfo"] = ContentFile(
+            g.serialize(format="turtle"), "publicInfo"
+        )
         public_secret_hashes = set(map(hash_object, get_secrets(g)))
         cluster.public = len(public_secret_hashes) > 0
         if created:
@@ -77,6 +88,7 @@ def _update_or_create_cluster(
             action_save_fn()
             return cluster
     elif cluster.id is not None and not public_secret_hashes:
+        # is not newly created and has also no new public_secret_hashes
         def save_fn():
             cluster_save_fn()
             return cluster
@@ -108,7 +120,9 @@ def create_cluster_fn(
                 }
             ]
         }
-    if not objdata.get("publicInfo"):
+    if hasattr(objdata.get("publicInfo"), "read"):
+        objdata["publicInfo"] = objdata["publicInfo"].read()
+    if not objdata.get("publicInfo") or len(objdata["publicInfo"]) == 0:
         g = Graph()
         root = BNode()
         g.add((root, RDF.type, sgraph_cluster["Cluster"]))

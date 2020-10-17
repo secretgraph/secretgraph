@@ -101,6 +101,15 @@ class Cluster(FlexidModel):
             null=True, blank=True, related_name="clusters"
         )
 
+    @property
+    def link(self):
+        # path to raw view
+        return reverse(
+            "secretgraph:cluster", kwargs={
+                "id": self.flexid
+            }
+        )
+
 
 class ContentManager(models.Manager):
     def injected_keys(self, queryset=None, group=""):

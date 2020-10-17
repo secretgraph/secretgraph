@@ -142,8 +142,10 @@ export default (appProps: SideBarItemsProps) => {
     }
     if (activeContent && activeContent == node.id){
       return (
-        <ListItem key={`${activeUrl}:${node.id}:active`}>
-          <ListItemText className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
+        <ListItem key={`${activeUrl}:${node.id}`}>
+          <ListItemText
+            key={`${activeUrl}:${node.id}.text`}
+            className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
         </ListItem>
       )
     }
@@ -151,11 +153,15 @@ export default (appProps: SideBarItemsProps) => {
         <ListItem button key={`${activeUrl}:${node.id}`}
           onClick={() => selectItem(node)}
         >
-          <ListItemIcon>
+          <ListItemIcon
+            key={`${activeUrl}:${node.id}.icon`}
+          >
               {icon}
           </ListItemIcon>
           {state== "draft" ? <ListItemIcon><DraftsIcon /></ListItemIcon> : null}
-          <ListItemText className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
+          <ListItemText
+            key={`${activeUrl}:${node.id}.text`}
+            className={classes.sideBarEntry} primary={`${elements.get(type) ? elements.get(type)?.label : type}: ...${node.id.substr(-48)}`} />
         </ListItem>
     );
   }
@@ -182,7 +188,9 @@ export default (appProps: SideBarItemsProps) => {
           _loadMore();
       }}
       >
-      <ListItemText primary={"Load more contents..."} />
+      <ListItemText
+        key={`${activeUrl}:${activeCluster ? activeCluster : "none"}:content:loadmore.text`}
+        primary={"Load more contents..."} />
       </ListItem>
     </List>
   );

@@ -51,14 +51,18 @@ function MainPage(props: Props) {
         FrameElementWrapper = elements.get("undefined") as ElementEntryInterface;
       }
       const FrameElementType = (FrameElementWrapper as ElementEntryInterface).component;
-      if (activeUrl === mainCtx.url || !mainCtx.url){
+      if (true || activeUrl === mainCtx.url || !mainCtx.url){
         frameElement = (
-          <FrameElementType/>
+          <FrameElementType
+            mainCtx={mainCtx}
+          />
         );
       } else {
         frameElement = (
-          <ApolloProvider client={createClient(mainCtx.url)}>
-            <FrameElementType/>
+          <ApolloProvider client={createClient(mainCtx.url as string)}>
+            <FrameElementType
+              mainCtx={mainCtx}
+            />
           </ApolloProvider>
         );
       }

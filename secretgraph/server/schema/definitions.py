@@ -6,6 +6,7 @@ from graphene import ObjectType, relay
 from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
+from django.utils.translation import gettext_lazy as _
 
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..messages import injection_group_help
@@ -13,6 +14,7 @@ from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
 
 
+# why?: scalars cannot be used in Unions
 class RegisterUrl(GenericScalar):
     """
     The `RegisterUrl` scalar type represents can be:
@@ -401,6 +403,11 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     contents = ContentConnectionField()
     user = relay.GlobalID(required=False)
     publicInfo = graphene.String(required=False)
+    link = graphene.String(
+        required=False, description=_(
+            "Link to turtle document with injected Contents"
+        )
+    )
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
@@ -439,6 +446,9 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
     def resolve_publicInfo(self, info):
         return self.publicInfo.open("r").read()
+
+    def resolve_link(self, info):
+        return self.link
 
 
 class ClusterConnectionField(DjangoConnectionField):

@@ -1,13 +1,21 @@
 
 
 import * as React from "react";
-import Paper from '@material-ui/core/Paper';
-import Grid from '@material-ui/core/Grid';
+import Typography from '@material-ui/core/Typography';
+import AddIcon from '@material-ui/icons/Add';
+import Card from '@material-ui/core/Card';
+import CardHeader from '@material-ui/core/CardHeader';
+import CardContent from '@material-ui/core/CardContent';
+import IconButton from '@material-ui/core/IconButton';
+import MoreVertIcon from '@material-ui/icons/MoreVert';
+import Collapse from '@material-ui/core/Collapse';
 import { useAsync } from "react-async"
-import { useQuery, useApolloClient } from '@apollo/client';
+import { useApolloClient } from '@apollo/client';
+import { parse, graph } from 'rdflib';
+import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../../constants"
 
 import { ConfigInterface } from "../../interfaces";
-import { MainContext, ConfigContext } from "../../contexts"
+import { MainContext, InitializedConfigContext } from "../../contexts"
 import { getClusterQuery } from "../../queries/cluster"
 import { useStylesAndTheme } from "../../theme";
 import { extractAuthInfo } from "../../utils/config";
@@ -18,40 +26,70 @@ type Props = {
 };
 
 const ViewCluster = (props: Props) => {
+  const {config, setConfig} = React.useContext(InitializedConfigContext);
+  const [ openTokens, setOpenTokens ] = React.useState(false);
   const {classes, theme} = useStylesAndTheme();
   const {mainCtx} = React.useContext(MainContext);
-  const {config, setConfig} = React.useContext(ConfigContext);
   const client = useApolloClient();
-  const authinfo = extractAuthInfo(config as ConfigInterface, mainCtx.url as string);
+  const authinfo = extractAuthInfo(config, mainCtx.url as string);
   const { data, error } = useAsync({
     promise: client.query({
       query: getClusterQuery,
       variables: {
         id: mainCtx.item,
-        authorization: authinfo
+        authorization: authinfo.keys
       }
     }),
     suspense: true
   });
+  if (!data){
+    throw error;
+  }
+  const url = new URL(config.baseUrl);
+  let name: string | null = null, note: string | null = null;
+  try {
+    const store = graph();
+    parse((data as any).cluster.publicInfo, store, "");
+    const results = store.querySync(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`)
+    if(results.length > 0) {
+      name = results[0][0];
+      note = results[0][1] ? results[0][1] : "";
+    }
+  } catch(exc){
+    console.warn("Could not parse publicInfo", exc)
+  }
 
   return (
     <ViewFrame
-    shareurl=""
+      shareurl={`${url.origin}${(data as any).cluster.link}`}
     >
-      <Grid container spacing={5}>
-        <Grid item xs={12} md={6}>
-          Name
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper>xs=12</Paper>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <Paper>xs=12</Paper>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <Paper>xs=12</Paper>
-        </Grid>
-      </Grid>
+      <Typography>
+        {name}
+      </Typography>
+      <Card>
+        <CardContent>
+          {note}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader
+          avatar={
+            <IconButton aria-label="add" onClick={() => console.log("implement")}>
+              <AddIcon />
+            </IconButton>
+          }
+          action={
+            <IconButton aria-label="tokens" onClick={() => setOpenTokens(!openTokens)}>
+              <MoreVertIcon />
+            </IconButton>
+          }
+          title="Tokens"
+        />
+        <Collapse in={openTokens} timeout="auto">
+          <CardContent>
+          </CardContent>
+        </Collapse>
+      </Card>
 
     </ViewFrame>
   );
@@ -75,12 +113,21 @@ const EditCluster = (props: Props) => {
 
 export default function ClusterComponent(props: Props) {
   const {mainCtx} = React.useContext(MainContext);
-  if (mainCtx.action == "view" && mainCtx.item) {
-    return (<ViewCluster/>)
-  } else if (mainCtx.action == "edit" && mainCtx.item) {
-    return (<EditCluster/>)
-  } else if (mainCtx.action == "add") {
-    return (<AddCluster/>)
+  try{
+    if (mainCtx.action == "view" && mainCtx.item) {
+      return (<ViewCluster/>)
+    } else if (mainCtx.action == "edit" && mainCtx.item) {
+      return (<EditCluster/>)
+    } else if (mainCtx.action == "add") {
+      return (<AddCluster/>)
+    }
+  } catch (exc) {
+    console.error(exc);
+    return (
+      <Typography color="textPrimary" gutterBottom paragraph>
+        {exc}
+      </Typography>
+    )
   }
   return null;
 };

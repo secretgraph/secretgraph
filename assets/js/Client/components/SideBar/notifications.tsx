@@ -32,6 +32,7 @@ export default (appProps: SideBarItemsProps) => {
         key="examplenotification"
       >
         <ListItemText
+          key="examplenotification.text"
           primary="TODO..."
         />
       </ListItem>

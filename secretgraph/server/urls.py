@@ -1,9 +1,14 @@
 from django.urls import path
-from .views import ContentView
+from .views import ContentView, ClusterView
 
 app_name = "secretgraph"
 
 urlpatterns = [
+    path(
+        "clusters/<slug:id>/",
+        ClusterView.as_view(),
+        name="clusters"
+    ),
     path(
         "contents/",
         ContentView.as_view(),

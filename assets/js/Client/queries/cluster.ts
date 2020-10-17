@@ -41,6 +41,7 @@ export const getClusterQuery = gql`
     }
     cluster(id: $id, authorization: $authorization) {
       id
+      link
       group
       publicInfo
       availableActions {

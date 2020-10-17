@@ -40,3 +40,9 @@ cluster:Cluster.publicsecret a rdf:Bag;
   rdfs:comment "Public Secrets for a Cluster" ;
   rdfs:domain cluster:Cluster ;
   rdfs:range cluster:PublicSecret .
+
+cluster:Cluster.contents a rdf:Bag;
+  rdfs:isDefinedBy </static/schemes/secretgraph/cluster#> ;
+  rdfs:comment "Only for raw view. List with links to contents" ;
+  rdfs:domain cluster:Cluster ;
+  rdfs:range xsd:anyURI .

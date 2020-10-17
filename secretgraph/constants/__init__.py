@@ -26,6 +26,12 @@ class TransferResult(enum.Enum):
     FAILED_VERIFICATION = "failed_verification"
 
 
-sgraph_secretgraph = Namespace("/static/schemes/secretgraph/secretgraph")
-sgraph_cluster = Namespace("/static/schemes/secretgraph/cluster")
-sgraph_simplecontent = Namespace("/static/schemes/secretgraph/simplecontent")
+sgraph_secretgraph = Namespace(
+    "https://secretgraph.net/static/schemes/secretgraph/secretgraph"
+)
+sgraph_cluster = Namespace(
+    "https://secretgraph.net/static/schemes/secretgraph/cluster"
+)
+sgraph_simplecontent = Namespace(
+    "https://secretgraph.net/static/schemes/secretgraph/simplecontent"
+)

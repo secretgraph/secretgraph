@@ -128,10 +128,16 @@ export default (appProps: SideBarItemsProps) => {
             <ListItem button key={`${activeUrl}:cluster:entry:${edge.node.id}`}
               onClick={() => selectItem(edge.node)}
             >
-              <ListItemIcon>
+              <ListItemIcon key={`${activeUrl}:cluster:entry:${edge.node.id}.icon`}>
                 <GroupWorkIcon />
               </ListItemIcon>
-              <ListItemText className={classes.sideBarEntry} primaryTypographyProps={{variant:"body2"}} primary={name ? name : `...${edge.node.id.substr(-48)}`} title={note} />
+              <ListItemText
+                key={`${activeUrl}:cluster:entry:${edge.node.id}.text`}
+                className={classes.sideBarEntry}
+                primaryTypographyProps={{variant:"body2"}}
+                primary={name ? name : `...${edge.node.id.substr(-48)}`}
+                title={note}
+              />
               {(edge.node.id !== activeCluster) ? <ExpandMoreIcon/> : null}
             </ListItem>
           );
@@ -140,10 +146,13 @@ export default (appProps: SideBarItemsProps) => {
             <ListItem button key={`${activeUrl}:cluster:entry:${edge.node.id}`}
               onClick={() => selectItem(edge.node)}
             >
-              <ListItemIcon>
+              <ListItemIcon
+                key={`${activeUrl}:cluster:entry:${edge.node.id}.icon`}
+              >
                 <GroupWorkIcon />
               </ListItemIcon>
-              <ListItemText className={classes.sideBarEntry} primary={name ? name : `...${edge.node.id.substr(-48)}`} title={note} />
+              <ListItemText key={`${activeUrl}:cluster:entry:${edge.node.id}.text`}
+                className={classes.sideBarEntry} primary={name ? name : `...${edge.node.id.substr(-48)}`} title={note} />
             </ListItem>
           );
         }
@@ -156,7 +165,7 @@ export default (appProps: SideBarItemsProps) => {
           _loadMore();
         }}
       >
-        <ListItemText primary={"Load more clusters..."} />
+        <ListItemText key={`${activeUrl}:cluster:loadmore.text`} primary={"Load more clusters..."} />
       </ListItem>
     </List>
   );

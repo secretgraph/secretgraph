@@ -14,7 +14,9 @@ from django.shortcuts import resolve_url
 from django.urls import reverse
 from django.views.generic.edit import FormView
 from graphene_file_upload.django import FileUploadGraphQLView
+from rdflib import RDF, XSD, Graph, Literal
 
+from ..constants import sgraph_cluster
 from .actions.view import ContentFetchQueryset, fetch_contents
 from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
@@ -22,7 +24,6 @@ from .utils.auth import (
     fetch_by_id, initializeCachedResult, retrieve_allowed_objects
 )
 from .utils.encryption import iter_decrypt_contents
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,42 @@ class AllowCORSMixin(object):
         response = super().dispatch(request, *args, **kwargs)
         self.add_cors_headers(response)
         return response
+
+
+class ClusterView(AllowCORSMixin, FormView):
+    def get(self, request, *args, **kwargs):
+        authset = set(request.headers.get("Authorization", "").replace(
+            " ", ""
+        ).split(","))
+        authset.update(request.GET.getlist("token"))
+        # authset can contain: ""
+        # why not id_to_result => uses flexid directly
+        cluster = fetch_by_id(
+            initializeCachedResult(
+                request, authset=authset
+            )["Cluster"]["objects"], kwargs["id"], type_name="Cluster"
+        ).first()
+        if not cluster:
+            raise Http404()
+        g = Graph()
+        with cluster.publicInfo.open("rb") as rb:
+            g.parse(file=rb, format="turtle")
+        cluster_main = g.value(
+            predicate=RDF.type, object=sgraph_cluster["Cluster"], any=False
+        )
+        g.remove((cluster_main, sgraph_cluster["Cluster.contents"], None))
+        for content in initializeCachedResult(
+            request, authset=authset
+        )["Content"]["objects"].filter(cluster=cluster).only("flexid"):
+            g.add((
+                cluster_main,
+                sgraph_cluster["Cluster.contents"],
+                Literal(content.link, datatype=XSD.anyURI)
+            ))
+        return HttpResponse(
+            g.serialize(format="turtle"),
+            content_type="text/turtle;charset=utf-8"
+        )
 
 
 class ContentView(AllowCORSMixin, FormView):
@@ -68,10 +105,6 @@ class ContentView(AllowCORSMixin, FormView):
         self.result = initializeCachedResult(
             request, authset=authset
         )["Content"]
-        self.result = self.result.copy()
-        self.result["objects"] = self.result["objects"].filter(
-            flexid=kwargs["id"]
-        )
 
         if "decrypt" in kwargs:
             if self.action != "view":
@@ -81,8 +114,10 @@ class ContentView(AllowCORSMixin, FormView):
             )
         elif kwargs.get("id"):
             if self.action in {"push", "update"}:
+                # user interface
                 response = self.render_to_response(self.get_context_data())
             else:
+                # raw interface
                 response = self.handle_raw_singlecontent(
                     request, *args, **kwargs
                 )
