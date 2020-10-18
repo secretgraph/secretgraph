@@ -62,7 +62,10 @@ class SecretgraphConfig(ObjectType):
 
     def resolve_injectedClusters(self, info):
         return map(
-            lambda key, val: ClusterGroupEntry(group=key, clusters=val),
+            lambda key_val: ClusterGroupEntry(
+                group=key_val[0],
+                clusters=key_val[1]
+            ),
             (
                 getattr(
                     settings, "SECRETGRAPH_INJECT_CLUSTERS", None
@@ -124,14 +127,20 @@ class ActionMixin(object):
             "required_keys_%ss" % name.lower(), {}
         ).get(self.id, {}).items()
         # only show some actions
-        resultval = filter(lambda key, val: key[0] in {
+        # we cannot seperate with lambda. They appear as list
+        resultval = filter(lambda key_val: key_val[0][0] in {
             "manage", "push", "view", "update"
         }, resultval)
+        # we cannot seperate with lambda. They appear as list
         return map(
-            lambda key, val: ActionEntry(
-                keyHash=key[1], type=key[0],
-                requiredKeys=val["requiredKeys"],
-                allowedTags=val["allowedTags"] if key[0] != "view" else None,
+            lambda key_val: ActionEntry(
+                keyHash=key_val[0][1], type=key_val[0][0],
+                requiredKeys=key_val[1]["requiredKeys"],
+                allowedTags=(
+                    key_val[1]["allowedTags"] if
+                    key_val[0][0] != "view" else
+                    None
+                ),
             ),
             resultval
         )

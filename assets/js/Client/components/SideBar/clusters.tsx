@@ -1,7 +1,7 @@
 import * as React from "react";
 import Divider from "@material-ui/core/Divider";
 import GroupWorkIcon from '@material-ui/icons/GroupWork';
-import { parse, graph } from 'rdflib';
+import { parse, graph, SPARQLToQuery } from 'rdflib';
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
@@ -114,8 +114,8 @@ export default (appProps: SideBarItemsProps) => {
         if (edge.node.publicInfo){
           try {
             const store = graph();
-            parse(edge.node.publicInfo, store, "");
-            const results = store.querySync(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`)
+            parse(edge.node.publicInfo, store, "https://secretgraph.net/static/schemes");
+            const results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
             if(results.length > 0) {
               name = results[0][0];
               note = results[0][1] ? results[0][1] : "";

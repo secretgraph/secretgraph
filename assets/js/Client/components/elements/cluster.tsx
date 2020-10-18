@@ -11,7 +11,7 @@ import MoreVertIcon from '@material-ui/icons/MoreVert';
 import Collapse from '@material-ui/core/Collapse';
 import { useAsync } from "react-async"
 import { useApolloClient } from '@apollo/client';
-import { parse, graph } from 'rdflib';
+import { parse, graph, SPARQLToQuery } from 'rdflib';
 import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../../constants"
 
 import { ConfigInterface } from "../../interfaces";
@@ -43,25 +43,26 @@ const ViewCluster = (props: Props) => {
     suspense: true
   });
   if (!data){
-    throw error;
+    console.error(error);
+    return null;
   }
   const url = new URL(config.baseUrl);
   let name: string | null = null, note: string | null = null;
   try {
     const store = graph();
-    parse((data as any).cluster.publicInfo, store, "");
-    const results = store.querySync(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`)
+    parse((data as any).data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
+    const results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
     if(results.length > 0) {
       name = results[0][0];
       note = results[0][1] ? results[0][1] : "";
     }
   } catch(exc){
-    console.warn("Could not parse publicInfo", exc)
+    console.warn("Could not parse publicInfo", exc, data)
   }
 
   return (
     <ViewFrame
-      shareurl={`${url.origin}${(data as any).cluster.link}`}
+      shareurl={`${url.origin}${(data as any).data.secretgraph.node.link}`}
     >
       <Typography>
         {name}
