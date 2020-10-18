@@ -255,14 +255,11 @@ const SideBar = (props: SideBarProps) => {
             }
             setMainCtx({
               ...mainCtx,
-              item: null,
+              item: searchCtx.cluster,
+              url: activeUrl,
               type: "Cluster",
               action: "view",
               state: "default"
-            });
-            setSearchCtx({
-              ...searchCtx,
-              cluster: searchCtx.cluster
             });
             setHeaderExpanded(false);
           }}
@@ -291,10 +288,6 @@ const SideBar = (props: SideBarProps) => {
               type: "Cluster",
               action: "view",
               state: "default"
-            });
-            setSearchCtx({
-              ...searchCtx,
-              cluster: null
             });
             setHeaderExpanded(false);
           }}

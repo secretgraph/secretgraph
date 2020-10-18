@@ -22,21 +22,24 @@ parser.add_argument("--algo", "-t", choices=[
 ], default="rsa")
 
 serverConfigQuery_query = """
-  query serverSecretgraphConfigQuery {
-    secretgraphConfig {
-      hashAlgorithms
-      PBKDF2Iterations
-      injectedClusters {
-        group
-        clusters
-        links {
-          link
-          hash
+query serverSecretgraphConfigQuery {
+    secretgraph{
+        config {
+            hashAlgorithms
+            PBKDF2Iterations
+            injectedClusters {
+                group
+                clusters
+                links {
+                link
+                hash
+                }
+            }
+            registerUrl
+            }
         }
-      }
-      registerUrl
     }
-  }
+}
 """
 
 clusterCreateMutation_mutation = """
@@ -58,14 +61,14 @@ mutation clusterCreateMutation($publicInfo: Upload, $actions: [ActionInput!], $p
           }
     ) {
         cluster {
-          id
-          group
-          availableActions {
-              keyHash
-              type
-              requiredKeys
-              allowedTags
-          }
+            id
+            group
+            availableActions {
+                keyHash
+                type
+                requiredKeys
+                allowedTags
+            }
         }
         writeok
     }

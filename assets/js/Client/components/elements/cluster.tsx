@@ -6,6 +6,10 @@ import AddIcon from '@material-ui/icons/Add';
 import Card from '@material-ui/core/Card';
 import CardHeader from '@material-ui/core/CardHeader';
 import CardContent from '@material-ui/core/CardContent';
+import List from "@material-ui/core/List";
+import ListItem from "@material-ui/core/ListItem";
+import ListItemIcon from "@material-ui/core/ListItemIcon";
+import ListItemText from "@material-ui/core/ListItemText";
 import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import Collapse from '@material-ui/core/Collapse';
@@ -51,11 +55,12 @@ const ViewCluster = (props: Props) => {
   try {
     const store = graph();
     parse((data as any).data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
-    const results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
-    if(results.length > 0) {
-      name = results[0][0];
-      note = results[0][1] ? results[0][1] : "";
+    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
+    if(name_note_results.length > 0) {
+      name = name_note_results[0][0];
+      note = name_note_results[0][1] ? name_note_results[0][1] : "";
     }
+    const token_results = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store))
   } catch(exc){
     console.warn("Could not parse publicInfo", exc, data)
   }
@@ -88,6 +93,15 @@ const ViewCluster = (props: Props) => {
         />
         <Collapse in={openTokens} timeout="auto">
           <CardContent>
+            <List>
+              {token_results.map((publicsecret: any, index: number) => (
+                <ListItem key={`${index}:wrapper`}>
+                  <ListItemText>
+                    Public Token: {publicsecret.token}
+                  </ListItemText>
+                </ListItem>
+              ))}
+            </List>
           </CardContent>
         </Collapse>
       </Card>
