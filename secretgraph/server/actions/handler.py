@@ -287,6 +287,7 @@ class ActionHandler():
                 "Action": []
             }
         }
+        # TODO: Maybe fixed. Pass down excludes from old manage
         for idtuple in action_dict.get("exclude") or []:
             type_name, id = from_global_id(idtuple)
             result["exclude"][type_name].append(id)
