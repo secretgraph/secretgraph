@@ -23,6 +23,7 @@ import { MainContext, InitializedConfigContext } from "../../contexts"
 import { getClusterQuery } from "../../queries/cluster"
 import { useStylesAndTheme } from "../../theme";
 import { extractAuthInfo } from "../../utils/config";
+import { unserializeToArrayBuffer } from "../../utils/encryption";
 import { ViewFrame } from "../ElementFrames";
 
 
@@ -51,7 +52,7 @@ const ViewCluster = (props: Props) => {
     return null;
   }
   const url = new URL(config.baseUrl);
-  let name: string | null = null, note: string | null = null;
+  let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
   try {
     const store = graph();
     parse((data as any).data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
@@ -60,9 +61,18 @@ const ViewCluster = (props: Props) => {
       name = name_note_results[0][0];
       note = name_note_results[0][1] ? name_note_results[0][1] : "";
     }
-    const token_results = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store))
+    cluster_tokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store)).map((val: any) => val.token)
   } catch(exc){
     console.warn("Could not parse publicInfo", exc, data)
+  }
+  const privateTokens = [];
+  if (mainCtx.url && mainCtx.item && config.hosts[mainCtx.url] && config.hosts[mainCtx.url].clusters[mainCtx.item]){
+    for(const hash in config.hosts[mainCtx.url].clusters[mainCtx.item].hashes){
+      const token = config.tokens[hash];
+      if (!token) continue;
+      if (cluster_tokens.includes(token)) continue;
+      privateTokens.push(token)
+    }
   }
 
   return (
@@ -94,10 +104,17 @@ const ViewCluster = (props: Props) => {
         <Collapse in={openTokens} timeout="auto">
           <CardContent>
             <List>
-              {token_results.map((publicsecret: any, index: number) => (
-                <ListItem key={`${index}:wrapper`}>
+              {cluster_tokens.map((token: string, index: number) => (
+                <ListItem key={`public:${index}:wrapper`}>
                   <ListItemText>
-                    Public Token: {publicsecret.token}
+                    Public Token: {token}
+                  </ListItemText>
+                </ListItem>
+              ))}
+              {privateTokens.map((token: string, index: number) => (
+                <ListItem key={`public:${index}:wrapper`}>
+                  <ListItemText>
+                    Private Token: {token}
                   </ListItemText>
                 </ListItem>
               ))}
