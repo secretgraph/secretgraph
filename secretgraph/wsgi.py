@@ -5,12 +5,13 @@ It exposes the WSGI callable as a module-level variable named ``application``.
 
 """
 
+from pathlib import Path
 import os
 import sys
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if BASE_DIR not in sys.path:
-    sys.path.append(BASE_DIR)
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.append(str(BASE_DIR))
 
 from django.core.wsgi import get_wsgi_application  # noqa: E402
 

@@ -14,8 +14,8 @@ module.exports = {
   devtool: "eval-cheap-source-map",
   mode: "development",
   output: {
+    publicPath: "webpack_bundles/",
     path: path.resolve(__dirname, "./webpack_bundles/"),
-    filename: "[name].js", //-[hash]
   },
   entry: {
     main: "./assets/js/Client/index.tsx"
@@ -43,7 +43,6 @@ module.exports = {
     noParse: /browserfs\.js/
   },
   resolve: {
-    fullySpecified: false, // relax requirement
     extensions: [".tsx", ".jsx", ".ts", ".js", '.wasm', '.mjs', '.json'],
     alias: {
       'fs': 'browserfs/dist/shims/fs.js',
@@ -54,30 +53,32 @@ module.exports = {
       'bfsGlobal': require.resolve('browserfs')
     },
     fallback: {
-      'assert': false,
       "url": require.resolve("url/"),
       "stream": require.resolve("stream-browserify"),
       "os": require.resolve("os-browserify/browser"),
       "constants": require.resolve("constants-browserify"),
       "util": require.resolve("util/"),
       "querystring": require.resolve("querystring-es3"),
-      "https": false
+      "https": false,
+      "assert": false
     }
   },
 
   plugins: [
-    new CleanWebpackPlugin(),  // removes outdated assets from the output dir
+    // remove outdated
+    new CleanWebpackPlugin(),
     new ManifestPlugin(),
     new webpack.ProvidePlugin({ BrowserFS: 'bfsGlobal', process: 'processGlobal', Buffer: 'bufferGlobal' }),
     tsgqlPlugin,
-  ] /**
+  ],
   optimization: {
     splitChunks: {
       chunks: "all",
     },
   },
+  /*
   externals: {
     react: "React",
     "react-dom": "ReactDOM",
-  },*/,
+  },*/
 };

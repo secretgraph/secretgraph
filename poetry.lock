@@ -143,6 +143,17 @@ python-versions = ">=3.5"
 django = ">=2.0"
 
 [[package]]
+name = "django-manifest-loader"
+version = "0.0.1"
+description = "A Django app to load webpack assets."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+django = "*"
+
+[[package]]
 name = "django-mysql"
 version = "3.9.0"
 description = "Django-MySQL extends Django's built-in MySQL and MariaDB support their specific features not available on other databases."
@@ -152,14 +163,6 @@ python-versions = ">=3.5"
 
 [package.dependencies]
 Django = ">=2.2"
-
-[[package]]
-name = "django-webpack-loader"
-version = "0.7.0"
-description = "Transparently use webpack with django"
-category = "dev"
-optional = false
-python-versions = "*"
 
 [[package]]
 name = "django-webtest"
@@ -598,7 +601,7 @@ test = ["django-webtest", "WSGIProxy2", "graphene-django", "graphene-file-upload
 [metadata]
 lock-version = "1.0"
 python-versions = ">=3.6"
-content-hash = "10630b1114a11891f5092543feecc1833b5f4b881db3d707e2f3050353662e14"
+content-hash = "3a6e8d90a05601ee5cd511d36fed86f763a3c07030ffadb1c4889da396d93bd5"
 
 [metadata.files]
 aniso8601 = [
@@ -704,13 +707,13 @@ django-fast-ratelimit = [
     {file = "django-fast-ratelimit-0.5.0.3.tar.gz", hash = "sha256:f8e3dbfe97fda0a248d15d57fe3be2fa93965097dfc5164f07b681a5afbd63a0"},
     {file = "django_fast_ratelimit-0.5.0.3-py3-none-any.whl", hash = "sha256:072c1e448fe11bae1df469f0271a8feb4fc349c910cc5d6cb445f994b9602b16"},
 ]
+django-manifest-loader = [
+    {file = "django-manifest-loader-0.0.1.tar.gz", hash = "sha256:8f29282b2dde9be6b75a38c0e234ac5b72e0b210d9fb4751a2d8f5428ee0725a"},
+    {file = "django_manifest_loader-0.0.1-py3-none-any.whl", hash = "sha256:47891956c67574395c7e3652e0f62d21e7008d9c71653c757ff7c4fa890d7547"},
+]
 django-mysql = [
     {file = "django-mysql-3.9.0.tar.gz", hash = "sha256:2f70c348b539f75753b56d7f952b6c6b153b984477220c1dd59763c030ddbba0"},
     {file = "django_mysql-3.9.0-py3-none-any.whl", hash = "sha256:a70704f8c2f18a02991ad926a2cfe37ab418f034ebda88f2547b96099dbff5ed"},
-]
-django-webpack-loader = [
-    {file = "django-webpack-loader-0.7.0.tar.gz", hash = "sha256:7a3c88201aa54481f9399465615cbe7b9aece8081496a6d0287b7cb8e232f447"},
-    {file = "django_webpack_loader-0.7.0-py2.py3-none-any.whl", hash = "sha256:d28a276ed3d89e97a313b74967e373693f8b86afe629f4c91eea91c5b4f2ec20"},
 ]
 django-webtest = [
     {file = "django-webtest-1.9.7.tar.gz", hash = "sha256:c5a1e486a3d8d3623aa615b6db2f27de848aa7079303a84721e9a685f839796c"},

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
+from pathlib import Path
 import os
 import sys
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = Path(__file__).resolve(strict=True).parent
 
 if __name__ == "__main__":
-    if BASE_DIR not in sys.path:
-        sys.path.append(BASE_DIR)
+    if str(BASE_DIR) not in sys.path:
+        sys.path.append(str(BASE_DIR))
     os.environ.setdefault(
         "DJANGO_SETTINGS_MODULE", "secretgraph.settings.debug"
     )

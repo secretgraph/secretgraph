@@ -3,11 +3,10 @@
 {% block styles %}
 {% manifest_match '*.css' '<link rel="stylesheet" href="{match}"/>' %}
 {% endblock %}
+{% block head_scripts %}
+{% manifest_match '*.js' '<script defer src="{match}"></script>' %}
+{% endblock %}
 
 {% block layout %}
 <div style="display: contents" id="content-main" data-graphql-path="{{graphql_path}}"></div>
 {% endblock %}
-
-{% block body_scripts %}
-{% manifest_match '*.js' '<script src="{match}"/>' %}
-{% endblock body_scripts %}

@@ -4,6 +4,7 @@ Django settings for secretgraph project.
 """
 
 import os
+from pathlib import Path
 
 import certifi
 
@@ -11,10 +12,7 @@ DEBUG = os.environ.get("DEBUG") == "true"
 DEBUG = True
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
-
+BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 
 GRAPHENE = {
     'SCHEMA': 'secretgraph.schema.schema',
