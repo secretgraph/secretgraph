@@ -1,7 +1,7 @@
 const path = require("path");
 const webpack = require("webpack");
-const BundleTracker = require("webpack-bundle-tracker");
-const ServiceWorkerWebpackPlugin = require("serviceworker-webpack-plugin");
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const ManifestPlugin = require('webpack-manifest-plugin');
 const TsGraphQLPlugin = require('ts-graphql-plugin/webpack');
 
 const tsgqlPlugin = new TsGraphQLPlugin({
@@ -26,6 +26,9 @@ module.exports = {
         test: /\.(ts|js)x?$/,
         loader: "ts-loader",
         exclude: /node_modules/,
+        resolve: {
+          fullySpecified: false // relax requirement
+        },
         options: {
           getCustomTransformers: () => ({
             before: [
@@ -40,7 +43,8 @@ module.exports = {
     noParse: /browserfs\.js/
   },
   resolve: {
-    extensions: [".tsx", ".ts", ".js", ".jsx"],
+    fullySpecified: false, // relax requirement
+    extensions: [".tsx", ".jsx", ".ts", ".js", '.wasm', '.mjs', '.json'],
     alias: {
       'fs': 'browserfs/dist/shims/fs.js',
       'buffer': 'browserfs/dist/shims/buffer.js',
@@ -48,19 +52,24 @@ module.exports = {
       'processGlobal': 'browserfs/dist/shims/process.js',
       'bufferGlobal': 'browserfs/dist/shims/bufferGlobal.js',
       'bfsGlobal': require.resolve('browserfs')
+    },
+    fallback: {
+      'assert': false,
+      "url": require.resolve("url/"),
+      "stream": require.resolve("stream-browserify"),
+      "os": require.resolve("os-browserify/browser"),
+      "constants": require.resolve("constants-browserify"),
+      "util": require.resolve("util/"),
+      "querystring": require.resolve("querystring-es3"),
+      "https": false
     }
   },
 
   plugins: [
-    new BundleTracker({
-      filename: "./webpack-stats.json",
-      path: __dirname,
-    }),
+    new CleanWebpackPlugin(),  // removes outdated assets from the output dir
+    new ManifestPlugin(),
     new webpack.ProvidePlugin({ BrowserFS: 'bfsGlobal', process: 'processGlobal', Buffer: 'bufferGlobal' }),
     tsgqlPlugin,
-    new ServiceWorkerWebpackPlugin({ // should be last
-      entry: "./assets/js/ServiceWorker/index.tsx",
-    }),
   ] /**
   optimization: {
     splitChunks: {

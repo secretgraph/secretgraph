@@ -38,7 +38,6 @@ django-mysql = {version="*", optional = true}
 psycopg2 = {version="*", optional = true}
 django-webtest = {version="*", optional = true}
 WSGIProxy2 = {version="*", optional = true}
-django-webpack-loader = {version="*", optional = true}
 django-fast-ratelimit = {version="*", optional = true}
 
 

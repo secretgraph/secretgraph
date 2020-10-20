@@ -1,7 +1,7 @@
 {% extends "secretgraph/base.html" %}
-{% load render_bundle from webpack_loader %}
+{% load manifest %}
 {% block styles %}
-{% render_bundle 'main' 'css' %}
+{% manifest_match '*.css' '<link rel="stylesheet" href="{match}"/>' %}
 {% endblock %}
 
 {% block layout %}
@@ -9,5 +9,5 @@
 {% endblock %}
 
 {% block body_scripts %}
-{% render_bundle 'main' 'js' %}
+{% manifest_match '*.js' '<script src="{match}"/>' %}
 {% endblock body_scripts %}
