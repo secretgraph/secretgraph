@@ -24,7 +24,7 @@ import { getClusterQuery } from "../../queries/cluster"
 import { useStylesAndTheme } from "../../theme";
 import { extractAuthInfo } from "../../utils/config";
 import { unserializeToArrayBuffer } from "../../utils/encryption";
-import { ViewFrame } from "../ElementFrames";
+import { ViewFrame, DecisionFrame } from "../ElementFrames";
 
 
 type Props = {
@@ -145,21 +145,12 @@ const EditCluster = (props: Props) => {
 
 export default function ClusterComponent(props: Props) {
   const {mainCtx} = React.useContext(MainContext);
-  try{
-    if (mainCtx.action == "view" && mainCtx.item) {
-      return (<ViewCluster/>)
-    } else if (mainCtx.action == "edit" && mainCtx.item) {
-      return (<EditCluster/>)
-    } else if (mainCtx.action == "add") {
-      return (<AddCluster/>)
-    }
-  } catch (exc) {
-    console.error(exc);
-    return (
-      <Typography color="textPrimary" gutterBottom paragraph>
-        {exc}
-      </Typography>
-    )
-  }
-  return null;
+  return (
+    <DecisionFrame
+      mainCtx={mainCtx}
+      add={AddCluster}
+      view={ViewCluster}
+      edit={EditCluster}
+    />
+  );
 };

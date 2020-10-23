@@ -54,14 +54,12 @@ function MainPage(props: Props) {
       if (activeUrl == mainCtx.url || !mainCtx.url){
         frameElement = (
           <FrameElementType
-            mainCtx={mainCtx}
           />
         );
       } else {
         frameElement = (
           <ApolloProvider client={createClient(mainCtx.url as string)}>
             <FrameElementType
-              mainCtx={mainCtx}
             />
           </ApolloProvider>
         );

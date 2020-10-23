@@ -1909,6 +1909,18 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
+              "name": "id",
+              "type": {
+                "kind": "SCALAR",
+                "name": "ID",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
               "name": "hashAlgorithms",
               "type": {
                 "kind": "LIST",

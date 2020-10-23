@@ -4,6 +4,7 @@ Django settings for secretgraph project.
 """
 
 import os
+import time
 from pathlib import Path
 
 import certifi
@@ -13,6 +14,9 @@ DEBUG = True
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
+
+# last reload time (secretgraph specific)
+LAST_CONFIG_RELOAD_ID = str(time.time())
 
 GRAPHENE = {
     'SCHEMA': 'secretgraph.schema.schema',

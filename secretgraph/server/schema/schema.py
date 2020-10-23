@@ -1,7 +1,6 @@
 from graphene import Field, List, ID, ObjectType, relay
 from django.utils.translation import gettext_lazy as _
 
-
 from .arguments import AuthList
 from ..utils.auth import initializeCachedResult
 from .definitions import (
