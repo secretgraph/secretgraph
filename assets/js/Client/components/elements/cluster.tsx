@@ -66,7 +66,12 @@ const ViewCluster = (props: Props) => {
     console.warn("Could not parse publicInfo", exc, data)
   }
   const privateTokens = [];
-  if (mainCtx.url && mainCtx.item && config.hosts[mainCtx.url] && config.hosts[mainCtx.url].clusters[mainCtx.item]){
+  if (
+    mainCtx.url &&
+    mainCtx.item &&
+    config.hosts[mainCtx.url] &&
+    config.hosts[mainCtx.url].clusters[mainCtx.item]
+  ){
     for(const hash in config.hosts[mainCtx.url].clusters[mainCtx.item].hashes){
       const token = config.tokens[hash];
       if (!token) continue;

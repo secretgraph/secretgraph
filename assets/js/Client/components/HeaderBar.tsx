@@ -50,16 +50,16 @@ function HeaderBar(props: Props) {
   } catch(exc) {}
   switch (mainCtx.action){
     case "add":
-      let temp = elements.get(mainCtx.item as string);
+      let temp = elements.get(mainCtx.type as string);
       title = `Add: ${temp ? temp.label : 'unknown'}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "update":
-      title = `Update: ${mainCtx.item}`;
+      title = `Update: ${mainCtx.type}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "help":
-      title = `Help: ${mainCtx.item}`;
+      title = `Help: ${mainCtx.type}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "start":

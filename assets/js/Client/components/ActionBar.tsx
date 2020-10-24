@@ -13,6 +13,7 @@ import { MainContext } from '../contexts';
 import { useStylesAndTheme } from '../theme';
 
 type Props = {
+  shareUrl: string | null
 };
 
 function createOptionsIterator(mapObject: Map<string, any>) {
@@ -87,7 +88,7 @@ function ActionBar(props: Props) {
               item: null,
               type: event.target.value
             })}
-            value={mainCtx.item || undefined}
+            value={mainCtx.type || undefined}
             children={
               createOptionsIterator(elements)
             }

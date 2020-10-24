@@ -1,16 +1,15 @@
 import * as React from "react";
-import { ApolloProvider } from "@apollo/client";
-import { Theme } from "@material-ui/core/styles";
+import { ApolloProvider } from "@apollo/client";;
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
 import { useStylesAndTheme } from "../theme";
 import { elements } from '../components/elements';
-import { CapturingSuspense } from '../components/misc';
 import { loadConfigSync } from '../utils/config';
 import { createClient } from '../utils/graphql';
 import { MainContextInterface, SearchContextInterface, ElementEntryInterface } from '../interfaces';
 import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
 import SideBar from '../components/SideBar';
+import { CapturingSuspense } from '../components/misc';
 // const SideBar = React.lazy(() => import('../components/SideBar'));
 const SettingsImporter = React.lazy(() => import('./SettingsImporter'));
 const Help = React.lazy(() => import('./Help'));
@@ -25,6 +24,7 @@ function MainPage(props: Props) {
   const {defaultPath} = props;
   const {classes, theme} = useStylesAndTheme();
   const [drawerOpen, setDrawerOpen] = React.useState(true);
+  const [shareUrl, setShareUrl] = React.useState(null) as [string | null, any];
   const [config, setConfig] = React.useState(() => loadConfigSync());
   const [mainCtx, setMainCtx] = React.useState({
     "action": config ? "add" : "start",
@@ -32,9 +32,8 @@ function MainPage(props: Props) {
     "title": null,
     "item": null,
     "url": null,
-    "type": null
+    "type": elements.keys().next().value
   } as MainContextInterface);
-  const [activeItem, setActiveItem] = React.useState(() => elements.keys().next().value);
   const [searchCtx, setSearchCtx] = React.useState({
     "cluster": null,
     "include": [],
@@ -54,12 +53,14 @@ function MainPage(props: Props) {
       if (activeUrl == mainCtx.url || !mainCtx.url){
         frameElement = (
           <FrameElementType
+            setShareUrl={setShareUrl}
           />
         );
       } else {
         frameElement = (
           <ApolloProvider client={createClient(mainCtx.url as string)}>
             <FrameElementType
+              setShareUrl={setShareUrl}
             />
           </ApolloProvider>
         );
@@ -93,6 +94,7 @@ function MainPage(props: Props) {
                   />
                   <main className={classes.content}>
                     <ActionBar
+                      shareUrl={mainCtx.item && shareUrl ? shareUrl : null}
                     />
                     <section className={classes.mainSection}>
                       <CapturingSuspense>
