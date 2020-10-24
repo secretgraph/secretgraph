@@ -229,7 +229,7 @@ export async function encryptRSAOEAP(options: CryptoRSAInInterface | Promise<Cry
   }
   const key = await unserializeToCryptoKey(_options.key, {
     name: "RSA-OAEP",
-    hash: mapHashNames[""+hashalgo].name
+    hash: mapHashNames[""+hashalgo].operationName
   });
   return {
     data: await crypto.subtle.encrypt(
@@ -256,7 +256,7 @@ export async function decryptRSAOEAP(options: CryptoRSAInInterface | Promise<Cry
         if(!mapHashNames[""+_hashalgo]){
           throw Error("hashalgorithm not supported: "+_hashalgo)
         }
-        hashalgo = mapHashNames[""+_hashalgo].name;
+        hashalgo = mapHashNames[""+_hashalgo].operationName;
         key = await unserializeToCryptoKey(split[0], {
           name: "RSA-OAEP",
           hash: hashalgo
@@ -267,7 +267,7 @@ export async function decryptRSAOEAP(options: CryptoRSAInInterface | Promise<Cry
         if(!mapHashNames[""+_hashalgo2]){
           throw Error("hashalgorithm not supported: "+_hashalgo2)
         }
-        hashalgo = mapHashNames[""+_hashalgo2].name;
+        hashalgo = mapHashNames[""+_hashalgo2].operationName;
         [nonce, key] = [
           await unserializeToArrayBuffer(split[0]),
           await unserializeToCryptoKey(split[1], {
@@ -285,7 +285,7 @@ export async function decryptRSAOEAP(options: CryptoRSAInInterface | Promise<Cry
         if(!mapHashNames[""+_hashalgo3]){
           throw Error("hashalgorithm not supported: "+_hashalgo3)
         }
-        hashalgo = mapHashNames[""+_hashalgo3].name;
+        hashalgo = mapHashNames[""+_hashalgo3].operationName;
         key = await unserializeToCryptoKey(split[2], {
           name: "RSA-OAEP",
           hash: hashalgo
@@ -297,7 +297,7 @@ export async function decryptRSAOEAP(options: CryptoRSAInInterface | Promise<Cry
     if(!mapHashNames[""+_hashalgo]){
       Error("hashalgorithm not supported: "+_hashalgo)
     }
-    hashalgo = mapHashNames[""+_hashalgo].name;
+    hashalgo = mapHashNames[""+_hashalgo].operationName;
     key = await unserializeToCryptoKey(_key, {
       name: "RSA-OAEP",
       hash: hashalgo
@@ -406,7 +406,7 @@ export async function derivePW(options: PWInterface | PromiseLike<PWInterface>) 
         "name": "PBKDF2",
         salt: salt,
         "iterations": iterations,
-        "hash": mapHashNames[""+_hashalgo].name
+        "hash": mapHashNames[""+_hashalgo].operationName
       },
       key,
       256  // cap at 256 for AESGCM compatibility

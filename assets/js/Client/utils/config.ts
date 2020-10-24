@@ -265,7 +265,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
     return Promise.reject("no cert found");
   }
   certhashes = await Promise.all(obj.data.secretgraph.config.hashAlgorithms.map(
-    (hash: string) => crypto.subtle.digest(mapHashNames[hash], cert as Uint8Array).then(
+    (hash: string) => crypto.subtle.digest(mapHashNames[hash].operationName, cert as Uint8Array).then(
       (data) => btoa(String.fromCharCode(... new Uint8Array(data)))
     )
   ));

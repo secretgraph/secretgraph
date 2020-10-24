@@ -9,11 +9,11 @@ export const contentStates = new Map([
   ['public', { label: gettext('Public') }],
 ]);
 
-export const mapHashNames: { [algo: string]: {readonly name: string, readonly length: number} } = {
-  "sha512": {name: "SHA-512", length: 512},
-  "SHA-512": {name: "SHA-512", length: 512},
-  "sha256": {name: "SHA-256", length: 256},
-  "SHA-256": {name: "SHA-256", length: 256}
+export const mapHashNames: { [algo: string]: {readonly operationName: string, readonly length: number, readonly serializedName: string} } = {
+  "sha512": {operationName: "SHA-512", length: 512, serializedName: "sha512"},
+  "SHA-512": {operationName: "SHA-512", length: 512, serializedName: "sha512"},
+  "sha256": {operationName: "SHA-256", length: 256, serializedName: "sha256"},
+  "SHA-256": {operationName: "SHA-256", length: 256, serializedName: "sha256"}
 }
 
 export const mapEncryptionAlgorithms: {readonly [algo: string]: {readonly usages: KeyUsage[]} } = {

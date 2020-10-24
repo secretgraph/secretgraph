@@ -66,7 +66,7 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
   if(!mapHashNames[hashalgo]){
     throw Error("hashalgorithm not supported: "+hashalgo)
   }
-  const hashalgo2 = mapHashNames[hashalgo].name;
+  const hashalgo2 = mapHashNames[hashalgo].operationName;
   const hashalgo2_len = mapHashNames[hashalgo].length;
   for(let counter=0; counter<privkeys.length;counter++){
     const privkey = privkeys[counter];

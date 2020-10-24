@@ -11,21 +11,21 @@ import { mapHashNames } from "../constants"
 
 
 export async function createContent(
-    options: {
-      client: ApolloClient<any>,
-      config: ConfigInterface,
-      cluster: string,
-      value: File | Blob,
-      pubkeys: CryptoKey[],
-      privkeys?: CryptoKey[],
-      tags: string[],
-      contentHash?: string | null,
-      references?: ReferenceInterface[] | null,
-      actions?: ActionInterface[],
-      hashAlgorithm?: string,
-      url?: string
-    }
-  ) {
+  options: {
+    client: ApolloClient<any>,
+    config: ConfigInterface,
+    cluster: string,
+    value: File | Blob,
+    pubkeys: CryptoKey[],
+    privkeys?: CryptoKey[],
+    tags: string[],
+    contentHash?: string | null,
+    references?: ReferenceInterface[] | null,
+    actions?: ActionInterface[],
+    hashAlgorithm?: string,
+    url?: string
+  }
+) {
     const nonce = crypto.getRandomValues(new Uint8Array(13));
     const key = crypto.getRandomValues(new Uint8Array(32));
     let url: string;
@@ -47,7 +47,7 @@ export async function createContent(
 
     const halgo = mapHashNames[options.hashAlgorithm ? options.hashAlgorithm : (await options.client.query(
       {query: serverConfigQuery}
-    ) as any).data.secretgraph.configg.hashAlgorithms[0]].name;
+    ) as any).data.secretgraph.config.hashAlgorithms[0]].operationName;
 
     const [referencesPromise, tagsPromise ] = encryptSharedKey(key, options.pubkeys, halgo);
     const referencesPromise2 = encryptedContentPromise.then(
@@ -68,7 +68,7 @@ export async function createContent(
         authorization: actionkeys
       }
     });
-  }
+}
 
 export async function createCluster(
   options: {

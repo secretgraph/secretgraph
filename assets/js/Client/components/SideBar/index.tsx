@@ -80,7 +80,7 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
                   query: serverConfigQuery
                 });
                 for(const algo of result.data.secretgraph.config.hashAlgorithms){
-                  const mappedName = mapHashNames[algo].name;
+                  const mappedName = mapHashNames[algo].operationName;
                   if (mappedName){
                     hashAlgos.push(mappedName);
                   }
