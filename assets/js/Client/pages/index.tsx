@@ -24,7 +24,6 @@ function MainPage(props: Props) {
   const {defaultPath} = props;
   const {classes, theme} = useStylesAndTheme();
   const [drawerOpen, setDrawerOpen] = React.useState(true);
-  const [shareUrl, setShareUrl] = React.useState(null) as [string | null, any];
   const [config, setConfig] = React.useState(() => loadConfigSync());
   const [mainCtx, setMainCtx] = React.useState({
     "action": config ? "add" : "start",
@@ -32,7 +31,8 @@ function MainPage(props: Props) {
     "title": null,
     "item": null,
     "url": null,
-    "type": elements.keys().next().value
+    "type": elements.keys().next().value,
+    "shareUrl": null
   } as MainContextInterface);
   const [searchCtx, setSearchCtx] = React.useState({
     "cluster": null,
@@ -52,16 +52,18 @@ function MainPage(props: Props) {
       const FrameElementType = (FrameElementWrapper as ElementEntryInterface).component;
       if (activeUrl == mainCtx.url || !mainCtx.url){
         frameElement = (
-          <FrameElementType
-            setShareUrl={setShareUrl}
-          />
+          <CapturingSuspense>
+            <FrameElementType
+            />
+          </CapturingSuspense>
         );
       } else {
         frameElement = (
           <ApolloProvider client={createClient(mainCtx.url as string)}>
-            <FrameElementType
-              setShareUrl={setShareUrl}
-            />
+            <CapturingSuspense>
+              <FrameElementType
+              />
+            </CapturingSuspense>
           </ApolloProvider>
         );
       }
@@ -69,12 +71,16 @@ function MainPage(props: Props) {
     case "start":
     case "import":
       frameElement = (
-        <SettingsImporter/>
+        <CapturingSuspense>
+          <SettingsImporter/>
+        </CapturingSuspense>
       );
       break;
     case "help":
       frameElement = (
-        <Help/>
+        <CapturingSuspense>
+          <Help/>
+        </CapturingSuspense>
       );
       break;
   }
@@ -92,16 +98,12 @@ function MainPage(props: Props) {
                   <HeaderBar
                     openState={{drawerOpen: !!(drawerOpen && config), setDrawerOpen}}
                   />
-                  <main className={classes.content}>
-                    <ActionBar
-                      shareUrl={mainCtx.item && shareUrl ? shareUrl : null}
-                    />
-                    <section className={classes.mainSection}>
-                      <CapturingSuspense>
-                        {frameElement}
-                      </CapturingSuspense>
-                    </section>
-                  </main>
+                  <div className={classes.content}>
+                    <ActionBar/>
+                    <main className={classes.mainSection}>
+                      {frameElement}
+                    </main>
+                  </div>
                 </div>
               </div>
             </ApolloProvider>

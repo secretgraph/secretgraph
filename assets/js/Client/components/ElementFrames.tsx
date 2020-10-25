@@ -12,14 +12,13 @@ import { useStylesAndTheme } from "../theme";
 
 
 type ViewProps = {
-  shareurl: string,
   // special attribute
   children: any
 };
 
 export const ViewFrame = (props: ViewProps) => {
   const {classes, theme} = useStylesAndTheme();
-  const { children, shareurl} = props;
+  const { children } = props;
 
   return (
     <React.Fragment>
@@ -35,7 +34,6 @@ export const ViewFrame = (props: ViewProps) => {
 
 
 type EditProps = {
-  shareurl?: string,
   // special attribute
   children: any
 };

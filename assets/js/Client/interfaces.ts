@@ -95,6 +95,7 @@ export interface MainContextInterface {
   // activeUrl can be changed without changing active element, so cache it here
   url: null | string;
   type: null | string;
+  shareUrl: null | string;
 }
 
 export interface SearchContextInterface {

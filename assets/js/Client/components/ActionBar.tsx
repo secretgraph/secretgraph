@@ -5,7 +5,14 @@ import Tooltip from '@material-ui/core/Tooltip';
 import IconButton from "@material-ui/core/IconButton";
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
+import ShareIcon from '@material-ui/icons/Share';
 import NativeSelect from '@material-ui/core/NativeSelect';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Button from '@material-ui/core/Button';
+import DialogContent from '@material-ui/core/DialogContent';
+import Link from '@material-ui/core/Link';
 import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined';
 import { elements } from './elements';
 import { contentStates } from '../constants';
@@ -13,7 +20,6 @@ import { MainContext } from '../contexts';
 import { useStylesAndTheme } from '../theme';
 
 type Props = {
-  shareUrl: string | null
 };
 
 function createOptionsIterator(mapObject: Map<string, any>) {
@@ -31,27 +37,51 @@ function createOptionsIterator(mapObject: Map<string, any>) {
 
 function ActionBar(props: Props) {
   const {classes, theme} = useStylesAndTheme();
-  const [actionOpen, setActionOpen] = React.useState(false);
-  const [actionWeakOpen, setActionWeakOpen] = React.useState(false);
+  const [shareOpen, setShareOpen] = React.useState(false);
+  const [actionAddOpen, setActionAddOpen] = React.useState(false);
+  const [actionAddWeakOpen, setActionAddWeakOpen] = React.useState(false);
   const {mainCtx, setMainCtx} = React.useContext(MainContext);
 
   const addAction = () => {
-    if (!actionOpen){
-      setActionOpen(true);
+    if (!actionAddOpen){
+      setActionAddOpen(true);
       return;
     }
   }
 
+
   const blurDisables = () => {
-    if (!actionWeakOpen){
-      setActionOpen(false);
+    if (!actionAddWeakOpen){
+      setActionAddOpen(false);
     }
   }
   return (
-    <div className={classes.actionToolBarOuter}
-      onBlur={blurDisables}
-      onMouseLeave={() => setActionWeakOpen(false)}
+    <nav className={classes.actionToolBarOuter}
+      onMouseLeave={() => setActionAddWeakOpen(false)}
     >
+      <Dialog open={shareOpen} onClose={() => setShareOpen(false)} aria-labelledby="share-dialog-title">
+        <DialogTitle id="share-dialog-title">Share</DialogTitle>
+        <DialogContent>
+          <Link href={"" + mainCtx.shareUrl} onClick={(event:any) => {
+            if (navigator.clipboard){
+              navigator.clipboard.writeText("" + mainCtx.shareUrl)
+              event.preventDefault()
+              console.log("url copied");
+              return false
+            } else {
+              console.log("clipboard not supported");
+            }
+            }}
+          >
+            {mainCtx.shareUrl}
+          </Link>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShareOpen(false)} color="secondary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
       <div style={{flexGrow: 1}} />
       <Toolbar className={classes.actionToolBarInner}>
         <Tooltip title="Select state of content" arrow>
@@ -81,37 +111,50 @@ function ActionBar(props: Props) {
         </Tooltip>
         <Tooltip title="Add Element" arrow>
           <NativeSelect
-            className={(actionWeakOpen || actionOpen || mainCtx.action === "add") ? classes.newItemSelect : classes.hidden}
+            className={(actionAddWeakOpen || actionAddOpen || mainCtx.action === "add") ? classes.newItemSelect : classes.hidden}
             onChange={(event: any) => setMainCtx({
               ...mainCtx,
               action: "add",
               item: null,
+              shareUrl: null,
               type: event.target.value
             })}
             value={mainCtx.type || undefined}
             children={
               createOptionsIterator(elements)
             }
+            onBlur={blurDisables}
           />
         </Tooltip>
         <Tooltip title="Add" arrow>
           <IconButton
-            className={(actionWeakOpen || actionOpen || mainCtx.action === "add") ? classes.hidden : classes.actionToolBarButton}
+            className={(actionAddWeakOpen || actionAddOpen || mainCtx.action === "add") ? classes.hidden : classes.actionToolBarButton}
             aria-label="add"
             onClick={addAction}
-            onMouseEnter={() => setActionWeakOpen(true)}
+            onMouseEnter={() => setActionAddWeakOpen(true)}
           >
             <AddIcon />
           </IconButton>
         </Tooltip>
-        <IconButton
-            className={classes.actionToolBarButton}
-            aria-label="help"
-          >
+        <Tooltip title="Share" arrow>
+          <IconButton
+              className={classes.actionToolBarButton}
+              aria-label="share"
+              onClick={() => setShareOpen(false)}
+            >
+            <ShareIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Help" arrow>
+          <IconButton
+              className={classes.actionToolBarButton}
+              aria-label="help"
+            >
             <HelpOutlineOutlinedIcon />
           </IconButton>
+        </Tooltip>
       </Toolbar>
-    </div>
+    </nav>
   );
 }
 

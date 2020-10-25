@@ -355,12 +355,14 @@ const SideBar = (props: SideBarProps) => {
                   if (type == "PrivateKey" ) {
                     type = "PublicKey";
                   }
+                  const url = new URL(activeUrl);
                   setMainCtx({
                     ...mainCtx,
                     action: "view",
                     type: type,
                     item: content.id,
                     url: activeUrl,
+                    shareUrl: `${url.origin}${content.link}`,
                     state: "public"
                   });
                   setHeaderExpanded(false);
@@ -392,12 +394,14 @@ const SideBar = (props: SideBarProps) => {
                   if (type == "PrivateKey" ) {
                     type = "PublicKey";
                   }
+                  const url = new URL(activeUrl);
                   setMainCtx({
                     ...mainCtx,
                     action: "view",
                     type: type,
                     item: content.id,
                     url: activeUrl,
+                    shareUrl: `${url.origin}${content.link}`,
                     state: "internal"
                   });
                   setHeaderExpanded(false);
@@ -423,12 +427,14 @@ const SideBar = (props: SideBarProps) => {
                   if (type == "PrivateKey" ) {
                     type = "PublicKey";
                   }
+                  const url = new URL(activeUrl);
                   setMainCtx({
                     ...mainCtx,
                     action: "view",
                     type: type,
                     item: content.id,
-                    url: activeUrl
+                    url: activeUrl,
+                    shareUrl: `${url.origin}${content.link}`,
                   });
                   setHeaderExpanded(false);
                   setOpenMenu("notifications");
@@ -447,13 +453,15 @@ const SideBar = (props: SideBarProps) => {
             header="Clusters"
             selectItem={
               (cluster: any) => {
+                const url = new URL(activeUrl);
                 setMainCtx({
                   ...mainCtx,
                   item: cluster.id,
                   type: "Cluster",
                   action: "view",
                   state: "default",
-                  url: activeUrl
+                  url: activeUrl,
+                  shareUrl: `${url.origin}${cluster.link}`
                 });
                 setSearchCtx({
                   ...searchCtx,

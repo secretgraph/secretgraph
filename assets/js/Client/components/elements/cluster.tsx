@@ -51,7 +51,6 @@ const ViewCluster = (props: Props) => {
     console.error(error);
     return null;
   }
-  const url = new URL(config.baseUrl);
   let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
   try {
     const store = graph();
@@ -82,7 +81,6 @@ const ViewCluster = (props: Props) => {
 
   return (
     <ViewFrame
-      shareurl={`${url.origin}${(data as any).data.secretgraph.node.link}`}
     >
       <Typography>
         {name}
