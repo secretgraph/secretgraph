@@ -54,11 +54,11 @@ export interface ReferenceInterface {
   extra: string;
 }
 
-export interface ConfigClusterInterface {
+export interface ConfigContentInterface {
   hashes: { [hash: string]: string[] };
 }
 
-export interface ConfigContentInterface {
+export interface ConfigClusterInterface {
   hashes: { [hash: string]: string[] };
 }
 
@@ -69,7 +69,7 @@ export interface ConfigInterface {
   hosts: { [url: string]: {
     hashAlgorithms: string[],
     clusters: { [flexid: string]: ConfigClusterInterface }
-    // contensts: { [flexid: string]: ConfigContentInterface }
+    contents: { [flexid: string]: ConfigContentInterface }
   }};
   baseUrl: string;
   configHashes: string[];

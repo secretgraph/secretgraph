@@ -8,8 +8,10 @@ import CardHeader from '@material-ui/core/CardHeader';
 import CardContent from '@material-ui/core/CardContent';
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
+import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
+import Tooltip from '@material-ui/core/Tooltip';
 import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import Collapse from '@material-ui/core/Collapse';
@@ -75,7 +77,8 @@ const ViewCluster = (props: Props) => {
       const token = config.tokens[hash];
       if (!token) continue;
       if (cluster_tokens.includes(token)) continue;
-      privateTokens.push(token)
+      const actions = config.hosts[mainCtx.url].clusters[mainCtx.item].hashes[hash]
+      privateTokens.push([token, actions])
     }
   }
 
@@ -83,11 +86,11 @@ const ViewCluster = (props: Props) => {
     <ViewFrame
     >
       <Typography>
-        {name}
+        {name ? name : "No Name"}
       </Typography>
       <Card>
         <CardContent>
-          {note}
+          {note ? note : "No Note"}
         </CardContent>
       </Card>
       <Card>
@@ -109,16 +112,16 @@ const ViewCluster = (props: Props) => {
             <List>
               {cluster_tokens.map((token: string, index: number) => (
                 <ListItem key={`public:${index}:wrapper`}>
-                  <ListItemText>
-                    Public Token: {token}
-                  </ListItemText>
+                  <ListItemText primary={`Public Token: ${token}`}
+                  />
                 </ListItem>
               ))}
-              {privateTokens.map((token: string, index: number) => (
-                <ListItem key={`public:${index}:wrapper`}>
-                  <ListItemText>
-                    Private Token: {token}
-                  </ListItemText>
+              {privateTokens.map(([token, actions] : [token: string, actions: string[]], index: number) => (
+                <ListItem key={`private:${index}:wrapper`}>
+                  <ListItemText
+                    primary={`Private Token: ${token}`}
+                    secondary={"allows actions: "+ actions.join(", ")}
+                  />
                 </ListItem>
               ))}
             </List>

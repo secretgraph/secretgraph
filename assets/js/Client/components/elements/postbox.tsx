@@ -41,7 +41,6 @@ const ViewPostbox = (props: Props) => {
   }
   return (
     <ViewFrame
-      shareurl=""
     >
 
     </ViewFrame>
@@ -64,7 +63,6 @@ const EditPostbox = (props: Props) => {
 
   return (
     <EditFrame
-      shareurl=""
     >
 
     </EditFrame>

@@ -39,7 +39,6 @@ const ViewKeys = (props: Props) => {
   }
   return (
     <ViewFrame
-      shareurl=""
     >
 
     </ViewFrame>
@@ -62,7 +61,6 @@ const EditKeys = (props: Props) => {
 
   return (
     <EditFrame
-      shareurl=""
     >
 
     </EditFrame>

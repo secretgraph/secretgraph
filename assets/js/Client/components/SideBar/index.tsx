@@ -100,7 +100,9 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
                 }
               };
               hashAlgos
-              newConfig.hosts[value] = {hashAlgorithms: hashAlgos, clusters: {}};
+              newConfig.hosts[value] = {
+                hashAlgorithms: hashAlgos, clusters: {}, contents: {}
+              };
               setConfig(newConfig)
             }
             setActiveUrl(value);

@@ -65,7 +65,6 @@ const ViewFile = (props: Props) => {
  */
   return (
     <ViewFrame
-      shareurl=""
     >
 
     </ViewFrame>

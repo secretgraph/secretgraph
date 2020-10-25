@@ -18,7 +18,7 @@ import {
 } from "./encryption";
 import { ApolloClient } from "@apollo/client";
 import {
-  checkConfig,
+  cleanConfig,
   extractAuthInfo,
   findCertCandidatesForRefs,
 } from "./config";
@@ -210,7 +210,7 @@ export async function initializeCluster(
     privateKey
   );
   config.tokens[digestActionKey] = keyb64;
-  if (!checkConfig(config)) {
+  if (!cleanConfig(config)) {
     console.error("invalid config created");
     return;
   }

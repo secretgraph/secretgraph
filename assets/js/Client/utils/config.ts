@@ -9,7 +9,7 @@ import { mapHashNames } from "../constants";
 import { ApolloClient } from '@apollo/client';
 
 
-export function checkConfig(config: ConfigInterface | null | undefined) {
+export function cleanConfig(config: ConfigInterface | null | undefined) {
   if(!config){
     return null;
   }
@@ -23,6 +23,15 @@ export function checkConfig(config: ConfigInterface | null | undefined) {
   ){
     console.error(config);
     return null;
+  }
+  for(const _host in config.hosts){
+    const host = config.hosts[_host];
+    if (!host["clusters"]){
+      host["clusters"] = {};
+    }
+    if (!host["contents"]){
+      host["contents"] = {};
+    }
   }
 
   return config;
@@ -63,7 +72,7 @@ export const loadConfigSync = (obj: Storage = window.localStorage): ConfigInterf
   if (!result) {
     return null;
   }
-  return checkConfig(JSON.parse(result));
+  return cleanConfig(JSON.parse(result));
 }
 
 
@@ -89,9 +98,9 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
           })).data;
         }
       }) as any;
-      return checkConfig(JSON.parse(String.fromCharCode(...new Uint8Array(parsedResult2))));
+      return cleanConfig(JSON.parse(String.fromCharCode(...new Uint8Array(parsedResult2))));
     }
-    return checkConfig(parsedResult);
+    return cleanConfig(parsedResult);
   } else {
     let request : Request;
     if(obj instanceof Request){
@@ -174,14 +183,14 @@ export const loadConfig = async (obj: string | File | Request | Storage = window
           nonce: b64toarr(contentResult.headers.get("X-NONCE") as string),
           data: contentResult.arrayBuffer()
 
-        }).then((data) => checkConfig(JSON.parse(String.fromCharCode(...new Uint8Array(data.data))))
+        }).then((data) => cleanConfig(JSON.parse(String.fromCharCode(...new Uint8Array(data.data))))
       )
-      return checkConfig(config);
+      return cleanConfig(config);
     } else if(prekeys) {
       throw("requires pw but not specified");
     }
     try {
-      return checkConfig(await contentResult.json());
+      return cleanConfig(await contentResult.json());
     } catch(e) {
       console.warn(e);
       return null;
