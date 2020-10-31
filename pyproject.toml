@@ -30,6 +30,7 @@ cryptography = "*"
 rdflib = '*'
 requests = "*"
 certifi = "*"
+graphene-protector = {version="*", optional = true}
 graphene-django = {version="*", optional = true}
 graphene-file-upload = {version="*", optional = true}
 flipflop = {version="*", optional = true}
@@ -43,6 +44,7 @@ django-fast-ratelimit = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
+graphene-protector = "*"
 graphene-django = '*'
 graphene-file-upload = "*"
 django-extensions = '*'
@@ -54,7 +56,7 @@ django-fast-ratelimit = "*"
 
 
 [tool.poetry.extras]
-server = ["graphene-django", "graphene-file-upload", "django-fast-ratelimit"]
+server = ["graphene-django", "graphene-protector", "graphene-file-upload", "django-fast-ratelimit"]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
 mysql = ["mysqlclient", "django-mysql"]
@@ -101,5 +103,5 @@ deps =
 """
 
 [build-system]
-requires = ["poetry>=1.0"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

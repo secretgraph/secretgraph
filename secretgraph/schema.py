@@ -1,6 +1,6 @@
 import graphene
 from graphene import relay
-
+from graphene_protector.django import Schema
 
 from .server.schema import Query as ServerQuery
 from .server.schema import Mutation as ServerMutation
@@ -25,4 +25,4 @@ class Mutation(
     pass
 
 
-schema = graphene.Schema(query=Query, mutation=Mutation)
+schema = Schema(query=Query, mutation=Mutation)
