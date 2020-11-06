@@ -4,7 +4,7 @@ import Typography from '@material-ui/core/Typography';
 import * as React from "react";
 
 
-export class CapturingSuspense extends React.Component<{}, {error: null | any}> {
+export class CapturingSuspense extends React.PureComponent<{}, {error: null | any}> {
   constructor(props: any) {
     super(props);
     this.state = { error: null };
