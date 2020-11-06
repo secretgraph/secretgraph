@@ -8,13 +8,15 @@ const tsgqlPlugin = new TsGraphQLPlugin({
 });
 
 
-module.exports = {
+module.exports = (env, options) => ({
   context: __dirname,
-  devtool: "source-map",
-  mode: "development",
+  devtool: options.mode === "development" ? "source-map" : false,
   output: {
     publicPath: "webpack_bundles/",
     path: path.resolve(__dirname, "./webpack_bundles/"),
+  },
+  watchOptions: {
+    ignored: /node_modules/
   },
   entry: {
     main: "./assets/js/Client/index.tsx"
@@ -25,9 +27,6 @@ module.exports = {
         test: /\.(ts|js)x?$/,
         loader: "ts-loader",
         exclude: /node_modules/,
-        resolve: {
-          fullySpecified: false // relax requirement
-        },
         options: {
           getCustomTransformers: () => ({
             before: [
@@ -53,13 +52,9 @@ module.exports = {
     tsgqlPlugin,
   ],
   optimization: {
+    runtimeChunk: true,
     splitChunks: {
       chunks: "all",
     },
   },
-  /*
-  externals: {
-    react: "React",
-    "react-dom": "ReactDOM",
-  },*/
-};
+});

@@ -144,9 +144,9 @@ function HeaderBar(props: Props) {
     )
   }
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     document.title = documenttitle;
-  })
+  }, [documenttitle])
 
   return (
     <AppBar
