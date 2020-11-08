@@ -15,6 +15,11 @@ import Tooltip from '@material-ui/core/Tooltip';
 import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import Collapse from '@material-ui/core/Collapse';
+
+import FormGroup from '@material-ui/core/FormGroup';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import FormControl from '@material-ui/core/FormControl';
+import FormLabel from '@material-ui/core/FormLabel';
 import { useAsync } from "react-async"
 import { useApolloClient } from '@apollo/client';
 import { parse, graph, SPARQLToQuery } from 'rdflib';
@@ -29,12 +34,63 @@ import { unserializeToArrayBuffer } from "../../utils/encryption";
 import { ViewFrame, DecisionFrame } from "../ElementFrames";
 
 
+interface TokenListProps {
+  initialOpen: boolean,
+  canAdd: boolean,
+  privateTokens: [token: string, actions: string[]][],
+  publicTokens: string[]
+}
+
+
+const TokenList = (props: TokenListProps) => {
+  const { canAdd, initialOpen, privateTokens, publicTokens } = props
+  const [ openTokens, setOpenTokens ] = React.useState(initialOpen);
+  return (
+    <Card>
+      <CardHeader
+        avatar={
+          canAdd ? <IconButton aria-label="add" onClick={() => console.log("implement")}>
+            <AddIcon />
+          </IconButton> : undefined
+        }
+        action={
+          <IconButton aria-label="tokens" onClick={() => setOpenTokens(!openTokens)}>
+            <MoreVertIcon />
+          </IconButton>
+        }
+        title="Tokens"
+      />
+      <Collapse in={openTokens} timeout="auto">
+        <CardContent>
+          <List>
+            {publicTokens.map((token: string, index: number) => (
+              <ListItem key={`public:${index}:wrapper`}>
+                <ListItemText primary={`Public Token: ${token}`}
+                />
+              </ListItem>
+            ))}
+            {privateTokens.map(([token, actions] : [token: string, actions: string[]], index: number) => (
+              <ListItem key={`private:${index}:wrapper`}>
+                <ListItemText
+                  primary={`Private Token: ${token}`}
+                  secondary={"allows actions: "+ actions.join(", ")}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </CardContent>
+      </Collapse>
+    </Card>
+  )
+}
+
+
 type Props = {
 };
 
-const ViewCluster = (props: Props) => {
+
+const ViewCluster = () => {
   const {config, setConfig} = React.useContext(InitializedConfigContext);
-  const [ openTokens, setOpenTokens ] = React.useState(false);
   const {classes, theme} = useStylesAndTheme();
   const {mainCtx} = React.useContext(MainContext);
   const client = useApolloClient();
@@ -50,7 +106,7 @@ const ViewCluster = (props: Props) => {
     suspense: true
   });
   if (!data){
-    console.error(error);
+    console.error(data, error);
     return null;
   }
   let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
@@ -66,7 +122,7 @@ const ViewCluster = (props: Props) => {
   } catch(exc){
     console.warn("Could not parse publicInfo", exc, data)
   }
-  const privateTokens = [];
+  const privateTokens: [string, string[]][] = [];
   if (
     mainCtx.url &&
     mainCtx.item &&
@@ -88,47 +144,15 @@ const ViewCluster = (props: Props) => {
       <Typography>
         {name ? name : "No Name"}
       </Typography>
-      <Card>
-        <CardContent>
-          {note ? note : "No Note"}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader
-          avatar={
-            <IconButton aria-label="add" onClick={() => console.log("implement")}>
-              <AddIcon />
-            </IconButton>
-          }
-          action={
-            <IconButton aria-label="tokens" onClick={() => setOpenTokens(!openTokens)}>
-              <MoreVertIcon />
-            </IconButton>
-          }
-          title="Tokens"
-        />
-        <Collapse in={openTokens} timeout="auto">
-          <CardContent>
-            <List>
-              {cluster_tokens.map((token: string, index: number) => (
-                <ListItem key={`public:${index}:wrapper`}>
-                  <ListItemText primary={`Public Token: ${token}`}
-                  />
-                </ListItem>
-              ))}
-              {privateTokens.map(([token, actions] : [token: string, actions: string[]], index: number) => (
-                <ListItem key={`private:${index}:wrapper`}>
-                  <ListItemText
-                    primary={`Private Token: ${token}`}
-                    secondary={"allows actions: "+ actions.join(", ")}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </CardContent>
-        </Collapse>
-      </Card>
-
+      <Typography>
+        {note ? note : "No Note"}
+      </Typography>
+      <TokenList
+        publicTokens={cluster_tokens}
+        privateTokens={privateTokens}
+        initialOpen
+        canAdd={false}
+      />
     </ViewFrame>
   );
 }

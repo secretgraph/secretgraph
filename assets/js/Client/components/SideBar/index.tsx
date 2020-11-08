@@ -227,17 +227,17 @@ const SideBar = (props: SideBarProps) => {
   let activeElements = [];
   let sideBarItems = [];
   const closedSymbol = theme.direction === "ltr" ? (
-    <ChevronRightIcon />
+    <ChevronRightIcon key="closedicoltr"/>
   ) : (
-    <ChevronLeftIcon />
+    <ChevronLeftIcon key="closedicortl"/>
   )
   const closeButton = (
     <Hidden lgUp>
       <IconButton onClick={() => openState.setDrawerOpen(false)}>
         {theme.direction === "ltr" ? (
-          <ChevronLeftIcon />
+          <ChevronLeftIcon key="closeicoltr"/>
         ) : (
-          <ChevronRightIcon />
+          <ChevronRightIcon key="closeicortl"/>
         )}
       </IconButton>
     </Hidden>
