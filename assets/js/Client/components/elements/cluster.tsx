@@ -82,7 +82,7 @@ const TokenList = (props: TokenListProps) => {
 }
 
 
-const EditClusterIntern = (props: {name: string, note: string}) => {
+const EditClusterIntern = (props: {name: string, note: string, id?: string | null}) => {
   return (
     <Formik
       initialValues={{
@@ -193,6 +193,7 @@ const AddCluster = () => {
     <EditFrame>
       <EditClusterIntern
         name="" note=""
+        id={null}
       />
     </EditFrame>
   );
@@ -218,7 +219,11 @@ const EditCluster = () => {
     console.error(data, error);
     return (
       <EditFrame>
-        <EditClusterIntern />
+        <EditClusterIntern
+          id={mainCtx.item}
+          name=""
+          note=""
+        />
       </EditFrame>
     );
   }
@@ -238,6 +243,7 @@ const EditCluster = () => {
   return (
     <EditFrame>
       <EditClusterIntern
+        id={mainCtx.item}
         name={name || ""}
         note={note || ""}
       />

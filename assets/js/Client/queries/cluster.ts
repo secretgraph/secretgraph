@@ -95,3 +95,31 @@ export const createClusterMutation = gql`
     }
   }
 `
+
+
+export const updateClusterMutation = gql`
+  mutation clusterUpdateMutation($id: ID!, $publicInfo: Upload, $actions: [ActionInput!], $authorization: [String!]) {
+    updateOrCreateCluster(
+      input: {
+        cluster: {
+          id: $id
+          publicInfo: $publicInfo
+          actions: $actions
+        }
+        authorization: $authorization
+      }
+    ) {
+      cluster {
+        id
+        group
+        availableActions {
+          keyHash
+          type
+          requiredKeys
+          allowedTags
+        }
+      }
+      writeok
+    }
+  }
+`

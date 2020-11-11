@@ -1,4 +1,4 @@
-import { createClusterMutation } from "../queries/cluster";
+import { createClusterMutation, updateClusterMutation } from "../queries/cluster";
 import { createContentMutation, contentQuery } from "../queries/content";
 import { serverConfigQuery } from "../queries/server";
 import {
@@ -25,65 +25,58 @@ import {
 import { createContentAuth, encryptSharedKey, hashContent } from "./graphql";
 import { mapHashNames } from "../constants";
 
-export async function createContent(options: {
-  client: ApolloClient<any>;
-  config: ConfigInterface;
-  cluster: string;
-  value: File | Blob;
-  pubkeys: CryptoKey[];
-  privkeys?: CryptoKey[];
-  tags: string[];
-  contentHash?: string | null;
-  references?: ReferenceInterface[] | null;
-  actions?: ActionInterface[];
-  hashAlgorithm?: string;
-  url?: string;
+// TODO: replace pubkeys, privkeys? by CryptoKey | CryptoKeyPair
+export async function createContent({
+    client,
+    cluster,
+    actions,
+    ...options
+  } : {
+  client: ApolloClient<any>,
+  config: ConfigInterface,
+  cluster: string,
+  value: File | Blob,
+  pubkeys: CryptoKey[],
+  privkeys?: CryptoKey[],
+  tags: string[],
+  contentHash?: string | null,
+  references?: ReferenceInterface[] | null,
+  actions?: ActionInterface[],
+  hashAlgorithm?: string,
+  authorization: string[]
 }) {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const key = crypto.getRandomValues(new Uint8Array(32));
-  let url: string;
-  if (options.url) {
-    url = options.url;
-  } else {
-    url = options.config.baseUrl;
-  }
 
   const encryptedContentPromise = encryptAESGCM({
     key,
     nonce,
     data: options.value.arrayBuffer(),
   });
-  const actionkeys = createContentAuth({
-    config: options.config,
-    clusters: [options.cluster],
-    action: "manage",
-    url,
-  })[0] as string[];
-
   const halgo =
     mapHashNames[
       options.hashAlgorithm
         ? options.hashAlgorithm
-        : ((await options.client.query({ query: serverConfigQuery })) as any)
+        : ((await client.query({ query: serverConfigQuery })) as any)
             .data.secretgraph.config.hashAlgorithms[0]
     ].operationName;
 
-  const [referencesPromise, tagsPromise] = encryptSharedKey(
+  const [publicKeyReferencesPromise, tagsPromise] = encryptSharedKey(
     key,
     options.pubkeys,
     halgo
   );
-  const referencesPromise2 = encryptedContentPromise.then((data) =>
+  const signatureReferencesPromise = encryptedContentPromise.then((data) =>
     hashContent(data.data, options.privkeys ? options.privkeys : [], halgo)
   );
   const newTags: string[] = await tagsPromise;
-  const newReferences: ReferenceInterface[] = await referencesPromise;
-  return await options.client.mutate({
+  return await client.mutate({
     mutation: createContentMutation,
     variables: {
-      cluster: options.cluster,
-      references: newReferences.concat(
-        await referencesPromise2,
+      cluster,
+      references: ([] as ReferenceInterface[]).concat(
+        await publicKeyReferencesPromise,
+        await signatureReferencesPromise,
         options.references ? options.references : []
       ),
       tags: newTags.concat(options.tags),
@@ -91,22 +84,100 @@ export async function createContent(options: {
       value: await encryptedContentPromise.then(
         (data) => new File([data.data], "value")
       ),
-      actions: options.actions,
+      actions: actions,
       contentHash: options.contentHash ? options.contentHash : null,
-      authorization: actionkeys,
+      authorization: options.authorization
+    },
+  });
+}
+
+// TODO: replace pubkeys, privkeys? by CryptoKey | CryptoKeyPair
+export async function updateContent({
+    id,
+    client,
+    ...options
+  } : {
+  id: string,
+  client: ApolloClient<any>,
+  config: ConfigInterface,
+  cluster?: string,
+  value?: File | Blob,
+  pubkeys: CryptoKey[],
+  privkeys?: CryptoKey[],
+  tags?: string[],
+  contentHash?: string | null,
+  references?: ReferenceInterface[] | null,
+  actions?: ActionInterface[],
+  hashAlgorithm?: string,
+  authorization: string[]
+}) {
+  const nonce = crypto.getRandomValues(new Uint8Array(13));
+  const key = crypto.getRandomValues(new Uint8Array(32));
+  let contentPromise : Promise<null|File> = Promise.resolve(null);
+  let referencesPromise;
+  let tagsPromise;
+
+  const halgo =
+    mapHashNames[
+      options.hashAlgorithm
+        ? options.hashAlgorithm
+        : ((await client.query({ query: serverConfigQuery })) as any)
+            .data.secretgraph.config.hashAlgorithms[0]
+    ].operationName;
+  if (options.value) {
+    const encryptedContentPromise2 = encryptAESGCM({
+      key,
+      nonce,
+      data: options.value.arrayBuffer(),
+    })
+
+    const [ publicKeyReferencesPromise, tagsPromise2] = encryptSharedKey(
+      key,
+      options.pubkeys,
+      halgo
+    );
+    tagsPromise = tagsPromise2;
+    const signatureReferencesPromise = encryptedContentPromise2.then((data) =>
+      hashContent(data.data, options.privkeys ? options.privkeys : [], halgo)
+    );
+    contentPromise = encryptedContentPromise2.then(
+      (data) => new File([data.data], "value")
+    );
+    referencesPromise = ([] as ReferenceInterface[]).concat(
+      await publicKeyReferencesPromise,
+      await signatureReferencesPromise,
+      options.references ? options.references : []
+    );
+  } else {
+    referencesPromise = options.references ? options.references : null
+    tagsPromise = options.tags ? options.tags : null
+  }
+
+  return await client.mutate({
+    mutation: createContentMutation,
+    variables: {
+      id,
+      cluster: options.cluster ? options.cluster : null,
+      references: await referencesPromise,
+      tags: await tagsPromise,
+      nonce: await serializeToBase64(nonce),
+      value: await contentPromise,
+      actions: options.actions ? options.actions : null,
+      contentHash: options.contentHash ? options.contentHash : null,
+      authorization: options.authorization
     },
   });
 }
 
 export async function createCluster(options: {
-  client: ApolloClient<any>;
-  actions: ActionInterface[];
-  hashAlgorithm: string;
-  publicInfo: string;
-  publicKey: CryptoKey;
-  privateKey?: CryptoKey;
-  privateKeyKey?: Uint8Array;
-  authorization?: string[];
+  client: ApolloClient<any>,
+  actions: ActionInterface[],
+  hashAlgorithm: string,
+  publicInfo: string,
+  publicKey: CryptoKey,
+  privateKey?: CryptoKey,
+  privateKeyKey?: Uint8Array,
+  authorization?: string[]
 }) {
   let nonce: null | Uint8Array = null;
 
@@ -144,6 +215,28 @@ export async function createCluster(options: {
       privateKey: await privateKeyPromise,
       privateTags: privateTags,
       nonce: nonce ? await serializeToBase64(nonce) : null,
+      actions: options.actions,
+      authorization: options.authorization,
+    },
+  });
+}
+
+export async function updateCluster(options: {
+  id: string,
+  client: ApolloClient<any>,
+  actions?: ActionInterface[],
+  hashAlgorithm: string,
+  publicInfo?: string,
+  authorization?: string[]
+}) {
+  return await options.client.mutate({
+    mutation: updateClusterMutation,
+    variables: {
+      id: options.id,
+      publicInfo: new File(
+        [utf8encoder.encode(options.publicInfo)],
+        "publicInfo"
+      ),
       actions: options.actions,
       authorization: options.authorization,
     },
@@ -218,6 +311,14 @@ export async function initializeCluster(
     ["type=Config"],
     config["hosts"][config["baseUrl"]].hashAlgorithms[0]
   );
+
+  const actionkeys = createContentAuth({
+    config: config,
+    clusters: [clusterResult.cluster["id"]],
+    action: "manage",
+    url: config.baseUrl,
+  })[0] as string[];
+
   return await createContent({
     client,
     config,
@@ -228,6 +329,7 @@ export async function initializeCluster(
     tags: ["type=Config", "state=internal"],
     contentHash: digest,
     hashAlgorithm: config["hosts"][config["baseUrl"]].hashAlgorithms[0],
+    authorization: actionkeys
   }).then(() => {
     return [config, clusterResult.cluster.id as string];
   });
