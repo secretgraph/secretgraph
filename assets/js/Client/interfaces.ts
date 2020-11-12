@@ -115,3 +115,10 @@ export interface ElementEntryInterface {
   ignore?: boolean;
   component: React.LazyExoticComponent<any>;
 }
+
+
+
+export interface CryptoHashPair {
+  key: CryptoKey;
+  hash: string;
+}

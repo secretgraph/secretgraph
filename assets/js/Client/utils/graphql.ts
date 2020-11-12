@@ -1,8 +1,8 @@
 
 import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { createUploadLink } from 'apollo-upload-client';
-import { ConfigInterface, ReferenceInterface} from "../interfaces";
-import { unserializeToCryptoKey, serializeToBase64, unserializeToArrayBuffer, encryptRSAOEAP } from "./encryption";
+import { ConfigInterface, ReferenceInterface, CryptoHashPair, KeyInput} from "../interfaces";
+import { unserializeToCryptoKey, serializeToBase64, encryptRSAOEAP } from "./encryption";
 import { mapHashNames } from "../constants";
 
 
@@ -61,53 +61,62 @@ export function createContentAuth(
   return [authkeys, Promise.allSettled(privkeys)]
 }
 
-export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalgo: string, hashes?: string[]) : Promise<ReferenceInterface[]> {
+async function createSignatureReferences_helper(key: KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>, hashalgo: string, content: ArrayBuffer | PromiseLike<ArrayBuffer>){
+  const _x = await key;
+  let signkey: KeyInput, hash: string | Promise<string>;
+  const hashalgo2 = mapHashNames[hashalgo].operationName;
+  const hashalgo2_len = mapHashNames[hashalgo].length;
+  if ((_x as any)["hash"]) {
+    signkey = (_x as CryptoHashPair).key
+    hash = (_x as CryptoHashPair).hash
+  } else {
+    signkey = (key as KeyInput)
+    hash = serializeToBase64(crypto.subtle.digest(
+      hashalgo2,
+      await crypto.subtle.exportKey(
+        "spki" as const,
+        await unserializeToCryptoKey(
+          (key as KeyInput), {
+            name: "RSA-OAEP",
+            hash: hashalgo2,
+          }, "publicKey"
+        )
+      )
+    ));
+  }
+
+  return {
+    signature: await serializeToBase64(crypto.subtle.sign(
+      {
+        name: "RSA-PSS",
+        saltLength: hashalgo2_len / 8,
+      },
+      await unserializeToCryptoKey(
+        signkey, {
+          name: "RSA-PSS",
+          hash: hashalgo2,
+        }, "privateKey"
+      ),
+      await content
+    )),
+    hash: await hash
+  }
+}
+
+export function createSignatureReferences(content: ArrayBuffer, privkeys: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[], hashalgo: string) : Promise<ReferenceInterface[]> {
   const references: Promise<ReferenceInterface>[] = [];
   if(!mapHashNames[hashalgo]){
     throw Error("hashalgorithm not supported: "+hashalgo)
   }
-  const hashalgo2 = mapHashNames[hashalgo].operationName;
-  const hashalgo2_len = mapHashNames[hashalgo].length;
   for(let counter=0; counter<privkeys.length;counter++){
-    const privkey = privkeys[counter];
-    const signKey = unserializeToCryptoKey(privkey, {
-      name: "RSA-PSS",
-      hash: hashalgo2
-    }, "privateKey");
-    const hashfn = async () => {
-      if (hashes){
-        return hashes[counter];
-      }
-      const exported = await crypto.subtle.exportKey(
-        "spki" as const,
-        await unserializeToCryptoKey(privkey, {
-          name: "RSA-OAEP",
-          hash: hashalgo2
-        }, "publicKey")
-      );
-      return await serializeToBase64(crypto.subtle.digest(
-        hashalgo2,
-        exported
-      ))
-    }
     references.push(
-      Promise.all([
-        hashfn(),
-        signKey.then(
-          (signkey) => serializeToBase64(crypto.subtle.sign(
-            {
-              name: "RSA-PSS",
-              saltLength: hashalgo2_len / 8,
-            },
-            signkey,
-            content
-          ))
-        ) as Promise<string>
-      ]).then((arr) : ReferenceInterface => {
+      createSignatureReferences_helper(
+        privkeys[counter], hashalgo, content
+      ).then(({signature, hash}) : ReferenceInterface => {
         return {
-          "target": arr[0],
+          "target": hash,
           "group": "signature",
-          "extra": arr[1]
+          "extra": signature
         }
       })
     )
@@ -116,38 +125,58 @@ export function hashContent(content: ArrayBuffer, privkeys: CryptoKey[], hashalg
   return Promise.all(references);
 }
 
+async function encryptSharedKey_helper(key: KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>, hashalgo: string | undefined, sharedkey: Uint8Array) {
+  const _x = await key;
+  let pubkey: CryptoKey | Promise<CryptoKey>, hash: string | Promise<string>;
+  const hashalgo2 = mapHashNames[""+hashalgo].operationName;
+  if ((_x as any)["hash"]) {
+    pubkey = (_x as CryptoHashPair).key
+    hash = (_x as CryptoHashPair).hash
+  } else {
+    if(!hashalgo2){
+      throw new Error("Invalid hash algorithm/no hash algorithm specified and no CryptoHashPair provided: "+hashalgo2)
+    }
+    pubkey = unserializeToCryptoKey((key as KeyInput), {
+      name: "RSA-OAEP",
+      hash: hashalgo2,
+    }, "publicKey")
+    hash = serializeToBase64(crypto.subtle.digest(
+      hashalgo2,
+      await crypto.subtle.exportKey(
+        "spki" as const,
+        await pubkey
+      )
+    ));
+  }
+  return {
+    encrypted: await encryptRSAOEAP(
+      {
+        key: pubkey,
+        data: sharedkey,
+        hashAlgorithm: hashalgo2
+      }
+    ).then((data) => serializeToBase64(data.data)),
+    hash: await hash
+  }
+}
 
-export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: CryptoKey[], hashalgo?: string, hashes?: string[]) : [Promise<ReferenceInterface[]>, Promise<string[]>] {
+export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[], hashalgo?: string) : [Promise<ReferenceInterface[]>, Promise<string[]>] {
   const references: PromiseLike<ReferenceInterface>[] = [];
   const tags: PromiseLike<string>[] = [];
   for(let counter=0; counter<pubkeys.length;counter++){
-    const pubkey = pubkeys[counter];
-    let hash = hashes ? Promise.resolve(hashes[counter]): unserializeToArrayBuffer(
-      pubkey
-    ).then(
-      (exported) => serializeToBase64(crypto.subtle.digest(
-        hashalgo as string, exported
-      ))
+    const temp = encryptSharedKey_helper(
+      pubkeys[counter], hashalgo, sharedkey
     );
     references.push(
-      Promise.all([
-        hash,
-        encryptRSAOEAP(
-          {
-            key: pubkey,
-            data: sharedkey,
-            hashAlgorithm: hashalgo
-          }
-        ).then((data) => serializeToBase64(data.data))
-      ]).then((arr) : ReferenceInterface => {
+      temp.then(({encrypted, hash}) : ReferenceInterface => {
         return {
-          "target": arr[0],
+          "target": hash,
           "group": "key",
-          "extra": arr[1]
+          "extra": encrypted
         }
       })
     )
-    tags.push(hash.then((hashstr:string) : string => `key_hash=${hashstr}`));
+    tags.push(temp.then(({hash}) : string => `key_hash=${hash}`));
   }
   return [Promise.all(references), Promise.all(tags)]
 }

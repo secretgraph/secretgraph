@@ -22,7 +22,7 @@ import {
   extractAuthInfo,
   findCertCandidatesForRefs,
 } from "./config";
-import { createContentAuth, encryptSharedKey, hashContent } from "./graphql";
+import { createContentAuth, encryptSharedKey, createSignatureReferences } from "./graphql";
 import { mapHashNames } from "../constants";
 
 // TODO: replace pubkeys, privkeys? by CryptoKey | CryptoKeyPair
@@ -67,7 +67,7 @@ export async function createContent({
     halgo
   );
   const signatureReferencesPromise = encryptedContentPromise.then((data) =>
-    hashContent(data.data, options.privkeys ? options.privkeys : [], halgo)
+    createSignatureReferences(data.data, options.privkeys ? options.privkeys : [], halgo)
   );
   const newTags: string[] = await tagsPromise;
   return await client.mutate({
@@ -138,7 +138,7 @@ export async function updateContent({
     );
     tagsPromise = tagsPromise2;
     const signatureReferencesPromise = encryptedContentPromise2.then((data) =>
-      hashContent(data.data, options.privkeys ? options.privkeys : [], halgo)
+      createSignatureReferences(data.data, options.privkeys ? options.privkeys : [], halgo)
     );
     contentPromise = encryptedContentPromise2.then(
       (data) => new File([data.data], "value")
@@ -193,13 +193,11 @@ export async function createCluster(options: {
       data: options.privateKey,
     }).then((obj) => new File([obj.data], "privateKey"));
     privateTags.push(
-      await serializeToBase64(
-        encryptRSAOEAP({
-          key: options.privateKey,
-          data: options.privateKeyKey,
-          hashAlgorithm: options.hashAlgorithm,
-        })
-      ).then((obj) => `key=${obj}`)
+      await encryptRSAOEAP({
+        key: options.privateKey,
+        data: options.privateKeyKey,
+        hashAlgorithm: options.hashAlgorithm,
+      }).then((data) => serializeToBase64(data.data)).then((obj) => `key=${obj}`)
     );
   } else {
     privateKeyPromise = Promise.resolve(null);
@@ -273,7 +271,6 @@ export async function initializeCluster(
     )
     .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))));
   const keyb64 = btoa(String.fromCharCode(...key));
-
   const clusterResponse = await createCluster({
     client,
     actions: [{ value: '{"action": "manage"}', key: keyb64 }],

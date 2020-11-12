@@ -4,7 +4,6 @@ import * as React from "react";
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 
-import { useAsync } from "react-async"
 import { saveAs } from 'file-saver';
 import { useQuery, useApolloClient } from '@apollo/client';
 
@@ -26,18 +25,12 @@ const ViewFile = (props: Props) => {
   const { mainCtx } = React.useContext(MainContext);
   const { config } = React.useContext(ConfigContext);
   const client = useApolloClient();
-  const { data, error } = useAsync({
-    promise: decryptContentId(
-      client,
-      config as ConfigInterface,
-      mainCtx.url as string,
-      mainCtx.item as string
-    ),
-    suspense: true
-  });
-  if(error){
-    throw error;
-  }
+  decryptContentId(
+    client,
+    config as ConfigInterface,
+    mainCtx.url as string,
+    mainCtx.item as string
+  )
   /**
   saveAs(
     new File(

@@ -6,7 +6,6 @@ import CardContent from '@material-ui/core/CardContent';
 import { Theme } from "@material-ui/core/styles";
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-import { useAsync } from "react-async"
 import { saveAs } from 'file-saver';
 import { useQuery, useApolloClient } from '@apollo/client';
 
@@ -27,18 +26,12 @@ const ViewPostbox = (props: Props) => {
   const { mainCtx } = React.useContext(MainContext);
   const client = useApolloClient();
   const { config } = React.useContext(ConfigContext);
-  const { data, error } = useAsync({
-    promise: decryptContentId(
-      client,
-      config as ConfigInterface,
-      mainCtx.url as string,
-      mainCtx.item as string
-    ),
-    suspense: true
-  });
-  if(error){
-    throw error;
-  }
+  decryptContentId(
+    client,
+    config as ConfigInterface,
+    mainCtx.url as string,
+    mainCtx.item as string
+  )
   return (
     <ViewFrame
     >
