@@ -67,7 +67,7 @@ export class DecisionFrame extends React.Component<DecisionFrameProps, {error: n
     super(props);
     this.state = { error: null };
   }
-  render_element(){
+  retrieve_element(){
     let Elem;
     if (this.props.mainCtx.action == "view" && this.props.mainCtx.item) {
       Elem = this.props.view
@@ -76,9 +76,9 @@ export class DecisionFrame extends React.Component<DecisionFrameProps, {error: n
     } else if (this.props.mainCtx.action == "add") {
       Elem = this.props.add
     } else {
-      return null;
+      return () => (<></>);
     }
-    return (<Elem/>)
+    return Elem
   }
   render(){
     if (this.state.error) {
@@ -88,9 +88,10 @@ export class DecisionFrame extends React.Component<DecisionFrameProps, {error: n
         </Typography>
       );
     }
+    const Elem = this.retrieve_element();
     return (
       <React.Suspense fallback={<CircularProgress />}>
-        {this.render_element()}
+        <Elem/>
       </React.Suspense>
     );
   }

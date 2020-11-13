@@ -1,5 +1,6 @@
 
 import { ApolloClient, InMemoryCache } from '@apollo/client';
+import { relayStylePagination } from "@apollo/client/utilities";
 import { createUploadLink } from 'apollo-upload-client';
 import { ConfigInterface, ReferenceInterface, CryptoHashPair, KeyInput} from "../interfaces";
 import { unserializeToCryptoKey, serializeToBase64, encryptRSAOEAP } from "./encryption";
@@ -11,7 +12,18 @@ export const createClient = (url: string) => {
     uri: url
   });
   return new ApolloClient({
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+      typePolicies: {
+        SecretgraphObject: {
+          queryType: true,
+          fields: {
+            // could be dangerous to activate, wait until tests are possible
+            //clusters: relayStylePagination(),
+            //contents: relayStylePagination()
+          },
+        },
+      },
+    }),
     link: link,
     name: 'secretgraph',
     version: '0.1',

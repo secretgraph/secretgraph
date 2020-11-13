@@ -194,15 +194,21 @@ const ViewCluster = () => {
       promiseFn: item_retrieval_helper,
       suspense: true,
       client: client,
-      authinfo: authinfo,
+      keys: authinfo.keys,
       item: mainCtx.item
     }
   )
-  if (!data){
-    console.error(data, error);
+  if (!data && !error) {
     return null;
   }
-  console.log(data)
+  if (!data && error){
+    console.error("Error", data, error);
+    return null;
+  }
+  if (!(data as any).data.secretgraph.node){
+    console.error("Node empty", data, authinfo)
+    return null;
+  }
 
   return (
     <ViewClusterViewer
@@ -226,7 +232,7 @@ const AddCluster = () => {
 }
 
 const EditCluster = () => {
-  const {config, updateConfig} = React.useContext(InitializedConfigContext);
+  const {config} = React.useContext(InitializedConfigContext);
   const {mainCtx} = React.useContext(MainContext);
   const client = useApolloClient();
   const authinfo = extractAuthInfo(config, mainCtx.url as string);
@@ -235,12 +241,26 @@ const EditCluster = () => {
       promiseFn: item_retrieval_helper,
       suspense: true,
       client: client,
-      authinfo: authinfo,
+      keys: authinfo.keys,
       item: mainCtx.item
     }
   )
-  if (!data){
+  if (!data && !error) {
+    return null;
+  }
+  if (!data && error){
     console.error(data, error);
+    return (
+      <EditFrame>
+        <EditClusterIntern
+          id={mainCtx.item}
+          name=""
+          note=""
+        />
+      </EditFrame>
+    );
+  }
+  if (!(data as any).data.secretgraph.node){
     return (
       <EditFrame>
         <EditClusterIntern

@@ -45,6 +45,7 @@ const clusterFeedQuery = gql`
       ) @connection(key: "SideBar_clusters", filters:["include", "exclude", "public"]) {
         edges {
           node {
+            link
             id
             publicInfo
           }

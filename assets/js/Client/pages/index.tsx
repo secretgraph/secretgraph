@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ApolloProvider } from "@apollo/client";;
 import CssBaseline from '@material-ui/core/CssBaseline';
+import Paper from '@material-ui/core/Paper';
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
 import { useStylesAndTheme } from "../theme";
@@ -20,14 +21,14 @@ type Props = {
 };
 
 function updateState<T>(state: T, update: Partial<T>) : T {
-  return Object.assign(state, update)
+  return Object.assign({}, state, update)
 }
 
 function updateNullableState<T>(state: T, update: Partial<T> | null) : (T | null){
   if (update === null){
     return null;
   }
-  return Object.assign(state, update)
+  return Object.assign({}, state, update)
 }
 
 
@@ -117,9 +118,9 @@ function MainPage(props: Props) {
                   />
                   <div className={classes.content}>
                     <ActionBar/>
-                    <main className={classes.mainSection}>
+                    <Paper component="main" className={classes.mainSection}>
                       {frameElement}
-                    </main>
+                    </Paper>
                   </div>
                 </div>
               </div>

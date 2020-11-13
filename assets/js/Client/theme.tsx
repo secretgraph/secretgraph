@@ -17,8 +17,6 @@ export function secretgraphTheme(theme: Theme) {
       gridTemplateColumns: "auto 1fr",
     },
     subRoot: {
-      display: "grid",
-      gridTemplateRows: "auto auto 1fr",
       minHeight: "100vh" as const
     },
     appBar: {
@@ -105,9 +103,7 @@ export function secretgraphTheme(theme: Theme) {
       color: 'white' as const,
     },
     mainSection: {
-      borderRadius: "5px" as const,
-      border: "1px solid black" as const,
-      minHeight: "100px" as const,
+      minHeight: "200px" as const,
       flexGrow: 1,
     },
     content: {

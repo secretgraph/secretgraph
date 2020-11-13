@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function(){
     try {
       items = JSON.parse(element.dataset.items);
     } catch (e) {
-      console.log(e);
+      console.error(e);
       continue
     }
     let orig_val = [];
