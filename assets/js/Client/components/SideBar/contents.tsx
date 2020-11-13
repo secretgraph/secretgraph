@@ -77,7 +77,7 @@ query SideBarContentFeedQuery(
 
 
 // ["type=", "state=", ...
-export default (appProps: SideBarItemsProps) => {
+export default function Contents(appProps: SideBarItemsProps) {
   const {classes, theme} = useStylesAndTheme();
   const { authinfo, selectItem, loadMoreExtra, activeCluster, activeContent, state, header, usePublic } = appProps;
   const {searchCtx} = React.useContext(SearchContext);

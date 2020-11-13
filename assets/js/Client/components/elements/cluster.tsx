@@ -5,6 +5,7 @@ import Typography from '@material-ui/core/Typography';
 import AddIcon from '@material-ui/icons/Add';
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
+import { useAsync } from "react-async"
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
@@ -17,7 +18,7 @@ import { Formik, Form, FastField, Field } from 'formik';
 
 import TextareaAutosize from '@material-ui/core/TextareaAutosize';
 import { TextField } from 'formik-material-ui';
-import { useApolloClient } from '@apollo/client';
+import { useApolloClient, ApolloClient } from '@apollo/client';
 import { parse, graph, SPARQLToQuery } from 'rdflib';
 import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../../constants"
 
@@ -80,6 +81,21 @@ const TokenList = (props: TokenListProps) => {
   )
 }
 
+function item_retrieval_helper(
+  {client, keys, item} : {
+    client: ApolloClient<any>,
+    keys: string[],
+    item: string
+  }
+) {
+  return client.query({
+    query: getClusterQuery,
+    variables: {
+      id: item,
+      authorization: keys
+    }
+  })
+}
 
 const EditClusterIntern = (props: {name: string, note: string, id?: string | null}) => {
   return (
@@ -115,80 +131,86 @@ const EditClusterIntern = (props: {name: string, note: string, id?: string | nul
 
 }
 
-const ViewCluster = () => {
-  const {config, setConfig} = React.useContext(InitializedConfigContext);
-  const {classes, theme} = useStylesAndTheme();
+const ViewClusterViewer = ({serverConfig, node}: {serverConfig: any, node: any}) => {
   const {mainCtx} = React.useContext(MainContext);
-  const item = mainCtx.item
-
-  const ViewCluster_helper = async () => {
-    const authinfo = extractAuthInfo(config, mainCtx.url as string);
-    const client = useApolloClient();
-    const { data, error } = await client.query({
-      query: getClusterQuery,
-      variables: {
-        id: mainCtx.item,
-        authorization: authinfo.keys
-      }
-    })
-    if (!data){
-      console.error(data, error);
-      return null;
+  const {config, updateConfig} = React.useContext(InitializedConfigContext);
+  const {classes, theme} = useStylesAndTheme();
+  let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
+  try {
+    const store = graph();
+    parse(node.publicInfo, store, "https://secretgraph.net/static/schemes");
+    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
+    if(name_note_results.length > 0) {
+      name = name_note_results[0][0];
+      note = name_note_results[0][1] ? name_note_results[0][1] : "";
     }
-    let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
-    try {
-      const store = graph();
-      parse((data as any).data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
-      const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
-      if(name_note_results.length > 0) {
-        name = name_note_results[0][0];
-        note = name_note_results[0][1] ? name_note_results[0][1] : "";
-      }
-      cluster_tokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store)).map((val: any) => val.token)
-    } catch(exc){
-      console.warn("Could not parse publicInfo", exc, data)
-    }
-    const privateTokens: [string, string[]][] = [];
-    if (
-      mainCtx.url &&
-      mainCtx.item &&
-      config.hosts[mainCtx.url] &&
-      config.hosts[mainCtx.url].clusters[mainCtx.item]
-    ){
-      for(const hash in config.hosts[mainCtx.url].clusters[mainCtx.item].hashes){
-        const token = config.tokens[hash];
-        if (!token) continue;
-        if (cluster_tokens.includes(token)) continue;
-        const actions = config.hosts[mainCtx.url].clusters[mainCtx.item].hashes[hash]
-        privateTokens.push([token, actions])
-      }
-    }
-
-    return (
-      <ViewFrame
-      >
-        <Typography>
-          {name ? name : "No Name"}
-        </Typography>
-        <Typography>
-          {note ? note : "No Note"}
-        </Typography>
-        <TokenList
-          publicTokens={cluster_tokens}
-          privateTokens={privateTokens}
-          initialOpen
-          canAdd={false}
-        />
-      </ViewFrame>
-    );
+    cluster_tokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store)).map((val: any) => val.token)
+  } catch(exc){
+    console.warn("Could not parse publicInfo", exc, node.publicInfo)
   }
-  return React.lazy(async () => {
-    return {default: await ViewCluster_helper() as any}
+  const privateTokens: [string, string[]][] = [];
+  if (
+    mainCtx.url &&
+    mainCtx.item &&
+    config.hosts[mainCtx.url] &&
+    config.hosts[mainCtx.url].clusters[mainCtx.item]
+  ){
+    for(const hash in config.hosts[mainCtx.url].clusters[mainCtx.item].hashes){
+      const token = config.tokens[hash];
+      if (!token) continue;
+      if (cluster_tokens.includes(token)) continue;
+      const actions = config.hosts[mainCtx.url].clusters[mainCtx.item].hashes[hash]
+      privateTokens.push([token, actions])
+    }
+  }
 
-  })
-
+  return (
+    <ViewFrame
+    >
+      <Typography>
+        {name ? name : "No Name"}
+      </Typography>
+      <Typography>
+        {note ? note : "No Note"}
+      </Typography>
+      <TokenList
+        publicTokens={cluster_tokens}
+        privateTokens={privateTokens}
+        initialOpen
+        canAdd={false}
+      />
+    </ViewFrame>
+  );
 }
 
+
+const ViewCluster = () => {
+  const {mainCtx} = React.useContext(MainContext);
+  const {config, updateConfig} = React.useContext(InitializedConfigContext);
+  const client = useApolloClient();
+  const authinfo = extractAuthInfo(config, mainCtx.url as string);
+  const { data, error } = useAsync(
+    {
+      promiseFn: item_retrieval_helper,
+      suspense: true,
+      client: client,
+      authinfo: authinfo,
+      item: mainCtx.item
+    }
+  )
+  if (!data){
+    console.error(data, error);
+    return null;
+  }
+  console.log(data)
+
+  return (
+    <ViewClusterViewer
+      serverConfig={(data as any).data.secretgraph.config}
+      node={(data as any).data.secretgraph.node}
+    />
+  )
+}
 
 const AddCluster = () => {
   const {classes, theme} = useStylesAndTheme();
@@ -204,55 +226,53 @@ const AddCluster = () => {
 }
 
 const EditCluster = () => {
-  const {config, setConfig} = React.useContext(InitializedConfigContext);
-  const {classes, theme} = useStylesAndTheme();
+  const {config, updateConfig} = React.useContext(InitializedConfigContext);
   const {mainCtx} = React.useContext(MainContext);
   const client = useApolloClient();
   const authinfo = extractAuthInfo(config, mainCtx.url as string);
-  const item = mainCtx.item;
-  return React.useMemo(async () => {
-    const { data, error } = await client.query({
-      query: getClusterQuery,
-      variables: {
-        id: mainCtx.item,
-        authorization: authinfo.keys
-      }
-    })
-    if (!data){
-      console.error(data, error);
-      return (
-        <EditFrame>
-          <EditClusterIntern
-            id={mainCtx.item}
-            name=""
-            note=""
-          />
-        </EditFrame>
-      );
+  const { data, error } = useAsync(
+    {
+      promiseFn: item_retrieval_helper,
+      suspense: true,
+      client: client,
+      authinfo: authinfo,
+      item: mainCtx.item
     }
-    let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
-    try {
-      const store = graph();
-      parse((data as any).data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
-      const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
-      if(name_note_results.length > 0) {
-        name = name_note_results[0][0];
-        note = name_note_results[0][1] ? name_note_results[0][1] : "";
-      }
-    } catch(exc){
-      console.warn("Could not parse publicInfo", exc, data)
-    }
-
+  )
+  if (!data){
+    console.error(data, error);
     return (
       <EditFrame>
         <EditClusterIntern
           id={mainCtx.item}
-          name={name || ""}
-          note={note || ""}
+          name=""
+          note=""
         />
       </EditFrame>
     );
-  }, [item])
+  }
+  let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
+  try {
+    const store = graph();
+    parse((data as any).data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
+    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
+    if(name_note_results.length > 0) {
+      name = name_note_results[0][0];
+      note = name_note_results[0][1] ? name_note_results[0][1] : "";
+    }
+  } catch(exc){
+    console.warn("Could not parse publicInfo", exc, data)
+  }
+
+  return (
+    <EditFrame>
+      <EditClusterIntern
+        id={mainCtx.item}
+        name={name || ""}
+        note={note || ""}
+      />
+    </EditFrame>
+  );
 }
 
 export default function ClusterComponent() {

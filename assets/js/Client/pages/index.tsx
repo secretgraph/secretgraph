@@ -1,12 +1,13 @@
 import * as React from "react";
 import { ApolloProvider } from "@apollo/client";;
+import CssBaseline from '@material-ui/core/CssBaseline';
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
 import { useStylesAndTheme } from "../theme";
 import { elements } from '../components/elements';
 import { loadConfigSync } from '../utils/config';
 import { createClient } from '../utils/graphql';
-import { MainContextInterface, SearchContextInterface, ElementEntryInterface } from '../interfaces';
+import { ConfigInterface, MainContextInterface, SearchContextInterface, ElementEntryInterface } from '../interfaces';
 import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
 import SideBar from '../components/SideBar';
 import { CapturingSuspense } from '../components/misc';
@@ -18,14 +19,29 @@ type Props = {
   defaultPath?: string
 };
 
+function updateState<T>(state: T, update: Partial<T>) : T {
+  return Object.assign(state, update)
+}
+
+function updateNullableState<T>(state: T, update: Partial<T> | null) : (T | null){
+  if (update === null){
+    return null;
+  }
+  return Object.assign(state, update)
+}
 
 
 function MainPage(props: Props) {
   const {defaultPath} = props;
   const {classes, theme} = useStylesAndTheme();
   const [drawerOpen, setDrawerOpen] = React.useState(true);
-  const [config, setConfig] = React.useState(() => loadConfigSync());
-  const [mainCtx, setMainCtx] = React.useState({
+  const [config, updateConfig] = React.useReducer(
+    updateNullableState,
+    null,
+    () => loadConfigSync()
+  ) as [ConfigInterface|null, (update: Partial<ConfigInterface> | null) => void];
+  const [mainCtx, updateMainCtx] = React.useReducer(
+    updateState, {
     "action": config ? "add" : "start",
     "state": "default",
     "title": null,
@@ -33,13 +49,13 @@ function MainPage(props: Props) {
     "url": null,
     "type": elements.keys().next().value,
     "shareUrl": null
-  } as MainContextInterface);
-  const [searchCtx, setSearchCtx] = React.useState({
+  }) as [MainContextInterface, (update: Partial<MainContextInterface>) => void];
+  const [searchCtx, updateSearchCtx] = React.useReducer(updateState, {
     "cluster": null,
     "include": [],
     "exclude": []
-  } as SearchContextInterface);
-  const [activeUrl, setActiveUrl] = React.useState(() => (config ? config.baseUrl : defaultPath) as string)
+  }) as [SearchContextInterface, (update: Partial<SearchContextInterface>) => void];
+  const [activeUrl, updateActiveUrl] = React.useState(() => (config ? config.baseUrl : defaultPath) as string)
   let frameElement = null;
   switch(mainCtx.action){
     case "view":
@@ -85,11 +101,12 @@ function MainPage(props: Props) {
       break;
   }
   return (
-    <ActiveUrlContext.Provider value={{activeUrl, setActiveUrl}}>
-      <MainContext.Provider value={{mainCtx, setMainCtx}}>
-        <SearchContext.Provider value={{searchCtx, setSearchCtx}}>
-          <ConfigContext.Provider value={{config, setConfig}}>
+    <ActiveUrlContext.Provider value={{activeUrl, updateActiveUrl}}>
+      <MainContext.Provider value={{mainCtx, updateMainCtx}}>
+        <SearchContext.Provider value={{searchCtx, updateSearchCtx}}>
+          <ConfigContext.Provider value={{config, updateConfig}}>
             <ApolloProvider client={createClient(activeUrl)}>
+              <CssBaseline/>
               <div className={classes.root}>
                 <SideBar
                   openState={{drawerOpen, setDrawerOpen}}

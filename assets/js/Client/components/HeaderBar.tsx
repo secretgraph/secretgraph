@@ -41,8 +41,8 @@ function HeaderBar(props: Props) {
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportUrl, setExportUrl] = React.useState("");
   const [loadingExport, setLoadingExport] = React.useState(false);
-  const {mainCtx, setMainCtx} = React.useContext(MainContext);
-  const {config, setConfig} = React.useContext(ConfigContext);
+  const {mainCtx, updateMainCtx} = React.useContext(MainContext);
+  const {config, updateConfig} = React.useContext(ConfigContext);
   let title: string, documenttitle: string;
   let client: any = null;
   try {
@@ -123,8 +123,7 @@ function HeaderBar(props: Props) {
 
   const openImporter = () => {
     setMenuOpen(false);
-    setMainCtx({
-      ...mainCtx,
+    updateMainCtx({
       action: "import"
     })
   }

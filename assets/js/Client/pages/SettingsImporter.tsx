@@ -67,9 +67,9 @@ function SettingsImporter() {
   const [hasFile, setHasFile] = React.useState(false);
   const mainElement = document.getElementById("content-main");
   const defaultPath: string | undefined = mainElement ? mainElement.dataset.graphqlPath : undefined;
-  const {mainCtx, setMainCtx} = React.useContext(MainContext);
-  const {activeUrl, setActiveUrl} = React.useContext(ActiveUrlContext);
-  const {config, setConfig} = React.useContext(ConfigContext);
+  const {mainCtx, updateMainCtx} = React.useContext(MainContext);
+  const {activeUrl, updateActiveUrl} = React.useContext(ActiveUrlContext);
+  const {config, updateConfig} = React.useContext(ConfigContext);
 
   const handleSecretgraphEvent_inner = async (event: any) => {
     const providerUrl = (document.getElementById("secretgraph-provider") as HTMLInputElement).value;
@@ -115,24 +115,23 @@ function SettingsImporter() {
       setLoadingImport(false);
       return;
     }
-    setConfig(newConfig);
+    updateConfig(newConfig);
     setRegisterUrl(undefined);
-    setActiveUrl(newConfig.baseUrl);
-    setMainCtx({
-      ...mainCtx,
+    updateActiveUrl(newConfig.baseUrl);
+    updateMainCtx({
       action: "add"
     })
   }
 
   const handleSecretgraphEvent = async (event: any) => {
     setOldConfig(config);
-    setConfig(null);
+    updateConfig(null);
     setLoadingStart(true);
     try {
       await handleSecretgraphEvent_inner(event);
     } catch(errors) {
       console.error(errors);
-      setConfig(oldConfig);
+      updateConfig(oldConfig);
       setMessage({ severity: "error", message: "error while registration" });
       // in success case unmounted so this would be a noop
       // because state is forgotten
@@ -176,10 +175,9 @@ function SettingsImporter() {
       // TODO: handle exceptions and try with login
       setRegisterUrl(undefined);
       saveConfig(newConfig);
-      setConfig(newConfig);
-      setActiveUrl(newConfig.baseUrl);
-      setMainCtx({
-        ...mainCtx,
+      updateConfig(newConfig);
+      updateActiveUrl(newConfig.baseUrl);
+      updateMainCtx({
         action: "add"
       });
     } else if (typeof(sconfig.registerUrl) === "string") {
@@ -190,13 +188,13 @@ function SettingsImporter() {
   }
   const handleStart = async () => {
     setOldConfig(config);
-    setConfig(null);
+    updateConfig(null);
     setLoadingStart(true);
     try {
       await handleStart_inner();
     } catch(errors) {
       console.error(errors);
-      setConfig(oldConfig);
+      updateConfig(oldConfig);
       setMessage({ severity: "error", message: "error while registration" });
       // in success case unmounted so this would be a noop
       // because state is forgotten
@@ -230,22 +228,21 @@ function SettingsImporter() {
     saveConfig(newConfig);
 
     // const env = createEnvironment(newConfig.baseUrl);
-    setConfig(newConfig);
-    setActiveUrl(newConfig.baseUrl);
-    setMainCtx({
-      ...mainCtx,
+    updateConfig(newConfig);
+    updateActiveUrl(newConfig.baseUrl);
+    updateMainCtx({
       action: "add",
     });
   }
   const handleImport = async () => {
     setOldConfig(config);
-    setConfig(null);
+    updateConfig(null);
     setLoadingImport(true);
     try {
       await handleImport_inner();
     } catch (errors) {
       console.error(errors);
-      setConfig(oldConfig);
+      updateConfig(oldConfig);
       setMessage({ severity: "error", message: "error while import" });
       // in success case unmounted so this would be a noop
       // because state is forgotten

@@ -8,12 +8,9 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
 import ListSubheader from '@material-ui/core/ListSubheader';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import ExpandLessIcon from '@material-ui/icons/ExpandLess';
-import { Theme } from "@material-ui/core/styles";
 import { gql, useQuery } from '@apollo/client';
 import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../../constants"
 import { useStylesAndTheme } from "../../theme";
-import { CapturingSuspense } from "../misc";
 import { ActiveUrlContext } from "../../contexts";
 import { AuthInfoInterface } from "../../interfaces";
 
@@ -22,7 +19,6 @@ const SideBarContents = React.lazy(() => import("./contents"));
 
 type SideBarItemsProps = {
   authinfo: AuthInfoInterface,
-  state: string,
   selectItem: any,
   loadMoreExtra?: any,
   activeCluster: string | null,
@@ -62,9 +58,9 @@ const clusterFeedQuery = gql`
   }
 `
 
-export default (appProps: SideBarItemsProps) => {
+export default function Clusters (appProps: SideBarItemsProps) {
   const {classes, theme} = useStylesAndTheme();
-  const { state, authinfo, selectItem, activeCluster, header, loadMoreExtra } = appProps;
+  const { authinfo, selectItem, activeCluster, header, loadMoreExtra } = appProps;
   let hasNextPage = true;
   const {activeUrl} = React.useContext(ActiveUrlContext);
 

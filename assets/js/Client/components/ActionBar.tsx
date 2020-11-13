@@ -40,7 +40,7 @@ function ActionBar(props: Props) {
   const [shareOpen, setShareOpen] = React.useState(false);
   const [actionAddOpen, setActionAddOpen] = React.useState(false);
   const [actionAddWeakOpen, setActionAddWeakOpen] = React.useState(false);
-  const {mainCtx, setMainCtx} = React.useContext(MainContext);
+  const {mainCtx, updateMainCtx} = React.useContext(MainContext);
 
   const addAction = () => {
     if (!actionAddOpen){
@@ -87,8 +87,7 @@ function ActionBar(props: Props) {
         <Tooltip title="Select state of content" arrow>
           <NativeSelect
             className={classes.contentStateSelect}
-            onChange={(event: any) => setMainCtx({
-              ...mainCtx,
+            onChange={(event: any) => updateMainCtx({
               state: event.target.value
             })}
             value={mainCtx.state || undefined}
@@ -101,8 +100,7 @@ function ActionBar(props: Props) {
           <IconButton
             className={mainCtx.item  && mainCtx.action === "view" ? classes.actionToolBarButton : classes.hidden}
             aria-label="edit"
-            onClick={() => setMainCtx({
-              ...mainCtx,
+            onClick={() => updateMainCtx({
               action: "edit"
             })}
           >
@@ -112,8 +110,7 @@ function ActionBar(props: Props) {
         <Tooltip title="Add Element" arrow>
           <NativeSelect
             className={(actionAddWeakOpen || actionAddOpen || mainCtx.action === "add") ? classes.newItemSelect : classes.hidden}
-            onChange={(event: any) => setMainCtx({
-              ...mainCtx,
+            onChange={(event: any) => updateMainCtx({
               action: "add",
               item: null,
               shareUrl: null,

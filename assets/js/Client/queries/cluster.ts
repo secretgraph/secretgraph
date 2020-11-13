@@ -17,6 +17,7 @@ export const getClusterConfigurationQuery = gql`
           ... on Cluster{
             id
             group
+            link
             availableActions {
               keyHash
               type
@@ -47,8 +48,8 @@ export const getClusterQuery = gql`
       node(id: $id) {
         ... on Cluster {
           id
-          link
           group
+          link
           publicInfo
           availableActions {
             keyHash
@@ -84,6 +85,7 @@ export const createClusterMutation = gql`
       cluster {
         id
         group
+        link
         availableActions {
           keyHash
           type
@@ -112,6 +114,7 @@ export const updateClusterMutation = gql`
       cluster {
         id
         group
+        link
         availableActions {
           keyHash
           type
