@@ -20,33 +20,33 @@ import TextareaAutosize from '@material-ui/core/TextareaAutosize';
 import { TextField } from 'formik-material-ui';
 import { useApolloClient, ApolloClient } from '@apollo/client';
 import { parse, graph, SPARQLToQuery } from 'rdflib';
-import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../../constants"
+import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
 
-import { ConfigInterface } from "../../interfaces";
-import { MainContext, InitializedConfigContext } from "../../contexts"
-import { getClusterQuery } from "../../queries/cluster"
-import { useStylesAndTheme } from "../../theme";
-import { extractAuthInfo } from "../../utils/config";
-import { unserializeToArrayBuffer } from "../../utils/encryption";
-import { EditFrame, ViewFrame, DecisionFrame } from "../ElementFrames";
+import { ConfigInterface } from "../interfaces";
+import { MainContext, InitializedConfigContext } from "../contexts"
+import { getClusterQuery } from "../queries/cluster"
+import { useStylesAndTheme } from "../theme";
+import { extractAuthInfo } from "../utils/config";
+import { unserializeToArrayBuffer } from "../utils/encryption";
+import DecisionFrame from "../components/DecisionFrame";
 
 
 interface TokenListProps {
   initialOpen: boolean,
-  canAdd: boolean,
+  canEdit: boolean,
   privateTokens: [token: string, actions: string[]][],
   publicTokens: string[]
 }
 
 
 const TokenList = (props: TokenListProps) => {
-  const { canAdd, initialOpen, privateTokens, publicTokens } = props
+  const { canEdit, initialOpen, privateTokens, publicTokens } = props
   const [ openTokens, setOpenTokens ] = React.useState(initialOpen);
   return (
     <div>
       <div>
         {
-          canAdd ? <IconButton aria-label="add" onClick={() => console.log("implement")}>
+          canEdit ? <IconButton aria-label="add" onClick={() => console.log("implement")}>
             <AddIcon />
           </IconButton> : null
         }
@@ -165,7 +165,7 @@ const ViewClusterViewer = ({serverConfig, node}: {serverConfig: any, node: any})
   }
 
   return (
-    <ViewFrame
+    <React.Fragment
     >
       <Typography>
         {name ? name : "No Name"}
@@ -177,15 +177,15 @@ const ViewClusterViewer = ({serverConfig, node}: {serverConfig: any, node: any})
         publicTokens={cluster_tokens}
         privateTokens={privateTokens}
         initialOpen
-        canAdd={false}
+        canEdit={false}
       />
-    </ViewFrame>
+    </React.Fragment>
   );
 }
 
 
 const ViewCluster = () => {
-  const {mainCtx} = React.useContext(MainContext);
+  const {mainCtx, updateMainCtx} = React.useContext(MainContext);
   const {config, updateConfig} = React.useContext(InitializedConfigContext);
   const client = useApolloClient();
   const authinfo = extractAuthInfo(config, mainCtx.url as string);
@@ -209,6 +209,9 @@ const ViewCluster = () => {
     console.error("Node empty", data, authinfo)
     return null;
   }
+  if (!mainCtx.shareUrl){
+    updateMainCtx({shareUrl: (data as any).data.secretgraph.node.link})
+  }
 
   return (
     <ViewClusterViewer
@@ -222,18 +225,16 @@ const AddCluster = () => {
   const {classes, theme} = useStylesAndTheme();
 
   return (
-    <EditFrame>
-      <EditClusterIntern
-        name="" note=""
-        id={null}
-      />
-    </EditFrame>
+    <EditClusterIntern
+      name="" note=""
+      id={null}
+    />
   );
 }
 
 const EditCluster = () => {
   const {config} = React.useContext(InitializedConfigContext);
-  const {mainCtx} = React.useContext(MainContext);
+  const {mainCtx, updateMainCtx} = React.useContext(MainContext);
   const client = useApolloClient();
   const authinfo = extractAuthInfo(config, mainCtx.url as string);
   const { data, error } = useAsync(
@@ -248,27 +249,26 @@ const EditCluster = () => {
   if (!data && !error) {
     return null;
   }
+  if (!mainCtx.shareUrl){
+    updateMainCtx({shareUrl: (data as any).data.secretgraph.node.link})
+  }
   if (!data && error){
     console.error(data, error);
     return (
-      <EditFrame>
-        <EditClusterIntern
-          id={mainCtx.item}
-          name=""
-          note=""
-        />
-      </EditFrame>
+      <EditClusterIntern
+        id={mainCtx.item}
+        name=""
+        note=""
+      />
     );
   }
   if (!(data as any).data.secretgraph.node){
     return (
-      <EditFrame>
         <EditClusterIntern
           id={mainCtx.item}
           name=""
           note=""
         />
-      </EditFrame>
     );
   }
   let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
@@ -285,13 +285,11 @@ const EditCluster = () => {
   }
 
   return (
-    <EditFrame>
-      <EditClusterIntern
-        id={mainCtx.item}
-        name={name || ""}
-        note={note || ""}
-      />
-    </EditFrame>
+    <EditClusterIntern
+      id={mainCtx.item}
+      name={name || ""}
+      note={note || ""}
+    />
   );
 }
 

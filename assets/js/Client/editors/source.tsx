@@ -3,8 +3,8 @@
 import * as React from "react";
 import { Theme } from "@material-ui/core/styles";
 
-import { useStylesAndTheme } from "../../theme";
-import { newClusterLabel } from "../../messages";
+import { useStylesAndTheme } from "../theme";
+import { newClusterLabel } from "../messages";
 
 type Props = {
 };

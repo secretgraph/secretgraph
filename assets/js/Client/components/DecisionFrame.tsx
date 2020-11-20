@@ -1,58 +1,11 @@
 
 
 import * as React from "react";
-import Card from '@material-ui/core/Card';
-import CardContent from '@material-ui/core/CardContent';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import Skeleton from '@material-ui/lab/Skeleton';
 import Typography from '@material-ui/core/Typography';
 
 
 import { MainContextInterface } from "../interfaces"
-import { useStylesAndTheme } from "../theme";
-
-
-type ViewProps = {
-  // special attribute
-  children: any
-};
-
-export const ViewFrame = (props: ViewProps) => {
-  const {classes, theme} = useStylesAndTheme();
-  const { children } = props;
-
-  return (
-    <React.Fragment>
-      <Card>
-        <CardContent>
-          {children || null}
-        </CardContent>
-      </Card>
-
-    </React.Fragment>
-  );
-}
-
-
-type EditProps = {
-  // special attribute
-  children: any
-};
-
-export const EditFrame = (props: EditProps) => {
-  const {classes, theme} = useStylesAndTheme();
-  const { children } = props;
-
-  return (
-    <React.Fragment>
-      <Card>
-        <CardContent>
-          {children}
-        </CardContent>
-      </Card>
-
-    </React.Fragment>
-  );
-}
 
 
 interface DecisionFrameProps {
@@ -62,7 +15,7 @@ interface DecisionFrameProps {
   add: any
 }
 
-export class DecisionFrame extends React.Component<DecisionFrameProps, {error: null | any}> {
+export default class DecisionFrame extends React.Component<DecisionFrameProps, {error: null | any}> {
   constructor(props: DecisionFrameProps) {
     super(props);
     this.state = { error: null };
@@ -90,7 +43,7 @@ export class DecisionFrame extends React.Component<DecisionFrameProps, {error: n
     }
     const Elem = this.retrieve_element();
     return (
-      <React.Suspense fallback={<CircularProgress />}>
+      <React.Suspense fallback={<Skeleton variant="rect" />}>
         <Elem/>
       </React.Suspense>
     );

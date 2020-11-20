@@ -12,16 +12,26 @@ const drawerWidth = "16rem";
 
 export function secretgraphTheme(theme: Theme) {
   return {
-    root: {
+    rootShifted: {
+      height: "100vh",
       display: "grid",
-      gridTemplateColumns: "auto 1fr",
+      grid: `
+        'sidebar header' min-content
+        'sidebar content' 1fr
+        / ${drawerWidth} 1fr
+      `
     },
-    subRoot: {
-      minHeight: "100vh" as const
+    root: {
+      height: "100vh",
+      display: "grid",
+      grid: `
+        'sidebar header' min-content
+        'sidebar content' 1fr
+        / 0 1fr
+      `
     },
     appBar: {
-      gridRowStart: 1,
-      gridRowEnd: 1,
+      gridArea: "header",
       transition: theme.transitions.create(['margin', 'width'], {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
@@ -50,21 +60,6 @@ export function secretgraphTheme(theme: Theme) {
       color: "white" as const,
       direction: "rtl" as const,
       fontSize: "120%" as const
-    },
-    drawerOpen: {
-      gridColumnStart: 1,
-      gridColumnEnd: 1,
-      gridRowStart: 1,
-      gridRowEnd: 2,
-      width: drawerWidth,
-      height: "100vh"
-    },
-    draweClosed: {
-      gridColumnStart: 1,
-      gridColumnEnd: 1,
-      gridRowStart: 1,
-      gridRowEnd: 2,
-      width: 0
     },
     drawerPaper: {
       width: drawerWidth,
@@ -105,10 +100,10 @@ export function secretgraphTheme(theme: Theme) {
     mainSection: {
       minHeight: "200px" as const,
       flexGrow: 1,
+      padding: theme.spacing(1)
     },
     content: {
-      gridRowStart: 2,
-      gridRowEnd: 2,
+      gridArea: "content",
       display: "flex" as const,
       flexDirection: "column" as const,
       padding: theme.spacing(1),
@@ -116,6 +111,7 @@ export function secretgraphTheme(theme: Theme) {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
       }),
+      overflowY: "auto" as const
     },
     buttonProgress: {
       color: "primary",

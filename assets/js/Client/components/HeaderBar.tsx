@@ -19,7 +19,7 @@ import Link from '@material-ui/core/Link';
 import { useApolloClient } from '@apollo/client';
 import { useStylesAndTheme } from "../theme";
 import { exportConfig, exportConfigAsUrl } from "../utils/config";
-import { elements } from './elements';
+import { elements } from '../editors';
 import { serverConfigQuery } from "../queries/server";
 import { MainContext, ConfigContext } from '../contexts';
 

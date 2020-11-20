@@ -3,9 +3,9 @@
 import * as React from "react";
 import { Theme } from "@material-ui/core/styles";
 
-import { useStylesAndTheme } from "../../theme";
-import { newClusterLabel } from "../../messages";
-import { MainContext, ConfigContext } from "../../contexts"
+import { useStylesAndTheme } from "../theme";
+import { newClusterLabel } from "../messages";
+import { MainContext, ConfigContext } from "../contexts"
 
 type Props = {};
 const ViewCustom = (props: Props) => {

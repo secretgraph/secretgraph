@@ -3,10 +3,10 @@
 import * as React from "react";
 import { Theme } from "@material-ui/core/styles";
 
-import { MainContext, ConfigContext } from "../../contexts"
-import { getClusterQuery } from "../../queries/cluster"
-import { useStylesAndTheme } from "../../theme";
-import { newClusterLabel } from "../../messages";
+import { MainContext, ConfigContext } from "../contexts"
+import { getClusterQuery } from "../queries/cluster"
+import { useStylesAndTheme } from "../theme";
+import { newClusterLabel } from "../messages";
 
 
 type Props = {

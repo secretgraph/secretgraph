@@ -11,7 +11,7 @@ import DraftsIcon from '@material-ui/icons/Drafts';
 import MailIcon from "@material-ui/icons/Mail";
 import { gql, useQuery } from '@apollo/client';
 import { useStylesAndTheme } from "../../theme";
-import { elements } from "../elements";
+import { elements } from "../../editors";
 import { AuthInfoInterface } from "../../interfaces";
 import { SearchContext, ActiveUrlContext } from "../../contexts";
 

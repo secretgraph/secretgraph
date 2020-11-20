@@ -5,7 +5,7 @@ import Paper from '@material-ui/core/Paper';
 import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
 import { useStylesAndTheme } from "../theme";
-import { elements } from '../components/elements';
+import { elements } from '../editors';
 import { loadConfigSync } from '../utils/config';
 import { createClient } from '../utils/graphql';
 import { ConfigInterface, MainContextInterface, SearchContextInterface, ElementEntryInterface } from '../interfaces';
@@ -108,20 +108,18 @@ function MainPage(props: Props) {
           <ConfigContext.Provider value={{config, updateConfig}}>
             <ApolloProvider client={createClient(activeUrl)}>
               <CssBaseline/>
-              <div className={classes.root}>
+              <div className={config && drawerOpen ? classes.rootShifted : classes.root}>
                 <SideBar
                   openState={{drawerOpen, setDrawerOpen}}
                 />
-                <div className={classes.subRoot}>
-                  <HeaderBar
-                    openState={{drawerOpen: !!(drawerOpen && config), setDrawerOpen}}
-                  />
-                  <div className={classes.content}>
-                    <ActionBar/>
-                    <Paper component="main" className={classes.mainSection}>
-                      {frameElement}
-                    </Paper>
-                  </div>
+                <HeaderBar
+                  openState={{drawerOpen: !!(drawerOpen && config), setDrawerOpen}}
+                />
+                <div className={classes.content}>
+                  <ActionBar/>
+                  <Paper component="main" className={classes.mainSection}>
+                    {frameElement}
+                  </Paper>
                 </div>
               </div>
             </ApolloProvider>

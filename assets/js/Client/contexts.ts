@@ -14,6 +14,7 @@ export const ConfigContext = createContext({
     updateConfig: (update: Partial<ConfigInterface> | null) => {}
 });
 export const InitializedConfigContext = ConfigContext as Context<{config: ConfigInterface, updateConfig: (update: Partial<ConfigInterface> | null) => void} >;
+
 export const ActiveUrlContext = createContext({
     activeUrl: "" as string,
     updateActiveUrl: (update: string) => {}

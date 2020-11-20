@@ -555,7 +555,6 @@ const SideBar = (props: SideBarProps) => {
   }
   return (
     <Drawer
-      className={openState.drawerOpen && config ? classes.drawerOpen : classes.drawerClosed}
       variant="persistent"
       anchor={theme.direction === 'ltr' ? 'left' : 'right'}
       open={!!(openState.drawerOpen && config)}

@@ -1,7 +1,7 @@
 declare var gettext: any;
 
 import * as React from "react"
-import { ElementEntryInterface } from "../../interfaces"
+import { ElementEntryInterface } from "../interfaces"
 
 
 export const elements = new Map([

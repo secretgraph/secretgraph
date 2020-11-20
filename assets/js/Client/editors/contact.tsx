@@ -7,15 +7,13 @@ import CardContent from '@material-ui/core/CardContent';
 import { saveAs } from 'file-saver';
 import { useQuery, useApolloClient } from '@apollo/client';
 
-import { ViewFrame } from "../ElementFrames";
+import { ConfigInterface} from "../interfaces"
+import { MainContext, ConfigContext } from "../contexts"
+import { decryptContentId } from "../utils/operations"
 
-import { ConfigInterface} from "../../interfaces"
-import { MainContext, ConfigContext } from "../../contexts"
-import { decryptContentId } from "../../utils/operations"
-
-import { contentQuery } from "../../queries/content"
-import { useStylesAndTheme } from "../../theme";
-import { newClusterLabel } from "../../messages";
+import { contentQuery } from "../queries/content"
+import { useStylesAndTheme } from "../theme";
+import { newClusterLabel } from "../messages";
 
 
 type Props = {};
@@ -57,10 +55,10 @@ const ViewFile = (props: Props) => {
 {% endif %}
  */
   return (
-    <ViewFrame
+    <
     >
 
-    </ViewFrame>
+    </>
   );
 }
 
