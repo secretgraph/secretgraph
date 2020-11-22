@@ -56,7 +56,6 @@ idea: unique operation names. It would be nice to have namespaces
   * remove many "key" arguments
   * document when it is possible to push unencrypted content
 * document permissions, specialize
-* specialized Config accessor with update routine
 * implement hidden, for administrative hidding of contents
 * cleanup js structure, harmonize naming, modulize more
 * updateId in form

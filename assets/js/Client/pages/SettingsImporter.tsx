@@ -308,7 +308,7 @@ function SettingsImporter() {
               </Typography>
               <TextField
                 disabled={loadingStart || loadingImport}
-                fullWidth={true}
+                fullWidth
                 variant="outlined"
                 defaultValue={defaultPath}
                 label="Provider"

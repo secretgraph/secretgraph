@@ -41,17 +41,6 @@ function ActionBar(props: Props) {
   const [actionAddOpen, setActionAddOpen] = React.useState(false);
   const {mainCtx, updateMainCtx} = React.useContext(MainContext);
 
-  const addAction = () => {
-    if (!actionAddOpen){
-      setActionAddOpen(true);
-      return;
-    }
-  }
-
-
-  const blurDisables = () => {
-    setActionAddOpen(false);
-  }
   return (
     <nav className={classes.actionToolBarOuter}>
       <Dialog open={shareOpen} onClose={() => setShareOpen(false)} aria-labelledby="share-dialog-title">

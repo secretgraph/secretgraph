@@ -1,9 +1,9 @@
 
 import { saveAs } from 'file-saver';
 
-import { ConfigInterface, AuthInfoInterface } from "../interfaces";
+import { ConfigInterface, ConfigInputInterface, AuthInfoInterface } from "../interfaces";
 import { encryptPreKey, decryptFirstPreKey, decryptAESGCM, decryptRSAOEAP, encryptAESGCM, serializeToBase64 } from "./encryption";
-import { b64toarr, utf8encoder } from "./misc";
+import { b64toarr, utf8encoder, mergeDeleteObjects } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
 import { ApolloClient } from '@apollo/client';
@@ -378,4 +378,45 @@ export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any
     }
   }
   return found;
+}
+
+
+export function updateConfigReducer(state: ConfigInterface | null, update: Partial<ConfigInputInterface> | null) : (ConfigInterface | null){
+  if (update === null){
+    return null;
+  }
+  const newState : ConfigInterface = Object.create(state || {})
+  if(update.certificates){
+    newState.certificates = mergeDeleteObjects(newState.certificates, update.certificates)
+  }
+  if(update.tokens){
+    newState.tokens = mergeDeleteObjects(newState.tokens, update.tokens)
+  }
+  if(update.baseUrl){
+    newState.baseUrl = update.baseUrl
+  }
+  if(update.configHashes){
+    newState.configHashes = update.configHashes
+  }
+  if(update.configCluster){
+    newState.configCluster = update.configCluster
+  }
+  if (update.hosts) {
+    newState.hosts = mergeDeleteObjects(
+      newState.hosts, update.hosts, (oldval: any, newval: any) => {
+        const newState = Object.create(oldval)
+        if(newval.hashAlgorithms){
+          newState.hashAlgorithms = newval.hashAlgorithms
+        }
+        if(newval.clusters){
+          newState.clusters = mergeDeleteObjects(newState.clusters, newval.clusters)
+        }
+        if(newval.contents){
+          newState.contents = mergeDeleteObjects(newState.contents, newval.contents)
+        }
+        return newState;
+      }
+    )
+  }
+  return newState
 }

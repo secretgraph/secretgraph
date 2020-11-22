@@ -16,3 +16,18 @@ export function sortedHash(inp: string[], algo: string) : PromiseLike<string>{
     utf8encoder.encode(inp.sort().join(""))
   ).then((data) => btoa(String.fromCharCode(... new Uint8Array(data))));
 }
+
+
+export function mergeDeleteObjects(oldObj: any, newObj: any, objHandler=(oldval: any, newval: any) => newval){
+  const copied = Object.create(oldObj || {})
+  for(const [key, value] of newObj.entries()){
+    if (value === null){
+      delete copied[key];
+    } else if(typeof value === "object") {
+      copied[key] = objHandler(copied[key], value)
+    } else {
+      copied[key] = value;
+    }
+  }
+  return copied
+}

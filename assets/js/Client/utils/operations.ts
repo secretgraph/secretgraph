@@ -6,6 +6,8 @@ import {
   ReferenceInterface,
   ActionInterface,
   AuthInfoInterface,
+  KeyInput,
+  CryptoHashPair
 } from "../interfaces";
 import { b64toarr, sortedHash, utf8encoder } from "./misc";
 import {
@@ -25,7 +27,6 @@ import {
 import { createContentAuth, encryptSharedKey, createSignatureReferences } from "./graphql";
 import { mapHashNames } from "../constants";
 
-// TODO: replace pubkeys, privkeys? by CryptoKey | CryptoKeyPair
 export async function createContent({
     client,
     cluster,
@@ -36,8 +37,8 @@ export async function createContent({
   config: ConfigInterface,
   cluster: string,
   value: File | Blob,
-  pubkeys: CryptoKey[],
-  privkeys?: CryptoKey[],
+  pubkeys: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[],
+  privkeys?: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[],
   tags: string[],
   contentHash?: string | null,
   references?: ReferenceInterface[] | null,
@@ -91,7 +92,6 @@ export async function createContent({
   });
 }
 
-// TODO: replace pubkeys, privkeys? by CryptoKey | CryptoKeyPair
 export async function updateContent({
     id,
     client,
@@ -102,8 +102,8 @@ export async function updateContent({
   config: ConfigInterface,
   cluster?: string,
   value?: File | Blob,
-  pubkeys: CryptoKey[],
-  privkeys?: CryptoKey[],
+  pubkeys: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[],
+  privkeys?: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[],
   tags?: string[],
   contentHash?: string | null,
   references?: ReferenceInterface[] | null,
@@ -225,7 +225,7 @@ export async function updateCluster(options: {
   actions?: ActionInterface[],
   hashAlgorithm: string,
   publicInfo?: string,
-  authorization?: string[]
+  authorization: string[]
 }) {
   return await options.client.mutate({
     mutation: updateClusterMutation,

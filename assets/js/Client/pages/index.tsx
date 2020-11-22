@@ -6,9 +6,9 @@ import ActionBar from "../components/ActionBar";
 import HeaderBar from "../components/HeaderBar";
 import { useStylesAndTheme } from "../theme";
 import { elements } from '../editors';
-import { loadConfigSync } from '../utils/config';
+import { loadConfigSync, updateConfigReducer } from '../utils/config';
 import { createClient } from '../utils/graphql';
-import { ConfigInterface, MainContextInterface, SearchContextInterface, ElementEntryInterface } from '../interfaces';
+import { ConfigInterface, MainContextInterface, SearchContextInterface, ElementEntryInterface, ConfigInputInterface } from '../interfaces';
 import { MainContext, SearchContext, ConfigContext, ActiveUrlContext } from '../contexts';
 import SideBar from '../components/SideBar';
 import { CapturingSuspense } from '../components/misc';
@@ -24,23 +24,15 @@ function updateState<T>(state: T, update: Partial<T>) : T {
   return Object.assign({}, state, update)
 }
 
-function updateNullableState<T>(state: T, update: Partial<T> | null) : (T | null){
-  if (update === null){
-    return null;
-  }
-  return Object.assign({}, state, update)
-}
-
-
 function MainPage(props: Props) {
   const {defaultPath} = props;
   const {classes, theme} = useStylesAndTheme();
   const [drawerOpen, setDrawerOpen] = React.useState(true);
   const [config, updateConfig] = React.useReducer(
-    updateNullableState,
+    updateConfigReducer,
     null,
     () => loadConfigSync()
-  ) as [ConfigInterface|null, (update: Partial<ConfigInterface> | null) => void];
+  ) as [ConfigInterface|null, (update: Partial<ConfigInputInterface> | null) => void];
   const [mainCtx, updateMainCtx] = React.useReducer(
     updateState, {
     "action": config ? "add" : "start",
@@ -61,7 +53,7 @@ function MainPage(props: Props) {
   switch(mainCtx.action){
     case "view":
     case "add":
-    case "update":
+    case "edit":
       let FrameElementWrapper = elements.get(mainCtx.type ? mainCtx.type : "undefined");
       if (!FrameElementWrapper){
         FrameElementWrapper = elements.get("undefined") as ElementEntryInterface;

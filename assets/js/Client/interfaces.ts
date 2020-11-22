@@ -77,6 +77,20 @@ export interface ConfigInterface {
 }
 
 
+export interface ConfigInputInterface {
+  certificates: { [hash: string]: string | null };
+  tokens: { [hash: string]: string | null };
+  hosts: { [url: string]: {
+    hashAlgorithms: string[],
+    clusters: { [flexid: string]: ConfigClusterInterface | null }
+    contents: { [flexid: string]: ConfigContentInterface | null }
+  } | null};
+  baseUrl: string;
+  configHashes: string[];
+  configCluster: string;
+}
+
+
 export interface SecretgraphEventInterface {
   pingCreate?: boolean
 }

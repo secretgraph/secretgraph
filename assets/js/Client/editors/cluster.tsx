@@ -6,6 +6,7 @@ import AddIcon from '@material-ui/icons/Add';
 import List from "@material-ui/core/List";
 import ListItem from "@material-ui/core/ListItem";
 import { useAsync } from "react-async"
+import Button from '@material-ui/core/Button';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
@@ -17,36 +18,93 @@ import Collapse from '@material-ui/core/Collapse';
 import { Formik, Form, FastField, Field } from 'formik';
 
 import TextareaAutosize from '@material-ui/core/TextareaAutosize';
-import { TextField } from 'formik-material-ui';
+import { TextField as TextFieldFormik} from 'formik-material-ui';
 import { useApolloClient, ApolloClient } from '@apollo/client';
 import { parse, graph, SPARQLToQuery } from 'rdflib';
 import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
 
-import { ConfigInterface } from "../interfaces";
+import { ConfigInterface, MainContextInterface } from "../interfaces";
 import { MainContext, InitializedConfigContext } from "../contexts"
 import { getClusterQuery } from "../queries/cluster"
 import { useStylesAndTheme } from "../theme";
 import { extractAuthInfo } from "../utils/config";
-import { unserializeToArrayBuffer } from "../utils/encryption";
 import DecisionFrame from "../components/DecisionFrame";
+
+
+
+function item_retrieval_helper(
+  {client, keys, item} : {
+    client: ApolloClient<any>,
+    keys: string[],
+    item: string
+  }
+) {
+  return client.query({
+    query: getClusterQuery,
+    variables: {
+      id: item,
+      authorization: keys
+    }
+  })
+}
+
+
+function extractPublicInfo(config:ConfigInterface, mainCtx: MainContextInterface, data: any) {
+  const privateTokens: [string, string[]][] = [];
+
+  let name: string | null = null, note: string | null = null, publicTokens: string[] = [];
+  try {
+    const store = graph();
+    parse(data.data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
+    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
+    if(name_note_results.length > 0) {
+      name = name_note_results[0][0];
+      note = name_note_results[0][1] ? name_note_results[0][1] : "";
+    }
+    publicTokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store)).map((val: any) => val.token)
+  } catch(exc){
+    console.warn("Could not parse publicInfo", exc, data)
+  }
+  if (
+    mainCtx.url &&
+    mainCtx.item &&
+    config.hosts[mainCtx.url] &&
+    config.hosts[mainCtx.url].clusters[mainCtx.item]
+  ){
+    for(const hash in config.hosts[mainCtx.url].clusters[mainCtx.item].hashes){
+      const token = config.tokens[hash];
+      if (!token) continue;
+      if (publicTokens.includes(token)) continue;
+      const actions = config.hosts[mainCtx.url].clusters[mainCtx.item].hashes[hash]
+      privateTokens.push([token, actions])
+    }
+  }
+  return {
+    publicTokens,
+    privateTokens,
+    name,
+    note,
+    id: mainCtx.item
+  }
+}
+
 
 
 interface TokenListProps {
   initialOpen: boolean,
-  canEdit: boolean,
+  disabled?: boolean,
   privateTokens: [token: string, actions: string[]][],
   publicTokens: string[]
 }
 
 
-const TokenList = (props: TokenListProps) => {
-  const { canEdit, initialOpen, privateTokens, publicTokens } = props
+const TokenList = ({ disabled, initialOpen, privateTokens, publicTokens }: TokenListProps) => {
   const [ openTokens, setOpenTokens ] = React.useState(initialOpen);
   return (
     <div>
       <div>
         {
-          canEdit ? <IconButton aria-label="add" onClick={() => console.log("implement")}>
+          !disabled ? <IconButton aria-label="add" onClick={() => console.log("implement")}>
             <AddIcon />
           </IconButton> : null
         }
@@ -81,108 +139,74 @@ const TokenList = (props: TokenListProps) => {
   )
 }
 
-function item_retrieval_helper(
-  {client, keys, item} : {
-    client: ApolloClient<any>,
-    keys: string[],
-    item: string
-  }
-) {
-  return client.query({
-    query: getClusterQuery,
-    variables: {
-      id: item,
-      authorization: keys
-    }
-  })
+
+interface ClusterInternProps {
+  name: string | null
+  note: string | null
+  id?: string | null
+  disabled?: boolean | undefined
+  publicTokens: string[]
+  privateTokens: [token: string, actions: string[]][]
 }
 
-const EditClusterIntern = (props: {name: string, note: string, id?: string | null}) => {
+const ClusterIntern = (props: ClusterInternProps) => {
+
   return (
-    <Formik
-      initialValues={{
-        name: props.name,
-        note: props.note,
-      }}
-      onSubmit={(values, { setSubmitting }) => {
-        setTimeout(() => {
-          setSubmitting(false);
-          alert(JSON.stringify(values, null, 2));
-        }, 500);
-      }}
-    >
-      <Form>
-        <FastField
-          component={TextField}
-          name="name"
-          type="text"
-          label="Name"
-        />
-        <br />
-        <FastField
-          component={TextareaAutosize}
-          name="note"
-          type="text"
-          label="Note"
-        />
-      </Form>
-    </Formik>
+      <Formik
+        initialValues={{
+          name: props.name || "",
+          note: props.note || "",
+        }}
+        onSubmit={async (values, { setSubmitting }) => {
+          setTimeout(() => {
+            setSubmitting(false);
+            alert(JSON.stringify(values, null, 2));
+          }, 500);
+        }}
+      >
+        {({ submitForm, isSubmitting }) => (
+          <Form>
+            <FastField
+              component={TextFieldFormik}
+              name="name"
+              type="text"
+              label="Name"
+              fullWidth
+              disabled={props.disabled || isSubmitting}
+            />
+            <br />
+            <FastField
+              component={TextareaAutosize}
+              name="note"
+              type="text"
+              label="Note"
+              rowsMin={12}
+              disabled={props.disabled || isSubmitting}
+            />
+            {
+            props.disabled ? null : (
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={isSubmitting}
+                onClick={submitForm}
+              >
+                Submit
+              </Button>
+              )
+            }
+            <TokenList
+              publicTokens={props.publicTokens}
+              privateTokens={props.privateTokens}
+              initialOpen
+              disabled={props.disabled || isSubmitting}
+            />
+          </Form>
+        )}
+      </Formik>
   )
 
 }
-
-const ViewClusterViewer = ({serverConfig, node}: {serverConfig: any, node: any}) => {
-  const {mainCtx} = React.useContext(MainContext);
-  const {config, updateConfig} = React.useContext(InitializedConfigContext);
-  const {classes, theme} = useStylesAndTheme();
-  let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
-  try {
-    const store = graph();
-    parse(node.publicInfo, store, "https://secretgraph.net/static/schemes");
-    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
-    if(name_note_results.length > 0) {
-      name = name_note_results[0][0];
-      note = name_note_results[0][1] ? name_note_results[0][1] : "";
-    }
-    cluster_tokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store)).map((val: any) => val.token)
-  } catch(exc){
-    console.warn("Could not parse publicInfo", exc, node.publicInfo)
-  }
-  const privateTokens: [string, string[]][] = [];
-  if (
-    mainCtx.url &&
-    mainCtx.item &&
-    config.hosts[mainCtx.url] &&
-    config.hosts[mainCtx.url].clusters[mainCtx.item]
-  ){
-    for(const hash in config.hosts[mainCtx.url].clusters[mainCtx.item].hashes){
-      const token = config.tokens[hash];
-      if (!token) continue;
-      if (cluster_tokens.includes(token)) continue;
-      const actions = config.hosts[mainCtx.url].clusters[mainCtx.item].hashes[hash]
-      privateTokens.push([token, actions])
-    }
-  }
-
-  return (
-    <React.Fragment
-    >
-      <Typography>
-        {name ? name : "No Name"}
-      </Typography>
-      <Typography>
-        {note ? note : "No Note"}
-      </Typography>
-      <TokenList
-        publicTokens={cluster_tokens}
-        privateTokens={privateTokens}
-        initialOpen
-        canEdit={false}
-      />
-    </React.Fragment>
-  );
-}
-
 
 const ViewCluster = () => {
   const {mainCtx, updateMainCtx} = React.useContext(MainContext);
@@ -213,10 +237,10 @@ const ViewCluster = () => {
     updateMainCtx({shareUrl: (data as any).data.secretgraph.node.link})
   }
 
+
   return (
-    <ViewClusterViewer
-      serverConfig={(data as any).data.secretgraph.config}
-      node={(data as any).data.secretgraph.node}
+    <ClusterIntern
+      {...  extractPublicInfo(config, mainCtx, data)} disabled
     />
   )
 }
@@ -225,8 +249,9 @@ const AddCluster = () => {
   const {classes, theme} = useStylesAndTheme();
 
   return (
-    <EditClusterIntern
-      name="" note=""
+    <ClusterIntern
+      name="" note="" publicTokens={[]}
+      privateTokens={[]}
       id={null}
     />
   );
@@ -255,19 +280,19 @@ const EditCluster = () => {
   if (!data && error){
     console.error(data, error);
     return (
-      <EditClusterIntern
+      <ClusterIntern
+        name="" note="" publicTokens={[]}
+        privateTokens={[]}
         id={mainCtx.item}
-        name=""
-        note=""
       />
     );
   }
   if (!(data as any).data.secretgraph.node){
     return (
-        <EditClusterIntern
+        <ClusterIntern
+          name="" note="" publicTokens={[]}
+          privateTokens={[]}
           id={mainCtx.item}
-          name=""
-          note=""
         />
     );
   }
@@ -285,10 +310,8 @@ const EditCluster = () => {
   }
 
   return (
-    <EditClusterIntern
-      id={mainCtx.item}
-      name={name || ""}
-      note={note || ""}
+    <ClusterIntern
+      {...  extractPublicInfo(config, mainCtx, data)}
     />
   );
 }
