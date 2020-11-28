@@ -20,7 +20,7 @@ export function sortedHash(inp: string[], algo: string) : PromiseLike<string>{
 
 export function mergeDeleteObjects(oldObj: any, newObj: any, objHandler=(oldval: any, newval: any) => newval){
   const copied = Object.create(oldObj || {})
-  for(const [key, value] of newObj.entries()){
+  for(const [key, value] of Object.entries(newObj)){
     if (value === null){
       delete copied[key];
     } else if(typeof value === "object") {

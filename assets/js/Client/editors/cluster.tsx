@@ -13,6 +13,7 @@ import ListItemText from "@material-ui/core/ListItemText";
 import Tooltip from '@material-ui/core/Tooltip';
 import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
+import Grid from '@material-ui/core/Grid';
 import Collapse from '@material-ui/core/Collapse';
 
 import { Formik, Form, FastField, Field } from 'formik';
@@ -20,8 +21,8 @@ import { Formik, Form, FastField, Field } from 'formik';
 import TextareaAutosize from '@material-ui/core/TextareaAutosize';
 import { TextField as TextFieldFormik} from 'formik-material-ui';
 import { useApolloClient, ApolloClient } from '@apollo/client';
-import { parse, graph, SPARQLToQuery } from 'rdflib';
-import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
+import { parse, serialize, graph, SPARQLToQuery, BlankNode, NamedNode, Literal } from 'rdflib';
+import { RDFS, XSD, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
 
 import { ConfigInterface, MainContextInterface } from "../interfaces";
 import { MainContext, InitializedConfigContext } from "../contexts"
@@ -52,18 +53,20 @@ function item_retrieval_helper(
 function extractPublicInfo(config:ConfigInterface, mainCtx: MainContextInterface, data: any) {
   const privateTokens: [string, string[]][] = [];
 
-  let name: string | null = null, note: string | null = null, publicTokens: string[] = [];
+  let name: string | null = null, note: string | null = null, publicTokens: string[] = [], publicInfo: string | undefined=data.data.secretgraph.node.publicInfo, root: BlankNode | NamedNode | null=null;
   try {
     const store = graph();
-    parse(data.data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
+    parse(publicInfo as string, store, "https://secretgraph.net/static/schemes");
     const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
     if(name_note_results.length > 0) {
-      name = name_note_results[0][0];
-      note = name_note_results[0][1] ? name_note_results[0][1] : "";
+      root = name_note_results[0][0];
+      name = name_note_results[0][1];
+      note = name_note_results[0][2] ? name_note_results[0][2] : "";
     }
     publicTokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store)).map((val: any) => val.token)
   } catch(exc){
     console.warn("Could not parse publicInfo", exc, data)
+    publicInfo = undefined
   }
   if (
     mainCtx.url &&
@@ -80,6 +83,7 @@ function extractPublicInfo(config:ConfigInterface, mainCtx: MainContextInterface
     }
   }
   return {
+    publicInfo,
     publicTokens,
     privateTokens,
     name,
@@ -141,6 +145,7 @@ const TokenList = ({ disabled, initialOpen, privateTokens, publicTokens }: Token
 
 
 interface ClusterInternProps {
+  publicInfo?: string
   name: string | null
   note: string | null
   id?: string | null
@@ -150,6 +155,7 @@ interface ClusterInternProps {
 }
 
 const ClusterIntern = (props: ClusterInternProps) => {
+  let root = new BlankNode();
 
   return (
       <Formik
@@ -158,49 +164,71 @@ const ClusterIntern = (props: ClusterInternProps) => {
           note: props.note || "",
         }}
         onSubmit={async (values, { setSubmitting }) => {
+          const store = graph();
+          console.log(values)
+          if(props.publicInfo){
+            parse(props.publicInfo as string, store, "https://secretgraph.net/static/schemes");
+            const results = store.querySync(SPARQLToQuery(`SELECT ?root WHERE {?root a ${CLUSTER("Cluster")}. }`, false, store))
+            console.log(results)
+            root = (results[0] && results[0][0]) || root;
+          }
+          store.removeMany(root, SECRETGRAPH("name"))
+          store.removeMany(root, SECRETGRAPH("note"))
+          console.log(root, values)
+          store.add(root, SECRETGRAPH("name"), new Literal(values.name || "", null, XSD("string")));
+          store.add(root, SECRETGRAPH("note"), new Literal(values.note || "", null, XSD("string")));
+          console.log(serialize(null as any, store, "https://secretgraph.net/static/schemes", "text/turtle"))
           setTimeout(() => {
             setSubmitting(false);
-            alert(JSON.stringify(values, null, 2));
           }, 500);
         }}
       >
         {({ submitForm, isSubmitting }) => (
           <Form>
-            <FastField
-              component={TextFieldFormik}
-              name="name"
-              type="text"
-              label="Name"
-              fullWidth
-              disabled={props.disabled || isSubmitting}
-            />
-            <br />
-            <FastField
-              component={TextareaAutosize}
-              name="note"
-              type="text"
-              label="Note"
-              rowsMin={12}
-              disabled={props.disabled || isSubmitting}
-            />
-            {
-            props.disabled ? null : (
-              <Button
-                variant="contained"
-                color="primary"
-                disabled={isSubmitting}
-                onClick={submitForm}
-              >
-                Submit
-              </Button>
-              )
-            }
-            <TokenList
-              publicTokens={props.publicTokens}
-              privateTokens={props.privateTokens}
-              initialOpen
-              disabled={props.disabled || isSubmitting}
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FastField
+                  component={TextFieldFormik}
+                  name="name"
+                  type="text"
+                  label="Name"
+                  fullWidth
+                  disabled={props.disabled || isSubmitting}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FastField
+                  component={TextareaAutosize}
+                  name="note"
+                  type="text"
+                  label="Note"
+                  rowsMin={12}
+                  disabled={props.disabled || isSubmitting}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                {
+                props.disabled ? null : (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    disabled={isSubmitting}
+                    onClick={submitForm}
+                  >
+                    Submit
+                  </Button>
+                  )
+                }
+              </Grid>
+              <Grid item xs={12}>
+                <TokenList
+                  publicTokens={props.publicTokens}
+                  privateTokens={props.privateTokens}
+                  initialOpen
+                  disabled={props.disabled || isSubmitting}
+                />
+              </Grid>
+            </Grid>
           </Form>
         )}
       </Formik>

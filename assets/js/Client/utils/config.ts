@@ -404,7 +404,7 @@ export function updateConfigReducer(state: ConfigInterface | null, update: Parti
   if (update.hosts) {
     newState.hosts = mergeDeleteObjects(
       newState.hosts, update.hosts, (oldval: any, newval: any) => {
-        const newState = Object.create(oldval)
+        const newState = Object.create(oldval || {})
         if(newval.hashAlgorithms){
           newState.hashAlgorithms = newval.hashAlgorithms
         }
