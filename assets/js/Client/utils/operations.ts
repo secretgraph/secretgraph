@@ -222,6 +222,7 @@ export async function createCluster(options: {
 export async function updateCluster(options: {
   id: string,
   client: ApolloClient<any>,
+  updateId: string,
   actions?: ActionInterface[],
   publicInfo?: string,
   authorization: string[]
@@ -230,6 +231,7 @@ export async function updateCluster(options: {
     mutation: updateClusterMutation,
     variables: {
       id: options.id,
+      updateId: options.updateId,
       publicInfo: new File(
         [utf8encoder.encode(options.publicInfo)],
         "publicInfo"

@@ -51,6 +51,7 @@ export const getClusterQuery = gql`
           group
           link
           publicInfo
+          updateId
           availableActions {
             keyHash
             type
@@ -100,11 +101,12 @@ export const createClusterMutation = gql`
 
 
 export const updateClusterMutation = gql`
-  mutation clusterUpdateMutation($id: ID!, $publicInfo: Upload, $actions: [ActionInput!], $authorization: [String!]) {
+  mutation clusterUpdateMutation($id: ID!, $updateId: ID!, $publicInfo: Upload, $actions: [ActionInput!], $authorization: [String!]) {
     updateOrCreateCluster(
       input: {
+        id: $id
+        updateId: $updateId
         cluster: {
-          id: $id
           publicInfo: $publicInfo
           actions: $actions
         }

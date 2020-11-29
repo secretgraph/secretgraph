@@ -170,7 +170,7 @@ class ClusterMutation(relay.ClientIDMutation):
             if not cluster_obj:
                 raise ValueError()
             _cluster_res = update_cluster_fn(
-                cluster_obj, cluster, info.context
+                info.context, cluster_obj, cluster, updateId
             )(transaction.atomic)
         else:
             user = None

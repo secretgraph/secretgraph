@@ -50,7 +50,7 @@ function item_retrieval_helper(
 }
 
 
-function extractPublicInfo(config:ConfigInterface, mainCtx: MainContextInterface, data: any) {
+function extractPublicInfo(config:ConfigInterface, data: any, url?: string | null | undefined, id?: string | null | undefined) {
   const privateTokens: [string, string[]][] = [];
 
   let name: string | null = null, note: string | null = null, publicTokens: string[] = [], publicInfo: string | undefined=data.data.secretgraph.node.publicInfo, root: BlankNode | NamedNode | null=null;
@@ -69,16 +69,16 @@ function extractPublicInfo(config:ConfigInterface, mainCtx: MainContextInterface
     publicInfo = undefined
   }
   if (
-    mainCtx.url &&
-    mainCtx.item &&
-    config.hosts[mainCtx.url] &&
-    config.hosts[mainCtx.url].clusters[mainCtx.item]
+    url &&
+    id &&
+    config.hosts[url] &&
+    config.hosts[url].clusters[id]
   ){
-    for(const hash in config.hosts[mainCtx.url].clusters[mainCtx.item].hashes){
+    for(const hash in config.hosts[url].clusters[id].hashes){
       const token = config.tokens[hash];
       if (!token) continue;
       if (publicTokens.includes(token)) continue;
-      const actions = config.hosts[mainCtx.url].clusters[mainCtx.item].hashes[hash]
+      const actions = config.hosts[url].clusters[id].hashes[hash]
       privateTokens.push([token, actions])
     }
   }
@@ -88,7 +88,8 @@ function extractPublicInfo(config:ConfigInterface, mainCtx: MainContextInterface
     privateTokens,
     name,
     note,
-    id: mainCtx.item
+    url,
+    id
   }
 }
 
@@ -149,6 +150,8 @@ interface ClusterInternProps {
   name: string | null
   note: string | null
   id?: string | null
+  url?: string | null | undefined
+  updateId?: string | null | undefined
   disabled?: boolean | undefined
   publicTokens: string[]
   privateTokens: [token: string, actions: string[]][]
@@ -165,7 +168,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
           name: props.name || "",
           note: props.note || "",
         }}
-        onSubmit={async (values, { setSubmitting }) => {
+        onSubmit={async (values, { setSubmitting, setValues }) => {
           const store = graph();
           if(props.publicInfo){
             parse(props.publicInfo as string, store, "_:");
@@ -176,10 +179,12 @@ const ClusterIntern = (props: ClusterInternProps) => {
           store.removeMany(root, SECRETGRAPH("note"))
           store.add(root, SECRETGRAPH("name"), new Literal(values.name || "", null, XSD("string")));
           store.add(root, SECRETGRAPH("note"), new Literal(values.note || "", null, XSD("string")));
+          let clusterResponse;
           if(props.id){
-            await updateCluster({
+            clusterResponse = await updateCluster({
               id: props.id as string,
               client,
+              updateId: props.updateId as string,
               publicInfo: serialize(null as any, store, "_:", "text/turtle"),
               authorization: props.keys
             })
@@ -196,21 +201,8 @@ const ClusterIntern = (props: ClusterInternProps) => {
               true,
               ["wrapKey", "unwrapKey", "encrypt", "decrypt"]
             )) as CryptoKeyPair;
-            const digestCertificatePromise = crypto.subtle
-              .exportKey("spki" as const, publicKey)
-              .then((keydata) =>
-                crypto.subtle
-                  .digest(config.hosts[config.baseUrl].hashAlgorithms[0], keydata)
-                  .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))))
-              );
-            const digestActionKeyPromise = crypto.subtle
-              .digest(
-                config.hosts[config.baseUrl].hashAlgorithms[0],
-                crypto.getRandomValues(new Uint8Array(32))
-              )
-              .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))));
             const keyb64 = btoa(String.fromCharCode(...key));
-            const clusterResponse = await createCluster({
+            clusterResponse = await createCluster({
               client,
               actions: [{ value: '{"action": "manage"}', key: keyb64 }],
               publicInfo: "",
@@ -220,10 +212,12 @@ const ClusterIntern = (props: ClusterInternProps) => {
               privateKeyKey: key,
             });
           }
-          console.log()
-          setTimeout(() => {
-            setSubmitting(false);
-          }, 500);
+          const extracted = extractPublicInfo(config, clusterResponse.data as any, props.url, props.id);
+          setValues({
+            name: extracted.name || "",
+            note: extracted.note || ""
+          });
+          setSubmitting(false);
         }}
       >
         {({ submitForm, isSubmitting }) => (
@@ -313,7 +307,7 @@ const ViewCluster = () => {
 
   return (
     <ClusterIntern
-      {...  extractPublicInfo(config, mainCtx, data)} disabled
+      {...  extractPublicInfo(config, data, mainCtx.url, mainCtx.item)} disabled
       keys={authinfo.keys}
     />
   )
@@ -371,15 +365,17 @@ const EditCluster = () => {
         <ClusterIntern
           name="" note="" publicTokens={[]}
           privateTokens={[]}
+
           id={mainCtx.item}
           keys={authinfo.keys}
         />
     );
   }
-  let name: string | null = null, note: string | null = null, cluster_tokens: string[] = [];
+  let name: string | null = null, note: string | null = null;
+  const node = (data as any).data.secretgraph.node;
   try {
     const store = graph();
-    parse((data as any).data.secretgraph.node.publicInfo, store, "https://secretgraph.net/static/schemes");
+    parse(node.publicInfo, store, "https://secretgraph.net/static/schemes");
     const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
     if(name_note_results.length > 0) {
       name = name_note_results[0][0];
@@ -391,8 +387,9 @@ const EditCluster = () => {
 
   return (
     <ClusterIntern
-      {...  extractPublicInfo(config, mainCtx, data)}
+      {...  extractPublicInfo(config, data, mainCtx.url, mainCtx.item)}
       keys={authinfo.keys}
+      updateId={node.updateId}
     />
   );
 }
