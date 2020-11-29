@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from rdflib import RDF, BNode, Graph
 
-from ....constants import sgraph_cluster
+from ....constants import CLUSTER
 from ...utils.misc import get_secrets, hash_object
 from ...models import Cluster
 from ._actions import create_actions_fn
@@ -38,13 +38,13 @@ def _update_or_create_cluster(
         g = Graph()
         g.parse(file=objdata["publicInfo"], format="turtle")
         cluster_main = g.value(
-            predicate=RDF.type, object=sgraph_cluster["Cluster"], any=False
+            predicate=RDF.type, object=CLUSTER["Cluster"], any=False
         )
         if not cluster_main:
             raise ValueError(
                 "Invalid publicInfo, not a valid cluster definition"
             )
-        g.remove((cluster_main, sgraph_cluster["Cluster.contents"], None))
+        g.remove((cluster_main, CLUSTER["Cluster.contents"], None))
         objdata["publicInfo"] = ContentFile(
             g.serialize(format="turtle"), "publicInfo"
         )
@@ -125,7 +125,7 @@ def create_cluster_fn(
     if not objdata.get("publicInfo") or len(objdata["publicInfo"]) == 0:
         g = Graph()
         root = BNode()
-        g.add((root, RDF.type, sgraph_cluster["Cluster"]))
+        g.add((root, RDF.type, CLUSTER["Cluster"]))
         objdata["publicInfo"] = g.serialize(format="turtle")
 
     if not objdata.get("actions"):

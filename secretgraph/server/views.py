@@ -16,7 +16,7 @@ from django.views.generic.edit import FormView
 from graphene_file_upload.django import FileUploadGraphQLView
 from rdflib import RDF, XSD, Graph, Literal
 
-from ..constants import sgraph_cluster
+from ..constants import CLUSTER
 from .actions.view import ContentFetchQueryset, fetch_contents
 from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
@@ -61,15 +61,15 @@ class ClusterView(AllowCORSMixin, FormView):
         with cluster.publicInfo.open("rb") as rb:
             g.parse(file=rb, format="turtle")
         cluster_main = g.value(
-            predicate=RDF.type, object=sgraph_cluster["Cluster"], any=False
+            predicate=RDF.type, object=CLUSTER["Cluster"], any=False
         )
-        g.remove((cluster_main, sgraph_cluster["Cluster.contents"], None))
+        g.remove((cluster_main, CLUSTER["Cluster.contents"], None))
         for content in initializeCachedResult(
             request, authset=authset
         )["Content"]["objects"].filter(cluster=cluster).only("flexid"):
             g.add((
                 cluster_main,
-                sgraph_cluster["Cluster.contents"],
+                CLUSTER["Cluster.contents"],
                 Literal(content.link, datatype=XSD.anyURI)
             ))
         return HttpResponse(

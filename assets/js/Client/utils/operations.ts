@@ -223,7 +223,6 @@ export async function updateCluster(options: {
   id: string,
   client: ApolloClient<any>,
   actions?: ActionInterface[],
-  hashAlgorithm: string,
   publicInfo?: string,
   authorization: string[]
 }) {
@@ -384,7 +383,7 @@ export async function decryptContentId(
   contentId: string
 ) {
   const _config = await config;
-  const authinfo: AuthInfoInterface = extractAuthInfo(_config, url);
+  const authinfo: AuthInfoInterface = extractAuthInfo({config: _config, url});
   let result;
   // TODO: maybe remove try catch
   try {

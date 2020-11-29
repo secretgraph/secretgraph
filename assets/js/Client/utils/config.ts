@@ -325,15 +325,22 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
 }
 
 
-export function extractAuthInfo(config: ConfigInterface, url: string) : AuthInfoInterface {
+export function extractAuthInfo({config, url, require=["view", "update", "manage"], ...props}: {
+  config: ConfigInterface, url: string,
+  clusters?: string[],
+  require?: string[]
+}) : AuthInfoInterface {
   const keys = [];
   const hashes = [];
   const clusters = config.hosts[(new URL(url, window.location.href)).href].clusters;
   for (const id in clusters) {
+    if (props.clusters && !props.clusters.includes(id)){
+      continue;
+    }
     const clusterconf = clusters[id];
     for (const hash in clusterconf.hashes){
-      // const actions = clusterconf.hashes[hash]
-      if (config.tokens[hash]){
+      const actions = clusterconf.hashes[hash];
+      if (config.tokens[hash] && require.some((val) => actions.includes(val))){
         hashes.push(hash);
         keys.push(`${id}:${config.tokens[hash]}`);
       }

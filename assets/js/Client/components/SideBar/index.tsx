@@ -524,7 +524,7 @@ const SideBar = (props: SideBarProps) => {
     </Hidden>
   );
   if (config){
-    const authinfo = extractAuthInfo(config, activeUrl);
+    const authinfo = extractAuthInfo({config, url: activeUrl});
     activeElements = (
       <ActiveElements
         openMenu={openMenu}

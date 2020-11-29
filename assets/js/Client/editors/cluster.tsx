@@ -18,7 +18,6 @@ import Collapse from '@material-ui/core/Collapse';
 
 import { Formik, Form, FastField, Field } from 'formik';
 
-import TextareaAutosize from '@material-ui/core/TextareaAutosize';
 import { TextField as TextFieldFormik} from 'formik-material-ui';
 import { useApolloClient, ApolloClient } from '@apollo/client';
 import { parse, serialize, graph, SPARQLToQuery, BlankNode, NamedNode, Literal } from 'rdflib';
@@ -29,6 +28,7 @@ import { MainContext, InitializedConfigContext } from "../contexts"
 import { getClusterQuery } from "../queries/cluster"
 import { useStylesAndTheme } from "../theme";
 import { extractAuthInfo } from "../utils/config";
+import { updateCluster, createCluster } from "../utils/operations";
 import DecisionFrame from "../components/DecisionFrame";
 
 
@@ -145,18 +145,20 @@ const TokenList = ({ disabled, initialOpen, privateTokens, publicTokens }: Token
 
 
 interface ClusterInternProps {
-  publicInfo?: string
+  readonly publicInfo?: string
   name: string | null
   note: string | null
   id?: string | null
   disabled?: boolean | undefined
   publicTokens: string[]
   privateTokens: [token: string, actions: string[]][]
+  keys: string[]
 }
 
 const ClusterIntern = (props: ClusterInternProps) => {
   let root = new BlankNode();
-
+  const client = useApolloClient();
+  const {config, updateConfig} = React.useContext(InitializedConfigContext);
   return (
       <Formik
         initialValues={{
@@ -165,19 +167,60 @@ const ClusterIntern = (props: ClusterInternProps) => {
         }}
         onSubmit={async (values, { setSubmitting }) => {
           const store = graph();
-          console.log(values)
           if(props.publicInfo){
-            parse(props.publicInfo as string, store, "https://secretgraph.net/static/schemes");
+            parse(props.publicInfo as string, store, "_:");
             const results = store.querySync(SPARQLToQuery(`SELECT ?root WHERE {?root a ${CLUSTER("Cluster")}. }`, false, store))
-            console.log(results)
             root = (results[0] && results[0][0]) || root;
           }
           store.removeMany(root, SECRETGRAPH("name"))
           store.removeMany(root, SECRETGRAPH("note"))
-          console.log(root, values)
           store.add(root, SECRETGRAPH("name"), new Literal(values.name || "", null, XSD("string")));
           store.add(root, SECRETGRAPH("note"), new Literal(values.note || "", null, XSD("string")));
-          console.log(serialize(null as any, store, "https://secretgraph.net/static/schemes", "text/turtle"))
+          if(props.id){
+            await updateCluster({
+              id: props.id as string,
+              client,
+              publicInfo: serialize(null as any, store, "_:", "text/turtle"),
+              authorization: props.keys
+            })
+          } else {
+            const key = crypto.getRandomValues(new Uint8Array(32));
+            const { publicKey, privateKey } = (await crypto.subtle.generateKey(
+              {
+                name: "RSA-OAEP",
+                //modulusLength: 8192,
+                modulusLength: 2048,
+                publicExponent: new Uint8Array([1, 0, 1]),
+                hash: config.hosts[config.baseUrl].hashAlgorithms[0],
+              },
+              true,
+              ["wrapKey", "unwrapKey", "encrypt", "decrypt"]
+            )) as CryptoKeyPair;
+            const digestCertificatePromise = crypto.subtle
+              .exportKey("spki" as const, publicKey)
+              .then((keydata) =>
+                crypto.subtle
+                  .digest(config.hosts[config.baseUrl].hashAlgorithms[0], keydata)
+                  .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))))
+              );
+            const digestActionKeyPromise = crypto.subtle
+              .digest(
+                config.hosts[config.baseUrl].hashAlgorithms[0],
+                crypto.getRandomValues(new Uint8Array(32))
+              )
+              .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))));
+            const keyb64 = btoa(String.fromCharCode(...key));
+            const clusterResponse = await createCluster({
+              client,
+              actions: [{ value: '{"action": "manage"}', key: keyb64 }],
+              publicInfo: "",
+              hashAlgorithm: config.hosts[config.baseUrl].hashAlgorithms[0],
+              publicKey,
+              privateKey,
+              privateKeyKey: key,
+            });
+          }
+          console.log()
           setTimeout(() => {
             setSubmitting(false);
           }, 500);
@@ -196,13 +239,15 @@ const ClusterIntern = (props: ClusterInternProps) => {
                   disabled={props.disabled || isSubmitting}
                 />
               </Grid>
+
               <Grid item xs={12}>
                 <FastField
-                  component={TextareaAutosize}
+                  component={TextFieldFormik}
                   name="note"
                   type="text"
                   label="Note"
-                  rowsMin={12}
+                  fullWidth
+                  multiline
                   disabled={props.disabled || isSubmitting}
                 />
               </Grid>
@@ -240,7 +285,7 @@ const ViewCluster = () => {
   const {mainCtx, updateMainCtx} = React.useContext(MainContext);
   const {config, updateConfig} = React.useContext(InitializedConfigContext);
   const client = useApolloClient();
-  const authinfo = extractAuthInfo(config, mainCtx.url as string);
+  const authinfo = extractAuthInfo({config, url: mainCtx.url as string, require: ["view", "manage"]});
   const { data, error } = useAsync(
     {
       promiseFn: item_retrieval_helper,
@@ -269,18 +314,23 @@ const ViewCluster = () => {
   return (
     <ClusterIntern
       {...  extractPublicInfo(config, mainCtx, data)} disabled
+      keys={authinfo.keys}
     />
   )
 }
 
 const AddCluster = () => {
   const {classes, theme} = useStylesAndTheme();
+  const {mainCtx} = React.useContext(MainContext);
+  const {config} = React.useContext(InitializedConfigContext);
+  const authinfo = extractAuthInfo({config, url: mainCtx.url as string, require: ["manage"]});
 
   return (
     <ClusterIntern
       name="" note="" publicTokens={[]}
       privateTokens={[]}
       id={null}
+      keys={authinfo.keys}
     />
   );
 }
@@ -289,7 +339,7 @@ const EditCluster = () => {
   const {config} = React.useContext(InitializedConfigContext);
   const {mainCtx, updateMainCtx} = React.useContext(MainContext);
   const client = useApolloClient();
-  const authinfo = extractAuthInfo(config, mainCtx.url as string);
+  const authinfo = extractAuthInfo({config, clusters:[mainCtx.item as string], url: mainCtx.url as string, require: ["manage"]});
   const { data, error } = useAsync(
     {
       promiseFn: item_retrieval_helper,
@@ -312,6 +362,7 @@ const EditCluster = () => {
         name="" note="" publicTokens={[]}
         privateTokens={[]}
         id={mainCtx.item}
+        keys={authinfo.keys}
       />
     );
   }
@@ -321,6 +372,7 @@ const EditCluster = () => {
           name="" note="" publicTokens={[]}
           privateTokens={[]}
           id={mainCtx.item}
+          keys={authinfo.keys}
         />
     );
   }
@@ -340,6 +392,7 @@ const EditCluster = () => {
   return (
     <ClusterIntern
       {...  extractPublicInfo(config, mainCtx, data)}
+      keys={authinfo.keys}
     />
   );
 }

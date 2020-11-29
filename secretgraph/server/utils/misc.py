@@ -4,7 +4,7 @@ import base64
 
 from django.conf import settings
 from cryptography.hazmat.primitives import serialization
-from ...constants import sgraph_cluster
+from ...constants import CLUSTER
 
 
 def refresh_fields(inp, *fields):
@@ -80,7 +80,7 @@ def get_secrets(graph):
         }
         """,
         initNs={
-            "cluster": sgraph_cluster
+            "cluster": CLUSTER
         }
     ):
         public_secrets.append(i.secret)

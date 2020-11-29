@@ -52,6 +52,7 @@ idea: unique operation names. It would be nice to have namespaces
 - fixes problem with lost updates, especially for hot files like config
 
 # TODO
+* disable editing/prompt for keys if keys are missing
 * cleanup serverside encryption
   * remove many "key" arguments
   * document when it is possible to push unencrypted content

@@ -111,7 +111,7 @@ export default function Clusters (appProps: SideBarItemsProps) {
         if (edge.node.publicInfo){
           try {
             const store = graph();
-            parse(edge.node.publicInfo, store, "https://secretgraph.net/static/schemes");
+            parse(edge.node.publicInfo, store, "_:");
             const results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
             if(results.length > 0) {
               name = results[0][0];
