@@ -28,6 +28,7 @@ import { MainContext, InitializedConfigContext } from "../contexts"
 import { getClusterQuery } from "../queries/cluster"
 import { useStylesAndTheme } from "../theme";
 import { extractAuthInfo } from "../utils/config";
+import { serializeToBase64 } from "../utils/encryption"
 import { updateCluster, createCluster } from "../utils/operations";
 import DecisionFrame from "../components/DecisionFrame";
 
@@ -50,10 +51,10 @@ function item_retrieval_helper(
 }
 
 
-function extractPublicInfo(config:ConfigInterface, data: any, url?: string | null | undefined, id?: string | null | undefined) {
+function extractPublicInfo(config:ConfigInterface, node: any, url?: string | null | undefined, id?: string | null | undefined) {
   const privateTokens: [string, string[]][] = [];
 
-  let name: string | null = null, note: string | null = null, publicTokens: string[] = [], publicInfo: string | undefined=data.data.secretgraph.node.publicInfo, root: BlankNode | NamedNode | null=null;
+  let name: string | null = null, note: string | null = null, publicTokens: string[] = [], publicInfo: string | undefined=node.publicInfo, root: BlankNode | NamedNode | null=null;
   try {
     const store = graph();
     parse(publicInfo as string, store, "https://secretgraph.net/static/schemes");
@@ -65,7 +66,7 @@ function extractPublicInfo(config:ConfigInterface, data: any, url?: string | nul
     }
     publicTokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store)).map((val: any) => val.token)
   } catch(exc){
-    console.warn("Could not parse publicInfo", exc, data)
+    console.warn("Could not parse publicInfo", exc, node)
     publicInfo = undefined
   }
   if (
@@ -162,6 +163,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
   let root = new BlankNode();
   const client = useApolloClient();
   const {config, updateConfig} = React.useContext(InitializedConfigContext);
+  const [ updateId, setUpdateId ] = React.useState(props.updateId);
   return (
       <Formik
         initialValues={{
@@ -201,6 +203,19 @@ const ClusterIntern = (props: ClusterInternProps) => {
               true,
               ["wrapKey", "unwrapKey", "encrypt", "decrypt"]
             )) as CryptoKeyPair;
+            const digestCertificatePromise = crypto.subtle
+              .exportKey("spki" as const, publicKey)
+              .then((keydata) =>
+                crypto.subtle
+                  .digest(config.hosts[config.baseUrl].hashAlgorithms[0], keydata)
+                  .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))))
+              );
+            const digestActionKeyPromise = crypto.subtle
+              .digest(
+                config.hosts[config.baseUrl].hashAlgorithms[0],
+                crypto.getRandomValues(new Uint8Array(32))
+              )
+              .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))));
             const keyb64 = btoa(String.fromCharCode(...key));
             clusterResponse = await createCluster({
               client,
@@ -211,8 +226,43 @@ const ClusterIntern = (props: ClusterInternProps) => {
               privateKey,
               privateKeyKey: key,
             });
+            if (!clusterResponse.errors && clusterResponse.data){
+              const [digestActionKey, digestCertificate] = await Promise.all([
+                digestActionKeyPromise,
+                digestCertificatePromise,
+              ]);
+              const newNode = clusterResponse.data.data.secretgraph.node;
+              const configUpdate = {
+                hosts: {
+                  [props.url as string]: {
+                    hashAlgorithms: clusterResponse.data.data.secretgraph.config.hashAlgorithms,
+                    clusters: {
+                      [newNode.id as string]: {
+                        hashes: {
+                          [digestActionKey]: ["manage", "create", "update"],
+                          [digestCertificate]: []
+                        }
+                      }
+                    }
+                  }
+                },
+                tokens: {
+                  [digestActionKey]: keyb64,
+                  [digestCertificate]: await serializeToBase64(
+                    privateKey
+                  )
+                }
+              }
+              updateConfig(configUpdate);
+            }
           }
-          const extracted = extractPublicInfo(config, clusterResponse.data as any, props.url, props.id);
+          if (clusterResponse.errors || !clusterResponse.data){
+            setSubmitting(false);
+            return;
+          }
+          console.log(clusterResponse.data)
+          const extracted = extractPublicInfo(config, clusterResponse.data?.updateOrCreateCluster.cluster, props.url, props.id);
+          setUpdateId(clusterResponse.data?.updateOrCreateCluster.cluster.updateId)
           setValues({
             name: extracted.name || "",
             note: extracted.note || ""
@@ -301,13 +351,13 @@ const ViewCluster = () => {
     return null;
   }
   if (!mainCtx.shareUrl){
-    updateMainCtx({shareUrl: (data as any).data.secretgraph.node.link})
+    updateMainCtx({shareUrl: data?.data.secretgraph.node.link})
   }
 
 
   return (
     <ClusterIntern
-      {...  extractPublicInfo(config, data, mainCtx.url, mainCtx.item)} disabled
+      {...  extractPublicInfo(config, data?.data?.secretgraph?.node, mainCtx.url, mainCtx.item)} disabled
       keys={authinfo.keys}
     />
   )
@@ -360,7 +410,7 @@ const EditCluster = () => {
       />
     );
   }
-  if (!(data as any).data.secretgraph.node){
+  if (!data?.data?.secretgraph?.node){
     return (
         <ClusterIntern
           name="" note="" publicTokens={[]}
@@ -371,25 +421,13 @@ const EditCluster = () => {
         />
     );
   }
-  let name: string | null = null, note: string | null = null;
-  const node = (data as any).data.secretgraph.node;
-  try {
-    const store = graph();
-    parse(node.publicInfo, store, "https://secretgraph.net/static/schemes");
-    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
-    if(name_note_results.length > 0) {
-      name = name_note_results[0][0];
-      note = name_note_results[0][1] ? name_note_results[0][1] : "";
-    }
-  } catch(exc){
-    console.warn("Could not parse publicInfo", exc, data)
-  }
+  console.log(data);
 
   return (
     <ClusterIntern
-      {...  extractPublicInfo(config, data, mainCtx.url, mainCtx.item)}
+      {...  extractPublicInfo(config, data.data?.secretgraph?.node, mainCtx.url, mainCtx.item)}
       keys={authinfo.keys}
-      updateId={node.updateId}
+      updateId={data.data?.secretgraph.node.updateId}
     />
   );
 }

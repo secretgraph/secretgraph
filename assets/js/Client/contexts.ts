@@ -1,5 +1,5 @@
 import {createContext, Context} from "react";
-import { MainContextInterface, SearchContextInterface, ConfigInterface } from './interfaces';
+import { MainContextInterface, SearchContextInterface, ConfigInterface, ConfigInputInterface } from './interfaces';
 
 export const MainContext = createContext({
     mainCtx: {} as MainContextInterface,
@@ -11,9 +11,9 @@ export const SearchContext = createContext({
 });
 export const ConfigContext = createContext({
     config: null as (ConfigInterface | null),
-    updateConfig: (update: Partial<ConfigInterface> | null) => {}
+    updateConfig: (update: ConfigInputInterface | null) => {}
 });
-export const InitializedConfigContext = ConfigContext as Context<{config: ConfigInterface, updateConfig: (update: Partial<ConfigInterface> | null) => void} >;
+export const InitializedConfigContext = ConfigContext as Context<{config: ConfigInterface, updateConfig: (update: Partial<ConfigInputInterface> | null) => void} >;
 
 export const ActiveUrlContext = createContext({
     activeUrl: "" as string,

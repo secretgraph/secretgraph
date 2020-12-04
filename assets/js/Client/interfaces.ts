@@ -62,32 +62,29 @@ export interface ConfigClusterInterface {
   hashes: { [hash: string]: string[] };
 }
 
+interface BaseHostInterface<ClusterType, ContentType> {
+  hashAlgorithms: string[],
+  clusters: { [flexid: string]: ClusterType }
+  contents: { [flexid: string]: ContentType }
+}
 
-export interface ConfigInterface {
-  certificates: { [hash: string]: string };
-  tokens: { [hash: string]: string };
-  hosts: { [url: string]: {
-    hashAlgorithms: string[],
-    clusters: { [flexid: string]: ConfigClusterInterface }
-    contents: { [flexid: string]: ConfigContentInterface }
-  }};
+interface BaseConfigInterface<SType=string> {
   baseUrl: string;
   configHashes: string[];
   configCluster: string;
+  certificates: { [hash: string]: SType };
+  tokens: { [hash: string]: SType };
 }
 
 
-export interface ConfigInputInterface {
-  certificates: { [hash: string]: string | null };
-  tokens: { [hash: string]: string | null };
-  hosts: { [url: string]: {
-    hashAlgorithms: string[],
-    clusters: { [flexid: string]: ConfigClusterInterface | null }
-    contents: { [flexid: string]: ConfigContentInterface | null }
-  } | null};
-  baseUrl: string;
-  configHashes: string[];
-  configCluster: string;
+
+export interface ConfigInterface extends BaseConfigInterface {
+  hosts: { [url: string]: BaseHostInterface<ConfigClusterInterface, ConfigContentInterface>};
+}
+
+
+export interface ConfigInputInterface extends Partial<BaseConfigInterface<string | null>> {
+  hosts?: { [url: string]: Partial<BaseHostInterface<ConfigClusterInterface | null, ConfigContentInterface | null>> | null}
 }
 
 

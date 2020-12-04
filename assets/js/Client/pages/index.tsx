@@ -32,7 +32,7 @@ function MainPage(props: Props) {
     updateConfigReducer,
     null,
     () => loadConfigSync()
-  ) as [ConfigInterface|null, (update: Partial<ConfigInputInterface> | null) => void];
+  ) as [ConfigInterface|null, (update: ConfigInputInterface | null) => void];
   const [mainCtx, updateMainCtx] = React.useReducer(
     updateState, {
     "action": config ? "add" : "start",

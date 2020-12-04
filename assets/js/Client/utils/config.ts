@@ -388,7 +388,7 @@ export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any
 }
 
 
-export function updateConfigReducer(state: ConfigInterface | null, update: Partial<ConfigInputInterface> | null) : (ConfigInterface | null){
+export function updateConfigReducer(state: ConfigInterface | null, update: ConfigInputInterface | null) : (ConfigInterface | null){
   if (update === null){
     return null;
   }

@@ -87,6 +87,7 @@ export const createClusterMutation = gql`
         id
         group
         link
+        publicInfo
         availableActions {
           keyHash
           type
@@ -117,6 +118,7 @@ export const updateClusterMutation = gql`
         id
         group
         link
+        publicInfo
         availableActions {
           keyHash
           type
