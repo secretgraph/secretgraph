@@ -57,14 +57,18 @@ function extractPublicInfo(config:ConfigInterface, node: any, url?: string | nul
   let name: string | null = null, note: string | null = null, publicTokens: string[] = [], publicInfo: string | undefined=node.publicInfo, root: BlankNode | NamedNode | null=null;
   try {
     const store = graph();
-    parse(publicInfo as string, store, "https://secretgraph.net/static/schemes");
-    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name, ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
+    parse(publicInfo as string, store, "_:");
+    const query = SPARQLToQuery('SELECT ?s ?p ?o WHERE { ?s ?p ?o. }', true, store);
+    let result = store.querySync(query);
+    console.log('query ran');
+    console.log(result);
+    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note . } }`, true, store))
+    console.log(name_note_results)
     if(name_note_results.length > 0) {
-      root = name_note_results[0][0];
-      name = name_note_results[0][1];
-      note = name_note_results[0][2] ? name_note_results[0][2] : "";
+      name = name_note_results[0][0];
+      note = name_note_results[0][1] ? name_note_results[0][1] : "";
     }
-    publicTokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, false, store)).map((val: any) => val.token)
+    publicTokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, true, store)).map((val: any) => val.token)
   } catch(exc){
     console.warn("Could not parse publicInfo", exc, node)
     publicInfo = undefined
@@ -262,6 +266,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
           }
           console.log(clusterResponse.data)
           const extracted = extractPublicInfo(config, clusterResponse.data?.updateOrCreateCluster.cluster, props.url, props.id);
+          console.log(extracted)
           setUpdateId(clusterResponse.data?.updateOrCreateCluster.cluster.updateId)
           setValues({
             name: extracted.name || "",
