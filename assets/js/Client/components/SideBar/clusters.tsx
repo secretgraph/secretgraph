@@ -112,10 +112,10 @@ export default function Clusters (appProps: SideBarItemsProps) {
           try {
             const store = graph();
             parse(edge.node.publicInfo, store, "_:");
-            const results = store.querySync(SPARQLToQuery(`SELECT ?name ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note } }`, false, store))
+            const results = store.querySync(SPARQLToQuery(`SELECT ?name ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note . } }`, false, store))
             if(results.length > 0) {
-              name = results[0][0];
-              note = results[0][1] ? results[0][1] : "";
+              name = results[0]["?name"].value;
+              note = results[0]["?note"] ? results[0]["?note"].value : "";
             }
           } catch(exc){
             console.warn("Could not parse publicInfo", exc)

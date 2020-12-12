@@ -54,8 +54,8 @@ function HeaderBar(props: Props) {
       title = `Add: ${temp ? temp.label : 'unknown'}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
-    case "update":
-      title = `Update: ${mainCtx.type}`;
+    case "edit":
+      title = `Edit: ${mainCtx.type}: ${mainCtx.title ? mainCtx.title : mainCtx.item}`;
       documenttitle = `Secretgraph: ${title}`;
       break;
     case "help":

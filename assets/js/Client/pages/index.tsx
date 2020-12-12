@@ -94,11 +94,11 @@ function MainPage(props: Props) {
       break;
   }
   return (
-    <ActiveUrlContext.Provider value={{activeUrl, updateActiveUrl}}>
-      <MainContext.Provider value={{mainCtx, updateMainCtx}}>
-        <SearchContext.Provider value={{searchCtx, updateSearchCtx}}>
-          <ConfigContext.Provider value={{config, updateConfig}}>
-            <ApolloProvider client={createClient(activeUrl)}>
+    <ApolloProvider client={createClient(activeUrl)}>
+      <ActiveUrlContext.Provider value={{activeUrl, updateActiveUrl}}>
+        <MainContext.Provider value={{mainCtx, updateMainCtx}}>
+          <SearchContext.Provider value={{searchCtx, updateSearchCtx}}>
+            <ConfigContext.Provider value={{config, updateConfig}}>
               <CssBaseline/>
               <div className={config && drawerOpen ? classes.rootShifted : classes.root}>
                 <SideBar
@@ -114,11 +114,11 @@ function MainPage(props: Props) {
                   </Paper>
                 </div>
               </div>
-            </ApolloProvider>
-          </ConfigContext.Provider>
-        </SearchContext.Provider>
-      </MainContext.Provider>
-    </ActiveUrlContext.Provider>
+            </ConfigContext.Provider>
+          </SearchContext.Provider>
+        </MainContext.Provider>
+      </ActiveUrlContext.Provider>
+    </ApolloProvider>
   );
 };
 

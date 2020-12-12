@@ -19,9 +19,9 @@ import Collapse from '@material-ui/core/Collapse';
 import { Formik, Form, FastField, Field } from 'formik';
 
 import { TextField as TextFieldFormik} from 'formik-material-ui';
-import { useApolloClient, ApolloClient } from '@apollo/client';
+import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client';
 import { parse, serialize, graph, SPARQLToQuery, BlankNode, NamedNode, Literal } from 'rdflib';
-import { RDFS, XSD, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
+import { RDF, XSD, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
 
 import { ConfigInterface, MainContextInterface } from "../interfaces";
 import { MainContext, InitializedConfigContext } from "../contexts"
@@ -58,15 +58,10 @@ function extractPublicInfo(config:ConfigInterface, node: any, url?: string | nul
   try {
     const store = graph();
     parse(publicInfo as string, store, "_:");
-    const query = SPARQLToQuery('SELECT ?s ?p ?o WHERE { ?s ?p ?o. }', true, store);
-    let result = store.querySync(query);
-    console.log('query ran');
-    console.log(result);
-    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note . } }`, true, store))
-    console.log(name_note_results)
+    const name_note_results = store.querySync(SPARQLToQuery(`SELECT ?name ?note WHERE {_:cluster a ${CLUSTER("Cluster")}; ${SECRETGRAPH("name")} ?name. OPTIONAL { _:cluster ${SECRETGRAPH("note")} ?note . } }`, true, store));
     if(name_note_results.length > 0) {
-      name = name_note_results[0][0];
-      note = name_note_results[0][1] ? name_note_results[0][1] : "";
+      name = name_note_results[0]["?name"].value;
+      note = name_note_results[0]["?note"] ? name_note_results[0]["?note"].value : "";
     }
     publicTokens = store.querySync(SPARQLToQuery(`SELECT ?token WHERE {_:cluster a ${CLUSTER("Cluster")}; ${CLUSTER("Cluster.publicsecrets")} _:pubsecret . _:pubsecret ${CLUSTER("PublicSecret.value")} ?token . }`, true, store)).map((val: any) => val.token)
   } catch(exc){
@@ -164,10 +159,13 @@ interface ClusterInternProps {
 }
 
 const ClusterIntern = (props: ClusterInternProps) => {
-  let root = new BlankNode();
   const client = useApolloClient();
   const {config, updateConfig} = React.useContext(InitializedConfigContext);
+  const {updateMainCtx} = React.useContext(MainContext)
   const [ updateId, setUpdateId ] = React.useState(props.updateId);
+  React.useEffect(() => {
+    updateMainCtx({title: props.name || ""})
+  }, [props.name])
   return (
       <Formik
         initialValues={{
@@ -175,22 +173,29 @@ const ClusterIntern = (props: ClusterInternProps) => {
           note: props.note || "",
         }}
         onSubmit={async (values, { setSubmitting, setValues }) => {
+          let root: BlankNode | undefined = undefined;
           const store = graph();
           if(props.publicInfo){
             parse(props.publicInfo as string, store, "_:");
-            const results = store.querySync(SPARQLToQuery(`SELECT ?root WHERE {?root a ${CLUSTER("Cluster")}. }`, false, store))
-            root = (results[0] && results[0][0]) || root;
+            const results = store.querySync(SPARQLToQuery(`SELECT ?root WHERE {?root a ${CLUSTER("Cluster")}. }`, true, store))
+            if (results[0] && results[0]["?root"]){
+              root = results[0]["?root"];
+            }
+          }
+          if (!root) {
+            root = new BlankNode()
+            store.add(root, RDF("type"), CLUSTER("Cluster"))
           }
           store.removeMany(root, SECRETGRAPH("name"))
           store.removeMany(root, SECRETGRAPH("note"))
           store.add(root, SECRETGRAPH("name"), new Literal(values.name || "", null, XSD("string")));
           store.add(root, SECRETGRAPH("note"), new Literal(values.note || "", null, XSD("string")));
-          let clusterResponse;
+          let clusterResponse : FetchResult<any>;
           if(props.id){
             clusterResponse = await updateCluster({
               id: props.id as string,
               client,
-              updateId: props.updateId as string,
+              updateId: updateId as string,
               publicInfo: serialize(null as any, store, "_:", "text/turtle"),
               authorization: props.keys
             })
@@ -257,6 +262,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
                   )
                 }
               }
+              // TODO: merge and refetch config
               updateConfig(configUpdate);
             }
           }
@@ -264,14 +270,13 @@ const ClusterIntern = (props: ClusterInternProps) => {
             setSubmitting(false);
             return;
           }
-          console.log(clusterResponse.data)
           const extracted = extractPublicInfo(config, clusterResponse.data?.updateOrCreateCluster.cluster, props.url, props.id);
-          console.log(extracted)
           setUpdateId(clusterResponse.data?.updateOrCreateCluster.cluster.updateId)
           setValues({
             name: extracted.name || "",
             note: extracted.note || ""
           });
+          updateMainCtx({title: extracted.name || ""})
           setSubmitting(false);
         }}
       >
@@ -332,7 +337,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
 
 const ViewCluster = () => {
   const {mainCtx, updateMainCtx} = React.useContext(MainContext);
-  const {config, updateConfig} = React.useContext(InitializedConfigContext);
+  const {config} = React.useContext(InitializedConfigContext);
   const client = useApolloClient();
   const authinfo = extractAuthInfo({config, url: mainCtx.url as string, require: ["view", "manage"]});
   const { data, error } = useAsync(
@@ -369,10 +374,8 @@ const ViewCluster = () => {
 }
 
 const AddCluster = () => {
-  const {classes, theme} = useStylesAndTheme();
-  const {mainCtx} = React.useContext(MainContext);
   const {config} = React.useContext(InitializedConfigContext);
-  const authinfo = extractAuthInfo({config, url: mainCtx.url as string, require: ["manage"]});
+  const authinfo = extractAuthInfo({config, url: config.baseUrl as string, require: ["manage"]});
 
   return (
     <ClusterIntern
@@ -426,7 +429,6 @@ const EditCluster = () => {
         />
     );
   }
-  console.log(data);
 
   return (
     <ClusterIntern

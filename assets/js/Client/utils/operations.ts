@@ -18,7 +18,7 @@ import {
   serializeToBase64,
   unserializeToArrayBuffer,
 } from "./encryption";
-import { ApolloClient } from "@apollo/client";
+import { ApolloClient, FetchResult } from "@apollo/client";
 import {
   cleanConfig,
   extractAuthInfo,
@@ -45,7 +45,7 @@ export async function createContent({
   actions?: ActionInterface[],
   hashAlgorithm?: string,
   authorization: string[]
-}) {
+}) : Promise<FetchResult<any>> {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const key = crypto.getRandomValues(new Uint8Array(32));
 
@@ -110,7 +110,7 @@ export async function updateContent({
   actions?: ActionInterface[],
   hashAlgorithm?: string,
   authorization: string[]
-}) {
+}) : Promise<FetchResult<any>> {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const key = crypto.getRandomValues(new Uint8Array(32));
   let contentPromise : Promise<null|File> = Promise.resolve(null);
@@ -178,7 +178,7 @@ export async function createCluster(options: {
   privateKey?: CryptoKey,
   privateKeyKey?: Uint8Array,
   authorization?: string[]
-}) {
+}) : Promise<FetchResult<any>> {
   let nonce: null | Uint8Array = null;
 
   let privateKeyPromise: Promise<null | File>;
@@ -226,7 +226,7 @@ export async function updateCluster(options: {
   actions?: ActionInterface[],
   publicInfo?: string,
   authorization: string[]
-}) {
+}) : Promise<FetchResult<any>> {
   return await options.client.mutate({
     mutation: updateClusterMutation,
     variables: {

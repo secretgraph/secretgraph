@@ -13,16 +13,9 @@ import Chip from '@material-ui/core/Chip';
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
 import Collapse from '@material-ui/core/Collapse';
-import Accordion from '@material-ui/core/Accordion';
-import AccordionDetails from '@material-ui/core/AccordionDetails';
-import AccordionSummary from '@material-ui/core/AccordionSummary';
-import GroupWorkIcon from '@material-ui/icons/GroupWork';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import ListItemText from "@material-ui/core/ListItemText";
-import InboxIcon from "@material-ui/icons/MoveToInbox";
-import MailOutlineIcon from '@material-ui/icons/MailOutline';
-import DraftsIcon from '@material-ui/icons/Drafts';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 
@@ -48,10 +41,6 @@ type SideBarHeaderProps = {
   closeButton: any,
   headerExpanded: boolean,
   setHeaderExpanded: any
-};
-
-
-type SideBarControlProps = {
 };
 
 const SideBarHeader = (props: SideBarHeaderProps) => {

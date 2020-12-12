@@ -427,3 +427,13 @@ export function updateConfigReducer(state: ConfigInterface | null, update: Confi
   }
   return newState
 }
+
+
+export async function updateConfigReducerSync(state: ConfigInterface | null, update: ConfigInputInterface | null, client: ApolloClient<any>) : Promise<ConfigInterface | null>{
+  if (update === null){
+    return null;
+  }
+  let ret
+  ret = updateConfigReducer(state, update) 
+  return ret
+}

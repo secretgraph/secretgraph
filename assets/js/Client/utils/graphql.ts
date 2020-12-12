@@ -8,9 +8,6 @@ import { mapHashNames } from "../constants";
 
 
 export const createClient = (url: string) => {
-  const link: any = createUploadLink({
-    uri: url
-  });
   return new ApolloClient({
     cache: new InMemoryCache({
       typePolicies: {
@@ -24,7 +21,9 @@ export const createClient = (url: string) => {
         },
       },
     }),
-    link: link,
+    link: createUploadLink({
+      uri: url
+    }),
     name: 'secretgraph',
     version: '0.1',
     queryDeduplication: false,

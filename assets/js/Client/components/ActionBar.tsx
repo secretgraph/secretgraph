@@ -6,6 +6,7 @@ import IconButton from "@material-ui/core/IconButton";
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
 import ShareIcon from '@material-ui/icons/Share';
+import VisibilityIcon from '@material-ui/icons/Visibility';
 import NativeSelect from '@material-ui/core/NativeSelect';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
@@ -81,15 +82,15 @@ function ActionBar(props: Props) {
             }
           />
         </Tooltip>
-        <Tooltip title="Edit" arrow className={(mainCtx.item  && mainCtx.action === "view" ) ? null : classes.hidden}>
+        <Tooltip title={mainCtx.action === "view" ? "Edit" : "View"} arrow className={(mainCtx.item) ? null : classes.hidden}>
           <IconButton
             className={classes.actionToolBarButton}
-            aria-label="edit"
+            aria-label={mainCtx.action === "view" ? "Edit" : "View"}
             onClick={() => updateMainCtx({
-              action: "edit"
+              action: mainCtx.action === "view" ? "edit" : "view"
             })}
           >
-            <EditIcon />
+            {mainCtx.action === "view" ? <EditIcon />  : <VisibilityIcon/>}
           </IconButton>
         </Tooltip>
         <Tooltip title="Add Element" arrow className={(actionAddOpen || mainCtx.action === "add") ?  null : classes.hidden}>
@@ -99,6 +100,7 @@ function ActionBar(props: Props) {
               setActionAddOpen(false)
               updateMainCtx({
                 action: "add",
+                title: null,
                 item: null,
                 shareUrl: null,
                 type: event.target.value
