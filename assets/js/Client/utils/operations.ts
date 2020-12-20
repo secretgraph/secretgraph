@@ -333,7 +333,7 @@ export async function initializeCluster(
   });
 }
 
-export async function decryptContentObject(
+export async function decryptContentObject({config, nodeData, blobOrAuthinfo}: {
   config: ConfigInterface | PromiseLike<ConfigInterface>,
   nodeData: any | PromiseLike<any>,
   blobOrAuthinfo:
@@ -341,7 +341,7 @@ export async function decryptContentObject(
     | string
     | AuthInfoInterface
     | PromiseLike<Blob | string | AuthInfoInterface>
-) {
+}) {
   let arrPromise: PromiseLike<ArrayBufferLike>;
   const _info = await blobOrAuthinfo;
   const _node = await nodeData;
@@ -378,12 +378,12 @@ export async function decryptContentObject(
   });
 }
 
-export async function decryptContentId(
+export async function decryptContentId({client, config, url, id: contentId}:{
   client: ApolloClient<any>,
   config: ConfigInterface | PromiseLike<ConfigInterface>,
   url: string,
-  contentId: string
-) {
+  id: string
+}) {
   const _config = await config;
   const authinfo: AuthInfoInterface = extractAuthInfo({config: _config, url});
   let result;
@@ -403,5 +403,9 @@ export async function decryptContentId(
   if (!result.data) {
     return null;
   }
-  return await decryptContentObject(_config, result.data.content, authinfo);
+  return await decryptContentObject({
+    config: _config,
+    nodeData: result.data.content,
+    blobOrAuthinfo: authinfo
+  });
 }

@@ -3,31 +3,58 @@
 import * as React from "react";
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
+import { useAsync } from "react-async"
 
 import { saveAs } from 'file-saver';
-import { useQuery, useApolloClient } from '@apollo/client';
-import { ConfigInterface} from "../interfaces"
+
+import { Formik, Form, FastField, Field } from 'formik';
+
+import { TextField as TextFieldFormik} from 'formik-material-ui';
+import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client';
+import { parse, serialize, graph, SPARQLToQuery, BlankNode, NamedNode, Literal } from 'rdflib';
+import { RDF, XSD, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
+
+import { ConfigInterface, MainContextInterface } from "../interfaces";
 import { MainContext, ConfigContext } from "../contexts"
 import { decryptContentId } from "../utils/operations"
 
 import { contentQuery } from "../queries/content"
 import { useStylesAndTheme } from "../theme";
 import { newClusterLabel } from "../messages";
+import DecisionFrame from "../components/DecisionFrame";
 
 
 type Props = {};
+
+
 
 const ViewFile = (props: Props) => {
   const {classes, theme} = useStylesAndTheme();
   const { mainCtx } = React.useContext(MainContext);
   const { config } = React.useContext(ConfigContext);
+  const [blobUrl, setBlobUrl] = React.useState(undefined)
   const client = useApolloClient();
-  decryptContentId(
-    client,
-    config as ConfigInterface,
-    mainCtx.url as string,
-    mainCtx.item as string
+  const { data, error } = useAsync(
+    {
+      promiseFn: decryptContentId,
+      suspense: true,
+      client: client,
+      config: config as ConfigInterface,
+      url: mainCtx.url as string,
+      id: mainCtx.item as string
+    }
   )
+  React.useEffect(()=> {
+    if(!data){
+      return;
+    }
+    const _blobUrl = URL.createObjectURL(data)
+    
+    return () => URL.revokeObjectURL(_blobUrl)
+  }, [data])
+  if (!data) {
+    return null;
+  }
   /**
   saveAs(
     new File(
@@ -54,8 +81,7 @@ const ViewFile = (props: Props) => {
 {% endif %}
  */
   return (
-    <
-    >
+    <>
 
     </>
   );
@@ -87,14 +113,12 @@ const EditFile = (props: Props) => {
 
 export default function FileComponent(props: Props) {
   const {mainCtx} = React.useContext(MainContext);
-  if (mainCtx.action == "view" && mainCtx.item) {
-    return (
-      <ViewFile/>
-    );
-  } else if (mainCtx.action == "edit" && mainCtx.item) {
-    return (<EditFile/>)
-  } else if (mainCtx.action == "add") {
-    return (<AddFile/>)
-  }
-  return null;
+  return (
+    <DecisionFrame
+      mainCtx={mainCtx}
+      add={AddFile}
+      view={ViewFile}
+      edit={EditFile}
+    />
+  );
 };
