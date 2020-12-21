@@ -415,6 +415,29 @@ export async function derivePW(options: PWInterface | PromiseLike<PWInterface>) 
   }
 }
 
+export async function encryptTag(options: CryptoGCMInInterface) {
+  const nonce = crypto.getRandomValues(new Uint8Array(13));
+  const {data} = await encryptAESGCM({
+    ...options,
+    nonce
+  })
+  const tmp = new Uint8Array(nonce.byteLength + data.byteLength);
+  tmp.set(new Uint8Array(nonce), 0);
+  tmp.set(new Uint8Array(data), nonce.byteLength);
+  return serializeToBase64(tmp)
+}
+
+
+export async function decryptTag(options: CryptoGCMInInterface) {
+  const data = await unserializeToArrayBuffer(options.data);
+  const nonce = new Uint8Array(data.slice(0, 13));
+  const realdata = data.slice(13);
+  return await decryptAESGCM({
+    ...options,
+    data: realdata,
+    nonce
+  })
+}
 
 export async function encryptPreKey({prekey, pw, hashAlgorithm, iterations}: {prekey: ArrayBuffer, pw: NonKeyInput, hashAlgorithm: string, iterations: number}){
   const nonce = crypto.getRandomValues(new Uint8Array(13));

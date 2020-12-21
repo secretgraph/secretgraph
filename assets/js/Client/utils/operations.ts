@@ -7,7 +7,8 @@ import {
   ActionInterface,
   AuthInfoInterface,
   KeyInput,
-  CryptoHashPair
+  CryptoHashPair,
+  CryptoGCMInInterface
 } from "../interfaces";
 import { b64toarr, sortedHash, utf8encoder } from "./misc";
 import {
@@ -17,6 +18,8 @@ import {
   encryptAESGCM,
   serializeToBase64,
   unserializeToArrayBuffer,
+  decryptTag,
+  encryptTag
 } from "./encryption";
 import { ApolloClient, FetchResult } from "@apollo/client";
 import {
@@ -45,6 +48,7 @@ export async function createContent({
   actions?: ActionInterface[],
   hashAlgorithm?: string,
   authorization: string[]
+  encryptTags?: string[]
 }) : Promise<FetchResult<any>> {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const key = crypto.getRandomValues(new Uint8Array(32));
@@ -80,7 +84,13 @@ export async function createContent({
         await signatureReferencesPromise,
         options.references ? options.references : []
       ),
-      tags: newTags.concat(options.tags),
+      tags: newTags.concat(options.tags).map(async (tag: string) => {
+        if(options.encryptTags && options.encryptTags.includes(tag)){
+          return await encryptTag({key, data: tag})
+        } else {
+          return tag
+        }
+      }),
       nonce: await serializeToBase64(nonce),
       value: await encryptedContentPromise.then(
         (data) => new File([data.data], "value")
@@ -110,6 +120,7 @@ export async function updateContent({
   actions?: ActionInterface[],
   hashAlgorithm?: string,
   authorization: string[]
+  encryptTags?: string[]
 }) : Promise<FetchResult<any>> {
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const key = crypto.getRandomValues(new Uint8Array(32));
@@ -159,7 +170,13 @@ export async function updateContent({
       id,
       cluster: options.cluster ? options.cluster : null,
       references: await referencesPromise,
-      tags: await tagsPromise,
+      tags: (await tagsPromise)?.map(async (tag: string) => {
+        if(options.encryptTags && options.encryptTags.includes(tag)){
+          return await encryptTag({key, data: tag.split("=", 2)[1]})
+        } else {
+          return tag
+        }
+      }),
       nonce: await serializeToBase64(nonce),
       value: await contentPromise,
       actions: options.actions ? options.actions : null,
@@ -333,14 +350,16 @@ export async function initializeCluster(
   });
 }
 
-export async function decryptContentObject({config, nodeData, blobOrAuthinfo}: {
+
+export async function decryptContentObject({config, nodeData, blobOrAuthinfo, decryptTags=[]}: {
   config: ConfigInterface | PromiseLike<ConfigInterface>,
   nodeData: any | PromiseLike<any>,
   blobOrAuthinfo:
     | Blob
     | string
     | AuthInfoInterface
-    | PromiseLike<Blob | string | AuthInfoInterface>
+    | PromiseLike<Blob | string | AuthInfoInterface>,
+    decryptTags?: string[]
 }) {
   let arrPromise: PromiseLike<ArrayBufferLike>;
   const _info = await blobOrAuthinfo;
@@ -371,18 +390,30 @@ export async function decryptContentObject({config, nodeData, blobOrAuthinfo}: {
       })
     )
   );
-  return await decryptAESGCM({
-    key: (await sharedkeyPromise).data,
-    nonce: _node.nonce,
-    data: arrPromise,
-  });
+  const key = (await sharedkeyPromise).data;
+  return {
+    ... await decryptAESGCM({
+      key,
+      nonce: _node.nonce,
+      data: arrPromise,
+    }),
+    tags: nodeData.tags.map(async (tag_val: string) => {
+      const [tag, data] = tag_val.split("=", 2)
+      if(decryptTags.includes(tag)){
+        return [tag, (await decryptTag({key, data})).data]
+      } else {
+        return [tag, data]
+      }
+    })
+  };
 }
 
-export async function decryptContentId({client, config, url, id: contentId}:{
+export async function decryptContentId({client, config, url, id: contentId, decryptTags}:{
   client: ApolloClient<any>,
   config: ConfigInterface | PromiseLike<ConfigInterface>,
   url: string,
-  id: string
+  id: string,
+  decryptTags?: string[]
 }) {
   const _config = await config;
   const authinfo: AuthInfoInterface = extractAuthInfo({config: _config, url});
@@ -393,7 +424,7 @@ export async function decryptContentId({client, config, url, id: contentId}:{
       query: contentQuery,
       variables: {
         id: contentId,
-        authorization: authinfo.keys,
+        authorization: authinfo.keys
       },
     });
   } catch (error) {
@@ -406,6 +437,7 @@ export async function decryptContentId({client, config, url, id: contentId}:{
   return await decryptContentObject({
     config: _config,
     nodeData: result.data.content,
-    blobOrAuthinfo: authinfo
+    blobOrAuthinfo: authinfo,
+    decryptTags
   });
 }

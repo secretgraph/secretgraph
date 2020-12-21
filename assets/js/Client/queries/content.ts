@@ -28,7 +28,7 @@ export const createContentMutation = gql`
 `
 
 export const contentQuery = gql`
-  query contentRetrieveQuery($id: ID!, $keyhashes: [String!], $authorization: [String!]) {
+  query contentRetrieveQuery($id: ID!, $keyhashes: [String!], $authorization: [String!] $includeTags: [String!]) {
     secretgraph(authorization: $authorization){
       node(
         id: $id
@@ -37,7 +37,9 @@ export const contentQuery = gql`
           id
           nonce
           link
-          tags
+          tags(
+            includeTags: $includeTags
+          )
           cluster {
             publicInfo
           }
