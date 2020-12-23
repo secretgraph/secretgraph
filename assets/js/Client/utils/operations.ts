@@ -376,7 +376,10 @@ export async function decryptContentObject({config, nodeData, blobOrAuthinfo, de
     }).then((result) => result.arrayBuffer());
   }
   if (_node.tags.includes("type=PublicKey")) {
-    return await arrPromise;
+    return {
+      data: await arrPromise,
+      tags: nodeData.tags
+    };
   }
   const found = findCertCandidatesForRefs(await config, _node);
   if (!found) {

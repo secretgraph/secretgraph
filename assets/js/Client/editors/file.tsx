@@ -32,7 +32,7 @@ const ViewFile = (props: Props) => {
   const {classes, theme} = useStylesAndTheme();
   const { mainCtx } = React.useContext(MainContext);
   const { config } = React.useContext(ConfigContext);
-  const [blobUrl, setBlobUrl] = React.useState(undefined)
+  const [blobUrl, setBlobUrl] = React.useState<string | undefined>(undefined)
   const client = useApolloClient();
   const { data, error } = useAsync(
     {
@@ -41,18 +41,22 @@ const ViewFile = (props: Props) => {
       client: client,
       config: config as ConfigInterface,
       url: mainCtx.url as string,
-      id: mainCtx.item as string
+      id: mainCtx.item as string,
+      decryptTags: ["mime"]
     }
   )
   React.useEffect(()=> {
     if(!data){
       return;
     }
-    const _blobUrl = URL.createObjectURL(data)
-    
-    return () => URL.revokeObjectURL(_blobUrl)
+    const _blobUrl = URL.createObjectURL(data.data)
+    setBlobUrl(_blobUrl);
+    return () => {
+      setBlobUrl(undefined)
+      URL.revokeObjectURL(_blobUrl)
+    }
   }, [data])
-  if (!data) {
+  if (!blobUrl) {
     return null;
   }
   /**
