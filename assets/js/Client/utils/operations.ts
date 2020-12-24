@@ -19,6 +19,7 @@ import {
   serializeToBase64,
   unserializeToArrayBuffer,
   decryptTag,
+  decryptTagRaw,
   encryptTag
 } from "./encryption";
 import { ApolloClient, FetchResult } from "@apollo/client";
@@ -125,7 +126,7 @@ export async function updateContent({
   const nonce = crypto.getRandomValues(new Uint8Array(13));
   const key = crypto.getRandomValues(new Uint8Array(32));
   let contentPromise : Promise<null|File> = Promise.resolve(null);
-  let referencesPromise;
+  let references;
   let tagsPromise;
 
   const halgo =
@@ -154,13 +155,13 @@ export async function updateContent({
     contentPromise = encryptedContentPromise2.then(
       (data) => new File([data.data], "value")
     );
-    referencesPromise = ([] as ReferenceInterface[]).concat(
+    references = ([] as ReferenceInterface[]).concat(
       await publicKeyReferencesPromise,
       await signatureReferencesPromise,
       options.references ? options.references : []
     );
   } else {
-    referencesPromise = options.references ? options.references : null
+    references = options.references ? options.references : null
     tagsPromise = options.tags ? options.tags : null
   }
 
@@ -169,10 +170,10 @@ export async function updateContent({
     variables: {
       id,
       cluster: options.cluster ? options.cluster : null,
-      references: await referencesPromise,
+      references,
       tags: (await tagsPromise)?.map(async (tag: string) => {
         if(options.encryptTags && options.encryptTags.includes(tag)){
-          return await encryptTag({key, data: tag.split("=", 2)[1]})
+          return await encryptTag({key, data: tag})
         } else {
           return tag
         }
@@ -403,7 +404,7 @@ export async function decryptContentObject({config, nodeData, blobOrAuthinfo, de
     tags: nodeData.tags.map(async (tag_val: string) => {
       const [tag, data] = tag_val.split("=", 2)
       if(decryptTags.includes(tag)){
-        return [tag, (await decryptTag({key, data})).data]
+        return [tag, (await decryptTagRaw({key, data})).data]
       } else {
         return [tag, data]
       }

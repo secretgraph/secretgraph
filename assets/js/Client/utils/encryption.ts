@@ -415,20 +415,33 @@ export async function derivePW(options: PWInterface | PromiseLike<PWInterface>) 
   }
 }
 
-export async function encryptTag(options: CryptoGCMInInterface) {
+// use tag="" for no prefix (key=...)
+export async function encryptTag(options: CryptoGCMInInterface & {readonly tag?: string | PromiseLike<string | undefined>}) {
+  let tag: string | undefined, data: CryptoGCMInInterface["data"];
+  if(options.tag !== undefined){
+    tag = await options.tag;
+  } else {
+    const splitted = ((await options.data ) as string).split("=", 2);
+    tag = splitted[0]
+
+  }
   const nonce = crypto.getRandomValues(new Uint8Array(13));
-  const {data} = await encryptAESGCM({
+  const {data: encrypted} = await encryptAESGCM({
     ...options,
     nonce
   })
-  const tmp = new Uint8Array(nonce.byteLength + data.byteLength);
+  const tmp = new Uint8Array(nonce.byteLength + encrypted.byteLength);
   tmp.set(new Uint8Array(nonce), 0);
-  tmp.set(new Uint8Array(data), nonce.byteLength);
-  return serializeToBase64(tmp)
+  tmp.set(new Uint8Array(encrypted), nonce.byteLength);
+
+  const serialized = await serializeToBase64(tmp)
+  if(tag){
+    return `${tag}=${serialized}`
+  }
+  return serialized;
 }
 
-
-export async function decryptTag(options: CryptoGCMInInterface) {
+export async function decryptTagRaw(options: CryptoGCMInInterface) {
   const data = await unserializeToArrayBuffer(options.data);
   const nonce = new Uint8Array(data.slice(0, 13));
   const realdata = data.slice(13);
@@ -436,6 +449,30 @@ export async function decryptTag(options: CryptoGCMInInterface) {
     ...options,
     data: realdata,
     nonce
+  })
+}
+
+
+export async function decryptTag(options: Omit<CryptoGCMInInterface, "data"> & {readonly data: string | PromiseLike<string>}) {
+  const [tag, b64data] = (await options.data).split("=", 2)
+  return {
+    ...await decryptTagRaw({...options, data: b64data}),
+    tag
+  }
+}
+
+export async function decryptTags(options: Omit<CryptoGCMInInterface, "data"> & {readonly tags: PromiseLike<(string | PromiseLike<string>)[]>, readonly decryptTags: string[]}) {
+  const tags:{[tag: string]: string[]} = {};
+  (await Promise.all(await options.tags)).forEach(async (tag_val) => {
+    const [tag, data] = tag_val.split("=", 2);
+    if(!tags[tag]){
+      tags[tag] = []
+    }
+    if(options.decryptTags.includes(tag)){
+      tags[tag].push((await decryptTagRaw({key: options.key, data})).data.toString())
+    } else {
+      tags[tag].push(data)
+    }
   })
 }
 
