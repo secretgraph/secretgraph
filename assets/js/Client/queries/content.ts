@@ -21,6 +21,7 @@ export const createContentMutation = gql`
       content {
         nonce
         link
+        updateId
       }
       writeok
     }
@@ -37,6 +38,7 @@ export const contentQuery = gql`
           id
           nonce
           link
+          updateId
           tags(
             includeTags: $includeTags
           )
@@ -79,6 +81,7 @@ export const findConfigQuery = gql`
             nonce
             link
             tags
+            updateId
             references(groups: ["key"]) {
               edges {
                 node {

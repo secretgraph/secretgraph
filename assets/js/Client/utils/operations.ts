@@ -18,8 +18,7 @@ import {
   encryptAESGCM,
   serializeToBase64,
   unserializeToArrayBuffer,
-  decryptTag,
-  decryptTagRaw,
+  extractTags,
   encryptTag
 } from "./encryption";
 import { ApolloClient, FetchResult } from "@apollo/client";
@@ -352,7 +351,7 @@ export async function initializeCluster(
 }
 
 
-export async function decryptContentObject({config, nodeData, blobOrAuthinfo, decryptTags=[]}: {
+export async function decryptContentObject({config, nodeData, blobOrAuthinfo, decrypt=[]}: {
   config: ConfigInterface | PromiseLike<ConfigInterface>,
   nodeData: any | PromiseLike<any>,
   blobOrAuthinfo:
@@ -360,7 +359,7 @@ export async function decryptContentObject({config, nodeData, blobOrAuthinfo, de
     | string
     | AuthInfoInterface
     | PromiseLike<Blob | string | AuthInfoInterface>,
-    decryptTags?: string[]
+    decrypt?: string[]
 }) {
   let arrPromise: PromiseLike<ArrayBufferLike>;
   const _info = await blobOrAuthinfo;
@@ -379,7 +378,8 @@ export async function decryptContentObject({config, nodeData, blobOrAuthinfo, de
   if (_node.tags.includes("type=PublicKey")) {
     return {
       data: await arrPromise,
-      tags: nodeData.tags
+      tags: nodeData.tags,
+      updateId: nodeData.updateId
     };
   }
   const found = findCertCandidatesForRefs(await config, _node);
@@ -401,23 +401,17 @@ export async function decryptContentObject({config, nodeData, blobOrAuthinfo, de
       nonce: _node.nonce,
       data: arrPromise,
     }),
-    tags: nodeData.tags.map(async (tag_val: string) => {
-      const [tag, data] = tag_val.split("=", 2)
-      if(decryptTags.includes(tag)){
-        return [tag, (await decryptTagRaw({key, data})).data]
-      } else {
-        return [tag, data]
-      }
-    })
+    updateId: nodeData.updateId,
+    tags: await extractTags({key, tags: nodeData.tags, decrypt})
   };
 }
 
-export async function decryptContentId({client, config, url, id: contentId, decryptTags}:{
+export async function decryptContentId({client, config, url, id: contentId, decrypt}:{
   client: ApolloClient<any>,
   config: ConfigInterface | PromiseLike<ConfigInterface>,
   url: string,
   id: string,
-  decryptTags?: string[]
+  decrypt?: string[]
 }) {
   const _config = await config;
   const authinfo: AuthInfoInterface = extractAuthInfo({config: _config, url});
@@ -442,6 +436,6 @@ export async function decryptContentId({client, config, url, id: contentId, decr
     config: _config,
     nodeData: result.data.content,
     blobOrAuthinfo: authinfo,
-    decryptTags
+    decrypt
   });
 }

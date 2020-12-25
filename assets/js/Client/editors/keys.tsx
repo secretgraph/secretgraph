@@ -22,12 +22,6 @@ const ViewKeys = (props: Props) => {
   const { mainCtx } = React.useContext(MainContext);
   const client = useApolloClient();
   const { config } = React.useContext(ConfigContext);
-  decryptContentId(
-    client,
-    config as ConfigInterface,
-    mainCtx.url as string,
-    mainCtx.item as string
-  )
   return (
     <
     >

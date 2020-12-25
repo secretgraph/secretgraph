@@ -1,6 +1,7 @@
 
 
 import * as React from "react";
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
 import { useAsync } from "react-async"
@@ -42,7 +43,7 @@ const ViewFile = (props: Props) => {
       config: config as ConfigInterface,
       url: mainCtx.url as string,
       id: mainCtx.item as string,
-      decryptTags: ["mime"]
+      decryptTags: ["mime", "name"]
     }
   )
   React.useEffect(()=> {
@@ -56,39 +57,44 @@ const ViewFile = (props: Props) => {
       URL.revokeObjectURL(_blobUrl)
     }
   }, [data])
-  if (!blobUrl) {
+  if (!blobUrl || !data) {
     return null;
   }
-  /**
-  saveAs(
-    new File(
-      [newConfig],
-      name,
-      {type: "text/plain;charset=utf-8"}
-    )
-  );
-  {% if type == "image" %}
-  <a href="{{download}}">
-    <img src="{{download}}" alt="{{object.associated.name}}" style="width:100%"/>
-  </a>
-{% elif type == "media" %}
-  <video controls>
-    <source src="{{download}}" style="width:100%">
-    {% trans 'Format not supported' %}
-  </video>
-{% else %}
-  <div style="width:100%" class="w3-padding w3-center">
-    <a class="w3-margin" href="{{download}}">
-      <i class="fas fa-file-download" style="font-size:300px;color: red;" aria-hidden="true"></i>
-    </a>
-  </div>
-{% endif %}
- */
+  let inner: null | JSX.Element = null;
+  switch(data.tags.mime.split("/", 1)[0]){
+    case "text":
+      // not implemented yet
+      break
+    case "audio":
+    case "video":
+      inner = (
+        <div>
+          <video controls>
+            <source src={blobUrl} style={{width:"100%"}}/>
+          </video>
+        </div>
+      )
+      break
+    case "image":
+      inner = (
+        <div>
+          <a href={blobUrl}>
+            <img src={blobUrl} alt={data.tags.name || ""} style={{width:"100%"}}/>
+          </a>
+        </div>
+      )
+      break
+  }
   return (
     <>
-
+      {inner}
+      <div>
+        <a  href={blobUrl} type={data.tags.mime} target="_blank">
+          <CloudDownloadIcon/>
+        </a>
+      </div>
     </>
-  );
+  )
 }
 
 const AddFile = (props: Props) => {

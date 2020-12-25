@@ -461,19 +461,20 @@ export async function decryptTag(options: Omit<CryptoGCMInInterface, "data"> & {
   }
 }
 
-export async function decryptTags(options: Omit<CryptoGCMInInterface, "data"> & {readonly tags: PromiseLike<(string | PromiseLike<string>)[]>, readonly decryptTags: string[]}) {
+export async function extractTags(options: Omit<CryptoGCMInInterface, "data"> & {readonly tags: PromiseLike<(string | PromiseLike<string>)[]>, readonly decrypt: string[]}) {
   const tags:{[tag: string]: string[]} = {};
-  (await Promise.all(await options.tags)).forEach(async (tag_val) => {
-    const [tag, data] = tag_val.split("=", 2);
+  await Promise.all((await options.tags).map(async (tag_val) => {
+    const [tag, data] = (await tag_val).split("=", 2);
     if(!tags[tag]){
       tags[tag] = []
     }
-    if(options.decryptTags.includes(tag)){
+    if(options.decrypt.includes(tag)){
       tags[tag].push((await decryptTagRaw({key: options.key, data})).data.toString())
     } else {
       tags[tag].push(data)
     }
-  })
+  }))
+  return tags
 }
 
 export async function encryptPreKey({prekey, pw, hashAlgorithm, iterations}: {prekey: ArrayBuffer, pw: NonKeyInput, hashAlgorithm: string, iterations: number}){

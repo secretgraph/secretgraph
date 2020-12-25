@@ -53,7 +53,7 @@ module.exports = (env, options) => ({
     tsgqlPlugin,
   ],
   optimization: {
-    runtimeChunk: true,
+    runtimeChunk: "single",
     splitChunks: {
       chunks: "all",
     },
