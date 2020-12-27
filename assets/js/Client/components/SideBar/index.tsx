@@ -360,7 +360,7 @@ const SideBarItems = ({
                 let type = content.tags.find((flag: string) => flag.startsWith("type="));
                 if (type){
                   // split works different in js, so 2
-                  type = type.split("=", 2)[1];
+                  type = type.match(/=(.*)/)[1]
                 }
                 if (type == "PrivateKey" ) {
                   type = "PublicKey";
@@ -398,7 +398,7 @@ const SideBarItems = ({
                 let type = content.tags.find((flag: string) => flag.startsWith("type="));
                 if (type){
                   // split works different in js, so 2
-                  type = type.split("=", 2)[1];
+                  type = type.match(/=(.*)/)[1];
                 }
                 if (type == "PrivateKey" ) {
                   type = "PublicKey";
@@ -431,7 +431,7 @@ const SideBarItems = ({
                 let type = content.tags.find((flag: string) => flag.startsWith("type="));
                 if (type){
                   // split works different in js, so 2
-                  type = type.split("=", 2)[1];
+                  type = type.match(/=(.*)/)[1];
                 }
                 if (type == "PrivateKey" ) {
                   type = "PublicKey";

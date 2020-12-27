@@ -123,12 +123,12 @@ export default function Contents(appProps: SideBarItemsProps) {
     let type = node.tags.find((flag: string) => flag.startsWith("type="));
     let state = node.tags.find((flag: string) => flag.startsWith("state="));
     if (type){
-        // split works different in js, so 2
-        type = type.split("=", 2)[1];
+        // split works different in js, so match
+        type = type.match(/=(.*)/)[1];
     }
     if (state){
-        // split works different in js, so 2
-        state = state.split("=", 2)[1];
+        // split works different in js, so match
+        state = state.match(/=(.*)/)[1];
     }
     let icon;
     switch(type){

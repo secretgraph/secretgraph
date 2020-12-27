@@ -164,22 +164,22 @@ def _update_or_create_content_or_key(
         if is_key:
             if content_state not in {"public", "internal"}:
                 raise ValueError(
-                    "%s is an invalid state for key", content_state
+                    "%s is an invalid state for key" % content_state
                 )
         else:
             if content_type in {"PrivateKey", "PublicKey", None}:
                 raise ValueError(
-                    "%s is an invalid type or not set", content_type
+                    "%s is an invalid type or not set" % content_type
                 )
             elif content_type == "Config" and content_state != "internal":
                 raise ValueError(
-                    "%s is an invalid state for Config", content_type
+                    "%s is an invalid state for Config" % content_type
                 )
             elif content_state not in {
                 "draft", "public", "internal"
             }:
                 raise ValueError(
-                    "%s is an invalid state for content", content_state
+                    "%s is an invalid state for content" % content_state
                 )
     elif not content.id:
         raise ValueError(

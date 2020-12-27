@@ -74,7 +74,10 @@ export async function createContent({
   const signatureReferencesPromise = encryptedContentPromise.then((data) =>
     createSignatureReferences(data.data, options.privkeys ? options.privkeys : [], halgo)
   );
-  const newTags: string[] = await tagsPromise;
+  const s = new Set<string>()
+  console.log((await tagsPromise).concat(options.tags))
+  const tags = await Promise.all((await tagsPromise).concat(options.tags).map((data) => encryptTag({data, key, encrypt: s})))
+  console.log(tags)
   return await client.mutate({
     mutation: createContentMutation,
     variables: {
@@ -84,13 +87,7 @@ export async function createContent({
         await signatureReferencesPromise,
         options.references ? options.references : []
       ),
-      tags: newTags.concat(options.tags).map(async (tag: string) => {
-        if(options.encryptTags && options.encryptTags.includes(tag)){
-          return await encryptTag({key, data: tag})
-        } else {
-          return tag
-        }
-      }),
+      tags,
       nonce: await serializeToBase64(nonce),
       value: await encryptedContentPromise.then(
         (data) => new File([data.data], "value")

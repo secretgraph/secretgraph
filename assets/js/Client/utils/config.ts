@@ -292,7 +292,7 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
       if(!privkeyrefnode){
         continue;
       }
-      const privkeykey = privkeyrefnode.node.target.tags.find((tag: string) => tag.startsWith("key=")).split("=", 2)[1];
+      const privkeykey = privkeyrefnode.node.target.tags.find((tag: string) => tag.startsWith("key=")).match(/=(.*)/)[1];
       const url = new URL(config.baseUrl);
       const sharedKeyPrivateKeyRes = await decryptRSAOEAP({
         key: cert,
@@ -356,7 +356,7 @@ export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any
     const hashes = [];
     for(const tag of nodeData.tags){
       if (tag.startsWith("key_hash=")){
-        const cleanhash = tag.split("=", 2)[1];
+        const cleanhash = tag.match(/=(.*)/)[1];
         if(cleanhash && config.certificates[cleanhash]){
           hashes.push(b64toarr(cleanhash))
         }
@@ -367,7 +367,7 @@ export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any
         for(const hash of hashes){
           found.push([
             hash,
-            b64toarr(tag.split("=", 2)[1])
+            b64toarr(tag.match(/=(.*)/)[1])
           ]);
         }
       }
@@ -375,7 +375,7 @@ export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any
   }
   for(const refnode of nodeData.references.edges){
     for(const dirtyhash of refnode.target.tags){
-      const cleanhash = dirtyhash.split("=", 2)[1];
+      const cleanhash = dirtyhash.match(/=(.*)/)[1];
       if(cleanhash && config.certificates[cleanhash]){
         found.push([
           b64toarr(config.certificates[cleanhash]),
