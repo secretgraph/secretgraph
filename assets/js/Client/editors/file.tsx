@@ -4,6 +4,7 @@ import * as React from "react";
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
+import * as DOMPurify from 'dompurify';
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import { useAsync } from "react-async"
@@ -25,8 +26,6 @@ import { contentQuery } from "../queries/content"
 import { useStylesAndTheme } from "../theme";
 import { newClusterLabel } from "../messages";
 import DecisionFrame from "../components/DecisionFrame";
-
-
 type Props = {};
 
 
@@ -52,7 +51,7 @@ const ViewFile = (props: Props) => {
     if(!data){
       return;
     }
-    const _blobUrl = URL.createObjectURL(data.data)
+    const _blobUrl = URL.createObjectURL(new Blob([data.data], {type: data.tags.mime}))
     setBlobUrl(_blobUrl);
     return () => {
       setBlobUrl(undefined)
@@ -65,24 +64,28 @@ const ViewFile = (props: Props) => {
   let inner: null | JSX.Element = null;
   switch(data.tags.mime.split("/", 1)[0]){
     case "text":
-      if (data.tags.mime == "text/html"){
+      let text;
+      try{
+        text = (new TextDecoder()).decode(data.data)
         // sanitize and render
+      }catch(exc){
+        console.log("Could not parse", exc)
+        text = `${data.data}`
+      }
+      if (data.tags.mime == "text/html"){
+        const sanitized = DOMPurify.sanitize(text)
         inner = (
-          <div>
-            <pre>
-              {data.data}
-            </pre>
+          <div dangerouslySetInnerHTML={{ __html: sanitized }}>
           </div>
         )
       } else {
         inner = (
           <div>
             <pre>
-              {data.data}
+              {text}
             </pre>
           </div>
         )
-
       }
     case "audio":
     case "video":
@@ -127,8 +130,19 @@ const AddFile = (props: Props) => {
         htmlInput: "",
         fileInput: null as (null | File)
       }}
+      validate={(values) => {
+        const errors : Partial<{[key in keyof typeof values]: string}> = {}
+        if ((values.plainInput && values.htmlInput) || (values.plainInput && values.fileInput) || (values.htmlInput && values.fileInput)){
+          errors["plainInput"] = errors["htmlInput"] = errors["fileInput"] = "only one can be set"
+        } else if (!values.plainInput && !values.htmlInput && !values.fileInput) {
+          errors["plainInput"] = errors["htmlInput"] = errors["fileInput"] = "empty"
+        }
+
+        return errors
+      }}
 
       onSubmit={async (values, { setSubmitting, setValues }) => {
+        const sanitized = DOMPurify.sanitize(values.htmlInput)
 
       }}
     >
