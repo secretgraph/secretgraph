@@ -10,6 +10,7 @@ import { useQuery, useApolloClient } from '@apollo/client';
 import { ConfigInterface} from "../interfaces"
 import { MainContext, ConfigContext } from "../contexts"
 import { decryptContentId } from "../utils/operations"
+import DecisionFrame from "../components/DecisionFrame";
 
 import { contentQuery } from "../queries/content"
 import { useStylesAndTheme } from "../theme";
@@ -53,18 +54,18 @@ const EditKeys = (props: Props) => {
 }
 
 export default function KeyComponent(props: Props) {
-  const {mainCtx} = React.useContext(MainContext);
+  const {mainCtx, updateMainCtx} = React.useContext(MainContext);
   if( mainCtx.type == "PrivateKey" ) {
-    // reload as PublicKey
+    // FIXME: reload as PublicKey
+    updateMainCtx({item: null})
+    return null
   }
-  if (mainCtx.action == "view" && mainCtx.item) {
-    return (
-      <ViewKeys/>
-    );
-  } else if (mainCtx.action == "edit" && mainCtx.item) {
-    return (<EditKeys/>)
-  } else if (mainCtx.action == "add") {
-    return (<AddKeys/>)
-  }
-  return null;
+  return (
+    <DecisionFrame
+      mainCtx={mainCtx}
+      view={ViewKeys}
+      edit={EditKeys}
+      add={AddKeys}
+    />
+  )
 };

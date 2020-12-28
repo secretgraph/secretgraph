@@ -10,6 +10,9 @@ import { MainContext, ConfigContext } from "../contexts"
 type Props = {};
 const ViewCustom = (props: Props) => {
   const {classes, theme} = useStylesAndTheme();
+  // list all tags
+  // view content if possible
+  // elsewise just download
 
   return (
     <div />
