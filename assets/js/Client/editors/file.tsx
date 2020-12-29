@@ -12,9 +12,9 @@ import { useAsync } from "react-async"
 
 import { saveAs } from 'file-saver';
 
-import { Formik, Form, FastField, Field, } from 'formik';
+import { Formik, FieldProps, Form, FastField, Field, } from 'formik';
 
-import { TextField as TextFieldFormik, SimpleFileUpload as SimpleFileUploadFormik} from 'formik-material-ui';
+import { TextField as FormikTextField, SimpleFileUpload as FormikSimpleFileUpload} from 'formik-material-ui';
 import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client';
 import { parse, serialize, graph, SPARQLToQuery, BlankNode, NamedNode, Literal } from 'rdflib';
 import { RDF, XSD, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
@@ -129,10 +129,15 @@ const AddFile = (props: Props) => {
       initialValues={{
         plainInput: "",
         htmlInput: "",
-        fileInput: null as (null | File)
+        fileInput: null as (null | File),
+        name: "",
+        tags: [] as string[]
       }}
       validate={(values) => {
         const errors : Partial<{[key in keyof typeof values]: string}> = {}
+        if (!values.name) {
+          errors["name"] = "Name required"
+        }
         if ((values.plainInput && values.htmlInput) || (values.plainInput && values.fileInput) || (values.htmlInput && values.fileInput)){
           errors["plainInput"] = errors["htmlInput"] = errors["fileInput"] = "only one can be set"
         } else if (!values.plainInput && !values.htmlInput && !values.fileInput) {
@@ -143,7 +148,10 @@ const AddFile = (props: Props) => {
       }}
 
       onSubmit={async (values, { setSubmitting, setValues }) => {
-        const sanitized = DOMPurify.sanitize(values.htmlInput)
+        let data: Blob;
+        if(values.htmlInput){
+          data = new Blob([DOMPurify.sanitize(values.htmlInput)], {type: "text/html"})
+        }
 
       }}
     >
@@ -152,7 +160,7 @@ const AddFile = (props: Props) => {
         { mainCtx.type != "text" ? (
           <Grid item xs={12} sm={!values.plainInput && !values.htmlInput && !values.fileInput ? 6 : undefined}>
             <Field
-              component={TextFieldFormik}
+              component={FormikTextField}
               name="plainInput"
               fullWidth
               multiline
@@ -167,7 +175,7 @@ const AddFile = (props: Props) => {
             multiline
             disabled={isSubmitting || values.plainInput || values.fileInput}
           >
-            {(formikProps) => {
+            {(formikProps: FieldProps) => {
               return (
                 <SunEditor/>
               )
@@ -177,7 +185,7 @@ const AddFile = (props: Props) => {
         { mainCtx.type != "text" ? (
           <Grid item xs={12}>
             <Field
-              component={SimpleFileUploadFormik}
+              component={FormikSimpleFileUpload}
               name="fileInput"
               disabled={isSubmitting|| values.plainInput || values.htmlInput}
             >
@@ -215,7 +223,9 @@ const EditFile = (props: Props) => {
       initialValues={{
         plainInput: "",
         htmlInput: "",
-        fileInput: null as (null | File)
+        fileInput: null as (null | File),
+        name: "",
+        tags: [] as string[]
       }}
 
       onSubmit={async (values, { setSubmitting, setValues }) => {
@@ -226,7 +236,7 @@ const EditFile = (props: Props) => {
       <Grid container spacing={1}>
         <Grid item xs={12} sm={!values.plainInput && !values.htmlInput && !values.fileInput ? 6 : undefined}>
           <Field
-            component={TextFieldFormik}
+            component={FormikTextField}
             name="plainInput"
             fullWidth
             multiline
@@ -244,7 +254,7 @@ const EditFile = (props: Props) => {
         </Grid>
         <Grid item xs={12}>
           <Field
-            component={SimpleFileUploadFormik}
+            component={FormikSimpleFileUpload}
             name="fileInput"
             disabled={isSubmitting|| values.plainInput || values.htmlInput}
           >

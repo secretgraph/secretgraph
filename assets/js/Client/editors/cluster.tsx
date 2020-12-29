@@ -18,7 +18,7 @@ import Collapse from '@material-ui/core/Collapse';
 
 import { Formik, Form, FastField, Field } from 'formik';
 
-import { TextField as TextFieldFormik} from 'formik-material-ui';
+import { TextField as FormikTextField} from 'formik-material-ui';
 import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client';
 import { parse, serialize, graph, SPARQLToQuery, BlankNode, NamedNode, Literal } from 'rdflib';
 import { RDF, XSD, CLUSTER, SECRETGRAPH, contentStates } from "../constants"
@@ -285,7 +285,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <FastField
-                  component={TextFieldFormik}
+                  component={FormikTextField}
                   name="name"
                   type="text"
                   label="Name"
@@ -296,7 +296,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
 
               <Grid item xs={12}>
                 <FastField
-                  component={TextFieldFormik}
+                  component={FormikTextField}
                   name="note"
                   type="text"
                   label="Note"
