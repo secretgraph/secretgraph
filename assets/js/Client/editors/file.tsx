@@ -4,6 +4,7 @@ import * as React from "react";
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
+import SunEditor from "suneditor-react"
 import * as DOMPurify from 'dompurify';
 import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
@@ -166,6 +167,11 @@ const AddFile = (props: Props) => {
             multiline
             disabled={isSubmitting || values.plainInput || values.fileInput}
           >
+            {(formikProps) => {
+              return (
+                <SunEditor/>
+              )
+            }}
           </Field>
         </Grid>
         { mainCtx.type != "text" ? (
