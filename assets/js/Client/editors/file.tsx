@@ -4,6 +4,7 @@ import * as React from "react";
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
+import LinearProgress from '@material-ui/core/LinearProgress';
 import SunEditor from "suneditor-react"
 import * as DOMPurify from 'dompurify';
 import Button from '@material-ui/core/Button';
@@ -151,8 +152,11 @@ const AddFile = (props: Props) => {
         let data: Blob;
         if(values.htmlInput){
           data = new Blob([DOMPurify.sanitize(values.htmlInput)], {type: "text/html"})
+        } else if(values.plainInput){
+          data = new Blob([values.plainInput], {type: "text/plain"})
+        } else if (values.fileInput){
+          data = values.fileInput
         }
-
       }}
     >
     {({ submitForm, isSubmitting, values, setValues}) => (
@@ -195,7 +199,7 @@ const AddFile = (props: Props) => {
           </Grid>
         ) : null}
         <Grid item xs={12}>
-          {/* linear progress */}
+          {isSubmitting && <LinearProgress/>}
         </Grid>
         <Grid item xs={12}>
           <Button

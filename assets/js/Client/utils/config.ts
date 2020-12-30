@@ -2,7 +2,7 @@
 import { saveAs } from 'file-saver';
 
 import { ConfigInterface, ConfigInputInterface, AuthInfoInterface } from "../interfaces";
-import { encryptPreKey, decryptFirstPreKey, decryptAESGCM, decryptRSAOEAP, encryptAESGCM, serializeToBase64 } from "./encryption";
+import { encryptPreKey, decryptFirstPreKey, decryptAESGCM, decryptRSAOEAP, encryptAESGCM, serializeToBase64, unserializeToCryptoKey, unserializeToArrayBuffer } from "./encryption";
 import { b64toarr, utf8encoder, mergeDeleteObjects } from "./misc";
 import { findConfigQuery } from "../queries/content";
 import { mapHashNames } from "../constants";
@@ -326,9 +326,10 @@ export async function exportConfigAsUrl(client: ApolloClient<any>, config: Confi
 
 
 export function extractAuthInfo({config, url, require=["view", "update", "manage"], ...props}: {
-  config: ConfigInterface, url: string,
-  clusters?: string[],
-  require?: string[]
+  readonly config: ConfigInterface,
+  readonly url: string,
+  readonly clusters?: string[],
+  readonly require?: string[]
 }) : AuthInfoInterface {
   const keys = [];
   const hashes = [];
@@ -349,16 +350,46 @@ export function extractAuthInfo({config, url, require=["view", "update", "manage
   return {hashes, keys};
 }
 
+export function extractPrivKeys({config, url, ...props}: {
+  readonly config: ConfigInterface,
+  readonly url: string,
+  readonly clusters?: string[],
+  readonly hashAlgorithm: string
+  old?: {[hash: string]: Promise<CryptoKey>}
+}) : {[hash: string]: Promise<CryptoKey>} {
+  const privkeys = props.old || {};
+  const clusters = config.hosts[(new URL(url, window.location.href)).href].clusters;
+  for (const id in clusters) {
+    if (props.clusters && !props.clusters.includes(id)){
+      continue;
+    }
+    const clusterconf = clusters[id];
+    for (const hash in clusterconf.hashes){
+      if(config.certificates[hash] && !privkeys[hash]){
+        privkeys[hash] = unserializeToCryptoKey(
+          config.certificates[hash],
+          {
+            name: "RSA-OAEP",
+            hash: mapHashNames[""+props.hashAlgorithm].operationName
+          },
+          "privateKey"
+        );
+      }
+    }
+  }
+  return privkeys;
+}
 
-export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any) : [Uint8Array, Uint8Array][] {
-  const found: [Uint8Array, Uint8Array][] = [];
+export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any) : [string, Uint8Array][] {
+  const found: [string, Uint8Array][] = [];
+  // extract tag key from private key
   if (nodeData.tags.includes("type=PrivateKey")){
     const hashes = [];
     for(const tag of nodeData.tags){
       if (tag.startsWith("key_hash=")){
         const cleanhash = tag.match(/=(.*)/)[1];
         if(cleanhash && config.certificates[cleanhash]){
-          hashes.push(b64toarr(cleanhash))
+          hashes.push(cleanhash)
         }
       }
     }
@@ -373,12 +404,13 @@ export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any
       }
     }
   }
+  // extract tags with hashes
   for(const refnode of nodeData.references.edges){
     for(const dirtyhash of refnode.target.tags){
       const cleanhash = dirtyhash.match(/=(.*)/)[1];
       if(cleanhash && config.certificates[cleanhash]){
         found.push([
-          b64toarr(config.certificates[cleanhash]),
+          cleanhash,
           b64toarr(refnode.extra)
         ]);
       }
@@ -387,7 +419,7 @@ export function findCertCandidatesForRefs(config: ConfigInterface, nodeData: any
   return found;
 }
 
-
+export function updateConfigReducer(state: ConfigInterface | null, update: ConfigInputInterface) : (ConfigInterface);
 export function updateConfigReducer(state: ConfigInterface | null, update: ConfigInputInterface | null) : (ConfigInterface | null){
   if (update === null){
     return null;
@@ -429,11 +461,40 @@ export function updateConfigReducer(state: ConfigInterface | null, update: Confi
 }
 
 
-export async function updateConfigReducerSync(state: ConfigInterface | null, update: ConfigInputInterface | null, client: ApolloClient<any>) : Promise<ConfigInterface | null>{
-  if (update === null){
-    return null;
+// update host specific or find a way to find missing refs
+/**
+export async function updateHash(config: ConfigInterface, old?: string) {
+  const newHash = config.hosts[config.baseUrl].hashAlgorithms[0]
+  if(old == newHash){
+    return config
   }
-  let ret
-  ret = updateConfigReducer(state, update) 
+  const updateMap = new Map<string, string>();
+  const ret =  {
+    ...config,
+    certificates: Object.fromEntries(await Promise.all(Object.entries(config.certificates).map(async([hash, val]) =>{
+      let newHash = updateMap.get(hash);
+      if (!updateMap.has(hash)){
+        updateMap.set(hash, await serializeToBase64(unserializeToArrayBuffer(val).then((buf) => crypto.subtle.digest(
+          mapHashNames[""+newHash].operationName, buf
+        ))))
+      }
+      return [
+        updateMap.get(hash),
+        val
+      ]
+    }))),
+    tokens: Object.fromEntries(await Promise.all(Object.entries(config.tokens).map(async([hash, val]) =>{
+      let newHash = updateMap.get(hash);
+      if (!updateMap.has(hash)){
+        updateMap.set(hash, await serializeToBase64(unserializeToArrayBuffer(val).then((buf) => crypto.subtle.digest(
+          mapHashNames[""+newHash].operationName, buf
+        ))))
+      }
+      return [
+        updateMap.get(hash),
+        val
+      ]
+    })))
+  }
   return ret
-}
+} */

@@ -79,7 +79,7 @@ function SettingsImporter() {
       setLoadingImport(false);
       return;
     }
-    const result: any = await client.query(
+    const result = await client.query(
       {query: serverConfigQuery}
     );
     if (!result){

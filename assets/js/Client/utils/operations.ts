@@ -1,5 +1,5 @@
 import { createClusterMutation, updateClusterMutation } from "../queries/cluster";
-import { createContentMutation, contentQuery } from "../queries/content";
+import { createContentMutation, updateContentMutation, contentQuery, findConfigQuery } from "../queries/content";
 import { serverConfigQuery } from "../queries/server";
 import {
   ConfigInterface,
@@ -8,7 +8,8 @@ import {
   AuthInfoInterface,
   KeyInput,
   CryptoHashPair,
-  CryptoGCMInInterface
+  CryptoGCMInInterface,
+  ConfigInputInterface
 } from "../interfaces";
 import { b64toarr, sortedHash, utf8encoder } from "./misc";
 import {
@@ -25,9 +26,11 @@ import { ApolloClient, FetchResult } from "@apollo/client";
 import {
   cleanConfig,
   extractAuthInfo,
+  extractPrivKeys,
   findCertCandidatesForRefs,
+  updateConfigReducer
 } from "./config";
-import { createContentAuth, encryptSharedKey, createSignatureReferences } from "./graphql";
+import { encryptSharedKey, createSignatureReferences, extractPubKeys } from "./graphql";
 import { mapHashNames } from "../constants";
 
 export async function createContent({
@@ -39,7 +42,7 @@ export async function createContent({
   client: ApolloClient<any>,
   config: ConfigInterface,
   cluster: string,
-  value: File | Blob,
+  value: Blob,
   pubkeys: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[],
   privkeys?: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[],
   tags: string[],
@@ -75,9 +78,7 @@ export async function createContent({
     createSignatureReferences(data.data, options.privkeys ? options.privkeys : [], halgo)
   );
   const s = new Set<string>()
-  console.log((await tagsPromise).concat(options.tags))
   const tags = await Promise.all((await tagsPromise).concat(options.tags).map((data) => encryptTag({data, key, encrypt: s})))
-  console.log(tags)
   return await client.mutate({
     mutation: createContentMutation,
     variables: {
@@ -101,14 +102,16 @@ export async function createContent({
 
 export async function updateContent({
     id,
+    updateId,
     client,
     ...options
   } : {
   id: string,
+  updateId: string,
   client: ApolloClient<any>,
   config: ConfigInterface,
   cluster?: string,
-  value?: File | Blob,
+  value?: Blob,
   pubkeys: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[],
   privkeys?: (KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>)[],
   tags?: string[],
@@ -162,9 +165,10 @@ export async function updateContent({
   }
 
   return await client.mutate({
-    mutation: createContentMutation,
+    mutation: updateContentMutation,
     variables: {
       id,
+      updateId,
       cluster: options.cluster ? options.cluster : null,
       references,
       tags: (await tagsPromise)?.map(async (tag: string) => {
@@ -324,12 +328,12 @@ export async function initializeCluster(
     config["hosts"][config["baseUrl"]].hashAlgorithms[0]
   );
 
-  const actionkeys = createContentAuth({
+  const {keys: authorization} = extractAuthInfo({
     config: config,
     clusters: [clusterResult.cluster["id"]],
-    action: "manage",
+    require: ["manage"],
     url: config.baseUrl,
-  })[0] as string[];
+  });
 
   return await createContent({
     client,
@@ -341,7 +345,7 @@ export async function initializeCluster(
     tags: ["type=Config", "state=internal"],
     contentHash: digest,
     hashAlgorithm: config["hosts"][config["baseUrl"]].hashAlgorithms[0],
-    authorization: actionkeys
+    authorization
   }).then(() => {
     return [config, clusterResult.cluster.id as string];
   });
@@ -384,12 +388,12 @@ export async function decryptContentObject({config, nodeData, blobOrAuthinfo, de
     return null;
   }
   const sharedkeyPromise = Promise.any(
-    found.map((value) =>
-      decryptRSAOEAP({
-        key: value[0],
+    found.map(async (value) => {
+      return await decryptRSAOEAP({
+        key: (await config).certificates[value[0]],
         data: value[1],
       })
-    )
+    })
   );
   const key = (await sharedkeyPromise).data;
   return {
@@ -431,8 +435,90 @@ export async function decryptContentId({client, config, url, id: contentId, decr
   }
   return await decryptContentObject({
     config: _config,
-    nodeData: result.data.content,
+    nodeData: result.data.node,
     blobOrAuthinfo: authinfo,
     decrypt
   });
+}
+
+
+export async function updateConfigRemoteReducer(
+  state: ConfigInterface | null,
+  {update, authInfo, ...props}: {
+    update: ConfigInputInterface | null,
+    client: ApolloClient<any>,
+    authInfo?: AuthInfoInterface
+  }
+) : Promise<ConfigInterface | null>{
+  if (update === null){
+    return null;
+  }
+  const config = (state || updateConfigReducer(null, update))
+  if(!authInfo){
+    authInfo = extractAuthInfo({
+      config,
+      url: config.baseUrl,
+      clusters: [config.configCluster]
+    })
+  }
+  let privkeys = undefined;
+  let pubkeys = undefined;
+
+  while(true){
+    const configQueryRes = await props.client.query(
+      {
+        query: findConfigQuery,
+        variables:{
+          authorization: authInfo.keys
+        }
+      }
+    );
+    if(configQueryRes.errors){
+      throw configQueryRes.errors
+    }
+    const node = configQueryRes.data.node;
+    const foundConfig = await fetch(node.link, {
+      headers: {
+        Authorization: authInfo.keys.join(","),
+      },
+    }).then((result) => result.json());
+    const mergedConfig = updateConfigReducer(
+      foundConfig, update
+    )
+    mergedConfig.hosts[mergedConfig.baseUrl].hashAlgorithms = configQueryRes.data.config.hashAlgorithms
+    privkeys = extractPrivKeys({
+      config:mergedConfig,
+      url: mergedConfig.baseUrl,
+      hashAlgorithm: configQueryRes.data.config.hashAlgorithms[0],
+      old: privkeys
+    })
+    pubkeys = extractPubKeys({
+      node,
+      authorization:authInfo.keys,
+      params: {
+        name: "RSA-OAEP",
+        hash: configQueryRes.data.config.hashAlgorithms[0]
+      },
+      old: pubkeys,
+      onlyPubkeys: true
+    })
+
+    const result = await updateContent({
+      ...props,
+      id: node.id,
+      updateId: node.updateId,
+      privkeys: Object.values(privkeys),
+      pubkeys: Object.values(pubkeys),
+      config: foundConfig,
+      hashAlgorithm: configQueryRes.data.config.hashAlgorithms[0],
+      value: new Blob([JSON.stringify(mergedConfig)]),
+      authorization: authInfo.keys
+    })
+    if(result.errors){
+      throw configQueryRes.errors
+    }
+    if(result.data.writeok){
+      return mergedConfig
+    }
+  }
 }

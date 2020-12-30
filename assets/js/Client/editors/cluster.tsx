@@ -13,6 +13,7 @@ import ListItemText from "@material-ui/core/ListItemText";
 import Tooltip from '@material-ui/core/Tooltip';
 import IconButton from '@material-ui/core/IconButton';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
+import LinearProgress from '@material-ui/core/LinearProgress';
 import Grid from '@material-ui/core/Grid';
 import Collapse from '@material-ui/core/Collapse';
 
@@ -304,6 +305,9 @@ const ClusterIntern = (props: ClusterInternProps) => {
                   multiline
                   disabled={props.disabled || isSubmitting}
                 />
+              </Grid>
+              <Grid item xs={12}>
+                {isSubmitting && <LinearProgress/>}
               </Grid>
               <Grid item xs={12}>
                 {

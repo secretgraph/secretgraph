@@ -36,42 +36,6 @@ export const createClient = (url: string) => {
 
 }
 
-
-export function createContentAuth(
-  options: {
-    readonly config: ConfigInterface,
-    readonly clusters: string[],
-    readonly action?: string,
-    url?: string,
-    keysink?: any
-  }
-){
-  const authkeys: string[] = [];
-  const privkeys: PromiseLike<any>[] = [];
-  let usedUrl: string;
-  if(options.url){
-    usedUrl=options.url;
-  } else {
-    usedUrl=options.config.baseUrl;
-  }
-  const checkActions =  (el: string) => [options.action ? options.action : "view", "manage"].includes(el);
-  for(let clusterid of options.clusters){
-    const c = options.config.hosts[usedUrl] ? options.config.hosts[usedUrl].clusters[clusterid] : undefined;
-    if (c?.hashes){
-      for(let hash in c.hashes) {
-        if(options.keysink && hash in options.config.certificates){
-          privkeys.push(options.keysink(options.config.certificates[hash]));
-        } else if (c.hashes[hash].findIndex(checkActions) !== -1 && hash in options.config.tokens){
-          authkeys.push(`${clusterid}:${options.config.tokens[hash]}`);
-        }/** else if (!c.hashes[hash] && hash in config.tokens){
-          authkeys.push(`${hash}:${config.tokens[hash]}`);
-        } */
-      }
-    }
-  }
-  return [authkeys, Promise.allSettled(privkeys)]
-}
-
 async function createSignatureReferences_helper(key: KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>, hashalgo: string, content: ArrayBuffer | PromiseLike<ArrayBuffer>){
   const _x = await key;
   let signkey: KeyInput, hash: string | Promise<string>;
@@ -190,4 +154,30 @@ export function encryptSharedKey(sharedkey: Uint8Array, pubkeys: (KeyInput | Cry
     tags.push(temp.then(({hash}) : string => `key_hash=${hash}`));
   }
   return [Promise.all(references), Promise.all(tags)]
+}
+
+// onlyPubkeys skips checks which can fail in case of missing tag inclusion
+// this is the case with the findConfigQuery
+export function extractPubKeys(props: {
+  readonly node: any,
+  readonly authorization: string[], 
+  readonly params: any,
+  old?: {[hash: string]: Promise<CryptoKey>}
+  readonly onlyPubkeys?:boolean
+}): {[hash: string]: Promise<CryptoKey>}{
+  const pubkeys = props.old || {};
+  for(const ref of props.node.references.edges){
+    const keyNode = ref.target
+    if(!props.onlyPubkeys && (!keyNode.tags.includes("type=PublicKey"))){
+      continue
+    }
+    if(!pubkeys[keyNode.contentHash]){
+      pubkeys[keyNode.contentHash] = fetch(props.node.link, {
+        headers: {
+          Authorization: props.authorization.join(","),
+        },
+      }).then((result) => unserializeToCryptoKey(result.arrayBuffer(), props.params, "publicKey"));
+    }
+  }
+  return pubkeys;
 }

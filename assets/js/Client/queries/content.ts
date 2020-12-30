@@ -2,7 +2,7 @@ import { gql } from '@apollo/client';
 
 
 export const createContentMutation = gql`
-  mutation contentEncryptedMutation($cluster: ID!, $tags: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
+  mutation contentCreateEncryptedMutation($cluster: ID!, $tags: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
     updateOrCreateContent(
       input: {
         content: {
@@ -28,8 +28,37 @@ export const createContentMutation = gql`
   }
 `
 
+export const updateContentMutation = gql`
+  mutation contentUpdateEncryptedMutation($id: ID!, $updateId: ID!, $cluster: ID, $tags: [String!], $references: [ReferenceInput!], $value: Upload, $nonce: String, $contentHash: String, $authorization: [String!]) {
+    updateOrCreateContent(
+      input: {
+        content: {
+          id: $id
+          cluster: $cluster
+          value: {
+            tags: $tags
+            value: $value
+            nonce: $nonce
+          }
+          contentHash: $contentHash
+          references: $references
+        }
+        updateId: $updateId
+        authorization: $authorization
+      }
+    ) {
+      content {
+        nonce
+        link
+        updateId
+      }
+      writeok
+    }
+  }
+`
+
 export const contentQuery = gql`
-  query contentRetrieveQuery($id: ID!, $keyhashes: [String!], $authorization: [String!] $includeTags: [String!]) {
+  query contentRetrieveQuery($id: ID!, $keyhashes: [String!], $authorization: [String!], $includeTags: [String!]) {
     secretgraph(authorization: $authorization){
       node(
         id: $id
@@ -88,6 +117,8 @@ export const findConfigQuery = gql`
                   extra
                   target {
                     tags(includeTags: ["key_hash"])
+                    contentHash
+                    link
                     referencedBy(groups: ["public_key"]) {
                       edges {
                         node {
