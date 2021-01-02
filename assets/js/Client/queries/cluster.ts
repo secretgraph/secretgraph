@@ -1,5 +1,42 @@
 import { gql } from '@apollo/client'
 
+export const clusterFeedQuery = gql`
+    query SideBarClusterFeedQuery(
+        $authorization: [String!]
+        $include: [String!]
+        $exclude: [String!]
+        $public: Boolean
+        $count: Int
+        $cursor: String
+    ) {
+        clusters: secretgraph(authorization: $authorization) {
+            clusters(
+                includeTags: $include
+                excludeTags: $exclude
+                public: $public
+                first: $count
+                after: $cursor
+            )
+                @connection(
+                    key: "SideBar_clusters"
+                    filters: ["include", "exclude", "public"]
+                ) {
+                edges {
+                    node {
+                        link
+                        id
+                        publicInfo
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }
+    }
+`
+
 export const getClusterConfigurationQuery = gql`
     query clusterGetConfigurationQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {

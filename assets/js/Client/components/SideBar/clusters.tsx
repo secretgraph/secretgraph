@@ -10,6 +10,7 @@ import ListSubheader from '@material-ui/core/ListSubheader'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import { gql, useQuery } from '@apollo/client'
 import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from '../../constants'
+import { clusterFeedQuery } from '../../queries/cluster'
 import { useStylesAndTheme } from '../../theme'
 import { ActiveUrlContext } from '../../contexts'
 import { AuthInfoInterface } from '../../interfaces'
@@ -23,43 +24,6 @@ type SideBarItemsProps = {
     activeCluster: string | null
     header?: string
 }
-
-const clusterFeedQuery = gql`
-    query SideBarClusterFeedQuery(
-        $authorization: [String!]
-        $include: [String!]
-        $exclude: [String!]
-        $public: Boolean
-        $count: Int
-        $cursor: String
-    ) {
-        clusters: secretgraph(authorization: $authorization) {
-            clusters(
-                includeTags: $include
-                excludeTags: $exclude
-                public: $public
-                first: $count
-                after: $cursor
-            )
-                @connection(
-                    key: "SideBar_clusters"
-                    filters: ["include", "exclude", "public"]
-                ) {
-                edges {
-                    node {
-                        link
-                        id
-                        publicInfo
-                    }
-                }
-                pageInfo {
-                    hasNextPage
-                    endCursor
-                }
-            }
-        }
-    }
-`
 
 export default function Clusters(appProps: SideBarItemsProps) {
     const { classes, theme } = useStylesAndTheme()
