@@ -1,58 +1,48 @@
+import * as React from 'react'
 
+import { saveAs } from 'file-saver'
+import { useQuery, useApolloClient } from '@apollo/client'
 
-import * as React from "react";
+import { ConfigInterface } from '../interfaces'
+import { MainContext, ConfigContext } from '../contexts'
+import { decryptContentId } from '../utils/operations'
 
-import { saveAs } from 'file-saver';
-import { useQuery, useApolloClient } from '@apollo/client';
+import { contentQuery } from '../queries/content'
+import { useStylesAndTheme } from '../theme'
+import { newClusterLabel } from '../messages'
 
-import { ConfigInterface} from "../interfaces"
-import { MainContext, ConfigContext } from "../contexts"
-import { decryptContentId } from "../utils/operations"
+import DecisionFrame from '../components/DecisionFrame'
 
-import { contentQuery } from "../queries/content"
-import { useStylesAndTheme } from "../theme";
-import { newClusterLabel } from "../messages";
-
-import DecisionFrame from "../components/DecisionFrame";
-
-type Props = {};
+type Props = {}
 
 const ViewPostbox = (props: Props) => {
-  const {classes, theme} = useStylesAndTheme();
-  const { mainCtx } = React.useContext(MainContext);
-  const client = useApolloClient();
-  const { config } = React.useContext(ConfigContext);
-  return (
-    <></>
-  );
+    const { classes, theme } = useStylesAndTheme()
+    const { mainCtx } = React.useContext(MainContext)
+    const client = useApolloClient()
+    const { config } = React.useContext(ConfigContext)
+    return <></>
 }
 
 const AddPostbox = (props: Props) => {
-  const {classes, theme} = useStylesAndTheme();
+    const { classes, theme } = useStylesAndTheme()
 
-  return (
-    <></>
-  );
+    return <></>
 }
 
 const EditPostbox = (props: Props) => {
-  const {classes, theme} = useStylesAndTheme();
+    const { classes, theme } = useStylesAndTheme()
 
-  return (
-    <></>
-  );
+    return <></>
 }
 
 export default function PostboxComponent(props: Props) {
-  const {mainCtx} = React.useContext(MainContext);
-  if (mainCtx.action == "view" && mainCtx.item) {
-    return (
-      <ViewPostbox/>
-    );
-  } else if (mainCtx.action == "edit" && mainCtx.item) {
-    return (<EditPostbox/>)
-  } else if (mainCtx.action == "add") {
-    return (<AddPostbox/>)
-  }
-  return null;
-};
+    const { mainCtx } = React.useContext(MainContext)
+    if (mainCtx.action == 'view' && mainCtx.item) {
+        return <ViewPostbox />
+    } else if (mainCtx.action == 'edit' && mainCtx.item) {
+        return <EditPostbox />
+    } else if (mainCtx.action == 'add') {
+        return <AddPostbox />
+    }
+    return null
+}

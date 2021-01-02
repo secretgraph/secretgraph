@@ -1,17 +1,13 @@
+import * as React from 'react'
 
-import * as React from "react";
+import { useStylesAndTheme } from '../theme'
 
-import { useStylesAndTheme } from "../theme";
-
-type Props = {
-};
+type Props = {}
 
 function Help(props: Props) {
-  const {classes, theme} = useStylesAndTheme();
+    const { classes, theme } = useStylesAndTheme()
 
-  return (
-    <React.Fragment />
-  );
+    return <React.Fragment />
 }
 
-export default Help;
+export default Help

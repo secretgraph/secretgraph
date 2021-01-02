@@ -1,40 +1,35 @@
+import * as React from 'react'
+import Card from '@material-ui/core/Card'
+import CardContent from '@material-ui/core/CardContent'
+import { useAsync } from 'react-async'
 
+import { useQuery, useApolloClient } from '@apollo/client'
 
-import * as React from "react";
-import Card from '@material-ui/core/Card';
-import CardContent from '@material-ui/core/CardContent';
-import { useAsync } from "react-async"
+import { ConfigInterface } from '../interfaces'
+import { MainContext, ConfigContext } from '../contexts'
+import { decryptContentId } from '../utils/operations'
 
-import { useQuery, useApolloClient } from '@apollo/client';
+import { contentQuery } from '../queries/content'
+import { useStylesAndTheme } from '../theme'
+import { newClusterLabel } from '../messages'
 
-import { ConfigInterface} from "../interfaces"
-import { MainContext, ConfigContext } from "../contexts"
-import { decryptContentId } from "../utils/operations"
-
-import { contentQuery } from "../queries/content"
-import { useStylesAndTheme } from "../theme";
-import { newClusterLabel } from "../messages";
-
-
-type Props = {};
+type Props = {}
 
 const ViewFile = (props: Props) => {
-  const {classes, theme} = useStylesAndTheme();
-  const { mainCtx } = React.useContext(MainContext);
-  const client = useApolloClient();
-  const { config } = React.useContext(ConfigContext);
-  const { data, error } = useAsync(
-    {
-      promiseFn: decryptContentId,
-      suspense: true,
-      client: client,
-      config: config as ConfigInterface,
-      url: mainCtx.url as string,
-      id: mainCtx.item as string,
-      decryptTags: ["mime", "name"]
-    }
-  )
-  /**
+    const { classes, theme } = useStylesAndTheme()
+    const { mainCtx } = React.useContext(MainContext)
+    const client = useApolloClient()
+    const { config } = React.useContext(ConfigContext)
+    const { data, error } = useAsync({
+        promiseFn: decryptContentId,
+        suspense: true,
+        client: client,
+        config: config as ConfigInterface,
+        url: mainCtx.url as string,
+        id: mainCtx.item as string,
+        decryptTags: ['mime', 'name'],
+    })
+    /**
   saveAs(
     new File(
       [newConfig],
@@ -59,54 +54,41 @@ const ViewFile = (props: Props) => {
   </div>
 {% endif %}
  */
-  return (
-    <
-    >
-
-    </>
-  );
+    return <></>
 }
 
 const AddFile = (props: Props) => {
-  const {classes, theme} = useStylesAndTheme();
+    const { classes, theme } = useStylesAndTheme()
 
-  return (
-    <React.Fragment>
-      <Card>
-        <CardContent>
-
-        </CardContent>
-      </Card>
-
-    </React.Fragment>
-  );
+    return (
+        <React.Fragment>
+            <Card>
+                <CardContent></CardContent>
+            </Card>
+        </React.Fragment>
+    )
 }
 
 const EditFile = (props: Props) => {
-  const {classes, theme} = useStylesAndTheme();
+    const { classes, theme } = useStylesAndTheme()
 
-  return (
-    <React.Fragment>
-      <Card>
-        <CardContent>
-
-        </CardContent>
-      </Card>
-
-    </React.Fragment>
-  );
+    return (
+        <React.Fragment>
+            <Card>
+                <CardContent></CardContent>
+            </Card>
+        </React.Fragment>
+    )
 }
 
 export default function ContactComponent(props: Props) {
-  const {mainCtx} = React.useContext(MainContext);
-  if (mainCtx.action == "view" && mainCtx.item) {
-    return (
-      <ViewFile/>
-    );
-  } else if (mainCtx.action == "edit" && mainCtx.item) {
-    return (<EditFile/>)
-  } else if (mainCtx.action == "add") {
-    return (<AddFile/>)
-  }
-  return null;
-};
+    const { mainCtx } = React.useContext(MainContext)
+    if (mainCtx.action == 'view' && mainCtx.item) {
+        return <ViewFile />
+    } else if (mainCtx.action == 'edit' && mainCtx.item) {
+        return <EditFile />
+    } else if (mainCtx.action == 'add') {
+        return <AddFile />
+    }
+    return null
+}
