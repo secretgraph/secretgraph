@@ -16,8 +16,9 @@ import {
     AuthInfoInterface,
     KeyInput,
     CryptoHashPair,
-    CryptoGCMInInterface,
+    CryptoGCMOutInterface,
     ConfigInputInterface,
+    CryptoGCMInInterface,
 } from '../interfaces'
 import { b64toarr, sortedHash, utf8encoder } from './misc'
 import {
@@ -54,18 +55,10 @@ export async function createContent({
     client: ApolloClient<any>
     config: ConfigInterface
     cluster: string
-    value: Blob
-    pubkeys: (
-        | KeyInput
-        | CryptoHashPair
-        | PromiseLike<KeyInput | CryptoHashPair>
-    )[]
-    privkeys?: (
-        | KeyInput
-        | CryptoHashPair
-        | PromiseLike<KeyInput | CryptoHashPair>
-    )[]
-    tags: string[]
+    value: CryptoGCMInInterface['data']
+    pubkeys: Parameters<typeof encryptSharedKey>[1]
+    privkeys?: Parameters<typeof createSignatureReferences>[1]
+    tags: (string | PromiseLike<string>)[]
     contentHash?: string | null
     references?: ReferenceInterface[] | null
     actions?: ActionInterface[]
@@ -79,7 +72,7 @@ export async function createContent({
     const encryptedContentPromise = encryptAESGCM({
         key,
         nonce,
-        data: options.value.arrayBuffer(),
+        data: options.value,
     })
     const halgo =
         mapHashNames[
@@ -103,7 +96,7 @@ export async function createContent({
     )
     const s = new Set<string>()
     const tags = await Promise.all(
-        (await tagsPromise)
+        ((await tagsPromise) as (string | PromiseLike<string>)[])
             .concat(options.tags)
             .map((data) => encryptTag({ data, key, encrypt: s }))
     )
@@ -139,18 +132,10 @@ export async function updateContent({
     client: ApolloClient<any>
     config: ConfigInterface
     cluster?: string
-    value?: Blob
-    pubkeys: (
-        | KeyInput
-        | CryptoHashPair
-        | PromiseLike<KeyInput | CryptoHashPair>
-    )[]
-    privkeys?: (
-        | KeyInput
-        | CryptoHashPair
-        | PromiseLike<KeyInput | CryptoHashPair>
-    )[]
-    tags?: string[]
+    value: CryptoGCMInInterface['data']
+    pubkeys: Parameters<typeof encryptSharedKey>[1]
+    privkeys?: Parameters<typeof createSignatureReferences>[1]
+    tags?: (string | PromiseLike<string>)[]
     contentHash?: string | null
     references?: ReferenceInterface[] | null
     actions?: ActionInterface[]
@@ -175,7 +160,7 @@ export async function updateContent({
         const encryptedContentPromise2 = encryptAESGCM({
             key,
             nonce,
-            data: options.value.arrayBuffer(),
+            data: options.value,
         })
 
         const [publicKeyReferencesPromise, tagsPromise2] = encryptSharedKey(
@@ -212,13 +197,21 @@ export async function updateContent({
             updateId,
             cluster: options.cluster ? options.cluster : null,
             references,
-            tags: (await tagsPromise)?.map(async (tag: string) => {
-                if (options.encryptTags && options.encryptTags.includes(tag)) {
-                    return await encryptTag({ key, data: tag })
-                } else {
-                    return tag
+            tags: ((await tagsPromise) as
+                | (string | PromiseLike<string>)[]
+                | undefined)?.map(
+                async (tagPromise: string | PromiseLike<string>) => {
+                    const tag = await tagPromise
+                    if (
+                        options.encryptTags &&
+                        options.encryptTags.includes(tag)
+                    ) {
+                        return await encryptTag({ key, data: tag })
+                    } else {
+                        return tag
+                    }
                 }
-            }),
+            ),
             nonce: await serializeToBase64(nonce),
             value: await contentPromise,
             actions: options.actions ? options.actions : null,
@@ -396,6 +389,12 @@ export async function initializeCluster(
     })
 }
 
+interface decryptContentObjectInterface
+    extends Omit<Omit<CryptoGCMOutInterface, 'nonce'>, 'key'> {
+    tags: { [tag: string]: string[] }
+    updateId: string
+}
+
 export async function decryptContentObject({
     config,
     nodeData,
@@ -410,7 +409,7 @@ export async function decryptContentObject({
         | AuthInfoInterface
         | PromiseLike<Blob | string | AuthInfoInterface>
     decrypt?: string[]
-}) {
+}): Promise<decryptContentObjectInterface | null> {
     let arrPromise: PromiseLike<ArrayBufferLike>
     const _info = await blobOrAuthinfo
     const _node = await nodeData

@@ -8,20 +8,12 @@ from .user.schema import Query as UserQuery
 from .user.schema import Mutation as UserMutation
 
 
-class Query(
-    ServerQuery,
-    UserQuery,
-    graphene.ObjectType
-):
+class Query(ServerQuery, UserQuery, graphene.ObjectType):
     node = relay.Node.Field()
     pass
 
 
-class Mutation(
-    ServerMutation,
-    UserMutation,
-    graphene.ObjectType
-):
+class Mutation(ServerMutation, UserMutation, graphene.ObjectType):
     pass
 
 

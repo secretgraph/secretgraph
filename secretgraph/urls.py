@@ -16,32 +16,25 @@ urlpatterns = [
     path(
         "graphql",
         csrf_exempt(CORSFileUploadGraphQLView.as_view(graphiql=True)),
-        name="graphql-plain"
+        name="graphql-plain",
     ),
     # for general favicon, see also linked favicon in template
     path(
         "favicon.ico",
         RedirectView.as_view(
             url=staticfiles_storage.url("secretgraph/favicon.svg")
-        )
+        ),
     ),
-
 ]
 
 urlpatterns += i18n_patterns(
-    path(
-        "",
-        ProxyView.as_view()
-    ),
-    path(
-        "", include("secretgraph.proxy.urls"),
-        name="secretgraph_proxy"
-    ),
-    path('jsi18n/', JavaScriptCatalog.as_view(), name='javascript-i18n'),
+    path("", ProxyView.as_view()),
+    path("", include("secretgraph.proxy.urls"), name="secretgraph_proxy"),
+    path("jsi18n/", JavaScriptCatalog.as_view(), name="javascript-i18n"),
     # for localized graphql
     path(
         "graphql",
         csrf_exempt(CORSFileUploadGraphQLView.as_view(graphiql=True)),
-        name="graphql-localized"
-    )
+        name="graphql-localized",
+    ),
 )

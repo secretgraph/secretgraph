@@ -1,6 +1,6 @@
 // import { ApolloClient } from "@apollo/client";
 
-export type NonKeyInput = string | File | ArrayBuffer
+export type NonKeyInput = string | Blob | ArrayBuffer
 export type RawInput = NonKeyInput | CryptoKey
 export type KeyInput = RawInput | CryptoKeyPair
 
@@ -24,11 +24,7 @@ export interface CryptoRSAOutInterface extends KeyOutInterface {
 export interface CryptoGCMInInterface {
     readonly data: RawInput | PromiseLike<RawInput>
     readonly key: KeyInput | PromiseLike<KeyInput>
-    readonly nonce?:
-        | string
-        | File
-        | ArrayBuffer
-        | PromiseLike<string | File | ArrayBuffer>
+    readonly nonce?: NonKeyInput | PromiseLike<NonKeyInput>
 }
 
 export interface CryptoGCMOutInterface extends KeyOutInterface {

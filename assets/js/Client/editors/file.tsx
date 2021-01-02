@@ -2,10 +2,13 @@ import * as React from 'react'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
 import Card from '@material-ui/core/Card'
 import CardContent from '@material-ui/core/CardContent'
+import { Autocomplete as FormikAutocomplete } from 'formik-material-ui-lab'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import SunEditor from 'suneditor-react'
 import * as DOMPurify from 'dompurify'
 import Button from '@material-ui/core/Button'
+import Typography from '@material-ui/core/Typography'
+
 import Grid from '@material-ui/core/Grid'
 import { useAsync } from 'react-async'
 
@@ -16,33 +19,33 @@ import {
     SimpleFileUpload as FormikSimpleFileUpload,
 } from 'formik-material-ui'
 import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client'
-import {
-    parse,
-    serialize,
-    graph,
-    SPARQLToQuery,
-    BlankNode,
-    NamedNode,
-    Literal,
-} from 'rdflib'
-import { RDF, XSD, CLUSTER, SECRETGRAPH, contentStates } from '../constants'
 
 import { ConfigInterface, MainContextInterface } from '../interfaces'
-import { MainContext, ConfigContext } from '../contexts'
-import { decryptContentId } from '../utils/operations'
+import {
+    MainContext,
+    InitializedConfigContext,
+    SearchContext,
+} from '../contexts'
+import {
+    decryptContentId,
+    createContent,
+    updateContent,
+} from '../utils/operations'
 
 import { contentQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
+import UploadButton from '../components/UploadButton'
+import SimpleSelect from '../components/forms/SimpleSelect'
 import DecisionFrame from '../components/DecisionFrame'
-type Props = {}
 
-const ViewFile = (props: Props) => {
+const ViewFile = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx } = React.useContext(MainContext)
-    const { config } = React.useContext(ConfigContext)
+    const { config } = React.useContext(InitializedConfigContext)
     const [blobUrl, setBlobUrl] = React.useState<string | undefined>(undefined)
     const client = useApolloClient()
+
     //
     const { data, error } = useAsync({
         promiseFn: decryptContentId,
@@ -53,12 +56,19 @@ const ViewFile = (props: Props) => {
         id: mainCtx.item as string,
         decryptTags: ['mime', 'name'],
     })
+    if (error) {
+        console.error(error)
+    }
+    const mime =
+        data && data.tags.mime && data.tags.mime.length > 0
+            ? data.tags.mime[0]
+            : 'application/octet-stream'
     React.useEffect(() => {
         if (!data) {
             return
         }
         const _blobUrl = URL.createObjectURL(
-            new Blob([data.data], { type: data.tags.mime })
+            new Blob([data.data], { type: mime })
         )
         setBlobUrl(_blobUrl)
         return () => {
@@ -70,7 +80,7 @@ const ViewFile = (props: Props) => {
         return null
     }
     let inner: null | JSX.Element = null
-    switch (data.tags.mime.split('/', 1)[0]) {
+    switch (mime.split('/', 1)[0]) {
         case 'text':
             let text
             try {
@@ -80,57 +90,74 @@ const ViewFile = (props: Props) => {
                 console.error('Could not parse', exc)
                 text = `${data.data}`
             }
-            if (data.tags.mime == 'text/html') {
+            if (mime == 'text/html') {
                 const sanitized = DOMPurify.sanitize(text)
                 inner = (
-                    <div dangerouslySetInnerHTML={{ __html: sanitized }}></div>
+                    <Grid
+                        item
+                        xs={12}
+                        dangerouslySetInnerHTML={{ __html: sanitized }}
+                    />
                 )
             } else {
                 inner = (
-                    <div>
+                    <Grid item xs={12}>
                         <pre>{text}</pre>
-                    </div>
+                    </Grid>
                 )
             }
         case 'audio':
         case 'video':
             inner = (
-                <div>
+                <Grid item xs={12}>
                     <video controls>
                         <source src={blobUrl} style={{ width: '100%' }} />
                     </video>
-                </div>
+                </Grid>
             )
             break
         case 'image':
             inner = (
-                <div>
+                <Grid item xs={12}>
                     <a href={blobUrl}>
                         <img
                             src={blobUrl}
-                            alt={data.tags.name || ''}
+                            alt={
+                                data.tags.name && data.tags.name.length > 0
+                                    ? data.tags.name[0]
+                                    : ''
+                            }
                             style={{ width: '100%' }}
                         />
                     </a>
-                </div>
+                </Grid>
             )
             break
     }
     return (
-        <>
+        <Grid container spacing={2}>
+            <Grid item xs={12}>
+                <Typography variant="h5">Keywords</Typography>
+                <Typography variant="body2">
+                    {data.tags.keywords && data.tags.keywords.join(', ')}
+                </Typography>
+            </Grid>
             {inner}
-            <div>
-                <a href={blobUrl} type={data.tags.mime} target="_blank">
+            <Grid item xs={12}>
+                <a href={blobUrl} type={mime} target="_blank">
                     <CloudDownloadIcon />
                 </a>
-            </div>
-        </>
+            </Grid>
+        </Grid>
     )
 }
 
-const AddFile = (props: Props) => {
+const AddFile = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx } = React.useContext(MainContext)
+    const { searchCtx } = React.useContext(SearchContext)
+    const { config } = React.useContext(InitializedConfigContext)
+    const client = useApolloClient()
 
     return (
         <Formik
@@ -140,6 +167,7 @@ const AddFile = (props: Props) => {
                 fileInput: null as null | File,
                 name: '',
                 keywords: [] as string[],
+                cluster: searchCtx.cluster,
             }}
             validate={(values) => {
                 const errors: Partial<
@@ -147,6 +175,9 @@ const AddFile = (props: Props) => {
                 > = {}
                 if (!values.name) {
                     errors['name'] = 'Name required'
+                }
+                if (!values.cluster) {
+                    errors['cluster'] = 'Cluster required'
                 }
                 if (
                     (values.plainInput && values.htmlInput) ||
@@ -179,10 +210,42 @@ const AddFile = (props: Props) => {
                 } else if (values.fileInput) {
                     data = values.fileInput
                 }
+                const result = createContent({
+                    client,
+                    config,
+                    cluster: main,
+                })
             }}
         >
             {({ submitForm, isSubmitting, values, setValues }) => (
                 <Grid container spacing={1}>
+                    <Grid item xs={12} md={4}>
+                        <Field
+                            component={FormikTextField}
+                            name="name"
+                            fullWidth
+                            label="Name"
+                            disabled={isSubmitting}
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <SimpleSelect
+                            name="keywords"
+                            disabled={isSubmitting}
+                            options={[]}
+                            label="Keywords"
+                            freeSolo
+                        />
+                    </Grid>
+
+                    <Grid item xs={12} md={4}>
+                        <SimpleSelect
+                            name="cluster"
+                            disabled={isSubmitting}
+                            options={[]}
+                            label="Cluster"
+                        />
+                    </Grid>
                     {mainCtx.type != 'text' ? (
                         <Grid
                             item
@@ -235,9 +298,6 @@ const AddFile = (props: Props) => {
                                 return (
                                     <SunEditor
                                         width="100%"
-                                        setContents={
-                                            formikFieldProps.field.value
-                                        }
                                         onChange={
                                             formikFieldProps.field.onChange
                                         }
@@ -246,31 +306,42 @@ const AddFile = (props: Props) => {
                             }}
                         </Field>
                     </Grid>
-                    {mainCtx.type != 'text' ? (
-                        <Grid item xs={12}>
-                            <Field
-                                component={FormikSimpleFileUpload}
-                                name="fileInput"
-                                disabled={
-                                    isSubmitting ||
-                                    values.plainInput ||
-                                    values.htmlInput
-                                }
-                            >
-                                <Button>Upload</Button>
-                                <Button
-                                    onClick={() =>
-                                        setValues({
-                                            ...values,
-                                            fileInput: null,
-                                        })
-                                    }
-                                >
-                                    Clear
-                                </Button>
-                            </Field>
-                        </Grid>
-                    ) : null}
+                    <Grid item xs={12}>
+                        <Field
+                            name="fileInput"
+                            disabled={
+                                isSubmitting ||
+                                values.plainInput ||
+                                values.htmlInput
+                            }
+                        >
+                            {(formikFieldProps: FieldProps) => {
+                                return (
+                                    <>
+                                        <UploadButton
+                                            accept={
+                                                mainCtx.type == 'text'
+                                                    ? 'text/*'
+                                                    : undefined
+                                            }
+                                        >
+                                            <Button>Upload</Button>
+                                        </UploadButton>
+                                        <Button
+                                            onClick={() =>
+                                                setValues({
+                                                    ...values,
+                                                    fileInput: null,
+                                                })
+                                            }
+                                        >
+                                            Clear
+                                        </Button>
+                                    </>
+                                )
+                            }}
+                        </Field>
+                    </Grid>
                     <Grid item xs={12}>
                         {isSubmitting && <LinearProgress />}
                     </Grid>
@@ -290,23 +361,39 @@ const AddFile = (props: Props) => {
     )
 }
 
-const EditFile = (props: Props) => {
+const EditFile = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx } = React.useContext(MainContext)
 
     return (
         <Formik
             initialValues={{
-                plainInput: '',
-                htmlInput: '',
-                fileInput: null as null | File,
+                miscInput: null as null | File | string,
                 name: '',
-                tags: [] as string[],
+                keywords: [] as string[],
             }}
             onSubmit={async (values, { setSubmitting, setValues }) => {}}
         >
             {({ submitForm, isSubmitting, values, setValues }) => (
                 <Grid container spacing={1}>
+                    <Grid item xs={12} md={6}>
+                        <Field
+                            component={FormikTextField}
+                            name="name"
+                            fullWidth
+                            label="Name"
+                            disabled={isSubmitting}
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <SimpleSelect
+                            name="keywords"
+                            disabled={isSubmitting}
+                            options={[]}
+                            label="Keywords"
+                            freeSolo
+                        />
+                    </Grid>
                     <Grid
                         item
                         xs={12}
@@ -391,7 +478,7 @@ const EditFile = (props: Props) => {
     )
 }
 
-export default function FileComponent(props: Props) {
+export default function FileComponent() {
     const { mainCtx } = React.useContext(MainContext)
     return (
         <DecisionFrame

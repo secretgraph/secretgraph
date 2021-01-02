@@ -18,7 +18,7 @@ from django.core.wsgi import get_wsgi_application  # noqa: E402
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "secretgraph.settings.debug")
 if not os.environ.get(
     "SECRETGRAPH_SILENCE",
-    "django.core.management" in sys.modules  # is loaded by manage.py
+    "django.core.management" in sys.modules,  # is loaded by manage.py
 ):
     print("USE SETTINGS:", os.environ["DJANGO_SETTINGS_MODULE"])
 

@@ -581,7 +581,7 @@ export async function extractTags(
         readonly tags: PromiseLike<(string | PromiseLike<string>)[]>
         readonly decrypt: string[]
     }
-) {
+): Promise<{ [tag: string]: string[] }> {
     const tags: { [tag: string]: string[] } = {}
     await Promise.all(
         (await options.tags).map(async (tag_val) => {
