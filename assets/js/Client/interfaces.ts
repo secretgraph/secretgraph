@@ -54,6 +54,7 @@ export interface ReferenceInterface {
 
 export interface ConfigContentInterface {
     hashes: { [hash: string]: string[] }
+    id: string
 }
 
 export interface ConfigClusterInterface {
@@ -107,7 +108,7 @@ export interface SnackMessageInterface {
 export interface MainContextInterface {
     action: string
     title: null | string
-    state: string
+    state: 'start' | 'add' | 'view' | 'edit' | 'help'
     item: null | string
     // activeUrl can be changed without changing active element, so cache it here
     url: null | string

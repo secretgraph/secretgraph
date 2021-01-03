@@ -57,6 +57,7 @@ export const updateContentMutation = gql`
             }
         ) {
             content {
+                id
                 nonce
                 link
                 updateId
@@ -92,7 +93,15 @@ export const contentQuery = gql`
                             node {
                                 extra
                                 target {
-                                    tags(includeTags: ["hash=", "key="])
+                                    link
+                                    nonce
+                                    tags(
+                                        includeTags: [
+                                            "type"
+                                            "key_hash="
+                                            "key="
+                                        ]
+                                    )
                                 }
                             }
                         }

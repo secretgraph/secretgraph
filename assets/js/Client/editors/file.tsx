@@ -26,11 +26,15 @@ import {
     InitializedConfigContext,
     SearchContext,
 } from '../contexts'
+
+import { extractPubKeys } from '../utils/graphql'
 import {
     decryptContentId,
     createContent,
     updateContent,
 } from '../utils/operations'
+
+import { extractAuthInfo, extractPrivKeys } from '../utils/config'
 
 import { contentQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
@@ -155,7 +159,7 @@ const ViewFile = () => {
 
 const AddFile = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { searchCtx } = React.useContext(SearchContext)
     const { config } = React.useContext(InitializedConfigContext)
     const client = useApolloClient()
@@ -201,21 +205,71 @@ const AddFile = () => {
                 return errors
             }}
             onSubmit={async (values, { setSubmitting, setValues }) => {
-                let data: Blob
+                let value: Blob
                 if (values.htmlInput) {
-                    data = new Blob([DOMPurify.sanitize(values.htmlInput)], {
+                    value = new Blob([DOMPurify.sanitize(values.htmlInput)], {
                         type: 'text/html',
                     })
                 } else if (values.plainInput) {
-                    data = new Blob([values.plainInput], { type: 'text/plain' })
+                    value = new Blob([values.plainInput], {
+                        type: 'text/plain',
+                    })
                 } else if (values.fileInput) {
-                    data = values.fileInput
+                    value = values.fileInput
+                } else {
+                    throw Error('no input found')
                 }
-                const result = createContent({
+                const authinfo = extractAuthInfo({
+                    config,
+                    clusters: new Set([mainCtx.item as string]),
+                    url: mainCtx.url as string,
+                    require: new Set(['update']),
+                })
+                const pubkeysResult = await client.query({
+                    query: contentQuery,
+                    variables: {
+                        authorization: authinfo.keys,
+                    },
+                })
+                const hashAlgorithm =
+                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
+                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
+                const privkeys = extractPrivKeys({
+                    config,
+                    url: mainCtx.url as string,
+                    hashAlgorithm,
+                })
+                const pubkeys = extractPubKeys({
+                    node: pubkeysResult.data.secretgraph.node,
+                    authorization: authinfo.keys,
+                    params: {
+                        name: 'RSA-OAEP',
+                        hash: hashAlgorithm,
+                    },
+                })
+                const result = await createContent({
                     client,
                     config,
-                    cluster: main,
+                    cluster: values.cluster as string,
+                    value,
+                    tags: [
+                        `name=${values.name}`,
+                        `type=${
+                            value.type.startsWith('text/') ? 'text' : 'file'
+                        }`,
+                    ].concat(
+                        values.keywords.map(
+                            (val) =>
+                                `keyword=${(val.match(/=(.*)/) as string[])[1]}`
+                        )
+                    ),
+                    encryptTags: new Set(['name', 'mime']),
+                    privkeys: await Promise.all(Object.values(privkeys)),
+                    pubkeys: Object.values(pubkeys),
+                    hashAlgorithm,
+                    authorization: authinfo.keys,
                 })
+                updateMainCtx({ item: result.data.content.id, action: 'edit' })
             }}
         >
             {({ submitForm, isSubmitting, values, setValues }) => (
@@ -321,15 +375,37 @@ const AddFile = () => {
                                     return (
                                         <>
                                             <UploadButton
+                                                name="fileInput"
+                                                onChange={
+                                                    formikFieldProps.field
+                                                        .onChange
+                                                }
                                                 accept={
                                                     mainCtx.type == 'text'
                                                         ? 'text/*'
                                                         : undefined
                                                 }
                                             >
-                                                <Button>Upload</Button>
+                                                <Button
+                                                    disabled={
+                                                        !!(
+                                                            isSubmitting ||
+                                                            values.plainInput ||
+                                                            values.htmlInput
+                                                        )
+                                                    }
+                                                >
+                                                    Upload
+                                                </Button>
                                             </UploadButton>
                                             <Button
+                                                disabled={
+                                                    !!(
+                                                        isSubmitting ||
+                                                        values.plainInput ||
+                                                        values.htmlInput
+                                                    )
+                                                }
                                                 onClick={() =>
                                                     setValues({
                                                         ...values,
@@ -371,7 +447,8 @@ const EditFile = () => {
     return (
         <Formik
             initialValues={{
-                miscInput: null as null | File | string,
+                textInput: '',
+                fileInput: null as null | File | string,
                 name: '',
                 keywords: [] as string[],
             }}
@@ -397,69 +474,50 @@ const EditFile = () => {
                             freeSolo
                         />
                     </Grid>
-                    <Grid
-                        item
-                        xs={12}
-                        sm={
-                            !values.plainInput &&
-                            !values.htmlInput &&
-                            !values.fileInput
-                                ? 6
-                                : undefined
-                        }
-                    >
+                    <Grid item xs={12}>
+                        {}
                         <Field
                             component={FormikTextField}
-                            name="plainInput"
+                            name="textInput"
                             fullWidth
                             multiline
-                            disabled={
-                                isSubmitting ||
-                                values.htmlInput ||
-                                values.fileInput
-                            }
+                            disabled={isSubmitting}
                         />
                     </Grid>
-                    <Grid
-                        item
-                        xs={12}
-                        sm={
-                            !values.plainInput &&
-                            !values.htmlInput &&
-                            !values.fileInput
-                                ? 6
-                                : undefined
-                        }
-                    >
-                        <Field
-                            name="htmlInput"
-                            fullWidth
-                            multiline
-                            disabled={
-                                isSubmitting ||
-                                values.plainInput ||
-                                values.fileInput
-                            }
-                        ></Field>
-                    </Grid>
                     <Grid item xs={12}>
-                        <Field
-                            component={FormikSimpleFileUpload}
-                            name="fileInput"
-                            disabled={
-                                isSubmitting ||
-                                values.plainInput ||
-                                values.htmlInput
-                            }
-                        >
-                            <Button>Upload</Button>
-                            <Button
-                                onClick={() =>
-                                    setValues({ ...values, fileInput: null })
-                                }
-                            >
-                                Clear
-                            </Button>
+                        <Field name="fileInput" disabled={isSubmitting}>
+                            {(formikFieldProps: FieldProps) => {
+                                return (
+                                    <>
+                                        <UploadButton
+                                            name="fileInput"
+                                            onChange={
+                                                formikFieldProps.field.onChange
+                                            }
+                                            accept={
+                                                mainCtx.type == 'text'
+                                                    ? 'text/*'
+                                                    : undefined
+                                            }
+                                        >
+                                            <Button disabled={!!isSubmitting}>
+                                                Upload
+                                            </Button>
+                                        </UploadButton>
+                                        <Button
+                                            disabled={!!isSubmitting}
+                                            onClick={() =>
+                                                setValues({
+                                                    ...values,
+                                                    fileInput: null,
+                                                })
+                                            }
+                                        >
+                                            Clear
+                                        </Button>
+                                    </>
+                                )
+                            }}
                         </Field>
                     </Grid>
                     <Grid item xs={12}>

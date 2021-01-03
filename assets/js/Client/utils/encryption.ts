@@ -1,4 +1,3 @@
-import { utf8encoder } from './misc'
 import {
     CryptoRSAInInterface,
     CryptoRSAOutInterface,
@@ -11,6 +10,9 @@ import {
     KeyOutInterface,
 } from '../interfaces'
 import { mapHashNames, mapEncryptionAlgorithms } from '../constants'
+
+import { utf8encoder } from './misc'
+import * as IterableOps from './iterable'
 
 export async function toPBKDF2key(
     inp: RawInput | PromiseLike<RawInput>
@@ -578,20 +580,22 @@ export async function decryptTag(
 
 export async function extractTags(
     options: Omit<CryptoGCMInInterface, 'data'> & {
-        readonly tags: PromiseLike<(string | PromiseLike<string>)[]>
-        readonly decrypt: string[]
+        readonly tags:
+            | PromiseLike<Iterable<string | PromiseLike<string>>>
+            | Iterable<string | PromiseLike<string>>
+        readonly decrypt: Set<string>
     }
 ): Promise<{ [tag: string]: string[] }> {
     const tags: { [tag: string]: string[] } = {}
     await Promise.all(
-        (await options.tags).map(async (tag_val) => {
+        IterableOps.map(await options.tags, async (tag_val) => {
             const [_, tag, data] = (await tag_val).match(
                 /(^[^=]+?)=(.*)/
             ) as string[]
             if (!tags[tag]) {
                 tags[tag] = []
             }
-            if (options.decrypt.includes(tag)) {
+            if (options.decrypt.has(tag)) {
                 tags[tag].push(
                     (
                         await decryptTagRaw({ key: options.key, data })

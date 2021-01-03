@@ -374,20 +374,11 @@ const ClusterIntern = (props: ClusterInternProps) => {
                     setSubmitting(false)
                     return
                 }
-                const extracted = extractPublicInfo(
-                    config,
-                    clusterResponse.data?.updateOrCreateCluster.cluster,
-                    props.url,
-                    props.id
-                )
-                setUpdateId(
-                    clusterResponse.data?.updateOrCreateCluster.cluster.updateId
-                )
-                setValues({
-                    name: extracted.name || '',
-                    note: extracted.note || '',
+                updateMainCtx({
+                    action: 'edit',
+                    item:
+                        clusterResponse.data?.updateOrCreateCluster.cluster.id,
                 })
-                updateMainCtx({ title: extracted.name || '' })
                 setSubmitting(false)
             }}
         >
@@ -453,7 +444,7 @@ const ViewCluster = () => {
     const authinfo = extractAuthInfo({
         config,
         url: mainCtx.url as string,
-        require: ['view', 'manage'],
+        require: new Set(['view', 'manage']),
     })
     const { data, error } = useAsync({
         promiseFn: item_retrieval_helper,
@@ -496,7 +487,7 @@ const AddCluster = () => {
     const authinfo = extractAuthInfo({
         config,
         url: config.baseUrl as string,
-        require: ['manage'],
+        require: new Set(['manage']),
     })
 
     return (
@@ -517,9 +508,9 @@ const EditCluster = () => {
     const client = useApolloClient()
     const authinfo = extractAuthInfo({
         config,
-        clusters: [mainCtx.item as string],
+        clusters: new Set([mainCtx.item as string]),
         url: mainCtx.url as string,
-        require: ['manage'],
+        require: new Set(['manage']),
     })
     const { data, error } = useAsync({
         promiseFn: item_retrieval_helper,

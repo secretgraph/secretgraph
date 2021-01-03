@@ -44,7 +44,7 @@ export default function ClusterSelect<
             extractAuthInfo({
                 config,
                 url,
-                require: ['update', 'manage'],
+                require: new Set(['update', 'manage']),
             }),
         [config, url]
     )

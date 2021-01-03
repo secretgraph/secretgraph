@@ -15,6 +15,7 @@ import {
     unserializeToCryptoKey,
     unserializeToArrayBuffer,
 } from './encryption'
+import * as SetOps from './set'
 import { b64toarr, utf8encoder, mergeDeleteObjects } from './misc'
 import { findConfigQuery } from '../queries/content'
 import { mapHashNames } from '../constants'
@@ -415,31 +416,44 @@ export async function exportConfigAsUrl(
 export function extractAuthInfo({
     config,
     url,
-    require = ['view', 'update', 'manage'],
+    require = new Set(['view', 'update', 'manage']),
     ...props
 }: {
     readonly config: ConfigInterface
     readonly url: string
-    readonly clusters?: string[]
-    readonly require?: string[]
+    readonly clusters?: Set<string>
+    readonly content?: string
+    readonly require?: Set<string>
 }): AuthInfoInterface {
     const keys = []
     const hashes = []
-    const clusters =
-        config.hosts[new URL(url, window.location.href).href].clusters
-    for (const id in clusters) {
-        if (props.clusters && !props.clusters.includes(id)) {
-            continue
+    const host = config.hosts[new URL(url, window.location.href).href]
+    if (!props.content || props.clusters) {
+        for (const id in host.clusters) {
+            if (props.clusters && !props.clusters.has(id)) {
+                continue
+            }
+            const clusterconf = host.clusters[id]
+            for (const hash in clusterconf.hashes) {
+                if (
+                    config.tokens[hash] &&
+                    SetOps.hasUnion(require, clusterconf.hashes[hash])
+                ) {
+                    hashes.push(hash)
+                    keys.push(`${id}:${config.tokens[hash]}`)
+                }
+            }
         }
-        const clusterconf = clusters[id]
-        for (const hash in clusterconf.hashes) {
-            const actions = clusterconf.hashes[hash]
+    }
+    if (props.content) {
+        const contentconf = host.contents[props.content]
+        for (const hash in contentconf.hashes) {
             if (
                 config.tokens[hash] &&
-                require.some((val) => actions.includes(val))
+                SetOps.hasUnion(require, contentconf.hashes[hash])
             ) {
                 hashes.push(hash)
-                keys.push(`${id}:${config.tokens[hash]}`)
+                keys.push(`${contentconf.id}:${config.tokens[hash]}`)
             }
         }
     }
@@ -453,15 +467,15 @@ export function extractPrivKeys({
 }: {
     readonly config: ConfigInterface
     readonly url: string
-    readonly clusters?: string[]
+    readonly clusters?: Set<string>
     readonly hashAlgorithm: string
     old?: { [hash: string]: Promise<CryptoKey> }
 }): { [hash: string]: Promise<CryptoKey> } {
     const privkeys = props.old || {}
-    const clusters =
-        config.hosts[new URL(url, window.location.href).href].clusters
+    const urlob = new URL(url, window.location.href)
+    const clusters = config.hosts[urlob.href].clusters
     for (const id in clusters) {
-        if (props.clusters && !props.clusters.includes(id)) {
+        if (props.clusters && !props.clusters.has(id)) {
             continue
         }
         const clusterconf = clusters[id]
@@ -471,9 +485,7 @@ export function extractPrivKeys({
                     config.certificates[hash],
                     {
                         name: 'RSA-OAEP',
-                        hash:
-                            mapHashNames['' + props.hashAlgorithm]
-                                .operationName,
+                        hash: mapHashNames[props.hashAlgorithm].operationName,
                     },
                     'privateKey'
                 )
@@ -523,6 +535,10 @@ export function updateConfigReducer(
     state: ConfigInterface | null,
     update: ConfigInputInterface
 ): ConfigInterface
+export function updateConfigReducer(
+    state: ConfigInterface | null,
+    update: ConfigInputInterface | null
+): ConfigInterface | null
 export function updateConfigReducer(
     state: ConfigInterface | null,
     update: ConfigInputInterface | null
