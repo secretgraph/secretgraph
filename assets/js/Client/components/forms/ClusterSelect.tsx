@@ -2,50 +2,119 @@ import * as React from 'react'
 
 import { InitializedConfigContext } from '../../contexts'
 import { extractAuthInfo } from '../../utils/config'
+import { clusterFeedQuery } from '../../queries/cluster'
+import { CLUSTER, SECRETGRAPH, contentStates } from '../../constants'
+import { parse, graph, SPARQLToQuery } from 'rdflib'
 
-import { gql, useQuery } from '@apollo/client'
+import { gql, useLazyQuery } from '@apollo/client'
 
-import SimpleSelect from './SimpleSelect'
+import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
-export default function ClusterSelect({ url }: { url: string }) {
-    const [options, setOptions] = React.useState([] as [string, string][])
-    const [open, setOpen] = React.useState(false)
+export interface ClusterSelectProps<
+    Multiple extends boolean | undefined,
+    DisableClearable extends boolean | undefined,
+    FreeSolo extends boolean | undefined,
+    V
+> extends Omit<
+        SimpleSelectProps<
+            Multiple,
+            DisableClearable,
+            FreeSolo,
+            V,
+            { id: string; label: string }
+        >,
+        'options'
+    > {
+    url: string
+}
+
+export default function ClusterSelect<
+    Multiple extends boolean | undefined,
+    DisableClearable extends boolean | undefined,
+    FreeSolo extends boolean | undefined,
+    V
+>({
+    url,
+    ...props
+}: ClusterSelectProps<Multiple, DisableClearable, FreeSolo, V>) {
     const { config } = React.useContext(InitializedConfigContext)
-    const { data, fetchMore, loading } = useQuery(clusterFeedQuery, {
-        variables: {
-            authorization: authinfo.keys,
-        },
-    })
-    if (loading) return null
 
-    React.useEffect(() => {
-        if (!open) {
-            return
-        }
-        setOptions([])
-        ;(async () => {
-            const authinfo = extractAuthInfo({
+    const authinfo = React.useMemo(
+        () =>
+            extractAuthInfo({
                 config,
                 url,
                 require: ['update', 'manage'],
-            })
-            const { data, fetchMore, loading } = useQuery(clusterFeedQuery, {
-                variables: {
-                    authorization: authinfo.keys,
-                },
-            })
-        })()
-    }, [open])
+            }),
+        [config, url]
+    )
+
+    const [getClusters, { fetchMore, data, called, refetch }] = useLazyQuery(
+        clusterFeedQuery,
+        {
+            variables: {
+                authorization: authinfo.keys,
+            },
+            onCompleted: (data) => {
+                if (data.clusters.clusters.pageInfo.hasNextPage) {
+                    ;(fetchMore as NonNullable<typeof fetchMore>)({
+                        variables: {
+                            cursor: data.clusters.clusters.pageInfo.endCursor,
+                        },
+                    })
+                }
+            },
+        }
+    )
+    const clustersFinished: {
+        id: string
+        label: string
+    }[] = React.useMemo(() => {
+        if (!data) {
+            return []
+        }
+        return data.clusters.clusters.edges.map((edge: any) => {
+            let name: string | undefined,
+                note: string = ''
+            try {
+                const store = graph()
+                parse(edge.node.publicInfo, store, '_:')
+                const results = store.querySync(
+                    SPARQLToQuery(
+                        `SELECT ?name ?note WHERE {_:cluster a ${CLUSTER(
+                            'Cluster'
+                        )}; ${SECRETGRAPH(
+                            'name'
+                        )} ?name. OPTIONAL { _:cluster ${SECRETGRAPH(
+                            'note'
+                        )} ?note . } }`,
+                        false,
+                        store
+                    )
+                )
+                if (results.length > 0) {
+                    name = results[0]['?name'].value
+                    note = results[0]['?note'] ? results[0]['?note'].value : ''
+                }
+            } catch (exc) {
+                console.warn('Could not parse publicInfo', exc)
+            }
+            return {
+                id: edge.node.id,
+                label: name === undefined ? edge.node.id : name,
+            }
+        })
+    }, [data])
     return (
         <SimpleSelect
-            name="cluster"
-            options={options}
-            open={open}
+            {...props}
+            options={clustersFinished}
             onOpen={() => {
-                setOpen(true)
-            }}
-            onClose={() => {
-                setOpen(false)
+                if (called) {
+                    ;(refetch as NonNullable<typeof refetch>)()
+                } else {
+                    getClusters()
+                }
             }}
         />
     )

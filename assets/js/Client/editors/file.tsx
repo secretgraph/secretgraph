@@ -37,6 +37,7 @@ import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
 import UploadButton from '../components/UploadButton'
 import SimpleSelect from '../components/forms/SimpleSelect'
+import ClusterSelect from '../components/forms/ClusterSelect'
 import DecisionFrame from '../components/DecisionFrame'
 
 const ViewFile = () => {
@@ -218,144 +219,146 @@ const AddFile = () => {
             }}
         >
             {({ submitForm, isSubmitting, values, setValues }) => (
-                <Grid container spacing={1}>
-                    <Grid item xs={12} md={4}>
-                        <Field
-                            component={FormikTextField}
-                            name="name"
-                            fullWidth
-                            label="Name"
-                            disabled={isSubmitting}
-                        />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <SimpleSelect
-                            name="keywords"
-                            disabled={isSubmitting}
-                            options={[]}
-                            label="Keywords"
-                            freeSolo
-                        />
-                    </Grid>
+                <Form>
+                    <Grid container spacing={1}>
+                        <Grid item xs={12} md={4}>
+                            <Field
+                                component={FormikTextField}
+                                name="name"
+                                fullWidth
+                                label="Name"
+                                disabled={isSubmitting}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <SimpleSelect
+                                name="keywords"
+                                disabled={isSubmitting}
+                                options={[]}
+                                label="Keywords"
+                                freeSolo
+                            />
+                        </Grid>
 
-                    <Grid item xs={12} md={4}>
-                        <SimpleSelect
-                            name="cluster"
-                            disabled={isSubmitting}
-                            options={[]}
-                            label="Cluster"
-                        />
-                    </Grid>
-                    {mainCtx.type != 'text' ? (
+                        <Grid item xs={12} md={4}>
+                            <ClusterSelect
+                                url={mainCtx.url as string}
+                                name="cluster"
+                                disabled={isSubmitting}
+                                label="Cluster"
+                            />
+                        </Grid>
+                        {mainCtx.type != 'text' ? (
+                            <Grid
+                                item
+                                xs={12}
+                                sm={
+                                    !values.plainInput &&
+                                    !values.htmlInput &&
+                                    !values.fileInput
+                                        ? 6
+                                        : undefined
+                                }
+                            >
+                                <Field
+                                    component={FormikTextField}
+                                    name="plainInput"
+                                    fullWidth
+                                    multiline
+                                    disabled={
+                                        isSubmitting ||
+                                        values.htmlInput ||
+                                        values.fileInput
+                                    }
+                                />
+                            </Grid>
+                        ) : null}
                         <Grid
                             item
                             xs={12}
                             sm={
+                                mainCtx.type != 'text' &&
                                 !values.plainInput &&
                                 !values.htmlInput &&
-                                !values.fileInput
+                                !values.fileInput &&
+                                mainCtx.type != 'text'
                                     ? 6
                                     : undefined
                             }
                         >
                             <Field
-                                component={FormikTextField}
-                                name="plainInput"
+                                name="htmlInput"
                                 fullWidth
                                 multiline
                                 disabled={
                                     isSubmitting ||
-                                    values.htmlInput ||
+                                    values.plainInput ||
                                     values.fileInput
                                 }
-                            />
+                            >
+                                {(formikFieldProps: FieldProps) => {
+                                    return (
+                                        <SunEditor
+                                            width="100%"
+                                            onChange={
+                                                formikFieldProps.field.onChange
+                                            }
+                                        />
+                                    )
+                                }}
+                            </Field>
                         </Grid>
-                    ) : null}
-                    <Grid
-                        item
-                        xs={12}
-                        sm={
-                            mainCtx.type != 'text' &&
-                            !values.plainInput &&
-                            !values.htmlInput &&
-                            !values.fileInput &&
-                            mainCtx.type != 'text'
-                                ? 6
-                                : undefined
-                        }
-                    >
-                        <Field
-                            name="htmlInput"
-                            fullWidth
-                            multiline
-                            disabled={
-                                isSubmitting ||
-                                values.plainInput ||
-                                values.fileInput
-                            }
-                        >
-                            {(formikFieldProps: FieldProps) => {
-                                return (
-                                    <SunEditor
-                                        width="100%"
-                                        onChange={
-                                            formikFieldProps.field.onChange
-                                        }
-                                    />
-                                )
-                            }}
-                        </Field>
+                        <Grid item xs={12}>
+                            <Field
+                                name="fileInput"
+                                disabled={
+                                    isSubmitting ||
+                                    values.plainInput ||
+                                    values.htmlInput
+                                }
+                            >
+                                {(formikFieldProps: FieldProps) => {
+                                    return (
+                                        <>
+                                            <UploadButton
+                                                accept={
+                                                    mainCtx.type == 'text'
+                                                        ? 'text/*'
+                                                        : undefined
+                                                }
+                                            >
+                                                <Button>Upload</Button>
+                                            </UploadButton>
+                                            <Button
+                                                onClick={() =>
+                                                    setValues({
+                                                        ...values,
+                                                        fileInput: null,
+                                                    })
+                                                }
+                                            >
+                                                Clear
+                                            </Button>
+                                        </>
+                                    )
+                                }}
+                            </Field>
+                        </Grid>
+                        <Grid item xs={12}>
+                            {isSubmitting && <LinearProgress />}
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                disabled={isSubmitting}
+                                onClick={submitForm}
+                            >
+                                Submit
+                            </Button>
+                        </Grid>
                     </Grid>
-                    <Grid item xs={12}>
-                        <Field
-                            name="fileInput"
-                            disabled={
-                                isSubmitting ||
-                                values.plainInput ||
-                                values.htmlInput
-                            }
-                        >
-                            {(formikFieldProps: FieldProps) => {
-                                return (
-                                    <>
-                                        <UploadButton
-                                            accept={
-                                                mainCtx.type == 'text'
-                                                    ? 'text/*'
-                                                    : undefined
-                                            }
-                                        >
-                                            <Button>Upload</Button>
-                                        </UploadButton>
-                                        <Button
-                                            onClick={() =>
-                                                setValues({
-                                                    ...values,
-                                                    fileInput: null,
-                                                })
-                                            }
-                                        >
-                                            Clear
-                                        </Button>
-                                    </>
-                                )
-                            }}
-                        </Field>
-                    </Grid>
-                    <Grid item xs={12}>
-                        {isSubmitting && <LinearProgress />}
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            disabled={isSubmitting}
-                            onClick={submitForm}
-                        >
-                            Submit
-                        </Button>
-                    </Grid>
-                </Grid>
+                </Form>
             )}
         </Formik>
     )

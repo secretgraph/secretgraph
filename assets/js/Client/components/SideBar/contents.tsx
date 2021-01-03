@@ -115,15 +115,12 @@ export default function Contents(appProps: SideBarItemsProps) {
             cursor: null,
         },
     })
-    if (loading) return null
-    hasNextPage = data.contents.contents.pageInfo.hasNextPage
     const _loadMore = () => {
         fetchMore({
             variables: {
                 cursor: data.contents.contents.pageInfo.endCursor,
             },
         }).then((result: any) => {
-            hasNextPage = result.data.contents.contents.pageInfo.hasNextPage
             if (loadMoreExtra) {
                 loadMoreExtra()
             }
@@ -199,20 +196,28 @@ export default function Contents(appProps: SideBarItemsProps) {
             </ListSubheader>
         )
     }
+    const contentsFinished: () => JSX.Element[] = React.useCallback(() => {
+        if (!data) {
+            return []
+        }
+        return data.contents.contents.edges.map((edge: any) =>
+            render_item(edge.node)
+        )
+    }, [data])
 
     return (
         <List>
             {_header}
-            {data.contents.contents.edges.map((edge: any) =>
-                render_item(edge.node)
-            )}
+            {contentsFinished()}
             <Divider />
             <ListItem
                 button
                 key={`${activeUrl}:${
                     activeCluster ? activeCluster : 'none'
                 }:content:loadmore`}
-                disabled={loading || !hasNextPage}
+                disabled={
+                    loading || !data.contents.contents.pageInfo.hasNextPage
+                }
                 onClick={() => {
                     _loadMore()
                 }}

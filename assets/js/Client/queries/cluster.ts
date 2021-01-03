@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client'
 
 export const clusterFeedQuery = gql`
-    query SideBarClusterFeedQuery(
+    query clusterFeedQuery(
         $authorization: [String!]
         $include: [String!]
         $exclude: [String!]
@@ -18,7 +18,7 @@ export const clusterFeedQuery = gql`
                 after: $cursor
             )
                 @connection(
-                    key: "SideBar_clusters"
+                    key: "feed_clusters"
                     filters: ["include", "exclude", "public"]
                 ) {
                 edges {

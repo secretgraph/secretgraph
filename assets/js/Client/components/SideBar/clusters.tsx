@@ -8,14 +8,12 @@ import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
 import ListSubheader from '@material-ui/core/ListSubheader'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
-import { gql, useQuery } from '@apollo/client'
-import { RDFS, CLUSTER, SECRETGRAPH, contentStates } from '../../constants'
+import { useQuery } from '@apollo/client'
+import { CLUSTER, SECRETGRAPH } from '../../constants'
 import { clusterFeedQuery } from '../../queries/cluster'
 import { useStylesAndTheme } from '../../theme'
 import { ActiveUrlContext } from '../../contexts'
 import { AuthInfoInterface } from '../../interfaces'
-
-const SideBarContents = React.lazy(() => import('./contents'))
 
 type SideBarItemsProps = {
     authinfo: AuthInfoInterface
@@ -26,7 +24,7 @@ type SideBarItemsProps = {
 }
 
 export default function Clusters(appProps: SideBarItemsProps) {
-    const { classes, theme } = useStylesAndTheme()
+    const { classes } = useStylesAndTheme()
     const {
         authinfo,
         selectItem,
@@ -34,24 +32,20 @@ export default function Clusters(appProps: SideBarItemsProps) {
         header,
         loadMoreExtra,
     } = appProps
-    let hasNextPage = true
     const { activeUrl } = React.useContext(ActiveUrlContext)
 
-    const { data, fetchMore, loading } = useQuery(clusterFeedQuery, {
+    let { data, fetchMore, loading } = useQuery(clusterFeedQuery, {
         variables: {
             authorization: authinfo.keys,
         },
     })
-    if (loading) return null
-    hasNextPage = data.clusters.clusters.pageInfo.hasNextPage
 
     const _loadMore = () => {
         fetchMore({
             variables: {
                 cursor: data.clusters.clusters.pageInfo.endCursor,
             },
-        }).then((result: any) => {
-            hasNextPage = result.data.clusters.clusters.pageInfo.hasNextPage
+        }).then(() => {
             if (loadMoreExtra) {
                 loadMoreExtra()
             }
@@ -66,100 +60,99 @@ export default function Clusters(appProps: SideBarItemsProps) {
             </ListSubheader>
         )
     }
+    const clustersFinished: () => JSX.Element[] = React.useCallback(() => {
+        if (!data) {
+            return []
+        }
+        return data.clusters.clusters.edges.map((edge: any) => {
+            let name: string | undefined,
+                note: string = ''
+            try {
+                const store = graph()
+                parse(edge.node.publicInfo, store, '_:')
+                const results = store.querySync(
+                    SPARQLToQuery(
+                        `SELECT ?name ?note WHERE {_:cluster a ${CLUSTER(
+                            'Cluster'
+                        )}; ${SECRETGRAPH(
+                            'name'
+                        )} ?name. OPTIONAL { _:cluster ${SECRETGRAPH(
+                            'note'
+                        )} ?note . } }`,
+                        false,
+                        store
+                    )
+                )
+                if (results.length > 0) {
+                    name = results[0]['?name'].value
+                    note = results[0]['?note'] ? results[0]['?note'].value : ''
+                }
+            } catch (exc) {
+                console.warn('Could not parse publicInfo', exc)
+            }
+            if (edge.node.id === activeCluster) {
+                return (
+                    <ListItem
+                        button
+                        key={`${activeUrl}:cluster:entry:${edge.node.id}`}
+                        onClick={() => selectItem(edge.node)}
+                    >
+                        <ListItemIcon
+                            key={`${activeUrl}:cluster:entry:${edge.node.id}.icon`}
+                        >
+                            <GroupWorkIcon />
+                        </ListItemIcon>
+                        <ListItemText
+                            key={`${activeUrl}:cluster:entry:${edge.node.id}.text`}
+                            className={classes.sideBarEntry}
+                            primaryTypographyProps={{ variant: 'body2' }}
+                            primary={
+                                name ? name : `...${edge.node.id.substr(-48)}`
+                            }
+                            title={note}
+                        />
+                        {edge.node.id !== activeCluster ? (
+                            <ExpandMoreIcon />
+                        ) : null}
+                    </ListItem>
+                )
+            } else {
+                return (
+                    <ListItem
+                        button
+                        key={`${activeUrl}:cluster:entry:${edge.node.id}`}
+                        onClick={() => selectItem(edge.node)}
+                    >
+                        <ListItemIcon
+                            key={`${activeUrl}:cluster:entry:${edge.node.id}.icon`}
+                        >
+                            <GroupWorkIcon />
+                        </ListItemIcon>
+                        <ListItemText
+                            key={`${activeUrl}:cluster:entry:${edge.node.id}.text`}
+                            className={classes.sideBarEntry}
+                            primary={
+                                name ? name : `...${edge.node.id.substr(-48)}`
+                            }
+                            title={note}
+                        />
+                    </ListItem>
+                )
+            }
+        })
+    }, [data])
 
     return (
         <List>
             {_header}
-            {data.clusters.clusters.edges.map((edge: any) => {
-                let name: string | undefined,
-                    note: string = ''
-                if (edge.node.publicInfo) {
-                    try {
-                        const store = graph()
-                        parse(edge.node.publicInfo, store, '_:')
-                        const results = store.querySync(
-                            SPARQLToQuery(
-                                `SELECT ?name ?note WHERE {_:cluster a ${CLUSTER(
-                                    'Cluster'
-                                )}; ${SECRETGRAPH(
-                                    'name'
-                                )} ?name. OPTIONAL { _:cluster ${SECRETGRAPH(
-                                    'note'
-                                )} ?note . } }`,
-                                false,
-                                store
-                            )
-                        )
-                        if (results.length > 0) {
-                            name = results[0]['?name'].value
-                            note = results[0]['?note']
-                                ? results[0]['?note'].value
-                                : ''
-                        }
-                    } catch (exc) {
-                        console.warn('Could not parse publicInfo', exc)
-                    }
-                }
-                if (edge.node.id === activeCluster) {
-                    return (
-                        <ListItem
-                            button
-                            key={`${activeUrl}:cluster:entry:${edge.node.id}`}
-                            onClick={() => selectItem(edge.node)}
-                        >
-                            <ListItemIcon
-                                key={`${activeUrl}:cluster:entry:${edge.node.id}.icon`}
-                            >
-                                <GroupWorkIcon />
-                            </ListItemIcon>
-                            <ListItemText
-                                key={`${activeUrl}:cluster:entry:${edge.node.id}.text`}
-                                className={classes.sideBarEntry}
-                                primaryTypographyProps={{ variant: 'body2' }}
-                                primary={
-                                    name
-                                        ? name
-                                        : `...${edge.node.id.substr(-48)}`
-                                }
-                                title={note}
-                            />
-                            {edge.node.id !== activeCluster ? (
-                                <ExpandMoreIcon />
-                            ) : null}
-                        </ListItem>
-                    )
-                } else {
-                    return (
-                        <ListItem
-                            button
-                            key={`${activeUrl}:cluster:entry:${edge.node.id}`}
-                            onClick={() => selectItem(edge.node)}
-                        >
-                            <ListItemIcon
-                                key={`${activeUrl}:cluster:entry:${edge.node.id}.icon`}
-                            >
-                                <GroupWorkIcon />
-                            </ListItemIcon>
-                            <ListItemText
-                                key={`${activeUrl}:cluster:entry:${edge.node.id}.text`}
-                                className={classes.sideBarEntry}
-                                primary={
-                                    name
-                                        ? name
-                                        : `...${edge.node.id.substr(-48)}`
-                                }
-                                title={note}
-                            />
-                        </ListItem>
-                    )
-                }
-            })}
-
+            {clustersFinished()}
             <Divider />
             <ListItem
                 button
                 key={`${activeUrl}:cluster:loadmore`}
-                disabled={loading || !hasNextPage}
+                disabled={
+                    loading || !data.clusters.clusters.pageInfo.hasNextPage
+                }
                 onClick={() => {
                     _loadMore()
                 }}
