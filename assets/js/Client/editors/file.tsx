@@ -7,6 +7,7 @@ import LinearProgress from '@material-ui/core/LinearProgress'
 import SunEditor from 'suneditor-react'
 import * as DOMPurify from 'dompurify'
 import Button from '@material-ui/core/Button'
+import TextField from '@material-ui/core/TextField'
 import Typography from '@material-ui/core/Typography'
 
 import Grid from '@material-ui/core/Grid'
@@ -35,7 +36,9 @@ import {
 } from '../utils/operations'
 
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
+import { utf8decoder } from '../utils/misc'
 
+import { clusterGetConfigurationQuery } from '../queries/cluster'
 import { contentQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
@@ -169,7 +172,7 @@ const AddFile = () => {
             initialValues={{
                 plainInput: '',
                 htmlInput: '',
-                fileInput: null as null | File,
+                fileInput: null as null | Blob,
                 name: '',
                 keywords: [] as string[],
                 cluster: searchCtx.cluster,
@@ -340,22 +343,23 @@ const AddFile = () => {
                                     : undefined
                             }
                         >
-                            <Field
-                                name="htmlInput"
-                                fullWidth
-                                multiline
-                                disabled={
-                                    isSubmitting ||
-                                    values.plainInput ||
-                                    values.fileInput
-                                }
-                            >
+                            <Field name="htmlInput">
                                 {(formikFieldProps: FieldProps) => {
                                     return (
                                         <SunEditor
                                             width="100%"
+                                            disable={
+                                                !!(
+                                                    isSubmitting ||
+                                                    values.plainInput ||
+                                                    values.fileInput
+                                                )
+                                            }
                                             onChange={
                                                 formikFieldProps.field.onChange
+                                            }
+                                            setContents={
+                                                formikFieldProps.field.value
                                             }
                                         />
                                     )
@@ -440,23 +444,159 @@ const AddFile = () => {
     )
 }
 
+const TextFileAdapter = ({
+    mime,
+    disabled,
+    onChange,
+    value,
+}: {
+    mime: string
+    disabled?: boolean
+    onChange: (newText: Blob) => void
+    value: Blob
+}) => {
+    if (!mime.startsWith('text/')) {
+        return null
+    }
+    const [text, setText] = React.useState<string | undefined>(undefined)
+    React.useEffect(() => {
+        value.text().then((val) => setText(val))
+        return () => setText(undefined)
+    }, [value])
+    if (text === undefined) {
+        return null
+    }
+    if (mime === 'text/html') {
+        return (
+            <SunEditor
+                width="100%"
+                disable={disabled}
+                onChange={(val) => {
+                    onChange(new Blob([text], { type: mime }))
+                }}
+                setContents={text}
+            />
+        )
+    }
+    return (
+        <TextField
+            fullWidth
+            multiline
+            disabled={disabled}
+            value={text}
+            onChange={(ev) => {
+                onChange(new Blob([ev.currentTarget.value], { type: mime }))
+            }}
+        />
+    )
+}
+
 const EditFile = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx } = React.useContext(MainContext)
+    const { config } = React.useContext(InitializedConfigContext)
+    const client = useApolloClient()
+    const { data, error } = useAsync({
+        promiseFn: decryptContentId,
+        suspense: true,
+        client: client,
+        config: config as ConfigInterface,
+        url: mainCtx.url as string,
+        id: mainCtx.item as string,
+        decryptTags: ['mime', 'name'],
+    })
+    if (error) {
+        console.error(error)
+    }
+    if (!data) {
+        return null
+    }
+    const mime =
+        data.tags.mime && data.tags.mime.length > 0
+            ? data.tags.mime[0]
+            : 'application/octet-stream'
 
     return (
         <Formik
             initialValues={{
-                textInput: '',
-                fileInput: null as null | File | string,
-                name: '',
-                keywords: [] as string[],
+                fileInput: new Blob([data.data], { type: mime }),
+                name:
+                    data.tags.name && data.tags.name.length > 0
+                        ? data.tags.name[0]
+                        : '',
+                keywords: data.tags.keywords || [],
+                cluster: data.nodeData?.cluster?.id as string | null,
             }}
-            onSubmit={async (values, { setSubmitting, setValues }) => {}}
+            validate={(values) => {
+                const errors: Partial<
+                    { [key in keyof typeof values]: string }
+                > = {}
+                if (!values.name) {
+                    errors['name'] = 'Name required'
+                }
+                if (!values.fileInput) {
+                    errors['fileInput'] = 'empty'
+                }
+                return errors
+            }}
+            onSubmit={async (values, { setSubmitting, setValues }) => {
+                const value: Blob = values.fileInput
+                const authinfo = extractAuthInfo({
+                    config,
+                    clusters: new Set([mainCtx.item as string]),
+                    url: mainCtx.url as string,
+                    require: new Set(['update']),
+                })
+                const pubkeysResult = await client.query({
+                    query: contentQuery,
+                    variables: {
+                        authorization: authinfo.keys,
+                    },
+                })
+                const hashAlgorithm =
+                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
+                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
+                const privkeys = extractPrivKeys({
+                    config,
+                    url: mainCtx.url as string,
+                    hashAlgorithm,
+                })
+                const pubkeys = extractPubKeys({
+                    node: pubkeysResult.data.secretgraph.node,
+                    authorization: authinfo.keys,
+                    params: {
+                        name: 'RSA-OAEP',
+                        hash: hashAlgorithm,
+                    },
+                })
+                const result = await updateContent({
+                    client,
+                    config,
+                    cluster: values.cluster || undefined,
+                    value,
+                    tags: [
+                        `name=${values.name}`,
+                        `type=${
+                            value.type.startsWith('text/') ? 'text' : 'file'
+                        }`,
+                    ].concat(
+                        values.keywords.map(
+                            (val) =>
+                                `keyword=${(val.match(/=(.*)/) as string[])[1]}`
+                        )
+                    ),
+                    encryptTags: new Set(['name', 'mime']),
+                    privkeys: await Promise.all(Object.values(privkeys)),
+                    pubkeys: Object.values(pubkeys),
+                    hashAlgorithm,
+                    authorization: authinfo.keys,
+                })
+                updateMainCtx({ item: result.data.content.id, action: 'edit' })
+            }}
         >
             {({ submitForm, isSubmitting, values, setValues }) => (
                 <Grid container spacing={1}>
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} md={4}>
                         <Field
                             component={FormikTextField}
                             name="name"
@@ -465,7 +605,7 @@ const EditFile = () => {
                             disabled={isSubmitting}
                         />
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} md={4}>
                         <SimpleSelect
                             name="keywords"
                             disabled={isSubmitting}
@@ -474,13 +614,25 @@ const EditFile = () => {
                             freeSolo
                         />
                     </Grid>
+
+                    <Grid item xs={12} md={4}>
+                        <ClusterSelect
+                            url={mainCtx.url as string}
+                            name="cluster"
+                            disabled={isSubmitting}
+                            label="Cluster"
+                        />
+                    </Grid>
                     <Grid item xs={12}>
-                        {}
-                        <Field
-                            component={FormikTextField}
-                            name="textInput"
-                            fullWidth
-                            multiline
+                        <TextFileAdapter
+                            value={values.fileInput}
+                            onChange={(blob) => {
+                                setValues({
+                                    ...values,
+                                    fileInput: blob,
+                                })
+                            }}
+                            mime={mime}
                             disabled={isSubmitting}
                         />
                     </Grid>
@@ -504,17 +656,6 @@ const EditFile = () => {
                                                 Upload
                                             </Button>
                                         </UploadButton>
-                                        <Button
-                                            disabled={!!isSubmitting}
-                                            onClick={() =>
-                                                setValues({
-                                                    ...values,
-                                                    fileInput: null,
-                                                })
-                                            }
-                                        >
-                                            Clear
-                                        </Button>
                                     </>
                                 )
                             }}

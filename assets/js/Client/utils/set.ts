@@ -1,4 +1,4 @@
-// stolen from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
+// taken from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
 
 export function isSuperset<T>(set: Set<T>, subset: Iterable<T>) {
     for (let elem of subset) {
@@ -16,7 +16,7 @@ export function union<T>(setA: Iterable<T>, setB: Iterable<T>) {
     }
     return _union
 }
-export function hasUnion<T>(setA: Set<T>, elements: Iterable<T>) {
+export function hasIntersection<T>(setA: Set<T>, elements: Iterable<T>) {
     for (let elem of elements) {
         if (setA.has(elem)) {
             return true
@@ -35,9 +35,9 @@ export function intersection<T>(setA: Set<T>, setB: Iterable<T>) {
     return _intersection
 }
 
-export function symmetricDifference<T>(setA: Iterable<T>, setB: Iterable<T>) {
-    let _difference = new Set(setA)
-    for (let elem of setB) {
+export function symmetricDifference<T>(setA: Set<T>, setB: Iterable<T>) {
+    let _difference = new Set(setB)
+    for (let elem of setA) {
         if (_difference.has(elem)) {
             _difference.delete(elem)
         } else {
@@ -53,4 +53,14 @@ export function difference<T>(setA: Iterable<T>, setB: Iterable<T>) {
         _difference.delete(elem)
     }
     return _difference
+}
+export function isNotEq<T>(setA: Set<T>, elements: Iterable<T>) {
+    let count = 0
+    for (let elem of elements) {
+        if (!setA.has(elem)) {
+            return true
+        }
+        count++
+    }
+    return setA.size != count
 }

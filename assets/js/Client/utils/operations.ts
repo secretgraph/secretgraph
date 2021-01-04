@@ -380,6 +380,7 @@ interface decryptContentObjectInterface
     extends Omit<Omit<CryptoGCMOutInterface, 'nonce'>, 'key'> {
     tags: { [tag: string]: string[] }
     updateId: string
+    nodeData: any
 }
 
 export async function decryptContentObject({
@@ -416,6 +417,7 @@ export async function decryptContentObject({
             data: await arrPromise,
             tags: nodeData.tags,
             updateId: nodeData.updateId,
+            nodeData,
         }
     }
     const found = findCertCandidatesForRefs(await config, _node)
@@ -439,6 +441,7 @@ export async function decryptContentObject({
         })),
         updateId: nodeData.updateId,
         tags: await extractTags({ key, tags: nodeData.tags, decrypt }),
+        nodeData,
     }
 }
 

@@ -1,4 +1,5 @@
 export const utf8encoder = new TextEncoder()
+export const utf8decoder = new TextDecoder()
 
 export function utf8ToBinary(inp: string): string {
     return String.fromCharCode(...utf8encoder.encode(inp))

@@ -83,6 +83,7 @@ export const contentQuery = gql`
                     updateId
                     tags(includeTags: $includeTags)
                     cluster {
+                        id
                         publicInfo
                     }
                     references(

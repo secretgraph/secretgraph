@@ -437,7 +437,7 @@ export function extractAuthInfo({
             for (const hash in clusterconf.hashes) {
                 if (
                     config.tokens[hash] &&
-                    SetOps.hasUnion(require, clusterconf.hashes[hash])
+                    SetOps.hasIntersection(require, clusterconf.hashes[hash])
                 ) {
                     hashes.push(hash)
                     keys.push(`${id}:${config.tokens[hash]}`)
@@ -450,7 +450,7 @@ export function extractAuthInfo({
         for (const hash in contentconf.hashes) {
             if (
                 config.tokens[hash] &&
-                SetOps.hasUnion(require, contentconf.hashes[hash])
+                SetOps.hasIntersection(require, contentconf.hashes[hash])
             ) {
                 hashes.push(hash)
                 keys.push(`${contentconf.id}:${config.tokens[hash]}`)
