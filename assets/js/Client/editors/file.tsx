@@ -38,8 +38,10 @@ import {
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
 import { utf8decoder } from '../utils/misc'
 
-import { clusterGetConfigurationQuery } from '../queries/cluster'
-import { contentQuery } from '../queries/content'
+import {
+    contentRetrievalQuery,
+    getContentConfigurationQuery,
+} from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
 import UploadButton from '../components/UploadButton'
@@ -229,9 +231,10 @@ const AddFile = () => {
                     require: new Set(['update']),
                 })
                 const pubkeysResult = await client.query({
-                    query: contentQuery,
+                    query: getContentConfigurationQuery,
                     variables: {
                         authorization: authinfo.keys,
+                        id: values.cluster,
                     },
                 })
                 const hashAlgorithm =
@@ -493,7 +496,7 @@ const TextFileAdapter = ({
 
 const EditFile = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config } = React.useContext(InitializedConfigContext)
     const client = useApolloClient()
     const { data, error } = useAsync({
@@ -548,9 +551,10 @@ const EditFile = () => {
                     require: new Set(['update']),
                 })
                 const pubkeysResult = await client.query({
-                    query: contentQuery,
+                    query: getContentConfigurationQuery,
                     variables: {
                         authorization: authinfo.keys,
+                        id: mainCtx.item,
                     },
                 })
                 const hashAlgorithm =

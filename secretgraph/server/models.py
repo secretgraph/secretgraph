@@ -77,6 +77,8 @@ class FlexidModel(models.Model):
 
 
 class Cluster(FlexidModel):
+    # not a field but an attribute for restricting view
+    limited = False
     publicInfo: str = models.FileField(
         upload_to=get_publicInfo_file_path, db_column="public_info"
     )
@@ -128,10 +130,13 @@ class ContentManager(models.Manager):
         )
 
     def get_queryset(self):
-        return super().get_queryset().annotate(group=models.F("cluster__group"))
+        return (
+            super().get_queryset().annotate(group=models.F("cluster__group"))
+        )
 
 
 class Content(FlexidModel):
+    limited = False
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(
         blank=True, default=uuid4, db_column="update_id"

@@ -5,7 +5,7 @@ import {
 import {
     createContentMutation,
     updateContentMutation,
-    contentQuery,
+    contentRetrievalQuery,
     findConfigQuery,
 } from '../queries/content'
 import { serverConfigQuery } from '../queries/server'
@@ -467,7 +467,7 @@ export async function decryptContentId({
     // TODO: maybe remove try catch
     try {
         result = await client.query({
-            query: contentQuery,
+            query: contentRetrievalQuery,
             variables: {
                 id: contentId,
                 authorization: authinfo.keys,

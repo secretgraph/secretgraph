@@ -41,14 +41,6 @@ export const getClusterConfigurationQuery = gql`
     query clusterGetConfigurationQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
-                injectedClusters {
-                    group
-                    clusters
-                    links {
-                        link
-                        hash
-                    }
-                }
                 node(id: $id) {
                     ... on Cluster {
                         id

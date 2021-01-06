@@ -67,8 +67,8 @@ export const updateContentMutation = gql`
     }
 `
 
-export const contentQuery = gql`
-    query contentRetrieveQuery(
+export const contentRetrievalQuery = gql`
+    query contentRetrievalQuery(
         $id: ID!
         $keyhashes: [String!]
         $authorization: [String!]
@@ -167,6 +167,63 @@ export const findConfigQuery = gql`
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
+export const getContentConfigurationQuery = gql`
+    query contentGetConfigurationQuery($id: ID!, $authorization: [String!]) {
+        secretgraph(authorization: $authorization) {
+            config {
+                injectedClusters {
+                    group
+                    keys {
+                        link
+                        hash
+                    }
+                }
+                node(id: $id) {
+                    ... on Cluster {
+                        id
+                        group
+                        link
+                        availableActions {
+                            keyHash
+                            type
+                            requiredKeys
+                            allowedTags
+                        }
+
+                        contents(includeTags: ["type=PublicKey"]) {
+                            edges {
+                                node {
+                                    link
+                                    tags(includeTags: ["key_hash="])
+                                }
+                            }
+                        }
+                    }
+                    ... on Content {
+                        id
+                        group
+                        availableActions {
+                            keyHash
+                            type
+                            requiredKeys
+                            allowedTags
+                        }
+                        id
+                        nonce
+                        link
+                        updateId
+                        tags(includeTags: $includeTags)
+                        keys {
+                            link
+                            hash
                         }
                     }
                 }

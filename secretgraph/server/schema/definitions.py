@@ -9,7 +9,6 @@ from graphql_relay import from_global_id
 from django.utils.translation import gettext_lazy as _
 
 from ..utils.auth import initializeCachedResult, fetch_by_id
-from ..messages import injection_group_help
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
 
@@ -231,9 +230,6 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         includeAlgos=graphene.List(graphene.String, required=False),
     )
     link = graphene.String()
-    group = graphene.String(description=injection_group_help)
-
-    keys = graphene.List(KeyLink, description="Links to keys")
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
@@ -247,6 +243,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     def resolve_references(
         self, info, authorization=None, groups=None, **kwargs
     ):
+        if self.limited:
+            return ContentReference.objects.none()
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
         ]
@@ -266,6 +264,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     def resolve_referencedBy(
         self, info, authorization=None, groups=None, **kwargs
     ):
+        if self.limited:
+            return ContentReference.objects.none()
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
         ]
@@ -283,14 +283,20 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )
 
     def resolve_cluster(self, info, authorization=None):
+        if self.limited:
+            return Cluster.objects.none()
         # authorization often cannot be used, but it is ok, we have cache then
-        return (
+        res = (
             initializeCachedResult(info.context, authset=authorization)[
                 "Cluster"
             ]["objects"]
             .filter(id=self.cluster_id)
             .first()
         )
+        if not res:
+            res = Cluster.objects.get(id=self.cluster_id)
+            res.limited = True
+        return res
 
     def resolve_tags(self, info, includeTags=None, excludeTags=None):
         incl_filters = Q()
@@ -300,9 +306,16 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
         for i in excludeTags or []:
             excl_filters |= Q(tag__startswith=i)
-        return self.tags.filter(~excl_filters & incl_filters).values_list(
+        tags = self.tags.filter(~excl_filters & incl_filters).values_list(
             "tag", flat=True
         )
+        if self.limited:
+            tags.filter(
+                Q(tag__startswith="key_hash=")
+                | Q(tag__startswith="type=")
+                | Q(tag__startswith="state=")
+            )
+        return tags
 
     def resolve_signatures(self, info, authorization=None, includeAlgos=None):
         # authorization often cannot be used, but it is ok, we have cache then
@@ -316,20 +329,6 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
     def resolve_link(self, info):
         return self.link
-
-    def resolve_group(self, info):
-        return self.group
-
-    def resolve_keys(self, info, authorization=None):
-        result = initializeCachedResult(info.context, authset=authorization)[
-            "Content"
-        ]
-        return map(
-            lambda x: KeyLink(link=x.link, hash=x.contentHash),
-            result["Cluster"]
-            .filter(cluster_id=self.cluster_id, tags__tag="type=PublicKey")
-            .only("flexid", "contentHash"),
-        )
 
     def resolve_availableActions(self, info):
         return ActionMixin.resolve_availableActions(self, info)
@@ -391,9 +390,11 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Cluster
         name = "Cluster"
         interfaces = (relay.Node,)
-        fields = ["group", "updated", "updateId"]
+        fields = ["group"]
 
     contents = ContentConnectionField()
+    updated = graphene.DateTime(required=False)
+    updateId = graphene.UUID(required=False)
     user = relay.GlobalID(required=False)
     publicInfo = graphene.String(required=False)
     link = graphene.String(
@@ -414,15 +415,32 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         result = initializeCachedResult(
             info.context, authset=kwargs.get("authorization")
         )["Content"]
+        contents = result["objects"]
+        if self.limited:
+            contents = contents.filter(tag__tag="type=PublicKey").annotate(
+                limited=True
+            )
         return fetch_contents(
-            result["objects"],
+            contents.filter(cluster_id=self.id),
             result["actions"],
             includeTags=kwargs.get("tagsInclude"),
             excludeTags=kwargs.get("tagsExclude"),
             contentHashes=kwargs.get("contentHashes"),
         )
 
+    def resolve_updated(self, info, **kwargs):
+        if self.limited:
+            return None
+        return self.updated
+
+    def resolve_updateId(self, info, **kwargs):
+        if self.limited:
+            return None
+        return self.updateId
+
     def resolve_user(self, info, **kwargs):
+        if self.limited:
+            return None
         if not hasattr(self, "user"):
             return None
         return self.user
@@ -431,9 +449,13 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return ActionMixin.resolve_availableActions(self, info)
 
     def resolve_publicInfo(self, info):
+        if self.limited:
+            return None
         return self.publicInfo.open("r").read()
 
     def resolve_link(self, info):
+        if self.limited:
+            return None
         return self.link
 
 
