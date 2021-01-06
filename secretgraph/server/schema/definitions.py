@@ -231,6 +231,11 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     )
     link = graphene.String()
 
+    def resolve_id(self, info):
+        if self.limited:
+            return None
+        super().resolve_id(info)
+
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
         result = initializeCachedResult(info.context, authset=authorization)[
@@ -401,6 +406,11 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         required=False,
         description=_("Link to turtle document with injected Contents"),
     )
+
+    def resolve_id(self, info):
+        if self.limited:
+            return None
+        super().resolve_id(info)
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
