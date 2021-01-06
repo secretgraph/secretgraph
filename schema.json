@@ -179,6 +179,16 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "offset",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "before",
                   "type": {
                     "kind": "SCALAR",
@@ -652,6 +662,16 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "offset",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "before",
                   "type": {
                     "kind": "SCALAR",
@@ -1091,6 +1111,16 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "offset",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "before",
                   "type": {
                     "kind": "SCALAR",
@@ -1195,6 +1225,16 @@
                       "name": "String",
                       "ofType": null
                     }
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
+                  "name": "offset",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
                   }
                 },
                 {
@@ -1346,6 +1386,22 @@
                 "kind": "SCALAR",
                 "name": "String",
                 "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "Links to keys",
+              "isDeprecated": false,
+              "name": "keys",
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "KeyLink",
+                  "ofType": null
+                }
               }
             }
           ],
@@ -1571,6 +1627,41 @@
           "enumValues": null,
           "fields": [
             {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "hash",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "link",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            }
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "kind": "OBJECT",
+          "name": "KeyLink",
+          "possibleTypes": null
+        },
+        {
+          "description": null,
+          "enumValues": null,
+          "fields": [
+            {
               "args": [
                 {
                   "defaultValue": null,
@@ -1700,6 +1791,16 @@
                   "type": {
                     "kind": "SCALAR",
                     "name": "DateTime",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
+                  "name": "offset",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
                     "ofType": null
                   }
                 },
@@ -1839,6 +1940,16 @@
                   "type": {
                     "kind": "SCALAR",
                     "name": "DateTime",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
+                  "name": "offset",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Int",
                     "ofType": null
                   }
                 },
@@ -2032,13 +2143,13 @@
               "deprecationReason": null,
               "description": "Links to injected keys",
               "isDeprecated": false,
-              "name": "links",
+              "name": "keys",
               "type": {
                 "kind": "LIST",
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "InjectedKeyLink",
+                  "name": "KeyLink",
                   "ofType": null
                 }
               }
@@ -2048,41 +2159,6 @@
           "interfaces": [],
           "kind": "OBJECT",
           "name": "ClusterGroupEntry",
-          "possibleTypes": null
-        },
-        {
-          "description": null,
-          "enumValues": null,
-          "fields": [
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "hash",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "link",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            }
-          ],
-          "inputFields": null,
-          "interfaces": [],
-          "kind": "OBJECT",
-          "name": "InjectedKeyLink",
           "possibleTypes": null
         },
         {
