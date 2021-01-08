@@ -114,7 +114,7 @@ export const contentRetrievalQuery = gql`
 `
 
 export const findConfigQuery = gql`
-    query contentConfigQuery(
+    query contentFindConfigQuery(
         $cluster: ID
         $authorization: [String!]
         $contentHashes: [String!]
@@ -143,7 +143,7 @@ export const findConfigQuery = gql`
                                 node {
                                     extra
                                     target {
-                                        tags(includeTags: ["key_hash"])
+                                        tags(includeTags: ["key_hash="])
                                         contentHash
                                         link
                                         referencedBy(groups: ["public_key"]) {
@@ -209,7 +209,6 @@ export const getContentConfigurationQuery = gql`
                     }
                     ... on Content {
                         id
-                        group
                         availableActions {
                             keyHash
                             type
@@ -221,9 +220,16 @@ export const getContentConfigurationQuery = gql`
                         link
                         updateId
                         tags(includeTags: $includeTags)
-                        keys {
-                            link
-                            hash
+                        cluster {
+                            group
+                            contents(includeTags: ["type=PublicKey"]) {
+                                edges {
+                                    node {
+                                        link
+                                        tags(includeTags: ["key_hash="])
+                                    }
+                                }
+                            }
                         }
                     }
                 }

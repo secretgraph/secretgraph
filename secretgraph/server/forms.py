@@ -14,34 +14,28 @@ from .utils.auth import initializeCachedResult
 
 class PushForm(forms.Form):
     value = forms.FileField(required=True)
-    nonce = forms.CharField(label=messages.nonce_label, required=False)
+    nonce = forms.CharField(widget=forms.HiddenInput(), required=False)
     tags = MultipleOpenChoiceField(
-        label=messages.extra_tags_label, required=False,
+        label=messages.extra_tags_label,
+        required=False,
         widget=ListWidget(
-            items={
-                "format_type": "text"
-            },
-            item_label=messages.tags_tag_label
-        )
+            items={"format_type": "text"}, item_label=messages.tags_tag_label
+        ),
     )
     references = MultipleOpenChoiceField(
-        label=_("References contents"), required=False,
+        label=_("References contents"),
+        required=False,
         widget=ListWidget(
             items=[
-                {
-                    "name": "group",
-                    "format_type": "text"
-                },
+                {"name": "group", "format_type": "text"},
                 {
                     "name": "target",
                     "format_type": "text",
-                    "extras": {
-                        "enum": []
-                    }
-                }
+                    "extras": {"enum": []},
+                },
             ],
-            item_label=messages.reference_label
-        )
+            item_label=messages.reference_label,
+        ),
     )
     key = forms.CharField(label=messages.server_key_label, required=False)
 
@@ -69,34 +63,24 @@ class PushForm(forms.Form):
             allowed = form.get("allowedTags", None)
             if allowed is not None:
                 matcher = re.compile(
-                    "^(?:%s)(?:(?<==)|$)" % "|".join(map(
-                        re.escape,
-                        allowed
-                    ))
+                    "^(?:%s)(?:(?<==)|$)" % "|".join(map(re.escape, allowed))
                 )
                 ret["tags"] = filter(
-                    lambda x: matcher.fullmatch(x),
-                    ret["tags"]
+                    lambda x: matcher.fullmatch(x), ret["tags"]
                 )
-            ret["tags"] = chain(
-                form.get("injectedTags", []),
-                ret["tags"]
-            )
+            ret["tags"] = chain(form.get("injectedTags", []), ret["tags"])
         else:
             ret["tags"] = form.get("injectedTags") or []
         if ret.get("references") is not None:
             ret["references"] = chain(
-                form.get("injectReferences", []),
-                ret["references"]
+                form.get("injectReferences", []), ret["references"]
             )
         else:
             ret["references"] = form.get("injectReferences") or []
         required_keys = list(
             Content.objects.injected_keys(
                 group=self.instance.group
-            ).values_list(
-                "contentHash", flat=True
-            )
+            ).values_list("contentHash", flat=True)
         )
         required_keys.extend(form.get("requiredKeys", []))
         action_key = None
@@ -104,28 +88,31 @@ class PushForm(forms.Form):
             "content": {
                 "nonce": self.cleaned_data.get("nonce"),
                 "value": self.cleaned_data["value"],
-                "tags": self.cleaned_data["tags"]
+                "tags": self.cleaned_data["tags"],
             },
-            "key": self.cleaned_data.get("key")
+            "key": self.cleaned_data.get("key"),
         }
         action_key = None
         if form.pop("updateable", False):
             freeze = form.pop("freeze", False)
             action_key = os.urandom(32)
-            content["actions"] = [{
-                "key": action_key,
-                "action": "update",
-                "restrict": True,
-                "freeze": freeze,
-                "form": form
-            }]
+            content["actions"] = [
+                {
+                    "key": action_key,
+                    "action": "update",
+                    "restrict": True,
+                    "freeze": freeze,
+                    "form": form,
+                }
+            ]
         self.save = lambda: (
             create_content_fn(
-                self.request, content,
+                self.request,
+                content,
                 key=self.cleaned_data.get("key"),
-                required_keys=required_keys
+                required_keys=required_keys,
             ),
-            action_key
+            action_key,
         )
         return ret
 
@@ -135,14 +122,14 @@ class PushForm(forms.Form):
 
 class UpdateForm(forms.Form):
     value = forms.FileField(required=True)
+    nonce = forms.CharField(widget=forms.HiddenInput(), required=False)
+    updateId = forms.TextField(widget=forms.HiddenInput(), required=True)
     tags = MultipleOpenChoiceField(
-        label=messages.extra_tags_label, required=False,
+        label=messages.extra_tags_label,
+        required=False,
         widget=ListWidget(
-            items={
-                "format_type": "text"
-            },
-            item_label=messages.tags_tag_label
-        )
+            items={"format_type": "text"}, item_label=messages.tags_tag_label
+        ),
     )
     references = MultipleOpenChoiceField(
         label=_("References contents"), required=False

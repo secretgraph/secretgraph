@@ -208,7 +208,39 @@ export function encryptSharedKey(
 
 // onlyPubkeys skips checks which can fail in case of missing tag inclusion
 // this is the case with the findConfigQuery
-export function extractPubKeys(props: {
+export function extractPubKeysCluster(props: {
+    readonly node: any
+    readonly authorization: string[]
+    readonly params: any
+    old?: { [hash: string]: Promise<CryptoKey> }
+    readonly onlyPubkeys?: boolean
+}): { [hash: string]: Promise<CryptoKey> } {
+    const pubkeys = props.old || {}
+    const contents = props.node.cluster
+        ? props.node.cluster.contents
+        : props.node.contents
+    for (const keyNode of contents) {
+        if (!props.onlyPubkeys && !keyNode.tags.includes('type=PublicKey')) {
+            continue
+        }
+        if (!pubkeys[keyNode.contentHash]) {
+            pubkeys[keyNode.contentHash] = fetch(props.node.link, {
+                headers: {
+                    Authorization: props.authorization.join(','),
+                },
+            }).then((result) =>
+                unserializeToCryptoKey(
+                    result.arrayBuffer(),
+                    props.params,
+                    'publicKey'
+                )
+            )
+        }
+    }
+    return pubkeys
+}
+
+export function extractPubKeysRefs(props: {
     readonly node: any
     readonly authorization: string[]
     readonly params: any

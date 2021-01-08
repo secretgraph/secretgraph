@@ -6,6 +6,7 @@ import {
     createContentMutation,
     updateContentMutation,
     contentRetrievalQuery,
+    getContentConfigurationQuery,
     findConfigQuery,
 } from '../queries/content'
 import { serverConfigQuery } from '../queries/server'
@@ -42,7 +43,8 @@ import {
 import {
     encryptSharedKey,
     createSignatureReferences,
-    extractPubKeys,
+    extractPubKeysCluster,
+    extractPubKeysRefs,
 } from './graphql'
 import { mapHashNames } from '../constants'
 
@@ -516,7 +518,7 @@ export async function updateConfigRemoteReducer(
 
     while (true) {
         const configQueryRes = await props.client.query({
-            query: findConfigQuery,
+            query: contentRetrievalQuery,
             variables: {
                 authorization: authInfo.keys,
             },
@@ -539,7 +541,7 @@ export async function updateConfigRemoteReducer(
             hashAlgorithm: configQueryRes.data.config.hashAlgorithms[0],
             old: privkeys,
         })
-        pubkeys = extractPubKeys({
+        pubkeys = extractPubKeysRefs({
             node,
             authorization: authInfo.keys,
             params: {

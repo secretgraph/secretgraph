@@ -28,7 +28,7 @@ import {
     SearchContext,
 } from '../contexts'
 
-import { extractPubKeys } from '../utils/graphql'
+import { extractPubKeysCluster } from '../utils/graphql'
 import {
     decryptContentId,
     createContent,
@@ -245,7 +245,7 @@ const AddFile = () => {
                     url: mainCtx.url as string,
                     hashAlgorithm,
                 })
-                const pubkeys = extractPubKeys({
+                const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
                     authorization: authinfo.keys,
                     params: {
@@ -565,7 +565,7 @@ const EditFile = () => {
                     url: mainCtx.url as string,
                     hashAlgorithm,
                 })
-                const pubkeys = extractPubKeys({
+                const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
                     authorization: authinfo.keys,
                     params: {
@@ -574,6 +574,8 @@ const EditFile = () => {
                     },
                 })
                 const result = await updateContent({
+                    id: mainCtx.item as string,
+                    updateId: pubkeysResult.data.secretgraph.node.updateId,
                     client,
                     config,
                     cluster: values.cluster || undefined,
