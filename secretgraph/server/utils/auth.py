@@ -30,18 +30,20 @@ class LazyViewResult(object):
         for r in viewResults:
             self._result_dict[r["objects"].model.__name__] = r
         if self.authset is None:
-            self.authset = \
-                request.headers.get("Authorization", "").replace(
-                    " ", ""
-                ).split(",")
+            self.authset = (
+                request.headers.get("Authorization", "")
+                .replace(" ", "")
+                .split(",")
+            )
 
     def __getitem__(self, item):
         if item in _cached_classes:
             if item not in self._result_dict:
                 self._result_dict[item] = retrieve_allowed_objects(
-                    self.request, self.scope,
+                    self.request,
+                    self.scope,
                     apps.get_model("secretgraph", item).objects.all(),
-                    authset=self.authset
+                    authset=self.authset,
                 )
             return self._result_dict[item]
         if item in {"authset", "scope"}:
@@ -64,39 +66,38 @@ def initializeCachedResult(
             name,
             LazyViewResult(
                 request, *viewResults, scope=scope, authset=authset
-            )
+            ),
         )
     return getattr(request, name)
 
 
 def retrieve_allowed_objects(request, scope, query, authset=None):
     if authset is None:
-        authset = \
-            request.headers.get("Authorization", "").replace(
-                " ", ""
-            ).split(",")
+        authset = (
+            request.headers.get("Authorization", "")
+            .replace(" ", "")
+            .split(",")
+        )
     authset = set(authset)
     now = timezone.now()
     # cleanup expired Contents
-    Content.objects.filter(
-        markForDestruction__lte=now
-    ).delete()
+    Content.objects.filter(markForDestruction__lte=now).delete()
     if query.model == Cluster:
         Cluster.objects.annotate(models.Count("contents")).filter(
-            markForDestruction__lte=now,
-            contents__count=0
+            markForDestruction__lte=now, contents__count=0
         ).delete()
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
-    pre_filtered_actions = Action.objects.select_related("cluster").filter(
-        start__lte=now
-    ).filter(
-        models.Q(stop__isnull=True) | models.Q(stop__gte=now)
-    ).order_by("-start", "-id")
+    pre_filtered_actions = (
+        Action.objects.select_related("cluster")
+        .filter(start__lte=now)
+        .filter(models.Q(stop__isnull=True) | models.Q(stop__gte=now))
+        .order_by("-start", "-id")
+    )
     if isinstance(query.model, Content):
         pre_filtered_actions = pre_filtered_actions.filter(
-            models.Q(contentAction__isnull=True) |
-            models.Q(contentAction__content__in=query)
+            models.Q(contentAction__isnull=True)
+            | models.Q(contentAction__content__in=query)
         )
     clusters = set()
     all_filters = models.Q()
@@ -109,7 +110,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "actions": Action.objects.none(),
         "action_key_map": {},
         "required_keys_clusters": {},
-        "required_keys_contents": {}
+        "required_keys_contents": {},
     }
     for item in authset:
         # harden against invalid input, e.g. object view produces empty strings
@@ -139,8 +140,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         keyhashes = calculate_hashes(action_key)
 
         actions = pre_filtered_actions.filter(
-            cluster__flexid=clusterflexid,
-            keyHash__in=keyhashes
+            cluster__flexid=clusterflexid, keyHash__in=keyhashes
         )
         if not actions:
             continue
@@ -152,11 +152,11 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         # 3 special
         accesslevel = 0
         for action in actions:
-            action_dict = json.loads(aesgcm.decrypt(
-                base64.b64decode(action.nonce),
-                action.value,
-                None
-            ))
+            action_dict = json.loads(
+                aesgcm.decrypt(
+                    base64.b64decode(action.nonce), action.value, None
+                )
+            )
             result = ActionHandler.handle_action(
                 query.model,
                 action_dict,
@@ -164,7 +164,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 action=action,
                 accesslevel=accesslevel,
                 request=request,
-                authset=authset
+                authset=authset,
             )
             if result is None:
                 continue
@@ -173,17 +173,13 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 returnval["objects"] = query.none()
                 return returnval
             if action.contentAction:
-                required_keys_dict = \
-                    returnval["required_keys_contents"].setdefault(
-                        action.contentAction.content_id,
-                        {}
-                    )
+                required_keys_dict = returnval[
+                    "required_keys_contents"
+                ].setdefault(action.contentAction.content_id, {})
             else:
-                required_keys_dict = \
-                    returnval["required_keys_clusters"].setdefault(
-                        action.cluster_id,
-                        {}
-                    )
+                required_keys_dict = returnval[
+                    "required_keys_clusters"
+                ].setdefault(action.cluster_id, {})
 
             foundaccesslevel = result["accesslevel"]
 
@@ -194,26 +190,22 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 if form:
                     returnval["forms"] = {action.id: form}
 
-                required_keys_dict[
-                    (action_dict["action"], action.keyHash)
-                ] = {
+                required_keys_dict[(action_dict["action"], action.keyHash)] = {
+                    "id": action.id,
                     "requiredKeys": form.get("requiredKeys", []),
-                    "allowedTags": form.get("allowedTags")
+                    "allowedTags": form.get("allowedTags"),
                 }
             elif accesslevel == foundaccesslevel:
                 filters &= result.get("filters", models.Q())
                 form = result.get("form")
                 if form:
-                    returnval["forms"].setdefault(
-                        action.id,
-                        form
-                    )
+                    returnval["forms"].setdefault(action.id, form)
                 required_keys_dict.setdefault(
                     (action_dict["action"], action.keyHash),
                     {
                         "requiredKeys": form.get("requiredKeys", []),
-                        "allowedTags": form.get("allowedTags")
-                    }
+                        "allowedTags": form.get("allowedTags"),
+                    },
                 )
 
             if action.keyHash != keyhashes[0]:
@@ -231,36 +223,26 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             returnval["action_key_map"][h] = action_key
         clusters.add(clusterflexid)
         if issubclass(query.model, Cluster):
-            all_filters |= (
-                filters & models.Q(id=actions[0].cluster_id)
-            )
+            all_filters |= filters & models.Q(id=actions[0].cluster_id)
         else:
-            all_filters |= (
-                filters & models.Q(cluster_id=actions[0].cluster_id)
-            )
+            all_filters |= filters & models.Q(cluster_id=actions[0].cluster_id)
 
     if issubclass(query.model, Cluster):
-        all_filters &= (
-            models.Q(id__in=list(returnval["required_keys_clusters"].keys())) |
-            models.Q(public=True)
-        )
+        all_filters &= models.Q(
+            id__in=list(returnval["required_keys_clusters"].keys())
+        ) | models.Q(public=True)
     elif issubclass(query.model, Content):
         all_filters &= (
-            models.Q(tags__tag="state=public") |
-            models.Q(id__in=list(returnval["required_keys_contents"].keys())) |
-            models.Q(
-                cluster_id__in=list(returnval[
-                    "required_keys_clusters"
-                ].keys())
+            models.Q(tags__tag="state=public")
+            | models.Q(id__in=list(returnval["required_keys_contents"].keys()))
+            | models.Q(
+                cluster_id__in=list(returnval["required_keys_clusters"].keys())
             )
         )
     else:
-        assert issubclass(query.model, Action), \
-               "invalid type %r" % query.model
+        assert issubclass(query.model, Action), "invalid type %r" % query.model
         all_filters &= models.Q(
-            cluster_id__in=list(returnval[
-                "required_keys_clusters"
-            ].keys())
+            cluster_id__in=list(returnval["required_keys_clusters"].keys())
         )
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
@@ -272,8 +254,12 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
 
 
 def fetch_by_id(
-    query, flexids, prefix="", type_name=None, check_content_hash=False,
-    limit_ids=1
+    query,
+    flexids,
+    prefix="",
+    type_name=None,
+    check_content_hash=False,
+    limit_ids=1,
 ):
     # without auth check! do it before
     type_name = type_name or query.model.__name__
@@ -304,9 +290,7 @@ def fetch_by_id(
                 "No {} Id ({})".format(query.model.__name__, type_name)
             )
         addto.add(f)
-    filters = {
-        f"{prefix}flexid__in": flexid_set
-    }
+    filters = {f"{prefix}flexid__in": flexid_set}
     if chash_set:
         filters[f"{prefix}contentHash__in"] = chash_set
     return query.filter(**filters)
@@ -325,15 +309,17 @@ def id_to_result(request, id, klasses, scope="view", authset=None):
         for klass in klasses:
             if type_name == klass.__name__:
                 if scope == "view" and type(id).__name__ in _cached_classes:
-                    result = initializeCachedResult(
-                        request, authset=authset
-                    )[type(id).__name__]
+                    result = initializeCachedResult(request, authset=authset)[
+                        type(id).__name__
+                    ]
                     result = result.copy()
                     result["objects"] = result["objects"].filter(flexid=flexid)
                 else:
                     result = retrieve_allowed_objects(
-                        request, scope, klass.objects.filter(flexid=flexid),
-                        authset=authset
+                        request,
+                        scope,
+                        klass.objects.filter(flexid=flexid),
+                        authset=authset,
                     )
                 break
         if not result:
@@ -344,20 +330,20 @@ def id_to_result(request, id, klasses, scope="view", authset=None):
             )
     elif not isinstance(id, klasses):
         raise ValueError(
-            "Only for {}".format(
-                ",".join(map(lambda x: x.__name__, klasses))
-            )
+            "Only for {}".format(",".join(map(lambda x: x.__name__, klasses)))
         )
     else:
         if scope == "view" and type(id).__name__ in _cached_classes:
-            result = initializeCachedResult(
-                request, authset=authset
-            )[type(id).__name__]
+            result = initializeCachedResult(request, authset=authset)[
+                type(id).__name__
+            ]
             result = result.copy()
             result["objects"] = result["objects"].filter(pk=id.pk)
         else:
             result = retrieve_allowed_objects(
-                request, scope, type(id).objects.filter(pk=id.pk),
-                authset=authset
+                request,
+                scope,
+                type(id).objects.filter(pk=id.pk),
+                authset=authset,
             )
     return result

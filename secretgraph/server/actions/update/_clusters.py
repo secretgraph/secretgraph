@@ -18,20 +18,19 @@ from ._contents import create_key_fn
 len_default_hash = len(hash_object(b""))
 
 
-def _update_or_create_cluster(
-    request, cluster, objdata, authset
-):
+def _update_or_create_cluster(request, cluster, objdata, authset):
     created = not cluster.id
     if objdata.get("publicInfo"):
         if isinstance(objdata["publicInfo"], bytes):
-            objdata["publicInfo"] = \
-                ContentFile(objdata["publicInfo"], "publicInfo")
+            objdata["publicInfo"] = ContentFile(
+                objdata["publicInfo"], "publicInfo"
+            )
         elif isinstance(objdata["publicInfo"], str):
-            objdata["publicInfo"] = \
-                ContentFile(objdata["publicInfo"].encode("utf8"), "publicInfo")
+            objdata["publicInfo"] = ContentFile(
+                objdata["publicInfo"].encode("utf8"), "publicInfo"
+            )
         else:
-            objdata["publicInfo"] = \
-                File(objdata["publicInfo"], "publicInfo")
+            objdata["publicInfo"] = File(objdata["publicInfo"], "publicInfo")
         # max = 2 MB
         if objdata["publicInfo"].size > 2000000:
             raise ValueError("Too big >2MB")
@@ -51,14 +50,18 @@ def _update_or_create_cluster(
         public_secret_hashes = set(map(hash_object, get_secrets(g)))
         cluster.public = len(public_secret_hashes) > 0
         if created:
+
             def cluster_save_fn():
                 cluster.updateId = uuid4()
                 cluster.publicInfo.save("", objdata["publicInfo"])
+
         else:
+
             def cluster_save_fn():
                 cluster.updateId = uuid4()
                 cluster.publicInfo.delete(False)
                 cluster.publicInfo.save("", objdata["publicInfo"])
+
     elif cluster.id is not None:
         public_secret_hashes = {}
         cluster_save_fn = cluster.save
@@ -69,8 +72,7 @@ def _update_or_create_cluster(
         action_save_fn = create_actions_fn(
             cluster, objdata["actions"], request, created, authset=authset
         )
-        assert created and not cluster.id, \
-            "Don't save cluster in action clean"
+        assert created and not cluster.id, "Don't save cluster in action clean"
 
         m_actions = filter(
             lambda x: x.action_type == "manage", action_save_fn.actions
@@ -78,28 +80,28 @@ def _update_or_create_cluster(
         m_actions = set(map(lambda x: x.keyHash, m_actions))
 
         if created and "manage" not in action_save_fn.action_types:
-            raise ValueError("Requires \"manage\" Action")
+            raise ValueError('Requires "manage" Action')
 
         if m_actions.intersection(public_secret_hashes):
-            raise ValueError("\"manage\" action cannot be public")
+            raise ValueError('"manage" action cannot be public')
 
         def save_fn():
             cluster_save_fn()
             action_save_fn()
             return cluster
+
     elif cluster.id is not None and not public_secret_hashes:
         # is not newly created and has also no new public_secret_hashes
         def save_fn():
             cluster_save_fn()
             return cluster
+
     else:
         raise ValueError("no actions for new cluster")
     return save_fn
 
 
-def create_cluster_fn(
-    request, objdata=None, user=None, authset=None
-):
+def create_cluster_fn(request, objdata=None, user=None, authset=None):
     prebuild = {}
 
     if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
@@ -111,14 +113,7 @@ def create_cluster_fn(
     if not objdata:
         action_key = os.urandom(32)
         objdata = {
-            "actions": [
-                {
-                    "key": action_key,
-                    "value": {
-                        "action": "manage"
-                    }
-                }
-            ]
+            "actions": [{"key": action_key, "value": {"action": "manage"}}]
         }
     if hasattr(objdata.get("publicInfo"), "read"):
         objdata["publicInfo"] = objdata["publicInfo"].read()
@@ -130,17 +125,11 @@ def create_cluster_fn(
 
     if not objdata.get("actions"):
         raise ValueError("Actions required")
-    contentdata = {
-        "key": objdata["key"]
-    }
+    contentdata = {"key": objdata["key"]}
     cluster = Cluster(**prebuild)
-    cluster_fn = _update_or_create_cluster(
-        request, cluster, objdata, authset
-    )
+    cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset)
     contentdata["cluster"] = cluster
-    content_fn = create_key_fn(
-        request, contentdata, authset
-    )
+    content_fn = create_key_fn(request, contentdata, authset)
 
     def save_fn(context=nullcontext):
         if callable(context):
@@ -148,10 +137,8 @@ def create_cluster_fn(
         with context:
             cluster = cluster_fn()
             content_fn()
-            return {
-                "cluster": cluster,
-                "writeok": True
-            }
+            return {"cluster": cluster, "writeok": True}
+
     return save_fn
 
 
@@ -179,10 +166,8 @@ def update_cluster_fn(
             except ObjectDoesNotExist:
                 return {
                     "cluster": Cluster.objects.filter(id=cluster.id).first(),
-                    "writeok": False
+                    "writeok": False,
                 }
-            return {
-                "cluster": cluster_fn(),
-                "writeok": True
-            }
+            return {"cluster": cluster_fn(), "writeok": True}
+
     return save_fn

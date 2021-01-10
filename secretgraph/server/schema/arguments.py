@@ -10,51 +10,45 @@ class AuthList(graphene.List):
 
 
 class ActionInput(graphene.InputObjectType):
+    idOrHash = graphene.String(required=False)
     start = graphene.DateTime(required=False)
     stop = graphene.DateTime(required=False)
-    value = graphene.JSONString(
-        required=True,
-        description="Action definition"
-    )
+    value = graphene.JSONString(required=True, description="Action definition")
     # always required as actions must be checked and transformed by server
     key = graphene.String(
-        required=True,
-        description="Action key for encrypting action (base64, 32 bytes)"
+        required=False,
+        description="Action key for encrypting action (base64, 32 bytes)",
     )
 
 
 class ContentKeyInput(graphene.InputObjectType):
     publicKey = Upload(
-        required=False,
-        description="Cleartext public key in der format"
+        required=False, description="Cleartext public key in der format"
     )
     # encrypted!
     privateKey = Upload(
-        required=False,
-        description=(
-            "Encrypted private key (requires nonce)"
-        )
+        required=False, description=("Encrypted private key (requires nonce)")
     )
     nonce = graphene.String(
-        required=False,
-        description="Nonce for private key (base64, 13 bytes)"
+        required=False, description="Nonce for private key (base64, 13 bytes)"
     )
     privateTags = graphene.List(
-        graphene.String, required=True,
-        description="Metadata tags for private key"
+        graphene.String,
+        required=True,
+        description="Metadata tags for private key",
     )
 
     publicTags = graphene.List(
-        graphene.String, required=True,
-        description="Metadata tags for public key"
+        graphene.String,
+        required=True,
+        description="Metadata tags for public key",
     )
 
 
 class ReferenceInput(graphene.InputObjectType):
     target = graphene.ID(
         required=True,
-        description="Can be node id, direct id of content or hash of key"
-
+        description="Can be node id, direct id of content or hash of key",
     )
     extra = graphene.String(required=False)
     group = graphene.String(required=False)

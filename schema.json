@@ -770,6 +770,18 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
+              "name": "id",
+              "type": {
+                "kind": "SCALAR",
+                "name": "ID",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
               "name": "keyHash",
               "type": {
                 "kind": "SCALAR",
@@ -2982,6 +2994,16 @@
             {
               "defaultValue": null,
               "description": null,
+              "name": "idOrHash",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": null,
               "name": "start",
               "type": {
                 "kind": "SCALAR",
@@ -3018,13 +3040,9 @@
               "description": "Action key for encrypting action (base64, 32 bytes)",
               "name": "key",
               "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                }
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
               }
             }
           ],

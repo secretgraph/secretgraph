@@ -64,12 +64,14 @@ idea: unique operation names. It would be nice to have namespaces
 
 -   fixes problem with lost updates, especially for hot files like config
 
+## Action updates
+
+-   via value = "delete" or json variant of "delete" actions are deleteable
+-   actions are identified either by their hash or id
+
 # TODO
 
--   addKeys, removeKeys API instead of cluster updates
-    -   more precise
-    -   no decryption required
-    -   threadsafe
+-   addKeys, removeKeys API - not possible. Actions are currently not addressable
 -   disable editing/prompt for keys if keys are missing
 -   cleanup serverside encryption
     -   remove many "key" arguments

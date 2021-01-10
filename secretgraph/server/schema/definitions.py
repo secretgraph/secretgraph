@@ -100,6 +100,7 @@ class FlexidMixin:
 
 
 class ActionEntry(graphene.ObjectType):
+    id = graphene.ID()
     # of action key
     keyHash = graphene.String()
     type = graphene.String()
@@ -129,6 +130,7 @@ class ActionMixin(object):
         # we cannot seperate with lambda. They appear as list
         return map(
             lambda key_val: ActionEntry(
+                id=None if self.limited else key_val[1]["id"],
                 keyHash=key_val[0][1],
                 type=key_val[0][0],
                 requiredKeys=key_val[1]["requiredKeys"],
