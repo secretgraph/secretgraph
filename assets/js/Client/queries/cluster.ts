@@ -67,7 +67,7 @@ export const getClusterQuery = gql`
                 injectedClusters {
                     group
                     clusters
-                    links {
+                    keys {
                         link
                         hash
                     }

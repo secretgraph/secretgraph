@@ -14,16 +14,11 @@ export interface SimpleSelectProps<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined,
-    V,
     T = string
 > extends Omit<
-        Omit<
-            AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
-            'renderTags'
-        >,
-        'renderInput'
+        AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
+        'renderTags' | 'renderInput'
     > {
-    name: string
     label?: TextFieldProps['label']
     InputProps?: TextFieldProps['InputProps']
     renderInput?: AutocompleteProps<
@@ -46,9 +41,8 @@ interface SimpleSelectPropsTags<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined,
-    V,
     T = string
-> extends SimpleSelectProps<Multiple, DisableClearable, FreeSolo, V, T> {
+> extends SimpleSelectProps<Multiple, DisableClearable, FreeSolo, T> {
     renderInput: AutocompleteProps<
         T,
         Multiple,
@@ -67,9 +61,8 @@ interface SimpleSelectPropsTagsStrict<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined,
-    V,
     T = string
-> extends SimpleSelectPropsTags<Multiple, DisableClearable, FreeSolo, V, T> {
+> extends SimpleSelectPropsTags<Multiple, DisableClearable, FreeSolo, T> {
     renderTags: NonNullable<
         AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>['renderTags']
     >
@@ -82,88 +75,76 @@ export default function SimpleSelect<
     V,
     T = string
 >({
-    name,
     label,
     InputProps: InputPropsMain,
     ...appProps
-}: SimpleSelectProps<Multiple, DisableClearable, FreeSolo, V, T>) {
-    return (
-        <Field name={name}>
-            {(formikFieldProps: FieldProps<V>) => {
-                if (appProps.renderTags === true) {
-                    appProps.renderTags = (value, getTagProps) =>
-                        value.map((option, index) => (
-                            <Chip
-                                variant="outlined"
-                                label={
-                                    appProps.getOptionLabel
-                                        ? appProps.getOptionLabel(option)
-                                        : option
-                                }
-                                size="small"
-                                {...getTagProps({ index })}
-                            />
-                        ))
-                }
-                if (!appProps.renderInput) {
-                    const getTagPropsDropin = ({
-                        index,
-                    }: {
-                        index: number
-                    }) => ({
-                        key: index,
-                        'data-tag-index': index,
-                        tabIndex: -1,
-                    })
-                    appProps.renderInput = (
-                        params: AutocompleteRenderInputParams
-                    ) => {
-                        const InputProps: TextFieldProps['InputProps'] = {
-                            ...(InputPropsMain || {}),
-                        }
-                        Object.assign(InputProps, params.InputProps)
-                        if (!appProps.multiple && appProps.renderTags) {
-                            const appProps2 = appProps as SimpleSelectPropsTagsStrict<
-                                Multiple,
-                                DisableClearable,
-                                FreeSolo,
-                                V,
-                                T
-                            >
-                            InputProps['startAdornment'] = appProps2.renderTags(
-                                appProps.options,
-                                getTagPropsDropin
-                            )
-                        }
-                        return (
-                            <TextField
-                                {...params}
-                                error={
-                                    formikFieldProps.form.touched[name] &&
-                                    !!formikFieldProps.form.errors[name]
-                                }
-                                InputProps={InputProps}
-                                label={label}
-                                fullWidth
-                                helperText={formikFieldProps.form.errors[name]}
-                                variant="outlined"
-                            />
-                        )
-                    }
-                }
+}: SimpleSelectProps<Multiple, DisableClearable, FreeSolo, T> & FieldProps<V>) {
+    if (!appProps.getOptionLabel) {
+        appProps.getOptionLabel = (option: T) => `${option}`
+    }
+    if (appProps.renderTags === true) {
+        appProps.renderTags = (value, getTagProps) =>
+            value.map((option, index) => {
                 return (
-                    <FormikAutocomplete
-                        {...formikFieldProps}
-                        {...(appProps as SimpleSelectPropsTags<
-                            Multiple,
-                            DisableClearable,
-                            FreeSolo,
-                            V,
-                            T
-                        >)}
+                    <Chip
+                        variant="outlined"
+                        label={(appProps.getOptionLabel as NonNullable<
+                            typeof appProps['getOptionLabel']
+                        >)(option)}
+                        size="small"
+                        {...getTagProps({ index })}
                     />
                 )
-            }}
-        </Field>
+            })
+    }
+    if (!appProps.renderInput) {
+        const getTagPropsDropin = ({ index }: { index: number }) => ({
+            key: index,
+            'data-tag-index': index,
+            tabIndex: -1,
+        })
+        appProps.renderInput = (params: AutocompleteRenderInputParams) => {
+            const InputProps: TextFieldProps['InputProps'] = {
+                ...(InputPropsMain || {}),
+            }
+            Object.assign(InputProps, params.InputProps)
+            if (!appProps.multiple && appProps.renderTags) {
+                const appProps2 = appProps as SimpleSelectPropsTagsStrict<
+                    Multiple,
+                    DisableClearable,
+                    FreeSolo,
+                    T
+                >
+                InputProps['startAdornment'] = appProps2.renderTags(
+                    appProps.options,
+                    getTagPropsDropin
+                )
+            }
+            return (
+                <TextField
+                    {...params}
+                    error={
+                        appProps.form.touched[appProps.field.name] &&
+                        !!appProps.form.errors[appProps.field.name]
+                    }
+                    InputProps={InputProps}
+                    label={label}
+                    fullWidth
+                    helperText={appProps.form.errors[appProps.field.name]}
+                    variant="outlined"
+                />
+            )
+        }
+    }
+    return (
+        <FormikAutocomplete
+            {...(appProps as SimpleSelectPropsTags<
+                Multiple,
+                DisableClearable,
+                FreeSolo,
+                T
+            > &
+                FieldProps<V>)}
+        />
     )
 }

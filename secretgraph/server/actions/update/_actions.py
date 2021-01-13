@@ -142,12 +142,12 @@ def create_actions_fn(
                 ContentAction.objects.bulk_create(
                     map(
                         lambda c: c.contentAction,
-                        filter(add_actions, lambda x: x.contentAction),
+                        filter(lambda x: x.contentAction, add_actions),
                     )
                 )
             if create:
                 Action.objects.bulk_create(
-                    refresh_fields(add_actions.values(), "cluster")
+                    refresh_fields(add_actions, "cluster")
                 )
             else:
                 if modify_actions:
@@ -155,8 +155,8 @@ def create_actions_fn(
                         [
                             c.contentAction
                             for c in filter(
-                                modify_actions.values(),
                                 lambda x: x.contentAction,
+                                modify_actions.values(),
                             )
                         ]
                     )

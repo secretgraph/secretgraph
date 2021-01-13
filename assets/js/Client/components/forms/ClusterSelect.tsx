@@ -1,31 +1,31 @@
 import * as React from 'react'
+import { parse, graph, SPARQLToQuery } from 'rdflib'
+
+import { gql, useLazyQuery } from '@apollo/client'
+import { FieldProps, Field } from 'formik'
 
 import { InitializedConfigContext } from '../../contexts'
 import { extractAuthInfo } from '../../utils/config'
 import { clusterFeedQuery } from '../../queries/cluster'
 import { CLUSTER, SECRETGRAPH, contentStates } from '../../constants'
-import { parse, graph, SPARQLToQuery } from 'rdflib'
-
-import { gql, useLazyQuery } from '@apollo/client'
 
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
 export interface ClusterSelectProps<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
-    FreeSolo extends boolean | undefined,
-    V
+    FreeSolo extends boolean | undefined
 > extends Omit<
         SimpleSelectProps<
             Multiple,
             DisableClearable,
             FreeSolo,
-            V,
             { id: string; label: string }
         >,
         'options'
     > {
     url: string
+    firstIfEmpty?: boolean
 }
 
 export default function ClusterSelect<
@@ -35,19 +35,21 @@ export default function ClusterSelect<
     V
 >({
     url,
+    firstIfEmpty,
     ...props
-}: ClusterSelectProps<Multiple, DisableClearable, FreeSolo, V>) {
+}: ClusterSelectProps<Multiple, DisableClearable, FreeSolo> & FieldProps<V>) {
     const { config } = React.useContext(InitializedConfigContext)
 
-    const authinfo = React.useMemo(
-        () =>
-            extractAuthInfo({
-                config,
-                url,
-                require: new Set(['update', 'manage']),
-            }),
-        [config, url]
-    )
+    const authinfo = React.useMemo(() => {
+        if (url === undefined) {
+            throw Error(`no url: ${url}`)
+        }
+        return extractAuthInfo({
+            config,
+            url,
+            require: new Set(['update', 'manage']),
+        })
+    }, [config, url])
 
     const [getClusters, { fetchMore, data, called, refetch }] = useLazyQuery(
         clusterFeedQuery,
@@ -73,7 +75,7 @@ export default function ClusterSelect<
         if (!data) {
             return []
         }
-        return data.clusters.clusters.edges.map((edge: any) => {
+        return data.clusters.clusters.edges.map((edge: any, index: number) => {
             let name: string | undefined,
                 note: string = ''
             try {
@@ -99,23 +101,46 @@ export default function ClusterSelect<
             } catch (exc) {
                 console.warn('Could not parse publicInfo', exc)
             }
+
             return {
                 id: edge.node.id,
                 label: name === undefined ? edge.node.id : name,
             }
         })
     }, [data])
-    return (
+    React.useEffect(() => {
+        if (
+            !firstIfEmpty ||
+            clustersFinished.length == 0 ||
+            props.form.values[props.field.name]
+        ) {
+            return
+        }
+        props.form.setFieldValue(props.field.name, clustersFinished[0])
+    }, [clustersFinished])
+    const ret = (
         <SimpleSelect
             {...props}
-            options={clustersFinished}
+            getOptionLabel={(option) => {
+                return option.label || ''
+            }}
+            options={
+                clustersFinished.length == 0 &&
+                props.form.initialValues[props.field.name]
+                    ? props.multiple
+                        ? props.form.initialValues[props.field.name]
+                        : [props.form.initialValues[props.field.name]]
+                    : clustersFinished
+            }
             onOpen={() => {
                 if (called) {
                     ;(refetch as NonNullable<typeof refetch>)()
-                } else {
-                    getClusters()
                 }
             }}
         />
     )
+    React.useLayoutEffect(() => {
+        !called && getClusters()
+    })
+    return ret
 }

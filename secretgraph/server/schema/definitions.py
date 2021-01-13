@@ -92,6 +92,8 @@ class FlexidMixin:
     # exposed id is flexid
 
     def resolve_id(self, info):
+        if self.limited:
+            return None
         return self.flexid
 
     @classmethod
@@ -127,10 +129,11 @@ class ActionMixin(object):
             in {"manage", "push", "view", "update"},
             resultval,
         )
+        has_manage = any(map(lambda x: x[0][0] == "manage", resultval))
         # we cannot seperate with lambda. They appear as list
         return map(
             lambda key_val: ActionEntry(
-                id=None if self.limited else key_val[1]["id"],
+                id=None if not has_manage else key_val[1]["id"],
                 keyHash=key_val[0][1],
                 type=key_val[0][0],
                 requiredKeys=key_val[1]["requiredKeys"],
@@ -233,11 +236,6 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     )
     link = graphene.String()
 
-    def resolve_id(self, info):
-        if self.limited:
-            return None
-        super().resolve_id(info)
-
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
         result = initializeCachedResult(info.context, authset=authorization)[
@@ -338,6 +336,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.link
 
     def resolve_availableActions(self, info):
+        if self.limited:
+            return []
         return ActionMixin.resolve_availableActions(self, info)
 
 
@@ -409,11 +409,6 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         description=_("Link to turtle document with injected Contents"),
     )
 
-    def resolve_id(self, info):
-        if self.limited:
-            return None
-        super().resolve_id(info)
-
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
         return fetch_clusters(
@@ -458,6 +453,8 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.user
 
     def resolve_availableActions(self, info):
+        if self.limited:
+            return []
         return ActionMixin.resolve_availableActions(self, info)
 
     def resolve_publicInfo(self, info):

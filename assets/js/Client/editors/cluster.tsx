@@ -31,7 +31,11 @@ import {
 import { RDF, XSD, CLUSTER, SECRETGRAPH, contentStates } from '../constants'
 
 import { ConfigInterface, MainContextInterface } from '../interfaces'
-import { MainContext, InitializedConfigContext } from '../contexts'
+import {
+    MainContext,
+    InitializedConfigContext,
+    ActiveUrlContext,
+} from '../contexts'
 import { getClusterQuery } from '../queries/cluster'
 import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo } from '../utils/config'
@@ -484,9 +488,10 @@ const ViewCluster = () => {
 
 const AddCluster = () => {
     const { config } = React.useContext(InitializedConfigContext)
+    const { activeUrl } = React.useContext(ActiveUrlContext)
     const authinfo = extractAuthInfo({
         config,
-        url: config.baseUrl as string,
+        url: activeUrl,
         require: new Set(['manage']),
     })
 

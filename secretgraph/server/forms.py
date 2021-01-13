@@ -123,7 +123,7 @@ class PushForm(forms.Form):
 class UpdateForm(forms.Form):
     value = forms.FileField(required=True)
     nonce = forms.CharField(widget=forms.HiddenInput(), required=False)
-    updateId = forms.TextField(widget=forms.HiddenInput(), required=True)
+    updateId = forms.CharField(widget=forms.HiddenInput(), required=True)
     tags = MultipleOpenChoiceField(
         label=messages.extra_tags_label,
         required=False,

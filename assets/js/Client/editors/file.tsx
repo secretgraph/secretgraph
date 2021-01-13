@@ -26,6 +26,7 @@ import {
     MainContext,
     InitializedConfigContext,
     SearchContext,
+    ActiveUrlContext,
 } from '../contexts'
 
 import { extractPubKeysCluster } from '../utils/graphql'
@@ -165,6 +166,7 @@ const ViewFile = () => {
 const AddFile = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const { activeUrl } = React.useContext(ActiveUrlContext)
     const { searchCtx } = React.useContext(SearchContext)
     const { config } = React.useContext(InitializedConfigContext)
     const client = useApolloClient()
@@ -177,7 +179,7 @@ const AddFile = () => {
                 fileInput: null as null | Blob,
                 name: '',
                 keywords: [] as string[],
-                cluster: searchCtx.cluster,
+                cluster: searchCtx.cluster ? searchCtx.cluster : null,
             }}
             validate={(values) => {
                 const errors: Partial<
@@ -226,8 +228,8 @@ const AddFile = () => {
                 }
                 const authinfo = extractAuthInfo({
                     config,
-                    clusters: new Set([mainCtx.item as string]),
-                    url: mainCtx.url as string,
+                    clusters: new Set([values.cluster as string]),
+                    url: activeUrl,
                     require: new Set(['update']),
                 })
                 const pubkeysResult = await client.query({
@@ -291,7 +293,8 @@ const AddFile = () => {
                             />
                         </Grid>
                         <Grid item xs={12} md={4}>
-                            <SimpleSelect
+                            <Field
+                                component={SimpleSelect}
                                 name="keywords"
                                 disabled={isSubmitting}
                                 options={[]}
@@ -301,11 +304,13 @@ const AddFile = () => {
                         </Grid>
 
                         <Grid item xs={12} md={4}>
-                            <ClusterSelect
-                                url={mainCtx.url as string}
+                            <Field
+                                component={ClusterSelect}
+                                url={activeUrl as string}
                                 name="cluster"
                                 disabled={isSubmitting}
                                 label="Cluster"
+                                firstIfEmpty
                             />
                         </Grid>
                         {mainCtx.type != 'text' ? (
@@ -340,8 +345,7 @@ const AddFile = () => {
                                 mainCtx.type != 'text' &&
                                 !values.plainInput &&
                                 !values.htmlInput &&
-                                !values.fileInput &&
-                                mainCtx.type != 'text'
+                                !values.fileInput
                                     ? 6
                                     : undefined
                             }
@@ -612,7 +616,8 @@ const EditFile = () => {
                         />
                     </Grid>
                     <Grid item xs={12} md={4}>
-                        <SimpleSelect
+                        <Field
+                            component={SimpleSelect}
                             name="keywords"
                             disabled={isSubmitting}
                             options={[]}
@@ -622,11 +627,13 @@ const EditFile = () => {
                     </Grid>
 
                     <Grid item xs={12} md={4}>
-                        <ClusterSelect
+                        <Field
+                            component={ClusterSelect}
                             url={mainCtx.url as string}
                             name="cluster"
                             disabled={isSubmitting}
                             label="Cluster"
+                            firstIfEmpty
                         />
                     </Grid>
                     <Grid item xs={12}>

@@ -427,6 +427,9 @@ export function extractAuthInfo({
 }): AuthInfoInterface {
     const keys = []
     const hashes = []
+    if (url === undefined) {
+        throw Error(`no url: ${url}`)
+    }
     const host = config.hosts[new URL(url, window.location.href).href]
     if (!props.content || props.clusters) {
         for (const id in host.clusters) {

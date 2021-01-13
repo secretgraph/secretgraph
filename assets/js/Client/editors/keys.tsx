@@ -10,7 +10,7 @@ import { MainContext, ConfigContext } from '../contexts'
 import { decryptContentId } from '../utils/operations'
 import DecisionFrame from '../components/DecisionFrame'
 
-import { contentQuery } from '../queries/content'
+import { contentRetrievalQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
 

@@ -20,8 +20,9 @@
 ## Permissions
 
 -   manage: can change and create clusters, full access like admin
--   create: can add and update contents
--   update: update contents
+-   create: can add contents
+-   delete: can delete contents or clusters and contents (depending on scope)
+-   update: update contents or clusters (depending on scope)
 -   push: create subcontents via push
 -   view: view contents and or clusters (depending on scope)
 
@@ -66,12 +67,14 @@ idea: unique operation names. It would be nice to have namespaces
 
 ## Action updates
 
--   via value = "delete" or json variant of "delete" actions are deleteable
+-   via value = "delete" or json variant of "delete" actions can be deleted
 -   actions are identified either by their hash or id
+    Other types are:
+-   {"}
 
 # TODO
 
--   addKeys, removeKeys API - not possible. Actions are currently not addressable
+-   test permissions
 -   disable editing/prompt for keys if keys are missing
 -   cleanup serverside encryption
     -   remove many "key" arguments
