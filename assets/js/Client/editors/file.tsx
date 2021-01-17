@@ -207,7 +207,7 @@ const AddFile = () => {
                 ) {
                     errors['plainInput'] = errors['htmlInput'] = errors[
                         'fileInput'
-                    ] = 'empty'
+                    ] = 'one field must be set'
                 }
 
                 return errors
@@ -256,29 +256,39 @@ const AddFile = () => {
                         hash: hashAlgorithm,
                     },
                 })
-                const result = await createContent({
-                    client,
-                    config,
-                    cluster: values.cluster as string,
-                    value,
-                    tags: [
-                        `name=${values.name}`,
-                        `type=${
-                            value.type.startsWith('text/') ? 'Text' : 'File'
-                        }`,
-                    ].concat(
-                        values.keywords.map(
-                            (val) =>
-                                `keyword=${(val.match(/=(.*)/) as string[])[1]}`
-                        )
-                    ),
-                    encryptTags: new Set(['name', 'mime']),
-                    privkeys: await Promise.all(Object.values(privkeys)),
-                    pubkeys: Object.values(pubkeys),
-                    hashAlgorithm,
-                    authorization: authinfo.keys,
-                })
-                updateMainCtx({ item: result.data.content.id, action: 'edit' })
+                try {
+                    const result = await createContent({
+                        client,
+                        config,
+                        cluster: values.cluster as string,
+                        value,
+                        tags: [
+                            `name=${values.name}`,
+                            `type=${
+                                value.type.startsWith('text/') ? 'Text' : 'File'
+                            }`,
+                        ].concat(
+                            values.keywords.map(
+                                (val) =>
+                                    `keyword=${
+                                        (val.match(/=(.*)/) as string[])[1]
+                                    }`
+                            )
+                        ),
+                        encryptTags: new Set(['name', 'mime']),
+                        privkeys: await Promise.all(Object.values(privkeys)),
+                        pubkeys: Object.values(pubkeys),
+                        hashAlgorithm,
+                        authorization: authinfo.keys,
+                    })
+                    updateMainCtx({
+                        item: result.data.content.id,
+                        action: 'edit',
+                    })
+                } catch (exc) {
+                    console.error(exc)
+                }
+                setSubmitting(false)
             }}
         >
             {({ submitForm, isSubmitting, values, setValues }) => (
@@ -356,9 +366,10 @@ const AddFile = () => {
                                                     onChange:
                                                         formikFieldProps.field
                                                             .onChange,
-                                                    onBlur:
-                                                        formikFieldProps.field
-                                                            .onBlur,
+                                                    onBlur: () =>
+                                                        formikFieldProps.field.onBlur(
+                                                            'htmlInput'
+                                                        ),
                                                     setContent:
                                                         formikFieldProps.field
                                                             .value,
@@ -479,13 +490,13 @@ const TextFileAdapter = ({
                 fullWidth
                 variant="outlined"
                 multiline
-                onBlur={onBlur}
                 InputProps={{
                     inputComponent: SunEditor as any,
                     inputProps: {
                         width: '100%',
                         disable: disabled,
                         onChange: onChange as any,
+                        onBlur: onBlur,
                         setContent: value,
                     },
                 }}
@@ -499,6 +510,7 @@ const TextFileAdapter = ({
             variant="outlined"
             disabled={disabled}
             label={'Plaintext input'}
+            onBlur={onBlur}
             value={text}
             onChange={(ev) => {
                 onChange(new Blob([ev.currentTarget.value], { type: mime }))
@@ -613,7 +625,7 @@ const EditFile = () => {
                 updateMainCtx({ item: result.data.content.id, action: 'edit' })
             }}
         >
-            {({ submitForm, isSubmitting, values, setValues, handleBlur }) => (
+            {({ submitForm, isSubmitting, values, setValues }) => (
                 <Grid container spacing={1}>
                     <Grid item xs={12} md={4}>
                         <Field
@@ -654,7 +666,6 @@ const EditFile = () => {
                                     fileInput: blob,
                                 })
                             }}
-                            onBlur={handleBlur}
                             mime={mime}
                             disabled={isSubmitting}
                         />
