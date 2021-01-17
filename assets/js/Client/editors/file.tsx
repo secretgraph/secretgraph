@@ -5,6 +5,7 @@ import CardContent from '@material-ui/core/CardContent'
 import { Autocomplete as FormikAutocomplete } from 'formik-material-ui-lab'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import SunEditor from 'suneditor-react'
+import 'suneditor/dist/css/suneditor.min.css'
 import * as DOMPurify from 'dompurify'
 import Button from '@material-ui/core/Button'
 import TextField from '@material-ui/core/TextField'
@@ -328,7 +329,9 @@ const AddFile = () => {
                                 <Field
                                     component={FormikTextField}
                                     name="plainInput"
+                                    label="Text"
                                     fullWidth
+                                    variant="outlined"
                                     multiline
                                     disabled={
                                         isSubmitting ||
@@ -353,21 +356,28 @@ const AddFile = () => {
                             <Field name="htmlInput">
                                 {(formikFieldProps: FieldProps) => {
                                     return (
-                                        <SunEditor
-                                            width="100%"
-                                            disable={
-                                                !!(
-                                                    isSubmitting ||
-                                                    values.plainInput ||
-                                                    values.fileInput
-                                                )
-                                            }
-                                            onChange={
-                                                formikFieldProps.field.onChange
-                                            }
-                                            setContents={
-                                                formikFieldProps.field.value
-                                            }
+                                        <FormikTextField
+                                            {...formikFieldProps}
+                                            label="Html Text"
+                                            fullWidth
+                                            variant="outlined"
+                                            InputProps={{
+                                                inputComponent: SunEditor as any,
+                                                inputProps: {
+                                                    width: '100%',
+                                                    disable: !!(
+                                                        isSubmitting ||
+                                                        values.plainInput ||
+                                                        values.fileInput
+                                                    ),
+                                                    onChange:
+                                                        formikFieldProps.field
+                                                            .onChange,
+                                                    setContent:
+                                                        formikFieldProps.field
+                                                            .value,
+                                                },
+                                            }}
                                         />
                                     )
                                 }}
@@ -475,13 +485,20 @@ const TextFileAdapter = ({
     }
     if (mime === 'text/html') {
         return (
-            <SunEditor
-                width="100%"
-                disable={disabled}
-                onChange={(val) => {
-                    onChange(new Blob([text], { type: mime }))
+            <TextField
+                label="Html Text"
+                fullWidth
+                variant="outlined"
+                multiline
+                InputProps={{
+                    inputComponent: SunEditor as any,
+                    inputProps: {
+                        width: '100%',
+                        disable: disabled,
+                        onChange: onChange as any,
+                        setContent: value,
+                    },
                 }}
-                setContents={text}
             />
         )
     }
@@ -489,7 +506,9 @@ const TextFileAdapter = ({
         <TextField
             fullWidth
             multiline
+            variant="outlined"
             disabled={disabled}
+            label={'Plaintext input'}
             value={text}
             onChange={(ev) => {
                 onChange(new Blob([ev.currentTarget.value], { type: mime }))
