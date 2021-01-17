@@ -264,7 +264,7 @@ const AddFile = () => {
                     tags: [
                         `name=${values.name}`,
                         `type=${
-                            value.type.startsWith('text/') ? 'text' : 'file'
+                            value.type.startsWith('text/') ? 'Text' : 'File'
                         }`,
                     ].concat(
                         values.keywords.map(
@@ -314,18 +314,8 @@ const AddFile = () => {
                                 firstIfEmpty
                             />
                         </Grid>
-                        {mainCtx.type != 'text' ? (
-                            <Grid
-                                item
-                                xs={12}
-                                sm={
-                                    !values.plainInput &&
-                                    !values.htmlInput &&
-                                    !values.fileInput
-                                        ? 6
-                                        : undefined
-                                }
-                            >
+                        {mainCtx.type != 'Text' ? (
+                            <Grid item xs={12} sm={6}>
                                 <Field
                                     component={FormikTextField}
                                     name="plainInput"
@@ -344,14 +334,7 @@ const AddFile = () => {
                         <Grid
                             item
                             xs={12}
-                            sm={
-                                mainCtx.type != 'text' &&
-                                !values.plainInput &&
-                                !values.htmlInput &&
-                                !values.fileInput
-                                    ? 6
-                                    : undefined
-                            }
+                            sm={mainCtx.type != 'Text' ? 6 : undefined}
                         >
                             <Field name="htmlInput">
                                 {(formikFieldProps: FieldProps) => {
@@ -373,6 +356,9 @@ const AddFile = () => {
                                                     onChange:
                                                         formikFieldProps.field
                                                             .onChange,
+                                                    onBlur:
+                                                        formikFieldProps.field
+                                                            .onBlur,
                                                     setContent:
                                                         formikFieldProps.field
                                                             .value,
@@ -383,6 +369,7 @@ const AddFile = () => {
                                 }}
                             </Field>
                         </Grid>
+
                         <Grid item xs={12}>
                             <Field
                                 name="fileInput"
@@ -402,7 +389,7 @@ const AddFile = () => {
                                                         .onChange
                                                 }
                                                 accept={
-                                                    mainCtx.type == 'text'
+                                                    mainCtx.type == 'Text'
                                                         ? 'text/*'
                                                         : undefined
                                                 }
@@ -465,11 +452,13 @@ const TextFileAdapter = ({
     mime,
     disabled,
     onChange,
+    onBlur,
     value,
 }: {
     mime: string
     disabled?: boolean
     onChange: (newText: Blob) => void
+    onBlur?: any
     value: Blob
 }) => {
     if (!mime.startsWith('text/')) {
@@ -490,6 +479,7 @@ const TextFileAdapter = ({
                 fullWidth
                 variant="outlined"
                 multiline
+                onBlur={onBlur}
                 InputProps={{
                     inputComponent: SunEditor as any,
                     inputProps: {
@@ -606,7 +596,7 @@ const EditFile = () => {
                     tags: [
                         `name=${values.name}`,
                         `type=${
-                            value.type.startsWith('text/') ? 'text' : 'file'
+                            value.type.startsWith('text/') ? 'Text' : 'File'
                         }`,
                     ].concat(
                         values.keywords.map(
@@ -623,7 +613,7 @@ const EditFile = () => {
                 updateMainCtx({ item: result.data.content.id, action: 'edit' })
             }}
         >
-            {({ submitForm, isSubmitting, values, setValues }) => (
+            {({ submitForm, isSubmitting, values, setValues, handleBlur }) => (
                 <Grid container spacing={1}>
                     <Grid item xs={12} md={4}>
                         <Field
@@ -664,6 +654,7 @@ const EditFile = () => {
                                     fileInput: blob,
                                 })
                             }}
+                            onBlur={handleBlur}
                             mime={mime}
                             disabled={isSubmitting}
                         />
@@ -679,7 +670,7 @@ const EditFile = () => {
                                                 formikFieldProps.field.onChange
                                             }
                                             accept={
-                                                mainCtx.type == 'text'
+                                                mainCtx.type == 'Text'
                                                     ? 'text/*'
                                                     : undefined
                                             }
