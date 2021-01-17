@@ -144,7 +144,7 @@ django = ">=2.0"
 
 [[package]]
 name = "django-manifest-loader"
-version = "0.2.0"
+version = "1.0.0"
 description = "A Django app to load webpack assets."
 category = "main"
 optional = false
@@ -712,8 +712,8 @@ django-fast-ratelimit = [
     {file = "django_fast_ratelimit-0.5.0.3-py3-none-any.whl", hash = "sha256:072c1e448fe11bae1df469f0271a8feb4fc349c910cc5d6cb445f994b9602b16"},
 ]
 django-manifest-loader = [
-    {file = "django-manifest-loader-0.2.0.tar.gz", hash = "sha256:7e01b8434154f72462aec878c62109521868966d850735f78f70bb1da4a68bfd"},
-    {file = "django_manifest_loader-0.2.0-py3-none-any.whl", hash = "sha256:fa75b4d677b71120a6003059d0af1741defc4d7301854a84835fa06dc4a0ec79"},
+    {file = "django-manifest-loader-1.0.0.tar.gz", hash = "sha256:cd7a5585d17b07cf7d672c201ecb3476121f65c9b522e29f25c2ee4e9f87ab34"},
+    {file = "django_manifest_loader-1.0.0-py3-none-any.whl", hash = "sha256:17a6e5b47ff6999ca530e754d874c1e4b0c7f16e72c761e3e05bc529cee34145"},
 ]
 django-mysql = [
     {file = "django-mysql-3.10.0.tar.gz", hash = "sha256:86fbe92623eb35fa6ece0574293db40b025e7df5bc58bd23b5a3c56bc9db51c7"},
