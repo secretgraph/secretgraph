@@ -450,18 +450,15 @@ const ViewCluster = () => {
         url: mainCtx.url as string,
         require: new Set(['view', 'manage']),
     })
-    const { data, error } = useAsync({
+    const { data } = useAsync({
         promiseFn: item_retrieval_helper,
         suspense: true,
+        onReject: console.error,
         client: client,
         keys: authinfo.keys,
         item: mainCtx.item,
     })
-    if (!data && !error) {
-        return null
-    }
-    if (!data && error) {
-        console.error('Error', data, error)
+    if (!data) {
         return null
     }
     if (!(data as any).data.secretgraph.node) {
@@ -523,12 +520,10 @@ const EditCluster = () => {
         client: client,
         keys: authinfo.keys,
         item: mainCtx.item,
+        watch: (mainCtx.url as string) + mainCtx.item,
     })
     if (!data && !error) {
         return null
-    }
-    if (!mainCtx.shareUrl) {
-        updateMainCtx({ shareUrl: (data as any).data.secretgraph.node.link })
     }
     if (!data && error) {
         console.error(data, error)
@@ -542,6 +537,9 @@ const EditCluster = () => {
                 keys={authinfo.keys}
             />
         )
+    }
+    if (!mainCtx.shareUrl) {
+        updateMainCtx({ shareUrl: (data as any).data.secretgraph.node.link })
     }
     if (!data?.data?.secretgraph?.node) {
         return (

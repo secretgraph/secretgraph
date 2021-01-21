@@ -4,11 +4,9 @@ import Card from '@material-ui/core/Card'
 import CardContent from '@material-ui/core/CardContent'
 import { Autocomplete as FormikAutocomplete } from 'formik-material-ui-lab'
 import LinearProgress from '@material-ui/core/LinearProgress'
-import SunEditor from 'suneditor-react'
-import 'suneditor/dist/css/suneditor.min.css'
 import * as DOMPurify from 'dompurify'
 import Button from '@material-ui/core/Button'
-import TextField from '@material-ui/core/TextField'
+import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 import Typography from '@material-ui/core/Typography'
 
 import Grid from '@material-ui/core/Grid'
@@ -46,10 +44,12 @@ import {
 } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
+import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import DecisionFrame from '../components/DecisionFrame'
+import { TextFieldProps as TextFieldPropsFormik } from 'material-ui'
 
 const ViewFile = () => {
     const { classes, theme } = useStylesAndTheme()
@@ -59,17 +59,19 @@ const ViewFile = () => {
     const client = useApolloClient()
 
     //
-    const { data, error } = useAsync({
+    const { data } = useAsync({
         promiseFn: decryptContentId,
         suspense: true,
+        onReject: console.error,
         client: client,
         config: config as ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
         decryptTags: ['mime', 'name'],
+        watch: (mainCtx.url as string) + mainCtx.item,
     })
-    if (error) {
-        console.error(error)
+    if (!data) {
+        return null
     }
     const mime =
         data && data.tags.mime && data.tags.mime.length > 0
@@ -349,32 +351,23 @@ const AddFile = () => {
                             <Field name="htmlInput">
                                 {(formikFieldProps: FieldProps) => {
                                     return (
-                                        <FormikTextField
-                                            {...formikFieldProps}
+                                        <SunEditor
                                             label="Html Text"
-                                            fullWidth
                                             variant="outlined"
-                                            InputProps={{
-                                                inputComponent: SunEditor as any,
-                                                inputProps: {
-                                                    width: '100%',
-                                                    disable: !!(
-                                                        isSubmitting ||
-                                                        values.plainInput ||
-                                                        values.fileInput
-                                                    ),
-                                                    onChange:
-                                                        formikFieldProps.field
-                                                            .onChange,
-                                                    onBlur: () =>
-                                                        formikFieldProps.field.onBlur(
-                                                            'htmlInput'
-                                                        ),
-                                                    setContent:
-                                                        formikFieldProps.field
-                                                            .value,
-                                                },
-                                            }}
+                                            helperText={
+                                                formikFieldProps.meta.error
+                                            }
+                                            error={
+                                                !!formikFieldProps.meta.error &&
+                                                !!formikFieldProps.meta.touched
+                                            }
+                                            disabled={
+                                                !!(
+                                                    isSubmitting ||
+                                                    values.plainInput ||
+                                                    values.fileInput
+                                                )
+                                            }
                                         />
                                     )
                                 }}
@@ -434,6 +427,21 @@ const AddFile = () => {
                                             >
                                                 Clear
                                             </Button>
+                                            {formikFieldProps.meta.error && (
+                                                <Typography
+                                                    color={
+                                                        formikFieldProps.meta
+                                                            .touched
+                                                            ? 'error'
+                                                            : undefined
+                                                    }
+                                                >
+                                                    {
+                                                        formikFieldProps.meta
+                                                            .error
+                                                    }
+                                                </Typography>
+                                            )}
                                         </>
                                     )
                                 }}
@@ -461,17 +469,16 @@ const AddFile = () => {
 
 const TextFileAdapter = ({
     mime,
-    disabled,
     onChange,
     onBlur,
     value,
+    ...props
 }: {
     mime: string
-    disabled?: boolean
     onChange: (newText: Blob) => void
     onBlur?: any
     value: Blob
-}) => {
+} & Pick<TextFieldProps, 'disabled' | 'error' | 'helperText'>) => {
     if (!mime.startsWith('text/')) {
         return null
     }
@@ -485,21 +492,16 @@ const TextFileAdapter = ({
     }
     if (mime === 'text/html') {
         return (
-            <TextField
+            <SunEditor
                 label="Html Text"
                 fullWidth
                 variant="outlined"
                 multiline
-                InputProps={{
-                    inputComponent: SunEditor as any,
-                    inputProps: {
-                        width: '100%',
-                        disable: disabled,
-                        onChange: onChange as any,
-                        onBlur: onBlur,
-                        setContent: value,
-                    },
+                onChange={(ev) => {
+                    onChange(new Blob([ev.currentTarget.value], { type: mime }))
                 }}
+                onBlur={onBlur}
+                {...props}
             />
         )
     }
@@ -508,10 +510,10 @@ const TextFileAdapter = ({
             fullWidth
             multiline
             variant="outlined"
-            disabled={disabled}
             label={'Plaintext input'}
             onBlur={onBlur}
             value={text}
+            {...props}
             onChange={(ev) => {
                 onChange(new Blob([ev.currentTarget.value], { type: mime }))
             }}
@@ -524,18 +526,17 @@ const EditFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config } = React.useContext(InitializedConfigContext)
     const client = useApolloClient()
-    const { data, error } = useAsync({
+    const { data } = useAsync({
         promiseFn: decryptContentId,
+        onReject: console.error,
         suspense: true,
         client: client,
         config: config as ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
         decryptTags: ['mime', 'name'],
+        watch: (mainCtx.url as string) + mainCtx.item,
     })
-    if (error) {
-        console.error(error)
-    }
     if (!data) {
         return null
     }
@@ -625,7 +626,14 @@ const EditFile = () => {
                 updateMainCtx({ item: result.data.content.id, action: 'edit' })
             }}
         >
-            {({ submitForm, isSubmitting, values, setValues }) => (
+            {({
+                submitForm,
+                isSubmitting,
+                values,
+                setValues,
+                touched,
+                errors,
+            }) => (
                 <Grid container spacing={1}>
                     <Grid item xs={12} md={4}>
                         <Field
@@ -668,6 +676,10 @@ const EditFile = () => {
                             }}
                             mime={mime}
                             disabled={isSubmitting}
+                            helperText={errors['fileInput']}
+                            error={
+                                errors['fileInput'] && !!touched['fileInput']
+                            }
                         />
                     </Grid>
                     <Grid item xs={12}>
@@ -690,6 +702,18 @@ const EditFile = () => {
                                                 Upload
                                             </Button>
                                         </UploadButton>
+                                        {formikFieldProps.meta.error && (
+                                            <Typography
+                                                color={
+                                                    formikFieldProps.meta
+                                                        .touched
+                                                        ? 'error'
+                                                        : undefined
+                                                }
+                                            >
+                                                {formikFieldProps.meta.error}
+                                            </Typography>
+                                        )}
                                     </>
                                 )
                             }}

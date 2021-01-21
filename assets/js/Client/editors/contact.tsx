@@ -23,6 +23,7 @@ const ViewFile = (props: Props) => {
     const { data, error } = useAsync({
         promiseFn: decryptContentId,
         suspense: true,
+        onReject: console.error,
         client: client,
         config: config as ConfigInterface,
         url: mainCtx.url as string,

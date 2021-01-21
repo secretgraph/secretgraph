@@ -114,6 +114,7 @@ export interface MainContextInterface {
     url: null | string
     type: null | string
     shareUrl: null | string
+    // editable
 }
 
 export interface SearchContextInterface {
