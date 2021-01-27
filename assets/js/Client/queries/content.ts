@@ -186,48 +186,48 @@ export const getContentConfigurationQuery = gql`
                         hash
                     }
                 }
-                node(id: $id) {
-                    ... on Cluster {
-                        id
-                        group
-                        link
-                        availableActions {
-                            keyHash
-                            type
-                            requiredKeys
-                            allowedTags
-                        }
+            }
+            node(id: $id) {
+                ... on Cluster {
+                    id
+                    group
+                    link
+                    availableActions {
+                        keyHash
+                        type
+                        requiredKeys
+                        allowedTags
+                    }
 
+                    contents(includeTags: ["type=PublicKey"]) {
+                        edges {
+                            node {
+                                link
+                                tags(includeTags: ["key_hash=", "type="])
+                            }
+                        }
+                    }
+                }
+                ... on Content {
+                    id
+                    availableActions {
+                        keyHash
+                        type
+                        requiredKeys
+                        allowedTags
+                    }
+                    id
+                    nonce
+                    link
+                    updateId
+                    tags(includeTags: ["type="])
+                    cluster {
+                        group
                         contents(includeTags: ["type=PublicKey"]) {
                             edges {
                                 node {
                                     link
                                     tags(includeTags: ["key_hash="])
-                                }
-                            }
-                        }
-                    }
-                    ... on Content {
-                        id
-                        availableActions {
-                            keyHash
-                            type
-                            requiredKeys
-                            allowedTags
-                        }
-                        id
-                        nonce
-                        link
-                        updateId
-                        tags(includeTags: $includeTags)
-                        cluster {
-                            group
-                            contents(includeTags: ["type=PublicKey"]) {
-                                edges {
-                                    node {
-                                        link
-                                        tags(includeTags: ["key_hash="])
-                                    }
                                 }
                             }
                         }

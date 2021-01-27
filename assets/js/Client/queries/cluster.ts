@@ -40,18 +40,16 @@ export const clusterFeedQuery = gql`
 export const getClusterConfigurationQuery = gql`
     query clusterGetConfigurationQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
-            config {
-                node(id: $id) {
-                    ... on Cluster {
-                        id
-                        group
-                        link
-                        availableActions {
-                            keyHash
-                            type
-                            requiredKeys
-                            allowedTags
-                        }
+            node(id: $id) {
+                ... on Cluster {
+                    id
+                    group
+                    link
+                    availableActions {
+                        keyHash
+                        type
+                        requiredKeys
+                        allowedTags
                     }
                 }
             }

@@ -217,14 +217,14 @@ export function extractPubKeysCluster(props: {
 }): { [hash: string]: Promise<CryptoKey> } {
     const pubkeys = props.old || {}
     const contents = props.node.cluster
-        ? props.node.cluster.contents
-        : props.node.contents
-    for (const keyNode of contents) {
+        ? props.node.cluster.contents.edges
+        : props.node.contents.edges
+    for (const { node: keyNode } of contents) {
         if (!props.onlyPubkeys && !keyNode.tags.includes('type=PublicKey')) {
             continue
         }
         if (!pubkeys[keyNode.contentHash]) {
-            pubkeys[keyNode.contentHash] = fetch(props.node.link, {
+            pubkeys[keyNode.contentHash] = fetch(keyNode.link, {
                 headers: {
                     Authorization: props.authorization.join(','),
                 },
@@ -248,13 +248,12 @@ export function extractPubKeysRefs(props: {
     readonly onlyPubkeys?: boolean
 }): { [hash: string]: Promise<CryptoKey> } {
     const pubkeys = props.old || {}
-    for (const ref of props.node.references.edges) {
-        const keyNode = ref.target
+    for (const { target: keyNode } of props.node.references.edges) {
         if (!props.onlyPubkeys && !keyNode.tags.includes('type=PublicKey')) {
             continue
         }
         if (!pubkeys[keyNode.contentHash]) {
-            pubkeys[keyNode.contentHash] = fetch(props.node.link, {
+            pubkeys[keyNode.contentHash] = fetch(keyNode.link, {
                 headers: {
                     Authorization: props.authorization.join(','),
                 },

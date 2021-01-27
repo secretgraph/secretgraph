@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { parse, graph, SPARQLToQuery } from 'rdflib'
 
-import { gql, useLazyQuery } from '@apollo/client'
+import { gql, useLazyQuery, useQuery } from '@apollo/client'
 import { FieldProps, Field } from 'formik'
 
 import { InitializedConfigContext } from '../../contexts'
@@ -16,12 +16,7 @@ export interface ClusterSelectProps<
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined
 > extends Omit<
-        SimpleSelectProps<
-            Multiple,
-            DisableClearable,
-            FreeSolo,
-            { id: string; label: string }
-        >,
+        SimpleSelectProps<Multiple, DisableClearable, FreeSolo, string>,
         'options'
     > {
     url: string
@@ -51,10 +46,7 @@ export default function ClusterSelect<
         })
     }, [config, url])
 
-    const [
-        getClusters,
-        { fetchMore, data, called, refetch, loading },
-    ] = useLazyQuery(clusterFeedQuery, {
+    const { fetchMore, data, loading } = useQuery(clusterFeedQuery, {
         variables: {
             authorization: authinfo.keys,
         },
@@ -68,14 +60,18 @@ export default function ClusterSelect<
             }
         },
     })
-    const clustersFinished: {
-        id: string
-        label: string
-    }[] = React.useMemo(() => {
-        if (!data) {
-            return []
+    const { ids, labelMap } = React.useMemo(() => {
+        const ret: {
+            ids: string[]
+            labelMap: { [key: string]: string }
+        } = {
+            ids: [],
+            labelMap: {},
         }
-        return data.clusters.clusters.edges.map((edge: any, index: number) => {
+        if (!data) {
+            return ret
+        }
+        for (const edge of data.clusters.clusters.edges) {
             let name: string | undefined,
                 note: string = ''
             try {
@@ -101,47 +97,31 @@ export default function ClusterSelect<
             } catch (exc) {
                 console.warn('Could not parse publicInfo', exc)
             }
-
-            return {
-                id: edge.node.id,
-                label: name === undefined ? edge.node.id : name,
+            ret.ids.push(edge.node.id)
+            if (name) {
+                ret.labelMap[edge.node.id] = name
             }
-        })
+        }
+        return ret
     }, [data])
     React.useEffect(() => {
         if (
             !firstIfEmpty ||
-            clustersFinished.length == 0 ||
+            ids.length == 0 ||
             props.form.values[props.field.name]
         ) {
             return
         }
-        props.form.setFieldValue(props.field.name, clustersFinished[0])
-    }, [clustersFinished])
-    const ret = (
+        props.form.setFieldValue(props.field.name, ids[0])
+    }, [ids])
+    return (
         <SimpleSelect
             {...props}
             loading={loading}
             getOptionLabel={(option) => {
-                return option.label || ''
+                return labelMap[option] || option
             }}
-            options={
-                clustersFinished.length == 0 &&
-                props.form.initialValues[props.field.name]
-                    ? props.multiple
-                        ? props.form.initialValues[props.field.name]
-                        : [props.form.initialValues[props.field.name]]
-                    : clustersFinished
-            }
-            onOpen={() => {
-                if (called) {
-                    ;(refetch as NonNullable<typeof refetch>)()
-                }
-            }}
+            options={ids}
         />
     )
-    React.useLayoutEffect(() => {
-        !called && getClusters()
-    })
-    return ret
 }

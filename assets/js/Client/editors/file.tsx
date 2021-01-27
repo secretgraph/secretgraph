@@ -169,7 +169,7 @@ const AddFile = () => {
     const { activeUrl } = React.useContext(ActiveUrlContext)
     const { searchCtx } = React.useContext(SearchContext)
     const { config } = React.useContext(InitializedConfigContext)
-    const [PSelections, setPSelections] = React.useState<string[]>([])
+    // const [PSelections, setPSelections] = React.useState<string[]>([])
     const client = useApolloClient()
 
     return (
@@ -240,12 +240,11 @@ const AddFile = () => {
                         id: values.cluster,
                     },
                 })
-                const hashAlgorithm =
-                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
+                const hashAlgorithm = config.hosts[activeUrl].hashAlgorithms[0]
                 //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                 const privkeys = extractPrivKeys({
                     config,
-                    url: mainCtx.url as string,
+                    url: activeUrl,
                     hashAlgorithm,
                 })
                 const pubkeys = extractPubKeysCluster({
@@ -256,6 +255,7 @@ const AddFile = () => {
                         hash: hashAlgorithm,
                     },
                 })
+                console.log(value)
                 try {
                     const result = await createContent({
                         client,
@@ -296,9 +296,7 @@ const AddFile = () => {
                     <Grid container spacing={1}>
                         <Grid item xs={12} md={4}>
                             <Field
-                                component={SimpleSelect}
-                                freeSolo
-                                options={PSelections}
+                                component={FormikTextField}
                                 name="name"
                                 fullWidth
                                 label="Name"
@@ -313,6 +311,7 @@ const AddFile = () => {
                                 options={[]}
                                 label="Keywords"
                                 freeSolo
+                                multiple
                             />
                         </Grid>
 
@@ -410,27 +409,32 @@ const AddFile = () => {
                                                         ev.target.files.length >
                                                             0
                                                     ) {
-                                                        setPSelections([
+                                                        /**setPSelections([
                                                             ev.target.files[0]
                                                                 .name,
-                                                        ])
+                                                        ])*/
                                                         if (
                                                             !formikFieldProps
                                                                 .form.touched
                                                                 .name
                                                         ) {
-                                                            setValues({
-                                                                ...values,
-                                                                name:
-                                                                    ev.target
-                                                                        .files[0]
-                                                                        .name,
-                                                            })
+                                                            formikFieldProps.form.setFieldValue(
+                                                                'name',
+                                                                ev.target
+                                                                    .files[0]
+                                                                    .name
+                                                            )
                                                         }
+                                                        formikFieldProps.form.setFieldValue(
+                                                            'fileInput',
+                                                            ev.target.files[0]
+                                                        )
+                                                    } else {
+                                                        formikFieldProps.form.setFieldValue(
+                                                            'fileInput',
+                                                            null
+                                                        )
                                                     }
-                                                    formikFieldProps.field.onChange(
-                                                        ev
-                                                    )
                                                 }}
                                                 accept={
                                                     mainCtx.type == 'Text'
@@ -698,6 +702,7 @@ const EditFile = () => {
                             options={[]}
                             label="Keywords"
                             freeSolo
+                            multiple
                         />
                     </Grid>
 
