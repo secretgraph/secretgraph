@@ -51,23 +51,23 @@ export default function ClusterSelect<
         })
     }, [config, url])
 
-    const [getClusters, { fetchMore, data, called, refetch }] = useLazyQuery(
-        clusterFeedQuery,
-        {
-            variables: {
-                authorization: authinfo.keys,
-            },
-            onCompleted: (data) => {
-                if (data.clusters.clusters.pageInfo.hasNextPage) {
-                    ;(fetchMore as NonNullable<typeof fetchMore>)({
-                        variables: {
-                            cursor: data.clusters.clusters.pageInfo.endCursor,
-                        },
-                    })
-                }
-            },
-        }
-    )
+    const [
+        getClusters,
+        { fetchMore, data, called, refetch, loading },
+    ] = useLazyQuery(clusterFeedQuery, {
+        variables: {
+            authorization: authinfo.keys,
+        },
+        onCompleted: (data) => {
+            if (data.clusters.clusters.pageInfo.hasNextPage) {
+                ;(fetchMore as NonNullable<typeof fetchMore>)({
+                    variables: {
+                        cursor: data.clusters.clusters.pageInfo.endCursor,
+                    },
+                })
+            }
+        },
+    })
     const clustersFinished: {
         id: string
         label: string
@@ -121,6 +121,7 @@ export default function ClusterSelect<
     const ret = (
         <SimpleSelect
             {...props}
+            loading={loading}
             getOptionLabel={(option) => {
                 return option.label || ''
             }}

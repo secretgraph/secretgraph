@@ -14,10 +14,7 @@ import { useAsync } from 'react-async'
 
 import { Formik, FieldProps, Form, FastField, Field } from 'formik'
 
-import {
-    TextField as FormikTextField,
-    SimpleFileUpload as FormikSimpleFileUpload,
-} from 'formik-material-ui'
+import { TextField as FormikTextField } from 'formik-material-ui'
 import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client'
 
 import { ConfigInterface, MainContextInterface } from '../interfaces'
@@ -172,6 +169,7 @@ const AddFile = () => {
     const { activeUrl } = React.useContext(ActiveUrlContext)
     const { searchCtx } = React.useContext(SearchContext)
     const { config } = React.useContext(InitializedConfigContext)
+    const [PSelections, setPSelections] = React.useState<string[]>([])
     const client = useApolloClient()
 
     return (
@@ -298,7 +296,9 @@ const AddFile = () => {
                     <Grid container spacing={1}>
                         <Grid item xs={12} md={4}>
                             <Field
-                                component={FormikTextField}
+                                component={SimpleSelect}
+                                freeSolo
+                                options={PSelections}
                                 name="name"
                                 fullWidth
                                 label="Name"
@@ -336,9 +336,11 @@ const AddFile = () => {
                                     variant="outlined"
                                     multiline
                                     disabled={
-                                        isSubmitting ||
-                                        values.htmlInput ||
-                                        values.fileInput
+                                        !!(
+                                            isSubmitting ||
+                                            values.htmlInput ||
+                                            values.fileInput
+                                        )
                                     }
                                 />
                             </Grid>
@@ -352,8 +354,20 @@ const AddFile = () => {
                                 {(formikFieldProps: FieldProps) => {
                                     return (
                                         <SunEditor
+                                            value={formikFieldProps.meta.value}
+                                            name="htmlInput"
                                             label="Html Text"
                                             variant="outlined"
+                                            onChange={(ev) => {
+                                                formikFieldProps.form.setValues(
+                                                    {
+                                                        ...formikFieldProps.form
+                                                            .values,
+                                                        htmlInput:
+                                                            ev.target.value,
+                                                    }
+                                                )
+                                            }}
                                             helperText={
                                                 formikFieldProps.meta.error
                                             }
@@ -378,9 +392,11 @@ const AddFile = () => {
                             <Field
                                 name="fileInput"
                                 disabled={
-                                    isSubmitting ||
-                                    values.plainInput ||
-                                    values.htmlInput
+                                    !!(
+                                        isSubmitting ||
+                                        values.plainInput ||
+                                        values.htmlInput
+                                    )
                                 }
                             >
                                 {(formikFieldProps: FieldProps) => {
@@ -388,10 +404,34 @@ const AddFile = () => {
                                         <>
                                             <UploadButton
                                                 name="fileInput"
-                                                onChange={
-                                                    formikFieldProps.field
-                                                        .onChange
-                                                }
+                                                onChange={(ev) => {
+                                                    if (
+                                                        ev.target.files &&
+                                                        ev.target.files.length >
+                                                            0
+                                                    ) {
+                                                        setPSelections([
+                                                            ev.target.files[0]
+                                                                .name,
+                                                        ])
+                                                        if (
+                                                            !formikFieldProps
+                                                                .form.touched
+                                                                .name
+                                                        ) {
+                                                            setValues({
+                                                                ...values,
+                                                                name:
+                                                                    ev.target
+                                                                        .files[0]
+                                                                        .name,
+                                                            })
+                                                        }
+                                                    }
+                                                    formikFieldProps.field.onChange(
+                                                        ev
+                                                    )
+                                                }}
                                                 accept={
                                                     mainCtx.type == 'Text'
                                                         ? 'text/*'
@@ -399,6 +439,9 @@ const AddFile = () => {
                                                 }
                                             >
                                                 <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    component="span"
                                                     disabled={
                                                         !!(
                                                             isSubmitting ||
@@ -411,6 +454,9 @@ const AddFile = () => {
                                                 </Button>
                                             </UploadButton>
                                             <Button
+                                                variant="contained"
+                                                color="primary"
+                                                component="span"
                                                 disabled={
                                                     !!(
                                                         isSubmitting ||
@@ -698,7 +744,7 @@ const EditFile = () => {
                                                     : undefined
                                             }
                                         >
-                                            <Button disabled={!!isSubmitting}>
+                                            <Button disabled={isSubmitting}>
                                                 Upload
                                             </Button>
                                         </UploadButton>

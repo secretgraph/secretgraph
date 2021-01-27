@@ -155,7 +155,7 @@ django = "*"
 
 [[package]]
 name = "django-mysql"
-version = "3.10.0"
+version = "3.11.1"
 description = "Django-MySQL extends Django's built-in MySQL and MariaDB support their specific features not available on other databases."
 category = "main"
 optional = true
@@ -716,8 +716,8 @@ django-manifest-loader = [
     {file = "django_manifest_loader-1.0.0-py3-none-any.whl", hash = "sha256:17a6e5b47ff6999ca530e754d874c1e4b0c7f16e72c761e3e05bc529cee34145"},
 ]
 django-mysql = [
-    {file = "django-mysql-3.10.0.tar.gz", hash = "sha256:86fbe92623eb35fa6ece0574293db40b025e7df5bc58bd23b5a3c56bc9db51c7"},
-    {file = "django_mysql-3.10.0-py3-none-any.whl", hash = "sha256:a0b53a2bbe7507508894251b6c5e9f2f8aa68c5ed9c2d0a91e8ed5908b740cc1"},
+    {file = "django-mysql-3.11.1.tar.gz", hash = "sha256:2df90b65f5ddfd000156c648bfeb66a1576c74c8b30028de4fe8784d7b3a184a"},
+    {file = "django_mysql-3.11.1-py3-none-any.whl", hash = "sha256:fa19252c88b13172dd3954c1a629a08fdee5b28762cb5bdbe3f466fb2be0192f"},
 ]
 django-webtest = [
     {file = "django-webtest-1.9.7.tar.gz", hash = "sha256:c5a1e486a3d8d3623aa615b6db2f27de848aa7079303a84721e9a685f839796c"},

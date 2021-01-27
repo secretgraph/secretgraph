@@ -9,7 +9,7 @@ const tsgqlPlugin = new TsGraphQLPlugin({
 
 module.exports = (env, options) => ({
     context: __dirname,
-    devtool: options.mode === 'development' ? 'source-map' : false,
+    devtool: options.mode === 'development' ? 'eval' : false,
     output: {
         publicPath: '/webpack_bundles/',
         path: path.resolve(__dirname, './webpack_bundles/'),
