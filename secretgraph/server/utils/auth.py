@@ -71,6 +71,9 @@ def initializeCachedResult(
     return getattr(request, name)
 
 
+_allowed_types = {"Cluster"}
+
+
 def retrieve_allowed_objects(request, scope, query, authset=None):
     if authset is None:
         authset = (
@@ -125,7 +128,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         try:
             _type, clusterflexid = from_global_id(clusterflexid)
         finally:
-            if _type != "Cluster":
+            if _type not in _allowed_types:
                 continue
         try:
             clusterflexid = UUID(clusterflexid)
@@ -249,7 +252,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     returnval["actions"] = Action.objects.filter(
         id__in=models.Subquery(returnval["actions"].values("id"))
     ).order_by("-start", "-id")
-    returnval["objects"] = query.filter(all_filters)
+    returnval["objects"] = query.filter(id__in=query.filter(all_filters))
     return returnval
 
 

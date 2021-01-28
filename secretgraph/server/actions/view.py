@@ -11,8 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_clusters(
-    query, id=None, includeTags=None, excludeTags=None, contentHashes=None,
-    minUpdated=None, maxUpdated=None
+    query,
+    id=None,
+    includeTags=None,
+    excludeTags=None,
+    contentHashes=None,
+    minUpdated=None,
+    maxUpdated=None,
 ) -> QuerySet:
     if id:
         query = fetch_by_id(query, id)
@@ -39,8 +44,8 @@ def fetch_clusters(
 
     if minUpdated or maxUpdated:
         query = query.filter(
-            Q(updated__range=(minUpdated, maxUpdated)) |
-            Q(contents__updated__range=(minUpdated, maxUpdated))
+            Q(updated__range=(minUpdated, maxUpdated))
+            | Q(contents__updated__range=(minUpdated, maxUpdated))
         )
 
     return query
@@ -48,8 +53,9 @@ def fetch_clusters(
 
 class ContentFetchQueryset(QuerySet):
     """
-        Tracks usage of contents and mark accordingly Content for removal
+    Tracks usage of contents and mark accordingly Content for removal
     """
+
     only_direct_fetch_trigger = False
     actions = None
 
@@ -64,8 +70,9 @@ class ContentFetchQueryset(QuerySet):
             actions = getattr(query, "actions", None)
         if actions is not None:
             self.actions = actions
-        self.only_direct_fetch_action_trigger = \
+        self.only_direct_fetch_action_trigger = (
             only_direct_fetch_action_trigger
+        )
         kwargs["model"] = kwargs.get("model", None) or query.model
         super().__init__(query=query, **kwargs)
 
@@ -76,14 +83,15 @@ class ContentFetchQueryset(QuerySet):
         """
         c = super()._clone()
         c.actions = self.actions
-        c.only_direct_fetch_action_trigger = \
+        c.only_direct_fetch_action_trigger = (
             self.only_direct_fetch_action_trigger
+        )
         return c
 
     def fetch_action_trigger(self, objects, direct=True):
         """
-            Trigger fetch handling stuff
-            fetch=delete after read
+        Trigger fetch handling stuff
+        fetch=delete after read
         """
         assert self.actions is not None, "actions is None"
         if self.only_direct_fetch_action_trigger and not direct:
@@ -92,29 +100,29 @@ class ContentFetchQueryset(QuerySet):
             return objects
         elif isinstance(objects, (Content,)):
             used_actions = ContentAction.objects.filter(
-                content=objects,
-                action__in=self.actions
+                content=objects, action__in=self.actions
             )
         else:
             # is iterator
             if hasattr(objects, "__next__"):
                 objects = list(objects)
             used_actions = ContentAction.objects.filter(
-                content__in=objects,
-                action__in=self.actions
+                content__in=objects, action__in=self.actions
             )
         if used_actions:
             used_actions.update(used=True)
             markForDestruction = timezone.now() + td(hours=8)
             Content.objects.filter(
-                Q(markForDestruction=None) |
-                Q(markForDestruction__gt=markForDestruction),
-                id__in=Subquery(
-                    used_actions.values("id")
+                Q(markForDestruction=None)
+                | Q(markForDestruction__gt=markForDestruction),
+                id__in=Subquery(used_actions.values("id")),
+            ).exclude(
+                actions__in=ContentAction.objects.filter(
+                    group="fetch", used=False
                 )
-            ).exclude(actions__in=ContentAction.objects.filter(
-                group="fetch", used=False
-            )).update(markForDestruction=markForDestruction)
+            ).update(
+                markForDestruction=markForDestruction
+            )
         return objects
 
     def __iter__(self):
@@ -122,14 +130,10 @@ class ContentFetchQueryset(QuerySet):
             yield i
 
     def __getitem__(self, key):
-        return self.fetch_action_trigger(
-            super().__getitem__(key), False
-        )
+        return self.fetch_action_trigger(super().__getitem__(key), False)
 
     def get(self, *args, **kwargs):
-        return self.fetch_action_trigger(
-            super().get(*args, **kwargs), False
-        )
+        return self.fetch_action_trigger(super().get(*args, **kwargs), False)
 
     def first(self):
         return self.fetch_action_trigger(super().first(), False)
@@ -145,9 +149,15 @@ class ContentFetchQueryset(QuerySet):
 
 
 def fetch_contents(
-    query, actions, id=None, includeTags=None, excludeTags=None,
-    contentHashes=None, noFetch=False,
-    minUpdated=None, maxUpdated=None
+    query,
+    actions,
+    id=None,
+    includeTags=None,
+    excludeTags=None,
+    contentHashes=None,
+    noFetch=False,
+    minUpdated=None,
+    maxUpdated=None,
 ) -> QuerySet:
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
@@ -165,9 +175,7 @@ def fetch_contents(
 
         for i in excludeTags or []:
             excl_filters |= Q(tags__tag__startswith=i)
-        query = query.filter(
-            (~excl_filters) & incl_filters & hash_filters
-        )
+        query = query.filter((~excl_filters) & incl_filters & hash_filters)
 
     if minUpdated and not maxUpdated:
         maxUpdated = dt.max
@@ -177,6 +185,5 @@ def fetch_contents(
     if minUpdated or maxUpdated:
         query = query.filter(updated__range=(minUpdated, maxUpdated))
     return ContentFetchQueryset(
-        query.query, actions=actions,
-        only_direct_fetch_action_trigger=noFetch
+        query.query, actions=actions, only_direct_fetch_action_trigger=noFetch
     )

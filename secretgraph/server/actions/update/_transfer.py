@@ -1,6 +1,4 @@
-__all__ = [
-    "transfer_value"
-]
+__all__ = ["transfer_value"]
 
 import base64
 import json
@@ -28,37 +26,37 @@ logger = logging.getLogger(__name__)
 def _generate_transfer_info(content, hashes_remote, signatures):
     yield ContentTag(
         content=content,
-        tag="signature_hash_algorithms=%s" % ",".join(
-            map(
-                lambda x: x.name,
-                hashes_remote
-            )
-        )
+        tag="signature_hash_algorithms=%s"
+        % ",".join(map(lambda x: x.name, hashes_remote)),
     )
     for remote_key_hash, val in (signatures or {}).items():
         yield ContentTag(
             content=content,
             tag=(
-                "signature=%s=%s" % (
+                "signature=%s=%s"
+                % (
                     # = algo=signature=keyhash
-                    val["signature"], remote_key_hash
+                    val["signature"],
+                    remote_key_hash,
                 )
-            )
+            ),
         )
         if val.get("link"):
             yield ContentTag(
                 content=content,
-                tag=(
-                    "key_link=%s=%s" % (
-                        remote_key_hash, val["link"]
-                    )
-                )
+                tag=("key_link=%s=%s" % (remote_key_hash, val["link"])),
             )
 
 
 def transfer_value(
-    content, key=None, url=None, headers=None, transfer=True, session=None,
-    keepalive=None, verifiers=None
+    content,
+    key=None,
+    url=None,
+    headers=None,
+    transfer=True,
+    session=None,
+    keepalive=None,
+    verifiers=None,
 ):
     _headers = {}
     if keepalive is None:
@@ -66,11 +64,15 @@ def transfer_value(
     if key:
         assert not url, "can only specify key or url"
         try:
-            _blob = AESGCM(key).decrypt(
-                content.value.open("rb").read(),
-                base64.b64decode(content.nonce),
-                None
-            ).split(b'\r\n', 1)
+            _blob = (
+                AESGCM(key)
+                .decrypt(
+                    content.file.open("rb").read(),
+                    base64.b64decode(content.nonce),
+                    None,
+                )
+                .split(b"\r\n", 1)
+            )
             if len(_blob) == 1:
                 url = _blob[0]
             else:
@@ -103,11 +105,7 @@ def transfer_value(
         if not blocked_contents:
             return TransferResult.ERROR
         if inline_domain:
-            response = Client().get(
-                url,
-                SERVER_NAME=inline_domain,
-                **_headers
-            )
+            response = Client().get(url, SERVER_NAME=inline_domain, **_headers)
             if response.status_code == 404:
                 return TransferResult.NOTFOUND
             elif response.status_code != 200:
@@ -125,22 +123,24 @@ def transfer_value(
                     *map(
                         lambda x: hashes.Hash(
                             getattr(hashes, x.strip().upper()),
-                            default_backend()
+                            default_backend(),
                         ),
-                        set(response.get("X-HASH-ALGORITHMS").split(",")[5])
+                        set(response.get("X-HASH-ALGORITHMS").split(",")[5]),
                     )
                 ]
-            with content.value.open("wb") as f:
+            with content.file.open("wb") as f:
                 for chunk in response.streaming_content:
                     f.write(chunk)
                     for i in hashes_remote:
                         i.update(chunk)
             if transfer:
                 signatures = retrieve_signatures(
-                    url, headers,
-                    session=session, params=params,
+                    url,
+                    headers,
+                    session=session,
+                    params=params,
                     inline_domain=inline_domain,
-                    keepalive=keepalive
+                    keepalive=keepalive,
                 )
         else:
             if session:
@@ -148,11 +148,7 @@ def transfer_value(
             else:
                 s = requests.Session()
             try:
-                response = s.get(
-                    url,
-                    headers=_headers,
-                    **params
-                )
+                response = s.get(url, headers=_headers, **params)
                 if response.status_code == 404:
                     return TransferResult.NOTFOUND
                 elif response.status_code != 200:
@@ -169,16 +165,14 @@ def transfer_value(
                         *map(
                             lambda x: hashes.Hash(
                                 getattr(hashes, x.strip().upper()),
-                                default_backend()
+                                default_backend(),
                             ),
                             set(
-                                response.get(
-                                    "X-HASH-ALGORITHMS"
-                                ).split(",")[5]
-                            )
+                                response.get("X-HASH-ALGORITHMS").split(",")[5]
+                            ),
                         )
                     ]
-                with content.value.open("wb") as f:
+                with content.file.open("wb") as f:
                     for chunk in response.iter_content(512):
                         f.write(chunk)
                         for i in hashes_remote:
@@ -186,10 +180,12 @@ def transfer_value(
 
                 if transfer:
                     signatures = retrieve_signatures(
-                        url, headers,
-                        session=s, params=params,
+                        url,
+                        headers,
+                        session=s,
+                        params=params,
                         inline_domain=inline_domain,
-                        keepalive=keepalive
+                        keepalive=keepalive,
                     )
             except Exception as exc:
                 logger.error("Error while transferring content", exc_info=exc)
@@ -200,20 +196,12 @@ def transfer_value(
         if transfer:
             content.references.filter(group="transfer").delete()
             content.tags.bulk_create(
-                _generate_transfer_info(
-                    content,
-                    hashes_remote,
-                    signatures
-                ),
-                ignore_conflict=True
+                _generate_transfer_info(content, hashes_remote, signatures),
+                ignore_conflict=True,
             )
             content.updateId = uuid4()
             content.save(update_fields=["updateId"])
     if transfer and verifiers:
-        if not verify_signatures(
-            hashes_remote,
-            signatures,
-            verifiers
-        ):
+        if not verify_signatures(hashes_remote, signatures, verifiers):
             return TransferResult.FAILED_VERIFICATION
     return TransferResult.SUCCESS

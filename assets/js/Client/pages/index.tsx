@@ -36,6 +36,7 @@ function updateState<T>(state: T, update: Partial<T>): T {
 }
 
 function MainPage(props: Props) {
+    const query = new URLSearchParams(document.location.search)
     const { defaultPath } = props
     const { classes, theme } = useStylesAndTheme()
     const [drawerOpen, setDrawerOpen] = React.useState(true)
@@ -50,7 +51,9 @@ function MainPage(props: Props) {
         title: null,
         item: null,
         url: null,
-        type: elements.keys().next().value,
+        type: elements.has(query.get('type') as any)
+            ? query.get('type')
+            : elements.keys().next().value,
         shareUrl: null,
     }) as [
         MainContextInterface,

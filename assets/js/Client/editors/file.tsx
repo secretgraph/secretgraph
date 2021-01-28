@@ -255,7 +255,6 @@ const AddFile = () => {
                         hash: hashAlgorithm,
                     },
                 })
-                console.log(value)
                 try {
                     const result = await createContent({
                         client,
@@ -264,6 +263,8 @@ const AddFile = () => {
                         value,
                         tags: [
                             `name=${values.name}`,
+                            `mime=${value.type}`,
+                            `state=${mainCtx.state}`,
                             `type=${
                                 value.type.startsWith('text/') ? 'Text' : 'File'
                             }`,
@@ -281,8 +282,9 @@ const AddFile = () => {
                         hashAlgorithm,
                         authorization: authinfo.keys,
                     })
+                    console.log(result)
                     updateMainCtx({
-                        item: result.data.content.id,
+                        item: result.data.node.id,
                         action: 'edit',
                     })
                 } catch (exc) {
@@ -658,6 +660,8 @@ const EditFile = () => {
                     value,
                     tags: [
                         `name=${values.name}`,
+                        `mime=${value.type}`,
+                        `state=${mainCtx.state}`,
                         `type=${
                             value.type.startsWith('text/') ? 'Text' : 'File'
                         }`,
@@ -673,7 +677,7 @@ const EditFile = () => {
                     hashAlgorithm,
                     authorization: authinfo.keys,
                 })
-                updateMainCtx({ item: result.data.content.id, action: 'edit' })
+                updateMainCtx({ item: result.data.node.id, action: 'edit' })
             }}
         >
             {({

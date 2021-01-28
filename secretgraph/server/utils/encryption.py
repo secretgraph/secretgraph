@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 default_padding = padding.OAEP(
     mgf=padding.MGF1(algorithm=hashes.SHA256()),
     algorithm=hashes.SHA256(),
-    label=None
+    label=None,
 )
 
 
@@ -37,15 +37,13 @@ def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
         infile = BytesIO(base64.b64decode(infile))
     if not outfile:
         outfile = tempfile.NamedTemporaryFile(
-            suffix='.encrypt', dir=settings.FILE_UPLOAD_TEMP_DIR
+            suffix=".encrypt", dir=settings.FILE_UPLOAD_TEMP_DIR
         )
     nonce = os.urandom(13)
     if not key:
         key = os.urandom(32)
     encryptor = Cipher(
-        algorithms.AES(key),
-        modes.GCM(nonce),
-        backend=default_backend()
+        algorithms.AES(key), modes.GCM(nonce), backend=default_backend()
     ).encryptor()
 
     chunk = infile.read(512)
@@ -60,9 +58,10 @@ def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
 
 def create_key_maps(contents, keyset=(), inject_public=True):
     """
-        queries transfers and create content key map
+    queries transfers and create content key map
     """
     from ..models import Cluster, ContentTag
+
     key_map1 = {}
     for i in keyset:
         i = i.split(":", 1)
@@ -80,38 +79,40 @@ def create_key_maps(contents, keyset=(), inject_public=True):
                 key_map1[f"key_hash={i[0]}"] = _key
     if inject_public:
         for cluster in Cluster.objects.filter(
-            public=True,
-            contents__in=contents
+            public=True, contents__in=contents
         ):
             g = Graph()
             g.parse(cluster.publicInfo, "turtle")
             key_map1.update(
                 map(
                     lambda x: ("key_hash=%s" % hash_object(x), x),
-                    get_secrets(g)
+                    get_secrets(g),
                 )
             )
 
     reference_query = ContentReference.objects.filter(
-        Q(group="key") |
-        Q(group="transfer"),
-        source__in=contents
+        Q(group="key") | Q(group="transfer"), source__in=contents
     )
 
     key_query = Content.objects.filter(
         tags__tag="type=PrivateKey",
         tags__tag__in=key_map1.keys(),
-    ).annotate(matching_tag=Subquery(
-        ContentTag.objects.filter(content_id=OuterRef("pk")).values("tag")[:1]
-    ))
+    ).annotate(
+        matching_tag=Subquery(
+            ContentTag.objects.filter(content_id=OuterRef("pk")).values("tag")[
+                :1
+            ]
+        )
+    )
     content_key_map = {}
     transfer_key_map = {}
-    for ref in reference_query.annotate(matching_tag=Subquery(
-        ContentTag.objects.filter(
-            source_id=OuterRef("pk"),
-            tag__in=key_map1.keys()
-        ).values("tag")[:1]
-    )):
+    for ref in reference_query.annotate(
+        matching_tag=Subquery(
+            ContentTag.objects.filter(
+                source_id=OuterRef("pk"), tag__in=key_map1.keys()
+            ).values("tag")[:1]
+        )
+    ):
         esharedkey = base64.b64decode(ref.extra)
         sharedkey = None
         if ref.matching_tag:
@@ -121,11 +122,7 @@ def create_key_maps(contents, keyset=(), inject_public=True):
             aesgcm = AESGCM(matching_key)
             try:
                 aesgcm = AESGCM(matching_key)
-                sharedkey = aesgcm.decrypt(
-                    esharedkey,
-                    nonce,
-                    None
-                )
+                sharedkey = aesgcm.decrypt(esharedkey, nonce, None)
             except Exception as exc:
                 logger.warning(
                     "Could not decode shared key (direct)", exc_info=exc
@@ -136,9 +133,7 @@ def create_key_maps(contents, keyset=(), inject_public=True):
                     nonce = base64.b64decode(key.nonce)
                     aesgcm = AESGCM(matching_key)
                     privkey = aesgcm.decrypt(
-                        key.value.open("rb").read(),
-                        nonce,
-                        None
+                        key.file.open("rb").read(), nonce, None
                     )
                     privkey = load_der_private_key(
                         privkey, None, default_backend()
@@ -150,10 +145,7 @@ def create_key_maps(contents, keyset=(), inject_public=True):
                     continue
 
                 try:
-                    shared_key = privkey.decrypt(
-                        esharedkey,
-                        default_padding
-                    )
+                    shared_key = privkey.decrypt(esharedkey, default_padding)
                 except Exception as exc:
                     logger.warning(
                         "Could not decrypt shared key (privkey)", exc_info=exc
@@ -171,6 +163,7 @@ def iter_decrypt_contents(
     result, decryptset, inject_public=True
 ) -> Iterable[Iterable[str]]:
     from ..actions.update import transfer_value
+
     # copy query
     content_query = result["objects"].all()
     # per default verifiers=None, so that a failed verifications cannot happen
@@ -185,17 +178,18 @@ def iter_decrypt_contents(
     ).annotate(
         is_transfer=Exists(
             ContentReference.objects.filter(
-                source=OuterRef("pk"),
-                group="transfer"
+                source=OuterRef("pk"), group="transfer"
             )
         ),
         active_action_ids=Subquery(
-            result["actions"].filter(
-                Q(contentAction__content_id=OuterRef("id")) |
-                Q(contentAction=None),
-                id__in=result["forms"].keys()
-            ).values("id")
-        )
+            result["actions"]
+            .filter(
+                Q(contentAction__content_id=OuterRef("id"))
+                | Q(contentAction=None),
+                id__in=result["forms"].keys(),
+            )
+            .values("id")
+        ),
     )
 
     for content in query:
@@ -208,15 +202,16 @@ def iter_decrypt_contents(
             if not verifiers:
                 verifiers = None
             else:
-                verifiers = content_query.filter(
-                    id__in=verifiers
-                )
+                verifiers = content_query.filter(id__in=verifiers)
             result = transfer_value(
-                content, key=transfer_map[content.id], transfer=True,
-                verifiers=verifiers
+                content,
+                key=transfer_map[content.id],
+                transfer=True,
+                verifiers=verifiers,
             )
             if result in {
-                TransferResult.NOTFOUND, TransferResult.FAILED_VERIFICATION
+                TransferResult.NOTFOUND,
+                TransferResult.FAILED_VERIFICATION,
             }:
                 content.delete()
                 continue
@@ -229,7 +224,7 @@ def iter_decrypt_contents(
                 decryptor = Cipher(
                     algorithms.AES(content_map[content.flexid]),
                     modes.GCM(base64.b64decode(content.nonce)),
-                    backend=default_backend()
+                    backend=default_backend(),
                 ).decryptor()
             except Exception as exc:
                 logger.warning(
@@ -238,7 +233,7 @@ def iter_decrypt_contents(
                 continue
 
             def _generator():
-                with content.value.open() as fileob:
+                with content.file.open() as fileob:
                     chunk = fileob.read(512)
                     nextchunk = None
                     while chunk:
@@ -251,12 +246,15 @@ def iter_decrypt_contents(
                             yield decryptor.finalize_with_tag(chunk[-16:])
                         chunk = nextchunk
                 result["objects"].fetch_action_trigger(content)
+
         else:
+
             def _generator():
-                with content.value.open() as fileob:
+                with content.file.open() as fileob:
                     chunk = fileob.read(512)
                     while chunk:
                         yield chunk
                         chunk = fileob.read(512)
                 result["objects"].fetch_action_trigger(content)
+
         yield _generator()

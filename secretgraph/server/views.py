@@ -7,8 +7,12 @@ from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
 from django.http import (
-    FileResponse, Http404, HttpResponse, HttpResponseRedirect, JsonResponse,
-    StreamingHttpResponse
+    FileResponse,
+    Http404,
+    HttpResponse,
+    HttpResponseRedirect,
+    JsonResponse,
+    StreamingHttpResponse,
 )
 from django.shortcuts import resolve_url
 from django.urls import reverse
@@ -21,7 +25,9 @@ from .actions.view import ContentFetchQueryset, fetch_contents
 from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
 from .utils.auth import (
-    fetch_by_id, initializeCachedResult, retrieve_allowed_objects
+    fetch_by_id,
+    initializeCachedResult,
+    retrieve_allowed_objects,
 )
 from .utils.encryption import iter_decrypt_contents
 
@@ -29,12 +35,11 @@ logger = logging.getLogger(__name__)
 
 
 class AllowCORSMixin(object):
-
     def add_cors_headers(self, response):
         response["Access-Control-Allow-Origin"] = "*"
         if self.request.method == "OPTIONS":
             # copy from allow
-            response["Access-Control-Allow-Methods"] = response['Allow']
+            response["Access-Control-Allow-Methods"] = response["Allow"]
 
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
@@ -44,16 +49,20 @@ class AllowCORSMixin(object):
 
 class ClusterView(AllowCORSMixin, FormView):
     def get(self, request, *args, **kwargs):
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
+        authset = set(
+            request.headers.get("Authorization", "")
+            .replace(" ", "")
+            .split(",")
+        )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
         # why not id_to_result => uses flexid directly
         cluster = fetch_by_id(
-            initializeCachedResult(
-                request, authset=authset
-            )["Cluster"]["objects"], kwargs["id"], type_name="Cluster"
+            initializeCachedResult(request, authset=authset)["Cluster"][
+                "objects"
+            ],
+            kwargs["id"],
+            type_name="Cluster",
         ).first()
         if not cluster:
             raise Http404()
@@ -64,17 +73,23 @@ class ClusterView(AllowCORSMixin, FormView):
             predicate=RDF.type, object=CLUSTER["Cluster"], any=False
         )
         g.remove((cluster_main, CLUSTER["Cluster.contents"], None))
-        for content in initializeCachedResult(
-            request, authset=authset
-        )["Content"]["objects"].filter(cluster=cluster).only("flexid"):
-            g.add((
-                cluster_main,
-                CLUSTER["Cluster.contents"],
-                Literal(content.link, datatype=XSD.anyURI)
-            ))
+        for content in (
+            initializeCachedResult(request, authset=authset)["Content"][
+                "objects"
+            ]
+            .filter(cluster=cluster)
+            .only("flexid")
+        ):
+            g.add(
+                (
+                    cluster_main,
+                    CLUSTER["Cluster.contents"],
+                    Literal(content.link, datatype=XSD.anyURI),
+                )
+            )
         return HttpResponse(
             g.serialize(format="turtle"),
-            content_type="text/turtle;charset=utf-8"
+            content_type="text/turtle;charset=utf-8",
         )
 
 
@@ -85,33 +100,33 @@ class ContentView(AllowCORSMixin, FormView):
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
         response["X-ITERATIONS"] = ",".join(
-            settings.SECRETGRAPH_ITERATIONS
+            map(str, settings.SECRETGRAPH_ITERATIONS)
         )
         response["X-HASH-ALGORITHMS"] = ",".join(
             settings.SECRETGRAPH_HASH_ALGORITHMS
         )
-        response["X-GRAPHQL-PATH"] = resolve_url(getattr(
-            settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql"
-        ))
+        response["X-GRAPHQL-PATH"] = resolve_url(
+            getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql")
+        )
         return response
 
     def get(self, request, *args, **kwargs):
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
+        authset = set(
+            request.headers.get("Authorization", "")
+            .replace(" ", "")
+            .split(",")
+        )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
         # why not id_to_result => uses flexid directly
-        self.result = initializeCachedResult(
-            request, authset=authset
-        )["Content"]
+        self.result = initializeCachedResult(request, authset=authset)[
+            "Content"
+        ]
 
         if "decrypt" in kwargs:
             if self.action != "view":
                 raise Http404()
-            response = self.handle_decrypt(
-                request, authset, *args, **kwargs
-            )
+            response = self.handle_decrypt(request, authset, *args, **kwargs)
         elif kwargs.get("id"):
             if self.action in {"push", "update"}:
                 # user interface
@@ -126,16 +141,19 @@ class ContentView(AllowCORSMixin, FormView):
         return response
 
     def post(self, request, *args, **kwargs):
-        authset = set(request.headers.get("Authorization", "").replace(
-            " ", ""
-        ).split(","))
+        authset = set(
+            request.headers.get("Authorization", "")
+            .replace(" ", "")
+            .split(",")
+        )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
         # why not id_to_result => uses flexid directly
         self.result = retrieve_allowed_objects(
-            request, Content.objects.filter(
-                flexid=kwargs["id"]
-            ), scope=self.action, authset=authset
+            request,
+            Content.objects.filter(flexid=kwargs["id"]),
+            scope=self.action,
+            authset=authset,
         )
         return super().post(request, *args, **kwargs)
 
@@ -166,19 +184,22 @@ class ContentView(AllowCORSMixin, FormView):
     def get_form_kwargs(self):
         """Return the keyword arguments for instantiating the form."""
         kwargs = super().get_form_kwargs()
-        if hasattr(self, 'result'):
+        if hasattr(self, "result"):
             try:
-                content = ContentFetchQueryset(fetch_by_id(
-                    self.result["objects"], kwargs["id"]
-                ), self.result["actions"]).first()
+                content = ContentFetchQueryset(
+                    fetch_by_id(self.result["objects"], kwargs["id"]).query,
+                    self.result["actions"],
+                ).first()
             finally:
                 if not content:
                     raise Http404()
-            kwargs.update({
-                'result': self.result,
-                'instance': content,
-                'request': self.request
-            })
+            kwargs.update(
+                {
+                    "result": self.result,
+                    "instance": content,
+                    "request": self.request,
+                }
+            )
         return kwargs
 
     def form_invalid(self, form):
@@ -190,17 +211,18 @@ class ContentView(AllowCORSMixin, FormView):
         c, key = form.save()
         if key:
             response = HttpResponseRedirect(
-                "%s?token=%s" % (
+                "%s?token=%s"
+                % (
                     reverse(
-                        "secretgraph:contents-update",
-                        kwargs={
-                            "id": c.id
-                        }
+                        "secretgraph:contents-update", kwargs={"id": c.id}
                     ),
-                    "token=".join([
-                        "%s:%s" % (c.cluster.flexid, base64.b64encode(key)),
-                        *self.result["authset"]
-                    ])
+                    "token=".join(
+                        [
+                            "%s:%s"
+                            % (c.cluster.flexid, base64.b64encode(key)),
+                            *self.result["authset"],
+                        ]
+                    ),
                 )
             )
         else:
@@ -213,8 +235,11 @@ class ContentView(AllowCORSMixin, FormView):
         clusters = request.GET.getlist("cluster")
         if clusters:
             result["objects"] = fetch_by_id(
-                result["objects"], clusters, prefix="cluster__",
-                type_name="Cluster", limit_ids=10
+                result["objects"],
+                clusters,
+                prefix="cluster__",
+                type_name="Cluster",
+                limit_ids=10,
             )
         result["objects"] = fetch_contents(
             result["objects"],
@@ -222,7 +247,7 @@ class ContentView(AllowCORSMixin, FormView):
             kwargs.get("id"),
             includeTags=request.GET.getlist("inclTags"),
             excludeTags=request.GET.getlist("exclTags"),
-            contentHashes=request.GET.getlist("contentHash")
+            contentHashes=request.GET.getlist("contentHash"),
         )
         if not result["objects"]:
             raise Http404()
@@ -246,15 +271,14 @@ class ContentView(AllowCORSMixin, FormView):
         response = StreamingHttpResponse(gen())
         return response
 
-    def handle_raw_singlecontent(
-        self, request, *args, **kwargs
-    ):
+    def handle_raw_singlecontent(self, request, *args, **kwargs):
         content = None
         result = self.result
         try:
-            content = ContentFetchQueryset(fetch_by_id(
-                result["objects"], kwargs["id"]
-            ), result["actions"]).first()
+            content = ContentFetchQueryset(
+                fetch_by_id(result["objects"], kwargs["id"]).query,
+                result["actions"],
+            ).first()
         finally:
             if not content:
                 raise Http404()
@@ -268,42 +292,44 @@ class ContentView(AllowCORSMixin, FormView):
                 if len(k) >= 10:
                     q |= Q(target__tags__tag=f"key_hash={k}")
             # signatures first, should be maximal 20, so on first page
-            refs = refs.filter(q).annotate(
-                privkey_link=Subquery(
-                    result["objects"].filter(
-                        tags__tag="type=PrivateKey",
-                        referencedBy__source__referencedBy=OuterRef("pk")
-                    ).values("link")[:1]
+            refs = (
+                refs.filter(q)
+                .annotate(
+                    privkey_link=Subquery(
+                        result["objects"]
+                        .filter(
+                            tags__tag="type=PrivateKey",
+                            referencedBy__source__referencedBy=OuterRef("pk"),
+                        )
+                        .values("link")[:1]
+                    )
                 )
-            ).order_by("-group", "id")
-            page = Paginator(refs, 500).get_page(
-                request.GET.get("page", 1)
+                .order_by("-group", "id")
             )
+            page = Paginator(refs, 500).get_page(request.GET.get("page", 1))
             response = {
                 "pages": page.paginator.num_pages,
                 "signatures": {},
-                "keys": {}
+                "keys": {},
             }
             for ref in refs:
                 if ref.group == "key":
                     response["keys"][ref.target.contentHash] = {
                         "key": ref.extra,
-                        "link": ref.privkey_link and ref.privkey_link[0]
+                        "link": ref.privkey_link and ref.privkey_link[0],
                     }
                 else:
                     response["signatures"][ref.target.contentHash] = {
                         "signature": ref.extra,
-                        "link": ref.target.link
+                        "link": ref.target.link,
                     }
             response = JsonResponse(response)
             response["X-IS-VERIFIED"] = "false"
         else:
-            response = FileResponse(content.value.open("rb"))
+            response = FileResponse(content.file.open("rb"))
             _type = content.tags.filter(tag__startswith="type=").first()
-            response["X-TYPE"] = _type.split("=", 1)[1] if _type else ""
-            verifiers = content.references.filter(
-                group="signature"
-            )
+            response["X-TYPE"] = _type.tag.split("=", 1)[1] if _type else ""
+            verifiers = content.references.filter(group="signature")
             response["X-IS-VERIFIED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
         return response
