@@ -500,23 +500,40 @@ export function extractPrivKeys({
 export function findCertCandidatesForRefs(
     config: ConfigInterface,
     nodeData: any
-): [string, Uint8Array][] {
-    const found: [string, Uint8Array][] = []
+) {
+    const found: {
+        hash: string
+        hashAlgorithm?: string
+        sharedKey: Uint8Array
+    }[] = []
     // extract tag key from private key
     if (nodeData.tags.includes('type=PrivateKey')) {
         const hashes = []
         for (const tag of nodeData.tags) {
             if (tag.startsWith('key_hash=')) {
-                const cleanhash = tag.match(/=(.*)/)[1]
-                if (cleanhash && config.certificates[cleanhash]) {
-                    hashes.push(cleanhash)
+                const [_, hashAlgorithm, cleanhash] = tag.match(
+                    /=([^:]*:)?([^:]*)/
+                )
+                if (!cleanhash) {
+                    if (config.certificates[`${hashAlgorithm}:${cleanhash}`]) {
+                        hashes.push(`${hashAlgorithm}:${cleanhash}`)
+                    } else if (config.certificates[cleanhash]) {
+                        hashes.push(cleanhash)
+                    }
                 }
             }
         }
         for (const tag of nodeData.tags) {
             if (tag.startsWith('key=')) {
                 for (const hash of hashes) {
-                    found.push([hash, b64toarr(tag.match(/=(.*)/)[1])])
+                    const [_, hashAlgorithm, shared] = tag.match(
+                        /=([^:]*:)?([^:]*)/
+                    )
+                    found.push({
+                        hash,
+                        hashAlgorithm: hashAlgorithm || undefined,
+                        sharedKey: b64toarr(shared),
+                    })
                 }
             }
         }
@@ -524,9 +541,29 @@ export function findCertCandidatesForRefs(
     // extract tags with hashes
     for (const { node: refnode } of nodeData.references.edges) {
         for (const dirtyhash of refnode.target.tags) {
-            const cleanhash = dirtyhash.match(/=(.*)/)[1]
-            if (cleanhash && config.certificates[cleanhash]) {
-                found.push([cleanhash, b64toarr(refnode.extra)])
+            const [_, hashAlgorithm, cleanhash] = dirtyhash.match(
+                /=([^:]*:)?([^:]*)/
+            )
+            if (cleanhash) {
+                if (config.certificates[`${hashAlgorithm}:${cleanhash}`]) {
+                    const [_, hashAlgorithm2, b64] = refnode.extra.match(
+                        /([^:]*:)?([^:]*)/
+                    )
+                    found.push({
+                        hash: `${hashAlgorithm}:${cleanhash}`,
+                        hashAlgorithm: hashAlgorithm2 || hashAlgorithm,
+                        sharedKey: b64toarr(b64),
+                    })
+                } else if (config.certificates[cleanhash]) {
+                    const [_, hashAlgorithm2, b64] = refnode.extra.match(
+                        /([^:]*:)?([^:]*)/
+                    )
+                    found.push({
+                        hash: cleanhash,
+                        hashAlgorithm: hashAlgorithm2 || hashAlgorithm,
+                        sharedKey: b64toarr(b64),
+                    })
+                }
             }
         }
     }

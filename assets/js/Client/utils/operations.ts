@@ -429,7 +429,6 @@ export async function decryptContentObject({
     }
     let key
     try {
-        // TODO: fix bug somewhere here are the dragons
         const found = findCertCandidatesForRefs(config, _node)
         if (!found) {
             return null
@@ -437,10 +436,12 @@ export async function decryptContentObject({
         key = (
             await Promise.any(
                 found.map(async (value) => {
+                    console.log(value)
                     try {
                         return await decryptRSAOEAP({
-                            key: config.certificates[value[0]],
-                            data: value[1],
+                            key: config.certificates[value.hash],
+                            data: value.sharedKey,
+                            hashAlgorithm: value.hashAlgorithm,
                         })
                     } catch (exc) {
                         console.error(exc)
