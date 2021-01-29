@@ -120,7 +120,7 @@ export function createSignatureReferences(
                     return {
                         target: hash,
                         group: 'signature',
-                        extra: signature,
+                        extra: `${hashalgo}:${signature}`,
                     }
                 }
             )
@@ -196,7 +196,7 @@ export function encryptSharedKey(
                     return {
                         target: hash,
                         group: 'key',
-                        extra: encrypted,
+                        extra: `${hashalgo}:${encrypted}`,
                     }
                 }
             )

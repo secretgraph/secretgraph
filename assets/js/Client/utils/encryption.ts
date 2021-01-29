@@ -303,9 +303,10 @@ export async function decryptRSAOEAP(
     const _key = await _options.key
     if (typeof _key === 'string') {
         const split = _key.split(':')
+        let _hashalgo
         switch (split.length) {
             case 1:
-                const _hashalgo = await _options.hashAlgorithm
+                _hashalgo = await _options.hashAlgorithm
                 if (!mapHashNames['' + _hashalgo]) {
                     throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
@@ -320,13 +321,13 @@ export async function decryptRSAOEAP(
                 )
                 break
             case 2:
-                const _hashalgo2 = await _options.hashAlgorithm
-                if (!mapHashNames['' + _hashalgo2]) {
-                    throw Error('hashalgorithm not supported: ' + _hashalgo2)
+                _hashalgo = split[0]
+                if (!mapHashNames['' + _hashalgo]) {
+                    throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
-                hashalgo = mapHashNames['' + _hashalgo2].operationName
+                hashalgo = mapHashNames['' + _hashalgo].operationName
                 ;[nonce, key] = [
-                    await unserializeToArrayBuffer(split[0]),
+                    await unserializeToArrayBuffer(split[1]),
                     await unserializeToCryptoKey(
                         split[1],
                         {
@@ -338,15 +339,14 @@ export async function decryptRSAOEAP(
                 ]
                 break
             default:
-                let _hashalgo3
-                ;[_hashalgo3, nonce] = [
+                ;[_hashalgo, nonce] = [
                     split[0],
                     await unserializeToArrayBuffer(split[1]),
                 ]
-                if (!mapHashNames['' + _hashalgo3]) {
-                    throw Error('hashalgorithm not supported: ' + _hashalgo3)
+                if (!mapHashNames['' + _hashalgo]) {
+                    throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
-                hashalgo = mapHashNames['' + _hashalgo3].operationName
+                hashalgo = mapHashNames['' + _hashalgo].operationName
                 key = await unserializeToCryptoKey(
                     split[2],
                     {
@@ -529,7 +529,6 @@ export async function encryptTag(
         const splitted = ((await options.data) as string).match(
             /^([^=]+)=(.*)/
         ) as string[]
-        console.log(splitted)
         tag = splitted[1]
         data = splitted[2]
     }

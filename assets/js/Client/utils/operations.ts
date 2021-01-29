@@ -386,7 +386,7 @@ interface decryptContentObjectInterface
 }
 
 export async function decryptContentObject({
-    config,
+    config: _config,
     nodeData,
     blobOrAuthinfo,
     decrypt = new Set(),
@@ -403,6 +403,11 @@ export async function decryptContentObject({
     let arrPromise: PromiseLike<ArrayBufferLike>
     const _info = await blobOrAuthinfo
     const _node = await nodeData
+    const config = await _config
+    if (!_node) {
+        console.error('no node found')
+        return null
+    }
     if (_info instanceof Blob) {
         arrPromise = _info.arrayBuffer()
     } else if (typeof _info == 'string') {
@@ -422,16 +427,21 @@ export async function decryptContentObject({
             nodeData,
         }
     }
-    const found = findCertCandidatesForRefs(await config, _node)
+    const found = findCertCandidatesForRefs(config, _node)
     if (!found) {
         return null
     }
     const sharedkeyPromise = Promise.any(
         found.map(async (value) => {
-            return await decryptRSAOEAP({
-                key: (await config).certificates[value[0]],
-                data: value[1],
-            })
+            try {
+                return await decryptRSAOEAP({
+                    key: config.certificates[value[0]],
+                    data: value[1],
+                })
+            } catch (exc) {
+                console.error(exc)
+                throw exc
+            }
         })
     )
     const key = (await sharedkeyPromise).data
@@ -484,7 +494,7 @@ export async function decryptContentId({
     }
     return await decryptContentObject({
         config: _config,
-        nodeData: result.data.node,
+        nodeData: result.data.secretgraph.node,
         blobOrAuthinfo: authinfo,
         decrypt,
     })

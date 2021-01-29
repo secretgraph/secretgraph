@@ -22,6 +22,7 @@ export const createContentMutation = gql`
             }
         ) {
             content {
+                id
                 nonce
                 link
                 updateId

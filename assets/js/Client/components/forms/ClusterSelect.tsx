@@ -71,12 +71,12 @@ export default function ClusterSelect<
         if (!data) {
             return ret
         }
-        for (const edge of data.clusters.clusters.edges) {
+        for (const { node } of data.clusters.clusters.edges) {
             let name: string | undefined,
                 note: string = ''
             try {
                 const store = graph()
-                parse(edge.node.publicInfo, store, '_:')
+                parse(node.publicInfo, store, '_:')
                 const results = store.querySync(
                     SPARQLToQuery(
                         `SELECT ?name ?note WHERE {_:cluster a ${CLUSTER(
@@ -97,9 +97,9 @@ export default function ClusterSelect<
             } catch (exc) {
                 console.warn('Could not parse publicInfo', exc)
             }
-            ret.ids.push(edge.node.id)
+            ret.ids.push(node.id)
             if (name) {
-                ret.labelMap[edge.node.id] = name
+                ret.labelMap[node.id] = name
             }
         }
         return ret

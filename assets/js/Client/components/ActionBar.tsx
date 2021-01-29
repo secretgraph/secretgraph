@@ -90,7 +90,7 @@ function ActionBar(props: Props) {
                                 state: event.target.value,
                             })
                         }
-                        value={mainCtx.state || undefined}
+                        value={mainCtx.state || 'default'}
                         children={createOptionsIterator(contentStates)}
                     />
                 </Tooltip>

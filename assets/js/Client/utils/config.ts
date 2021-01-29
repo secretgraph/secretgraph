@@ -348,12 +348,11 @@ export async function exportConfigAsUrl(
         )
     )
     const searchcerthashes = new Set(actions.map((hash) => `key_hash=${hash}`))
-    for (const node of obj.data.contents.edges) {
-        if (!node.node.tags.includes('type=Config')) {
+    for (const { node: configContent } of obj.data.contents.edges) {
+        if (!configContent.tags.includes('type=Config')) {
             continue
         }
-        for (const keyrefnode of node.node.references.edges) {
-            const keyref = keyrefnode.node
+        for (const { node: keyref } of configContent.references.edges) {
             if (
                 keyref.target.tags.findIndex((val: any) =>
                     searchcerthashes.has(val)
@@ -362,7 +361,7 @@ export async function exportConfigAsUrl(
                 continue
             }
             const privkeyrefnode = keyref.target.references.find(
-                (node: any) => node.node.target.tags
+                ({ node }: any) => node.target.tags
             )
             if (!privkeyrefnode) {
                 continue
@@ -393,13 +392,13 @@ export async function exportConfigAsUrl(
                     iterations: obj.data.secretgraph.config.PBKDF2Iterations,
                 })
                 return `${url.origin}${
-                    node.node.link
+                    configContent.link
                 }?decrypt&token=${tokens.join('token=')}&prekey=${
                     certhashes[0]
                 }:${prekey}&prekey=shared:${prekey2}`
             } else {
                 return `${url.origin}${
-                    node.node.link
+                    configContent.link
                 }?decrypt&token=${tokens.join('token=')}&token=${
                     certhashes[0]
                 }:${btoa(
@@ -523,7 +522,7 @@ export function findCertCandidatesForRefs(
         }
     }
     // extract tags with hashes
-    for (const refnode of nodeData.references.edges) {
+    for (const { node: refnode } of nodeData.references.edges) {
         for (const dirtyhash of refnode.target.tags) {
             const cleanhash = dirtyhash.match(/=(.*)/)[1]
             if (cleanhash && config.certificates[cleanhash]) {

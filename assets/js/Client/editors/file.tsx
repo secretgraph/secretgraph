@@ -18,6 +18,7 @@ import { TextField as FormikTextField } from 'formik-material-ui'
 import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client'
 
 import { ConfigInterface, MainContextInterface } from '../interfaces'
+import * as Constants from '../constants'
 import {
     MainContext,
     InitializedConfigContext,
@@ -50,7 +51,7 @@ import { TextFieldProps as TextFieldPropsFormik } from 'material-ui'
 
 const ViewFile = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config } = React.useContext(InitializedConfigContext)
     const [blobUrl, setBlobUrl] = React.useState<string | undefined>(undefined)
     const client = useApolloClient()
@@ -78,6 +79,18 @@ const ViewFile = () => {
         if (!data) {
             return
         }
+        const updateOb: Partial<MainContextInterface> = {}
+        if (data.tags.name && data.tags.name.length > 0) {
+            updateOb['title'] = data.tags.name[0]
+        }
+        if (
+            data.tags.state &&
+            data.tags.state.length > 0 &&
+            Constants.contentStates.has(data.tags.state[0])
+        ) {
+            updateOb['state'] = data.tags.state[0] as any
+        }
+        updateMainCtx(updateOb)
         const _blobUrl = URL.createObjectURL(
             new Blob([data.data], { type: mime })
         )
@@ -264,7 +277,11 @@ const AddFile = () => {
                         tags: [
                             `name=${values.name}`,
                             `mime=${value.type}`,
-                            `state=${mainCtx.state}`,
+                            `state=${
+                                mainCtx.state == 'default'
+                                    ? 'internal'
+                                    : mainCtx.state
+                            }`,
                             `type=${
                                 value.type.startsWith('text/') ? 'Text' : 'File'
                             }`,
@@ -282,15 +299,15 @@ const AddFile = () => {
                         hashAlgorithm,
                         authorization: authinfo.keys,
                     })
-                    console.log(result)
                     updateMainCtx({
-                        item: result.data.node.id,
+                        item: result.data.updateOrCreateContent.content.id,
+                        url: activeUrl,
                         action: 'edit',
                     })
                 } catch (exc) {
                     console.error(exc)
+                    setSubmitting(false)
                 }
-                setSubmitting(false)
             }}
         >
             {({ submitForm, isSubmitting, values, setValues }) => (
@@ -589,6 +606,28 @@ const EditFile = () => {
         decryptTags: ['mime', 'name'],
         watch: (mainCtx.url as string) + mainCtx.item,
     })
+
+    React.useEffect(() => {
+        if (!data) {
+            return
+        }
+        const updateOb: Partial<MainContextInterface> = {}
+        if (data.tags.name && data.tags.name.length > 0) {
+            updateOb['title'] = data.tags.name[0]
+        }
+        if (
+            data.tags.state &&
+            data.tags.state.length > 0 &&
+            Constants.contentStates.has(data.tags.state[0])
+        ) {
+            updateOb['state'] = data.tags.state[0] as any
+        }
+        updateMainCtx(updateOb)
+        const _blobUrl = URL.createObjectURL(
+            new Blob([data.data], { type: mime })
+        )
+    }, [data])
+
     if (!data) {
         return null
     }
@@ -661,7 +700,11 @@ const EditFile = () => {
                     tags: [
                         `name=${values.name}`,
                         `mime=${value.type}`,
-                        `state=${mainCtx.state}`,
+                        `state=${
+                            mainCtx.state == 'default'
+                                ? 'internal'
+                                : mainCtx.state
+                        }`,
                         `type=${
                             value.type.startsWith('text/') ? 'Text' : 'File'
                         }`,
@@ -677,7 +720,10 @@ const EditFile = () => {
                     hashAlgorithm,
                     authorization: authinfo.keys,
                 })
-                updateMainCtx({ item: result.data.node.id, action: 'edit' })
+                updateMainCtx({
+                    item: result.data.updateOrCreateContent.content.id,
+                    action: 'edit',
+                })
             }}
         >
             {({

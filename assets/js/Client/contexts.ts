@@ -5,7 +5,12 @@ import {
     ConfigInterface,
     ConfigInputInterface,
 } from './interfaces'
-
+/**export const VisibleStateContext = createContext({
+    visibility: 'default' as 'default' | 'draft' | 'public' | 'internal',
+    updateVisibility: (
+        update: 'default' | 'draft' | 'public' | 'internal'
+    ) => {},
+})*/
 export const MainContext = createContext({
     mainCtx: {} as MainContextInterface,
     updateMainCtx: (update: Partial<MainContextInterface>) => {},
