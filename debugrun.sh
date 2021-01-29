@@ -2,7 +2,8 @@
 
 source .venv/bin/activate
 trap "" err exit INT
-npm run watch&
+./manage.py migrate
+npm run watch:dev&
 f1=$!
 ./manage.py runserver_plus --nothreading&
 f2=$!

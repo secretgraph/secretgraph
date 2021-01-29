@@ -48,13 +48,17 @@ def get_publicInfo_file_path(instance, filename) -> str:
 
 def get_content_file_path(instance, filename) -> str:
     ret = getattr(settings, "SECRETGRAPH_FILE_DIR", "content_files")
+    cluster_id = instance.cluster_id or instance.cluster.id
+    if not cluster_id:
+        raise Exception("no cluster id found")
+
     # try 100 times to find free filename
     # but should not take more than 1 try
     for _i in range(0, 100):
         ret_path = default_storage.generate_filename(
             posixpath.join(
                 ret,
-                str(instance.cluster_id),
+                str(cluster_id),
                 "%s.store"
                 % secrets.token_urlsafe(
                     getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH", 100)

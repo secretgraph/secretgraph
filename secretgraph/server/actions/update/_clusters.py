@@ -136,6 +136,7 @@ def create_cluster_fn(request, objdata=None, user=None, authset=None):
             context = context()
         with context:
             cluster = cluster_fn()
+            # refresh_fields(add_actions, "cluster")
             content_fn()
             return {"cluster": cluster, "writeok": True}
 

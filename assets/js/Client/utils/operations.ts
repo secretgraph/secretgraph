@@ -427,33 +427,46 @@ export async function decryptContentObject({
             nodeData,
         }
     }
-    const found = findCertCandidatesForRefs(config, _node)
-    if (!found) {
+    let key
+    try {
+        // TODO: fix bug somewhere here are the dragons
+        const found = findCertCandidatesForRefs(config, _node)
+        if (!found) {
+            return null
+        }
+        key = (
+            await Promise.any(
+                found.map(async (value) => {
+                    try {
+                        return await decryptRSAOEAP({
+                            key: config.certificates[value[0]],
+                            data: value[1],
+                        })
+                    } catch (exc) {
+                        console.error(exc)
+                        throw exc
+                    }
+                })
+            )
+        ).data
+    } catch (exc) {
+        console.error(exc)
         return null
     }
-    const sharedkeyPromise = Promise.any(
-        found.map(async (value) => {
-            try {
-                return await decryptRSAOEAP({
-                    key: config.certificates[value[0]],
-                    data: value[1],
-                })
-            } catch (exc) {
-                console.error(exc)
-                throw exc
-            }
-        })
-    )
-    const key = (await sharedkeyPromise).data
-    return {
-        ...(await decryptAESGCM({
-            key,
-            nonce: _node.nonce,
-            data: arrPromise,
-        })),
-        updateId: nodeData.updateId,
-        tags: await extractTags({ key, tags: nodeData.tags, decrypt }),
-        nodeData,
+    try {
+        return {
+            ...(await decryptAESGCM({
+                key,
+                nonce: _node.nonce,
+                data: arrPromise,
+            })),
+            updateId: nodeData.updateId,
+            tags: await extractTags({ key, tags: nodeData.tags, decrypt }),
+            nodeData,
+        }
+    } catch (exc) {
+        console.error(exc)
+        return null
     }
 }
 
