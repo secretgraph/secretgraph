@@ -506,13 +506,14 @@ export function findCertCandidatesForRefs(
         hashAlgorithm?: string
         sharedKey: Uint8Array
     }[] = []
+    console.log(nodeData)
     // extract tag key from private key
     if (nodeData.tags.includes('type=PrivateKey')) {
         const hashes = []
         for (const tag of nodeData.tags) {
             if (tag.startsWith('key_hash=')) {
                 const [_, hashAlgorithm, cleanhash] = tag.match(
-                    /=([^:]*:)?([^:]*)/
+                    /=(?:([^:]*?):)?([^:]*)/
                 )
                 if (!cleanhash) {
                     if (config.certificates[`${hashAlgorithm}:${cleanhash}`]) {
@@ -527,7 +528,7 @@ export function findCertCandidatesForRefs(
             if (tag.startsWith('key=')) {
                 for (const hash of hashes) {
                     const [_, hashAlgorithm, shared] = tag.match(
-                        /=([^:]*:)?([^:]*)/
+                        /=(?:([^:]*?):)?([^:]*)/
                     )
                     found.push({
                         hash,
@@ -542,12 +543,12 @@ export function findCertCandidatesForRefs(
     for (const { node: refnode } of nodeData.references.edges) {
         for (const dirtyhash of refnode.target.tags) {
             const [_, hashAlgorithm, cleanhash] = dirtyhash.match(
-                /=([^:]*:)?([^:]*)/
+                /^[^=]+=(?:([^:]*?):)?([^:]*)/
             )
             if (cleanhash) {
                 if (config.certificates[`${hashAlgorithm}:${cleanhash}`]) {
                     const [_, hashAlgorithm2, b64] = refnode.extra.match(
-                        /([^:]*:)?([^:]*)/
+                        /^(?:([^:]*?):)?([^:]*)/
                     )
                     found.push({
                         hash: `${hashAlgorithm}:${cleanhash}`,
@@ -556,7 +557,7 @@ export function findCertCandidatesForRefs(
                     })
                 } else if (config.certificates[cleanhash]) {
                     const [_, hashAlgorithm2, b64] = refnode.extra.match(
-                        /([^:]*:)?([^:]*)/
+                        /^(?:([^:]*?):)?([^:]*)/
                     )
                     found.push({
                         hash: cleanhash,

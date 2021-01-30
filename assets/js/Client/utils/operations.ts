@@ -436,7 +436,6 @@ export async function decryptContentObject({
         key = (
             await Promise.any(
                 found.map(async (value) => {
-                    console.log(value)
                     try {
                         return await decryptRSAOEAP({
                             key: config.certificates[value.hash],
@@ -450,6 +449,7 @@ export async function decryptContentObject({
                 })
             )
         ).data
+        console.log('2222')
     } catch (exc) {
         console.error(exc)
         return null

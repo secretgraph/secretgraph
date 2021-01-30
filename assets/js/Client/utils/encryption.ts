@@ -297,7 +297,7 @@ export async function decryptRSAOEAP(
     options: CryptoRSAInInterface | Promise<CryptoRSAInInterface>
 ): Promise<CryptoRSAOutInterface> {
     const _options = await options
-    let hashalgo: string,
+    let hashValue = undefined,
         nonce: ArrayBuffer | undefined = undefined,
         key: CryptoKey
     const _key = await _options.key
@@ -307,32 +307,32 @@ export async function decryptRSAOEAP(
         switch (split.length) {
             case 1:
                 _hashalgo = await _options.hashAlgorithm
-                if (!mapHashNames['' + _hashalgo]) {
+                hashValue = mapHashNames['' + _hashalgo]
+                if (!hashValue) {
                     throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
-                hashalgo = mapHashNames['' + _hashalgo].operationName
                 key = await unserializeToCryptoKey(
                     split[0],
                     {
                         name: 'RSA-OAEP',
-                        hash: hashalgo,
+                        hash: hashValue.operationName,
                     },
                     'privateKey'
                 )
                 break
             case 2:
                 _hashalgo = split[0]
-                if (!mapHashNames['' + _hashalgo]) {
+                hashValue = mapHashNames['' + _hashalgo]
+                if (!hashValue) {
                     throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
-                hashalgo = mapHashNames['' + _hashalgo].operationName
                 ;[nonce, key] = [
                     await unserializeToArrayBuffer(split[1]),
                     await unserializeToCryptoKey(
                         split[1],
                         {
                             name: 'RSA-OAEP',
-                            hash: hashalgo,
+                            hash: hashValue.operationName,
                         },
                         'privateKey'
                     ),
@@ -343,15 +343,15 @@ export async function decryptRSAOEAP(
                     split[0],
                     await unserializeToArrayBuffer(split[1]),
                 ]
-                if (!mapHashNames['' + _hashalgo]) {
+                hashValue = mapHashNames['' + _hashalgo]
+                if (!hashValue) {
                     throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
-                hashalgo = mapHashNames['' + _hashalgo].operationName
                 key = await unserializeToCryptoKey(
                     split[2],
                     {
                         name: 'RSA-OAEP',
-                        hash: hashalgo,
+                        hash: hashValue.operationName,
                     },
                     'privateKey'
                 )
@@ -359,15 +359,15 @@ export async function decryptRSAOEAP(
         }
     } else {
         const _hashalgo = await _options.hashAlgorithm
-        if (!mapHashNames['' + _hashalgo]) {
+        hashValue = mapHashNames['' + _hashalgo]
+        if (!hashValue) {
             Error('hashalgorithm not supported: ' + _hashalgo)
         }
-        hashalgo = mapHashNames['' + _hashalgo].operationName
         key = await unserializeToCryptoKey(
             _key,
             {
                 name: 'RSA-OAEP',
-                hash: hashalgo,
+                hash: hashValue.operationName,
             },
             'privateKey'
         )
@@ -381,7 +381,7 @@ export async function decryptRSAOEAP(
             await unserializeToArrayBuffer(_options.data)
         ),
         key,
-        hashAlgorithm: hashalgo,
+        hashAlgorithm: hashValue.serializedName,
         nonce,
     }
 }

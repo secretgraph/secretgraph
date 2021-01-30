@@ -106,7 +106,8 @@ export function createSignatureReferences(
     hashalgo: string
 ): Promise<ReferenceInterface[]> {
     const references: Promise<ReferenceInterface>[] = []
-    if (!mapHashNames[hashalgo]) {
+    const hashValue = mapHashNames[hashalgo]
+    if (!hashValue) {
         throw Error('hashalgorithm not supported: ' + hashalgo)
     }
     for (let counter = 0; counter < privkeys.length; counter++) {
@@ -120,7 +121,7 @@ export function createSignatureReferences(
                     return {
                         target: hash,
                         group: 'signature',
-                        extra: `${hashalgo}:${signature}`,
+                        extra: `${hashValue.serializedName}:${signature}`,
                     }
                 }
             )
@@ -137,28 +138,28 @@ async function encryptSharedKey_helper(
 ) {
     const _x = await key
     let pubkey: CryptoKey | Promise<CryptoKey>, hash: string | Promise<string>
-    const hashalgo2 = mapHashNames['' + hashalgo].operationName
     if ((_x as any)['hash']) {
         pubkey = (_x as CryptoHashPair).key
         hash = (_x as CryptoHashPair).hash
     } else {
-        if (!hashalgo2) {
+        const operationName = mapHashNames['' + hashalgo].operationName
+        if (!operationName) {
             throw new Error(
                 'Invalid hash algorithm/no hash algorithm specified and no CryptoHashPair provided: ' +
-                    hashalgo2
+                    hashalgo
             )
         }
         pubkey = unserializeToCryptoKey(
             key as KeyInput,
             {
                 name: 'RSA-OAEP',
-                hash: hashalgo2,
+                hash: operationName,
             },
             'publicKey'
         )
         hash = serializeToBase64(
             crypto.subtle.digest(
-                hashalgo2,
+                operationName,
                 await crypto.subtle.exportKey('spki' as const, await pubkey)
             )
         )
@@ -167,7 +168,7 @@ async function encryptSharedKey_helper(
         encrypted: await encryptRSAOEAP({
             key: pubkey,
             data: sharedkey,
-            hashAlgorithm: hashalgo2,
+            hashAlgorithm: hashalgo,
         }).then((data) => serializeToBase64(data.data)),
         hash: await hash,
     }
@@ -184,6 +185,10 @@ export function encryptSharedKey(
 ): [Promise<ReferenceInterface[]>, Promise<string[]>] {
     const references: PromiseLike<ReferenceInterface>[] = []
     const tags: PromiseLike<string>[] = []
+    const hashValue = mapHashNames['' + hashalgo]
+    if (!hashValue) {
+        throw Error('hashalgorithm not supported: ' + hashalgo)
+    }
     for (let counter = 0; counter < pubkeys.length; counter++) {
         const temp = encryptSharedKey_helper(
             pubkeys[counter],
@@ -196,7 +201,7 @@ export function encryptSharedKey(
                     return {
                         target: hash,
                         group: 'key',
-                        extra: `${hashalgo}:${encrypted}`,
+                        extra: `${hashValue.serializedName}:${encrypted}`,
                     }
                 }
             )
