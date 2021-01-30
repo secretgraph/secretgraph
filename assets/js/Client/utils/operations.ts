@@ -449,7 +449,6 @@ export async function decryptContentObject({
                 })
             )
         ).data
-        console.log('2222')
     } catch (exc) {
         console.error(exc)
         return null
