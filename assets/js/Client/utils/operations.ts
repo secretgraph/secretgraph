@@ -1,3 +1,4 @@
+import { ApolloClient, FetchResult } from '@apollo/client'
 import {
     createClusterMutation,
     updateClusterMutation,
@@ -21,6 +22,7 @@ import {
     ConfigInputInterface,
     CryptoGCMInInterface,
 } from '../interfaces'
+import { mapHashNames } from '../constants'
 import { b64toarr, sortedHash, utf8encoder } from './misc'
 import {
     decryptRSAOEAP,
@@ -32,7 +34,6 @@ import {
     extractTags,
     encryptTag,
 } from './encryption'
-import { ApolloClient, FetchResult } from '@apollo/client'
 import {
     cleanConfig,
     extractAuthInfo,
@@ -46,7 +47,6 @@ import {
     extractPubKeysCluster,
     extractPubKeysRefs,
 } from './graphql'
-import { mapHashNames } from '../constants'
 
 export async function createContent({
     client,
@@ -182,8 +182,8 @@ export async function updateContent({
         references = options.references ? options.references : null
         tagsPromise = options.tags ? options.tags : null
     }
-
-    return await client.mutate({
+    // TODO: Fix dropped tags
+    const params = {
         mutation: updateContentMutation,
         variables: {
             id,
@@ -207,7 +207,9 @@ export async function updateContent({
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],
         },
-    })
+    }
+    console.log(params)
+    return await client.mutate(params)
 }
 
 export async function createCluster(options: {
@@ -436,21 +438,16 @@ export async function decryptContentObject({
         key = (
             await Promise.any(
                 found.map(async (value) => {
-                    try {
-                        return await decryptRSAOEAP({
-                            key: config.certificates[value.hash],
-                            data: value.sharedKey,
-                            hashAlgorithm: value.hashAlgorithm,
-                        })
-                    } catch (exc) {
-                        console.error(exc)
-                        throw exc
-                    }
+                    return await decryptRSAOEAP({
+                        key: config.certificates[value.hash],
+                        data: value.sharedKey,
+                        hashAlgorithm: value.hashAlgorithm,
+                    })
                 })
             )
         ).data
     } catch (exc) {
-        console.error(exc)
+        console.error(exc, exc?.errors)
         return null
     }
     try {

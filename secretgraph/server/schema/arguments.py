@@ -55,7 +55,7 @@ class ReferenceInput(graphene.InputObjectType):
 
 
 class ContentValueInput(graphene.InputObjectType):
-    value = Upload(required=True)
+    value = Upload(required=False)
     nonce = graphene.String(required=False)
     tags = graphene.List(graphene.String, required=False)
 

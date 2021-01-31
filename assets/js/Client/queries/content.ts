@@ -46,8 +46,8 @@ export const updateContentMutation = gql`
     ) {
         updateOrCreateContent(
             input: {
+                id: $id
                 content: {
-                    id: $id
                     cluster: $cluster
                     value: { tags: $tags, value: $value, nonce: $nonce }
                     contentHash: $contentHash
@@ -223,6 +223,7 @@ export const getContentConfigurationQuery = gql`
                     updateId
                     tags(includeTags: ["type="])
                     cluster {
+                        id
                         group
                         contents(includeTags: ["type=PublicKey"]) {
                             edges {

@@ -506,7 +506,6 @@ export function findCertCandidatesForRefs(
         hashAlgorithm?: string
         sharedKey: Uint8Array
     }[] = []
-    console.log(nodeData)
     // extract tag key from private key
     if (nodeData.tags.includes('type=PrivateKey')) {
         const hashes = []

@@ -68,9 +68,6 @@ const ViewFile = () => {
         decryptTags: ['mime', 'name'],
         watch: (mainCtx.url as string) + mainCtx.item,
     })
-    if (!data) {
-        return null
-    }
     const mime =
         data && data.tags.mime && data.tags.mime.length > 0
             ? data.tags.mime[0]
@@ -130,6 +127,7 @@ const ViewFile = () => {
                     </Grid>
                 )
             }
+            break
         case 'audio':
         case 'video':
             inner = (
@@ -645,7 +643,7 @@ const EditFile = () => {
                         ? data.tags.name[0]
                         : '',
                 keywords: data.tags.keywords || [],
-                cluster: data.nodeData?.cluster?.id as string | null,
+                cluster: data.nodeData?.cluster?.id as string,
             }}
             validate={(values) => {
                 const errors: Partial<
@@ -663,7 +661,10 @@ const EditFile = () => {
                 const value: Blob = values.fileInput
                 const authinfo = extractAuthInfo({
                     config,
-                    clusters: new Set([mainCtx.item as string]),
+                    clusters: new Set([
+                        values.cluster,
+                        data.nodeData.cluster.id,
+                    ]),
                     url: mainCtx.url as string,
                     require: new Set(['update']),
                 })
@@ -682,6 +683,7 @@ const EditFile = () => {
                     url: mainCtx.url as string,
                     hashAlgorithm,
                 })
+                console.log(pubkeysResult.data)
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
                     authorization: authinfo.keys,

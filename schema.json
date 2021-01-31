@@ -2902,13 +2902,9 @@
               "description": null,
               "name": "value",
               "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Upload",
-                  "ofType": null
-                }
+                "kind": "SCALAR",
+                "name": "Upload",
+                "ofType": null
               }
             },
             {

@@ -135,8 +135,8 @@ export async function unserializeToArrayBuffer(
             (_data as any).buffer instanceof ArrayBuffer
         ) {
             _result = _data as ArrayBuffer
-        } else if (_data instanceof File) {
-            _result = await (_data as File).arrayBuffer()
+        } else if (_data instanceof Blob) {
+            _result = await (_data as Blob).arrayBuffer()
         } else if (_data instanceof CryptoKey) {
             if (!_data.extractable) {
                 throw Error('Cannot extract key (extractable=false)')
