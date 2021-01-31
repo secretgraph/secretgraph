@@ -229,7 +229,7 @@ export const getContentConfigurationQuery = gql`
                             edges {
                                 node {
                                     link
-                                    tags(includeTags: ["key_hash="])
+                                    tags(includeTags: ["key_hash=", "type="])
                                 }
                             }
                         }

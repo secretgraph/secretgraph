@@ -8,6 +8,9 @@ export function utf8ToBinary(inp: string): string {
 export function b64toarr(inp: string) {
     return Uint8Array.from(atob(inp), (c) => c.charCodeAt(0))
 }
+export function b64toutf8(inp: string) {
+    return utf8decoder.decode(b64toarr(inp))
+}
 
 export function sortedHash(inp: string[], algo: string): PromiseLike<string> {
     return crypto.subtle

@@ -311,7 +311,7 @@ def _update_or_create_content_or_key(
             else:
                 # simply ignore id=, can only be changed in regenerateFlexid
                 content.tags.exclude(Q(tag__startswith="id=")).delete()
-                ContentTag.objects.bulk_create(final_tags, "content")
+                ContentTag.objects.bulk_create(final_tags)
 
         # create id tag after object was created or update it
         content.tags.update_or_create(

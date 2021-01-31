@@ -34,7 +34,7 @@ import {
 } from '../utils/operations'
 
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
-import { utf8decoder } from '../utils/misc'
+import { utf8decoder, utf8ToBinary, b64toutf8 } from '../utils/misc'
 
 import {
     contentRetrievalQuery,
@@ -65,7 +65,7 @@ const ViewFile = () => {
         config: config as ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
-        decryptTags: ['mime', 'name'],
+        decrypt: new Set(['mime', 'name']),
         watch: (mainCtx.url as string) + mainCtx.item,
     })
     const mime =
@@ -273,8 +273,8 @@ const AddFile = () => {
                         cluster: values.cluster as string,
                         value,
                         tags: [
-                            `name=${values.name}`,
-                            `mime=${value.type}`,
+                            `name=${btoa(values.name)}`,
+                            `mime=${btoa(value.type)}`,
                             `state=${
                                 mainCtx.state == 'default'
                                     ? 'internal'
@@ -477,7 +477,6 @@ const AddFile = () => {
                                             <Button
                                                 variant="contained"
                                                 color="primary"
-                                                component="span"
                                                 disabled={
                                                     !!(
                                                         isSubmitting ||
@@ -593,7 +592,7 @@ const EditFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config } = React.useContext(InitializedConfigContext)
     const client = useApolloClient()
-    const { data } = useAsync({
+    const { data, reload } = useAsync({
         promiseFn: decryptContentId,
         onReject: console.error,
         suspense: true,
@@ -601,7 +600,7 @@ const EditFile = () => {
         config: config as ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
-        decryptTags: ['mime', 'name'],
+        decrypt: new Set(['mime', 'name']),
         watch: (mainCtx.url as string) + mainCtx.item,
     })
 
@@ -621,9 +620,9 @@ const EditFile = () => {
             updateOb['state'] = data.tags.state[0] as any
         }
         updateMainCtx(updateOb)
-        const _blobUrl = URL.createObjectURL(
+        /**const _blobUrl = URL.createObjectURL(
             new Blob([data.data], { type: mime })
-        )
+        )*/
     }, [data])
 
     if (!data) {
@@ -683,9 +682,8 @@ const EditFile = () => {
                     url: mainCtx.url as string,
                     hashAlgorithm,
                 })
-                console.log(pubkeysResult.data)
                 const pubkeys = extractPubKeysCluster({
-                    node: pubkeysResult.data.secretgraph.node,
+                    node: pubkeysResult.data.secretgraph.node.cluster,
                     authorization: authinfo.keys,
                     params: {
                         name: 'RSA-OAEP',
@@ -697,11 +695,11 @@ const EditFile = () => {
                     updateId: pubkeysResult.data.secretgraph.node.updateId,
                     client,
                     config,
-                    cluster: values.cluster || undefined,
+                    cluster: values.cluster, // can be null for keeping cluster
                     value,
                     tags: [
-                        `name=${values.name}`,
-                        `mime=${value.type}`,
+                        `name=${btoa(values.name)}`,
+                        `mime=${btoa(value.type)}`,
                         `state=${
                             mainCtx.state == 'default'
                                 ? 'internal'
@@ -722,19 +720,25 @@ const EditFile = () => {
                     hashAlgorithm,
                     authorization: authinfo.keys,
                 })
-                updateMainCtx({
-                    item: result.data.updateOrCreateContent.content.id,
-                    action: 'edit',
-                })
+                if (result.errors) {
+                    console.error(result.errors)
+                } else if (!result.data.updateOrCreateContent.writeok) {
+                    console.log(
+                        'Write failed because of update, load new version',
+                        result
+                    )
+                }
+                reload()
             }}
         >
             {({
                 submitForm,
                 isSubmitting,
                 values,
-                setValues,
                 touched,
                 errors,
+                setFieldValue,
+                setFieldTouched,
             }) => (
                 <Grid container spacing={1}>
                     <Grid item xs={12} md={4}>
@@ -772,10 +776,8 @@ const EditFile = () => {
                         <TextFileAdapter
                             value={values.fileInput}
                             onChange={(blob) => {
-                                setValues({
-                                    ...values,
-                                    fileInput: blob,
-                                })
+                                setFieldValue('fileInput', blob)
+                                setFieldTouched('fileInput', true)
                             }}
                             mime={mime}
                             disabled={isSubmitting}
@@ -792,16 +794,26 @@ const EditFile = () => {
                                     <>
                                         <UploadButton
                                             name="fileInput"
-                                            onChange={
-                                                formikFieldProps.field.onChange
-                                            }
+                                            onChange={(ev) => {
+                                                ev.target.files &&
+                                                    ev.target.files.length &&
+                                                    setFieldValue(
+                                                        'fileInput',
+                                                        ev.target.files[0]
+                                                    )
+                                            }}
                                             accept={
                                                 mainCtx.type == 'Text'
                                                     ? 'text/*'
                                                     : undefined
                                             }
                                         >
-                                            <Button disabled={isSubmitting}>
+                                            <Button
+                                                disabled={isSubmitting}
+                                                variant="contained"
+                                                color="primary"
+                                                component="span"
+                                            >
                                                 Upload
                                             </Button>
                                         </UploadButton>

@@ -68,6 +68,9 @@ export async function createContent({
     authorization: Iterable<string>
     encryptTags?: Iterable<string>
 }): Promise<FetchResult<any>> {
+    if (options.pubkeys.length == 0) {
+        throw Error('No public keys provided')
+    }
     const nonce = crypto.getRandomValues(new Uint8Array(13))
     const key = crypto.getRandomValues(new Uint8Array(32))
 
@@ -135,22 +138,31 @@ export async function updateContent({
     contentHash?: string | null
     references?: Iterable<ReferenceInterface> | null
     actions?: Iterable<ActionInterface>
-    hashAlgorithm: string
+    hashAlgorithm?: string
     authorization: Iterable<string>
     encryptTags?: Iterable<string>
 }): Promise<FetchResult<any>> {
     const nonce = crypto.getRandomValues(new Uint8Array(13))
     const key = crypto.getRandomValues(new Uint8Array(32))
-    let contentPromise: Promise<null | File> = Promise.resolve(null)
     let references
-    let tagsPromise
+    const tags = options.tags
+        ? await Promise.all(options.tags)
+        : options.value
+        ? []
+        : null
     const encrypt: Set<string> | undefined = options.encryptTags
         ? new Set(options.encryptTags)
         : undefined
 
-    const halgo = mapHashNames[options.hashAlgorithm].operationName
+    let encryptedContent = null
     if (options.value) {
-        const encryptedContentPromise2 = encryptAESGCM({
+        if (!options.hashAlgorithm) {
+            throw Error('hashAlgorithm required for value updates')
+        }
+        if (options.pubkeys.length == 0) {
+            throw Error('No public keys provided')
+        }
+        encryptedContent = await encryptAESGCM({
             key,
             nonce,
             data: options.value,
@@ -159,28 +171,21 @@ export async function updateContent({
         const [publicKeyReferencesPromise, tagsPromise2] = encryptSharedKey(
             key,
             options.pubkeys,
-            halgo
+            options.hashAlgorithm
         )
-        tagsPromise = tagsPromise2
-        const signatureReferencesPromise = encryptedContentPromise2.then(
-            (data) =>
-                createSignatureReferences(
-                    data.data,
-                    options.privkeys ? options.privkeys : [],
-                    halgo
-                )
-        )
-        contentPromise = encryptedContentPromise2.then(
-            (data) => new File([data.data], 'value')
+        const signatureReferencesPromise = createSignatureReferences(
+            encryptedContent.data,
+            options.privkeys ? options.privkeys : [],
+            options.hashAlgorithm
         )
         references = ([] as ReferenceInterface[]).concat(
             await publicKeyReferencesPromise,
             await signatureReferencesPromise,
             options.references ? [...options.references] : []
         )
+        ;(tags as string[]).push(...(await tagsPromise2))
     } else {
         references = options.references ? options.references : null
-        tagsPromise = options.tags ? options.tags : null
     }
     // TODO: Fix dropped tags
     const params = {
@@ -190,25 +195,28 @@ export async function updateContent({
             updateId,
             cluster: options.cluster ? options.cluster : null,
             references,
-            tags: ((await tagsPromise) as
-                | (string | PromiseLike<string>)[]
-                | undefined)?.map(
-                async (tagPromise: string | PromiseLike<string>) => {
-                    return await encryptTag({
-                        key,
-                        data: tagPromise,
-                        encrypt,
-                    })
-                }
-            ),
+            tags: tags
+                ? await Promise.all(
+                      tags.map(
+                          async (tagPromise: string | PromiseLike<string>) => {
+                              return await encryptTag({
+                                  key,
+                                  data: tagPromise,
+                                  encrypt,
+                              })
+                          }
+                      )
+                  )
+                : null,
             nonce: await serializeToBase64(nonce),
-            value: await contentPromise,
+            value: encryptedContent
+                ? new File([encryptedContent.data], 'value')
+                : null,
             actions: options.actions ? options.actions : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],
         },
     }
-    console.log(params)
     return await client.mutate(params)
 }
 

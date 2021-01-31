@@ -520,8 +520,9 @@ export async function encryptTag(
         readonly tag?: string | PromiseLike<string>
         readonly encrypt?: Set<string>
     }
-) {
-    let tag: string | undefined, data: CryptoGCMInInterface['data']
+): Promise<string> {
+    let tag: string | undefined,
+        data: Exclude<CryptoGCMInInterface['data'], 'PromiseLike'>
     if (options.tag !== undefined) {
         tag = await options.tag
         data = await options.data
@@ -543,8 +544,21 @@ export async function encryptTag(
         const tmp = new Uint8Array(nonce.byteLength + encrypted.byteLength)
         tmp.set(new Uint8Array(nonce), 0)
         tmp.set(new Uint8Array(encrypted), nonce.byteLength)
-
         data = await serializeToBase64(tmp)
+        /**console.log(
+            tag,
+            await serializeToBase64(options.key as ArrayBuffer),
+            String.fromCharCode(
+                ...new Uint8Array(
+                    (
+                        await decryptTagRaw({
+                            data,
+                            key: options.key,
+                        })
+                    ).data
+                )
+            )
+        )*/
     }
     if (tag) {
         return `${tag}=${data as string}`
@@ -596,9 +610,16 @@ export async function extractTags(
             }
             if (options.decrypt.has(tag)) {
                 tags[tag].push(
-                    (
-                        await decryptTagRaw({ key: options.key, data })
-                    ).data.toString()
+                    String.fromCharCode(
+                        ...new Uint8Array(
+                            (
+                                await decryptTagRaw({
+                                    key: options.key,
+                                    data,
+                                })
+                            ).data
+                        )
+                    )
                 )
             } else {
                 tags[tag].push(data)
