@@ -38,7 +38,6 @@ function createOptionsIterator(mapObject: Map<string, any>) {
 function ActionBar(props: Props) {
     const { classes, theme } = useStylesAndTheme()
     const [shareOpen, setShareOpen] = React.useState(false)
-    const [actionAddOpen, setActionAddOpen] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
 
     return (
@@ -78,10 +77,7 @@ function ActionBar(props: Props) {
                 </DialogActions>
             </Dialog>
             <div style={{ flexGrow: 1 }} />
-            <Toolbar
-                className={classes.actionToolBarInner}
-                onBlur={() => setActionAddOpen(false)}
-            >
+            <Toolbar className={classes.actionToolBarInner}>
                 <Tooltip title="Select state of content" arrow>
                     <NativeSelect
                         className={classes.contentStateSelect}
@@ -116,48 +112,42 @@ function ActionBar(props: Props) {
                         )}
                     </IconButton>
                 </Tooltip>
-                <Tooltip
-                    title="Add Element"
-                    arrow
-                    className={
-                        actionAddOpen || mainCtx.action === 'add'
-                            ? null
-                            : classes.hidden
-                    }
-                >
-                    <NativeSelect
-                        className={classes.newItemSelect}
-                        onChange={(event: any) => {
-                            setActionAddOpen(false)
-                            updateMainCtx({
-                                action: 'add',
-                                title: null,
-                                item: null,
-                                shareUrl: null,
-                                type: event.target.value,
-                            })
-                        }}
-                        value={mainCtx.type || undefined}
-                        children={createOptionsIterator(elements)}
-                    />
-                </Tooltip>
-                <Tooltip
-                    title="Add"
-                    arrow
-                    className={
-                        actionAddOpen || mainCtx.action === 'add'
-                            ? classes.hidden
-                            : null
-                    }
-                >
-                    <IconButton
-                        className={classes.actionToolBarButton}
-                        aria-label="add"
-                        onClick={() => setActionAddOpen(true)}
-                        onMouseEnter={() => setActionAddOpen(true)}
-                    >
-                        <AddIcon />
-                    </IconButton>
+                <Tooltip title="Add Element" arrow>
+                    <span>
+                        <NativeSelect
+                            className={classes.newItemSelect}
+                            onChange={(event: any) => {
+                                updateMainCtx({
+                                    action: 'add',
+                                    title: null,
+                                    item: null,
+                                    shareUrl: null,
+                                    type: event.target.value,
+                                })
+                            }}
+                            value={mainCtx.type || undefined}
+                            children={createOptionsIterator(elements)}
+                        />
+                        <IconButton
+                            className={
+                                mainCtx.action != 'add'
+                                    ? classes.actionToolBarButton
+                                    : classes.hidden
+                            }
+                            aria-label="add"
+                            onClick={(event) => {
+                                updateMainCtx({
+                                    action: 'add',
+                                    title: null,
+                                    item: null,
+                                    shareUrl: null,
+                                    type: mainCtx.type,
+                                })
+                            }}
+                        >
+                            <AddIcon />
+                        </IconButton>
+                    </span>
                 </Tooltip>
                 <Tooltip
                     title="Share "

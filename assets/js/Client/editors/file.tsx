@@ -284,12 +284,7 @@ const AddFile = () => {
                                 value.type.startsWith('text/') ? 'Text' : 'File'
                             }`,
                         ].concat(
-                            values.keywords.map(
-                                (val) =>
-                                    `keyword=${
-                                        (val.match(/=(.*)/) as string[])[1]
-                                    }`
-                            )
+                            values.keywords.map((val) => `keyword=${val}`)
                         ),
                         encryptTags: new Set(['name', 'mime']),
                         privkeys: await Promise.all(Object.values(privkeys)),
@@ -713,12 +708,7 @@ const EditFile = () => {
                         `type=${
                             value.type.startsWith('text/') ? 'Text' : 'File'
                         }`,
-                    ].concat(
-                        values.keywords.map(
-                            (val) =>
-                                `keyword=${(val.match(/=(.*)/) as string[])[1]}`
-                        )
-                    ),
+                    ].concat(values.keywords.map((val) => `keyword=${val}`)),
                     encryptTags: new Set(['name', 'mime']),
                     privkeys: await Promise.all(Object.values(privkeys)),
                     pubkeys: Object.values(pubkeys),

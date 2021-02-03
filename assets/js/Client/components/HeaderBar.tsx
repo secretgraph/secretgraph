@@ -39,11 +39,11 @@ function HeaderBar(props: Props) {
     const [loadingExport, setLoadingExport] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config, updateConfig } = React.useContext(ConfigContext)
-    let title: string, documenttitle: string
     let client: any = null
     try {
         client = useApolloClient()
     } catch (exc) {}
+    let title: string, documenttitle: string
     switch (mainCtx.action) {
         case 'add':
             let temp = elements.get(mainCtx.type as string)
@@ -71,8 +71,10 @@ function HeaderBar(props: Props) {
         default:
             if (mainCtx.title) {
                 title = mainCtx.title as string
-            } else {
+            } else if (mainCtx.item) {
                 title = mainCtx.item as string
+            } else {
+                title = '-'
             }
             documenttitle = `Secretgraph: ${title}`
             break
@@ -148,7 +150,7 @@ function HeaderBar(props: Props) {
     }
 
     React.useLayoutEffect(() => {
-        document.title = documenttitle
+        document.title = documenttitle || ''
     }, [documenttitle])
 
     return (

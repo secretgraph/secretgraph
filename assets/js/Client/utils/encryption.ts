@@ -473,17 +473,28 @@ export async function decryptAESGCM(
             'privateKey'
         )
     }
-    return {
-        data: await crypto.subtle.decrypt(
-            {
-                name: 'AES-GCM',
-                iv: nonce,
-            },
+    try {
+        let data = await unserializeToArrayBuffer(_options.data)
+        if (!data || data.byteLength == 0) {
+            data = new Uint8Array()
+        } else {
+            data = await crypto.subtle.decrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: nonce,
+                },
+                key,
+                data
+            )
+        }
+        return {
+            data,
             key,
-            await unserializeToArrayBuffer(_options.data)
-        ),
-        key,
-        nonce,
+            nonce,
+        }
+    } catch (exc) {
+        console.debug(nonce, await unserializeToArrayBuffer(_options.data), key)
+        throw exc
     }
 }
 

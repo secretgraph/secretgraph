@@ -12,7 +12,7 @@ import {
     ) => {},
 })*/
 export const MainContext = createContext({
-    mainCtx: {} as MainContextInterface,
+    mainCtx: { title: '' } as MainContextInterface,
     updateMainCtx: (update: Partial<MainContextInterface>) => {},
 })
 export const SearchContext = createContext({
