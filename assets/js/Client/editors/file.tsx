@@ -549,9 +549,8 @@ const TextFileAdapter = ({
         return null
     }
     const [text, setText] = React.useState<string | undefined>(undefined)
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
         value.text().then((val) => setText(val))
-        return () => setText(undefined)
     }, [value])
     if (text === undefined) {
         return null
@@ -563,6 +562,7 @@ const TextFileAdapter = ({
                 fullWidth
                 variant="outlined"
                 multiline
+                value={text}
                 onChange={(ev) => {
                     onChange(new Blob([ev.currentTarget.value], { type: mime }))
                 }}
@@ -573,13 +573,13 @@ const TextFileAdapter = ({
     }
     return (
         <TextField
+            {...props}
             fullWidth
             multiline
             variant="outlined"
             label={'Plaintext input'}
             onBlur={onBlur}
-            value={text}
-            {...props}
+            defaultValue={text}
             onChange={(ev) => {
                 onChange(new Blob([ev.currentTarget.value], { type: mime }))
             }}
@@ -625,17 +625,22 @@ const EditFile = () => {
         )*/
     }, [data])
 
+    const mime = React.useMemo(() => {
+        if (!data) {
+            return 'application/octet-stream'
+        }
+        return data.tags.mime && data.tags.mime.length > 0
+            ? data.tags.mime[0]
+            : 'application/octet-stream'
+    }, [data])
     if (!data) {
         return null
     }
-    const mime =
-        data.tags.mime && data.tags.mime.length > 0
-            ? data.tags.mime[0]
-            : 'application/octet-stream'
 
     return (
         <Formik
             initialValues={{
+                textFInput: new Blob([data.data], { type: mime }),
                 fileInput: new Blob([data.data], { type: mime }),
                 name:
                     data.tags.name && data.tags.name.length > 0
@@ -734,6 +739,7 @@ const EditFile = () => {
             {({
                 submitForm,
                 isSubmitting,
+                setSubmitting,
                 values,
                 touched,
                 errors,
@@ -774,17 +780,15 @@ const EditFile = () => {
                     </Grid>
                     <Grid item xs={12}>
                         <TextFileAdapter
-                            value={values.fileInput}
+                            value={values.textFInput}
                             onChange={(blob) => {
                                 setFieldValue('fileInput', blob)
-                                setFieldTouched('fileInput', true)
+                                if (!touched.fileInput) {
+                                    setFieldTouched('fileInput', true)
+                                }
                             }}
                             mime={mime}
                             disabled={isSubmitting}
-                            helperText={errors['fileInput']}
-                            error={
-                                errors['fileInput'] && !!touched['fileInput']
-                            }
                         />
                     </Grid>
                     <Grid item xs={12}>
@@ -795,12 +799,19 @@ const EditFile = () => {
                                         <UploadButton
                                             name="fileInput"
                                             onChange={(ev) => {
-                                                ev.target.files &&
-                                                    ev.target.files.length &&
+                                                if (
+                                                    ev.target.files &&
+                                                    ev.target.files.length
+                                                ) {
                                                     setFieldValue(
                                                         'fileInput',
                                                         ev.target.files[0]
                                                     )
+                                                    setFieldValue(
+                                                        'textFInput',
+                                                        ev.target.files[0]
+                                                    )
+                                                }
                                             }}
                                             accept={
                                                 mainCtx.type == 'Text'
