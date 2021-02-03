@@ -122,7 +122,6 @@ export const findConfigQuery = gql`
     ) {
         secretgraph {
             config {
-                PBKDF2Iterations
                 hashAlgorithms
             }
             contents(

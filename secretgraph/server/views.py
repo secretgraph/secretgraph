@@ -99,9 +99,6 @@ class ContentView(AllowCORSMixin, FormView):
 
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
-        response["X-ITERATIONS"] = ",".join(
-            map(str, settings.SECRETGRAPH_ITERATIONS)
-        )
         response["X-HASH-ALGORITHMS"] = ",".join(
             settings.SECRETGRAPH_HASH_ALGORITHMS
         )

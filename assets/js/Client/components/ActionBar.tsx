@@ -6,6 +6,7 @@ import AddIcon from '@material-ui/icons/Add'
 import EditIcon from '@material-ui/icons/Edit'
 import ShareIcon from '@material-ui/icons/Share'
 import VisibilityIcon from '@material-ui/icons/Visibility'
+import DeleteIcon from '@material-ui/icons/Delete'
 import NativeSelect from '@material-ui/core/NativeSelect'
 import Dialog from '@material-ui/core/Dialog'
 import DialogActions from '@material-ui/core/DialogActions'
@@ -110,6 +111,19 @@ function ActionBar(props: Props) {
                         ) : (
                             <VisibilityIcon />
                         )}
+                    </IconButton>
+                </Tooltip>
+                <Tooltip
+                    title={'Delete'}
+                    arrow
+                    className={mainCtx.item ? null : classes.hidden}
+                >
+                    <IconButton
+                        className={classes.actionToolBarButton}
+                        aria-label={'Delete'}
+                        onClick={async () => {}}
+                    >
+                        <DeleteIcon />
                     </IconButton>
                 </Tooltip>
                 <Tooltip title="Add Element" arrow>

@@ -5,7 +5,6 @@ export const serverConfigQuery = gql`
         secretgraph {
             config {
                 hashAlgorithms
-                PBKDF2Iterations
                 injectedClusters {
                     group
                     clusters

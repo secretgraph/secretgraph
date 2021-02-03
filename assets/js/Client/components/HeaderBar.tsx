@@ -16,7 +16,7 @@ import TextField from '@material-ui/core/TextField'
 import FormControl from '@material-ui/core/FormControl'
 import FormHelperText from '@material-ui/core/FormHelperText'
 import Link from '@material-ui/core/Link'
-import { useApolloClient } from '@apollo/client'
+import { useApolloClient, ApolloClient } from '@apollo/client'
 import { useStylesAndTheme } from '../theme'
 import { exportConfig, exportConfigAsUrl } from '../utils/config'
 import { elements } from '../editors'
@@ -24,6 +24,8 @@ import { serverConfigQuery } from '../queries/server'
 import { MainContext, ConfigContext } from '../contexts'
 
 import { encryptingPasswordLabel, encryptingPasswordHelp } from '../messages'
+
+import { deleteNode } from '../queries/node'
 
 type Props = {
     openState: any
@@ -39,7 +41,7 @@ function HeaderBar(props: Props) {
     const [loadingExport, setLoadingExport] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config, updateConfig } = React.useContext(ConfigContext)
-    let client: any = null
+    let client: ApolloClient<any> | null = null
     try {
         client = useApolloClient()
     } catch (exc) {}
@@ -86,7 +88,7 @@ function HeaderBar(props: Props) {
         const encryptingPw = (document.getElementById(
             'secretgraph-export-pw'
         ) as HTMLInputElement).value
-        const sconfig: any = await client
+        const sconfig: any = await (client as ApolloClient<any>)
             .query({
                 query: serverConfigQuery,
             })
@@ -96,12 +98,7 @@ function HeaderBar(props: Props) {
             setLoadingExport(false)
             return
         }
-        exportConfig(
-            config,
-            encryptingPw,
-            sconfig.PBKDF2Iterations[0],
-            'secretgraph_settings.json'
-        )
+        exportConfig(config, encryptingPw, 100000, 'secretgraph_settings.json')
         setExportOpen(false)
         setLoadingExport(false)
     }
@@ -118,8 +115,15 @@ function HeaderBar(props: Props) {
         ) as HTMLInputElement | undefined)?.value
         let _exportUrl
         try {
-            _exportUrl = await exportConfigAsUrl(client, config, encryptingPw)
-        } catch (exc) {}
+            _exportUrl = await exportConfigAsUrl({
+                client: client as ApolloClient<any>,
+                config,
+                pw: encryptingPw,
+                iterations: 100000,
+            })
+        } catch (exc) {
+            console.error(exc)
+        }
 
         setExportUrl(_exportUrl ? (_exportUrl as string) : '')
         setMenuOpen(false)

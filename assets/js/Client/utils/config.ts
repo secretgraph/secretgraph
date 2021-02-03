@@ -296,7 +296,7 @@ export async function exportConfig(
         }
         newConfig = JSON.stringify({
             data: await serializeToBase64(encrypted.data),
-            iterations: iterations,
+            iterations,
             nonce: await serializeToBase64(encrypted.nonce),
             prekeys: await Promise.all(prekeys),
         })
@@ -309,11 +309,17 @@ export async function exportConfig(
     saveAs(new File([newConfig], name, { type: 'text/plain;charset=utf-8' }))
 }
 
-export async function exportConfigAsUrl(
-    client: ApolloClient<any>,
-    config: ConfigInterface,
+export async function exportConfigAsUrl({
+    client,
+    config,
+    pw,
+    iterations = 100000,
+}: {
+    client: ApolloClient<any>
+    config: ConfigInterface
+    iterations: number
     pw?: string
-) {
+}) {
     let actions: string[] = [],
         cert: Uint8Array | null = null
     for (const hash of config.configHashes) {
@@ -383,13 +389,13 @@ export async function exportConfigAsUrl(
                     prekey: sharedKeyPrivateKeyRes.data,
                     pw,
                     hashAlgorithm: 'SHA-512',
-                    iterations: obj.data.secretgraph.config.PBKDF2Iterations,
+                    iterations,
                 })
                 const prekey2 = await encryptPreKey({
                     prekey: (await sharedKeyConfigRes).data,
                     pw,
                     hashAlgorithm: 'SHA-512',
-                    iterations: obj.data.secretgraph.config.PBKDF2Iterations,
+                    iterations,
                 })
                 return `${url.origin}${
                     configContent.link

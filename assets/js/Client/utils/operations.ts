@@ -10,6 +10,10 @@ import {
     getContentConfigurationQuery,
     findConfigQuery,
 } from '../queries/content'
+import {
+    deleteNode as deleteNodeQuery,
+    resetDeletionNode as resetDeletionNodeQuery,
+} from '../queries/node'
 import { serverConfigQuery } from '../queries/server'
 import {
     ConfigInterface,
@@ -47,6 +51,42 @@ import {
     extractPubKeysCluster,
     extractPubKeysRefs,
 } from './graphql'
+
+export async function deleteNode({
+    id,
+    client,
+    authorization,
+}: {
+    id: string
+    client: ApolloClient<any>
+    authorization: string[]
+}) {
+    return await client.mutate({
+        mutation: deleteNodeQuery,
+        variables: {
+            id,
+            authorization,
+        },
+    })
+}
+
+export async function resetDeletionNode({
+    id,
+    client,
+    authorization,
+}: {
+    id: string
+    client: ApolloClient<any>
+    authorization: string[]
+}) {
+    return await client.mutate({
+        mutation: resetDeletionNodeQuery,
+        variables: {
+            id,
+            authorization,
+        },
+    })
+}
 
 export async function createContent({
     client,

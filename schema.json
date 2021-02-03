@@ -1989,22 +1989,6 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "PBKDF2Iterations",
-              "type": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Int",
-                  "ofType": null
-                }
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
               "name": "injectedClusters",
               "type": {
                 "kind": "LIST",

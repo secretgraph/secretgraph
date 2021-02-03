@@ -44,7 +44,6 @@ class ClusterGroupEntry(graphene.ObjectType):
 class SecretgraphConfig(ObjectType):
     id = graphene.ID()
     hashAlgorithms = graphene.List(graphene.String)
-    PBKDF2Iterations = graphene.List(graphene.Int)
     injectedClusters = graphene.List(ClusterGroupEntry)
     registerUrl = graphene.Field(RegisterUrl)
     loginUrl = graphene.String(required=False)
@@ -54,9 +53,6 @@ class SecretgraphConfig(ObjectType):
 
     def resolve_hashAlgorithms(self, info):
         return settings.SECRETGRAPH_HASH_ALGORITHMS
-
-    def resolve_PBKDF2Iterations(self, info):
-        return settings.SECRETGRAPH_ITERATIONS
 
     def resolve_injectedClusters(self, info):
         return map(

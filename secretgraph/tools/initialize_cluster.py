@@ -24,7 +24,6 @@ query serverSecretgraphConfigQuery {
     secretgraph{
         config {
             hashAlgorithms
-            PBKDF2Iterations
             injectedClusters {
                 group
                 clusters
