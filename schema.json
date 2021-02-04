@@ -610,6 +610,16 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "deleted",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "minUpdated",
                   "type": {
                     "kind": "SCALAR",
@@ -685,6 +695,18 @@
               "type": {
                 "kind": "OBJECT",
                 "name": "ContentConnection",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "markForDestruction",
+              "type": {
+                "kind": "SCALAR",
+                "name": "DateTime",
                 "ofType": null
               }
             },
@@ -960,6 +982,18 @@
                   "name": "UUID",
                   "ofType": null
                 }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "",
+              "isDeprecated": false,
+              "name": "markForDestruction",
+              "type": {
+                "kind": "SCALAR",
+                "name": "DateTime",
+                "ofType": null
               }
             },
             {
@@ -1718,6 +1752,16 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "deleted",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "minUpdated",
                   "type": {
                     "kind": "SCALAR",
@@ -1858,6 +1902,16 @@
                   "defaultValue": null,
                   "description": null,
                   "name": "public",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
+                  "name": "deleted",
                   "type": {
                     "kind": "SCALAR",
                     "name": "Boolean",

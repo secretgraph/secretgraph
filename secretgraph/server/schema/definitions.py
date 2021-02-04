@@ -216,7 +216,13 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Content
         name = "Content"
         interfaces = (relay.Node,)
-        fields = ["nonce", "updated", "contentHash", "updateId"]
+        fields = [
+            "nonce",
+            "updated",
+            "contentHash",
+            "updateId",
+            "markForDestruction",
+        ]
 
     cluster = graphene.Field(lambda: ClusterNode)
     references = ContentReferenceConnectionField()
@@ -349,6 +355,7 @@ class ContentConnectionField(DjangoConnectionField):
             "contentHashes", graphene.List(graphene.String, required=False)
         )
         kwargs.setdefault("public", graphene.Boolean(required=False))
+        kwargs.setdefault("deleted", graphene.Boolean(required=False))
         kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
         kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
         super().__init__(type, *args, **kwargs)
@@ -357,6 +364,7 @@ class ContentConnectionField(DjangoConnectionField):
     def resolve_queryset(cls, connection, queryset, info, args):
         public = args.get("public")
         clusters = args.get("clusters")
+        deleted = args.get("deleted")
         if clusters:
             queryset = fetch_by_id(
                 queryset,
@@ -365,6 +373,7 @@ class ContentConnectionField(DjangoConnectionField):
                 type_name="Cluster",
                 limit_ids=10,
             )
+        queryset = queryset.filter(markForDestruction__isnull=not deleted)
         if public in {True, False}:
             if public:
                 queryset = queryset.filter(tags__tag="state=public")
@@ -396,6 +405,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         fields = ["group"]
 
     contents = ContentConnectionField()
+    markForDestruction = graphene.DateTime(required=False)
     updated = graphene.DateTime(required=False)
     updateId = graphene.UUID(required=False)
     user = relay.GlobalID(required=False)
@@ -430,6 +440,11 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
             excludeTags=kwargs.get("tagsExclude"),
             contentHashes=kwargs.get("contentHashes"),
         )
+
+    def resolve_markForDestruction(self, info, **kwargs):
+        if self.limited:
+            return None
+        return self.markForDestruction
 
     def resolve_updated(self, info, **kwargs):
         if self.limited:
@@ -478,6 +493,7 @@ class ClusterConnectionField(DjangoConnectionField):
         kwargs.setdefault("user", graphene.ID(required=False))
         kwargs.setdefault("public", graphene.Boolean(required=False))
         kwargs.setdefault("featured", graphene.Boolean(required=False))
+        kwargs.setdefault("deleted", graphene.Boolean(required=False))
         kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
         kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
         super().__init__(type, *args, **kwargs)
@@ -487,6 +503,7 @@ class ClusterConnectionField(DjangoConnectionField):
         public = args.get("public")
         featured = args.get("featured", False)
         user = args.get("user")
+        deleted = args.get("deleted")
         if featured and public is None:
             public = True
         if user:
@@ -501,6 +518,7 @@ class ClusterConnectionField(DjangoConnectionField):
                 except Exception:
                     pass
                 queryset = queryset.filter(user__pk=user)
+        queryset = queryset.filter(markForDestruction__isnull=not deleted)
         if public in {True, False}:
             queryset = queryset.filter(public=public)
 

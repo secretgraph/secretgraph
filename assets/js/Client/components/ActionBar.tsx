@@ -15,10 +15,13 @@ import Button from '@material-ui/core/Button'
 import DialogContent from '@material-ui/core/DialogContent'
 import Link from '@material-ui/core/Link'
 import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined'
+import { useApolloClient } from '@apollo/client'
 import { elements } from '../editors'
 import { contentStates } from '../constants'
-import { MainContext } from '../contexts'
+import { MainContext, InitializedConfigContext } from '../contexts'
 import { useStylesAndTheme } from '../theme'
+import { deleteNode } from '../utils/operations'
+import { extractAuthInfo } from '../utils/config'
 
 type Props = {}
 
@@ -40,6 +43,8 @@ function ActionBar(props: Props) {
     const { classes, theme } = useStylesAndTheme()
     const [shareOpen, setShareOpen] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const { config } = React.useContext(InitializedConfigContext)
+    const client = useApolloClient()
 
     return (
         <nav className={classes.actionToolBarOuter}>
@@ -121,7 +126,18 @@ function ActionBar(props: Props) {
                     <IconButton
                         className={classes.actionToolBarButton}
                         aria-label={'Delete'}
-                        onClick={async () => {}}
+                        onClick={async () => {
+                            const authkeys = extractAuthInfo({
+                                config,
+                                url: mainCtx.url as string,
+                                require: new Set(['delete', 'manage']),
+                            }).keys
+                            await deleteNode({
+                                client,
+                                id: mainCtx.item as string,
+                                authorization: authkeys,
+                            })
+                        }}
                     >
                         <DeleteIcon />
                     </IconButton>
