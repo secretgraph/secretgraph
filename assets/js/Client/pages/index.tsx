@@ -55,6 +55,7 @@ function MainPage(props: Props) {
             ? query.get('type')
             : elements.keys().next().value,
         shareUrl: null,
+        deleted: null,
     }) as [
         MainContextInterface,
         (update: Partial<MainContextInterface>) => void

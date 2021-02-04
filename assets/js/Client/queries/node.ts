@@ -5,14 +5,7 @@ export const deleteNode = gql`
         deleteContentOrCluster(
             input: { id: $id, authorization: $authorization }
         ) {
-            node {
-                ... on Content {
-                    id
-                }
-                ... on Cluster {
-                    id
-                }
-            }
+            id
         }
     }
 `
@@ -21,14 +14,7 @@ export const resetDeletionNode = gql`
         resetDeletionContentOrCluster(
             input: { id: $id, authorization: $authorization }
         ) {
-            node {
-                ... on Content {
-                    id
-                }
-                ... on Cluster {
-                    id
-                }
-            }
+            id
         }
     }
 `

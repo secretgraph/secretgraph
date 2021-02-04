@@ -75,7 +75,7 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         id = graphene.ID(required=True)
         authorization = AuthList()
 
-    node = graphene.Field(FlexidType)
+    id = graphene.ID()
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, id, authorization=None):
@@ -96,7 +96,7 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         obj = result["objects"].first()
         if not obj:
             raise ValueError("Object does not exist")
-        ret = cls(node=obj)
+        ret = cls(id=obj.id)
         if isinstance(obj, Content):
             if (
                 not obj.markForDestruction
@@ -115,7 +115,6 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
                 if not obj.markForDestruction or obj.markForDestruction > now:
                     obj.markForDestruction = now
                     obj.save(update_fields=["markForDestruction"])
-        initializeCachedResult(info.context, authset=authorization)
         return ret
 
 
@@ -124,7 +123,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
         id = graphene.ID(required=True)
         authorization = AuthList()
 
-    node = graphene.Field(FlexidType)
+    id = graphene.ID()
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, id, authorization=None):
@@ -155,8 +154,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
             )
             obj.markForDestruction = None
             obj.save(update_fields=["markForDestruction"])
-        initializeCachedResult(info.context, authset=authorization)
-        return cls(node=obj)
+        return cls(id=obj.id)
 
 
 class ClusterMutation(relay.ClientIDMutation):

@@ -703,7 +703,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "markForDestruction",
+              "name": "deleted",
               "type": {
                 "kind": "SCALAR",
                 "name": "DateTime",
@@ -989,18 +989,6 @@
               "deprecationReason": null,
               "description": "",
               "isDeprecated": false,
-              "name": "markForDestruction",
-              "type": {
-                "kind": "SCALAR",
-                "name": "DateTime",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "",
-              "isDeprecated": false,
               "name": "nonce",
               "type": {
                 "kind": "NON_NULL",
@@ -1054,6 +1042,18 @@
                   "name": "ActionEntry",
                   "ofType": null
                 }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "deleted",
+              "type": {
+                "kind": "SCALAR",
+                "name": "DateTime",
+                "ofType": null
               }
             },
             {
@@ -3639,10 +3639,10 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "node",
+              "name": "id",
               "type": {
-                "kind": "UNION",
-                "name": "FlexidType",
+                "kind": "SCALAR",
+                "name": "ID",
                 "ofType": null
               }
             },
@@ -3723,10 +3723,10 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "node",
+              "name": "id",
               "type": {
-                "kind": "UNION",
-                "name": "FlexidType",
+                "kind": "SCALAR",
+                "name": "ID",
                 "ofType": null
               }
             },

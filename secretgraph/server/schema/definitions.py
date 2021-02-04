@@ -221,9 +221,9 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             "updated",
             "contentHash",
             "updateId",
-            "markForDestruction",
         ]
 
+    deleted = graphene.DateTime(required=False)
     cluster = graphene.Field(lambda: ClusterNode)
     references = ContentReferenceConnectionField()
     referencedBy = ContentReferenceConnectionField()
@@ -246,6 +246,11 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return fetch_contents(
             result["objects"], result["actions"], str(id)
         ).first()
+
+    def resolve_deleted(self, info, **kwargs):
+        # if self.limited:
+        #    return None
+        return self.markForDestruction
 
     def resolve_references(
         self, info, authorization=None, groups=None, **kwargs
@@ -405,7 +410,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         fields = ["group"]
 
     contents = ContentConnectionField()
-    markForDestruction = graphene.DateTime(required=False)
+    deleted = graphene.DateTime(required=False)
     updated = graphene.DateTime(required=False)
     updateId = graphene.UUID(required=False)
     user = relay.GlobalID(required=False)
@@ -441,7 +446,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
             contentHashes=kwargs.get("contentHashes"),
         )
 
-    def resolve_markForDestruction(self, info, **kwargs):
+    def resolve_deleted(self, info, **kwargs):
         if self.limited:
             return None
         return self.markForDestruction

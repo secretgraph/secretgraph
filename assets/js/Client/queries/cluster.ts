@@ -74,6 +74,7 @@ export const getClusterQuery = gql`
             node(id: $id) {
                 ... on Cluster {
                     id
+                    deleted
                     group
                     link
                     publicInfo

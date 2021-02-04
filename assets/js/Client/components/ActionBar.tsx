@@ -152,6 +152,7 @@ function ActionBar(props: Props) {
                                     title: null,
                                     item: null,
                                     shareUrl: null,
+                                    deleted: null,
                                     type: event.target.value,
                                 })
                             }}
@@ -171,6 +172,7 @@ function ActionBar(props: Props) {
                                     title: null,
                                     item: null,
                                     shareUrl: null,
+                                    deleted: null,
                                     type: mainCtx.type,
                                 })
                             }}

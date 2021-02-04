@@ -79,6 +79,7 @@ export const contentRetrievalQuery = gql`
             node(id: $id) {
                 ... on Content {
                     id
+                    deleted
                     nonce
                     link
                     updateId

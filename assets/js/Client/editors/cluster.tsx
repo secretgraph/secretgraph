@@ -458,15 +458,21 @@ const ViewCluster = () => {
         keys: authinfo.keys,
         item: mainCtx.item,
     })
+    React.useEffect(() => {
+        if (!data) {
+            return
+        }
+        updateMainCtx({
+            shareUrl: data?.data.secretgraph.node.link,
+            deleted: data?.data.secretgraph.node.deleted,
+        })
+    }, [data])
     if (!data) {
         return null
     }
     if (!(data as any).data.secretgraph.node) {
         console.error('Node empty', data, authinfo)
         return null
-    }
-    if (!mainCtx.shareUrl) {
-        updateMainCtx({ shareUrl: data?.data.secretgraph.node.link })
     }
 
     return (
