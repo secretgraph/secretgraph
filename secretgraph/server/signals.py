@@ -1,4 +1,3 @@
-
 from itertools import product, islice
 import uuid
 
@@ -9,47 +8,46 @@ from ..constants import DeleteRecursive
 
 
 def deleteContentCb(sender, instance, **kwargs):
-    from ..models import ContentReference
-    references = ContentReference.objects.filter(
-        target=instance
-    )
+    from .models import ContentReference
+
+    references = ContentReference.objects.filter(target=instance)
     other_references = ContentReference.objects.filter(
         ~models.Q(target=instance)
     )
     nogroup_references = references.filter(
-        deleteRecursive=DeleteRecursive.NO_GROUP
+        deleteRecursive=DeleteRecursive.NO_GROUP.value
     )
 
     recursive_references = references.filter(
-        deleteRecursive=DeleteRecursive.TRUE
+        deleteRecursive=DeleteRecursive.TRUE.value
     )
     # delete recursive connected contents
-    sender.objects.filter(
-        references__in=recursive_references
-    ).delete()
+    sender.objects.filter(references__in=recursive_references).delete()
 
     # delete contents if group vanishes and NO_GROUP is set
     delete_ids = []
-    for content_id in sender.objects.filter(
-        models.Q(references__in=nogroup_references)
-    ).annotate(
-        relevant_groups=models.Subquery(
-            nogroup_references.filter(
-                source=models.OuterRef("pk")
-            ).annotate(
-                amount=models.Count("group", distinct=True)
+    # TODO: FIX logic, it is completely broken and underdocumented
+    for content_id in (
+        sender.objects.filter(models.Q(references__in=nogroup_references))
+        .annotate(
+            relevant_groups=models.Subquery(
+                nogroup_references.filter(
+                    source=models.OuterRef("pk")
+                ).annotate(amount=models.Count("group", distinct=True))
             )
         )
-    ).filter(
-        relevant_groups__amount__gt=models.Subquery(
-            other_references.filter(
-                source=models.OuterRef("pk"),
-                group__in=models.OuterRef("relevant_groups.group")
-            ).annotate(
-                amount=models.Count("group", distinct=True)
-            ).values("amount")
+        .filter(
+            relevant_groups__amount__gt=models.Subquery(
+                other_references.filter(
+                    source=models.OuterRef("pk"),
+                    group__in=models.OuterRef("relevant_groups.group"),
+                )
+                .annotate(amount=models.Count("group", distinct=True))
+                .values("amount")
+            )
         )
-    ).values_list("pk", flat=True):
+        .values_list("pk", flat=True)
+    ):
         delete_ids.append(content_id)
     sender.objects.filter(id__in=delete_ids).delete()
 
@@ -61,18 +59,15 @@ def deleteEncryptedFileCb(sender, instance, **kwargs):
 
 def generateFlexid(sender, instance, force=False, **kwargs):
     from .models import Cluster, Content
+
     if not instance.flexid or force:
         for i in range(0, 1000):
             if i >= 999:
-                raise ValueError(
-                    'A possible infinite loop was detected'
-                )
+                raise ValueError("A possible infinite loop was detected")
             instance.flexid = uuid.uuid4()
             try:
                 with transaction.atomic():
-                    instance.save(
-                        update_fields=["flexid"]
-                    )
+                    instance.save(update_fields=["flexid"])
                 break
             except IntegrityError:
                 pass
@@ -93,13 +88,12 @@ def generateFlexid(sender, instance, force=False, **kwargs):
 def regenerateKeyHash(sender, force=False, **kwargs):
     from .utils.misc import hash_object, calculate_hashes
     from .models import Content, ContentTag
-    contents = Content.objects.filter(
-        tags__tag="type=PublicKey"
-    )
+
+    contents = Content.objects.filter(tags__tag="type=PublicKey")
     # calculate for all old hashes
     if not force:
         contents = contents.exclude(
-            contentHash__regex='^.{%d}$' % len(hash_object(b""))
+            contentHash__regex="^.{%d}$" % len(hash_object(b""))
         )
 
     # distinct on contentHash field currently only for postgresql
@@ -113,17 +107,15 @@ def regenerateKeyHash(sender, force=False, **kwargs):
         if add_to == 0:
             continue
 
-        tags = map(lambda x: 'key_hash=%s' % x, chashes)
+        tags = map(lambda x: "key_hash=%s" % x, chashes)
         batch_size = 1000
         final_tags = (
             ContentTag(tag=tag, content=content)
             for (tag, c) in product(
                 tags[:add_to],
-                Content.objects.exclude(
-                    tags__tag=tags[0]
-                ).filter(
+                Content.objects.exclude(tags__tag=tags[0]).filter(
                     models.Q(tags__tag__in=tags[add_to:])
-                )
+                ),
             )
         )
         while True:
@@ -133,13 +125,13 @@ def regenerateKeyHash(sender, force=False, **kwargs):
             # ignore duplicate key_hash entries
             ContentTag.objects.bulk_create(batch, ignore_conflicts=True)
         Content.objects.filter(
-            contentHash__in=chashes[1:],
-            tags__tag="type=PublicKey"
+            contentHash__in=chashes[1:], tags__tag="type=PublicKey"
         ).update(contentHash=chashes[0])
 
 
 def fillEmptyFlexidsCb(sender, **kwargs):
     from .models import Cluster, Content
+
     for c in Cluster.objects.filter(flexid=None):
         generateFlexid(Cluster, c, False)
     for c in Content.objects.filter(flexid=None):

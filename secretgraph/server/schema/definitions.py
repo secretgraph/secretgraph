@@ -523,13 +523,18 @@ class ClusterConnectionField(DjangoConnectionField):
             queryset = queryset.filter(public=public)
 
         return fetch_clusters(
-            queryset.filter(
-                id__in=Subquery(
-                    initializeCachedResult(
-                        info.context, authset=args.get("authorization")
-                    )["Cluster"]["objects"].values("id")
-                )
-            ),
+            # DECIDE: still required?
+            # or better explicit way instead of doing so in cached query?
+            # queryset.filter(
+            #    id__in=Subquery(
+            #        initializeCachedResult(
+            #            info.context, authset=args.get("authorization")
+            #        )["Cluster"]["objects"].values("id")
+            #    )
+            # ),
+            initializeCachedResult(
+                info.context, authset=args.get("authorization")
+            )["Cluster"]["objects"],
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
             minUpdated=args.get("minUpdated"),

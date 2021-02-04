@@ -252,7 +252,10 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     returnval["actions"] = Action.objects.filter(
         id__in=models.Subquery(returnval["actions"].values("id"))
     ).order_by("-start", "-id")
-    returnval["objects"] = query.filter(id__in=query.filter(all_filters))
+    # fixes problems with result["objects"]
+    returnval["objects"] = query.filter(
+        id__in=models.Subquery(query.filter(all_filters).values("id"))
+    )
     return returnval
 
 
