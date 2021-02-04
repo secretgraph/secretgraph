@@ -76,6 +76,7 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         authorization = AuthList()
 
     id = graphene.ID()
+    deleted = graphene.DateTime()
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, id, authorization=None):
@@ -96,13 +97,15 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         obj = result["objects"].first()
         if not obj:
             raise ValueError("Object does not exist")
-        ret = cls(id=obj.id)
+        oid = obj.id
+        markForDestruction = now
         if isinstance(obj, Content):
             if (
                 not obj.markForDestruction
                 or obj.markForDestruction > now_plus_x
             ):
                 obj.markForDestruction = now_plus_x
+                markForDestruction = now_plus_x
                 obj.save(update_fields=["markForDestruction"])
         elif isinstance(obj, Cluster):
             if not obj.contents.exists():
@@ -112,10 +115,11 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
                     Q(markForDestruction__isnull=True)
                     | Q(markForDestruction__gt=now_plus_x)
                 ).update(markForDestruction=now_plus_x)
+                markForDestruction = now_plus_x
                 if not obj.markForDestruction or obj.markForDestruction > now:
                     obj.markForDestruction = now
                     obj.save(update_fields=["markForDestruction"])
-        return ret
+        return cls(id=oid, deleted=markForDestruction)
 
 
 class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
@@ -124,6 +128,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
         authorization = AuthList()
 
     id = graphene.ID()
+    deleted = graphene.DateTime()
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, id, authorization=None):
@@ -154,7 +159,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
             )
             obj.markForDestruction = None
             obj.save(update_fields=["markForDestruction"])
-        return cls(id=obj.id)
+        return cls(id=obj.id, deleted=obj.markForDestruction)
 
 
 class ClusterMutation(relay.ClientIDMutation):

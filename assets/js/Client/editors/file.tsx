@@ -66,7 +66,7 @@ const ViewFile = () => {
         url: mainCtx.url as string,
         id: mainCtx.item as string,
         decrypt: new Set(['mime', 'name']),
-        watch: (mainCtx.url as string) + mainCtx.item,
+        watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
     const mime =
         data && data.tags.mime && data.tags.mime.length > 0
@@ -596,7 +596,7 @@ const EditFile = () => {
         url: mainCtx.url as string,
         id: mainCtx.item as string,
         decrypt: new Set(['mime', 'name']),
-        watch: (mainCtx.url as string) + mainCtx.item,
+        watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
 
     React.useEffect(() => {

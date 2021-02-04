@@ -3651,6 +3651,18 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
+              "name": "deleted",
+              "type": {
+                "kind": "SCALAR",
+                "name": "DateTime",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
               "name": "clientMutationId",
               "type": {
                 "kind": "SCALAR",
@@ -3727,6 +3739,18 @@
               "type": {
                 "kind": "SCALAR",
                 "name": "ID",
+                "ofType": null
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "deleted",
+              "type": {
+                "kind": "SCALAR",
+                "name": "DateTime",
                 "ofType": null
               }
             },

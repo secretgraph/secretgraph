@@ -221,7 +221,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
     const { config, updateConfig } = React.useContext(InitializedConfigContext)
     const { updateMainCtx } = React.useContext(MainContext)
     const [updateId, setUpdateId] = React.useState(props.updateId)
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
         updateMainCtx({ title: props.name || '' })
     }, [props.name])
     return (
@@ -457,6 +457,7 @@ const ViewCluster = () => {
         client: client,
         keys: authinfo.keys,
         item: mainCtx.item,
+        watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
     })
     React.useEffect(() => {
         if (!data) {
@@ -526,7 +527,7 @@ const EditCluster = () => {
         client: client,
         keys: authinfo.keys,
         item: mainCtx.item,
-        watch: (mainCtx.url as string) + mainCtx.item,
+        watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
     })
     if (!data && !error) {
         return null

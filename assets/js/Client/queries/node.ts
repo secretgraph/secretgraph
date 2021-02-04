@@ -6,6 +6,7 @@ export const deleteNode = gql`
             input: { id: $id, authorization: $authorization }
         ) {
             id
+            deleted
         }
     }
 `
@@ -15,6 +16,7 @@ export const resetDeletionNode = gql`
             input: { id: $id, authorization: $authorization }
         ) {
             id
+            deleted
         }
     }
 `
