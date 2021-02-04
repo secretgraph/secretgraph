@@ -15,7 +15,7 @@ def deleteContentCb(sender, instance, **kwargs):
         ~models.Q(target=instance)
     )
     nogroup_references = references.filter(
-        deleteRecursive=DeleteRecursive.NO_GROUP.value
+        deleteRecursive=DeleteRecursive.NO_GROUP.value,
     )
 
     recursive_references = references.filter(
@@ -24,31 +24,28 @@ def deleteContentCb(sender, instance, **kwargs):
     # delete recursive connected contents
     sender.objects.filter(references__in=recursive_references).delete()
 
+    nogroup_groups = set(nogroup_references.values_list("group", flat=True))
+
     # delete contents if group vanishes and NO_GROUP is set
-    delete_ids = []
-    # TODO: FIX logic, it is completely broken and underdocumented
-    for content_id in (
+    delete_ids = models.Subquery(
         sender.objects.filter(models.Q(references__in=nogroup_references))
         .annotate(
-            relevant_groups=models.Subquery(
-                nogroup_references.filter(
-                    source=models.OuterRef("pk")
-                ).annotate(amount=models.Count("group", distinct=True))
-            )
-        )
-        .filter(
-            relevant_groups__amount__gt=models.Subquery(
-                other_references.filter(
+            all_groups=models.Subquery(
+                ContentReference.objects.filter(
+                    group__in=nogroup_groups,
                     source=models.OuterRef("pk"),
-                    group__in=models.OuterRef("relevant_groups.group"),
-                )
-                .annotate(amount=models.Count("group", distinct=True))
-                .values("amount")
-            )
+                ).annotate(amount=models.Count("group", distinct=True))
+            ),
+            remaining_groups=models.Subquery(
+                other_references.filter(
+                    group__in=nogroup_groups,
+                    source=models.OuterRef("pk"),
+                ).annotate(amount=models.Count("group", distinct=True))
+            ),
         )
-        .values_list("pk", flat=True)
-    ):
-        delete_ids.append(content_id)
+        .filter(remaining_groups__lt=models.F("all_groups"))
+        .values("pk")
+    )
     sender.objects.filter(id__in=delete_ids).delete()
 
 
