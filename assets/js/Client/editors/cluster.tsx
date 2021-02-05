@@ -463,10 +463,18 @@ const ViewCluster = () => {
         if (!data) {
             return
         }
-        updateMainCtx({
+        const updateOb = {
             shareUrl: data?.data.secretgraph.node.link,
             deleted: data?.data.secretgraph.node.deleted,
-        })
+        }
+        if (
+            data?.data.secretgraph.node.id == config.configCluster &&
+            mainCtx.url == config.baseUrl &&
+            !updateOb.deleted
+        ) {
+            updateOb.deleted = false
+        }
+        updateMainCtx(updateOb)
     }, [data])
     if (!data) {
         return null
@@ -529,6 +537,25 @@ const EditCluster = () => {
         item: mainCtx.item,
         watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
     })
+
+    React.useEffect(() => {
+        if (!data) {
+            return
+        }
+        const updateOb = {
+            shareUrl: data?.data.secretgraph.node.link,
+            deleted: data?.data.secretgraph.node.deleted,
+        }
+        if (
+            data?.data.secretgraph.node.id == config.configCluster &&
+            mainCtx.url == config.baseUrl &&
+            !updateOb.deleted
+        ) {
+            updateOb.deleted = false
+        }
+        updateMainCtx(updateOb)
+    }, [data])
+
     if (!data && !error) {
         return null
     }

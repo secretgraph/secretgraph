@@ -120,49 +120,64 @@ function ActionBar(props: Props) {
                     </IconButton>
                 </Tooltip>
                 <Tooltip
-                    title={mainCtx.deleted ? 'Restore' : 'Delete'}
+                    title={
+                        mainCtx.deleted
+                            ? 'Restore'
+                            : mainCtx.deleted === false
+                            ? 'Deletion not possible, config cluster'
+                            : 'Delete'
+                    }
                     arrow
-                    className={mainCtx.item ? null : classes.hidden}
+                    className={!mainCtx.item ? classes.hidden : null}
                 >
-                    <IconButton
-                        className={classes.actionToolBarButton}
-                        aria-label={mainCtx.deleted ? 'Restore' : 'Delete'}
-                        onClick={async () => {
-                            const authkeys = extractAuthInfo({
-                                config,
-                                url: mainCtx.url as string,
-                                require: new Set(['delete', 'manage']),
-                            }).keys
-                            if (mainCtx.deleted) {
-                                const { data } = await resetDeletionNode({
-                                    client,
-                                    id: mainCtx.item as string,
-                                    authorization: authkeys,
-                                })
-                                updateMainCtx({
-                                    deleted:
-                                        data.resetDeletionContentOrCluster
-                                            .deleted,
-                                })
-                            } else {
-                                const { data } = await deleteNode({
-                                    client,
-                                    id: mainCtx.item as string,
-                                    authorization: authkeys,
-                                })
-                                updateMainCtx({
-                                    deleted:
-                                        data.deleteContentOrCluster.deleted,
-                                })
+                    <span>
+                        <IconButton
+                            disabled={mainCtx.deleted === false}
+                            className={classes.actionToolBarButton}
+                            aria-label={
+                                mainCtx.deleted
+                                    ? 'Restore'
+                                    : mainCtx.deleted === false
+                                    ? 'Deletion not possible, config cluster'
+                                    : 'Delete'
                             }
-                        }}
-                    >
-                        {mainCtx.deleted ? (
-                            <RestoreFromTrashIcon />
-                        ) : (
-                            <DeleteIcon />
-                        )}
-                    </IconButton>
+                            onClick={async () => {
+                                const authkeys = extractAuthInfo({
+                                    config,
+                                    url: mainCtx.url as string,
+                                    require: new Set(['delete', 'manage']),
+                                }).keys
+                                if (mainCtx.deleted) {
+                                    const { data } = await resetDeletionNode({
+                                        client,
+                                        id: mainCtx.item as string,
+                                        authorization: authkeys,
+                                    })
+                                    updateMainCtx({
+                                        deleted:
+                                            data.resetDeletionContentOrCluster
+                                                .deleted,
+                                    })
+                                } else {
+                                    const { data } = await deleteNode({
+                                        client,
+                                        id: mainCtx.item as string,
+                                        authorization: authkeys,
+                                    })
+                                    updateMainCtx({
+                                        deleted:
+                                            data.deleteContentOrCluster.deleted,
+                                    })
+                                }
+                            }}
+                        >
+                            {mainCtx.deleted ? (
+                                <RestoreFromTrashIcon />
+                            ) : (
+                                <DeleteIcon />
+                            )}
+                        </IconButton>
+                    </span>
                 </Tooltip>
                 <Tooltip title="Add Element" arrow>
                     <span>

@@ -34,7 +34,7 @@ export default function Clusters(appProps: SideBarItemsProps) {
     } = appProps
     const { activeUrl } = React.useContext(ActiveUrlContext)
 
-    let { data, fetchMore, loading } = useQuery(clusterFeedQuery, {
+    let { data, fetchMore, error, loading } = useQuery(clusterFeedQuery, {
         variables: {
             authorization: authinfo.keys,
         },
@@ -151,7 +151,9 @@ export default function Clusters(appProps: SideBarItemsProps) {
                 button
                 key={`${activeUrl}:cluster:loadmore`}
                 disabled={
-                    loading || !data.clusters.clusters.pageInfo.hasNextPage
+                    loading ||
+                    !!error ||
+                    !data.clusters.clusters.pageInfo.hasNextPage
                 }
                 onClick={() => {
                     _loadMore()

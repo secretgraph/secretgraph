@@ -133,11 +133,11 @@ export async function createContent({
             halgo
         )
     )
-    const s = new Set<string>()
+    const encrypt = new Set<string>(options.encryptTags)
     const tags = await Promise.all(
         ((await tagsPromise) as (string | PromiseLike<string>)[])
             .concat([...options.tags])
-            .map((data) => encryptTag({ data, key, encrypt: s }))
+            .map((data) => encryptTag({ data, key, encrypt }))
     )
     return await client.mutate({
         mutation: createContentMutation,
@@ -227,8 +227,7 @@ export async function updateContent({
     } else {
         references = options.references ? options.references : null
     }
-    // TODO: Fix dropped tags
-    const params = {
+    return await client.mutate({
         mutation: updateContentMutation,
         variables: {
             id,
@@ -256,8 +255,7 @@ export async function updateContent({
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],
         },
-    }
-    return await client.mutate(params)
+    })
 }
 
 export async function createCluster(options: {

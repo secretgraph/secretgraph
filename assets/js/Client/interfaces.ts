@@ -114,7 +114,7 @@ export interface MainContextInterface {
     url: null | string
     type: null | string
     shareUrl: null | string
-    deleted: Date | null
+    deleted: Date | null | false
     // editable
 }
 

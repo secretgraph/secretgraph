@@ -525,7 +525,7 @@ export async function derivePW(
     }
 }
 
-// use tag="" for no prefix (key=...)
+// use tag="" for flags
 export async function encryptTag(
     options: CryptoGCMInInterface & {
         readonly tag?: string | PromiseLike<string>
@@ -543,6 +543,9 @@ export async function encryptTag(
         ) as string[]
         tag = splitted[1]
         data = splitted[2]
+    }
+    if (!data) {
+        throw Error('missing data')
     }
 
     if (!options.encrypt || options.encrypt.has(tag)) {
@@ -571,10 +574,11 @@ export async function encryptTag(
             )
         )*/
     }
-    if (tag) {
-        return `${tag}=${data as string}`
+    if (!tag) {
+        // for flags
+        return data as string
     }
-    return data as string
+    return `${tag}=${data as string}`
 }
 
 export async function decryptTagRaw(options: CryptoGCMInInterface) {
