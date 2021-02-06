@@ -136,8 +136,8 @@ const ViewFile = () => {
     //
     const { data } = useAsync({
         promiseFn: decryptContentId,
-        suspense: true,
         onReject: console.error,
+        suspense: true,
         client: client,
         config: config as ConfigInterface,
         url: mainCtx.url as string,
@@ -355,7 +355,6 @@ const AddFile = () => {
                         />
                     )
                 }
-                console.log(preview)
                 return (
                     <Form>
                         <Grid container spacing={2}>

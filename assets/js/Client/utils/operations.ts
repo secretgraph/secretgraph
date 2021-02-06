@@ -427,7 +427,7 @@ export async function initializeCluster(
 }
 
 interface decryptContentObjectInterface
-    extends Omit<Omit<CryptoGCMOutInterface, 'nonce'>, 'key'> {
+    extends Omit<CryptoGCMOutInterface, 'nonce' | 'key'> {
     tags: { [tag: string]: string[] }
     updateId: string
     nodeData: any
@@ -436,20 +436,20 @@ interface decryptContentObjectInterface
 export async function decryptContentObject({
     config: _config,
     nodeData,
-    blobOrAuthinfo,
+    blobOrTokens,
     decrypt = new Set(),
 }: {
     config: ConfigInterface | PromiseLike<ConfigInterface>
     nodeData: any | PromiseLike<any>
-    blobOrAuthinfo:
+    blobOrTokens:
         | Blob
         | string
-        | AuthInfoInterface
-        | PromiseLike<Blob | string | AuthInfoInterface>
+        | string[]
+        | PromiseLike<Blob | string | string[]>
     decrypt?: Set<string>
 }): Promise<decryptContentObjectInterface | null> {
     let arrPromise: PromiseLike<ArrayBufferLike>
-    const _info = await blobOrAuthinfo
+    const _info = await blobOrTokens
     const _node = await nodeData
     const config = await _config
     if (!_node) {
@@ -463,7 +463,7 @@ export async function decryptContentObject({
     } else {
         arrPromise = fetch(_node.link, {
             headers: {
-                Authorization: _info.keys.join(','),
+                Authorization: _info.join(','),
             },
         }).then((result) => result.arrayBuffer())
     }
@@ -551,7 +551,7 @@ export async function decryptContentId({
     return await decryptContentObject({
         config: _config,
         nodeData: result.data.secretgraph.node,
-        blobOrAuthinfo: authinfo,
+        blobOrTokens: authinfo.keys,
         decrypt,
     })
 }

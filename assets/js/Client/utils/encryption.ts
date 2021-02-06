@@ -606,6 +606,26 @@ export async function decryptTag(
     }
 }
 
+export async function extractUnencryptedTags(options: {
+    readonly tags:
+        | PromiseLike<Iterable<string | PromiseLike<string>>>
+        | Iterable<string | PromiseLike<string>>
+}): Promise<{ [tag: string]: string[] }> {
+    const tags: { [tag: string]: string[] } = {}
+    await Promise.all(
+        IterableOps.map(await options.tags, async (tag_val) => {
+            const [_, tag, data] = (await tag_val).match(
+                /(^[^=]+?)=(.*)/
+            ) as string[]
+            if (!tags[tag]) {
+                tags[tag] = []
+            }
+            tags[tag].push(data)
+        })
+    )
+    return tags
+}
+
 export async function extractTags(
     options: Omit<CryptoGCMInInterface, 'data'> & {
         readonly tags:

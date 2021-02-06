@@ -67,6 +67,58 @@ export const updateContentMutation = gql`
         }
     }
 `
+export const findPublicKeyQuery = gql`
+    query contentFindPublicKeyQuery($id: ID!, $authorization: [String!]) {
+        secretgraph(authorization: $authorization) {
+            node(id: $id) {
+                ... on Content {
+                    references(groups: ["public_key"]) {
+                        edges {
+                            node {
+                                id
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
+export const keysRetrievalQuery = gql`
+    query contentKeyRetrievalQuery($id: ID!, $authorization: [String!]) {
+        secretgraph(authorization: $authorization) {
+            node(id: $id) {
+                ... on Content {
+                    id
+                    deleted
+                    link
+                    updateId
+                    tags
+                    cluster {
+                        id
+                        publicInfo
+                    }
+                    referencedBy(groups: ["public_key"]) {
+                        edges {
+                            node {
+                                extra
+                                target {
+                                    id
+                                    deleted
+                                    link
+                                    nonce
+                                    updateId
+                                    tags
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
 
 export const contentRetrievalQuery = gql`
     query contentRetrievalQuery(
