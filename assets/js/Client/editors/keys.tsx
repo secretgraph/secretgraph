@@ -8,7 +8,8 @@ import Grid from '@material-ui/core/Grid'
 import { saveAs } from 'file-saver'
 import { useQuery, useApolloClient, ApolloClient } from '@apollo/client'
 
-import { ConfigInterface } from '../interfaces'
+import { ConfigInterface, MainContextInterface } from '../interfaces'
+import * as Constants from '../constants'
 import { MainContext, InitializedConfigContext } from '../contexts'
 import { decryptContentId, decryptContentObject } from '../utils/operations'
 import { extractTags, extractUnencryptedTags } from '../utils/encryption'
@@ -100,24 +101,74 @@ async function loadKeys({
 
 const ViewKeys = (props: Props) => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx } = React.useContext(MainContext)
     const client = useApolloClient()
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config } = React.useContext(InitializedConfigContext)
-    const { data, isLoading } = useAsync({
+    const { data, isLoading, promise } = useAsync({
         promiseFn: loadKeys,
-        suspense: true,
         onReject: console.error,
+        onResolve: ({ publicKey, privateKey }) => {
+            if (!data) {
+                return
+            }
+            const updateOb: Partial<MainContextInterface> = {
+                deleted: publicKey.nodeData.deleted,
+            }
+            if (publicKey.tags.key_hash && publicKey.tags.key_hash.length > 0) {
+                updateOb['title'] = publicKey.tags.key_hash[0]
+            }
+            if (
+                publicKey.tags.state &&
+                publicKey.tags.state.length > 0 &&
+                Constants.contentStates.has(publicKey.tags.state[0])
+            ) {
+                updateOb['state'] = publicKey.tags.state[0] as any
+            }
+            updateMainCtx(updateOb)
+        },
+        suspense: true,
         id: mainCtx.item as string,
         config,
         client,
         url: mainCtx.url as string,
+        watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
+    if (isLoading) {
+        throw promise
+    }
+    if (!data) {
+        return null
+    }
 
     return (
         <Grid container spacing={2}>
             <Grid item xs={12}>
-                <Typography variant="h5">Keywords</Typography>
-                <Typography variant="body2"></Typography>
+                <Typography variant="h5">Key hashes</Typography>
+                <Typography variant="body2">
+                    {data.publicKey.tags.key_hash.join(', ')}
+                </Typography>
+            </Grid>
+            <Grid item xs={12}>
+                <Typography variant="h5">Public Key</Typography>
+                <Typography variant="body2">
+                    {btoa(
+                        String.fromCharCode(
+                            ...new Uint8Array(data.publicKey.data)
+                        )
+                    )}
+                </Typography>
+            </Grid>
+            <Grid item xs={12}>
+                <Typography variant="h5">Private Key</Typography>
+                <Typography variant="body2">
+                    {data.privateKey
+                        ? btoa(
+                              String.fromCharCode(
+                                  ...new Uint8Array(data.privateKey.data)
+                              )
+                          )
+                        : '-'}
+                </Typography>
             </Grid>
         </Grid>
     )
@@ -136,6 +187,9 @@ const EditKeys = (props: Props) => {
         client,
         url: mainCtx.url as string,
     })
+    if (!data || isLoading) {
+        return null
+    }
 
     return <></>
 }
@@ -185,7 +239,7 @@ export default function KeyComponent(props: Props) {
         config,
         url: mainCtx.url as string,
     })
-    useAsync({
+    const { isLoading, promise } = useAsync({
         promiseFn: findOrReturn,
         onReject: console.error,
         onResolve: (data) => {
@@ -201,6 +255,9 @@ export default function KeyComponent(props: Props) {
         authorization,
         suspense: true,
     })
+    if (isLoading) {
+        throw promise
+    }
     if (mainCtx.type == 'PrivateKey') {
         return null
     }

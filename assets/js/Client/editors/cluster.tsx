@@ -450,33 +450,30 @@ const ViewCluster = () => {
         url: mainCtx.url as string,
         require: new Set(['view', 'manage']),
     })
-    const { data } = useAsync({
+    const { data, isLoading, promise } = useAsync({
         promiseFn: item_retrieval_helper,
-        suspense: true,
         onReject: console.error,
+        onResolve: (data) => {
+            const updateOb = {
+                shareUrl: data?.data.secretgraph.node.link,
+                deleted: data?.data.secretgraph.node.deleted,
+            }
+            if (
+                data?.data.secretgraph.node.id == config.configCluster &&
+                mainCtx.url == config.baseUrl &&
+                !updateOb.deleted
+            ) {
+                updateOb.deleted = false
+            }
+            updateMainCtx(updateOb)
+        },
+        suspense: true,
         client: client,
         keys: authinfo.keys,
         item: mainCtx.item,
         watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
     })
-    React.useEffect(() => {
-        if (!data) {
-            return
-        }
-        const updateOb = {
-            shareUrl: data?.data.secretgraph.node.link,
-            deleted: data?.data.secretgraph.node.deleted,
-        }
-        if (
-            data?.data.secretgraph.node.id == config.configCluster &&
-            mainCtx.url == config.baseUrl &&
-            !updateOb.deleted
-        ) {
-            updateOb.deleted = false
-        }
-        updateMainCtx(updateOb)
-    }, [data])
-    if (!data) {
+    if (isLoading) {
         return null
     }
     if (!(data as any).data.secretgraph.node) {
@@ -529,38 +526,37 @@ const EditCluster = () => {
         url: mainCtx.url as string,
         require: new Set(['manage']),
     })
-    const { data, error } = useAsync({
+    const { data, isLoading, promise } = useAsync({
         promiseFn: item_retrieval_helper,
-        suspense: true,
+        onReject: console.error,
+        onResolve: (data) => {
+            if (!data) {
+                return
+            }
+            const updateOb = {
+                shareUrl: data?.data.secretgraph.node.link,
+                deleted: data?.data.secretgraph.node.deleted,
+            }
+            if (
+                data?.data.secretgraph.node.id == config.configCluster &&
+                mainCtx.url == config.baseUrl &&
+                !updateOb.deleted
+            ) {
+                updateOb.deleted = false
+            }
+            updateMainCtx(updateOb)
+        },
         client: client,
         keys: authinfo.keys,
         item: mainCtx.item,
         watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
+        suspense: true,
     })
 
-    React.useEffect(() => {
-        if (!data) {
-            return
-        }
-        const updateOb = {
-            shareUrl: data?.data.secretgraph.node.link,
-            deleted: data?.data.secretgraph.node.deleted,
-        }
-        if (
-            data?.data.secretgraph.node.id == config.configCluster &&
-            mainCtx.url == config.baseUrl &&
-            !updateOb.deleted
-        ) {
-            updateOb.deleted = false
-        }
-        updateMainCtx(updateOb)
-    }, [data])
-
-    if (!data && !error) {
+    if (isLoading) {
         return null
     }
-    if (!data && error) {
-        console.error(data, error)
+    if (!data) {
         return (
             <ClusterIntern
                 name=""
@@ -571,9 +567,6 @@ const EditCluster = () => {
                 keys={authinfo.keys}
             />
         )
-    }
-    if (!mainCtx.shareUrl) {
-        updateMainCtx({ shareUrl: (data as any).data.secretgraph.node.link })
     }
     if (!data?.data?.secretgraph?.node) {
         return (

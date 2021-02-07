@@ -61,6 +61,7 @@ const ViewWidget = ({
     const [blobUrl, setBlobUrl] = React.useState<string | undefined>(undefined)
     const { data: arrBuff } = useAsync({
         promise: arrayBuffer,
+        onReject: console.error,
     })
     React.useEffect(() => {
         if (!arrBuff) {
@@ -134,9 +135,28 @@ const ViewFile = () => {
     const client = useApolloClient()
 
     //
-    const { data } = useAsync({
+    const { data, isLoading } = useAsync({
         promiseFn: decryptContentId,
         onReject: console.error,
+        onResolve: (data) => {
+            if (!data) {
+                return
+            }
+            const updateOb: Partial<MainContextInterface> = {
+                deleted: data.nodeData.deleted,
+            }
+            if (data.tags.name && data.tags.name.length > 0) {
+                updateOb['title'] = data.tags.name[0]
+            }
+            if (
+                data.tags.state &&
+                data.tags.state.length > 0 &&
+                Constants.contentStates.has(data.tags.state[0])
+            ) {
+                updateOb['state'] = data.tags.state[0] as any
+            }
+            updateMainCtx(updateOb)
+        },
         suspense: true,
         client: client,
         config: config as ConfigInterface,
@@ -149,25 +169,9 @@ const ViewFile = () => {
         data && data.tags.mime && data.tags.mime.length > 0
             ? data.tags.mime[0]
             : 'application/octet-stream'
-    React.useEffect(() => {
-        if (!data) {
-            return
-        }
-        const updateOb: Partial<MainContextInterface> = {
-            deleted: data.nodeData.deleted,
-        }
-        if (data.tags.name && data.tags.name.length > 0) {
-            updateOb['title'] = data.tags.name[0]
-        }
-        if (
-            data.tags.state &&
-            data.tags.state.length > 0 &&
-            Constants.contentStates.has(data.tags.state[0])
-        ) {
-            updateOb['state'] = data.tags.state[0] as any
-        }
-        updateMainCtx(updateOb)
-    }, [data])
+    if (isLoading) {
+        return null
+    }
     if (!data) {
         return null
     }
@@ -651,6 +655,25 @@ const EditFile = () => {
     const { data, reload } = useAsync({
         promiseFn: decryptContentId,
         onReject: console.error,
+        onResolve: (data) => {
+            if (!data) {
+                return
+            }
+            const updateOb: Partial<MainContextInterface> = {
+                deleted: data.nodeData.deleted,
+            }
+            if (data.tags.name && data.tags.name.length > 0) {
+                updateOb['title'] = data.tags.name[0]
+            }
+            if (
+                data.tags.state &&
+                data.tags.state.length > 0 &&
+                Constants.contentStates.has(data.tags.state[0])
+            ) {
+                updateOb['state'] = data.tags.state[0] as any
+            }
+            updateMainCtx(updateOb)
+        },
         suspense: true,
         client: client,
         config: config as ConfigInterface,
@@ -659,29 +682,6 @@ const EditFile = () => {
         decrypt: new Set(['mime', 'name']),
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
-
-    React.useEffect(() => {
-        if (!data) {
-            return
-        }
-        const updateOb: Partial<MainContextInterface> = {
-            deleted: data.nodeData.deleted,
-        }
-        if (data.tags.name && data.tags.name.length > 0) {
-            updateOb['title'] = data.tags.name[0]
-        }
-        if (
-            data.tags.state &&
-            data.tags.state.length > 0 &&
-            Constants.contentStates.has(data.tags.state[0])
-        ) {
-            updateOb['state'] = data.tags.state[0] as any
-        }
-        updateMainCtx(updateOb)
-        /**const _blobUrl = URL.createObjectURL(
-            new Blob([data.data], { type: mime })
-        )*/
-    }, [data])
 
     const mime = React.useMemo(() => {
         if (!data) {
