@@ -104,7 +104,7 @@ const ViewKeys = (props: Props) => {
     const client = useApolloClient()
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config } = React.useContext(InitializedConfigContext)
-    const { data, isLoading, promise } = useAsync({
+    const { data, isLoading } = useAsync({
         promiseFn: loadKeys,
         onReject: console.error,
         onResolve: ({ publicKey, privateKey }) => {
@@ -133,10 +133,7 @@ const ViewKeys = (props: Props) => {
         url: mainCtx.url as string,
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
-    if (isLoading) {
-        throw promise
-    }
-    if (!data) {
+    if (!data || isLoading) {
         return null
     }
 
@@ -201,19 +198,23 @@ const AddKeys = (props: Props) => {
 }
 
 async function findOrReturn({
-    type,
     client,
-    authorization,
+    config,
     id,
+    url,
 }: {
-    type: string
     client: ApolloClient<any>
-    authorization: string[]
-    id: string
+    config: ConfigInterface
+    id: string | null
+    url: string | null
 }) {
-    if (type == 'PublicKey') {
-        return undefined
+    if (!id || !url) {
+        return true
     }
+    const { keys: authorization } = extractAuthInfo({
+        config,
+        url,
+    })
     const { data } = await client.query({
         query: findPublicKeyQuery,
         variables: {
@@ -221,9 +222,13 @@ async function findOrReturn({
             id,
         },
     })
-    let d = data.secretgraph.node
-    if (d) {
-        d = d.references
+    const node = data.secretgraph.node
+    if (node.tags.includes('type=PublicKey')) {
+        return true
+    }
+    let d = null
+    if (node) {
+        d = node.references
     }
     if (d && d.edges.length) {
         return d.edges[0].node.id
@@ -235,30 +240,27 @@ export default function KeyComponent(props: Props) {
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config } = React.useContext(InitializedConfigContext)
     const client = useApolloClient()
-    const { keys: authorization } = extractAuthInfo({
-        config,
-        url: mainCtx.url as string,
-    })
-    const { isLoading, promise } = useAsync({
+    const { data, isLoading } = useAsync({
         promiseFn: findOrReturn,
         onReject: console.error,
         onResolve: (data) => {
-            if (data) {
-                updateMainCtx({ item: data })
-            } else if (data === null) {
-                updateMainCtx({ item: null, action: 'add' })
+            if (data === true) {
+            } else if (data) {
+                updateMainCtx({ item: data, type: 'PublicKey' })
+            } else {
+                updateMainCtx({ item: null, type: 'PublicKey', action: 'add' })
             }
         },
-        client,
-        id: mainCtx.item as string,
-        type: mainCtx.type,
-        authorization,
         suspense: true,
+        client,
+        id: mainCtx.action === 'add' ? null : (mainCtx.item as string | null),
+        config,
+        url: mainCtx.url,
     })
     if (isLoading) {
-        throw promise
+        return null
     }
-    if (mainCtx.type == 'PrivateKey') {
+    if (data !== true) {
         return null
     }
     return (

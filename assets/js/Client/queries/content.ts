@@ -72,6 +72,7 @@ export const findPublicKeyQuery = gql`
         secretgraph(authorization: $authorization) {
             node(id: $id) {
                 ... on Content {
+                    tags(includeTags: ["type="])
                     references(groups: ["public_key"]) {
                         edges {
                             node {
