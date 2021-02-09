@@ -7,6 +7,9 @@ import Grid from '@material-ui/core/Grid'
 
 import { saveAs } from 'file-saver'
 import { useQuery, useApolloClient, ApolloClient } from '@apollo/client'
+import { Formik, FieldProps, Form, FastField, Field } from 'formik'
+
+import { TextField as FormikTextField } from 'formik-material-ui'
 
 import { ConfigInterface, MainContextInterface } from '../interfaces'
 import * as Constants from '../constants'
@@ -15,13 +18,12 @@ import { decryptContentId, decryptContentObject } from '../utils/operations'
 import { extractTags, extractUnencryptedTags } from '../utils/encryption'
 import { extractAuthInfo } from '../utils/config'
 import DecisionFrame from '../components/DecisionFrame'
+import ClusterSelect from '../components/forms/ClusterSelect'
 
 import { keysRetrievalQuery, findPublicKeyQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
 import { useAsync } from 'react-async'
-
-type Props = {}
 
 async function loadKeys({
     client,
@@ -99,7 +101,58 @@ async function loadKeys({
     return results
 }
 
-const ViewKeys = (props: Props) => {
+function InnerKeys({
+    key_hash,
+    url,
+    disabled,
+}: {
+    key_hash: any
+    url: string
+    disabled?: boolean
+}) {
+    return (
+        <Form>
+            <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                    <Typography variant="h5">Key hashes</Typography>
+                    <Typography variant="body2">
+                        {key_hash.join(', ')}
+                    </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <Field
+                        component={ClusterSelect}
+                        url={url}
+                        name="cluster"
+                        disabled={disabled}
+                        label="Cluster"
+                        firstIfEmpty
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <Field
+                        component={FormikTextField}
+                        name="publicKey"
+                        fullWidth
+                        label="Public Key"
+                        disabled={disabled}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <Field
+                        component={FormikTextField}
+                        name="privateKey"
+                        fullWidth
+                        label="Private Key"
+                        disabled={disabled}
+                    />
+                </Grid>
+            </Grid>
+        </Form>
+    )
+}
+
+const ViewKeys = () => {
     const { classes, theme } = useStylesAndTheme()
     const client = useApolloClient()
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
@@ -117,13 +170,6 @@ const ViewKeys = (props: Props) => {
             if (publicKey.tags.key_hash && publicKey.tags.key_hash.length > 0) {
                 updateOb['title'] = publicKey.tags.key_hash[0]
             }
-            if (
-                publicKey.tags.state &&
-                publicKey.tags.state.length > 0 &&
-                Constants.contentStates.has(publicKey.tags.state[0])
-            ) {
-                updateOb['state'] = publicKey.tags.state[0] as any
-            }
             updateMainCtx(updateOb)
         },
         suspense: true,
@@ -139,38 +185,46 @@ const ViewKeys = (props: Props) => {
 
     return (
         <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
                 <Typography variant="h5">Key hashes</Typography>
                 <Typography variant="body2">
                     {data.publicKey.tags.key_hash.join(', ')}
                 </Typography>
             </Grid>
+            <Grid item xs={12} sm={6}>
+                <Typography variant="h5">Cluster</Typography>
+                <Typography variant="body2">
+                    {data.publicKey.nodeData.cluster}
+                </Typography>
+            </Grid>
             <Grid item xs={12}>
                 <Typography variant="h5">Public Key</Typography>
-                <Typography variant="body2">
-                    {btoa(
-                        String.fromCharCode(
-                            ...new Uint8Array(data.publicKey.data)
+                <Typography variant="body2" style={{ whiteSpace: 'pre-line' }}>
+                    {`-----BEGIN PUBLIC KEY-----\n${btoa(
+                        String.fromCharCode.apply(
+                            null,
+                            new Uint8Array(data.publicKey.data)
                         )
-                    )}
+                    )}\n-----END PUBLIC KEY-----`}
                 </Typography>
             </Grid>
             <Grid item xs={12}>
                 <Typography variant="h5">Private Key</Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" style={{ whiteSpace: 'pre-line' }}>
                     {data.privateKey
-                        ? btoa(
-                              String.fromCharCode(
-                                  ...new Uint8Array(data.privateKey.data)
+                        ? `-----BEGIN PRIVATE KEY-----\n${btoa(
+                              String.fromCharCode.apply(
+                                  null,
+                                  new Uint8Array(data.privateKey.data)
                               )
-                          )
+                          )}\n-----END PRIVATE KEY-----`
                         : '-'}
                 </Typography>
             </Grid>
         </Grid>
     )
 }
-const EditKeys = (props: Props) => {
+const EditKeys = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx } = React.useContext(MainContext)
     const client = useApolloClient()
@@ -188,10 +242,111 @@ const EditKeys = (props: Props) => {
         return null
     }
 
-    return <></>
+    return (
+        <Formik
+            initialValues={{
+                cluster: data.publicKey.nodeData.cluster,
+                publicKey: `-----BEGIN PUBLIC KEY-----\n${btoa(
+                    String.fromCharCode.apply(
+                        null,
+                        new Uint8Array(data.publicKey.data)
+                    )
+                )}\n-----END PUBLIC KEY-----`,
+                privateKey: data.privateKey
+                    ? `-----BEGIN PRIVATE KEY-----\n${btoa(
+                          String.fromCharCode.apply(
+                              null,
+                              new Uint8Array(data.privateKey.data)
+                          )
+                      )}\n-----END PRIVATE KEY-----`
+                    : '',
+            }}
+            validate={(values) => {
+                const errors: Partial<
+                    { [key in keyof typeof values]: string }
+                > = {}
+                if (!values.publicKey) {
+                    errors['publicKey'] = 'empty'
+                }
+                return errors
+            }}
+            onSubmit={async (values, { setSubmitting, setValues }) => {
+                const authinfo = extractAuthInfo({
+                    config,
+                    clusters: new Set([
+                        values.cluster,
+                        data.publicKey.nodeData.cluster.id,
+                    ]),
+                    url: mainCtx.url as string,
+                    require: new Set(['update']),
+                })
+                const pubkeysResult = await client.query({
+                    query: getContentConfigurationQuery,
+                    variables: {
+                        authorization: authinfo.keys,
+                        id: mainCtx.item,
+                    },
+                })
+                const hashAlgorithm =
+                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
+                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
+                const privkeys = extractPrivKeys({
+                    config,
+                    url: mainCtx.url as string,
+                    hashAlgorithm,
+                })
+                const pubkeys = extractPubKeysCluster({
+                    node: pubkeysResult.data.secretgraph.node.cluster,
+                    authorization: authinfo.keys,
+                    params: {
+                        name: 'RSA-OAEP',
+                        hash: hashAlgorithm,
+                    },
+                })
+                const result = await updateContent({
+                    id: mainCtx.item as string,
+                    updateId: pubkeysResult.data.secretgraph.node.updateId,
+                    client,
+                    config,
+                    cluster: values.cluster, // can be null for keeping cluster
+                    value,
+                    tags: [
+                        `name=${btoa(values.name)}`,
+                        `mime=${btoa(value.type)}`,
+                        `state=${
+                            mainCtx.state == 'default'
+                                ? 'internal'
+                                : mainCtx.state
+                        }`,
+                        `type=${
+                            value.type.startsWith('text/') ? 'Text' : 'File'
+                        }`,
+                    ].concat(values.keywords.map((val) => `keyword=${val}`)),
+                    encryptTags: new Set(['name', 'mime']),
+                    privkeys: await Promise.all(Object.values(privkeys)),
+                    pubkeys: Object.values(pubkeys),
+                    hashAlgorithm,
+                    authorization: authinfo.keys,
+                })
+                if (result.errors) {
+                    console.error(result.errors)
+                } else if (!result.data.updateOrCreateContent.writeok) {
+                    console.log(
+                        'Write failed because of update, load new version',
+                        result
+                    )
+                }
+                reload()
+            }}
+        >
+            {(formikProps) => {
+                return <InnerKeys />
+            }}
+        </Formik>
+    )
 }
 
-const AddKeys = (props: Props) => {
+const AddKeys = () => {
     const { classes, theme } = useStylesAndTheme()
 
     return <></>

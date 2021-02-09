@@ -5,10 +5,7 @@ import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
 import { useAsync } from 'react-async'
 import Button from '@material-ui/core/Button'
-import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction'
-import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
-import Tooltip from '@material-ui/core/Tooltip'
 import IconButton from '@material-ui/core/IconButton'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
 import LinearProgress from '@material-ui/core/LinearProgress'
@@ -41,6 +38,7 @@ import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo } from '../utils/config'
 import { serializeToBase64 } from '../utils/encryption'
 import { updateCluster, createCluster } from '../utils/operations'
+import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
 import DecisionFrame from '../components/DecisionFrame'
 
 function item_retrieval_helper({
@@ -69,52 +67,10 @@ function extractPublicInfo(
 ) {
     const privateTokens: [string, string[]][] = []
 
-    let name: string | null = null,
-        note: string | null = null,
-        publicTokens: string[] = [],
-        publicInfo: string | undefined = node.publicInfo,
-        root: BlankNode | NamedNode | null = null
-    try {
-        const store = graph()
-        parse(publicInfo as string, store, '_:')
-        const name_note_results = store.querySync(
-            SPARQLToQuery(
-                `SELECT ?name ?note WHERE {_:cluster a ${CLUSTER(
-                    'Cluster'
-                )}; ${SECRETGRAPH(
-                    'name'
-                )} ?name. OPTIONAL { _:cluster ${SECRETGRAPH(
-                    'note'
-                )} ?note . } }`,
-                true,
-                store
-            )
-        )
-        if (name_note_results.length > 0) {
-            name = name_note_results[0]['?name'].value
-            note = name_note_results[0]['?note']
-                ? name_note_results[0]['?note'].value
-                : ''
-        }
-        publicTokens = store
-            .querySync(
-                SPARQLToQuery(
-                    `SELECT ?token WHERE {_:cluster a ${CLUSTER(
-                        'Cluster'
-                    )}; ${CLUSTER(
-                        'Cluster.publicsecrets'
-                    )} _:pubsecret . _:pubsecret ${CLUSTER(
-                        'PublicSecret.value'
-                    )} ?token . }`,
-                    true,
-                    store
-                )
-            )
-            .map((val: any) => val.token)
-    } catch (exc) {
-        console.warn('Could not parse publicInfo', exc, node)
-        publicInfo = undefined
-    }
+    const { name, note, publicTokens } = extractPublicInfoShared(
+        node.publicInfo,
+        true
+    )
     if (url && id && config.hosts[url] && config.hosts[url].clusters[id]) {
         for (const hash in config.hosts[url].clusters[id].hashes) {
             const token = config.tokens[hash]
@@ -125,7 +81,7 @@ function extractPublicInfo(
         }
     }
     return {
-        publicInfo,
+        publicInfo: node.publicInfo,
         publicTokens,
         privateTokens,
         name,

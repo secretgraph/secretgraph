@@ -1,8 +1,5 @@
 import * as React from 'react'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
-import Card from '@material-ui/core/Card'
-import CardContent from '@material-ui/core/CardContent'
-import { Autocomplete as FormikAutocomplete } from 'formik-material-ui-lab'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import * as DOMPurify from 'dompurify'
 import Button from '@material-ui/core/Button'
@@ -15,7 +12,7 @@ import { useAsync } from 'react-async'
 import { Formik, FieldProps, Form, FastField, Field } from 'formik'
 
 import { TextField as FormikTextField } from 'formik-material-ui'
-import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client'
+import { useApolloClient } from '@apollo/client'
 
 import { ConfigInterface, MainContextInterface } from '../interfaces'
 import * as Constants from '../constants'
@@ -36,18 +33,15 @@ import {
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
 import { utf8decoder, utf8ToBinary, b64toutf8 } from '../utils/misc'
 
-import {
-    contentRetrievalQuery,
-    getContentConfigurationQuery,
-} from '../queries/content'
+import { getContentConfigurationQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
 import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import ClusterSelect from '../components/forms/ClusterSelect'
+import StateSelect from '../components/forms/StateSelect'
 import DecisionFrame from '../components/DecisionFrame'
-import { TextFieldProps as TextFieldPropsFormik } from 'material-ui'
 
 const ViewWidget = ({
     arrayBuffer,
@@ -148,13 +142,6 @@ const ViewFile = () => {
             if (data.tags.name && data.tags.name.length > 0) {
                 updateOb['title'] = data.tags.name[0]
             }
-            if (
-                data.tags.state &&
-                data.tags.state.length > 0 &&
-                Constants.contentStates.has(data.tags.state[0])
-            ) {
-                updateOb['state'] = data.tags.state[0] as any
-            }
             updateMainCtx(updateOb)
         },
         suspense: true,
@@ -165,23 +152,43 @@ const ViewFile = () => {
         decrypt: new Set(['mime', 'name']),
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
-    const mime =
-        data && data.tags.mime && data.tags.mime.length > 0
-            ? data.tags.mime[0]
-            : 'application/octet-stream'
     if (isLoading) {
         return null
     }
     if (!data) {
         return null
     }
+    const mime =
+        data.tags.mime && data.tags.mime.length > 0
+            ? data.tags.mime[0]
+            : 'application/octet-stream'
+    const state =
+        data.tags.state &&
+        data.tags.state.length > 0 &&
+        Constants.contentStates.has(data.tags.state[0])
+            ? data.tags.state[0]
+            : ''
     return (
         <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid item xs={12} md={4}>
                 <Typography variant="h5">Keywords</Typography>
                 <Typography variant="body2">
                     {data.tags.keywords && data.tags.keywords.join(', ')}
                 </Typography>
+            </Grid>
+            <Grid item xs={12} md={4}>
+                <Typography variant="h5">State</Typography>
+                <Typography variant="body2">
+                    {state
+                        ? (Constants.contentStates.get(state) as {
+                              label: string
+                          }).label
+                        : 'unknown'}
+                </Typography>
+            </Grid>
+            <Grid item xs={12} md={4}>
+                <Typography variant="h5">Cluster</Typography>
+                <Typography variant="body2">{data.nodeData.cluster}</Typography>
             </Grid>
             <ViewWidget
                 arrayBuffer={Promise.resolve(data.data)}
@@ -211,6 +218,7 @@ const AddFile = () => {
                 plainInput: '',
                 htmlInput: '',
                 fileInput: null as null | Blob,
+                state: 'internal',
                 name: '',
                 keywords: [] as string[],
                 cluster: searchCtx.cluster ? searchCtx.cluster : null,
@@ -221,6 +229,9 @@ const AddFile = () => {
                 > = {}
                 if (!values.name) {
                     errors['name'] = 'Name required'
+                }
+                if (!values.state) {
+                    errors['state'] = 'State required'
                 }
                 if (!values.cluster) {
                     errors['cluster'] = 'Cluster required'
@@ -297,11 +308,7 @@ const AddFile = () => {
                         tags: [
                             `name=${btoa(values.name)}`,
                             `mime=${btoa(value.type)}`,
-                            `state=${
-                                mainCtx.state == 'default'
-                                    ? 'internal'
-                                    : mainCtx.state
-                            }`,
+                            `state=${values.state}`,
                             `type=${
                                 value.type.startsWith('text/') ? 'Text' : 'File'
                             }`,
@@ -363,12 +370,20 @@ const AddFile = () => {
                     <Form>
                         <Grid container spacing={2}>
                             {preview}
-                            <Grid item xs={12} md={4}>
+                            <Grid item xs={12}>
                                 <Field
                                     component={FormikTextField}
                                     name="name"
                                     fullWidth
                                     label="Name"
+                                    disabled={isSubmitting}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={4}>
+                                <StateSelect
+                                    name="state"
+                                    fullWidth
+                                    label="State"
                                     disabled={isSubmitting}
                                 />
                             </Grid>
@@ -665,13 +680,6 @@ const EditFile = () => {
             if (data.tags.name && data.tags.name.length > 0) {
                 updateOb['title'] = data.tags.name[0]
             }
-            if (
-                data.tags.state &&
-                data.tags.state.length > 0 &&
-                Constants.contentStates.has(data.tags.state[0])
-            ) {
-                updateOb['state'] = data.tags.state[0] as any
-            }
             updateMainCtx(updateOb)
         },
         suspense: true,
@@ -683,17 +691,19 @@ const EditFile = () => {
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
 
-    const mime = React.useMemo(() => {
-        if (!data) {
-            return 'application/octet-stream'
-        }
-        return data.tags.mime && data.tags.mime.length > 0
-            ? data.tags.mime[0]
-            : 'application/octet-stream'
-    }, [data])
     if (!data) {
         return null
     }
+    const mime =
+        data.tags.mime && data.tags.mime.length > 0
+            ? data.tags.mime[0]
+            : 'application/octet-stream'
+    const state =
+        data.tags.state &&
+        data.tags.state.length > 0 &&
+        Constants.contentStates.has(data.tags.state[0])
+            ? data.tags.state[0]
+            : 'internal'
 
     return (
         <Formik
@@ -704,6 +714,7 @@ const EditFile = () => {
                     data.tags.name && data.tags.name.length > 0
                         ? data.tags.name[0]
                         : '',
+                state,
                 keywords: data.tags.keywords || [],
                 cluster: data.nodeData?.cluster?.id as string,
             }}
@@ -763,11 +774,7 @@ const EditFile = () => {
                     tags: [
                         `name=${btoa(values.name)}`,
                         `mime=${btoa(value.type)}`,
-                        `state=${
-                            mainCtx.state == 'default'
-                                ? 'internal'
-                                : mainCtx.state
-                        }`,
+                        `state=${values.state}`,
                         `type=${
                             value.type.startsWith('text/') ? 'Text' : 'File'
                         }`,
@@ -805,12 +812,20 @@ const EditFile = () => {
                         mime={values.fileInput.type}
                         name={values.name}
                     />
-                    <Grid item xs={12} md={4}>
+                    <Grid item xs={12}>
                         <Field
                             component={FormikTextField}
                             name="name"
                             fullWidth
                             label="Name"
+                            disabled={isSubmitting}
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <StateSelect
+                            name="state"
+                            fullWidth
+                            label="State"
                             disabled={isSubmitting}
                         />
                     </Grid>

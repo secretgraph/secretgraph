@@ -24,21 +24,9 @@ import { useStylesAndTheme } from '../theme'
 import { deleteNode, resetDeletionNode } from '../utils/operations'
 import { extractAuthInfo } from '../utils/config'
 
-type Props = {}
+import MapSelect from './MapSelect'
 
-function createOptionsIterator(mapObject: Map<string, any>) {
-    return {
-        *[Symbol.iterator]() {
-            for (const [key, value] of mapObject) {
-                yield (
-                    <option value={key} key={key}>
-                        {value.label}
-                    </option>
-                )
-            }
-        },
-    }
-}
+type Props = {}
 
 function ActionBar(props: Props) {
     const { classes, theme } = useStylesAndTheme()
@@ -85,18 +73,6 @@ function ActionBar(props: Props) {
             </Dialog>
             <div style={{ flexGrow: 1 }} />
             <Toolbar className={classes.actionToolBarInner}>
-                <Tooltip title="Select state of content" arrow>
-                    <NativeSelect
-                        className={classes.contentStateSelect}
-                        onChange={(event: any) =>
-                            updateMainCtx({
-                                state: event.target.value,
-                            })
-                        }
-                        value={mainCtx.state || 'default'}
-                        children={createOptionsIterator(contentStates)}
-                    />
-                </Tooltip>
                 <Tooltip
                     title={mainCtx.action === 'view' ? 'Edit' : 'View'}
                     arrow
@@ -181,7 +157,7 @@ function ActionBar(props: Props) {
                 </Tooltip>
                 <Tooltip title="Add Element" arrow>
                     <span>
-                        <NativeSelect
+                        <MapSelect
                             className={classes.newItemSelect}
                             onChange={(event: any) => {
                                 updateMainCtx({
@@ -194,7 +170,7 @@ function ActionBar(props: Props) {
                                 })
                             }}
                             value={mainCtx.type || undefined}
-                            children={createOptionsIterator(elements)}
+                            options={elements}
                         />
                         <IconButton
                             className={

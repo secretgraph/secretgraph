@@ -174,8 +174,9 @@ export async function serializeToBase64(
     inp: RawInput | KeyOutInterface | PromiseLike<RawInput | KeyOutInterface>
 ): Promise<string> {
     return btoa(
-        String.fromCharCode(
-            ...new Uint8Array(await unserializeToArrayBuffer(inp))
+        String.fromCharCode.apply(
+            null,
+            new Uint8Array(await unserializeToArrayBuffer(inp))
         )
     )
 }

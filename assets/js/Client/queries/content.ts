@@ -273,7 +273,6 @@ export const getContentConfigurationQuery = gql`
                     id
                     nonce
                     link
-                    updateId
                     tags(includeTags: ["type="])
                     cluster {
                         id
