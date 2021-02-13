@@ -1,7 +1,7 @@
 import * as React from 'react'
 import Drawer from '@material-ui/core/Drawer'
 import List from '@material-ui/core/List'
-import Typography from '@material-ui/core/Typography'
+import Tooltip from '@material-ui/core/Tooltip'
 import TextField from '@material-ui/core/TextField'
 import Hidden from '@material-ui/core/Hidden'
 import Divider from '@material-ui/core/Divider'
@@ -18,23 +18,29 @@ import ListItemText from '@material-ui/core/ListItemText'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import ExpandLessIcon from '@material-ui/icons/ExpandLess'
 
-import { useApolloClient } from '@apollo/client'
+import { useApolloClient, ApolloClient } from '@apollo/client'
 
 import { useStylesAndTheme } from '../../theme'
 import { mapHashNames } from '../../constants'
 import { AuthInfoInterface } from '../../interfaces'
 import { serverConfigQuery } from '../../queries/server'
+import { getClusterQuery } from '../../queries/cluster'
 import {
     MainContext,
     SearchContext,
     ActiveUrlContext,
     ConfigContext,
+    InitializedConfigContext,
 } from '../../contexts'
 import { extractAuthInfo } from '../../utils/config'
+import { extractPublicInfo } from '../../utils/cluster'
 import { CapturingSuspense } from '../misc'
-const SideBarClusters = React.lazy(() => import('./clusters'))
+/**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))
-const SideBarNotifications = React.lazy(() => import('./notifications'))
+const SideBarNotifications = React.lazy(() => import('./notifications')) */
+import SideBarClusters from './clusters'
+import SideBarContents from './contents'
+import SideBarNotifications from './notifications'
 
 type SideBarProps = {
     openState: any
@@ -229,22 +235,77 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
     )
 }
 
+async function title_helper({
+    client,
+    keys,
+    item,
+    cancel,
+    setName,
+    setNote,
+}: {
+    client: ApolloClient<any>
+    keys: string[]
+    item: string
+    cancel: () => boolean
+    setName: (arg: string) => void
+    setNote: (arg: string) => void
+}) {
+    const { data } = await client.query({
+        query: getClusterQuery,
+        variables: {
+            id: item,
+            authorization: keys,
+        },
+    })
+    const { name, note } = extractPublicInfo(
+        data.secretgraph.node.publicInfo,
+        false
+    )
+    if (cancel()) {
+        return
+    }
+    name && setName(name)
+    note && setNote(note)
+}
+
 const ActiveElements = ({
     setOpenMenu,
-    updateMainCtx,
     setHeaderExpanded,
     ...props
 }: {
-    cluster: string | null
     openMenu: string
-    activeUrl: string
     setOpenMenu: any
-    updateMainCtx: (props: any) => void
     setHeaderExpanded: any
-    item: string | null
-    type: string | null
 }) => {
     const { classes, theme } = useStylesAndTheme()
+    const { config } = React.useContext(InitializedConfigContext)
+    const { activeUrl } = React.useContext(ActiveUrlContext)
+    const { searchCtx, updateSearchCtx } = React.useContext(SearchContext)
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const client = useApolloClient()
+    const [clusterName, setClusterName] = React.useState(searchCtx.cluster)
+    const [clusterNote, setClusterNote] = React.useState('')
+    const { keys } = extractAuthInfo({ config, url: activeUrl })
+    React.useLayoutEffect(() => {
+        if (!searchCtx.cluster) {
+            return
+        }
+        setClusterName(searchCtx.cluster)
+
+        let finished = false
+        const cancel = () => {
+            finished = true
+        }
+        title_helper({
+            client,
+            keys,
+            item: searchCtx.cluster,
+            setName: setClusterName,
+            setNote: setClusterNote,
+            cancel: () => finished == true,
+        })
+        return cancel
+    }, [searchCtx.cluster])
 
     const closedSymbol =
         theme.direction === 'ltr' ? (
@@ -253,8 +314,8 @@ const ActiveElements = ({
             <ChevronLeftIcon key="closedicortl" />
         )
     const activeElements = []
-    if (props.cluster) {
-        activeElements.push(
+    if (searchCtx.cluster) {
+        const inner = (
             <ListItem
                 button
                 key="clusters:show:known"
@@ -265,11 +326,10 @@ const ActiveElements = ({
                         setOpenMenu('clusters')
                     }
                     updateMainCtx({
-                        item: props.cluster,
-                        url: props.activeUrl,
+                        item: searchCtx.cluster,
+                        url: activeUrl,
                         type: 'Cluster',
                         action: 'view',
-                        state: 'default',
                     })
                     setHeaderExpanded(false)
                 }}
@@ -282,10 +342,19 @@ const ActiveElements = ({
                 <ListItemText
                     key={'clusters:show:known.text'}
                     className={classes.sideBarEntry}
-                    primary={`Cluster: ${props.cluster}`}
+                    primary={`Cluster: ${clusterName}`}
                 />
             </ListItem>
         )
+        if (clusterNote) {
+            activeElements.push(
+                <Tooltip key="clusters:show:known:tooltip" title={clusterNote}>
+                    {inner}
+                </Tooltip>
+            )
+        } else {
+            activeElements.push(inner)
+        }
     } else {
         activeElements.push(
             <ListItem
@@ -301,7 +370,6 @@ const ActiveElements = ({
                         item: null,
                         type: 'Cluster',
                         action: 'view',
-                        state: 'default',
                     })
                     setHeaderExpanded(false)
                 }}
@@ -319,7 +387,7 @@ const ActiveElements = ({
             </ListItem>
         )
     }
-    if (props.item && props.type != 'Cluster') {
+    if (mainCtx.item && mainCtx.type != 'Cluster') {
         activeElements.push(
             <ListItem
                 button
@@ -341,7 +409,7 @@ const ActiveElements = ({
                 <ListItemText
                     key="content:show.text"
                     className={classes.sideBarEntry}
-                    primary={`Content: ${props.type}: ${props.item}`}
+                    primary={`Content: ${mainCtx.type}: ${mainCtx.item}`}
                 />
             </ListItem>
         )
@@ -350,161 +418,111 @@ const ActiveElements = ({
 }
 
 const SideBarItems = ({
-    updateMainCtx,
-    updateSearchCtx,
     setHeaderExpanded,
     setOpenMenu,
     ...props
 }: {
     openMenu: string
-    authinfo: AuthInfoInterface
-    state: string
-    cluster: string | null
-    item: string | null
-    updateMainCtx: any
-    updateSearchCtx: any
-    activeUrl: string
     setHeaderExpanded: any
     setOpenMenu: any
 }) => {
     const { classes, theme } = useStylesAndTheme()
+    const { config } = React.useContext(InitializedConfigContext)
+    const { activeUrl } = React.useContext(ActiveUrlContext)
+    const { searchCtx, updateSearchCtx } = React.useContext(SearchContext)
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const authinfo = extractAuthInfo({ config, url: activeUrl })
     const sideBarItems = []
+
     switch (props.openMenu) {
         case 'notifications':
             sideBarItems.push(
                 <SideBarNotifications
                     key="SideBarNotifications"
-                    authinfo={props.authinfo}
+                    authinfo={authinfo}
                     header={'Notifications'}
                 />
             )
             break
         case 'contents':
-            if (props.state == 'default') {
-                sideBarItems.push(
-                    <SideBarContents
-                        key="SideBarContentsPublic"
-                        activeCluster={props.cluster}
-                        activeContent={props.item}
-                        usePublic
-                        header="Public"
-                        loadMoreExtra={() =>
-                            updateMainCtx({
-                                state: 'public',
-                            })
+            sideBarItems.push(
+                <SideBarContents
+                    key="SideBarContentsPublic"
+                    activeCluster={searchCtx.cluster}
+                    activeContent={mainCtx.item}
+                    usePublic
+                    header="Public"
+                    selectItem={(content: any) => {
+                        let type = content.tags.find((flag: string) =>
+                            flag.startsWith('type=')
+                        )
+                        if (type) {
+                            // split works different in js, so 2
+                            type = type.match(/=(.*)/)[1]
                         }
-                        selectItem={(content: any) => {
-                            let type = content.tags.find((flag: string) =>
-                                flag.startsWith('type=')
-                            )
-                            if (type) {
-                                // split works different in js, so 2
-                                type = type.match(/=(.*)/)[1]
-                            }
-                            if (type == 'PrivateKey') {
-                                type = 'PublicKey'
-                            }
-                            const url = new URL(props.activeUrl)
-                            updateMainCtx({
-                                action: 'view',
-                                type: type,
-                                item: content.id,
-                                url: props.activeUrl,
-                                shareUrl: `${url.origin}${content.link}`,
-                                state: 'public',
-                            })
-                            setHeaderExpanded(false)
-                            setOpenMenu('notifications')
-                        }}
-                    />
-                )
-                sideBarItems.push(
-                    <SideBarContents
-                        key="SideBarContentsInternal"
-                        authinfo={props.authinfo}
-                        activeCluster={props.cluster}
-                        activeContent={props.item}
-                        header="Internal"
-                        state="internal"
-                        loadMoreExtra={() =>
-                            updateMainCtx({
-                                state: 'internal',
-                            })
+                        if (type == 'PrivateKey') {
+                            type = 'PublicKey'
                         }
-                        selectItem={(content: any) => {
-                            let type = content.tags.find((flag: string) =>
-                                flag.startsWith('type=')
-                            )
-                            if (type) {
-                                // split works different in js, so 2
-                                type = type.match(/=(.*)/)[1]
-                            }
-                            if (type == 'PrivateKey') {
-                                type = 'PublicKey'
-                            }
-                            const url = new URL(props.activeUrl)
-                            updateMainCtx({
-                                action: 'view',
-                                type: type,
-                                item: content.id,
-                                url: props.activeUrl,
-                                shareUrl: `${url.origin}${content.link}`,
-                                state: 'internal',
-                            })
-                            setHeaderExpanded(false)
-                            setOpenMenu('notifications')
-                        }}
-                    />
-                )
-            } else {
-                sideBarItems.push(
-                    <SideBarContents
-                        key="SideBarContents"
-                        authinfo={props.authinfo}
-                        activeContent={props.item}
-                        activeCluster={props.cluster}
-                        state={props.state}
-                        selectItem={(content: any) => {
-                            let type = content.tags.find((flag: string) =>
-                                flag.startsWith('type=')
-                            )
-                            if (type) {
-                                // split works different in js, so 2
-                                type = type.match(/=(.*)/)[1]
-                            }
-                            if (type == 'PrivateKey') {
-                                type = 'PublicKey'
-                            }
-                            const url = new URL(props.activeUrl)
-                            updateMainCtx({
-                                action: 'view',
-                                type: type,
-                                item: content.id,
-                                url: props.activeUrl,
-                                shareUrl: `${url.origin}${content.link}`,
-                            })
-                            setHeaderExpanded(false)
-                            setOpenMenu('notifications')
-                        }}
-                    />
-                )
-            }
+                        const url = new URL(activeUrl)
+                        updateMainCtx({
+                            action: 'view',
+                            type: type,
+                            item: content.id,
+                            url: activeUrl,
+                            shareUrl: `${url.origin}${content.link}`,
+                        })
+                        setHeaderExpanded(false)
+                        setOpenMenu('notifications')
+                    }}
+                />
+            )
+            sideBarItems.push(
+                <SideBarContents
+                    key="SideBarContentsInternal"
+                    authinfo={authinfo}
+                    activeCluster={searchCtx.cluster}
+                    activeContent={mainCtx.item}
+                    header="Internal"
+                    state="internal"
+                    selectItem={(content: any) => {
+                        let type = content.tags.find((flag: string) =>
+                            flag.startsWith('type=')
+                        )
+                        if (type) {
+                            // split works different in js, so 2
+                            type = type.match(/=(.*)/)[1]
+                        }
+                        if (type == 'PrivateKey') {
+                            type = 'PublicKey'
+                        }
+                        const url = new URL(activeUrl)
+                        updateMainCtx({
+                            action: 'view',
+                            type: type,
+                            item: content.id,
+                            url: activeUrl,
+                            shareUrl: `${url.origin}${content.link}`,
+                        })
+                        setHeaderExpanded(false)
+                        setOpenMenu('notifications')
+                    }}
+                />
+            )
             break
         case 'clusters':
             sideBarItems.push(
                 <SideBarClusters
                     key="SideBarClusters"
-                    authinfo={props.authinfo}
-                    activeCluster={props.cluster}
+                    authinfo={authinfo}
+                    activeCluster={searchCtx.cluster}
                     header="Clusters"
                     selectItem={(cluster: any) => {
-                        const url = new URL(props.activeUrl)
+                        const url = new URL(activeUrl)
                         updateMainCtx({
                             item: cluster.id,
                             type: 'Cluster',
                             action: 'view',
-                            state: 'default',
-                            url: props.activeUrl,
+                            url: activeUrl,
                             shareUrl: `${url.origin}${cluster.link}`,
                         })
                         updateSearchCtx({
@@ -527,10 +545,7 @@ const SideBarItems = ({
 const SideBar = (props: SideBarProps) => {
     const { classes, theme } = useStylesAndTheme()
     const { openState } = props
-    const { searchCtx, updateSearchCtx } = React.useContext(SearchContext)
-    const { activeUrl, updateActiveUrl } = React.useContext(ActiveUrlContext)
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { config, updateConfig } = React.useContext(ConfigContext)
+    const { config } = React.useContext(ConfigContext)
     const [headerExpanded, setHeaderExpanded] = React.useState(false)
     const [openMenu, setOpenMenu] = React.useState('notifications')
     let activeElements: any = null
@@ -547,15 +562,9 @@ const SideBar = (props: SideBarProps) => {
         </Hidden>
     )
     if (config) {
-        const authinfo = extractAuthInfo({ config, url: activeUrl })
         activeElements = (
             <ActiveElements
                 openMenu={openMenu}
-                item={mainCtx.item}
-                cluster={searchCtx.cluster}
-                type={mainCtx.type}
-                activeUrl={activeUrl}
-                updateMainCtx={updateMainCtx}
                 setHeaderExpanded={setHeaderExpanded}
                 setOpenMenu={setOpenMenu}
             />
@@ -564,13 +573,6 @@ const SideBar = (props: SideBarProps) => {
         sideBarItems = (
             <SideBarItems
                 openMenu={openMenu}
-                authinfo={authinfo}
-                state={mainCtx.state}
-                cluster={searchCtx.cluster}
-                item={mainCtx.item}
-                activeUrl={activeUrl}
-                updateMainCtx={updateMainCtx}
-                updateSearchCtx={updateSearchCtx}
                 setHeaderExpanded={setHeaderExpanded}
                 setOpenMenu={setOpenMenu}
             />

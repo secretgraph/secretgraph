@@ -11,6 +11,7 @@ import {
     unserializeToCryptoKey,
     serializeToBase64,
     encryptRSAOEAP,
+    unserializeToArrayBuffer,
 } from './encryption'
 import { mapHashNames } from '../constants'
 
@@ -97,7 +98,7 @@ async function createSignatureReferences_helper(
 }
 
 export function createSignatureReferences(
-    content: ArrayBuffer,
+    content: Parameters<typeof unserializeToArrayBuffer>[0],
     privkeys: (
         | KeyInput
         | CryptoHashPair
@@ -110,12 +111,12 @@ export function createSignatureReferences(
     if (!hashValue) {
         throw Error('hashalgorithm not supported: ' + hashalgo)
     }
-    for (let counter = 0; counter < privkeys.length; counter++) {
+    for (const privKey of privkeys) {
         references.push(
             createSignatureReferences_helper(
-                privkeys[counter],
+                privKey,
                 hashalgo,
-                content
+                unserializeToArrayBuffer(content)
             ).then(
                 ({ signature, hash }): ReferenceInterface => {
                     return {
@@ -134,7 +135,7 @@ export function createSignatureReferences(
 async function encryptSharedKey_helper(
     key: KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>,
     hashalgo: string | undefined,
-    sharedkey: Uint8Array
+    sharedkey: ArrayBuffer
 ) {
     const _x = await key
     let pubkey: CryptoKey | Promise<CryptoKey>, hash: string | Promise<string>
@@ -175,7 +176,7 @@ async function encryptSharedKey_helper(
 }
 
 export function encryptSharedKey(
-    sharedkey: Uint8Array,
+    sharedkey: ArrayBuffer,
     pubkeys: (
         | KeyInput
         | CryptoHashPair
@@ -189,12 +190,8 @@ export function encryptSharedKey(
     if (!hashValue) {
         throw Error('hashalgorithm not supported: ' + hashalgo)
     }
-    for (let counter = 0; counter < pubkeys.length; counter++) {
-        const temp = encryptSharedKey_helper(
-            pubkeys[counter],
-            hashalgo,
-            sharedkey
-        )
+    for (const pubkey of pubkeys) {
+        const temp = encryptSharedKey_helper(pubkey, hashalgo, sharedkey)
         references.push(
             temp.then(
                 ({ encrypted, hash }): ReferenceInterface => {

@@ -227,15 +227,6 @@ const AddFile = () => {
                 const errors: Partial<
                     { [key in keyof typeof values]: string }
                 > = {}
-                if (!values.name) {
-                    errors['name'] = 'Name required'
-                }
-                if (!values.state) {
-                    errors['state'] = 'State required'
-                }
-                if (!values.cluster) {
-                    errors['cluster'] = 'Cluster required'
-                }
                 if (
                     (values.plainInput && values.htmlInput) ||
                     (values.plainInput && values.fileInput) ||
@@ -371,24 +362,53 @@ const AddFile = () => {
                         <Grid container spacing={2}>
                             {preview}
                             <Grid item xs={12}>
-                                <Field
+                                <FastField
                                     component={FormikTextField}
                                     name="name"
                                     fullWidth
                                     label="Name"
                                     disabled={isSubmitting}
+                                    validate={(val: string) => {
+                                        if (!val) {
+                                            return 'empty'
+                                        }
+                                        return null
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12} md={4}>
-                                <StateSelect
+                                <FastField
+                                    component={StateSelect}
                                     name="state"
                                     fullWidth
                                     label="State"
                                     disabled={isSubmitting}
+                                    validate={(val: string) => {
+                                        if (!val) {
+                                            return 'empty'
+                                        }
+                                        return null
+                                    }}
                                 />
                             </Grid>
                             <Grid item xs={12} md={4}>
-                                <Field
+                                <FastField
+                                    component={ClusterSelect}
+                                    url={activeUrl as string}
+                                    name="cluster"
+                                    disabled={isSubmitting}
+                                    label="Cluster"
+                                    firstIfEmpty
+                                    validate={(val: string) => {
+                                        if (!val) {
+                                            return 'empty'
+                                        }
+                                        return null
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={4}>
+                                <FastField
                                     component={SimpleSelect}
                                     name="keywords"
                                     disabled={isSubmitting}
@@ -396,17 +416,6 @@ const AddFile = () => {
                                     label="Keywords"
                                     freeSolo
                                     multiple
-                                />
-                            </Grid>
-
-                            <Grid item xs={12} md={4}>
-                                <Field
-                                    component={ClusterSelect}
-                                    url={activeUrl as string}
-                                    name="cluster"
-                                    disabled={isSubmitting}
-                                    label="Cluster"
-                                    firstIfEmpty
                                 />
                             </Grid>
                             {mainCtx.type != 'Text' ? (
@@ -813,24 +822,37 @@ const EditFile = () => {
                         name={values.name}
                     />
                     <Grid item xs={12}>
-                        <Field
+                        <FastField
                             component={FormikTextField}
                             name="name"
                             fullWidth
                             label="Name"
                             disabled={isSubmitting}
+                            validate={(val: string) => {
+                                if (!val) {
+                                    return 'empty'
+                                }
+                                return null
+                            }}
                         />
                     </Grid>
                     <Grid item xs={12} md={4}>
-                        <StateSelect
+                        <FastField
+                            component={StateSelect}
                             name="state"
                             fullWidth
                             label="State"
                             disabled={isSubmitting}
+                            validate={(val: string) => {
+                                if (!val) {
+                                    return 'empty'
+                                }
+                                return null
+                            }}
                         />
                     </Grid>
                     <Grid item xs={12} md={4}>
-                        <Field
+                        <FastField
                             component={SimpleSelect}
                             name="keywords"
                             disabled={isSubmitting}
@@ -842,7 +864,7 @@ const EditFile = () => {
                     </Grid>
 
                     <Grid item xs={12} md={4}>
-                        <Field
+                        <FastField
                             component={ClusterSelect}
                             url={mainCtx.url as string}
                             name="cluster"

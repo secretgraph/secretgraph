@@ -32,6 +32,46 @@ export const createContentMutation = gql`
     }
 `
 
+export const createKeysMutation = gql`
+    mutation contentCreateKeysMutation(
+        $cluster: ID!
+        $publicTags: [String!]
+        $privateTags: [String!]
+        $references: [ReferenceInput!]
+        $publicKey: Upload!
+        $privateKey: Upload
+        $nonce: String
+        $contentHash: String
+        $authorization: [String!]
+    ) {
+        updateOrCreateContent(
+            input: {
+                key: {
+                    cluster: $cluster
+                    value: {
+                        publicKey: $publicKey
+                        privateKey: $privateKey
+                        nonce: $nonce
+                        privateTags: $privateTags
+                        publicTags: $publicTags
+                    }
+                    contentHash: $contentHash
+                    references: $references
+                }
+                authorization: $authorization
+            }
+        ) {
+            content {
+                id
+                nonce
+                link
+                updateId
+            }
+            writeok
+        }
+    }
+`
+
 export const updateContentMutation = gql`
     mutation contentUpdateEncryptedMutation(
         $id: ID!
@@ -89,6 +129,9 @@ export const findPublicKeyQuery = gql`
 export const keysRetrievalQuery = gql`
     query contentKeyRetrievalQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
+            config {
+                hashAlgorithms
+            }
             node(id: $id) {
                 ... on Content {
                     id
@@ -233,6 +276,7 @@ export const getContentConfigurationQuery = gql`
     query contentGetConfigurationQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
+                hashAlgorithms
                 injectedClusters {
                     group
                     keys {

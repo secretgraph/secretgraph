@@ -6,8 +6,8 @@ import { FieldProps, Field } from 'formik'
 
 import { InitializedConfigContext } from '../../contexts'
 import { extractAuthInfo } from '../../utils/config'
+import { extractPublicInfo } from '../../utils/cluster'
 import { clusterFeedQuery } from '../../queries/cluster'
-import { CLUSTER, SECRETGRAPH, contentStates } from '../../constants'
 
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
@@ -72,31 +72,7 @@ export default function ClusterSelect<
             return ret
         }
         for (const { node } of data.clusters.clusters.edges) {
-            let name: string | undefined,
-                note: string = ''
-            try {
-                const store = graph()
-                parse(node.publicInfo, store, '_:')
-                const results = store.querySync(
-                    SPARQLToQuery(
-                        `SELECT ?name ?note WHERE {_:cluster a ${CLUSTER(
-                            'Cluster'
-                        )}; ${SECRETGRAPH(
-                            'name'
-                        )} ?name. OPTIONAL { _:cluster ${SECRETGRAPH(
-                            'note'
-                        )} ?note . } }`,
-                        false,
-                        store
-                    )
-                )
-                if (results.length > 0) {
-                    name = results[0]['?name'].value
-                    note = results[0]['?note'] ? results[0]['?note'].value : ''
-                }
-            } catch (exc) {
-                console.warn('Could not parse publicInfo', exc)
-            }
+            const { name, note } = extractPublicInfo(node.publicInfo)
             ret.ids.push(node.id)
             if (name) {
                 ret.labelMap[node.id] = name

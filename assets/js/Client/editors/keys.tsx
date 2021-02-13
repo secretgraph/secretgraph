@@ -7,20 +7,43 @@ import Grid from '@material-ui/core/Grid'
 
 import { saveAs } from 'file-saver'
 import { useQuery, useApolloClient, ApolloClient } from '@apollo/client'
-import { Formik, FieldProps, Form, FastField, Field } from 'formik'
+import {
+    Formik,
+    FieldProps,
+    Form,
+    FastField,
+    Field,
+    FormikValues,
+} from 'formik'
 
 import { TextField as FormikTextField } from 'formik-material-ui'
 
 import { ConfigInterface, MainContextInterface } from '../interfaces'
 import * as Constants from '../constants'
 import { MainContext, InitializedConfigContext } from '../contexts'
-import { decryptContentId, decryptContentObject } from '../utils/operations'
-import { extractTags, extractUnencryptedTags } from '../utils/encryption'
-import { extractAuthInfo } from '../utils/config'
+import {
+    decryptContentId,
+    decryptContentObject,
+    updateContent,
+    createKeys,
+    deleteNode,
+} from '../utils/operations'
+import {
+    extractTags,
+    extractUnencryptedTags,
+    unserializeToCryptoKey,
+    serializeToBase64,
+} from '../utils/encryption'
+import { extractAuthInfo, extractPrivKeys } from '../utils/config'
+import { extractPubKeysCluster } from '../utils/graphql'
 import DecisionFrame from '../components/DecisionFrame'
 import ClusterSelect from '../components/forms/ClusterSelect'
 
-import { keysRetrievalQuery, findPublicKeyQuery } from '../queries/content'
+import {
+    keysRetrievalQuery,
+    findPublicKeyQuery,
+    getContentConfigurationQuery,
+} from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
 import { useAsync } from 'react-async'
@@ -36,7 +59,7 @@ async function loadKeys({
     config: ConfigInterface
     url: string
 }) {
-    const { hashes, keys: authorization } = extractAuthInfo({
+    const { keys: authorization } = extractAuthInfo({
         config,
         url,
     })
@@ -48,7 +71,10 @@ async function loadKeys({
         },
     })
     const requests = []
-    const results = {} as {
+    const results = {
+        hashAlgorithms: data.secretgraph.config.hashAlgorithms,
+    } as {
+        hashAlgorithms: string[]
         publicKey: {
             tags: { [key: string]: string[] }
             data: ArrayBuffer
@@ -102,22 +128,21 @@ async function loadKeys({
 }
 
 function InnerKeys({
-    key_hash,
     url,
     disabled,
+    hashAlgorithms,
 }: {
-    key_hash: any
     url: string
     disabled?: boolean
+    hashAlgorithms: string[]
 }) {
+    const [joinedHashes, setJoinedHashes] = React.useState('loading')
     return (
         <Form>
             <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                     <Typography variant="h5">Key hashes</Typography>
-                    <Typography variant="body2">
-                        {key_hash.join(', ')}
-                    </Typography>
+                    <Typography variant="body2">{joinedHashes}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                     <Field
@@ -130,21 +155,55 @@ function InnerKeys({
                     />
                 </Grid>
                 <Grid item xs={12}>
+                    <Field name="publicKey">
+                        {(formikProps: FieldProps<any>) => {
+                            return (
+                                <FormikTextField
+                                    {...formikProps}
+                                    fullWidth
+                                    label="Public Key"
+                                    disabled={disabled}
+                                    multiline
+                                    variant="outlined"
+                                />
+                            )
+                        }}
+                    </Field>
                     <Field
                         component={FormikTextField}
                         name="publicKey"
                         fullWidth
                         label="Public Key"
                         disabled={disabled}
+                        multiline
+                        variant="outlined"
                     />
+                </Grid>
+                <Grid item xs={12}>
+                    <Field name="privateKey">
+                        {(formikProps: FieldProps<any>) => {
+                            return (
+                                <FormikTextField
+                                    {...formikProps}
+                                    fullWidth
+                                    label="Private Key"
+                                    disabled={disabled}
+                                    multiline
+                                    variant="outlined"
+                                />
+                            )
+                        }}
+                    </Field>
                 </Grid>
                 <Grid item xs={12}>
                     <Field
                         component={FormikTextField}
-                        name="privateKey"
+                        name="password"
+                        type="password"
                         fullWidth
-                        label="Private Key"
+                        label="Password"
                         disabled={disabled}
+                        variant="outlined"
                     />
                 </Grid>
             </Grid>
@@ -226,10 +285,10 @@ const ViewKeys = () => {
 }
 const EditKeys = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const client = useApolloClient()
     const { config } = React.useContext(InitializedConfigContext)
-    const { data, isLoading } = useAsync({
+    const { data, isLoading, reload } = useAsync({
         promiseFn: loadKeys,
         suspense: true,
         onReject: console.error,
@@ -237,30 +296,29 @@ const EditKeys = () => {
         config,
         client,
         url: mainCtx.url as string,
+        watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
     if (!data || isLoading) {
         return null
     }
+    const initialValues = {
+        cluster: data.publicKey.nodeData.cluster,
+        publicKey: `-----BEGIN PUBLIC KEY-----\n${btoa(
+            String.fromCharCode.apply(null, new Uint8Array(data.publicKey.data))
+        )}\n-----END PUBLIC KEY-----`,
+        privateKey: data.privateKey
+            ? `-----BEGIN PRIVATE KEY-----\n${btoa(
+                  String.fromCharCode.apply(
+                      null,
+                      new Uint8Array(data.privateKey.data)
+                  )
+              )}\n-----END PRIVATE KEY-----`
+            : '',
+    }
 
     return (
         <Formik
-            initialValues={{
-                cluster: data.publicKey.nodeData.cluster,
-                publicKey: `-----BEGIN PUBLIC KEY-----\n${btoa(
-                    String.fromCharCode.apply(
-                        null,
-                        new Uint8Array(data.publicKey.data)
-                    )
-                )}\n-----END PUBLIC KEY-----`,
-                privateKey: data.privateKey
-                    ? `-----BEGIN PRIVATE KEY-----\n${btoa(
-                          String.fromCharCode.apply(
-                              null,
-                              new Uint8Array(data.privateKey.data)
-                          )
-                      )}\n-----END PRIVATE KEY-----`
-                    : '',
-            }}
+            initialValues={initialValues}
             validate={(values) => {
                 const errors: Partial<
                     { [key in keyof typeof values]: string }
@@ -278,8 +336,10 @@ const EditKeys = () => {
                         data.publicKey.nodeData.cluster.id,
                     ]),
                     url: mainCtx.url as string,
-                    require: new Set(['update']),
+                    require: new Set(['update', 'delete', 'manage']),
                 })
+
+                // steps: sign with all other keys, if private key specified: create cryptotag
                 const pubkeysResult = await client.query({
                     query: getContentConfigurationQuery,
                     variables: {
@@ -287,60 +347,149 @@ const EditKeys = () => {
                         id: mainCtx.item,
                     },
                 })
+
                 const hashAlgorithm =
                     config.hosts[mainCtx.url as string].hashAlgorithms[0]
+
+                const key = crypto.getRandomValues(new Uint8Array(32))
                 //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                 const privkeys = extractPrivKeys({
                     config,
                     url: mainCtx.url as string,
                     hashAlgorithm,
                 })
-                const pubkeys = extractPubKeysCluster({
-                    node: pubkeysResult.data.secretgraph.node.cluster,
-                    authorization: authinfo.keys,
-                    params: {
-                        name: 'RSA-OAEP',
-                        hash: hashAlgorithm,
-                    },
-                })
-                const result = await updateContent({
-                    id: mainCtx.item as string,
-                    updateId: pubkeysResult.data.secretgraph.node.updateId,
-                    client,
-                    config,
-                    cluster: values.cluster, // can be null for keeping cluster
-                    value,
-                    tags: [
-                        `name=${btoa(values.name)}`,
-                        `mime=${btoa(value.type)}`,
-                        `state=${
-                            mainCtx.state == 'default'
-                                ? 'internal'
-                                : mainCtx.state
-                        }`,
-                        `type=${
-                            value.type.startsWith('text/') ? 'Text' : 'File'
-                        }`,
-                    ].concat(values.keywords.map((val) => `keyword=${val}`)),
-                    encryptTags: new Set(['name', 'mime']),
-                    privkeys: await Promise.all(Object.values(privkeys)),
-                    pubkeys: Object.values(pubkeys),
-                    hashAlgorithm,
-                    authorization: authinfo.keys,
-                })
-                if (result.errors) {
-                    console.error(result.errors)
-                } else if (!result.data.updateOrCreateContent.writeok) {
-                    console.log(
-                        'Write failed because of update, load new version',
-                        result
-                    )
+                const keyParams = {
+                    name: 'RSA-OAEP',
+                    hash:
+                        Constants.mapHashNames[
+                            pubkeysResult.data.secretgraph.config
+                                .hashAlgorithms[0]
+                        ].operationName,
                 }
-                reload()
+                const pubkeys = []
+                for (const { node } of pubkeysResult.data.secretgraph.node
+                    .cluster.contents.edges) {
+                    if (
+                        node.id != mainCtx.item &&
+                        node.tags.includes('type=PublicKey')
+                    ) {
+                        for (const tag of node.tags) {
+                            if (tag.startsWith('key_hash=')) {
+                                const cert =
+                                    config.certificates[tag.match(/=(.*)/)[1]]
+                                if (cert) {
+                                    pubkeys.push(
+                                        await unserializeToCryptoKey(
+                                            cert,
+                                            keyParams,
+                                            'privateKey'
+                                        )
+                                    )
+                                    break
+                                }
+                            }
+                        }
+                    }
+                }
+                let privKey = null
+                if (values.privateKey.trim()) {
+                    // can fail, is wanted to crash
+                    const matchedPrivKey = (values.privateKey.match(
+                        /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
+                    ) as string[])[1]
+                    privKey = await unserializeToCryptoKey(
+                        matchedPrivKey,
+                        keyParams,
+                        'privateKey'
+                    )
+                } else if (data.privateKey) {
+                    // privateKey is empty
+                    await deleteNode({
+                        client,
+                        id: data.privateKey.nodeData.id,
+                        authorization: authinfo.keys,
+                    })
+                }
+                if (
+                    values.publicKey.trim() != initialValues.publicKey.trim() ||
+                    (values.cluster &&
+                        values.cluster != data.publicKey.nodeData.cluster)
+                ) {
+                    // delete and recreate
+                    console.log('Public Key changed, recreate')
+                    // can fail, is wanted to crash
+                    const matchedPubKey = (values.publicKey.match(
+                        /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
+                    ) as string[])[1]
+                    const pubKey = await unserializeToCryptoKey(
+                        matchedPubKey,
+                        keyParams,
+                        'publicKey'
+                    )
+                    await deleteNode({
+                        client,
+                        id: data.publicKey.nodeData.id,
+                        authorization: authinfo.keys,
+                    })
+                    // recursively deletes private key but it would still be visible, so do it here
+                    if (data.privateKey && privKey) {
+                        await deleteNode({
+                            client,
+                            id: data.privateKey.nodeData.id,
+                            authorization: authinfo.keys,
+                        })
+                    }
+                    const { data: newData } = await createKeys({
+                        client,
+                        config,
+                        cluster: values.cluster as string,
+                        publicKey: pubKey,
+                        privateKey: privKey || undefined,
+                        privkeys: Object.values(privkeys),
+                        pubkeys: Object.values(pubkeys),
+                        hashAlgorithm: hashAlgorithm,
+                        authorization: authinfo.keys,
+                    })
+                    updateMainCtx({
+                        item: newData.updateOrCreateContent.content.id,
+                    })
+                } else {
+                    await updateContent({
+                        id: data.publicKey.nodeData.id,
+                        updateId: data.publicKey.nodeData.updateId,
+                        client,
+                        config,
+                        privkeys: await Promise.all(Object.values(privkeys)),
+                        pubkeys: Object.values(pubkeys),
+                        hashAlgorithm,
+                        authorization: authinfo.keys,
+                    })
+                    if (data.privateKey) {
+                        await updateContent({
+                            id: data.privateKey.nodeData.id,
+                            updateId: data.privateKey.nodeData.updateId,
+                            client,
+                            config,
+                            value: privKey || undefined,
+                            privkeys: await Promise.all(
+                                Object.values(privkeys)
+                            ),
+                            pubkeys: Object.values(pubkeys),
+                            hashAlgorithm,
+                            authorization: authinfo.keys,
+                        })
+                    }
+                    reload()
+                }
             }}
         >
             {(formikProps) => {
-                return <InnerKeys />
+                return (
+                    <InnerKeys
+                        hashAlgorithms={data.hashAlgorithms}
+                        url={mainCtx.url as string}
+                    />
+                )
             }}
         </Formik>
     )
@@ -391,7 +540,7 @@ async function findOrReturn({
     return null
 }
 
-export default function KeyComponent(props: Props) {
+export default function KeyComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { config } = React.useContext(InitializedConfigContext)
     const client = useApolloClient()

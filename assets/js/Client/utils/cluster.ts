@@ -3,6 +3,13 @@ import { CLUSTER, SECRETGRAPH } from '../constants'
 
 export function extractPublicInfo(
     publicInfo: string,
+    withTokens?: false
+): {
+    name: string | null
+    note: string | null
+}
+export function extractPublicInfo(
+    publicInfo: string,
     withTokens: true
 ): {
     name: string | null

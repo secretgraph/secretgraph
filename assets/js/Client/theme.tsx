@@ -43,12 +43,6 @@ export function secretgraphTheme(theme: Theme) {
         },
         sidebarButton: {},
         userButton: {},
-        contentStateSelect: {
-            marginLeft: theme.spacing(1),
-            color: 'white' as const,
-            direction: 'rtl' as const,
-            fontSize: '120%' as const,
-        },
         hidden: {
             display: 'none' as const,
         },

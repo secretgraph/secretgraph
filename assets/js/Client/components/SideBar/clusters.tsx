@@ -9,8 +9,8 @@ import ListItemText from '@material-ui/core/ListItemText'
 import ListSubheader from '@material-ui/core/ListSubheader'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import { useQuery } from '@apollo/client'
-import { CLUSTER, SECRETGRAPH } from '../../constants'
 import { clusterFeedQuery } from '../../queries/cluster'
+import { extractPublicInfo } from '../../utils/cluster'
 import { useStylesAndTheme } from '../../theme'
 import { ActiveUrlContext } from '../../contexts'
 import { AuthInfoInterface } from '../../interfaces'
@@ -65,31 +65,7 @@ export default function Clusters(appProps: SideBarItemsProps) {
             return []
         }
         return data.clusters.clusters.edges.map((edge: any) => {
-            let name: string | undefined,
-                note: string = ''
-            try {
-                const store = graph()
-                parse(edge.node.publicInfo, store, '_:')
-                const results = store.querySync(
-                    SPARQLToQuery(
-                        `SELECT ?name ?note WHERE {_:cluster a ${CLUSTER(
-                            'Cluster'
-                        )}; ${SECRETGRAPH(
-                            'name'
-                        )} ?name. OPTIONAL { _:cluster ${SECRETGRAPH(
-                            'note'
-                        )} ?note . } }`,
-                        false,
-                        store
-                    )
-                )
-                if (results.length > 0) {
-                    name = results[0]['?name'].value
-                    note = results[0]['?note'] ? results[0]['?note'].value : ''
-                }
-            } catch (exc) {
-                console.warn('Could not parse publicInfo', exc)
-            }
+            const { name, note } = extractPublicInfo(edge.node.publicInfo)
             if (edge.node.id === activeCluster) {
                 return (
                     <ListItem
@@ -109,7 +85,7 @@ export default function Clusters(appProps: SideBarItemsProps) {
                             primary={
                                 name ? name : `...${edge.node.id.substr(-48)}`
                             }
-                            title={note}
+                            title={note || undefined}
                         />
                         {edge.node.id !== activeCluster ? (
                             <ExpandMoreIcon />
@@ -134,7 +110,7 @@ export default function Clusters(appProps: SideBarItemsProps) {
                             primary={
                                 name ? name : `...${edge.node.id.substr(-48)}`
                             }
-                            title={note}
+                            title={note || undefined}
                         />
                     </ListItem>
                 )

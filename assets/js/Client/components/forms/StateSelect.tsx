@@ -1,26 +1,22 @@
 import * as React from 'react'
 
-import { Field } from 'formik'
+import { Field, FieldProps } from 'formik'
 import { TextField as FormikTextField } from 'formik-material-ui'
 
-import { MapSelectProps, createOptionsIterator } from '../MapSelect'
+import MapSelect, { MapSelectProps, createOptionsIterator } from '../MapSelect'
 import { contentStates } from '../../constants'
 
-export default function ({
-    disabled,
-    name,
-    ...props
-}: { name: string } & Omit<MapSelectProps, 'options'>) {
+export default function StateSelect<V = any>(
+    props: Omit<MapSelectProps, 'options'> & FieldProps<V>
+) {
     return (
-        <Field
-            component={FormikTextField}
-            name={name}
+        <FormikTextField
             select
             SelectProps={{
                 native: true,
             }}
-            {...props}
             children={createOptionsIterator(contentStates)}
+            {...props}
         />
     )
 }

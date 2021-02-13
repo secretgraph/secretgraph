@@ -6,6 +6,8 @@ import {
 } from '@material-ui/lab/Autocomplete'
 import Chip from '@material-ui/core/Chip'
 import TextField, { TextFieldProps } from '@material-ui/core/TextField'
+import { TextField as FormikTextField } from 'formik-material-ui'
+
 import { Autocomplete as FormikAutocomplete } from 'formik-material-ui-lab'
 
 import { FieldProps, Field } from 'formik'
@@ -77,6 +79,9 @@ export default function SimpleSelect<
 >({
     label,
     InputProps: InputPropsMain,
+    field,
+    form,
+    meta,
     ...appProps
 }: SimpleSelectProps<Multiple, DisableClearable, FreeSolo, T> & FieldProps<V>) {
     if (!appProps.getOptionLabel) {
@@ -121,16 +126,14 @@ export default function SimpleSelect<
                 )
             }
             return (
-                <TextField
+                <FormikTextField
                     {...params}
-                    error={
-                        appProps.form.touched[appProps.field.name] &&
-                        !!appProps.form.errors[appProps.field.name]
-                    }
+                    field={field}
+                    form={form}
+                    meta={meta}
                     InputProps={InputProps}
                     label={label}
                     fullWidth
-                    helperText={appProps.form.errors[appProps.field.name]}
                     variant="outlined"
                 />
             )

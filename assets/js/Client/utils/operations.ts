@@ -7,8 +7,7 @@ import {
     createContentMutation,
     updateContentMutation,
     contentRetrievalQuery,
-    getContentConfigurationQuery,
-    findConfigQuery,
+    createKeysMutation,
 } from '../queries/content'
 import {
     deleteNode as deleteNodeQuery,
@@ -25,6 +24,7 @@ import {
     CryptoGCMOutInterface,
     ConfigInputInterface,
     CryptoGCMInInterface,
+    RawInput,
 } from '../interfaces'
 import { mapHashNames } from '../constants'
 import { b64toarr, sortedHash, utf8encoder } from './misc'
@@ -37,6 +37,7 @@ import {
     unserializeToArrayBuffer,
     extractTags,
     encryptTag,
+    unserializeToCryptoKey,
 } from './encryption'
 import {
     cleanConfig,
@@ -160,6 +161,100 @@ export async function createContent({
     })
 }
 
+export async function createKeys({
+    client,
+    cluster,
+    actions,
+    privateKey,
+    pubkeys,
+    ...options
+}: {
+    client: ApolloClient<any>
+    config: ConfigInterface
+    cluster: string
+    privateKey?: KeyInput | PromiseLike<KeyInput>
+    publicKey: KeyInput | PromiseLike<KeyInput>
+    pubkeys?: Parameters<typeof encryptSharedKey>[1]
+    privkeys?: Parameters<typeof createSignatureReferences>[1]
+    privateTags?: Iterable<string | PromiseLike<string>>
+    publicTags?: Iterable<string | PromiseLike<string>>
+    contentHash?: string | null
+    actions?: Iterable<ActionInterface>
+    hashAlgorithm: string
+    authorization: Iterable<string>
+}): Promise<FetchResult<any>> {
+    const nonce = crypto.getRandomValues(new Uint8Array(13))
+    const key = crypto.getRandomValues(new Uint8Array(32))
+    const halgo = mapHashNames[options.hashAlgorithm].operationName
+
+    const keyParams = {
+        name: 'RSA-PSS',
+        hash: halgo,
+    }
+    const publicKey = await unserializeToCryptoKey(
+        options.publicKey,
+        keyParams,
+        'publicKey'
+    )
+    const encryptedPrivateKeyPromise = privateKey
+        ? encryptAESGCM({
+              key,
+              nonce,
+              data: unserializeToCryptoKey(privateKey, keyParams, 'privateKey'),
+          }).then((data) => new File([data.data], 'privateKey'))
+        : null
+
+    if (!pubkeys) {
+        pubkeys = []
+    }
+
+    const [
+        [specialRef, ...publicKeyReferences],
+        publicTags,
+    ] = await Promise.all(
+        encryptSharedKey(
+            key,
+            ([publicKey] as Parameters<typeof encryptSharedKey>[1]).concat(
+                pubkeys
+            ),
+            halgo
+        )
+    )
+    const signatureReferencesPromise = createSignatureReferences(
+        publicKey,
+        options.privkeys ? options.privkeys : [],
+        halgo
+    )
+    const privateTags = [`key=${specialRef.extra}`]
+    if (options.privateTags) {
+        privateTags.push(...(await Promise.all(options.privateTags)))
+    }
+    if (options.publicTags) {
+        publicTags.push(...(await Promise.all(options.publicTags)))
+    }
+    return await client.mutate({
+        mutation: createKeysMutation,
+        variables: {
+            cluster,
+            references: ([] as ReferenceInterface[]).concat(
+                publicKeyReferences,
+                await signatureReferencesPromise
+            ),
+            privateTags,
+            publicTags,
+            nonce: await serializeToBase64(nonce),
+            publicKey: new File(
+                [await unserializeToArrayBuffer(publicKey)],
+                'publicKey'
+            ),
+            privateKey: await encryptedPrivateKeyPromise,
+            actions: actions,
+            contentHash: options.contentHash ? options.contentHash : null,
+            authorization: options.authorization,
+        },
+    })
+}
+
 export async function updateContent({
     id,
     updateId,
@@ -171,7 +266,7 @@ export async function updateContent({
     client: ApolloClient<any>
     config: ConfigInterface
     cluster?: string
-    value: CryptoGCMInInterface['data']
+    value?: CryptoGCMInInterface['data']
     pubkeys: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     tags?: Iterable<string | PromiseLike<string>>
@@ -181,9 +276,9 @@ export async function updateContent({
     hashAlgorithm?: string
     authorization: Iterable<string>
     encryptTags?: Iterable<string>
+    // only for tag only updates if encryptTags is used
+    oldKey?: RawInput
 }): Promise<FetchResult<any>> {
-    const nonce = crypto.getRandomValues(new Uint8Array(13))
-    const key = crypto.getRandomValues(new Uint8Array(32))
     let references
     const tags = options.tags
         ? await Promise.all(options.tags)
@@ -194,8 +289,21 @@ export async function updateContent({
         ? new Set(options.encryptTags)
         : undefined
 
-    let encryptedContent = null
+    let key: ArrayBuffer | undefined
     if (options.value) {
+        key = crypto.getRandomValues(new Uint8Array(32))
+    } else if (options.tags && encrypt && encrypt.size > 0) {
+        if (!options.oldKey) {
+            throw Error('Tag only update without oldKey')
+        }
+        key = await unserializeToArrayBuffer(options.oldKey)
+    } else {
+        key = undefined
+    }
+    let encryptedContent = null
+    let nonce = undefined
+    if (options.value) {
+        nonce = crypto.getRandomValues(new Uint8Array(13))
         if (!options.hashAlgorithm) {
             throw Error('hashAlgorithm required for value updates')
         }
@@ -203,13 +311,13 @@ export async function updateContent({
             throw Error('No public keys provided')
         }
         encryptedContent = await encryptAESGCM({
-            key,
+            key: key as ArrayBuffer,
             nonce,
             data: options.value,
         })
 
         const [publicKeyReferencesPromise, tagsPromise2] = encryptSharedKey(
-            key,
+            key as ArrayBuffer,
             options.pubkeys,
             options.hashAlgorithm
         )
@@ -239,7 +347,7 @@ export async function updateContent({
                       tags.map(
                           async (tagPromise: string | PromiseLike<string>) => {
                               return await encryptTag({
-                                  key,
+                                  key: key as ArrayBuffer,
                                   data: tagPromise,
                                   encrypt,
                               })
@@ -247,7 +355,7 @@ export async function updateContent({
                       )
                   )
                 : null,
-            nonce: await serializeToBase64(nonce),
+            nonce: nonce ? await serializeToBase64(nonce) : undefined,
             value: encryptedContent
                 ? new File([encryptedContent.data], 'value')
                 : null,

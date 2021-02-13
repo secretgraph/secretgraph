@@ -74,7 +74,6 @@ idea: unique operation names. It would be nice to have namespaces
 
 # TODO
 
--   save iterations
 -   test permissions
 -   disable editing/prompt for keys if keys are missing
 -   cleanup serverside encryption

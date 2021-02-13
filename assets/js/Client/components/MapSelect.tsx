@@ -23,6 +23,7 @@ export default function MapSelect({ options, ...props }: MapSelectProps) {
     return (
         <TextField
             select
+            style={{ color: 'inherit' }}
             SelectProps={{
                 native: true,
             }}
