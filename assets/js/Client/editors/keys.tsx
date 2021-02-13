@@ -1,12 +1,19 @@
 import * as React from 'react'
 import { Theme } from '@material-ui/core/styles'
-import CircularProgress from '@material-ui/core/CircularProgress'
+import LinearProgress from '@material-ui/core/LinearProgress'
+import Button from '@material-ui/core/Button'
 import Typography from '@material-ui/core/Typography'
 
 import Grid from '@material-ui/core/Grid'
 
 import { saveAs } from 'file-saver'
-import { useQuery, useApolloClient, ApolloClient } from '@apollo/client'
+import {
+    useQuery,
+    useApolloClient,
+    ApolloClient,
+    ApolloError,
+    ApolloQueryResult,
+} from '@apollo/client'
 import {
     Formik,
     FieldProps,
@@ -14,13 +21,18 @@ import {
     FastField,
     Field,
     FormikValues,
+    useFormikContext,
 } from 'formik'
 
 import { TextField as FormikTextField } from 'formik-material-ui'
 
 import { ConfigInterface, MainContextInterface } from '../interfaces'
 import * as Constants from '../constants'
-import { MainContext, InitializedConfigContext } from '../contexts'
+import {
+    MainContext,
+    InitializedConfigContext,
+    SearchContext,
+} from '../contexts'
 import {
     decryptContentId,
     decryptContentObject,
@@ -28,10 +40,12 @@ import {
     createKeys,
     deleteNode,
 } from '../utils/operations'
+import { serverConfigQuery } from '../queries/server'
 import {
     extractTags,
     extractUnencryptedTags,
     unserializeToCryptoKey,
+    unserializeToArrayBuffer,
     serializeToBase64,
 } from '../utils/encryption'
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
@@ -127,15 +141,64 @@ async function loadKeys({
     return results
 }
 
+async function calcPublicKey(key: string, hashAlgorithms: string[]) {
+    const keyParams = {
+        name: 'RSA-OAEP',
+        hash: Constants.mapHashNames[hashAlgorithms[0]].operationName,
+    }
+    // can fail, fail wanted
+    const matchedPrivKey = (key.match(
+        /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
+    ) as string[])[1]
+    const publicKey = await unserializeToArrayBuffer(
+        unserializeToCryptoKey(matchedPrivKey, keyParams, 'publicKey')
+    )
+
+    return `-----BEGIN PUBLIC KEY-----\n${btoa(
+        String.fromCharCode.apply(null, new Uint8Array(publicKey))
+    )}\n-----END PUBLIC KEY-----`
+}
+
+async function calcHashes(key: string, hashAlgorithms: string[]) {
+    const keyParams = {
+        name: 'RSA-OAEP',
+        hash: Constants.mapHashNames['' + hashAlgorithms[0]].operationName,
+    }
+    // can fail, fail wanted
+    const matchedPubKey = (key.match(
+        /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
+    ) as string[])[1]
+    const rawKey = await unserializeToArrayBuffer(
+        unserializeToCryptoKey(matchedPubKey, keyParams, 'publicKey', true)
+    )
+    return await Promise.all(
+        hashAlgorithms.map(async (algo) => {
+            const operationName =
+                Constants.mapHashNames['' + algo].operationName
+            return await serializeToBase64(
+                crypto.subtle.digest(operationName, rawKey)
+            )
+        })
+    )
+}
+
 function InnerKeys({
     url,
     disabled,
     hashAlgorithms,
+    generateButton,
 }: {
     url: string
     disabled?: boolean
     hashAlgorithms: string[]
+    generateButton?: boolean
 }) {
+    const {
+        submitForm,
+        isSubmitting,
+        setValues,
+        values,
+    } = useFormikContext<any>()
     const [joinedHashes, setJoinedHashes] = React.useState('loading')
     return (
         <Form>
@@ -149,7 +212,7 @@ function InnerKeys({
                         component={ClusterSelect}
                         url={url}
                         name="cluster"
-                        disabled={disabled}
+                        disabled={isSubmitting || disabled}
                         label="Cluster"
                         firstIfEmpty
                     />
@@ -157,37 +220,61 @@ function InnerKeys({
                 <Grid item xs={12}>
                     <Field name="publicKey">
                         {(formikProps: FieldProps<any>) => {
+                            calcHashes(
+                                formikProps.field.value,
+                                hashAlgorithms
+                            ).then(
+                                (data) => setJoinedHashes(data.join(', ')),
+                                (reason) => {
+                                    console.debug(reason)
+                                    formikProps.form.setFieldError(
+                                        'publicKey',
+                                        'Invalid Key'
+                                    )
+                                }
+                            )
                             return (
                                 <FormikTextField
                                     {...formikProps}
                                     fullWidth
                                     label="Public Key"
-                                    disabled={disabled}
+                                    disabled={isSubmitting || disabled}
                                     multiline
                                     variant="outlined"
                                 />
                             )
                         }}
                     </Field>
-                    <Field
-                        component={FormikTextField}
-                        name="publicKey"
-                        fullWidth
-                        label="Public Key"
-                        disabled={disabled}
-                        multiline
-                        variant="outlined"
-                    />
                 </Grid>
                 <Grid item xs={12}>
                     <Field name="privateKey">
                         {(formikProps: FieldProps<any>) => {
+                            if (formikProps.field.value) {
+                                calcPublicKey(
+                                    formikProps.field.value,
+                                    hashAlgorithms
+                                ).then(
+                                    (data) =>
+                                        formikProps.form.setFieldValue(
+                                            'publicKey',
+                                            data,
+                                            false
+                                        ),
+                                    (reason) => {
+                                        console.debug(reason)
+                                        formikProps.form.setFieldError(
+                                            'privateKey',
+                                            'Invalid Key'
+                                        )
+                                    }
+                                )
+                            }
                             return (
                                 <FormikTextField
                                     {...formikProps}
                                     fullWidth
                                     label="Private Key"
-                                    disabled={disabled}
+                                    disabled={isSubmitting || disabled}
                                     multiline
                                     variant="outlined"
                                 />
@@ -205,6 +292,67 @@ function InnerKeys({
                         disabled={disabled}
                         variant="outlined"
                     />
+                </Grid>
+                <Grid item xs={12}>
+                    {isSubmitting && <LinearProgress />}
+                </Grid>
+                <Grid item xs={12}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={isSubmitting}
+                        onClick={submitForm}
+                    >
+                        Submit
+                    </Button>
+                    {generateButton && (
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            disabled={isSubmitting}
+                            onClick={async () => {
+                                const operationName =
+                                    Constants.mapHashNames[hashAlgorithms[0]]
+                                        .operationName
+                                const {
+                                    publicKey,
+                                    privateKey,
+                                } = (await crypto.subtle.generateKey(
+                                    {
+                                        name: 'RSA-OAEP',
+                                        modulusLength: 4096,
+                                        publicExponent: new Uint8Array([
+                                            1,
+                                            0,
+                                            1,
+                                        ]),
+                                        hash: operationName,
+                                    },
+                                    true,
+                                    [
+                                        'wrapKey',
+                                        'unwrapKey',
+                                        'encrypt',
+                                        'decrypt',
+                                    ]
+                                )) as CryptoKeyPair
+                                setValues(
+                                    {
+                                        ...values,
+                                        publicKey: `-----BEGIN PUBLIC KEY-----\n${await serializeToBase64(
+                                            publicKey
+                                        )}\n-----END PUBLIC KEY-----`,
+                                        privateKey: `-----BEGIN PRIVATE KEY-----\n${await serializeToBase64(
+                                            privateKey
+                                        )}\n-----END PRIVATE KEY-----`,
+                                    },
+                                    false
+                                )
+                            }}
+                        >
+                            Generate
+                        </Button>
+                    )}
                 </Grid>
             </Grid>
         </Form>
@@ -302,7 +450,7 @@ const EditKeys = () => {
         return null
     }
     const initialValues = {
-        cluster: data.publicKey.nodeData.cluster,
+        cluster: data.publicKey.nodeData.cluster as string,
         publicKey: `-----BEGIN PUBLIC KEY-----\n${btoa(
             String.fromCharCode.apply(null, new Uint8Array(data.publicKey.data))
         )}\n-----END PUBLIC KEY-----`,
@@ -336,7 +484,7 @@ const EditKeys = () => {
                         data.publicKey.nodeData.cluster.id,
                     ]),
                     url: mainCtx.url as string,
-                    require: new Set(['update', 'delete', 'manage']),
+                    require: new Set(['update', 'create', 'delete', 'manage']),
                 })
 
                 // steps: sign with all other keys, if private key specified: create cryptotag
@@ -348,23 +496,19 @@ const EditKeys = () => {
                     },
                 })
 
-                const hashAlgorithm =
-                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
-
                 const key = crypto.getRandomValues(new Uint8Array(32))
                 //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                 const privkeys = extractPrivKeys({
                     config,
                     url: mainCtx.url as string,
-                    hashAlgorithm,
+                    hashAlgorithm:
+                        config.hosts[mainCtx.url as string].hashAlgorithms[0],
                 })
                 const keyParams = {
                     name: 'RSA-OAEP',
                     hash:
-                        Constants.mapHashNames[
-                            pubkeysResult.data.secretgraph.config
-                                .hashAlgorithms[0]
-                        ].operationName,
+                        Constants.mapHashNames[data.hashAlgorithms[0]]
+                            .operationName,
                 }
                 const pubkeys = []
                 for (const { node } of pubkeysResult.data.secretgraph.node
@@ -442,12 +586,12 @@ const EditKeys = () => {
                     const { data: newData } = await createKeys({
                         client,
                         config,
-                        cluster: values.cluster as string,
+                        cluster: values.cluster,
                         publicKey: pubKey,
                         privateKey: privKey || undefined,
                         privkeys: Object.values(privkeys),
                         pubkeys: Object.values(pubkeys),
-                        hashAlgorithm: hashAlgorithm,
+                        hashAlgorithm: data.hashAlgorithms[0],
                         authorization: authinfo.keys,
                     })
                     updateMainCtx({
@@ -461,7 +605,7 @@ const EditKeys = () => {
                         config,
                         privkeys: await Promise.all(Object.values(privkeys)),
                         pubkeys: Object.values(pubkeys),
-                        hashAlgorithm,
+                        hashAlgorithm: data.hashAlgorithms[0],
                         authorization: authinfo.keys,
                     })
                     if (data.privateKey) {
@@ -475,7 +619,7 @@ const EditKeys = () => {
                                 Object.values(privkeys)
                             ),
                             pubkeys: Object.values(pubkeys),
-                            hashAlgorithm,
+                            hashAlgorithm: data.hashAlgorithms[0],
                             authorization: authinfo.keys,
                         })
                     }
@@ -497,8 +641,148 @@ const EditKeys = () => {
 
 const AddKeys = () => {
     const { classes, theme } = useStylesAndTheme()
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const { searchCtx } = React.useContext(SearchContext)
+    const client = useApolloClient()
+    const { config } = React.useContext(InitializedConfigContext)
+    const { data } = useAsync<ApolloQueryResult<any>>({
+        promiseFn: client.query,
+        onReject: console.error,
+        suspense: true,
+        query: serverConfigQuery,
+    })
+    const initialValues = {
+        cluster: searchCtx.cluster as string | null,
+        publicKey: '',
+        privateKey: '',
+    }
 
-    return <></>
+    return (
+        <Formik
+            initialValues={initialValues}
+            validate={(values) => {
+                const errors: Partial<
+                    { [key in keyof typeof values]: string }
+                > = {}
+                if (!values.cluster) {
+                    errors['cluster'] = 'empty'
+                }
+                if (!values.publicKey) {
+                    errors['publicKey'] = 'empty'
+                }
+                return errors
+            }}
+            onSubmit={async (values, { setSubmitting, setValues }) => {
+                const authinfo = extractAuthInfo({
+                    config,
+                    clusters: new Set([values.cluster as string]),
+                    url: mainCtx.url as string,
+                    require: new Set(['create', 'manage']),
+                })
+
+                // steps: sign with all other keys, if private key specified: create cryptotag
+                const pubkeysResult = await client.query({
+                    query: getContentConfigurationQuery,
+                    variables: {
+                        authorization: authinfo.keys,
+                        id: mainCtx.item,
+                    },
+                })
+
+                const hashAlgorithm =
+                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
+
+                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
+                const privkeys = extractPrivKeys({
+                    config,
+                    url: mainCtx.url as string,
+                    hashAlgorithm,
+                })
+                const keyParams = {
+                    name: 'RSA-OAEP',
+                    hash:
+                        Constants.mapHashNames[
+                            pubkeysResult.data.secretgraph.config
+                                .hashAlgorithms[0]
+                        ].operationName,
+                }
+                const pubkeys = []
+                for (const { node } of pubkeysResult.data.secretgraph.node
+                    .cluster.contents.edges) {
+                    if (
+                        node.id != mainCtx.item &&
+                        node.tags.includes('type=PublicKey')
+                    ) {
+                        for (const tag of node.tags) {
+                            if (tag.startsWith('key_hash=')) {
+                                const cert =
+                                    config.certificates[tag.match(/=(.*)/)[1]]
+                                if (cert) {
+                                    pubkeys.push(
+                                        await unserializeToCryptoKey(
+                                            cert,
+                                            keyParams,
+                                            'privateKey'
+                                        )
+                                    )
+                                    break
+                                }
+                            }
+                        }
+                    }
+                }
+                let privKey = null
+                if (values.privateKey.trim()) {
+                    // can fail, is wanted to crash
+                    const matchedPrivKey = (values.privateKey.match(
+                        /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
+                    ) as string[])[1]
+                    privKey = await unserializeToCryptoKey(
+                        matchedPrivKey,
+                        keyParams,
+                        'privateKey'
+                    )
+                }
+                // can fail, is wanted to crash
+                const matchedPubKey = (values.publicKey.match(
+                    /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
+                ) as string[])[1]
+                const pubKey = await unserializeToCryptoKey(
+                    matchedPubKey,
+                    keyParams,
+                    'publicKey'
+                )
+                const { data: newData } = await createKeys({
+                    client,
+                    config,
+                    cluster: values.cluster as string,
+                    publicKey: pubKey,
+                    privateKey: privKey || undefined,
+                    privkeys: Object.values(privkeys),
+                    pubkeys: Object.values(pubkeys),
+                    hashAlgorithm: hashAlgorithm,
+                    authorization: authinfo.keys,
+                })
+                updateMainCtx({
+                    item: newData.updateOrCreateContent.content.id,
+                })
+            }}
+        >
+            {(formikProps) => {
+                return (
+                    <InnerKeys
+                        hashAlgorithms={
+                            data
+                                ? data.data.secretgraph.config.hashAlgorithms
+                                : []
+                        }
+                        url={mainCtx.url as string}
+                        generateButton
+                    />
+                )
+            }}
+        </Formik>
+    )
 }
 
 async function findOrReturn({

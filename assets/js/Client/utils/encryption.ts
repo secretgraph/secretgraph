@@ -191,10 +191,13 @@ function compareObjects(obj1: any, obj2: any) {
     return true
 }
 
+class KeyTypeError extends Error {}
+
 export async function unserializeToCryptoKey(
     inp: KeyInput | PromiseLike<KeyInput>,
     params: any,
-    type: 'privateKey' | 'publicKey' = 'publicKey'
+    type: 'privateKey' | 'publicKey' = 'publicKey',
+    failInsteadConvert?: boolean
 ): Promise<CryptoKey> {
     let _data: ArrayBuffer, _result: CryptoKey
     const temp1 = await inp
@@ -206,6 +209,9 @@ export async function unserializeToCryptoKey(
             return temp1
         }
         if (type == 'publicKey' && temp1.type == 'private') {
+            if (failInsteadConvert) {
+                throw new KeyTypeError('Not a Public Key')
+            }
             return await toPublicKey(temp1, params)
         }
         _data = await unserializeToArrayBuffer(temp1)
@@ -248,10 +254,16 @@ export async function unserializeToCryptoKey(
                 true,
                 mapEncryptionAlgorithms[`${params.name}private`].usages
             )
-            if (type == 'publicKey') {
+            if (type == 'publicKey' && _result.type == 'private') {
+                if (failInsteadConvert) {
+                    throw new KeyTypeError('Not a Public Key')
+                }
                 _result = await toPublicKey(_result, params)
             }
         } catch (exc) {
+            if (exc instanceof KeyTypeError) {
+                throw exc
+            }
             if (type == 'publicKey') {
                 // serialize publicKey
                 _result = await crypto.subtle.importKey(
