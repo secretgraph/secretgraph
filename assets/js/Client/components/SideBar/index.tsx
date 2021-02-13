@@ -286,6 +286,7 @@ const ActiveElements = ({
     const [clusterName, setClusterName] = React.useState(searchCtx.cluster)
     const [clusterNote, setClusterNote] = React.useState('')
     const { keys } = extractAuthInfo({ config, url: activeUrl })
+
     React.useLayoutEffect(() => {
         if (!searchCtx.cluster) {
             return
@@ -305,7 +306,7 @@ const ActiveElements = ({
             cancel: () => finished == true,
         })
         return cancel
-    }, [searchCtx.cluster])
+    }, [searchCtx.cluster, mainCtx.type == 'Cluster' ? mainCtx.updateId : ''])
 
     const closedSymbol =
         theme.direction === 'ltr' ? (
@@ -368,6 +369,7 @@ const ActiveElements = ({
                     }
                     updateMainCtx({
                         item: null,
+                        updateId: null,
                         type: 'Cluster',
                         action: 'view',
                     })
@@ -468,6 +470,7 @@ const SideBarItems = ({
                             action: 'view',
                             type: type,
                             item: content.id,
+                            updateId: content.updateId,
                             url: activeUrl,
                             shareUrl: `${url.origin}${content.link}`,
                         })
@@ -500,6 +503,7 @@ const SideBarItems = ({
                             action: 'view',
                             type: type,
                             item: content.id,
+                            updateId: content.updateId,
                             url: activeUrl,
                             shareUrl: `${url.origin}${content.link}`,
                         })
@@ -520,6 +524,7 @@ const SideBarItems = ({
                         const url = new URL(activeUrl)
                         updateMainCtx({
                             item: cluster.id,
+                            updateId: cluster.updateId,
                             type: 'Cluster',
                             action: 'view',
                             url: activeUrl,

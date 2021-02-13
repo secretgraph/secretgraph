@@ -158,7 +158,9 @@ function ActionBar(props: Props) {
                 <Tooltip title="Add Element" arrow>
                     <span>
                         <MapSelect
-                            className={classes.newItemSelect}
+                            classes={{
+                                root: classes.newItemSelect,
+                            }}
                             onChange={(event: any) => {
                                 updateMainCtx({
                                     action: 'add',
@@ -184,6 +186,7 @@ function ActionBar(props: Props) {
                                     action: 'add',
                                     title: null,
                                     item: null,
+                                    updateId: null,
                                     shareUrl: null,
                                     deleted: null,
                                     type: mainCtx.type,

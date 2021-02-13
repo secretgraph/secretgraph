@@ -49,7 +49,11 @@ export function secretgraphTheme(theme: Theme) {
         newItemSelect: {
             color: 'white' as const,
             direction: 'rtl' as const,
-            fontSize: '120%' as const,
+            verticalAlign: 'middle !important',
+            '& .MuiInputBase-root': {
+                color: 'white' as const,
+                fontSize: '120% !important' as const,
+            },
         },
         drawerPaper: {
             width: drawerWidth,

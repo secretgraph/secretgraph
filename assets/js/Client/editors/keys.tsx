@@ -373,6 +373,7 @@ const ViewKeys = () => {
             }
             const updateOb: Partial<MainContextInterface> = {
                 deleted: publicKey.nodeData.deleted,
+                updateId: publicKey.nodeData.updateId,
             }
             if (publicKey.tags.key_hash && publicKey.tags.key_hash.length > 0) {
                 updateOb['title'] = publicKey.tags.key_hash[0]
@@ -596,9 +597,11 @@ const EditKeys = () => {
                     })
                     updateMainCtx({
                         item: newData.updateOrCreateContent.content.id,
+                        updateId:
+                            newData.updateOrCreateContent.content.updateId,
                     })
                 } else {
-                    await updateContent({
+                    const { data: newData } = await updateContent({
                         id: data.publicKey.nodeData.id,
                         updateId: data.publicKey.nodeData.updateId,
                         client,
@@ -623,6 +626,10 @@ const EditKeys = () => {
                             authorization: authinfo.keys,
                         })
                     }
+                    updateMainCtx({
+                        updateId:
+                            newData.updateOrCreateContent.content.updateId,
+                    })
                     reload()
                 }
             }}
@@ -765,6 +772,7 @@ const AddKeys = () => {
                 })
                 updateMainCtx({
                     item: newData.updateOrCreateContent.content.id,
+                    updateId: newData.updateOrCreateContent.content.updateId,
                 })
             }}
         >

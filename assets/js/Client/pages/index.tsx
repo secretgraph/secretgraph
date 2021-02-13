@@ -50,6 +50,7 @@ function MainPage(props: Props) {
         state: 'default',
         title: null,
         item: null,
+        updateId: null,
         url: null,
         type: elements.has(query.get('type') as any)
             ? query.get('type')

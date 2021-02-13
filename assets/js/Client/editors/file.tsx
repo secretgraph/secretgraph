@@ -138,6 +138,7 @@ const ViewFile = () => {
             }
             const updateOb: Partial<MainContextInterface> = {
                 deleted: data.nodeData.deleted,
+                updateId: data.nodeData.updateId,
             }
             if (data.tags.name && data.tags.name.length > 0) {
                 updateOb['title'] = data.tags.name[0]
@@ -314,6 +315,8 @@ const AddFile = () => {
                     })
                     updateMainCtx({
                         item: result.data.updateOrCreateContent.content.id,
+                        updateId:
+                            result.data.updateOrCreateContent.content.updateId,
                         url: activeUrl,
                         action: 'edit',
                     })
@@ -685,6 +688,7 @@ const EditFile = () => {
             }
             const updateOb: Partial<MainContextInterface> = {
                 deleted: data.nodeData.deleted,
+                updateId: data.nodeData.updateId,
             }
             if (data.tags.name && data.tags.name.length > 0) {
                 updateOb['title'] = data.tags.name[0]

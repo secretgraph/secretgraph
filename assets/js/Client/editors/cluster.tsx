@@ -32,6 +32,7 @@ import {
     MainContext,
     InitializedConfigContext,
     ActiveUrlContext,
+    SearchContext,
 } from '../contexts'
 import { getClusterQuery } from '../queries/cluster'
 import { useStylesAndTheme } from '../theme'
@@ -176,6 +177,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
     const client = useApolloClient()
     const { config, updateConfig } = React.useContext(InitializedConfigContext)
     const { updateMainCtx } = React.useContext(MainContext)
+    const { updateSearchCtx } = React.useContext(SearchContext)
     const [updateId, setUpdateId] = React.useState(props.updateId)
     React.useLayoutEffect(() => {
         updateMainCtx({ title: props.name || '' })
@@ -336,8 +338,14 @@ const ClusterIntern = (props: ClusterInternProps) => {
                 }
                 updateMainCtx({
                     action: 'edit',
-                    item:
-                        clusterResponse.data?.updateOrCreateCluster.cluster.id,
+                    item: clusterResponse.data.updateOrCreateCluster.cluster.id,
+                    updateId:
+                        clusterResponse.data.updateOrCreateCluster.cluster
+                            .updateId,
+                })
+                updateSearchCtx({
+                    cluster:
+                        clusterResponse.data.updateOrCreateCluster.cluster.id,
                 })
                 setSubmitting(false)
             }}
@@ -406,16 +414,17 @@ const ViewCluster = () => {
         url: mainCtx.url as string,
         require: new Set(['view', 'manage']),
     })
-    const { data, isLoading, promise } = useAsync({
+    const { data, isLoading } = useAsync({
         promiseFn: item_retrieval_helper,
         onReject: console.error,
         onResolve: (data) => {
             const updateOb = {
-                shareUrl: data?.data.secretgraph.node.link,
-                deleted: data?.data.secretgraph.node.deleted,
+                shareUrl: data.data.secretgraph.node.link,
+                deleted: data.data.secretgraph.node.deleted,
+                updateId: data.data.secretgraph.node.updateId,
             }
             if (
-                data?.data.secretgraph.node.id == config.configCluster &&
+                data.data.secretgraph.node.id == config.configCluster &&
                 mainCtx.url == config.baseUrl &&
                 !updateOb.deleted
             ) {
@@ -490,8 +499,9 @@ const EditCluster = () => {
                 return
             }
             const updateOb = {
-                shareUrl: data?.data.secretgraph.node.link,
-                deleted: data?.data.secretgraph.node.deleted,
+                shareUrl: data.data.secretgraph.node.link,
+                deleted: data.data.secretgraph.node.deleted,
+                updateId: data.data.secretgraph.node.updateId,
             }
             if (
                 data?.data.secretgraph.node.id == config.configCluster &&
