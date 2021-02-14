@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { parse, graph, SPARQLToQuery } from 'rdflib'
 
 import { gql, useLazyQuery, useQuery } from '@apollo/client'
 import { FieldProps, Field } from 'formik'
@@ -17,7 +16,7 @@ export interface ClusterSelectProps<
     FreeSolo extends boolean | undefined
 > extends Omit<
         SimpleSelectProps<Multiple, DisableClearable, FreeSolo, string>,
-        'options'
+        'options' | 'getOptionLabel' | 'loading'
     > {
     url: string
     firstIfEmpty?: boolean
@@ -34,7 +33,6 @@ export default function ClusterSelect<
     ...props
 }: ClusterSelectProps<Multiple, DisableClearable, FreeSolo> & FieldProps<V>) {
     const { config } = React.useContext(InitializedConfigContext)
-
     const authinfo = React.useMemo(() => {
         if (url === undefined) {
             throw Error(`no url: ${url}`)
@@ -51,6 +49,7 @@ export default function ClusterSelect<
             authorization: authinfo.keys,
         },
         onCompleted: (data) => {
+            console.log(data)
             if (data.clusters.clusters.pageInfo.hasNextPage) {
                 ;(fetchMore as NonNullable<typeof fetchMore>)({
                     variables: {

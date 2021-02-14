@@ -432,7 +432,7 @@ export function extractAuthInfo({
 }): AuthInfoInterface {
     const keys = []
     const hashes = []
-    if (url === undefined) {
+    if (url === undefined || url === null) {
         throw Error(`no url: ${url}`)
     }
     const host = config.hosts[new URL(url, window.location.href).href]

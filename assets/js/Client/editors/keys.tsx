@@ -32,6 +32,7 @@ import {
     MainContext,
     InitializedConfigContext,
     SearchContext,
+    ActiveUrlContext,
 } from '../contexts'
 import {
     decryptContentId,
@@ -160,6 +161,9 @@ async function calcPublicKey(key: string, hashAlgorithms: string[]) {
 }
 
 async function calcHashes(key: string, hashAlgorithms: string[]) {
+    if (hashAlgorithms.length == 0) {
+        return []
+    }
     const keyParams = {
         name: 'RSA-OAEP',
         hash: Constants.mapHashNames['' + hashAlgorithms[0]].operationName,
@@ -197,9 +201,19 @@ function InnerKeys({
         submitForm,
         isSubmitting,
         setValues,
+        setFieldValue,
+        setFieldError,
         values,
     } = useFormikContext<any>()
     const [joinedHashes, setJoinedHashes] = React.useState('loading')
+    React.useEffect(() => {
+        calcHashes(values.publicKey, hashAlgorithms).then(
+            (data) => {
+                setJoinedHashes(data.join(', '))
+            },
+            (reason) => {}
+        )
+    })
     return (
         <Form>
             <Grid container spacing={2}>
@@ -218,57 +232,57 @@ function InnerKeys({
                     />
                 </Grid>
                 <Grid item xs={12}>
-                    <Field name="publicKey">
-                        {(formikProps: FieldProps<any>) => {
-                            calcHashes(
-                                formikProps.field.value,
-                                hashAlgorithms
-                            ).then(
-                                (data) => setJoinedHashes(data.join(', ')),
+                    <Field
+                        name="publicKey"
+                        component={FormikTextField}
+                        validate={async (val: string) => {
+                            if (!val) {
+                                return 'empty'
+                            }
+                            // validate has side effects
+                            return await calcHashes(val, hashAlgorithms).then(
+                                (data) => {
+                                    setJoinedHashes(data.join(', '))
+                                    return null
+                                },
                                 (reason) => {
                                     console.debug(reason)
-                                    formikProps.form.setFieldError(
-                                        'publicKey',
-                                        'Invalid Key'
-                                    )
+                                    return 'Invalid Key'
                                 }
                             )
-                            return (
-                                <FormikTextField
-                                    {...formikProps}
-                                    fullWidth
-                                    label="Public Key"
-                                    disabled={isSubmitting || disabled}
-                                    multiline
-                                    variant="outlined"
-                                />
-                            )
                         }}
-                    </Field>
+                        fullWidth
+                        label="Public Key"
+                        disabled={isSubmitting || disabled}
+                        multiline
+                        variant="outlined"
+                    />
                 </Grid>
                 <Grid item xs={12}>
-                    <Field name="privateKey">
-                        {(formikProps: FieldProps<any>) => {
-                            if (formikProps.field.value) {
-                                calcPublicKey(
-                                    formikProps.field.value,
-                                    hashAlgorithms
-                                ).then(
-                                    (data) =>
-                                        formikProps.form.setFieldValue(
-                                            'publicKey',
+                    <Field
+                        name="privateKey"
+                        validate={(val: string) => {
+                            if (val) {
+                                calcPublicKey(val, hashAlgorithms).then(
+                                    async (data) => {
+                                        setFieldValue('publicKey', data, true)
+                                        await calcHashes(
                                             data,
-                                            false
-                                        ),
+                                            hashAlgorithms
+                                        ).then((data) => {
+                                            setJoinedHashes(data.join(', '))
+                                        })
+                                        return null
+                                    },
                                     (reason) => {
                                         console.debug(reason)
-                                        formikProps.form.setFieldError(
-                                            'privateKey',
-                                            'Invalid Key'
-                                        )
+                                        return 'Invalid Key'
                                     }
                                 )
                             }
+                        }}
+                    >
+                        {(formikProps: FieldProps<any>) => {
                             return (
                                 <FormikTextField
                                     {...formikProps}
@@ -649,6 +663,7 @@ const EditKeys = () => {
 const AddKeys = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const { activeUrl } = React.useContext(ActiveUrlContext)
     const { searchCtx } = React.useContext(SearchContext)
     const client = useApolloClient()
     const { config } = React.useContext(InitializedConfigContext)
@@ -784,7 +799,7 @@ const AddKeys = () => {
                                 ? data.data.secretgraph.config.hashAlgorithms
                                 : []
                         }
-                        url={mainCtx.url as string}
+                        url={activeUrl}
                         generateButton
                     />
                 )

@@ -5,7 +5,7 @@ import {
     AutocompleteProps,
 } from '@material-ui/lab/Autocomplete'
 import Chip from '@material-ui/core/Chip'
-import TextField, { TextFieldProps } from '@material-ui/core/TextField'
+import { TextFieldProps } from '@material-ui/core/TextField'
 import { TextField as FormikTextField } from 'formik-material-ui'
 
 import { Autocomplete as FormikAutocomplete } from 'formik-material-ui-lab'
@@ -146,8 +146,10 @@ export default function SimpleSelect<
                 DisableClearable,
                 FreeSolo,
                 T
-            > &
-                FieldProps<V>)}
+            >)}
+            field={field}
+            meta={meta}
+            form={form}
         />
     )
 }

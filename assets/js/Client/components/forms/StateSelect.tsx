@@ -15,8 +15,9 @@ export default function StateSelect<V = any>(
             SelectProps={{
                 native: true,
             }}
-            children={createOptionsIterator(contentStates)}
             {...props}
-        />
+        >
+            {createOptionsIterator(contentStates)}
+        </FormikTextField>
     )
 }
