@@ -3,6 +3,7 @@ import AppBar from '@material-ui/core/AppBar'
 import Toolbar from '@material-ui/core/Toolbar'
 import Typography from '@material-ui/core/Typography'
 import MenuItem from '@material-ui/core/MenuItem'
+import Tooltip from '@material-ui/core/Tooltip'
 import Menu from '@material-ui/core/Menu'
 import IconButton from '@material-ui/core/IconButton'
 import MenuIcon from '@material-ui/icons/Menu'
@@ -214,7 +215,11 @@ function HeaderBar(props: Props) {
             </Dialog>
             <Toolbar className={classes.appBarToolBar}>
                 {sidebarButton}
-                <Typography variant="h6" className={classes.appBarTitle}>
+                <Typography
+                    variant="h6"
+                    title={mainCtx.item || undefined}
+                    className={classes.appBarTitle}
+                >
                     {title}
                 </Typography>
                 <IconButton

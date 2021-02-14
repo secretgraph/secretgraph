@@ -296,7 +296,7 @@ function InnerKeys({
                         }}
                     </Field>
                 </Grid>
-                <Grid item xs={12}>
+                {/*<Grid item xs={12}>
                     <Field
                         component={FormikTextField}
                         name="password"
@@ -306,7 +306,7 @@ function InnerKeys({
                         disabled={disabled}
                         variant="outlined"
                     />
-                </Grid>
+                    </Grid>*/}
                 <Grid item xs={12}>
                     {isSubmitting && <LinearProgress />}
                 </Grid>
@@ -401,6 +401,7 @@ const ViewKeys = () => {
         url: mainCtx.url as string,
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
+    console.log(data, isLoading)
     if (!data || isLoading) {
         return null
     }

@@ -411,7 +411,9 @@ const ActiveElements = ({
                 <ListItemText
                     key="content:show.text"
                     className={classes.sideBarEntry}
-                    primary={`Content: ${mainCtx.type}: ${mainCtx.item}`}
+                    primary={`Content: ${mainCtx.type}: ${
+                        mainCtx.title || mainCtx.item
+                    }`}
                 />
             </ListItem>
         )
@@ -468,6 +470,7 @@ const SideBarItems = ({
                         const url = new URL(activeUrl)
                         updateMainCtx({
                             action: 'view',
+                            title: null,
                             type: type,
                             item: content.id,
                             updateId: content.updateId,
@@ -501,6 +504,7 @@ const SideBarItems = ({
                         const url = new URL(activeUrl)
                         updateMainCtx({
                             action: 'view',
+                            title: null,
                             type: type,
                             item: content.id,
                             updateId: content.updateId,

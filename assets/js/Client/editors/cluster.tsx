@@ -162,11 +162,10 @@ const TokenList = ({
 
 interface ClusterInternProps {
     readonly publicInfo?: string
-    name: string | null
-    note: string | null
+    readonly name: string | null
+    readonly note: string | null
     id?: string | null
     url?: string | null | undefined
-    updateId?: string | null | undefined
     disabled?: boolean | undefined
     publicTokens: string[]
     privateTokens: [token: string, actions: string[]][]
@@ -176,12 +175,11 @@ interface ClusterInternProps {
 const ClusterIntern = (props: ClusterInternProps) => {
     const client = useApolloClient()
     const { config, updateConfig } = React.useContext(InitializedConfigContext)
-    const { updateMainCtx } = React.useContext(MainContext)
+    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const { updateSearchCtx } = React.useContext(SearchContext)
-    const [updateId, setUpdateId] = React.useState(props.updateId)
     React.useLayoutEffect(() => {
         updateMainCtx({ title: props.name || '' })
-    }, [props.name])
+    }, [props.name, props.note])
     return (
         <Formik
             initialValues={{
@@ -227,7 +225,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
                     clusterResponse = await updateCluster({
                         id: props.id as string,
                         client,
-                        updateId: updateId as string,
+                        updateId: mainCtx.updateId as string,
                         publicInfo: serialize(
                             null as any,
                             store,
@@ -337,6 +335,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
                     return
                 }
                 updateMainCtx({
+                    title: values.name || '',
                     action: 'edit',
                     item: clusterResponse.data.updateOrCreateCluster.cluster.id,
                     updateId:
@@ -556,7 +555,6 @@ const EditCluster = () => {
                 mainCtx.item
             )}
             keys={authinfo.keys}
-            updateId={data.data?.secretgraph.node.updateId}
         />
     )
 }

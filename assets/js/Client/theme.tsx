@@ -40,6 +40,7 @@ export function secretgraphTheme(theme: Theme) {
         appBarTitle: {
             flexGrow: 1,
             marginLeft: '3rem' as const,
+            wordBreak: 'break-all' as const,
         },
         sidebarButton: {},
         userButton: {},
@@ -95,6 +96,7 @@ export function secretgraphTheme(theme: Theme) {
             minHeight: '200px' as const,
             flexGrow: 1,
             padding: theme.spacing(1),
+            overflowY: 'auto' as const,
         },
         content: {
             gridArea: 'content',

@@ -49,7 +49,6 @@ export default function ClusterSelect<
             authorization: authinfo.keys,
         },
         onCompleted: (data) => {
-            console.log(data)
             if (data.clusters.clusters.pageInfo.hasNextPage) {
                 ;(fetchMore as NonNullable<typeof fetchMore>)({
                     variables: {
