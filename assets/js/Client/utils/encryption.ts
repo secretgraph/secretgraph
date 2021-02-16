@@ -274,6 +274,7 @@ export async function unserializeToCryptoKey(
                     mapEncryptionAlgorithms[`${params.name}public`].usages
                 )
             } else {
+                console.debug(exc)
                 throw Error('Not a PrivateKey')
             }
         }

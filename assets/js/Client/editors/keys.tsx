@@ -587,7 +587,8 @@ const EditKeys = () => {
                     privKey = await unserializeToCryptoKey(
                         matchedPrivKey,
                         keyParams,
-                        'privateKey'
+                        'privateKey',
+                        true
                     )
                 } else if (data.privateKey) {
                     // privateKey is empty
