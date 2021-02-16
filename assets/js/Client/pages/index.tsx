@@ -47,7 +47,6 @@ function MainPage(props: Props) {
     )
     const [mainCtx, updateMainCtx] = React.useReducer(updateState, {
         action: config ? 'add' : 'start',
-        state: 'default',
         title: null,
         item: null,
         updateId: null,

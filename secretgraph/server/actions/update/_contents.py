@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.db.models import OuterRef, Q, Subquery
-from graphql_relay import from_global_id, to_global_id
+from graphql_relay import to_global_id
 
 from ...utils.auth import id_to_result, initializeCachedResult
 from ...utils.encryption import default_padding, encrypt_into_file
@@ -350,9 +350,6 @@ def create_key_fn(request, objdata, authset=None):
     if not key_obj:
         raise ValueError("Requires key")
     if isinstance(objdata.get("cluster"), str):
-        type_name, objdata["cluster"] = from_global_id(objdata["cluster"])
-        if type_name != "Cluster":
-            raise ValueError("Requires Cluster id")
         objdata["cluster"] = (
             id_to_result(
                 request, objdata["cluster"], Cluster, authset=authset
@@ -409,7 +406,6 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
         raise ValueError("Requires value or key")
     if value_obj and key_obj:
         raise ValueError("Can only specify one of value or key")
-
     if key_obj:
         # has removed key argument for only allowing complete key
         _save_fn = create_key_fn(request, objdata, authset=authset)
@@ -418,7 +414,10 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
             if callable(context):
                 context = context()
             with context:
-                return _save_fn()["public"]
+                return {
+                    **_save_fn()["public"],
+                    "writeok": True,
+                }
 
     else:
         newdata = {

@@ -2,6 +2,7 @@ import { ApolloClient, FetchResult } from '@apollo/client'
 import {
     createClusterMutation,
     updateClusterMutation,
+    getClusterQuery,
 } from '../queries/cluster'
 import {
     createContentMutation,
@@ -13,7 +14,6 @@ import {
     deleteNode as deleteNodeQuery,
     resetDeletionNode as resetDeletionNodeQuery,
 } from '../queries/node'
-import { serverConfigQuery } from '../queries/server'
 import {
     ConfigInterface,
     ReferenceInterface,
@@ -52,6 +52,8 @@ import {
     extractPubKeysCluster,
     extractPubKeysRefs,
 } from './graphql'
+
+import { extractPublicInfo } from './cluster'
 
 export async function deleteNode({
     id,
@@ -229,8 +231,14 @@ export async function createKeys({
     if (options.privateTags) {
         privateTags.push(...(await Promise.all(options.privateTags)))
     }
+    if (privateTags.every((val) => !val.startsWith('state='))) {
+        privateTags.push('state=internal')
+    }
     if (options.publicTags) {
         publicTags.push(...(await Promise.all(options.publicTags)))
+    }
+    if (publicTags.every((val) => !val.startsWith('state='))) {
+        publicTags.push('state=public')
     }
     return await client.mutate({
         mutation: createKeysMutation,
@@ -744,4 +752,23 @@ export async function updateConfigRemoteReducer(
             return mergedConfig
         }
     }
+}
+
+export async function loadAndExtractClusterInfo({
+    client,
+    authorization,
+    id,
+}: {
+    client: ApolloClient<any>
+    authorization: string[]
+    id: string
+}) {
+    const { data } = await client.query({
+        query: getClusterQuery,
+        variables: {
+            id,
+            authorization,
+        },
+    })
+    return extractPublicInfo(data.secretgraph.node.publicInfo, false)
 }

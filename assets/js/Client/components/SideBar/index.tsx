@@ -34,6 +34,7 @@ import {
 } from '../../contexts'
 import { extractAuthInfo } from '../../utils/config'
 import { extractPublicInfo } from '../../utils/cluster'
+import { loadAndExtractClusterInfo } from '../../utils/operations'
 import { CapturingSuspense } from '../misc'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))
@@ -237,31 +238,25 @@ const SideBarHeader = (props: SideBarHeaderProps) => {
 
 async function title_helper({
     client,
-    keys,
-    item,
-    cancel,
+    authorization,
+    id,
+    canceled,
     setName,
     setNote,
 }: {
     client: ApolloClient<any>
-    keys: string[]
-    item: string
-    cancel: () => boolean
+    authorization: string[]
+    id: string
+    canceled: () => boolean
     setName: (arg: string) => void
     setNote: (arg: string) => void
 }) {
-    const { data } = await client.query({
-        query: getClusterQuery,
-        variables: {
-            id: item,
-            authorization: keys,
-        },
+    const { name, note } = await loadAndExtractClusterInfo({
+        client,
+        authorization,
+        id,
     })
-    const { name, note } = extractPublicInfo(
-        data.secretgraph.node.publicInfo,
-        false
-    )
-    if (cancel()) {
+    if (canceled()) {
         return
     }
     name && setName(name)
@@ -299,11 +294,11 @@ const ActiveElements = ({
         }
         title_helper({
             client,
-            keys,
-            item: searchCtx.cluster,
+            authorization: keys,
+            id: searchCtx.cluster,
             setName: setClusterName,
             setNote: setClusterNote,
-            cancel: () => finished == true,
+            canceled: () => finished == true,
         })
         return cancel
     }, [searchCtx.cluster, mainCtx.type == 'Cluster' ? mainCtx.updateId : ''])

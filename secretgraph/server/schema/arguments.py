@@ -4,7 +4,11 @@ from graphene_file_upload.scalars import Upload
 
 class AuthList(graphene.List):
     def __init__(
-        self, of_type=graphene.String, *args, required=False, **kwargs
+        self,
+        of_type=graphene.NonNull(graphene.String),
+        *args,
+        required=False,
+        **kwargs
     ):
         super().__init__(of_type, *args, required=required, **kwargs)
 
@@ -33,13 +37,13 @@ class ContentKeyInput(graphene.InputObjectType):
         required=False, description="Nonce for private key (base64, 13 bytes)"
     )
     privateTags = graphene.List(
-        graphene.String,
+        graphene.NonNull(graphene.String),
         required=True,
         description="Metadata tags for private key",
     )
 
     publicTags = graphene.List(
-        graphene.String,
+        graphene.NonNull(graphene.String),
         required=True,
         description="Metadata tags for public key",
     )
@@ -57,14 +61,16 @@ class ReferenceInput(graphene.InputObjectType):
 class ContentValueInput(graphene.InputObjectType):
     value = Upload(required=False)
     nonce = graphene.String(required=False)
-    tags = graphene.List(graphene.String, required=False)
+    tags = graphene.List(graphene.NonNull(graphene.String), required=False)
 
 
 class ContentInput(graphene.InputObjectType):
     cluster = graphene.ID(required=False)
     key = ContentKeyInput(required=False)
     value = ContentValueInput(required=False)
-    references = graphene.List(ReferenceInput, required=False)
+    references = graphene.List(
+        graphene.NonNull(ReferenceInput), required=False
+    )
     contentHash = graphene.String(required=False)
     actions = graphene.List(ActionInput, required=False)
 
@@ -72,10 +78,12 @@ class ContentInput(graphene.InputObjectType):
 class PushContentInput(graphene.InputObjectType):
     parent = graphene.ID(required=True)
     value = ContentValueInput(required=True)
-    references = graphene.List(ReferenceInput, required=False)
+    references = graphene.List(
+        graphene.NonNull(ReferenceInput), required=False
+    )
 
 
 class ClusterInput(graphene.InputObjectType):
     publicInfo = Upload(required=False)
-    actions = graphene.List(ActionInput, required=False)
+    actions = graphene.List(graphene.NonNull(ActionInput), required=False)
     key = ContentKeyInput(required=False)

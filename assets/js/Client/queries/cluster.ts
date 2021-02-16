@@ -23,6 +23,7 @@ export const clusterFeedQuery = gql`
                 ) {
                 edges {
                     node {
+                        updateId
                         link
                         id
                         publicInfo
@@ -62,6 +63,7 @@ export const getClusterQuery = gql`
     query clusterGetClusterQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
+                id
                 injectedClusters {
                     group
                     clusters

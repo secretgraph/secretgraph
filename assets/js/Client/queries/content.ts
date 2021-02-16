@@ -35,8 +35,8 @@ export const createContentMutation = gql`
 export const createKeysMutation = gql`
     mutation contentCreateKeysMutation(
         $cluster: ID!
-        $publicTags: [String!]
-        $privateTags: [String!]
+        $publicTags: [String!]!
+        $privateTags: [String!]!
         $references: [ReferenceInput!]
         $publicKey: Upload!
         $privateKey: Upload
@@ -46,9 +46,9 @@ export const createKeysMutation = gql`
     ) {
         updateOrCreateContent(
             input: {
-                key: {
+                content: {
                     cluster: $cluster
-                    value: {
+                    key: {
                         publicKey: $publicKey
                         privateKey: $privateKey
                         nonce: $nonce
@@ -112,11 +112,16 @@ export const findPublicKeyQuery = gql`
         secretgraph(authorization: $authorization) {
             node(id: $id) {
                 ... on Content {
+                    id
                     tags(includeTags: ["type="])
                     references(groups: ["public_key"]) {
                         edges {
                             node {
-                                id
+                                target {
+                                    id
+                                    updateId
+                                    link
+                                }
                             }
                         }
                     }
@@ -130,6 +135,7 @@ export const keysRetrievalQuery = gql`
     query contentKeyRetrievalQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
+                id
                 hashAlgorithms
             }
             node(id: $id) {

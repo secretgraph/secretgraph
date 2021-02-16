@@ -55,6 +55,7 @@ const contentFeedQuery = gql`
                         id
                         nonce
                         link
+                        updateId
                         tags(includeTags: $includeTags)
                         references(
                             groups: ["key", "signature"]

@@ -4,6 +4,7 @@ export const serverConfigQuery = gql`
     query serverSecretgraphConfigQuery {
         secretgraph {
             config {
+                id
                 hashAlgorithms
                 injectedClusters {
                     group

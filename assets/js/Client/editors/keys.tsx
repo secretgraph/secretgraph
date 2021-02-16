@@ -106,36 +106,47 @@ async function loadKeys({
             headers: {
                 Authorization: authorization.join(','),
             },
-        }).then(async (val) => {
-            results['publicKey'] = {
-                tags: await extractUnencryptedTags({
-                    tags: data.secretgraph.node.tags,
-                }),
-                data: await val.arrayBuffer(),
-                nodeData: data.secretgraph.node,
-            }
         })
+            .then(async (val) => {
+                results['publicKey'] = {
+                    tags: await extractUnencryptedTags({
+                        tags: data.secretgraph.node.tags,
+                    }),
+                    data: await val.arrayBuffer(),
+                    nodeData: data.secretgraph.node,
+                }
+            })
+            .catch((reason) => {
+                console.error(reason)
+                throw reason
+            })
     )
     if (
         data.secretgraph.node.referencedBy &&
         data.secretgraph.node.referencedBy.edges.length > 0
     ) {
-        const nodeData = data.secretgraph.node.referencedBy.edges[0].node
+        const nodeData = data.secretgraph.node.referencedBy.edges[0].node.target
         requests.push(
             decryptContentObject({
                 config,
                 nodeData,
                 blobOrTokens: authorization,
-            }).then((val) => {
-                if (!val) {
-                    return
+            }).then(
+                (val) => {
+                    if (!val) {
+                        return
+                    }
+                    results['privateKey'] = {
+                        data: val.data,
+                        tags: val.tags,
+                        nodeData: val.nodeData,
+                    }
+                },
+                (reason) => {
+                    console.error(reason)
+                    throw reason
                 }
-                results['privateKey'] = {
-                    data: val.data,
-                    tags: val.tags,
-                    nodeData: val.nodeData,
-                }
-            })
+            )
         )
     }
     await Promise.allSettled(requests)
@@ -202,7 +213,8 @@ function InnerKeys({
         isSubmitting,
         setValues,
         setFieldValue,
-        setFieldError,
+        errors,
+        setErrors,
         values,
     } = useFormikContext<any>()
     const [joinedHashes, setJoinedHashes] = React.useState('loading')
@@ -213,13 +225,18 @@ function InnerKeys({
             },
             (reason) => {}
         )
-    })
+    }, [])
     return (
         <Form>
             <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                     <Typography variant="h5">Key hashes</Typography>
-                    <Typography variant="body2">{joinedHashes}</Typography>
+                    <Typography
+                        variant="body2"
+                        style={{ wordBreak: 'break-all' }}
+                    >
+                        {joinedHashes}
+                    </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                     <Field
@@ -362,6 +379,11 @@ function InnerKeys({
                                     },
                                     false
                                 )
+                                setErrors({
+                                    ...errors,
+                                    publicKey: undefined,
+                                    privateKey: undefined,
+                                })
                             }}
                         >
                             Generate
@@ -401,7 +423,6 @@ const ViewKeys = () => {
         url: mainCtx.url as string,
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
-    console.log(data, isLoading)
     if (!data || isLoading) {
         return null
     }
@@ -410,19 +431,22 @@ const ViewKeys = () => {
         <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
                 <Typography variant="h5">Key hashes</Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" style={{ wordBreak: 'break-all' }}>
                     {data.publicKey.tags.key_hash.join(', ')}
                 </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
                 <Typography variant="h5">Cluster</Typography>
-                <Typography variant="body2">
-                    {data.publicKey.nodeData.cluster}
+                <Typography variant="body2" style={{ wordBreak: 'break-all' }}>
+                    {data.publicKey.nodeData.cluster.id}
                 </Typography>
             </Grid>
             <Grid item xs={12}>
                 <Typography variant="h5">Public Key</Typography>
-                <Typography variant="body2" style={{ whiteSpace: 'pre-line' }}>
+                <Typography
+                    variant="body2"
+                    style={{ whiteSpace: 'pre-line', wordBreak: 'break-all' }}
+                >
                     {`-----BEGIN PUBLIC KEY-----\n${btoa(
                         String.fromCharCode.apply(
                             null,
@@ -433,7 +457,10 @@ const ViewKeys = () => {
             </Grid>
             <Grid item xs={12}>
                 <Typography variant="h5">Private Key</Typography>
-                <Typography variant="body2" style={{ whiteSpace: 'pre-line' }}>
+                <Typography
+                    variant="body2"
+                    style={{ whiteSpace: 'pre-line', wordBreak: 'break-all' }}
+                >
                     {data.privateKey
                         ? `-----BEGIN PRIVATE KEY-----\n${btoa(
                               String.fromCharCode.apply(
@@ -466,7 +493,7 @@ const EditKeys = () => {
         return null
     }
     const initialValues = {
-        cluster: data.publicKey.nodeData.cluster as string,
+        cluster: data.publicKey.nodeData.cluster.id as string,
         publicKey: `-----BEGIN PUBLIC KEY-----\n${btoa(
             String.fromCharCode.apply(null, new Uint8Array(data.publicKey.data))
         )}\n-----END PUBLIC KEY-----`,
@@ -573,7 +600,7 @@ const EditKeys = () => {
                 if (
                     values.publicKey.trim() != initialValues.publicKey.trim() ||
                     (values.cluster &&
-                        values.cluster != data.publicKey.nodeData.cluster)
+                        values.cluster != data.publicKey.nodeData.cluster.id)
                 ) {
                     // delete and recreate
                     console.log('Public Key changed, recreate')
@@ -699,7 +726,7 @@ const AddKeys = () => {
                 const authinfo = extractAuthInfo({
                     config,
                     clusters: new Set([values.cluster as string]),
-                    url: mainCtx.url as string,
+                    url: activeUrl,
                     require: new Set(['create', 'manage']),
                 })
 
@@ -708,17 +735,16 @@ const AddKeys = () => {
                     query: getContentConfigurationQuery,
                     variables: {
                         authorization: authinfo.keys,
-                        id: mainCtx.item,
+                        id: values.cluster,
                     },
                 })
 
-                const hashAlgorithm =
-                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
+                const hashAlgorithm = config.hosts[activeUrl].hashAlgorithms[0]
 
                 //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                 const privkeys = extractPrivKeys({
                     config,
-                    url: mainCtx.url as string,
+                    url: activeUrl,
                     hashAlgorithm,
                 })
                 const keyParams = {
@@ -731,7 +757,7 @@ const AddKeys = () => {
                 }
                 const pubkeys = []
                 for (const { node } of pubkeysResult.data.secretgraph.node
-                    .cluster.contents.edges) {
+                    .contents.edges) {
                     if (
                         node.id != mainCtx.item &&
                         node.tags.includes('type=PublicKey')
@@ -787,6 +813,8 @@ const AddKeys = () => {
                     authorization: authinfo.keys,
                 })
                 updateMainCtx({
+                    action: 'edit',
+                    url: activeUrl,
                     item: newData.updateOrCreateContent.content.id,
                     updateId: newData.updateOrCreateContent.content.updateId,
                 })
@@ -843,7 +871,7 @@ async function findOrReturn({
         d = node.references
     }
     if (d && d.edges.length) {
-        return d.edges[0].node.id
+        return d.edges[0].node.target.id
     }
     return null
 }
@@ -868,6 +896,7 @@ export default function KeyComponent() {
         id: mainCtx.action === 'add' ? null : (mainCtx.item as string | null),
         config,
         url: mainCtx.url,
+        watch: mainCtx.url + '' + mainCtx.item,
     })
     if (isLoading) {
         return null
