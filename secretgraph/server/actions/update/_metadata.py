@@ -1,7 +1,8 @@
-
 __all__ = [
-    "transform_tags", "extract_key_hashes", "transform_references",
-    "update_metadata_fn"
+    "transform_tags",
+    "extract_key_hashes",
+    "transform_references",
+    "update_metadata_fn",
 ]
 
 import logging
@@ -21,9 +22,7 @@ logger = logging.getLogger(__name__)
 
 len_default_hash = len(hash_object(b""))
 
-denied_remove_filter = re.compile(
-    "^(?:id|state|type)=?"
-)
+denied_remove_filter = re.compile("^(?:id|state|type)=?")
 
 
 def extract_key_hashes(tags):
@@ -50,20 +49,9 @@ def transform_tags(tags, oldtags=None, operation=MetadataOperations.append):
     operation = operation or MetadataOperations.append
     new_had_keyhash = False
     if operation == MetadataOperations.remove and oldtags:
-        tags = filter(
-            lambda x: not denied_remove_filter.match(x),
-            tags
-        )
-        remove_filter = re.compile(
-            r"^(?:%s)" % "|".join(map(
-                re.escape,
-                tags
-            ))
-        )
-        tags = filter(
-            lambda x: not remove_filter.match(x),
-            oldtags
-        )
+        tags = filter(lambda x: not denied_remove_filter.match(x), tags)
+        remove_filter = re.compile(r"^(?:%s)" % "|".join(map(re.escape, tags)))
+        tags = filter(lambda x: not remove_filter.match(x), oldtags)
     for tag in tags:
         splitted_tag = tag.split("=", 1)
         if splitted_tag[0] == "id":
@@ -118,8 +106,8 @@ def transform_tags(tags, oldtags=None, operation=MetadataOperations.append):
 
             if len(splitted_tag) == 2:
                 if (
-                    operation == MetadataOperations.append or
-                    splitted_tag[0] not in newtags_set
+                    operation == MetadataOperations.append
+                    or splitted_tag[0] not in newtags_set
                 ):
                     s = newtags.setdefault(splitted_tag[0], set())
                     if not isinstance(s, set):
@@ -128,17 +116,13 @@ def transform_tags(tags, oldtags=None, operation=MetadataOperations.append):
             elif newtags.setdefault(splitted_tag[0], None) is not None:
                 pass
 
-    if (
-        newtags.get("type") == {"PrivateKey"} and
-        not newtags.get("key")
-    ):
+    if newtags.get("type") == {"PrivateKey"} and not newtags.get("key"):
         raise ValueError("PrivateKey has no key=<foo> tag")
     return newtags, key_hashes
 
 
 def transform_references(
-    content, references, key_hashes_tags, allowed_targets,
-    no_final_refs=False
+    content, references, key_hashes_tags, allowed_targets, no_final_refs=False
 ):
     # no_final_refs final_references => None
     final_references = None if no_final_refs else []
@@ -171,15 +155,12 @@ def transform_references(
                             # for correct chaining
                             tag="type=PublicKey",
                             content_id=OuterRef("pk"),
-                            content__tags__tag=f"key_hash={ref['target']}"
+                            content__tags__tag=f"key_hash={ref['target']}",
                         ).values("pk")
                     )
                     # the direct way doesn't work
                     # subquery is necessary for chaining operations correctly
-                    q = (
-                        Q(tags__tag=f"id={ref['target']}") |
-                        Q(tags__in=_refs)
-                    )
+                    q = Q(tags__tag=f"id={ref['target']}") | Q(tags__in=_refs)
 
                 targetob = allowed_targets.filter(
                     q, markForDestruction=None
@@ -190,7 +171,8 @@ def transform_references(
                 source=content,
                 target=targetob,
                 group=ref.get("group") or "",
-                extra=ref.get("extra") or ""
+                extra=ref.get("extra") or "",
+                deleteRecursive=ref.get("deleteRecursive") or None,
             )
         # first extra tag in same group  with same target wins
         if (refob.group, refob.target.id) in deduplicate:
@@ -213,9 +195,14 @@ def transform_references(
 
 
 def update_metadata_fn(
-    request, content, *,
-    tags=None, references=None, operation=MetadataOperations.append,
-    authset=None, required_keys=None
+    request,
+    content,
+    *,
+    tags=None,
+    references=None,
+    operation=MetadataOperations.append,
+    authset=None,
+    required_keys=None,
 ):
     operation = operation or MetadataOperations.append
     final_tags = None
@@ -223,11 +210,7 @@ def update_metadata_fn(
     remove_refs_q = Q()
     if tags:
         oldtags = content.tags.values_list("tag", flat=True)
-        tags_dict, key_hashes_tags = transform_tags(
-            tags,
-            oldtags,
-            operation
-        )
+        tags_dict, key_hashes_tags = transform_tags(tags, oldtags, operation)
         content_state = next(iter(tags_dict.get("state", {None})))
         content_type = next(iter(tags_dict.get("type", {None})))
         if content_type in {"PrivateKey", "PublicKey"}:
@@ -240,32 +223,27 @@ def update_metadata_fn(
                 raise ValueError(
                     "%s is an invalid state for Config", content_type
                 )
-            elif content_state not in {
-                "draft", "public", "internal"
-            }:
+            elif content_state not in {"draft", "public", "internal"}:
                 raise ValueError(
                     "%s is an invalid state for content", content_state
                 )
 
         if operation in {
-            MetadataOperations.append, MetadataOperations.replace
+            MetadataOperations.append,
+            MetadataOperations.replace,
         }:
             final_tags = []
             for prefix, val in tags_dict.items():
                 if not val:
                     remove_tags_q |= Q(tag__startswith=prefix)
-                    final_tags.append(ContentTag(
-                        content=content,
-                        tag=prefix
-                    ))
+                    final_tags.append(ContentTag(content=content, tag=prefix))
                 else:
                     for subval in val:
                         composed = "%s=%s" % (prefix, subval)
                         remove_tags_q |= Q(tag__startswith=composed)
-                        final_tags.append(ContentTag(
-                            content=content,
-                            tag=composed
-                        ))
+                        final_tags.append(
+                            ContentTag(content=content, tag=composed)
+                        )
         else:
             for prefix, val in tags_dict.items():
                 if not val:
@@ -276,8 +254,7 @@ def update_metadata_fn(
                         remove_tags_q &= ~Q(tag__startswith=composed)
     else:
         kl = content.tags.filter(
-            Q(tag__startswith="key_hash=") |
-            Q(tag__startswith="type=")
+            Q(tag__startswith="key_hash=") | Q(tag__startswith="type=")
         ).values_list("tag", flat=True)
         key_hashes_tags, content_type = extract_key_hashes(kl)
 
@@ -287,54 +264,37 @@ def update_metadata_fn(
         _refs = []
         if MetadataOperations.replace:
             _refs = references
-        remrefs = set(map(
-            lambda x: (x["group"], x["target"]),
-            references
-        ))
+        remrefs = set(map(lambda x: (x["group"], x["target"]), references))
         for ref in content.references.all():
             if (ref.group, None) in remrefs:
-                remove_refs_q |= Q(
-                    id=ref.id
-                )
+                remove_refs_q |= Q(id=ref.id)
                 continue
             elif (ref.group, ref.target_id) in remrefs:
-                remove_refs_q |= Q(
-                    id=ref.id
-                )
+                remove_refs_q |= Q(id=ref.id)
                 continue
             elif (ref.group, ref.target.contentHash) in remrefs:
-                remove_refs_q |= Q(
-                    id=ref.id
-                )
+                remove_refs_q |= Q(id=ref.id)
                 continue
             _refs.append(ref)
     elif MetadataOperations.append:
         # prefer old extra values, no problem with crashing as ignore_conflict
-        _refs = [
-            *content.references.all(),
-            *references
-        ]
+        _refs = [*content.references.all(), *references]
     # no_final_refs => final_references = None
-    final_references, key_hashes_ref, verifiers_ref = \
-        transform_references(
-            content,
-            _refs,
-            key_hashes_tags,
-            initializeCachedResult(
-                request, authset=authset
-            )["Content"]["objects"],
-            no_final_refs=references is None
-        )
+    final_references, key_hashes_ref, verifiers_ref = transform_references(
+        content,
+        _refs,
+        key_hashes_tags,
+        initializeCachedResult(request, authset=authset)["Content"]["objects"],
+        no_final_refs=references is None,
+    )
 
     if required_keys and required_keys.isdisjoint(verifiers_ref):
         raise ValueError("Not signed by required keys")
     if (
-        content_type not in {"PrivateKey", "PublicKey"} and
-        len(key_hashes_ref) < 1
+        content_type not in {"PrivateKey", "PublicKey"}
+        and len(key_hashes_ref) < 1
     ):
-        raise ValueError(
-            ">=1 key references required for content"
-        )
+        raise ValueError(">=1 key references required for content")
 
     def save_fn(context=nullcontext):
         if callable(context):
@@ -344,25 +304,30 @@ def update_metadata_fn(
             content.save(update_fields=["updateId"])
             if final_tags is not None:
                 if operation in {
-                    MetadataOperations.remove, MetadataOperations.replace
+                    MetadataOperations.remove,
+                    MetadataOperations.replace,
                 }:
                     content.tags.filter(remove_tags_q).delete()
                 if operation in {
-                    MetadataOperations.append, MetadataOperations.replace
+                    MetadataOperations.append,
+                    MetadataOperations.replace,
                 }:
                     ContentTag.objects.bulk_create(
                         final_tags, ignore_conflicts=True
                     )
             if final_references is not None:
                 if operation in {
-                    MetadataOperations.remove, MetadataOperations.replace
+                    MetadataOperations.remove,
+                    MetadataOperations.replace,
                 }:
                     content.references.filter(remove_refs_q).delete()
                 if operation in {
-                    MetadataOperations.append, MetadataOperations.replace
+                    MetadataOperations.append,
+                    MetadataOperations.replace,
                 }:
                     ContentReference.objects.bulk_create(
                         final_references, ignore_conflicts=True
                     )
             return content
+
     return save_fn

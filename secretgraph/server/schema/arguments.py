@@ -1,6 +1,8 @@
 import graphene
 from graphene_file_upload.scalars import Upload
 
+from ... import constants
+
 
 class AuthList(graphene.List):
     def __init__(
@@ -8,7 +10,7 @@ class AuthList(graphene.List):
         of_type=graphene.NonNull(graphene.String),
         *args,
         required=False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(of_type, *args, required=required, **kwargs)
 
@@ -49,6 +51,24 @@ class ContentKeyInput(graphene.InputObjectType):
     )
 
 
+def ReferenceInput_desc(v):
+    if v == constants.DeleteRecursive.FALSE:
+        return "Keep content when referenced content is deleted"
+    elif v == constants.DeleteRecursive.TRUE:
+        return "Delete content when referenced content is deleted (default)"
+    elif v == constants.DeleteRecursive.NO_GROUP:
+        return "Delete content when referenced content is deleted and no other reference with the same group is remaining"  # noqa: E501
+    elif v is None:
+        return "Specify policy for recursive deletions"
+    else:
+        raise Exception(f"Invalid type: {v}")
+
+
+deleteRecursiveEnum = graphene.Enum.from_enum(
+    constants.DeleteRecursive, description=ReferenceInput_desc
+)
+
+
 class ReferenceInput(graphene.InputObjectType):
     target = graphene.ID(
         required=True,
@@ -56,6 +76,7 @@ class ReferenceInput(graphene.InputObjectType):
     )
     extra = graphene.String(required=False)
     group = graphene.String(required=False)
+    deleteRecursive = deleteRecursiveEnum(required=False)
 
 
 class ContentValueInput(graphene.InputObjectType):

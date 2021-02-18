@@ -28,6 +28,12 @@ class PushForm(forms.Form):
         widget=ListWidget(
             items=[
                 {"name": "group", "format_type": "text"},
+                {"name": "extra", "format_type": "text"},
+                {
+                    "name": "deleteRecursive",
+                    "format_type": "text",
+                    "extras": {"enum": ["NO_GROUP", "TRUE", "FALSE"]},
+                },
                 {
                     "name": "target",
                     "format_type": "text",
@@ -132,7 +138,25 @@ class UpdateForm(forms.Form):
         ),
     )
     references = MultipleOpenChoiceField(
-        label=_("References contents"), required=False
+        label=_("References contents"),
+        required=False,
+        widget=ListWidget(
+            items=[
+                {"name": "group", "format_type": "text"},
+                {"name": "extra", "format_type": "text"},
+                {
+                    "name": "deleteRecursive",
+                    "format_type": "text",
+                    "extras": {"enum": ["NO_GROUP", "TRUE", "FALSE"]},
+                },
+                {
+                    "name": "target",
+                    "format_type": "text",
+                    "extras": {"enum": []},
+                },
+            ],
+            item_label=messages.reference_label,
+        ),
     )
 
     def __init__(self, result, instance, request, **kwargs):

@@ -454,7 +454,7 @@ export async function initializeCluster(
     config: ConfigInterface
 ) {
     const key = crypto.getRandomValues(new Uint8Array(32))
-    const { publicKey, privateKey } = (await crypto.subtle.generateKey(
+    const { publicKey, privateKey } = await crypto.subtle.generateKey(
         {
             name: 'RSA-OAEP',
             //modulusLength: 8192,
@@ -464,7 +464,7 @@ export async function initializeCluster(
         },
         true,
         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-    )) as CryptoKeyPair
+    )
     const digestCertificatePromise = crypto.subtle
         .exportKey('spki' as const, publicKey)
         .then((keydata) =>
@@ -594,7 +594,7 @@ export async function decryptContentObject({
     let key
     try {
         const found = findCertCandidatesForRefs(config, _node)
-        if (!found) {
+        if (!found.length) {
             return null
         }
         key = (
@@ -612,6 +612,7 @@ export async function decryptContentObject({
         console.error(exc, exc?.errors)
         return null
     }
+
     try {
         return {
             ...(await decryptAESGCM({

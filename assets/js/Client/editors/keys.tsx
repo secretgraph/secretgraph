@@ -101,6 +101,12 @@ async function loadKeys({
             nodeData: any
         }
     }
+
+    const keyParams = {
+        name: 'RSA-OAEP',
+        hash:
+            Constants.mapHashNames[results['hashAlgorithms'][0]].operationName,
+    }
     requests.push(
         fetch(data.secretgraph.node.link, {
             headers: {
@@ -125,17 +131,23 @@ async function loadKeys({
         data.secretgraph.node.referencedBy &&
         data.secretgraph.node.referencedBy.edges.length > 0
     ) {
-        const nodeData = data.secretgraph.node.referencedBy.edges[0].node.target
+        const nodeData = data.secretgraph.node.referencedBy.edges[0].node.source
         requests.push(
             decryptContentObject({
                 config,
                 nodeData,
                 blobOrTokens: authorization,
             }).then(
-                (val) => {
+                async (val) => {
                     if (!val) {
                         return
                     }
+                    console.log(await serializeToBase64(val.data))
+                    await unserializeToCryptoKey(
+                        val.data,
+                        keyParams,
+                        'privateKey'
+                    )
                     results['privateKey'] = {
                         data: val.data,
                         tags: val.tags,
@@ -273,6 +285,7 @@ function InnerKeys({
                         disabled={isSubmitting || disabled}
                         multiline
                         variant="outlined"
+                        required
                     />
                 </Grid>
                 <Grid item xs={12}>
@@ -612,7 +625,8 @@ const EditKeys = () => {
                     const pubKey = await unserializeToCryptoKey(
                         matchedPubKey,
                         keyParams,
-                        'publicKey'
+                        'publicKey',
+                        true
                     )
                     await deleteNode({
                         client,

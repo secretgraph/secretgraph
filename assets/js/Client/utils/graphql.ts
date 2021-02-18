@@ -123,6 +123,7 @@ export function createSignatureReferences(
                         target: hash,
                         group: 'signature',
                         extra: `${hashValue.serializedName}:${signature}`,
+                        deleteRecursive: 'FALSE',
                     }
                 }
             )
@@ -199,6 +200,7 @@ export function encryptSharedKey(
                         target: hash,
                         group: 'key',
                         extra: `${hashValue.serializedName}:${encrypted}`,
+                        deleteRecursive: 'NO_GROUP',
                     }
                 }
             )

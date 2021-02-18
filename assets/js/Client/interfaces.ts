@@ -50,6 +50,7 @@ export interface ReferenceInterface {
     target: string
     group: string
     extra: string
+    deleteRecursive?: 'NO_GROUP' | 'TRUE' | 'FALSE'
 }
 
 export interface ConfigContentInterface {

@@ -132,7 +132,11 @@ export const findPublicKeyQuery = gql`
 `
 
 export const keysRetrievalQuery = gql`
-    query contentKeyRetrievalQuery($id: ID!, $authorization: [String!]) {
+    query contentKeyRetrievalQuery(
+        $id: ID!
+        $authorization: [String!]
+        $keyhashes: [String!]
+    ) {
         secretgraph(authorization: $authorization) {
             config {
                 id
@@ -149,17 +153,47 @@ export const keysRetrievalQuery = gql`
                         id
                         publicInfo
                     }
-                    referencedBy(groups: ["public_key"]) {
+                    references(groups: ["signature"], includeTags: $keyhashes) {
                         edges {
                             node {
                                 extra
                                 target {
+                                    link
+                                    tags(includeTags: ["type=", "key_hash="])
+                                }
+                            }
+                        }
+                    }
+                    referencedBy(groups: ["public_key"]) {
+                        edges {
+                            node {
+                                extra
+                                source {
                                     id
                                     deleted
                                     link
                                     nonce
                                     updateId
                                     tags
+                                    references(
+                                        groups: ["key"]
+                                        includeTags: $keyhashes
+                                    ) {
+                                        edges {
+                                            node {
+                                                extra
+                                                target {
+                                                    link
+                                                    tags(
+                                                        includeTags: [
+                                                            "type="
+                                                            "key_hash="
+                                                        ]
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -199,14 +233,7 @@ export const contentRetrievalQuery = gql`
                                 extra
                                 target {
                                     link
-                                    nonce
-                                    tags(
-                                        includeTags: [
-                                            "type"
-                                            "key_hash="
-                                            "key="
-                                        ]
-                                    )
+                                    tags(includeTags: ["type", "key_hash="])
                                 }
                             }
                         }
