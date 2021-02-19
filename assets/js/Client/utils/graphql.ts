@@ -1,19 +1,20 @@
 import { ApolloClient, InMemoryCache } from '@apollo/client'
 import { relayStylePagination } from '@apollo/client/utilities'
 import { createUploadLink } from 'apollo-upload-client'
+
+import { mapHashNames } from '../constants'
 import {
     ConfigInterface,
-    ReferenceInterface,
     CryptoHashPair,
     KeyInput,
+    ReferenceInterface,
 } from '../interfaces'
 import {
-    unserializeToCryptoKey,
-    serializeToBase64,
     encryptRSAOEAP,
+    serializeToBase64,
     unserializeToArrayBuffer,
+    unserializeToCryptoKey,
 } from './encryption'
-import { mapHashNames } from '../constants'
 
 export const createClient = (url: string) => {
     return new ApolloClient({
@@ -244,7 +245,7 @@ export function extractPubKeysCluster(props: {
     return pubkeys
 }
 
-export function extractPubKeysRefs(props: {
+export function extractPubKeysReferences(props: {
     readonly node: any
     readonly authorization: string[]
     readonly params: any

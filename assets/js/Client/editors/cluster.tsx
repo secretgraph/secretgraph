@@ -1,46 +1,44 @@
-import * as React from 'react'
-import Typography from '@material-ui/core/Typography'
-import AddIcon from '@material-ui/icons/Add'
+import { ApolloClient, FetchResult, useApolloClient } from '@apollo/client'
+import Button from '@material-ui/core/Button'
+import Collapse from '@material-ui/core/Collapse'
+import Grid from '@material-ui/core/Grid'
+import IconButton from '@material-ui/core/IconButton'
+import LinearProgress from '@material-ui/core/LinearProgress'
 import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
-import { useAsync } from 'react-async'
-import Button from '@material-ui/core/Button'
 import ListItemText from '@material-ui/core/ListItemText'
-import IconButton from '@material-ui/core/IconButton'
+import Typography from '@material-ui/core/Typography'
+import AddIcon from '@material-ui/icons/Add'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
-import LinearProgress from '@material-ui/core/LinearProgress'
-import Grid from '@material-ui/core/Grid'
-import Collapse from '@material-ui/core/Collapse'
-
-import { Formik, Form, FastField, Field } from 'formik'
-
+import { FastField, Field, Form, Formik } from 'formik'
 import { TextField as FormikTextField } from 'formik-material-ui'
-import { useApolloClient, ApolloClient, FetchResult } from '@apollo/client'
 import {
+    BlankNode,
+    Literal,
+    NamedNode,
+    SPARQLToQuery,
+    graph,
     parse,
     serialize,
-    graph,
-    SPARQLToQuery,
-    BlankNode,
-    NamedNode,
-    Literal,
 } from 'rdflib'
-import { RDF, XSD, CLUSTER, SECRETGRAPH, contentStates } from '../constants'
+import * as React from 'react'
+import { useAsync } from 'react-async'
 
-import { ConfigInterface, MainContextInterface } from '../interfaces'
+import DecisionFrame from '../components/DecisionFrame'
+import { CLUSTER, RDF, SECRETGRAPH, XSD, contentStates } from '../constants'
 import {
-    MainContext,
-    InitializedConfigContext,
     ActiveUrlContext,
+    InitializedConfigContext,
+    MainContext,
     SearchContext,
 } from '../contexts'
+import { ConfigInterface, MainContextInterface } from '../interfaces'
 import { getClusterQuery } from '../queries/cluster'
 import { useStylesAndTheme } from '../theme'
+import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
 import { extractAuthInfo } from '../utils/config'
 import { serializeToBase64 } from '../utils/encryption'
-import { updateCluster, createCluster } from '../utils/operations'
-import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
-import DecisionFrame from '../components/DecisionFrame'
+import { createCluster, updateCluster } from '../utils/operations'
 
 function item_retrieval_helper({
     client,

@@ -8,9 +8,9 @@ class Action(enum.Enum):
 
 
 class DeleteRecursive(enum.Enum):
-    FALSE = False
-    TRUE = True
-    NO_GROUP = None
+    TRUE = "a"
+    FALSE = "b"
+    NO_GROUP = "c"
 
 
 class MetadataOperations(enum.Enum):

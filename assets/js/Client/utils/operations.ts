@@ -50,7 +50,7 @@ import {
     encryptSharedKey,
     createSignatureReferences,
     extractPubKeysCluster,
-    extractPubKeysRefs,
+    extractPubKeysReferences,
 } from './graphql'
 
 import { extractPublicInfo } from './cluster'
@@ -724,7 +724,7 @@ export async function updateConfigRemoteReducer(
             hashAlgorithm: configQueryRes.data.config.hashAlgorithms[0],
             old: privkeys,
         })
-        pubkeys = extractPubKeysRefs({
+        pubkeys = extractPubKeysReferences({
             node,
             authorization: authInfo.keys,
             params: {

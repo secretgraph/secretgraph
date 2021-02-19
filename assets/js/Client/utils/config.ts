@@ -529,7 +529,7 @@ export function findCertCandidatesForRefs(
                 }
             }
         }
-        //console.log(hashes, nodeData.tags, config)
+        console.log(hashes, nodeData.tags, config)
         for (const tag of nodeData.tags) {
             if (tag.startsWith('key=')) {
                 for (const hash of hashes) {

@@ -3,7 +3,6 @@ import posixpath
 import secrets
 from datetime import datetime as dt
 from itertools import chain
-from typing import Optional
 from uuid import UUID, uuid4
 
 from cryptography.hazmat.backends import default_backend
@@ -21,6 +20,7 @@ from .messages import (
     injection_group_help,
     reference_group_help,
 )
+from .. import constants
 
 logger = logging.getLogger(__name__)
 
@@ -292,6 +292,15 @@ class ContentTag(models.Model):
         ]
 
 
+DeleteRecursive = models.TextChoices(
+    "DeleteRecursive",
+    map(
+        lambda x: (x[0], x[1].value),
+        constants.DeleteRecursive.__members__.items(),
+    ),
+)
+
+
 class ContentReference(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     source: Content = models.ForeignKey(
@@ -310,8 +319,14 @@ class ContentReference(models.Model):
         help_text=reference_group_help,
     )
     extra: str = models.TextField(blank=True, null=False, default="")
-    deleteRecursive: Optional[bool] = models.BooleanField(
-        blank=True, default=True, null=True, db_column="delete_recursive"
+
+    deleteRecursive: str = models.CharField(
+        blank=True,
+        default=constants.DeleteRecursive.TRUE.value,
+        null=False,
+        db_column="delete_recursive",
+        max_length=1,
+        choices=DeleteRecursive.choices,
     )
 
     class Meta:

@@ -1588,18 +1588,6 @@
             {
               "args": [],
               "deprecationReason": null,
-              "description": "",
-              "isDeprecated": false,
-              "name": "deleteRecursive",
-              "type": {
-                "kind": "SCALAR",
-                "name": "Boolean",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
               "description": "The ID of the object.",
               "isDeprecated": false,
               "name": "id",
@@ -1611,6 +1599,18 @@
                   "name": "ID",
                   "ofType": null
                 }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "deleteRecursive",
+              "type": {
+                "kind": "ENUM",
+                "name": "DeleteRecursive",
+                "ofType": null
               }
             }
           ],
@@ -1624,6 +1624,35 @@
           ],
           "kind": "OBJECT",
           "name": "ContentReference",
+          "possibleTypes": null
+        },
+        {
+          "description": "Specify policy for recursive deletions",
+          "enumValues": [
+            {
+              "deprecationReason": null,
+              "description": "Delete content when referenced content is deleted (default)",
+              "isDeprecated": false,
+              "name": "TRUE"
+            },
+            {
+              "deprecationReason": null,
+              "description": "Keep content when referenced content is deleted",
+              "isDeprecated": false,
+              "name": "FALSE"
+            },
+            {
+              "deprecationReason": null,
+              "description": "Delete content when referenced content is deleted and no other reference with the same group is remaining",
+              "isDeprecated": false,
+              "name": "NO_GROUP"
+            }
+          ],
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "kind": "ENUM",
+          "name": "DeleteRecursive",
           "possibleTypes": null
         },
         {
@@ -3052,35 +3081,6 @@
           "interfaces": null,
           "kind": "INPUT_OBJECT",
           "name": "ReferenceInput",
-          "possibleTypes": null
-        },
-        {
-          "description": "Specify policy for recursive deletions",
-          "enumValues": [
-            {
-              "deprecationReason": null,
-              "description": "Keep content when referenced content is deleted",
-              "isDeprecated": false,
-              "name": "FALSE"
-            },
-            {
-              "deprecationReason": null,
-              "description": "Delete content when referenced content is deleted (default)",
-              "isDeprecated": false,
-              "name": "TRUE"
-            },
-            {
-              "deprecationReason": null,
-              "description": "Delete content when referenced content is deleted and no other reference with the same group is remaining",
-              "isDeprecated": false,
-              "name": "NO_GROUP"
-            }
-          ],
-          "fields": null,
-          "inputFields": null,
-          "interfaces": null,
-          "kind": "ENUM",
-          "name": "DeleteRecursive",
           "possibleTypes": null
         },
         {

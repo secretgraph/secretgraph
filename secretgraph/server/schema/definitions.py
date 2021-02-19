@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Cluster, Content, ContentReference
+from .shared import DeleteRecursive
 
 
 # why?: scalars cannot be used in Unions
@@ -148,7 +149,9 @@ class ContentReferenceNode(DjangoObjectType):
         model = ContentReference
         name = "ContentReference"
         interfaces = (relay.Node,)
-        fields = ["source", "target", "group", "extra", "deleteRecursive"]
+        fields = ["source", "target", "group", "extra"]
+
+    deleteRecursive = DeleteRecursive(required=False)
 
     def resolve_id(self, info):
         return f"{self.source.flexid}:{self.target.flexid}:{self.group}"
@@ -174,6 +177,9 @@ class ContentReferenceNode(DjangoObjectType):
             return None
         except ValueError:
             return None
+
+    def resolve_deleteRecursive(self, info):
+        return self.deleteRecursive
 
     def resolve_source(self, info, authorization=None, **kwargs):
         result = initializeCachedResult(info.context, authset=authorization)[

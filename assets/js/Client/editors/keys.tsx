@@ -1,67 +1,66 @@
-import * as React from 'react'
-import { Theme } from '@material-ui/core/styles'
-import LinearProgress from '@material-ui/core/LinearProgress'
-import Button from '@material-ui/core/Button'
-import Typography from '@material-ui/core/Typography'
-
-import Grid from '@material-ui/core/Grid'
-
-import { saveAs } from 'file-saver'
 import {
-    useQuery,
-    useApolloClient,
     ApolloClient,
     ApolloError,
     ApolloQueryResult,
+    useApolloClient,
+    useQuery,
 } from '@apollo/client'
+import Button from '@material-ui/core/Button'
+import Grid from '@material-ui/core/Grid'
+import LinearProgress from '@material-ui/core/LinearProgress'
+import { Theme } from '@material-ui/core/styles'
+import Typography from '@material-ui/core/Typography'
+import { saveAs } from 'file-saver'
 import {
-    Formik,
-    FieldProps,
-    Form,
     FastField,
     Field,
+    FieldProps,
+    Form,
+    Formik,
     FormikValues,
     useFormikContext,
 } from 'formik'
-
 import { TextField as FormikTextField } from 'formik-material-ui'
+import * as React from 'react'
+import { useAsync } from 'react-async'
 
-import { ConfigInterface, MainContextInterface } from '../interfaces'
+import DecisionFrame from '../components/DecisionFrame'
+import ClusterSelect from '../components/forms/ClusterSelect'
 import * as Constants from '../constants'
 import {
-    MainContext,
-    InitializedConfigContext,
-    SearchContext,
     ActiveUrlContext,
+    InitializedConfigContext,
+    MainContext,
+    SearchContext,
 } from '../contexts'
+import { ConfigInterface, MainContextInterface } from '../interfaces'
+import { newClusterLabel } from '../messages'
 import {
-    decryptContentId,
-    decryptContentObject,
-    updateContent,
-    createKeys,
-    deleteNode,
-} from '../utils/operations'
+    findPublicKeyQuery,
+    getContentConfigurationQuery,
+    keysRetrievalQuery,
+} from '../queries/content'
 import { serverConfigQuery } from '../queries/server'
+import { useStylesAndTheme } from '../theme'
+import { extractAuthInfo, extractPrivKeys } from '../utils/config'
 import {
     extractTags,
     extractUnencryptedTags,
-    unserializeToCryptoKey,
-    unserializeToArrayBuffer,
     serializeToBase64,
+    unserializeToArrayBuffer,
+    unserializeToCryptoKey,
 } from '../utils/encryption'
-import { extractAuthInfo, extractPrivKeys } from '../utils/config'
-import { extractPubKeysCluster } from '../utils/graphql'
-import DecisionFrame from '../components/DecisionFrame'
-import ClusterSelect from '../components/forms/ClusterSelect'
-
 import {
-    keysRetrievalQuery,
-    findPublicKeyQuery,
-    getContentConfigurationQuery,
-} from '../queries/content'
-import { useStylesAndTheme } from '../theme'
-import { newClusterLabel } from '../messages'
-import { useAsync } from 'react-async'
+    extractPubKeysCluster,
+    extractPubKeysReferences,
+} from '../utils/graphql'
+import {
+    createKeys,
+    decryptContentId,
+    decryptContentObject,
+    deleteNode,
+    updateContent,
+} from '../utils/operations'
 
 async function loadKeys({
     client,
@@ -566,31 +565,11 @@ const EditKeys = () => {
                         Constants.mapHashNames[data.hashAlgorithms[0]]
                             .operationName,
                 }
-                const pubkeys = []
-                for (const { node } of pubkeysResult.data.secretgraph.node
-                    .cluster.contents.edges) {
-                    if (
-                        node.id != mainCtx.item &&
-                        node.tags.includes('type=PublicKey')
-                    ) {
-                        for (const tag of node.tags) {
-                            if (tag.startsWith('key_hash=')) {
-                                const cert =
-                                    config.certificates[tag.match(/=(.*)/)[1]]
-                                if (cert) {
-                                    pubkeys.push(
-                                        await unserializeToCryptoKey(
-                                            cert,
-                                            keyParams,
-                                            'privateKey'
-                                        )
-                                    )
-                                    break
-                                }
-                            }
-                        }
-                    }
-                }
+                const pubkeys = extractPubKeysReferences({
+                    node: pubkeysResult.data.secretgraph.node,
+                    authorization: authinfo.keys,
+                    params: keyParams,
+                })
                 let privKey = null
                 if (values.privateKey.trim()) {
                     // can fail, is wanted to crash
@@ -770,31 +749,12 @@ const AddKeys = () => {
                                 .hashAlgorithms[0]
                         ].operationName,
                 }
-                const pubkeys = []
-                for (const { node } of pubkeysResult.data.secretgraph.node
-                    .contents.edges) {
-                    if (
-                        node.id != mainCtx.item &&
-                        node.tags.includes('type=PublicKey')
-                    ) {
-                        for (const tag of node.tags) {
-                            if (tag.startsWith('key_hash=')) {
-                                const cert =
-                                    config.certificates[tag.match(/=(.*)/)[1]]
-                                if (cert) {
-                                    pubkeys.push(
-                                        await unserializeToCryptoKey(
-                                            cert,
-                                            keyParams,
-                                            'privateKey'
-                                        )
-                                    )
-                                    break
-                                }
-                            }
-                        }
-                    }
-                }
+                const pubkeys = extractPubKeysCluster({
+                    node: pubkeysResult.data.secretgraph.node,
+                    authorization: authinfo.keys,
+                    params: keyParams,
+                })
+
                 let privKey = null
                 if (values.privateKey.trim()) {
                     // can fail, is wanted to crash
