@@ -1,44 +1,34 @@
 import { ApolloClient, FetchResult } from '@apollo/client'
+
+import { mapHashNames } from '../constants'
+import {
+    ActionInterface,
+    AuthInfoInterface,
+    ConfigInputInterface,
+    ConfigInterface,
+    CryptoGCMInInterface,
+    CryptoGCMOutInterface,
+    CryptoHashPair,
+    KeyInput,
+    RawInput,
+    ReferenceInterface,
+} from '../interfaces'
 import {
     createClusterMutation,
-    updateClusterMutation,
     getClusterQuery,
+    updateClusterMutation,
 } from '../queries/cluster'
 import {
-    createContentMutation,
-    updateContentMutation,
     contentRetrievalQuery,
+    createContentMutation,
     createKeysMutation,
+    updateContentMutation,
 } from '../queries/content'
 import {
     deleteNode as deleteNodeQuery,
     resetDeletionNode as resetDeletionNodeQuery,
 } from '../queries/node'
-import {
-    ConfigInterface,
-    ReferenceInterface,
-    ActionInterface,
-    AuthInfoInterface,
-    KeyInput,
-    CryptoHashPair,
-    CryptoGCMOutInterface,
-    ConfigInputInterface,
-    CryptoGCMInInterface,
-    RawInput,
-} from '../interfaces'
-import { mapHashNames } from '../constants'
-import { b64toarr, sortedHash, utf8encoder } from './misc'
-import {
-    decryptRSAOEAP,
-    encryptRSAOEAP,
-    decryptAESGCM,
-    encryptAESGCM,
-    serializeToBase64,
-    unserializeToArrayBuffer,
-    extractTags,
-    encryptTag,
-    unserializeToCryptoKey,
-} from './encryption'
+import { extractPublicInfo } from './cluster'
 import {
     cleanConfig,
     extractAuthInfo,
@@ -47,13 +37,23 @@ import {
     updateConfigReducer,
 } from './config'
 import {
-    encryptSharedKey,
+    decryptAESGCM,
+    decryptRSAOEAP,
+    encryptAESGCM,
+    encryptRSAOEAP,
+    encryptTag,
+    extractTags,
+    serializeToBase64,
+    unserializeToArrayBuffer,
+    unserializeToCryptoKey,
+} from './encryption'
+import {
     createSignatureReferences,
+    encryptSharedKey,
     extractPubKeysCluster,
     extractPubKeysReferences,
 } from './graphql'
-
-import { extractPublicInfo } from './cluster'
+import { b64toarr, sortedHash, utf8encoder } from './misc'
 
 export async function deleteNode({
     id,
@@ -187,7 +187,7 @@ export async function createKeys({
 }): Promise<FetchResult<any>> {
     const nonce = crypto.getRandomValues(new Uint8Array(13))
     const key = crypto.getRandomValues(new Uint8Array(32))
-    const halgo = mapHashNames[options.hashAlgorithm].operationName
+    const halgo = mapHashNames[options.hashAlgorithm]
 
     const keyParams = {
         name: 'RSA-PSS',
@@ -219,15 +219,15 @@ export async function createKeys({
             ([publicKey] as Parameters<typeof encryptSharedKey>[1]).concat(
                 pubkeys
             ),
-            halgo
+            halgo.operationName
         )
     )
     const signatureReferencesPromise = createSignatureReferences(
         publicKey,
         options.privkeys ? options.privkeys : [],
-        halgo
+        halgo.operationName
     )
-    const privateTags = [`key=${specialRef.extra}`]
+    const privateTags = [`key=${halgo.serializedName}:${specialRef.extra}`]
     if (options.privateTags) {
         privateTags.push(...(await Promise.all(options.privateTags)))
     }
@@ -385,6 +385,7 @@ export async function createCluster(options: {
     authorization?: string[]
 }): Promise<FetchResult<any>> {
     let nonce: null | Uint8Array = null
+    const halgo = mapHashNames[options.hashAlgorithm]
 
     let privateKeyPromise: Promise<null | File>
     const publicKeyPromise = unserializeToArrayBuffer(options.publicKey).then(
@@ -404,7 +405,7 @@ export async function createCluster(options: {
                 hashAlgorithm: options.hashAlgorithm,
             })
                 .then((data) => serializeToBase64(data.data))
-                .then((obj) => `key=${obj}`)
+                .then((obj) => `key=${halgo.serializedName}:${obj}`)
         )
     } else {
         privateKeyPromise = Promise.resolve(null)

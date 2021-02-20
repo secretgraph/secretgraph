@@ -121,6 +121,23 @@ def transform_tags(tags, oldtags=None, operation=MetadataOperations.append):
     return newtags, key_hashes
 
 
+_deleteRecursive_set = set(
+    map(lambda x: x.value, DeleteRecursive.__members__.values())
+)
+
+
+def clean_deleteRecursive(group, val):
+    if val:
+        assert val in _deleteRecursive_set, "Invalid value for deleteRecursive"
+        return val
+    if group == "signature":
+        return DeleteRecursive.FALSE.value
+    elif group in {"key", "transfer"}:
+        return DeleteRecursive.NO_GROUP.value
+    else:
+        return DeleteRecursive.TRUE.value
+
+
 def transform_references(
     content, references, key_hashes_tags, allowed_targets, no_final_refs=False
 ):
@@ -172,8 +189,8 @@ def transform_references(
                 target=targetob,
                 group=ref.get("group") or "",
                 extra=ref.get("extra") or "",
-                deleteRecursive=(
-                    ref.get("deleteRecursive") or DeleteRecursive.TRUE.value
+                deleteRecursive=clean_deleteRecursive(
+                    ref.get("group"), ref.get("deleteRecursive")
                 ),
             )
         # first extra tag in same group  with same target wins
@@ -183,10 +200,8 @@ def transform_references(
         if len(refob.extra) > 8000:
             raise ValueError("Extra tag too big")
         if refob.group == "signature":
-            refob.deleteRecursive = DeleteRecursive.FALSE.value
             sig_target_hashes.add(targetob.contentHash)
         if refob.group in {"key", "transfer"}:
-            refob.deleteRecursive = DeleteRecursive.NO_GROUP.value
             if refob.group == "key":
                 encrypt_target_hashes.add(targetob.contentHash)
             if targetob.contentHash not in key_hashes_tags:

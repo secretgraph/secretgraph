@@ -117,7 +117,6 @@ export const findPublicKeyQuery = gql`
                     references(groups: ["public_key"]) {
                         edges {
                             node {
-                                deleteRecursive
                                 target {
                                     id
                                     updateId

@@ -1,25 +1,25 @@
+import { ApolloClient } from '@apollo/client'
 import { saveAs } from 'file-saver'
 
+import { mapHashNames } from '../constants'
 import {
-    ConfigInterface,
-    ConfigInputInterface,
     AuthInfoInterface,
+    ConfigInputInterface,
+    ConfigInterface,
 } from '../interfaces'
+import { findConfigQuery } from '../queries/content'
 import {
-    encryptPreKey,
-    decryptFirstPreKey,
     decryptAESGCM,
+    decryptFirstPreKey,
     decryptRSAOEAP,
     encryptAESGCM,
+    encryptPreKey,
     serializeToBase64,
-    unserializeToCryptoKey,
     unserializeToArrayBuffer,
+    unserializeToCryptoKey,
 } from './encryption'
+import { b64toarr, mergeDeleteObjects, utf8encoder } from './misc'
 import * as SetOps from './set'
-import { b64toarr, utf8encoder, mergeDeleteObjects } from './misc'
-import { findConfigQuery } from '../queries/content'
-import { mapHashNames } from '../constants'
-import { ApolloClient } from '@apollo/client'
 
 export function cleanConfig(config: ConfigInterface | null | undefined) {
     if (!config) {
@@ -520,28 +520,35 @@ export function findCertCandidatesForRefs(
                 const [_, hashAlgorithm, cleanhash] = tag.match(
                     /=(?:([^:]*?):)?([^:]*)/
                 )
-                if (!cleanhash) {
-                    if (config.certificates[`${hashAlgorithm}:${cleanhash}`]) {
-                        hashes.push(`${hashAlgorithm}:${cleanhash}`)
+                if (cleanhash) {
+                    if (
+                        hashAlgorithm &&
+                        config.certificates[`${hashAlgorithm}:${cleanhash}`]
+                    ) {
+                        hashes.push({ hash: cleanhash, hashAlgorithm })
                     } else if (config.certificates[cleanhash]) {
-                        hashes.push(cleanhash)
+                        hashes.push({
+                            hash: cleanhash,
+                            hashAlgorithm: undefined,
+                        })
                     }
                 }
             }
         }
-        console.log(hashes, nodeData.tags, config)
         for (const tag of nodeData.tags) {
             if (tag.startsWith('key=')) {
-                for (const hash of hashes) {
-                    const [_, hashAlgorithm, shared] = tag.match(
+                for (const { hash, hashAlgorithm } of hashes) {
+                    const [_, hashAlgorithm2, shared] = tag.match(
                         /=(?:([^:]*?):)?([^:]*)/
                     )
                     found.push({
                         hash,
-                        hashAlgorithm: hashAlgorithm || undefined,
+                        hashAlgorithm: hashAlgorithm2 || hashAlgorithm,
                         sharedKey: b64toarr(shared),
                     })
                 }
+                // there is only one key
+                break
             }
         }
     }
