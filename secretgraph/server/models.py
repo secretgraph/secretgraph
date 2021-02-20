@@ -338,7 +338,7 @@ class ContentReference(models.Model):
             models.CheckConstraint(
                 check=(
                     ~(models.Q(group="key") | models.Q(group="transfer"))
-                    | models.Q(deleteRecursive__isnull=True)
+                    | models.Q(deleteRecursive=DeleteRecursive.NO_GROUP.value)
                 ),
                 name="%(class)s_key",
             ),

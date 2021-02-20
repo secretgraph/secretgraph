@@ -289,7 +289,7 @@ class Migration(migrations.Migration):
                         ),
                         _negated=True,
                     ),
-                    ("deleteRecursive__isnull", True),
+                    ("deleteRecursive", "c"),
                     _connector="OR",
                 ),
                 name="contentreference_key",

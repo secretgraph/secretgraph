@@ -15,6 +15,7 @@ from django.core.files.base import ContentFile, File
 from django.db.models import OuterRef, Q, Subquery
 from graphql_relay import to_global_id
 
+from .... import constants
 from ...utils.auth import id_to_result, initializeCachedResult
 from ...utils.encryption import default_padding, encrypt_into_file
 from ...utils.misc import calculate_hashes, hash_object, refresh_fields
@@ -257,7 +258,7 @@ def _update_or_create_content_or_key(
                 refob = ContentReference(
                     target=keyob,
                     group="key",
-                    deleteRecursive=None,
+                    deleteRecursive=constants.DeleteRecursive.NO_GROUP.value,
                     extra=keyob.encrypt(inner_key, default_padding),
                 )
                 final_references.append(refob)
@@ -381,7 +382,7 @@ def create_key_fn(request, objdata, authset=None):
             {
                 "target": publickey_content,
                 "group": "public_key",
-                "deleteRecursive": True,
+                "deleteRecursive": constants.DeleteRecursive.TRUE.value,
             }
         ]
         private = _update_or_create_content_or_key(

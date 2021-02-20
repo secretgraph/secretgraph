@@ -13,7 +13,7 @@ from contextlib import nullcontext
 from django.db.models import OuterRef, Q, Subquery
 from graphql_relay import from_global_id
 
-from ....constants import MetadataOperations
+from ....constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import initializeCachedResult
 from ...utils.misc import hash_object
 from ...models import Content, ContentReference, ContentTag
@@ -172,7 +172,9 @@ def transform_references(
                 target=targetob,
                 group=ref.get("group") or "",
                 extra=ref.get("extra") or "",
-                deleteRecursive=ref.get("deleteRecursive") or None,
+                deleteRecursive=(
+                    ref.get("deleteRecursive") or DeleteRecursive.TRUE.value
+                ),
             )
         # first extra tag in same group  with same target wins
         if (refob.group, refob.target.id) in deduplicate:
@@ -181,10 +183,10 @@ def transform_references(
         if len(refob.extra) > 8000:
             raise ValueError("Extra tag too big")
         if refob.group == "signature":
-            refob.deleteRecursive = None
+            refob.deleteRecursive = DeleteRecursive.FALSE.value
             sig_target_hashes.add(targetob.contentHash)
         if refob.group in {"key", "transfer"}:
-            refob.deleteRecursive = None
+            refob.deleteRecursive = DeleteRecursive.NO_GROUP.value
             if refob.group == "key":
                 encrypt_target_hashes.add(targetob.contentHash)
             if targetob.contentHash not in key_hashes_tags:
