@@ -60,6 +60,7 @@ import {
     decryptContentObject,
     deleteNode,
     updateContent,
+    updateKey,
 } from '../utils/operations'
 
 async function loadKeys({
@@ -141,7 +142,6 @@ async function loadKeys({
                     if (!val) {
                         return
                     }
-                    console.log(await serializeToBase64(val.data))
                     await unserializeToCryptoKey(
                         val.data,
                         keyParams,
@@ -565,7 +565,7 @@ const EditKeys = () => {
                         Constants.mapHashNames[data.hashAlgorithms[0]]
                             .operationName,
                 }
-                const pubkeys = extractPubKeysReferences({
+                const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
                     authorization: authinfo.keys,
                     params: keyParams,
@@ -637,7 +637,7 @@ const EditKeys = () => {
                             newData.updateOrCreateContent.content.updateId,
                     })
                 } else {
-                    const { data: newData } = await updateContent({
+                    const { data: newData } = await updateKey({
                         id: data.publicKey.nodeData.id,
                         updateId: data.publicKey.nodeData.updateId,
                         client,
@@ -648,12 +648,12 @@ const EditKeys = () => {
                         authorization: authinfo.keys,
                     })
                     if (data.privateKey) {
-                        await updateContent({
+                        await updateKey({
                             id: data.privateKey.nodeData.id,
                             updateId: data.privateKey.nodeData.updateId,
                             client,
                             config,
-                            value: privKey || undefined,
+                            key: privKey || undefined,
                             privkeys: await Promise.all(
                                 Object.values(privkeys)
                             ),

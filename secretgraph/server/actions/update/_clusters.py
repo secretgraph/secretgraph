@@ -129,7 +129,7 @@ def create_cluster_fn(request, objdata=None, user=None, authset=None):
     cluster = Cluster(**prebuild)
     cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset)
     contentdata["cluster"] = cluster
-    content_fn = create_key_fn(request, contentdata, authset)
+    content_fn = create_key_fn(request, contentdata, authset=authset)
 
     def save_fn(context=nullcontext):
         if callable(context):

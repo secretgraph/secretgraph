@@ -73,6 +73,7 @@ def _transform_key_into_dataobj(key_obj, content=None):
                 key_obj.get("publicTags") or [],
             ),
             "contentHash": hashes[0],
+            "actions": key_obj.get("publicActions"),
         },
         {
             "nonce": key_obj["nonce"],
@@ -83,6 +84,7 @@ def _transform_key_into_dataobj(key_obj, content=None):
                 key_obj.get("privateTags") or [],
             ),
             "contentHash": None,
+            "actions": key_obj.get("privateActions"),
         }
         if key_obj.get("privateKey")
         else None,
@@ -373,7 +375,10 @@ def create_key_fn(request, objdata, authset=None):
         cluster=objdata["cluster"]
     )
     public["references"] = objdata.get("references")
-    public["actions"] = objdata.get("actions")
+    # defaults to actions are only applied to public key
+    public["publicActions"] = objdata.get("publicActions")
+    if public["actions"] and publickey_content.id:
+        raise ValueError("Key already exists and actions specified")
     public = _update_or_create_content_or_key(
         request, publickey_content, public, authset, True, []
     )
@@ -426,7 +431,7 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
             "references": objdata.get("references"),
             "contentHash": objdata.get("contentHash"),
             "tags": value_obj.get("tags"),
-            "actions": objdata.get("actions"),
+            "actions": objdata["value_obj"].get("actions"),
             **value_obj,
         }
         content_obj = Content()
@@ -452,8 +457,8 @@ def update_content_fn(
     except Exception:
         raise ValueError("updateId is not an uuid")
     is_key = False
-    # TODO: maybe allow updating both keys (only tags)
     if content.tags.filter(tag="type=PublicKey"):
+        # can only update public tags and actions, updateId
         is_key = True
         required_keys = []
         key_obj = objdata.get("key")
@@ -464,14 +469,13 @@ def update_content_fn(
             key_obj, content=content
         )
     elif content.tags.filter(tag="type=PrivateKey"):
+        # can only update private tags and actions, updateId
         is_key = True
         key_obj = objdata.get("key")
         if not key_obj:
             raise ValueError("Cannot transform key to content")
 
-        hashes, _public, newdata = _transform_key_into_dataobj(
-            key_obj, content=content
-        )
+        hashes, _public, newdata = _transform_key_into_dataobj(key_obj)
         if not newdata:
             raise ValueError("No data for private key")
     else:
@@ -481,7 +485,6 @@ def update_content_fn(
             "contentHash": objdata.get("contentHash"),
             **(objdata.get("value") or {}),
         }
-    newdata["actions"] = objdata.get("actions")
     func = _update_or_create_content_or_key(
         request, content, newdata, authset, is_key, required_keys or []
     )

@@ -49,6 +49,12 @@ class ContentKeyInput(graphene.InputObjectType):
         required=True,
         description="Metadata tags for public key",
     )
+    privateActions = graphene.List(
+        graphene.NonNull(ActionInput), required=False
+    )
+    publicActions = graphene.List(
+        graphene.NonNull(ActionInput), required=False
+    )
 
 
 class ReferenceInput(graphene.InputObjectType):
@@ -65,6 +71,7 @@ class ContentValueInput(graphene.InputObjectType):
     value = Upload(required=False)
     nonce = graphene.String(required=False)
     tags = graphene.List(graphene.NonNull(graphene.String), required=False)
+    actions = graphene.List(graphene.NonNull(ActionInput), required=False)
 
 
 class ContentInput(graphene.InputObjectType):
@@ -75,7 +82,6 @@ class ContentInput(graphene.InputObjectType):
         graphene.NonNull(ReferenceInput), required=False
     )
     contentHash = graphene.String(required=False)
-    actions = graphene.List(ActionInput, required=False)
 
 
 class PushContentInput(graphene.InputObjectType):

@@ -411,7 +411,7 @@ export async function encryptAESGCM(
         {
             name: 'AES-GCM',
         },
-        'publicKey'
+        'privateKey' // secret so private key
     )
     const data = await unserializeToArrayBuffer(_options.data)
     return {

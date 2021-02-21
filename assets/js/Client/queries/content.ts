@@ -9,12 +9,18 @@ export const createContentMutation = gql`
         $nonce: String
         $contentHash: String
         $authorization: [String!]
+        $actions: [ActionInput!]
     ) {
         updateOrCreateContent(
             input: {
                 content: {
                     cluster: $cluster
-                    value: { tags: $tags, value: $value, nonce: $nonce }
+                    value: {
+                        tags: $tags
+                        value: $value
+                        nonce: $nonce
+                        actions: $actions
+                    }
                     contentHash: $contentHash
                     references: $references
                 }
@@ -46,6 +52,46 @@ export const createKeysMutation = gql`
     ) {
         updateOrCreateContent(
             input: {
+                content: {
+                    cluster: $cluster
+                    key: {
+                        publicKey: $publicKey
+                        privateKey: $privateKey
+                        nonce: $nonce
+                        privateTags: $privateTags
+                        publicTags: $publicTags
+                    }
+                    contentHash: $contentHash
+                    references: $references
+                }
+                authorization: $authorization
+            }
+        ) {
+            content {
+                id
+                nonce
+                link
+                updateId
+            }
+            writeok
+        }
+    }
+`
+export const updateKeyMutation = gql`
+    mutation contentUpdateKeyMutation(
+        $id: ID!
+        $cluster: ID!
+        $publicTags: [String!]!
+        $privateTags: [String!]!
+        $references: [ReferenceInput!]
+        $privateKey: Upload
+        $nonce: String
+        $contentHash: String
+        $authorization: [String!]
+    ) {
+        updateOrCreateContent(
+            input: {
+                id: $id
                 content: {
                     cluster: $cluster
                     key: {
@@ -107,6 +153,7 @@ export const updateContentMutation = gql`
         }
     }
 `
+
 export const findPublicKeyQuery = gql`
     query contentFindPublicKeyQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {

@@ -115,7 +115,6 @@ class PushForm(forms.Form):
             create_content_fn(
                 self.request,
                 content,
-                key=self.cleaned_data.get("key"),
                 required_keys=required_keys,
             ),
             action_key,
