@@ -40,13 +40,13 @@ class ContentKeyInput(graphene.InputObjectType):
     )
     privateTags = graphene.List(
         graphene.NonNull(graphene.String),
-        required=True,
+        required=False,
         description="Metadata tags for private key",
     )
 
     publicTags = graphene.List(
         graphene.NonNull(graphene.String),
-        required=True,
+        required=False,
         description="Metadata tags for public key",
     )
     privateActions = graphene.List(

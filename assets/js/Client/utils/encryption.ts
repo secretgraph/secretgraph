@@ -273,7 +273,12 @@ export async function unserializeToCryptoKey(
                     mapEncryptionAlgorithms[`${params.name}public`].usages
                 )
             } else {
-                console.debug(exc)
+                console.debug(
+                    'error, parameters: ',
+                    _data,
+                    params,
+                    mapEncryptionAlgorithms[`${params.name}public`]
+                )
                 throw Error('Not a PrivateKey')
             }
         }
@@ -486,8 +491,9 @@ export async function decryptAESGCM(
             'privateKey'
         )
     }
+    let data
     try {
-        let data = await unserializeToArrayBuffer(_options.data)
+        data = await unserializeToArrayBuffer(_options.data)
         if (!data || data.byteLength == 0) {
             data = new Uint8Array()
         } else {
@@ -506,7 +512,7 @@ export async function decryptAESGCM(
             nonce,
         }
     } catch (exc) {
-        console.debug('error, parameter: ', nonce, await _options.data, key)
+        console.debug('error, parameters: ', key, nonce, data)
         throw exc
     }
 }

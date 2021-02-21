@@ -590,6 +590,18 @@ const EditKeys = () => {
                         authorization: authinfo.keys,
                     })
                 }
+
+                // can fail, is wanted to crash
+                const matchedPubKey = (values.publicKey.match(
+                    /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
+                ) as string[])[1]
+                // can fail, is wanted to crash
+                const pubKey = await unserializeToCryptoKey(
+                    matchedPubKey,
+                    keyParams,
+                    'publicKey',
+                    true
+                )
                 if (
                     values.publicKey.trim() != initialValues.publicKey.trim() ||
                     (values.cluster &&
@@ -597,16 +609,6 @@ const EditKeys = () => {
                 ) {
                     // delete and recreate
                     console.log('Public Key changed, recreate')
-                    // can fail, is wanted to crash
-                    const matchedPubKey = (values.publicKey.match(
-                        /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
-                    ) as string[])[1]
-                    const pubKey = await unserializeToCryptoKey(
-                        matchedPubKey,
-                        keyParams,
-                        'publicKey',
-                        true
-                    )
                     await deleteNode({
                         client,
                         id: data.publicKey.nodeData.id,
@@ -647,16 +649,28 @@ const EditKeys = () => {
                         hashAlgorithm: data.hashAlgorithms[0],
                         authorization: authinfo.keys,
                     })
-                    if (data.privateKey) {
+                    if (data.privateKey && privKey) {
                         await updateKey({
                             id: data.privateKey.nodeData.id,
                             updateId: data.privateKey.nodeData.updateId,
                             client,
                             config,
-                            key: privKey || undefined,
+                            key: privKey,
                             privkeys: await Promise.all(
                                 Object.values(privkeys)
                             ),
+                            pubkeys: Object.values(pubkeys),
+                            hashAlgorithm: data.hashAlgorithms[0],
+                            authorization: authinfo.keys,
+                        })
+                    } else if (privKey) {
+                        await createKeys({
+                            client,
+                            config,
+                            cluster: values.cluster,
+                            publicKey: pubKey,
+                            privateKey: privKey,
+                            privkeys: Object.values(privkeys),
                             pubkeys: Object.values(pubkeys),
                             hashAlgorithm: data.hashAlgorithms[0],
                             authorization: authinfo.keys,

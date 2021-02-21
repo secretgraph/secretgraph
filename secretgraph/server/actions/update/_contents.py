@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 len_default_hash = len(hash_object(b""))
 
 
-def _transform_key_into_dataobj(key_obj, content=None):
+def _transform_key_into_dataobj(key_obj, content=None, backupTags=frozenset()):
     if isinstance(key_obj.get("privateKey"), str):
         key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
     if isinstance(key_obj.get("publicKey"), str):
@@ -38,8 +38,13 @@ def _transform_key_into_dataobj(key_obj, content=None):
     if key_obj.get("privateKey"):
         if not key_obj.get("nonce"):
             raise ValueError("encrypted private key requires nonce")
+    has_public_key = True
     if not key_obj.get("publicKey"):
-        raise ValueError("No public key")
+        if not content:
+            raise ValueError("No public key")
+        else:
+            has_public_key = False
+            key_obj["publicKey"] = content.file.open("rb").read()
     try:
         if isinstance(key_obj["publicKey"], bytes):
             key_obj["publicKey"] = load_der_public_key(
@@ -56,7 +61,7 @@ def _transform_key_into_dataobj(key_obj, content=None):
     except Exception as exc:
         # logger.debug("loading public key failed", exc_info=exc)
         raise ValueError("Invalid public key") from exc
-    if content:
+    if content and has_public_key:
         if content.file.open("rb").read() != key_obj["publicKey"]:
             raise ValueError("Cannot change public key")
     hashes = calculate_hashes(key_obj["publicKey"])
@@ -70,7 +75,9 @@ def _transform_key_into_dataobj(key_obj, content=None):
             "tags": chain(
                 ["type=PublicKey"],
                 hashes_tags,
-                key_obj.get("publicTags") or [],
+                key_obj["publicTags"]
+                if key_obj.get("publicTags") is not None
+                else backupTags,
             ),
             "contentHash": hashes[0],
             "actions": key_obj.get("publicActions"),
@@ -81,7 +88,9 @@ def _transform_key_into_dataobj(key_obj, content=None):
             "tags": chain(
                 ["type=PrivateKey"],
                 hashes_tags,
-                key_obj.get("privateTags") or [],
+                key_obj["privateTags"]
+                if key_obj.get("privateTags") is not None
+                else backupTags,
             ),
             "contentHash": None,
             "actions": key_obj.get("privateActions"),
@@ -431,7 +440,6 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
             "references": objdata.get("references"),
             "contentHash": objdata.get("contentHash"),
             "tags": value_obj.get("tags"),
-            "actions": objdata["value_obj"].get("actions"),
             **value_obj,
         }
         content_obj = Content()
@@ -466,7 +474,11 @@ def update_content_fn(
             raise ValueError("Cannot transform key to content")
 
         hashes, newdata, _private = _transform_key_into_dataobj(
-            key_obj, content=content
+            key_obj,
+            content=content,
+            backupTags=content.tags.exclude(
+                tag__regex="^(key_hash|type)="
+            ).values_list("tag", flat=True),
         )
     elif content.tags.filter(tag="type=PrivateKey"):
         # can only update private tags and actions, updateId
@@ -475,7 +487,12 @@ def update_content_fn(
         if not key_obj:
             raise ValueError("Cannot transform key to content")
 
-        hashes, _public, newdata = _transform_key_into_dataobj(key_obj)
+        hashes, _public, newdata = _transform_key_into_dataobj(
+            key_obj,
+            backupTags=content.tags.exclude(
+                tag__regex="^(key_hash|type)="
+            ).values_list("tag", flat=True),
+        )
         if not newdata:
             raise ValueError("No data for private key")
     else:

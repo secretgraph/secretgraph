@@ -155,7 +155,7 @@ export async function createContent({
             tags,
             nonce: await serializeToBase64(nonce),
             value: await encryptedContentPromise.then(
-                (data) => new File([data.data], 'value')
+                (data) => new Blob([data.data])
             ),
             actions: actions,
             contentHash: options.contentHash ? options.contentHash : null,
@@ -192,19 +192,20 @@ export async function createKeys({
 
     const keyParams = {
         name: 'RSA-PSS',
-        hash: halgo,
+        hash: halgo.operationName,
     }
     const publicKey = await unserializeToCryptoKey(
         options.publicKey,
         keyParams,
         'publicKey'
     )
+
     const encryptedPrivateKeyPromise = privateKey
         ? encryptAESGCM({
               key,
               nonce,
               data: unserializeToCryptoKey(privateKey, keyParams, 'privateKey'),
-          }).then((data) => new File([data.data], 'privateKey'))
+          }).then((data) => new Blob([data.data]))
         : null
 
     if (!pubkeys) {
@@ -228,7 +229,7 @@ export async function createKeys({
         options.privkeys ? options.privkeys : [],
         halgo.operationName
     )
-    const privateTags = [`key=${halgo.serializedName}:${specialRef.extra}`]
+    const privateTags = [`key=${specialRef.extra}`]
     if (options.privateTags) {
         privateTags.push(...(await Promise.all(options.privateTags)))
     }
@@ -252,10 +253,7 @@ export async function createKeys({
             privateTags,
             publicTags,
             nonce: await serializeToBase64(nonce),
-            publicKey: new File(
-                [await unserializeToArrayBuffer(publicKey)],
-                'publicKey'
-            ),
+            publicKey: new Blob([await unserializeToArrayBuffer(publicKey)]),
             privateKey: await encryptedPrivateKeyPromise,
             actions: actions,
             contentHash: options.contentHash ? options.contentHash : null,
@@ -365,9 +363,7 @@ export async function updateContent({
                   )
                 : null,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
-            value: encryptedContent
-                ? new File([encryptedContent.data], 'value')
-                : null,
+            value: encryptedContent ? new Blob([encryptedContent.data]) : null,
             actions: options.actions ? options.actions : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],
@@ -436,10 +432,17 @@ export async function updateKey({
             data: updatedKey,
         })
 
-        const [publicKeyReferencesPromise, tagsPromise2] = encryptSharedKey(
-            sharedKey as ArrayBuffer,
-            options.pubkeys,
-            options.hashAlgorithm
+        const [
+            [specialRef, ...publicKeyReferences],
+            publicTags,
+        ] = await Promise.all(
+            encryptSharedKey(
+                sharedKey as ArrayBuffer,
+                ([updatedKey] as Parameters<typeof encryptSharedKey>[1]).concat(
+                    options.pubkeys
+                ),
+                options.hashAlgorithm
+            )
         )
         const signatureReferencesPromise = createSignatureReferences(
             completedKey.data,
@@ -447,11 +450,15 @@ export async function updateKey({
             options.hashAlgorithm
         )
         references = ([] as ReferenceInterface[]).concat(
-            await publicKeyReferencesPromise,
+            publicKeyReferences,
             await signatureReferencesPromise,
             options.references ? [...options.references] : []
         )
-        ;(tags as string[]).push(...(await tagsPromise2))
+        ;(tags as string[]).push(`key=${specialRef.extra}`, ...publicTags)
+
+        if ((tags as string[]).every((val) => !val.startsWith('state='))) {
+            ;(tags as string[]).push('state=internal')
+        }
     } else if (updatedKey && updatedKey.type == 'public') {
         if (!options.hashAlgorithm) {
             throw Error('hashAlgorithm required for key resigning')
@@ -466,8 +473,15 @@ export async function updateKey({
             await signatureReferencesPromise,
             options.references ? [...options.references] : []
         )
+        if (tags && tags.every((val) => !val.startsWith('state='))) {
+            tags.push('state=public')
+        }
     } else {
         references = options.references ? options.references : null
+    }
+
+    if (tags && tags.every((val) => !val.startsWith('state='))) {
+        throw Error('Missing state')
     }
     return await client.mutate({
         mutation: updateKeyMutation,
@@ -490,7 +504,7 @@ export async function updateKey({
                   )
                 : null,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
-            value: completedKey ? new File([completedKey.data], 'value') : null,
+            key: completedKey ? new Blob([completedKey.data]) : null,
             actions: options.actions ? options.actions : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],
@@ -511,9 +525,9 @@ export async function createCluster(options: {
     let nonce: null | Uint8Array = null
     const halgo = mapHashNames[options.hashAlgorithm]
 
-    let privateKeyPromise: Promise<null | File>
+    let privateKeyPromise: Promise<null | Blob>
     const publicKeyPromise = unserializeToArrayBuffer(options.publicKey).then(
-        (obj) => new File([obj], 'publicKey')
+        (obj) => new Blob([obj])
     )
     const privateTags = ['state=internal']
     if (options.privateKey && options.privateKeyKey) {
@@ -522,7 +536,7 @@ export async function createCluster(options: {
             key: options.privateKeyKey,
             data: options.privateKey,
             nonce,
-        }).then((obj) => new File([obj.data], 'privateKey'))
+        }).then((obj) => new Blob([obj.data]))
         privateTags.push(
             await encryptRSAOEAP({
                 key: options.privateKey,
@@ -538,10 +552,7 @@ export async function createCluster(options: {
     return await options.client.mutate({
         mutation: createClusterMutation,
         variables: {
-            publicInfo: new File(
-                [utf8encoder.encode(options.publicInfo)],
-                'publicInfo'
-            ),
+            publicInfo: new Blob([utf8encoder.encode(options.publicInfo)]),
             publicKey: await publicKeyPromise,
             privateKey: await privateKeyPromise,
             privateTags: privateTags,
@@ -565,10 +576,7 @@ export async function updateCluster(options: {
         variables: {
             id: options.id,
             updateId: options.updateId,
-            publicInfo: new File(
-                [utf8encoder.encode(options.publicInfo)],
-                'publicInfo'
-            ),
+            publicInfo: new Blob([utf8encoder.encode(options.publicInfo)]),
             actions: options.actions,
             authorization: options.authorization,
         },
@@ -656,7 +664,7 @@ export async function initializeCluster(
         client,
         config,
         cluster: clusterResult.cluster['id'],
-        value: new File([JSON.stringify(config)], 'value'),
+        value: new Blob([JSON.stringify(config)]),
         pubkeys: [publicKey],
         privkeys: [privateKey],
         tags: ['type=Config', 'state=internal'],

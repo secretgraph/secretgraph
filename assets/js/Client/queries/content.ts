@@ -80,11 +80,11 @@ export const createKeysMutation = gql`
 export const updateKeyMutation = gql`
     mutation contentUpdateKeyMutation(
         $id: ID!
-        $cluster: ID!
-        $publicTags: [String!]!
-        $privateTags: [String!]!
+        $updateId: ID!
+        $cluster: ID
+        $tags: [String!]
         $references: [ReferenceInput!]
-        $privateKey: Upload
+        $key: Upload
         $nonce: String
         $contentHash: String
         $authorization: [String!]
@@ -95,15 +95,16 @@ export const updateKeyMutation = gql`
                 content: {
                     cluster: $cluster
                     key: {
-                        publicKey: $publicKey
-                        privateKey: $privateKey
+                        publicKey: $key
+                        privateKey: $key
                         nonce: $nonce
-                        privateTags: $privateTags
-                        publicTags: $publicTags
+                        privateTags: $tags
+                        publicTags: $tags
                     }
                     contentHash: $contentHash
                     references: $references
                 }
+                updateId: $updateId
                 authorization: $authorization
             }
         ) {
