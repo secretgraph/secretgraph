@@ -1,19 +1,20 @@
-import * as React from 'react'
+import { gql, useQuery } from '@apollo/client'
 import Divider from '@material-ui/core/Divider'
-import DescriptionIcon from '@material-ui/icons/Description'
-import MovieIcon from '@material-ui/icons/Movie'
-import List from '@material-ui/core/List'
+import List, { ListProps } from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
 import ListSubheader from '@material-ui/core/ListSubheader'
+import DescriptionIcon from '@material-ui/icons/Description'
 import DraftsIcon from '@material-ui/icons/Drafts'
 import MailIcon from '@material-ui/icons/Mail'
-import { gql, useQuery } from '@apollo/client'
-import { useStylesAndTheme } from '../../theme'
+import MovieIcon from '@material-ui/icons/Movie'
+import * as React from 'react'
+
+import { ActiveUrlContext, SearchContext } from '../../contexts'
 import { elements } from '../../editors'
 import { AuthInfoInterface } from '../../interfaces'
-import { SearchContext, ActiveUrlContext } from '../../contexts'
+import { useStylesAndTheme } from '../../theme'
 
 type SideBarItemsProps = {
     authinfo?: AuthInfoInterface
@@ -82,18 +83,18 @@ const contentFeedQuery = gql`
 `
 
 // ["type=", "state=", ...
-export default function Contents(appProps: SideBarItemsProps) {
+export default function Contents({
+    authinfo,
+    selectItem,
+    loadMoreExtra,
+    activeCluster,
+    activeContent,
+    state,
+    header,
+    usePublic,
+    ...props
+}: SideBarItemsProps & ListProps) {
     const { classes, theme } = useStylesAndTheme()
-    const {
-        authinfo,
-        selectItem,
-        loadMoreExtra,
-        activeCluster,
-        activeContent,
-        state,
-        header,
-        usePublic,
-    } = appProps
     const { searchCtx } = React.useContext(SearchContext)
     const { activeUrl } = React.useContext(ActiveUrlContext)
     let hasNextPage = true
@@ -207,7 +208,7 @@ export default function Contents(appProps: SideBarItemsProps) {
     }, [data])
 
     return (
-        <List>
+        <List {...props}>
             {_header}
             {contentsFinished()}
             <Divider />

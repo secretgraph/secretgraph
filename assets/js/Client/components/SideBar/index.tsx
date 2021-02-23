@@ -1,39 +1,38 @@
-import * as React from 'react'
-import Drawer from '@material-ui/core/Drawer'
-import List from '@material-ui/core/List'
-import Tooltip from '@material-ui/core/Tooltip'
-import TextField from '@material-ui/core/TextField'
-import Hidden from '@material-ui/core/Hidden'
-import Divider from '@material-ui/core/Divider'
-import IconButton from '@material-ui/core/IconButton'
+import { ApolloClient, useApolloClient } from '@apollo/client'
 import Button from '@material-ui/core/Button'
-import Autocomplete from '@material-ui/lab/Autocomplete'
 import Chip from '@material-ui/core/Chip'
-import ChevronLeftIcon from '@material-ui/icons/ChevronLeft'
-import ChevronRightIcon from '@material-ui/icons/ChevronRight'
 import Collapse from '@material-ui/core/Collapse'
+import Divider from '@material-ui/core/Divider'
+import Drawer from '@material-ui/core/Drawer'
+import Hidden from '@material-ui/core/Hidden'
+import IconButton from '@material-ui/core/IconButton'
+import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
+import TextField from '@material-ui/core/TextField'
+import Tooltip from '@material-ui/core/Tooltip'
+import ChevronLeftIcon from '@material-ui/icons/ChevronLeft'
+import ChevronRightIcon from '@material-ui/icons/ChevronRight'
 import ExpandLessIcon from '@material-ui/icons/ExpandLess'
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
+import Autocomplete from '@material-ui/lab/Autocomplete'
+import * as React from 'react'
 
-import { useApolloClient, ApolloClient } from '@apollo/client'
-
-import { useStylesAndTheme } from '../../theme'
 import { mapHashNames } from '../../constants'
-import { AuthInfoInterface } from '../../interfaces'
-import { serverConfigQuery } from '../../queries/server'
-import { getClusterQuery } from '../../queries/cluster'
 import {
-    MainContext,
-    SearchContext,
     ActiveUrlContext,
     ConfigContext,
     InitializedConfigContext,
+    MainContext,
+    SearchContext,
 } from '../../contexts'
-import { extractAuthInfo } from '../../utils/config'
+import { AuthInfoInterface } from '../../interfaces'
+import { getClusterQuery } from '../../queries/cluster'
+import { serverConfigQuery } from '../../queries/server'
+import { useStylesAndTheme } from '../../theme'
 import { extractPublicInfo } from '../../utils/cluster'
+import { extractAuthInfo } from '../../utils/config'
 import { loadAndExtractClusterInfo } from '../../utils/operations'
 import { CapturingSuspense } from '../misc'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
@@ -430,23 +429,58 @@ const SideBarItems = ({
     const { activeUrl } = React.useContext(ActiveUrlContext)
     const { searchCtx, updateSearchCtx } = React.useContext(SearchContext)
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const authinfo = extractAuthInfo({ config, url: activeUrl })
-    const sideBarItems = []
+    const authinfo = React.useMemo(
+        () => extractAuthInfo({ config, url: activeUrl }),
+        [config, activeUrl]
+    )
 
-    switch (props.openMenu) {
-        case 'notifications':
-            sideBarItems.push(
+    return (
+        <div className={classes.sideBarBody}>
+            <CapturingSuspense>
                 <SideBarNotifications
                     key="SideBarNotifications"
                     authinfo={authinfo}
                     header={'Notifications'}
+                    className={
+                        props.openMenu != 'notifications'
+                            ? classes.hidden
+                            : undefined
+                    }
                 />
-            )
-            break
-        case 'contents':
-            sideBarItems.push(
+                <SideBarClusters
+                    key="SideBarClusters"
+                    className={
+                        props.openMenu != 'clusters'
+                            ? classes.hidden
+                            : undefined
+                    }
+                    authinfo={authinfo}
+                    activeCluster={searchCtx.cluster}
+                    header="Clusters"
+                    selectItem={(cluster: any) => {
+                        const url = new URL(activeUrl)
+                        updateMainCtx({
+                            item: cluster.id,
+                            updateId: cluster.updateId,
+                            type: 'Cluster',
+                            action: 'view',
+                            url: activeUrl,
+                            shareUrl: `${url.origin}${cluster.link}`,
+                        })
+                        updateSearchCtx({
+                            cluster: cluster.id,
+                        })
+                        setHeaderExpanded(false)
+                        setOpenMenu('contents')
+                    }}
+                />
                 <SideBarContents
                     key="SideBarContentsPublic"
+                    className={
+                        props.openMenu != 'contents'
+                            ? classes.hidden
+                            : undefined
+                    }
                     activeCluster={searchCtx.cluster}
                     activeContent={mainCtx.item}
                     usePublic
@@ -476,10 +510,13 @@ const SideBarItems = ({
                         setOpenMenu('notifications')
                     }}
                 />
-            )
-            sideBarItems.push(
                 <SideBarContents
                     key="SideBarContentsInternal"
+                    className={
+                        props.openMenu != 'contents'
+                            ? classes.hidden
+                            : undefined
+                    }
                     authinfo={authinfo}
                     activeCluster={searchCtx.cluster}
                     activeContent={mainCtx.item}
@@ -492,9 +529,6 @@ const SideBarItems = ({
                         if (type) {
                             // split works different in js, so 2
                             type = type.match(/=(.*)/)[1]
-                        }
-                        if (type == 'PrivateKey') {
-                            type = 'PublicKey'
                         }
                         const url = new URL(activeUrl)
                         updateMainCtx({
@@ -510,38 +544,7 @@ const SideBarItems = ({
                         setOpenMenu('notifications')
                     }}
                 />
-            )
-            break
-        case 'clusters':
-            sideBarItems.push(
-                <SideBarClusters
-                    key="SideBarClusters"
-                    authinfo={authinfo}
-                    activeCluster={searchCtx.cluster}
-                    header="Clusters"
-                    selectItem={(cluster: any) => {
-                        const url = new URL(activeUrl)
-                        updateMainCtx({
-                            item: cluster.id,
-                            updateId: cluster.updateId,
-                            type: 'Cluster',
-                            action: 'view',
-                            url: activeUrl,
-                            shareUrl: `${url.origin}${cluster.link}`,
-                        })
-                        updateSearchCtx({
-                            cluster: cluster.id,
-                        })
-                        setHeaderExpanded(false)
-                        setOpenMenu('contents')
-                    }}
-                />
-            )
-            break
-    }
-    return (
-        <div className={classes.sideBarBody}>
-            <CapturingSuspense>{...sideBarItems}</CapturingSuspense>
+            </CapturingSuspense>
         </div>
     )
 }
@@ -581,6 +584,8 @@ const SideBar = (props: SideBarProps) => {
                 setOpenMenu={setOpenMenu}
             />
         )
+    } else {
+        console.log('config not found')
     }
     return (
         <Drawer

@@ -139,6 +139,7 @@ async function loadKeys({
                 blobOrTokens: authorization,
             }).then(
                 async (val) => {
+                    //console.log(val, config, nodeData, authorization)
                     if (!val) {
                         return
                     }
@@ -415,7 +416,7 @@ const ViewKeys = () => {
     const { data, isLoading } = useAsync({
         promiseFn: loadKeys,
         onReject: console.error,
-        onResolve: ({ publicKey, privateKey }) => {
+        onResolve: ({ publicKey }) => {
             if (!data) {
                 return
             }
@@ -551,7 +552,6 @@ const EditKeys = () => {
                     },
                 })
 
-                const key = crypto.getRandomValues(new Uint8Array(32))
                 //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                 const privkeys = extractPrivKeys({
                     config,

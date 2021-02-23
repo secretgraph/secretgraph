@@ -1,19 +1,19 @@
-import * as React from 'react'
+import { useQuery } from '@apollo/client'
 import Divider from '@material-ui/core/Divider'
-import GroupWorkIcon from '@material-ui/icons/GroupWork'
-import { parse, graph, SPARQLToQuery } from 'rdflib'
-import List from '@material-ui/core/List'
+import List, { ListProps } from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
 import ListSubheader from '@material-ui/core/ListSubheader'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
-import { useQuery } from '@apollo/client'
-import { clusterFeedQuery } from '../../queries/cluster'
-import { extractPublicInfo } from '../../utils/cluster'
-import { useStylesAndTheme } from '../../theme'
+import GroupWorkIcon from '@material-ui/icons/GroupWork'
+import * as React from 'react'
+
 import { ActiveUrlContext } from '../../contexts'
 import { AuthInfoInterface } from '../../interfaces'
+import { clusterFeedQuery } from '../../queries/cluster'
+import { useStylesAndTheme } from '../../theme'
+import { extractPublicInfo } from '../../utils/cluster'
 
 type SideBarItemsProps = {
     authinfo: AuthInfoInterface
@@ -23,15 +23,15 @@ type SideBarItemsProps = {
     header?: string
 }
 
-export default function Clusters(appProps: SideBarItemsProps) {
+export default function Clusters({
+    authinfo,
+    selectItem,
+    activeCluster,
+    header,
+    loadMoreExtra,
+    ...props
+}: SideBarItemsProps & ListProps) {
     const { classes } = useStylesAndTheme()
-    const {
-        authinfo,
-        selectItem,
-        activeCluster,
-        header,
-        loadMoreExtra,
-    } = appProps
     const { activeUrl } = React.useContext(ActiveUrlContext)
 
     let { data, fetchMore, error, loading } = useQuery(clusterFeedQuery, {
@@ -119,7 +119,7 @@ export default function Clusters(appProps: SideBarItemsProps) {
     }, [data])
 
     return (
-        <List>
+        <List {...props}>
             {_header}
             {clustersFinished()}
             <Divider />
