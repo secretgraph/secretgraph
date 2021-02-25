@@ -95,7 +95,6 @@ export async function resetDeletionNode({
 export async function createContent({
     client,
     cluster,
-    actions,
     ...options
 }: {
     client: ApolloClient<any>
@@ -157,7 +156,7 @@ export async function createContent({
             value: await encryptedContentPromise.then(
                 (data) => new Blob([data.data])
             ),
-            actions: actions,
+            actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: options.authorization,
         },
@@ -167,7 +166,6 @@ export async function createContent({
 export async function createKeys({
     client,
     cluster,
-    actions,
     privateKey,
     pubkeys,
     ...options
@@ -182,7 +180,8 @@ export async function createKeys({
     privateTags?: Iterable<string | PromiseLike<string>>
     publicTags?: Iterable<string | PromiseLike<string>>
     contentHash?: string | null
-    actions?: Iterable<ActionInterface>
+    privateActions?: Iterable<ActionInterface>
+    publicActions?: Iterable<ActionInterface>
     hashAlgorithm: string
     authorization: Iterable<string>
 }): Promise<FetchResult<any>> {
@@ -212,10 +211,7 @@ export async function createKeys({
         pubkeys = []
     }
 
-    const [
-        [specialRef, ...publicKeyReferences],
-        publicTags,
-    ] = await Promise.all(
+    const [[specialRef, ...references], privateTags] = await Promise.all(
         encryptSharedKey(
             key,
             ([publicKey] as Parameters<typeof encryptSharedKey>[1]).concat(
@@ -224,21 +220,21 @@ export async function createKeys({
             halgo.operationName
         )
     )
+    privateTags.push(`key=${specialRef.extra}`)
     const signatureReferencesPromise = createSignatureReferences(
         publicKey,
         options.privkeys ? options.privkeys : [],
         halgo.operationName
     )
-    const privateTags = [`key=${specialRef.extra}`]
     if (options.privateTags) {
         privateTags.push(...(await Promise.all(options.privateTags)))
     }
     if (privateTags.every((val) => !val.startsWith('state='))) {
         privateTags.push('state=internal')
     }
-    if (options.publicTags) {
-        publicTags.push(...(await Promise.all(options.publicTags)))
-    }
+    const publicTags: string[] = options.publicTags
+        ? await Promise.all(options.publicTags)
+        : []
     if (publicTags.every((val) => !val.startsWith('state='))) {
         publicTags.push('state=public')
     }
@@ -246,16 +242,18 @@ export async function createKeys({
         mutation: createKeysMutation,
         variables: {
             cluster,
-            references: ([] as ReferenceInterface[]).concat(
-                publicKeyReferences,
-                await signatureReferencesPromise
-            ),
+            references: references.concat(await signatureReferencesPromise),
             privateTags,
             publicTags,
             nonce: await serializeToBase64(nonce),
             publicKey: new Blob([await unserializeToArrayBuffer(publicKey)]),
             privateKey: await encryptedPrivateKeyPromise,
-            actions: actions,
+            privateActions: options.privateActions
+                ? [...options.privateActions]
+                : undefined,
+            publicActions: options.publicActions
+                ? [...options.publicActions]
+                : undefined,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: options.authorization,
         },
@@ -364,7 +362,7 @@ export async function updateContent({
                 : null,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
             value: encryptedContent ? new Blob([encryptedContent.data]) : null,
-            actions: options.actions ? options.actions : null,
+            actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],
         },
@@ -434,7 +432,7 @@ export async function updateKey({
 
         const [
             [specialRef, ...publicKeyReferences],
-            publicTags,
+            privateTags,
         ] = await Promise.all(
             encryptSharedKey(
                 sharedKey as ArrayBuffer,
@@ -444,17 +442,10 @@ export async function updateKey({
                 options.hashAlgorithm
             )
         )
-        const signatureReferencesPromise = createSignatureReferences(
-            completedKey.data,
-            options.privkeys ? options.privkeys : [],
-            options.hashAlgorithm
-        )
-        references = ([] as ReferenceInterface[]).concat(
-            publicKeyReferences,
-            await signatureReferencesPromise,
+        ;(tags as string[]).push(`key=${specialRef.extra}`, ...privateTags)
+        references = publicKeyReferences.concat(
             options.references ? [...options.references] : []
         )
-        ;(tags as string[]).push(`key=${specialRef.extra}`, ...publicTags)
 
         if ((tags as string[]).every((val) => !val.startsWith('state='))) {
             ;(tags as string[]).push('state=internal')
@@ -469,8 +460,7 @@ export async function updateKey({
             options.privkeys ? options.privkeys : [],
             options.hashAlgorithm
         )
-        references = ([] as ReferenceInterface[]).concat(
-            await signatureReferencesPromise,
+        references = (await signatureReferencesPromise).concat(
             options.references ? [...options.references] : []
         )
         if (tags && tags.every((val) => !val.startsWith('state='))) {
@@ -505,7 +495,7 @@ export async function updateKey({
                 : null,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
             key: completedKey ? new Blob([completedKey.data]) : null,
-            actions: options.actions ? options.actions : null,
+            actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],
         },

@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 len_default_hash = len(hash_object(b""))
 
 
-def _transform_key_into_dataobj(key_obj, content=None, backupTags=frozenset()):
+def _transform_key_into_dataobj(key_obj, content=None):
     if isinstance(key_obj.get("privateKey"), str):
         key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
     if isinstance(key_obj.get("publicKey"), str):
@@ -73,11 +73,7 @@ def _transform_key_into_dataobj(key_obj, content=None, backupTags=frozenset()):
             "nonce": b"",
             "value": key_obj["publicKey"],
             "tags": chain(
-                ["type=PublicKey"],
-                hashes_tags,
-                key_obj["publicTags"]
-                if key_obj.get("publicTags") is not None
-                else backupTags,
+                ["type=PublicKey"], hashes_tags, key_obj["publicTags"]
             ),
             "contentHash": hashes[0],
             "actions": key_obj.get("publicActions"),
@@ -86,11 +82,7 @@ def _transform_key_into_dataobj(key_obj, content=None, backupTags=frozenset()):
             "nonce": key_obj["nonce"],
             "value": key_obj["privateKey"],
             "tags": chain(
-                ["type=PrivateKey"],
-                hashes_tags,
-                key_obj["privateTags"]
-                if key_obj.get("privateTags") is not None
-                else backupTags,
+                ["type=PrivateKey"], hashes_tags, key_obj["privateTags"]
             ),
             "contentHash": None,
             "actions": key_obj.get("privateActions"),
@@ -383,22 +375,29 @@ def create_key_fn(request, objdata, authset=None):
     publickey_content = publickey_content or Content(
         cluster=objdata["cluster"]
     )
-    public["references"] = objdata.get("references")
-    # defaults to actions are only applied to public key
-    public["publicActions"] = objdata.get("publicActions")
     if public["actions"] and publickey_content.id:
         raise ValueError("Key already exists and actions specified")
+    # distribute references automagically
+    if objdata.get("references"):
+        public["references"] = []
+        for ref in objdata["references"]:
+            if ref.group == "key":
+                if private:
+                    private.setdefault("references", []).append(ref)
+            else:
+                public["references"].append(ref)
+
     public = _update_or_create_content_or_key(
         request, publickey_content, public, authset, True, []
     )
     if private:
-        private["references"] = [
+        private.setdefault("references", []).append(
             {
                 "target": publickey_content,
                 "group": "public_key",
                 "deleteRecursive": constants.DeleteRecursive.TRUE.value,
             }
-        ]
+        )
         private = _update_or_create_content_or_key(
             request,
             Content(cluster=objdata["cluster"]),
@@ -474,11 +473,16 @@ def update_content_fn(
             raise ValueError("Cannot transform key to content")
 
         hashes, newdata, _private = _transform_key_into_dataobj(
-            key_obj,
+            {
+                **key_obj,
+                "publicTags": key_obj["publicTags"]
+                if key_obj.get("publicTags") is not None
+                else content.tags.exclude(
+                    tag__regex="^(key_hash|type)="
+                ).values_list("tag", flat=True),
+                "privateTags": [],
+            },
             content=content,
-            backupTags=content.tags.exclude(
-                tag__regex="^(key_hash|type)="
-            ).values_list("tag", flat=True),
         )
     elif content.tags.filter(tag="type=PrivateKey"):
         # can only update private tags and actions, updateId
@@ -488,10 +492,15 @@ def update_content_fn(
             raise ValueError("Cannot transform key to content")
 
         hashes, _public, newdata = _transform_key_into_dataobj(
-            key_obj,
-            backupTags=content.tags.exclude(
-                tag__regex="^(key_hash|type)="
-            ).values_list("tag", flat=True),
+            {
+                **key_obj,
+                "publicTags": [],
+                "privateTags": key_obj["privateTags"]
+                if key_obj.get("privateTags") is not None
+                else content.tags.exclude(
+                    tag__regex="^(key_hash|type)="
+                ).values_list("tag", flat=True),
+            },
         )
         if not newdata:
             raise ValueError("No data for private key")

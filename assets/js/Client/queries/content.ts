@@ -42,7 +42,9 @@ export const createKeysMutation = gql`
     mutation contentCreateKeysMutation(
         $cluster: ID!
         $publicTags: [String!]!
+        $publicActions: [ActionInput!]
         $privateTags: [String!]!
+        $privateActions: [ActionInput!]
         $references: [ReferenceInput!]
         $publicKey: Upload!
         $privateKey: Upload
@@ -59,7 +61,9 @@ export const createKeysMutation = gql`
                         privateKey: $privateKey
                         nonce: $nonce
                         privateTags: $privateTags
+                        privateActions: $privateActions
                         publicTags: $publicTags
+                        publicActions: $publicActions
                     }
                     contentHash: $contentHash
                     references: $references
@@ -82,6 +86,7 @@ export const updateKeyMutation = gql`
         $id: ID!
         $updateId: ID!
         $cluster: ID
+        $actions: [ActionInput!]
         $tags: [String!]
         $references: [ReferenceInput!]
         $key: Upload
@@ -99,7 +104,9 @@ export const updateKeyMutation = gql`
                         privateKey: $key
                         nonce: $nonce
                         privateTags: $tags
+                        privateActions: $actions
                         publicTags: $tags
+                        publicActions: $actions
                     }
                     contentHash: $contentHash
                     references: $references
@@ -125,6 +132,7 @@ export const updateContentMutation = gql`
         $updateId: ID!
         $cluster: ID
         $tags: [String!]
+        $actions: [ActionInput!]
         $references: [ReferenceInput!]
         $value: Upload
         $nonce: String
@@ -136,7 +144,12 @@ export const updateContentMutation = gql`
                 id: $id
                 content: {
                     cluster: $cluster
-                    value: { tags: $tags, value: $value, nonce: $nonce }
+                    value: {
+                        tags: $tags
+                        value: $value
+                        nonce: $nonce
+                        actions: $actions
+                    }
                     contentHash: $contentHash
                     references: $references
                 }
