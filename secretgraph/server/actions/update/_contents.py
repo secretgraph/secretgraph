@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 len_default_hash = len(hash_object(b""))
 
 
-def _transform_key_into_dataobj(key_obj, content=None):
+def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
     if isinstance(key_obj.get("privateKey"), str):
         key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
     if isinstance(key_obj.get("publicKey"), str):
@@ -40,11 +40,11 @@ def _transform_key_into_dataobj(key_obj, content=None):
             raise ValueError("encrypted private key requires nonce")
     has_public_key = True
     if not key_obj.get("publicKey"):
-        if not content:
+        if not publicKeyContent:
             raise ValueError("No public key")
         else:
             has_public_key = False
-            key_obj["publicKey"] = content.file.open("rb").read()
+            key_obj["publicKey"] = publicKeyContent.file.open("rb").read()
     try:
         if isinstance(key_obj["publicKey"], bytes):
             key_obj["publicKey"] = load_der_public_key(
@@ -61,8 +61,8 @@ def _transform_key_into_dataobj(key_obj, content=None):
     except Exception as exc:
         # logger.debug("loading public key failed", exc_info=exc)
         raise ValueError("Invalid public key") from exc
-    if content and has_public_key:
-        if content.file.open("rb").read() != key_obj["publicKey"]:
+    if publicKeyContent and has_public_key:
+        if publicKeyContent.file.open("rb").read() != key_obj["publicKey"]:
             raise ValueError("Cannot change public key")
     hashes = calculate_hashes(key_obj["publicKey"])
     hashes_tags = tuple(map(lambda x: f"key_hash={x}", hashes))
@@ -375,6 +375,11 @@ def create_key_fn(request, objdata, authset=None):
     publickey_content = publickey_content or Content(
         cluster=objdata["cluster"]
     )
+    # ensure public key values is not updated
+    # note: public has objdata format for _update_or_create_content_or_key
+    if publickey_content.id:
+        public.pop("value", None)
+        public.pop("nonce", None)
     if public["actions"] and publickey_content.id:
         raise ValueError("Key already exists and actions specified")
     # distribute references automagically
@@ -482,7 +487,7 @@ def update_content_fn(
                 ).values_list("tag", flat=True),
                 "privateTags": [],
             },
-            content=content,
+            publicKeyContent=content,
         )
     elif content.tags.filter(tag="type=PrivateKey"):
         # can only update private tags and actions, updateId

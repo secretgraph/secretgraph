@@ -32,6 +32,11 @@ This API contains only basic information and no informations like ids.
 It is a fallback API in case a cluster is not allowed to be read by tokens.
 The contents are limited to PublicKey types
 
+## Shortcut creation of keys
+
+With keys argument a keypair can be created or a privatekey associated with a publickey
+Specified references are automagically distributed between privatekey and publickey
+
 ## Special references
 
 -   group "key": extra holds encryped shared key
