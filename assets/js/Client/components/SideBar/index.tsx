@@ -584,8 +584,6 @@ const SideBar = (props: SideBarProps) => {
                 setOpenMenu={setOpenMenu}
             />
         )
-    } else {
-        console.log('config not found')
     }
     return (
         <Drawer
