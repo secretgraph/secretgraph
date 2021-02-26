@@ -578,13 +578,14 @@ export async function initializeCluster(
     config: ConfigInterface
 ) {
     const key = crypto.getRandomValues(new Uint8Array(32))
+    const halgo = mapHashNames[config.hosts[config.baseUrl].hashAlgorithms[0]]
     const { publicKey, privateKey } = await crypto.subtle.generateKey(
         {
             name: 'RSA-OAEP',
             //modulusLength: 8192,
             modulusLength: 2048,
             publicExponent: new Uint8Array([1, 0, 1]),
-            hash: config.hosts[config.baseUrl].hashAlgorithms[0],
+            hash: halgo.operationName,
         },
         true,
         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
@@ -593,7 +594,7 @@ export async function initializeCluster(
         .exportKey('spki' as const, publicKey)
         .then((keydata) =>
             crypto.subtle
-                .digest(config.hosts[config.baseUrl].hashAlgorithms[0], keydata)
+                .digest(halgo.operationName, keydata)
                 .then((data) =>
                     btoa(String.fromCharCode(...new Uint8Array(data)))
                 )
@@ -802,7 +803,7 @@ export async function updateConfigRemoteReducer(
     {
         update,
         authInfo,
-        ...props
+        client,
     }: {
         update: ConfigInputInterface | null
         client: ApolloClient<any>
@@ -824,7 +825,7 @@ export async function updateConfigRemoteReducer(
     let pubkeys = undefined
 
     while (true) {
-        const configQueryRes = await props.client.query({
+        const configQueryRes = await client.query({
             query: contentRetrievalQuery,
             variables: {
                 authorization: authInfo.keys,
@@ -860,7 +861,7 @@ export async function updateConfigRemoteReducer(
         })
 
         const result = await updateContent({
-            ...props,
+            client,
             id: node.id,
             updateId: node.updateId,
             privkeys: Object.values(privkeys),

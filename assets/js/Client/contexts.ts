@@ -1,10 +1,12 @@
-import { createContext, Context } from 'react'
+import { Context, createContext } from 'react'
+
 import {
+    ConfigInputInterface,
+    ConfigInterface,
     MainContextInterface,
     SearchContextInterface,
-    ConfigInterface,
-    ConfigInputInterface,
 } from './interfaces'
+
 /**export const VisibleStateContext = createContext({
     visibility: 'default' as 'default' | 'draft' | 'public' | 'internal',
     updateVisibility: (
@@ -21,11 +23,14 @@ export const SearchContext = createContext({
 })
 export const ConfigContext = createContext({
     config: null as ConfigInterface | null,
-    updateConfig: (update: ConfigInputInterface | null) => {},
+    updateConfig: (
+        update: ConfigInputInterface | null,
+        replace?: boolean
+    ) => {},
 })
 export const InitializedConfigContext = ConfigContext as Context<{
     config: ConfigInterface
-    updateConfig: (update: Partial<ConfigInputInterface> | null) => void
+    updateConfig: React.ContextType<typeof ConfigContext>['updateConfig']
 }>
 
 export const ActiveUrlContext = createContext({

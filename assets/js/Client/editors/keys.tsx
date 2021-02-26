@@ -59,7 +59,7 @@ import {
     decryptContentId,
     decryptContentObject,
     deleteNode,
-    updateContent,
+    updateConfigRemoteReducer,
     updateKey,
 } from '../utils/operations'
 
@@ -491,7 +491,7 @@ const EditKeys = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
     const client = useApolloClient()
-    const { config } = React.useContext(InitializedConfigContext)
+    const { config, updateConfig } = React.useContext(InitializedConfigContext)
     const { data, isLoading, reload } = useAsync({
         promiseFn: loadKeys,
         suspense: true,
@@ -676,11 +676,37 @@ const EditKeys = () => {
                             authorization: authinfo.keys,
                         })
                     }
+
+                    if (privKey || data.privateKey) {
+                        const halgo =
+                            Constants.mapHashNames[data.hashAlgorithms[0]]
+                        updateConfig(
+                            await updateConfigRemoteReducer(config, {
+                                update: {
+                                    certificates: {
+                                        [await serializeToBase64(
+                                            crypto.subtle.digest(
+                                                halgo.operationName,
+                                                await crypto.subtle.exportKey(
+                                                    'spki' as const,
+                                                    pubKey
+                                                )
+                                            )
+                                        )]: privKey
+                                            ? await serializeToBase64(privKey)
+                                            : null,
+                                    },
+                                },
+                                client,
+                            }),
+                            true
+                        )
+                    }
                     updateMainCtx({
                         updateId:
                             newData.updateOrCreateContent.content.updateId,
                     })
-                    reload()
+                    // reload()
                 }
             }}
         >
@@ -702,7 +728,7 @@ const AddKeys = () => {
     const { activeUrl } = React.useContext(ActiveUrlContext)
     const { searchCtx } = React.useContext(SearchContext)
     const client = useApolloClient()
-    const { config } = React.useContext(InitializedConfigContext)
+    const { config, updateConfig } = React.useContext(InitializedConfigContext)
     const { data } = useAsync<ApolloQueryResult<any>>({
         promiseFn: client.query,
         onReject: console.error,
@@ -807,6 +833,27 @@ const AddKeys = () => {
                     item: newData.updateOrCreateContent.content.id,
                     updateId: newData.updateOrCreateContent.content.updateId,
                 })
+                if (privKey) {
+                    const halgo = Constants.mapHashNames[hashAlgorithm]
+                    updateConfig(
+                        await updateConfigRemoteReducer(config, {
+                            update: {
+                                certificates: {
+                                    [await serializeToBase64(
+                                        crypto.subtle.digest(
+                                            halgo.operationName,
+                                            await crypto.subtle.exportKey(
+                                                'spki' as const,
+                                                pubKey
+                                            )
+                                        )
+                                    )]: await serializeToBase64(privKey),
+                                },
+                            },
+                            client,
+                        })
+                    )
+                }
             }}
         >
             {(formikProps) => {

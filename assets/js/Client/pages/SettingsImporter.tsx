@@ -1,40 +1,39 @@
-import * as React from 'react'
-
-import TextField from '@material-ui/core/TextField'
-import FormControl from '@material-ui/core/FormControl'
-import FormHelperText from '@material-ui/core/FormHelperText'
-import CircularProgress from '@material-ui/core/CircularProgress'
-import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt'
-import Snackbar from '@material-ui/core/Snackbar'
-import MuiAlert from '@material-ui/lab/Alert'
-import Dialog from '@material-ui/core/Dialog'
-import DialogActions from '@material-ui/core/DialogActions'
-import DialogTitle from '@material-ui/core/DialogTitle'
-import DialogContent from '@material-ui/core/DialogContent'
+import Button from '@material-ui/core/Button'
 import Card from '@material-ui/core/Card'
 import CardActions from '@material-ui/core/CardActions'
 import CardContent from '@material-ui/core/CardContent'
-import Button from '@material-ui/core/Button'
+import CircularProgress from '@material-ui/core/CircularProgress'
+import Dialog from '@material-ui/core/Dialog'
+import DialogActions from '@material-ui/core/DialogActions'
+import DialogContent from '@material-ui/core/DialogContent'
+import DialogTitle from '@material-ui/core/DialogTitle'
+import FormControl from '@material-ui/core/FormControl'
+import FormHelperText from '@material-ui/core/FormHelperText'
+import Snackbar from '@material-ui/core/Snackbar'
+import TextField from '@material-ui/core/TextField'
 import Typography from '@material-ui/core/Typography'
 import CheckIcon from '@material-ui/icons/Check'
+import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt'
+import MuiAlert from '@material-ui/lab/Alert'
+import * as React from 'react'
 
-import { useStylesAndTheme } from '../theme'
+import { mapHashNames } from '../constants'
+import { ActiveUrlContext, ConfigContext, MainContext } from '../contexts'
+import { ConfigInterface, SnackMessageInterface } from '../interfaces'
 import {
-    startHelp,
-    startLabel,
-    importStartLabel,
+    decryptingPasswordHelp,
+    decryptingPasswordLabel,
     importFileLabel,
     importHelp,
-    decryptingPasswordLabel,
-    decryptingPasswordHelp,
+    importStartLabel,
+    startHelp,
+    startLabel,
 } from '../messages'
-import { ConfigInterface, SnackMessageInterface } from '../interfaces'
-import { loadConfig, saveConfig, checkConfigObject } from '../utils/config'
+import { serverConfigQuery } from '../queries/server'
+import { useStylesAndTheme } from '../theme'
+import { checkConfigObject, loadConfig, saveConfig } from '../utils/config'
 import { createClient } from '../utils/graphql'
 import { initializeCluster } from '../utils/operations'
-import { serverConfigQuery } from '../queries/server'
-import { mapHashNames } from '../constants'
-import { MainContext, ConfigContext, ActiveUrlContext } from '../contexts'
 
 function Alert(props: any) {
     return <MuiAlert elevation={6} variant="filled" {...props} />
@@ -127,7 +126,7 @@ function SettingsImporter() {
             setLoadingImport(false)
             return
         }
-        updateConfig(newConfig)
+        updateConfig(newConfig, true)
         setRegisterUrl(undefined)
         updateActiveUrl(newConfig.baseUrl)
         updateMainCtx({
@@ -137,13 +136,12 @@ function SettingsImporter() {
 
     const handleSecretgraphEvent = async (event: any) => {
         setOldConfig(config)
-        updateConfig(null)
         setLoadingStart(true)
         try {
             await handleSecretgraphEvent_inner(event)
         } catch (errors) {
             console.error(errors)
-            updateConfig(oldConfig)
+            updateConfig(oldConfig, true)
             setMessage({
                 severity: 'error',
                 message: 'error while registration',
@@ -197,7 +195,7 @@ function SettingsImporter() {
             // TODO: handle exceptions and try with login
             setRegisterUrl(undefined)
             saveConfig(newConfig)
-            updateConfig(newConfig)
+            updateConfig(newConfig, true)
             updateActiveUrl(newConfig.baseUrl)
             updateMainCtx({
                 action: 'add',
@@ -210,13 +208,12 @@ function SettingsImporter() {
     }
     const handleStart = async () => {
         setOldConfig(config)
-        updateConfig(null)
         setLoadingStart(true)
         try {
             await handleStart_inner()
         } catch (errors) {
             console.error(errors)
-            updateConfig(oldConfig)
+            updateConfig(oldConfig, true)
             setMessage({
                 severity: 'error',
                 message: 'error while registration',
@@ -268,7 +265,7 @@ function SettingsImporter() {
         saveConfig(newConfig)
 
         // const env = createEnvironment(newConfig.baseUrl);
-        updateConfig(newConfig)
+        updateConfig(newConfig, true)
         updateActiveUrl(newConfig.baseUrl)
         updateMainCtx({
             action: 'add',
@@ -276,13 +273,12 @@ function SettingsImporter() {
     }
     const handleImport = async () => {
         setOldConfig(config)
-        updateConfig(null)
         setLoadingImport(true)
         try {
             await handleImport_inner()
         } catch (errors) {
             console.error(errors)
-            updateConfig(oldConfig)
+            updateConfig(oldConfig, true)
             setMessage({ severity: 'error', message: 'error while import' })
             // in success case unmounted so this would be a noop
             // because state is forgotten

@@ -430,8 +430,8 @@ export function extractAuthInfo({
     readonly content?: string
     readonly require?: Set<string>
 }): AuthInfoInterface {
-    const keys = []
-    const hashes = []
+    const keys = new Set<string>()
+    const hashes = new Set<string>()
     if (url === undefined || url === null) {
         throw Error(`no url: ${url}`)
     }
@@ -442,30 +442,48 @@ export function extractAuthInfo({
                 continue
             }
             const clusterconf = host.clusters[id]
-            for (const hash in clusterconf.hashes) {
+            for (const hash_algo in clusterconf.hashes) {
+                const [_, hash] = hash_algo.match(
+                    /(?:[^:]*:)?(.*?)/
+                ) as RegExpMatchArray
                 if (
-                    config.tokens[hash] &&
-                    SetOps.hasIntersection(require, clusterconf.hashes[hash])
+                    (config.tokens[hash_algo] || config.tokens[hash]) &&
+                    SetOps.hasIntersection(
+                        require,
+                        clusterconf.hashes[hash_algo]
+                    )
                 ) {
-                    hashes.push(hash)
-                    keys.push(`${id}:${config.tokens[hash]}`)
+                    hashes.add(hash)
+                    hashes.add(hash_algo)
+                    keys.add(
+                        `${id}:${
+                            config.tokens[hash_algo] || config.tokens[hash]
+                        }`
+                    )
                 }
             }
         }
     }
     if (props.content) {
         const contentconf = host.contents[props.content]
-        for (const hash in contentconf.hashes) {
+        for (const hash_algo in contentconf.hashes) {
+            const [_, hash] = hash_algo.match(
+                /(?:[^:]*:)?(.*?)/
+            ) as RegExpMatchArray
             if (
-                config.tokens[hash] &&
-                SetOps.hasIntersection(require, contentconf.hashes[hash])
+                (config.tokens[hash_algo] || config.tokens[hash]) &&
+                SetOps.hasIntersection(require, contentconf.hashes[hash_algo])
             ) {
-                hashes.push(hash)
-                keys.push(`${contentconf.id}:${config.tokens[hash]}`)
+                hashes.add(hash)
+                keys.add(
+                    `${contentconf.id}:${
+                        config.tokens[hash_algo] || config.tokens[hash]
+                    }`
+                )
             }
         }
     }
-    return { hashes, keys }
+    return { hashes: [...hashes], keys: [...keys] }
 }
 
 export function extractPrivKeys({
@@ -586,18 +604,24 @@ export function findCertCandidatesForRefs(
 
 export function updateConfigReducer(
     state: ConfigInterface | null,
-    update: ConfigInputInterface
+    update: ConfigInputInterface,
+    replace?: boolean
 ): ConfigInterface
 export function updateConfigReducer(
     state: ConfigInterface | null,
-    update: ConfigInputInterface | null
+    update: ConfigInputInterface | null,
+    replace?: boolean
 ): ConfigInterface | null
 export function updateConfigReducer(
     state: ConfigInterface | null,
-    update: ConfigInputInterface | null
+    update: ConfigInputInterface | null,
+    replace?: boolean
 ): ConfigInterface | null {
     if (update === null) {
         return null
+    }
+    if (replace) {
+        return update as ConfigInterface
     }
     const newState: ConfigInterface = Object.create(state || {})
     if (update.certificates) {
