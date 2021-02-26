@@ -35,7 +35,8 @@ The contents are limited to PublicKey types
 ## Shortcut creation of keys
 
 With keys argument a keypair can be created or a privatekey associated with a publickey
-Specified references are automagically distributed between privatekey and publickey
+Specified references are distributed between privatekey and publickey.
+key refs are assigned to privatekey, the rest to the public key
 
 ## Special references
 

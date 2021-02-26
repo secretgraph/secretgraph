@@ -380,16 +380,20 @@ def create_key_fn(request, objdata, authset=None):
     if publickey_content.id:
         public.pop("value", None)
         public.pop("nonce", None)
-    if public["actions"] and publickey_content.id:
-        raise ValueError("Key already exists and actions specified")
+        if public["actions"]:
+            raise ValueError("Key already exists and actions specified")
     # distribute references automagically
     if objdata.get("references"):
-        public["references"] = []
+        # cannot update references of existing public key
+        if publickey_content.id:
+            public["references"] = None
+        else:
+            public["references"] = []
         for ref in objdata["references"]:
             if ref.group == "key":
                 if private:
                     private.setdefault("references", []).append(ref)
-            else:
+            elif not publickey_content.id:
                 public["references"].append(ref)
 
     public = _update_or_create_content_or_key(
