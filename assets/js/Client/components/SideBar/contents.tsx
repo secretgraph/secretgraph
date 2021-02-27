@@ -97,7 +97,6 @@ export default function Contents({
     const { classes, theme } = useStylesAndTheme()
     const { searchCtx } = React.useContext(SearchContext)
     const { activeUrl } = React.useContext(ActiveUrlContext)
-    let hasNextPage = true
     const _usePublic = usePublic === undefined ? null : usePublic
     const incl = searchCtx.include.concat([])
     if (state) {
@@ -109,6 +108,7 @@ export default function Contents({
     const { data, fetchMore, loading } = useQuery(contentFeedQuery, {
         variables: {
             authorization: authinfo ? authinfo.keys : null,
+            includeTags: ['state=', 'type=', 'name='],
             include: incl,
             exclude: searchCtx.exclude,
             clusters: activeCluster ? [activeCluster] : null,
@@ -132,6 +132,7 @@ export default function Contents({
     const render_item = (node: any) => {
         let type = node.tags.find((flag: string) => flag.startsWith('type='))
         let state = node.tags.find((flag: string) => flag.startsWith('state='))
+        let name = node.tags.find((flag: string) => flag.startsWith('name='))
         if (type) {
             // split works different in js, so match
             type = type.match(/=(.*)/)[1]
@@ -139,6 +140,10 @@ export default function Contents({
         if (state) {
             // split works different in js, so match
             state = state.match(/=(.*)/)[1]
+        }
+        if (name) {
+            // split works different in js, so match
+            name = name.match(/=(.*)/)[1]
         }
         let icon
         switch (type) {
@@ -151,26 +156,19 @@ export default function Contents({
             default:
                 icon = <DescriptionIcon />
         }
-        if (activeContent && activeContent == node.id) {
-            return (
-                <ListItem key={`${activeUrl}:${node.id}`}>
-                    <ListItemText
-                        key={`${activeUrl}:${node.id}.text`}
-                        className={classes.sideBarEntry}
-                        primary={`${
-                            elements.get(type)
-                                ? elements.get(type)?.label
-                                : type
-                        }: ...${node.id.substr(-48)}`}
-                    />
-                </ListItem>
-            )
-        }
         return (
             <ListItem
-                button
+                button={
+                    (activeContent && activeContent == node.id
+                        ? false
+                        : true) as any
+                }
                 key={`${activeUrl}:${node.id}`}
-                onClick={() => selectItem(node)}
+                onClick={
+                    activeContent && activeContent == node.id
+                        ? undefined
+                        : () => selectItem(node)
+                }
             >
                 <ListItemIcon key={`${activeUrl}:${node.id}.icon`}>
                     {icon}
@@ -185,20 +183,12 @@ export default function Contents({
                     className={classes.sideBarEntry}
                     primary={`${
                         elements.get(type) ? elements.get(type)?.label : type
-                    }: ...${node.id.substr(-48)}`}
+                    }: ${name ? name : '...' + node.id.substr(-48)}`}
                 />
             </ListItem>
         )
     }
-    let _header = null
-    if (header) {
-        _header = (
-            <ListSubheader key="header" className={classes.sideBarEntry}>
-                {header}
-            </ListSubheader>
-        )
-    }
-    const contentsFinished: () => JSX.Element[] = React.useCallback(() => {
+    const contentsFinished: JSX.Element[] = React.useMemo(() => {
         if (!data) {
             return []
         }
@@ -209,8 +199,12 @@ export default function Contents({
 
     return (
         <List {...props}>
-            {_header}
-            {contentsFinished()}
+            {header && (
+                <ListSubheader key="header" className={classes.sideBarEntry}>
+                    {header}
+                </ListSubheader>
+            )}
+            {contentsFinished}
             <Divider />
             <ListItem
                 button

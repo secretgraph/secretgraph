@@ -80,7 +80,7 @@ idea: unique operation names. It would be nice to have namespaces
 
 # TODO
 
--   use serialized algo name?
+-   use serialized algo name for certificates/tokens?
 -   test permissions
 -   disable editing/prompt for keys if keys are missing
 -   cleanup serverside encryption

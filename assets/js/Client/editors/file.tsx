@@ -1,47 +1,45 @@
-import * as React from 'react'
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
-import LinearProgress from '@material-ui/core/LinearProgress'
-import * as DOMPurify from 'dompurify'
+import { useApolloClient } from '@apollo/client'
 import Button from '@material-ui/core/Button'
-import TextField, { TextFieldProps } from '@material-ui/core/TextField'
-import Typography from '@material-ui/core/Typography'
-
 import Grid from '@material-ui/core/Grid'
+import LinearProgress from '@material-ui/core/LinearProgress'
+import TextField, { TextFieldProps } from '@material-ui/core/TextField'
+import Tooltip from '@material-ui/core/Tooltip'
+import Typography from '@material-ui/core/Typography'
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
+import * as DOMPurify from 'dompurify'
+import { FastField, Field, FieldProps, Form, Formik } from 'formik'
+import {
+    Checkbox as FormikCheckbox,
+    TextField as FormikTextField,
+} from 'formik-material-ui'
+import * as React from 'react'
 import { useAsync } from 'react-async'
 
-import { Formik, FieldProps, Form, FastField, Field } from 'formik'
-
-import { TextField as FormikTextField } from 'formik-material-ui'
-import { useApolloClient } from '@apollo/client'
-
-import { ConfigInterface, MainContextInterface } from '../interfaces'
-import * as Constants from '../constants'
-import {
-    MainContext,
-    InitializedConfigContext,
-    SearchContext,
-    ActiveUrlContext,
-} from '../contexts'
-
-import { extractPubKeysCluster } from '../utils/graphql'
-import {
-    decryptContentId,
-    createContent,
-    updateContent,
-} from '../utils/operations'
-
-import { extractAuthInfo, extractPrivKeys } from '../utils/config'
-import { utf8decoder, utf8ToBinary, b64toutf8 } from '../utils/misc'
-
-import { getContentConfigurationQuery } from '../queries/content'
-import { useStylesAndTheme } from '../theme'
-import { newClusterLabel } from '../messages'
+import DecisionFrame from '../components/DecisionFrame'
+import ClusterSelect from '../components/forms/ClusterSelect'
+import SimpleSelect from '../components/forms/SimpleSelect'
+import StateSelect from '../components/forms/StateSelect'
 import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
-import SimpleSelect from '../components/forms/SimpleSelect'
-import ClusterSelect from '../components/forms/ClusterSelect'
-import StateSelect from '../components/forms/StateSelect'
-import DecisionFrame from '../components/DecisionFrame'
+import * as Constants from '../constants'
+import {
+    ActiveUrlContext,
+    InitializedConfigContext,
+    MainContext,
+    SearchContext,
+} from '../contexts'
+import { ConfigInterface, MainContextInterface } from '../interfaces'
+import { newClusterLabel } from '../messages'
+import { getContentConfigurationQuery } from '../queries/content'
+import { useStylesAndTheme } from '../theme'
+import { extractAuthInfo, extractPrivKeys } from '../utils/config'
+import { extractPubKeysCluster } from '../utils/graphql'
+import { b64toutf8, utf8ToBinary, utf8decoder } from '../utils/misc'
+import {
+    createContent,
+    decryptContentId,
+    updateContent,
+} from '../utils/operations'
 
 const ViewWidget = ({
     arrayBuffer,
@@ -140,7 +138,9 @@ const ViewFile = () => {
                 deleted: data.nodeData.deleted,
                 updateId: data.nodeData.updateId,
             }
-            if (data.tags.name && data.tags.name.length > 0) {
+            if (data.tags.ename && data.tags.ename.length > 0) {
+                updateOb['title'] = data.tags.ename[0]
+            } else if (data.tags.name && data.tags.name.length > 0) {
                 updateOb['title'] = data.tags.name[0]
             }
             updateMainCtx(updateOb)
@@ -150,7 +150,7 @@ const ViewFile = () => {
         config: config as ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
-        decrypt: new Set(['mime', 'name']),
+        decrypt: new Set(['mime', 'ename']),
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
     if (isLoading) {
@@ -169,8 +169,24 @@ const ViewFile = () => {
         Constants.contentStates.has(data.tags.state[0])
             ? data.tags.state[0]
             : ''
+
+    let name: string = mainCtx.item as string
+    let encryptName = false
+    if (data.tags.ename && data.tags.ename.length > 0) {
+        name = data.tags.ename[0]
+        encryptName = true
+    } else if (data.tags.name && data.tags.name.length > 0) {
+        name = data.tags.name[0]
+    }
     return (
         <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+                <Typography variant="h5">Name</Typography>
+                <Typography variant="body2">{name}</Typography>
+                <Typography variant="body2">
+                    {encryptName ? 'Name is encrypted' : 'Name is unencrypted'}
+                </Typography>
+            </Grid>
             <Grid item xs={12} md={4}>
                 <Typography variant="h5">Keywords</Typography>
                 <Typography variant="body2">
@@ -194,11 +210,7 @@ const ViewFile = () => {
             <ViewWidget
                 arrayBuffer={Promise.resolve(data.data)}
                 mime={mime}
-                name={
-                    data.tags.name && data.tags.name.length > 0
-                        ? data.tags.name[0]
-                        : ''
-                }
+                name={name}
             />
         </Grid>
     )
@@ -221,6 +233,7 @@ const AddFile = () => {
                 fileInput: null as null | Blob,
                 state: 'internal',
                 name: '',
+                encryptName: true,
                 keywords: [] as string[],
                 cluster: searchCtx.cluster ? searchCtx.cluster : null,
             }}
@@ -298,7 +311,9 @@ const AddFile = () => {
                         cluster: values.cluster as string,
                         value,
                         tags: [
-                            `name=${btoa(values.name)}`,
+                            values.encryptName
+                                ? `ename=${btoa(values.name)}`
+                                : `name=${btoa(values.name)}`,
                             `mime=${btoa(value.type)}`,
                             `state=${values.state}`,
                             `type=${
@@ -307,7 +322,7 @@ const AddFile = () => {
                         ].concat(
                             values.keywords.map((val) => `keyword=${val}`)
                         ),
-                        encryptTags: new Set(['name', 'mime']),
+                        encryptTags: new Set(['ename', 'mime']),
                         privkeys: await Promise.all(Object.values(privkeys)),
                         pubkeys: Object.values(pubkeys),
                         hashAlgorithm,
@@ -364,7 +379,7 @@ const AddFile = () => {
                     <Form>
                         <Grid container spacing={2}>
                             {preview}
-                            <Grid item xs={12}>
+                            <Grid item xs={10}>
                                 <FastField
                                     component={FormikTextField}
                                     name="name"
@@ -378,6 +393,15 @@ const AddFile = () => {
                                         return null
                                     }}
                                 />
+                            </Grid>
+                            <Grid item xs={2}>
+                                <Tooltip title="Encrypt name">
+                                    <FastField
+                                        component={FormikCheckbox}
+                                        name="encryptName"
+                                        disabled={isSubmitting}
+                                    />
+                                </Tooltip>
                             </Grid>
                             <Grid item xs={12} md={4}>
                                 <FastField
@@ -690,7 +714,9 @@ const EditFile = () => {
                 deleted: data.nodeData.deleted,
                 updateId: data.nodeData.updateId,
             }
-            if (data.tags.name && data.tags.name.length > 0) {
+            if (data.tags.ename && data.tags.ename.length > 0) {
+                updateOb['title'] = data.tags.ename[0]
+            } else if (data.tags.name && data.tags.name.length > 0) {
                 updateOb['title'] = data.tags.name[0]
             }
             updateMainCtx(updateOb)
@@ -718,15 +744,21 @@ const EditFile = () => {
             ? data.tags.state[0]
             : 'internal'
 
+    let name: string = mainCtx.item as string
+    let encryptName = false
+    if (data.tags.ename && data.tags.ename.length > 0) {
+        name = data.tags.ename[0]
+        encryptName = true
+    } else if (data.tags.name && data.tags.name.length > 0) {
+        name = data.tags.name[0]
+    }
     return (
         <Formik
             initialValues={{
                 textFInput: new Blob([data.data], { type: mime }),
                 fileInput: new Blob([data.data], { type: mime }),
-                name:
-                    data.tags.name && data.tags.name.length > 0
-                        ? data.tags.name[0]
-                        : '',
+                name,
+                encryptName,
                 state,
                 keywords: data.tags.keywords || [],
                 cluster: data.nodeData?.cluster?.id as string,
@@ -785,14 +817,16 @@ const EditFile = () => {
                     cluster: values.cluster, // can be null for keeping cluster
                     value,
                     tags: [
-                        `name=${btoa(values.name)}`,
+                        values.encryptName
+                            ? `ename=${btoa(values.name)}`
+                            : `name=${btoa(values.name)}`,
                         `mime=${btoa(value.type)}`,
                         `state=${values.state}`,
                         `type=${
                             value.type.startsWith('text/') ? 'Text' : 'File'
                         }`,
                     ].concat(values.keywords.map((val) => `keyword=${val}`)),
-                    encryptTags: new Set(['name', 'mime']),
+                    encryptTags: new Set(['ename', 'mime']),
                     privkeys: await Promise.all(Object.values(privkeys)),
                     pubkeys: Object.values(pubkeys),
                     hashAlgorithm,
@@ -825,7 +859,7 @@ const EditFile = () => {
                         mime={values.fileInput.type}
                         name={values.name}
                     />
-                    <Grid item xs={12}>
+                    <Grid item xs={10}>
                         <FastField
                             component={FormikTextField}
                             name="name"
@@ -839,6 +873,15 @@ const EditFile = () => {
                                 return null
                             }}
                         />
+                    </Grid>
+                    <Grid item xs={2}>
+                        <Tooltip title="Encrypt name">
+                            <FastField
+                                component={FormikCheckbox}
+                                name="encryptName"
+                                disabled={isSubmitting}
+                            />
+                        </Tooltip>
                     </Grid>
                     <Grid item xs={12} md={4}>
                         <FastField

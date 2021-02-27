@@ -51,16 +51,7 @@ export default function Clusters({
             }
         })
     }
-
-    let _header = null
-    if (header) {
-        _header = (
-            <ListSubheader key="header" className={classes.sideBarEntry}>
-                {header}
-            </ListSubheader>
-        )
-    }
-    const clustersFinished: () => JSX.Element[] = React.useCallback(() => {
+    const clustersFinished: JSX.Element[] = React.useMemo(() => {
         if (!data) {
             return []
         }
@@ -120,8 +111,12 @@ export default function Clusters({
 
     return (
         <List {...props}>
-            {_header}
-            {clustersFinished()}
+            {header && (
+                <ListSubheader key="header" className={classes.sideBarEntry}>
+                    {header}
+                </ListSubheader>
+            )}
+            {clustersFinished}
             <Divider />
             <ListItem
                 button
