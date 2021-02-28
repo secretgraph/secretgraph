@@ -1,10 +1,10 @@
 import {
-    fade,
-    withStyles,
-    makeStyles,
-    createStyles,
     Theme,
+    createStyles,
+    fade,
+    makeStyles,
     useTheme,
+    withStyles,
 } from '@material-ui/core/styles'
 
 const drawerWidth = '16rem'
@@ -39,8 +39,10 @@ export function secretgraphTheme(theme: Theme) {
         appBarToolBar: {},
         appBarTitle: {
             flexGrow: 1,
-            marginLeft: '3rem' as const,
             wordBreak: 'break-all' as const,
+            [theme.breakpoints.up('sm')]: {
+                marginLeft: '2rem' as const,
+            },
         },
         sidebarButton: {},
         userButton: {},

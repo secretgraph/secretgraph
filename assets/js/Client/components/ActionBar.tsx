@@ -1,29 +1,29 @@
-import * as React from 'react'
-import Toolbar from '@material-ui/core/Toolbar'
-import Tooltip from '@material-ui/core/Tooltip'
-import IconButton from '@material-ui/core/IconButton'
-import AddIcon from '@material-ui/icons/Add'
-import EditIcon from '@material-ui/icons/Edit'
-import ShareIcon from '@material-ui/icons/Share'
-import VisibilityIcon from '@material-ui/icons/Visibility'
-import DeleteIcon from '@material-ui/icons/Delete'
-import RestoreFromTrashIcon from '@material-ui/icons/RestoreFromTrash'
-import NativeSelect from '@material-ui/core/NativeSelect'
+import { useApolloClient } from '@apollo/client'
+import Button from '@material-ui/core/Button'
 import Dialog from '@material-ui/core/Dialog'
 import DialogActions from '@material-ui/core/DialogActions'
-import DialogTitle from '@material-ui/core/DialogTitle'
-import Button from '@material-ui/core/Button'
 import DialogContent from '@material-ui/core/DialogContent'
+import DialogTitle from '@material-ui/core/DialogTitle'
+import IconButton from '@material-ui/core/IconButton'
 import Link from '@material-ui/core/Link'
+import NativeSelect from '@material-ui/core/NativeSelect'
+import Toolbar from '@material-ui/core/Toolbar'
+import Tooltip from '@material-ui/core/Tooltip'
+import AddIcon from '@material-ui/icons/Add'
+import DeleteIcon from '@material-ui/icons/Delete'
+import EditIcon from '@material-ui/icons/Edit'
 import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined'
-import { useApolloClient } from '@apollo/client'
-import { elements } from '../editors'
-import { contentStates } from '../constants'
-import { MainContext, InitializedConfigContext } from '../contexts'
-import { useStylesAndTheme } from '../theme'
-import { deleteNode, resetDeletionNode } from '../utils/operations'
-import { extractAuthInfo } from '../utils/config'
+import RestoreFromTrashIcon from '@material-ui/icons/RestoreFromTrash'
+import ShareIcon from '@material-ui/icons/Share'
+import VisibilityIcon from '@material-ui/icons/Visibility'
+import * as React from 'react'
 
+import { contentStates } from '../constants'
+import { InitializedConfigContext, MainContext } from '../contexts'
+import { elements } from '../editors'
+import { useStylesAndTheme } from '../theme'
+import { extractAuthInfo } from '../utils/config'
+import { deleteNode, resetDeletionNode } from '../utils/operations'
 import MapSelect from './MapSelect'
 
 type Props = {}
@@ -100,7 +100,7 @@ function ActionBar(props: Props) {
                         mainCtx.deleted
                             ? 'Restore'
                             : mainCtx.deleted === false
-                            ? 'Deletion not possible, config cluster'
+                            ? 'Deletion blocked'
                             : 'Delete'
                     }
                     arrow
@@ -114,7 +114,7 @@ function ActionBar(props: Props) {
                                 mainCtx.deleted
                                     ? 'Restore'
                                     : mainCtx.deleted === false
-                                    ? 'Deletion not possible, config cluster'
+                                    ? 'Deletion blocked'
                                     : 'Delete'
                             }
                             onClick={async () => {

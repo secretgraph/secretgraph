@@ -1,5 +1,7 @@
 import { useApolloClient } from '@apollo/client'
 import Button from '@material-ui/core/Button'
+import Checkbox from '@material-ui/core/Checkbox'
+import FormControlLabel from '@material-ui/core/FormControlLabel'
 import Grid from '@material-ui/core/Grid'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import TextField, { TextFieldProps } from '@material-ui/core/TextField'
@@ -9,7 +11,7 @@ import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldProps, Form, Formik } from 'formik'
 import {
-    Checkbox as FormikCheckbox,
+    CheckboxWithLabel as FormikCheckboxWithLabel,
     TextField as FormikTextField,
 } from 'formik-material-ui'
 import * as React from 'react'
@@ -135,7 +137,7 @@ const ViewFile = () => {
                 return
             }
             const updateOb: Partial<MainContextInterface> = {
-                deleted: data.nodeData.deleted,
+                deleted: data.nodeData.deleted || null,
                 updateId: data.nodeData.updateId,
             }
             if (data.tags.ename && data.tags.ename.length > 0) {
@@ -183,9 +185,22 @@ const ViewFile = () => {
             <Grid item xs={12} md={4}>
                 <Typography variant="h5">Name</Typography>
                 <Typography variant="body2">{name}</Typography>
-                <Typography variant="body2">
-                    {encryptName ? 'Name is encrypted' : 'Name is unencrypted'}
-                </Typography>
+            </Grid>
+            <Grid item>
+                <Tooltip
+                    title={
+                        encryptName
+                            ? 'Name is encrypted'
+                            : 'Name is unencrypted'
+                    }
+                >
+                    <FormControlLabel
+                        disabled
+                        checked={encryptName}
+                        control={<Checkbox />}
+                        label="Encrypted"
+                    />
+                </Tooltip>
             </Grid>
             <Grid item xs={12} md={4}>
                 <Typography variant="h5">Keywords</Typography>
@@ -205,7 +220,9 @@ const ViewFile = () => {
             </Grid>
             <Grid item xs={12} md={4}>
                 <Typography variant="h5">Cluster</Typography>
-                <Typography variant="body2">{data.nodeData.cluster}</Typography>
+                <Typography variant="body2">
+                    {data.nodeData.cluster.id}
+                </Typography>
             </Grid>
             <ViewWidget
                 arrayBuffer={Promise.resolve(data.data)}
@@ -379,7 +396,7 @@ const AddFile = () => {
                     <Form>
                         <Grid container spacing={2}>
                             {preview}
-                            <Grid item xs={10}>
+                            <Grid item xs={12} sm={10}>
                                 <FastField
                                     component={FormikTextField}
                                     name="name"
@@ -394,13 +411,19 @@ const AddFile = () => {
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={2}>
+                            <Grid item xs={12} sm={2}>
                                 <Tooltip title="Encrypt name">
-                                    <FastField
-                                        component={FormikCheckbox}
-                                        name="encryptName"
-                                        disabled={isSubmitting}
-                                    />
+                                    <span>
+                                        <FastField
+                                            name="encryptName"
+                                            component={FormikCheckboxWithLabel}
+                                            Label={{
+                                                label: 'Encrypt',
+                                            }}
+                                            disabled={isSubmitting}
+                                            type="checkbox"
+                                        />
+                                    </span>
                                 </Tooltip>
                             </Grid>
                             <Grid item xs={12} md={4}>
@@ -711,7 +734,7 @@ const EditFile = () => {
                 return
             }
             const updateOb: Partial<MainContextInterface> = {
-                deleted: data.nodeData.deleted,
+                deleted: data.nodeData.deleted || null,
                 updateId: data.nodeData.updateId,
             }
             if (data.tags.ename && data.tags.ename.length > 0) {
@@ -859,7 +882,7 @@ const EditFile = () => {
                         mime={values.fileInput.type}
                         name={values.name}
                     />
-                    <Grid item xs={10}>
+                    <Grid item xs={12} sm={10}>
                         <FastField
                             component={FormikTextField}
                             name="name"
@@ -874,13 +897,19 @@ const EditFile = () => {
                             }}
                         />
                     </Grid>
-                    <Grid item xs={2}>
+                    <Grid item xs={12} sm={2}>
                         <Tooltip title="Encrypt name">
-                            <FastField
-                                component={FormikCheckbox}
-                                name="encryptName"
-                                disabled={isSubmitting}
-                            />
+                            <span>
+                                <FastField
+                                    name="encryptName"
+                                    component={FormikCheckboxWithLabel}
+                                    Label={{
+                                        label: 'Encrypt',
+                                    }}
+                                    disabled={isSubmitting}
+                                    type="checkbox"
+                                />
+                            </span>
                         </Tooltip>
                     </Grid>
                     <Grid item xs={12} md={4}>
@@ -934,7 +963,7 @@ const EditFile = () => {
                         />
                     </Grid>
                     <Grid item xs={12}>
-                        <Field name="fileInput" disabled={isSubmitting}>
+                        <FastField name="fileInput" disabled={isSubmitting}>
                             {(formikFieldProps: FieldProps) => {
                                 return (
                                     <>
@@ -985,7 +1014,7 @@ const EditFile = () => {
                                     </>
                                 )
                             }}
-                        </Field>
+                        </FastField>
                     </Grid>
                     <Grid item xs={12}>
                         {isSubmitting && <LinearProgress />}
