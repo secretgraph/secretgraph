@@ -311,7 +311,7 @@ export const findConfigQuery = gql`
         $authorization: [String!]
         $contentHashes: [String!]
     ) {
-        secretgraph {
+        secretgraph(authorization: $authorization) {
             config {
                 hashAlgorithms
             }
@@ -319,7 +319,6 @@ export const findConfigQuery = gql`
                 public: false
                 clusters: [$cluster]
                 includeTags: ["type=Config"]
-                authorization: $authorization
                 contentHashes: $contentHashes
             ) {
                 edges {

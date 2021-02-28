@@ -417,9 +417,7 @@ const ViewCluster = () => {
         onResolve: (data) => {
             const updateOb = {
                 shareUrl: data.data.secretgraph.node.link,
-                deleted:
-                    data.data.secretgraph.node.deleteddata.nodeData.deleted ||
-                    null,
+                deleted: data.data.secretgraph.node.deleted || null,
                 updateId: data.data.secretgraph.node.updateId,
             }
             if (

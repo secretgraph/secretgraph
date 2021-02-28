@@ -323,8 +323,10 @@ const ActiveElements = ({
                     updateMainCtx({
                         item: searchCtx.cluster,
                         url: activeUrl,
+                        deleted: false,
                         type: 'Cluster',
                         action: 'view',
+                        title: '',
                     })
                     setHeaderExpanded(false)
                 }}
@@ -366,6 +368,7 @@ const ActiveElements = ({
                         updateId: null,
                         type: 'Cluster',
                         action: 'view',
+                        title: '',
                     })
                     setHeaderExpanded(false)
                 }}
@@ -467,6 +470,7 @@ const SideBarItems = ({
                             action: 'view',
                             url: activeUrl,
                             shareUrl: `${url.origin}${cluster.link}`,
+                            title: '',
                         })
                         updateSearchCtx({
                             cluster: cluster.id,
@@ -500,7 +504,7 @@ const SideBarItems = ({
                         const url = new URL(activeUrl)
                         updateMainCtx({
                             action: 'view',
-                            title: null,
+                            title: '',
                             type: type,
                             deleted: false,
                             item: content.id,
@@ -535,7 +539,7 @@ const SideBarItems = ({
                         const url = new URL(activeUrl)
                         updateMainCtx({
                             action: 'view',
-                            title: null,
+                            title: '',
                             type: type,
                             deleted: false,
                             item: content.id,

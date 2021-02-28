@@ -109,7 +109,7 @@ export interface SnackMessageInterface {
 export interface MainContextInterface {
     action: 'start' | 'add' | 'view' | 'edit' | 'help' | 'import'
     updateId: null | string
-    title: null | string
+    title: string
     item: null | string
     // activeUrl can be changed without changing active element, so cache it here
     url: null | string

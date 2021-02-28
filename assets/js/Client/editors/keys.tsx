@@ -228,6 +228,7 @@ function InnerKeys({
         errors,
         setErrors,
         values,
+        dirty,
     } = useFormikContext<any>()
     const [joinedHashes, setJoinedHashes] = React.useState('loading')
     React.useEffect(() => {
@@ -344,7 +345,7 @@ function InnerKeys({
                     <Button
                         variant="contained"
                         color="primary"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !dirty}
                         onClick={submitForm}
                     >
                         Submit

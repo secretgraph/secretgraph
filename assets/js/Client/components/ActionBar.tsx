@@ -164,7 +164,7 @@ function ActionBar(props: Props) {
                             onChange={(event: any) => {
                                 updateMainCtx({
                                     action: 'add',
-                                    title: null,
+                                    title: '',
                                     item: null,
                                     shareUrl: null,
                                     deleted: null,
@@ -184,7 +184,7 @@ function ActionBar(props: Props) {
                             onClick={(event) => {
                                 updateMainCtx({
                                     action: 'add',
-                                    title: null,
+                                    title: '',
                                     item: null,
                                     updateId: null,
                                     shareUrl: null,

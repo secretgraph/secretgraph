@@ -43,6 +43,7 @@ import {
     updateContent,
 } from '../utils/operations'
 
+const decryptSet = new Set(['mime', 'ename'])
 const ViewWidget = ({
     arrayBuffer,
     mime,
@@ -122,6 +123,60 @@ const ViewWidget = ({
     )
 }
 
+const TextFileAdapter = ({
+    mime,
+    onChange,
+    onBlur,
+    value,
+    ...props
+}: {
+    mime: string
+    onChange: (newText: Blob) => void
+    onBlur?: any
+    value: Blob
+} & Pick<TextFieldProps, 'disabled' | 'error' | 'helperText'>) => {
+    if (!mime.startsWith('text/')) {
+        return null
+    }
+    const [text, setText] = React.useState<string | undefined>(undefined)
+    React.useLayoutEffect(() => {
+        value.text().then((val) => setText(val))
+    }, [value])
+    if (text === undefined) {
+        return null
+    }
+    if (mime === 'text/html') {
+        return (
+            <SunEditor
+                label="Html Text"
+                fullWidth
+                variant="outlined"
+                multiline
+                value={text}
+                onChange={(ev) => {
+                    onChange(new Blob([ev.currentTarget.value], { type: mime }))
+                }}
+                onBlur={onBlur}
+                {...props}
+            />
+        )
+    }
+    return (
+        <TextField
+            {...props}
+            fullWidth
+            multiline
+            variant="outlined"
+            label={'Plaintext input'}
+            onBlur={onBlur}
+            defaultValue={text}
+            onChange={(ev) => {
+                onChange(new Blob([ev.currentTarget.value], { type: mime }))
+            }}
+        />
+    )
+}
+
 const ViewFile = () => {
     const { classes, theme } = useStylesAndTheme()
     const { mainCtx, updateMainCtx } = React.useContext(MainContext)
@@ -152,7 +207,7 @@ const ViewFile = () => {
         config: config as ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
-        decrypt: new Set(['mime', 'ename']),
+        decrypt: decryptSet,
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
     if (isLoading) {
@@ -330,7 +385,7 @@ const AddFile = () => {
                         tags: [
                             values.encryptName
                                 ? `ename=${btoa(values.name)}`
-                                : `name=${btoa(values.name)}`,
+                                : `name=${values.name}`,
                             `mime=${btoa(value.type)}`,
                             `state=${values.state}`,
                             `type=${
@@ -358,7 +413,7 @@ const AddFile = () => {
                 }
             }}
         >
-            {({ submitForm, isSubmitting, values, setValues }) => {
+            {({ submitForm, isSubmitting, values, setValues, dirty }) => {
                 let preview = null
                 if (values.plainInput) {
                     preview = (
@@ -503,13 +558,9 @@ const AddFile = () => {
                                                 label="Html Text"
                                                 variant="outlined"
                                                 onChange={(ev) => {
-                                                    formikFieldProps.form.setValues(
-                                                        {
-                                                            ...formikFieldProps
-                                                                .form.values,
-                                                            htmlInput:
-                                                                ev.target.value,
-                                                        }
+                                                    formikFieldProps.form.setFieldValue(
+                                                        'htmlInput',
+                                                        ev.target.value
                                                     )
                                                 }}
                                                 helperText={
@@ -653,7 +704,7 @@ const AddFile = () => {
                                 <Button
                                     variant="contained"
                                     color="primary"
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || !dirty}
                                     onClick={submitForm}
                                 >
                                     Submit
@@ -664,60 +715,6 @@ const AddFile = () => {
                 )
             }}
         </Formik>
-    )
-}
-
-const TextFileAdapter = ({
-    mime,
-    onChange,
-    onBlur,
-    value,
-    ...props
-}: {
-    mime: string
-    onChange: (newText: Blob) => void
-    onBlur?: any
-    value: Blob
-} & Pick<TextFieldProps, 'disabled' | 'error' | 'helperText'>) => {
-    if (!mime.startsWith('text/')) {
-        return null
-    }
-    const [text, setText] = React.useState<string | undefined>(undefined)
-    React.useLayoutEffect(() => {
-        value.text().then((val) => setText(val))
-    }, [value])
-    if (text === undefined) {
-        return null
-    }
-    if (mime === 'text/html') {
-        return (
-            <SunEditor
-                label="Html Text"
-                fullWidth
-                variant="outlined"
-                multiline
-                value={text}
-                onChange={(ev) => {
-                    onChange(new Blob([ev.currentTarget.value], { type: mime }))
-                }}
-                onBlur={onBlur}
-                {...props}
-            />
-        )
-    }
-    return (
-        <TextField
-            {...props}
-            fullWidth
-            multiline
-            variant="outlined"
-            label={'Plaintext input'}
-            onBlur={onBlur}
-            defaultValue={text}
-            onChange={(ev) => {
-                onChange(new Blob([ev.currentTarget.value], { type: mime }))
-            }}
-        />
     )
 }
 
@@ -749,7 +746,7 @@ const EditFile = () => {
         config: config as ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
-        decrypt: new Set(['mime', 'name']),
+        decrypt: decryptSet,
         watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
 
@@ -834,7 +831,7 @@ const EditFile = () => {
                 })
                 const result = await updateContent({
                     id: mainCtx.item as string,
-                    updateId: pubkeysResult.data.secretgraph.node.updateId,
+                    updateId: data.nodeData.updateId,
                     client,
                     config,
                     cluster: values.cluster, // can be null for keeping cluster
@@ -842,7 +839,7 @@ const EditFile = () => {
                     tags: [
                         values.encryptName
                             ? `ename=${btoa(values.name)}`
-                            : `name=${btoa(values.name)}`,
+                            : `name=${values.name}`,
                         `mime=${btoa(value.type)}`,
                         `state=${values.state}`,
                         `type=${
@@ -869,10 +866,9 @@ const EditFile = () => {
             {({
                 submitForm,
                 isSubmitting,
-                setSubmitting,
                 values,
                 touched,
-                errors,
+                dirty,
                 setFieldValue,
                 setFieldTouched,
             }) => (
@@ -1023,7 +1019,7 @@ const EditFile = () => {
                         <Button
                             variant="contained"
                             color="primary"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !dirty}
                             onClick={submitForm}
                         >
                             Submit

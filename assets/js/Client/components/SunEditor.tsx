@@ -1,7 +1,8 @@
+import 'suneditor/dist/css/suneditor.min.css'
+
+import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 import * as React from 'react'
 import SunEditorTyped, { SunEditorReactProps } from 'suneditor-react'
-import 'suneditor/dist/css/suneditor.min.css'
-import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 
 const SunEditorUntyped = SunEditorTyped as any
 
@@ -31,7 +32,7 @@ export function SunEditorWrapper({
                 ref={ref}
                 disable={disabled}
                 {...props}
-                setContent={value}
+                setContents={value}
                 onChange={(val: string) => {
                     //console.log(ref.current, props)
                     ref.current.editor.save()

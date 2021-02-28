@@ -1,28 +1,30 @@
-import * as React from 'react'
 import { ApolloProvider } from '@apollo/client'
 import CssBaseline from '@material-ui/core/CssBaseline'
 import Paper from '@material-ui/core/Paper'
+import * as React from 'react'
+
 import ActionBar from '../components/ActionBar'
 import HeaderBar from '../components/HeaderBar'
-import { useStylesAndTheme } from '../theme'
-import { elements } from '../editors'
-import { loadConfigSync, updateConfigReducer } from '../utils/config'
-import { createClient } from '../utils/graphql'
+import { CapturingSuspense } from '../components/misc'
+import SideBar from '../components/SideBar'
 import {
-    ConfigInterface,
-    MainContextInterface,
-    SearchContextInterface,
-    ElementEntryInterface,
-    ConfigInputInterface,
-} from '../interfaces'
-import {
+    ActiveUrlContext,
+    ConfigContext,
     MainContext,
     SearchContext,
-    ConfigContext,
-    ActiveUrlContext,
 } from '../contexts'
-import SideBar from '../components/SideBar'
-import { CapturingSuspense } from '../components/misc'
+import { elements } from '../editors'
+import {
+    ConfigInputInterface,
+    ConfigInterface,
+    ElementEntryInterface,
+    MainContextInterface,
+    SearchContextInterface,
+} from '../interfaces'
+import { useStylesAndTheme } from '../theme'
+import { loadConfigSync, updateConfigReducer } from '../utils/config'
+import { createClient } from '../utils/graphql'
+
 // const SideBar = React.lazy(() => import('../components/SideBar'));
 const SettingsImporter = React.lazy(() => import('./SettingsImporter'))
 const Help = React.lazy(() => import('./Help'))
