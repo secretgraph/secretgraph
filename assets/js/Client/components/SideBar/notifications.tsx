@@ -5,10 +5,10 @@ import ListItemText from '@material-ui/core/ListItemText'
 import ListSubheader from '@material-ui/core/ListSubheader'
 import * as React from 'react'
 
-import { AuthInfoInterface } from '../../interfaces'
+import * as Interfaces from '../../interfaces'
 
 type SideBarItemsProps = {
-    authinfo?: AuthInfoInterface
+    authinfo?: Interfaces.AuthInfoInterface
     header?: any
 }
 

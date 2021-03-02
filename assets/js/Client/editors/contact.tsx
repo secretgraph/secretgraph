@@ -1,31 +1,29 @@
-import * as React from 'react'
+import { useApolloClient, useQuery } from '@apollo/client'
 import Card from '@material-ui/core/Card'
 import CardContent from '@material-ui/core/CardContent'
+import * as React from 'react'
 import { useAsync } from 'react-async'
 
-import { useQuery, useApolloClient } from '@apollo/client'
-
-import { ConfigInterface } from '../interfaces'
-import { MainContext, ConfigContext } from '../contexts'
-import { decryptContentId } from '../utils/operations'
-
+import * as Contexts from '../contexts'
+import * as Interfaces from '../interfaces'
+import { newClusterLabel } from '../messages'
 import { contentRetrievalQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
-import { newClusterLabel } from '../messages'
+import { decryptContentId } from '../utils/operations'
 
 type Props = {}
 
 const ViewFile = (props: Props) => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx } = React.useContext(Contexts.Main)
     const client = useApolloClient()
-    const { config } = React.useContext(ConfigContext)
+    const { config } = React.useContext(Contexts.Config)
     const { data, error } = useAsync({
         promiseFn: decryptContentId,
         suspense: true,
         onReject: console.error,
         client: client,
-        config: config as ConfigInterface,
+        config: config as Interfaces.ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
         decryptTags: ['mime', 'name'],
@@ -83,7 +81,7 @@ const EditFile = (props: Props) => {
 }
 
 export default function ContactComponent(props: Props) {
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx } = React.useContext(Contexts.Main)
     if (mainCtx.action == 'view' && mainCtx.item) {
         return <ViewFile />
     } else if (mainCtx.action == 'edit' && mainCtx.item) {

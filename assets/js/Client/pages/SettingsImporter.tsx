@@ -17,9 +17,9 @@ import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt'
 import MuiAlert from '@material-ui/lab/Alert'
 import * as React from 'react'
 
-import { mapHashNames } from '../constants'
-import { ActiveUrlContext, ConfigContext, MainContext } from '../contexts'
-import { ConfigInterface, SnackMessageInterface } from '../interfaces'
+import * as Constants from '../constants'
+import * as Contexts from '../contexts'
+import * as Interfaces from '../interfaces'
 import {
     decryptingPasswordHelp,
     decryptingPasswordLabel,
@@ -58,12 +58,12 @@ function SettingsImporter() {
     const [needsPw, setNeedsPw] = React.useState(false)
     const [hasPw, setHasPw] = React.useState(false)
     const [oldConfig, setOldConfig] = React.useState(null) as [
-        ConfigInterface | null,
+        Interfaces.ConfigInterface | null,
         any
     ]
     const [loginUrl, setLoginUrl] = React.useState(undefined)
     const [message, setMessage] = React.useState(undefined) as [
-        SnackMessageInterface | undefined,
+        Interfaces.SnackMessageInterface | undefined,
         any
     ]
     const [hasFile, setHasFile] = React.useState(false)
@@ -71,15 +71,15 @@ function SettingsImporter() {
     const defaultPath: string | undefined = mainElement
         ? mainElement.dataset.graphqlPath
         : undefined
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { activeUrl, updateActiveUrl } = React.useContext(ActiveUrlContext)
-    const { config, updateConfig } = React.useContext(ConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { activeUrl, updateActiveUrl } = React.useContext(Contexts.ActiveUrl)
+    const { config, updateConfig } = React.useContext(Contexts.Config)
 
     const handleSecretgraphEvent_inner = async (event: any) => {
         const providerUrl = (document.getElementById(
             'secretgraph-provider'
         ) as HTMLInputElement).value
-        let newConfig: ConfigInterface | null = null
+        let newConfig: Interfaces.ConfigInterface | null = null
         const client = createClient(providerUrl)
         if (!client) {
             setLoadingImport(false)
@@ -93,7 +93,7 @@ function SettingsImporter() {
         const sconfig = result.data.secretgraph.config
         const hashAlgos = []
         for (const algo of sconfig.hashAlgorithms) {
-            const mappedName = mapHashNames[algo]
+            const mappedName = Constants.mapHashNames[algo]
             if (mappedName) {
                 hashAlgos.push(mappedName.operationName)
             }
@@ -164,7 +164,7 @@ function SettingsImporter() {
         const sconfig = result.data.secretgraph.config
         const hashAlgos = []
         for (const algo of sconfig.hashAlgorithms) {
-            const mappedName = mapHashNames[algo]
+            const mappedName = Constants.mapHashNames[algo]
             if (mappedName) {
                 hashAlgos.push(mappedName.operationName)
             }
@@ -177,7 +177,7 @@ function SettingsImporter() {
             return
         }
         if (sconfig.registerUrl === true) {
-            const newConfig: ConfigInterface = {
+            const newConfig: Interfaces.ConfigInterface = {
                 certificates: {},
                 tokens: {},
                 hosts: {},

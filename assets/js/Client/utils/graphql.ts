@@ -3,12 +3,7 @@ import { relayStylePagination } from '@apollo/client/utilities'
 import { createUploadLink } from 'apollo-upload-client'
 
 import { mapHashNames } from '../constants'
-import {
-    ConfigInterface,
-    CryptoHashPair,
-    KeyInput,
-    ReferenceInterface,
-} from '../interfaces'
+import * as Interfaces from '../interfaces'
 import {
     encryptRSAOEAP,
     serializeToBase64,
@@ -45,26 +40,29 @@ export const createClient = (url: string) => {
 }
 
 async function createSignatureReferences_helper(
-    key: KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>,
+    key:
+        | Interfaces.KeyInput
+        | Interfaces.CryptoHashPair
+        | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>,
     hashalgo: string,
     content: ArrayBuffer | PromiseLike<ArrayBuffer>
 ) {
     const _x = await key
-    let signkey: KeyInput, hash: string | Promise<string>
+    let signkey: Interfaces.KeyInput, hash: string | Promise<string>
     const hashalgo2 = mapHashNames[hashalgo].operationName
     const hashalgo2_len = mapHashNames[hashalgo].length
     if ((_x as any)['hash']) {
-        signkey = (_x as CryptoHashPair).key
-        hash = (_x as CryptoHashPair).hash
+        signkey = (_x as Interfaces.CryptoHashPair).key
+        hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
-        signkey = key as KeyInput
+        signkey = key as Interfaces.KeyInput
         hash = serializeToBase64(
             crypto.subtle.digest(
                 hashalgo2,
                 await crypto.subtle.exportKey(
                     'spki' as const,
                     await unserializeToCryptoKey(
-                        key as KeyInput,
+                        key as Interfaces.KeyInput,
                         {
                             name: 'RSA-OAEP',
                             hash: hashalgo2,
@@ -101,13 +99,13 @@ async function createSignatureReferences_helper(
 export function createSignatureReferences(
     content: Parameters<typeof unserializeToArrayBuffer>[0],
     privkeys: (
-        | KeyInput
-        | CryptoHashPair
-        | PromiseLike<KeyInput | CryptoHashPair>
+        | Interfaces.KeyInput
+        | Interfaces.CryptoHashPair
+        | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>
     )[],
     hashalgo: string
-): Promise<ReferenceInterface[]> {
-    const references: Promise<ReferenceInterface>[] = []
+): Promise<Interfaces.ReferenceInterface[]> {
+    const references: Promise<Interfaces.ReferenceInterface>[] = []
     const hashValue = mapHashNames[hashalgo]
     if (!hashValue) {
         throw Error('hashalgorithm not supported: ' + hashalgo)
@@ -119,7 +117,7 @@ export function createSignatureReferences(
                 hashalgo,
                 unserializeToArrayBuffer(content)
             ).then(
-                ({ signature, hash }): ReferenceInterface => {
+                ({ signature, hash }): Interfaces.ReferenceInterface => {
                     return {
                         target: hash,
                         group: 'signature',
@@ -135,15 +133,18 @@ export function createSignatureReferences(
 }
 
 async function encryptSharedKey_helper(
-    key: KeyInput | CryptoHashPair | PromiseLike<KeyInput | CryptoHashPair>,
+    key:
+        | Interfaces.KeyInput
+        | Interfaces.CryptoHashPair
+        | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>,
     hashalgo: string | undefined,
     sharedkey: ArrayBuffer
 ) {
     const _x = await key
     let pubkey: CryptoKey | Promise<CryptoKey>, hash: string | Promise<string>
     if ((_x as any)['hash']) {
-        pubkey = (_x as CryptoHashPair).key
-        hash = (_x as CryptoHashPair).hash
+        pubkey = (_x as Interfaces.CryptoHashPair).key
+        hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
         const operationName = mapHashNames['' + hashalgo].operationName
         if (!operationName) {
@@ -153,7 +154,7 @@ async function encryptSharedKey_helper(
             )
         }
         pubkey = unserializeToCryptoKey(
-            key as KeyInput,
+            key as Interfaces.KeyInput,
             {
                 name: 'RSA-OAEP',
                 hash: operationName,
@@ -180,13 +181,13 @@ async function encryptSharedKey_helper(
 export function encryptSharedKey(
     sharedkey: ArrayBuffer,
     pubkeys: (
-        | KeyInput
-        | CryptoHashPair
-        | PromiseLike<KeyInput | CryptoHashPair>
+        | Interfaces.KeyInput
+        | Interfaces.CryptoHashPair
+        | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>
     )[],
     hashalgo?: string
-): [Promise<ReferenceInterface[]>, Promise<string[]>] {
-    const references: PromiseLike<ReferenceInterface>[] = []
+): [Promise<Interfaces.ReferenceInterface[]>, Promise<string[]>] {
+    const references: PromiseLike<Interfaces.ReferenceInterface>[] = []
     const tags: PromiseLike<string>[] = []
     const hashValue = mapHashNames['' + hashalgo]
     if (!hashValue) {
@@ -196,7 +197,7 @@ export function encryptSharedKey(
         const temp = encryptSharedKey_helper(pubkey, hashalgo, sharedkey)
         references.push(
             temp.then(
-                ({ encrypted, hash }): ReferenceInterface => {
+                ({ encrypted, hash }): Interfaces.ReferenceInterface => {
                     return {
                         target: hash,
                         group: 'key',

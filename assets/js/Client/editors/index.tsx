@@ -1,7 +1,8 @@
 declare var gettext: any
 
 import * as React from 'react'
-import { ElementEntryInterface } from '../interfaces'
+
+import * as Interfaces from '../interfaces'
 
 export const elements = new Map([
     [
@@ -67,4 +68,4 @@ export const elements = new Map([
             component: React.lazy(() => import('./custom')),
         },
     ],
-] as [string, ElementEntryInterface][])
+] as [string, Interfaces.ElementEntryInterface][])

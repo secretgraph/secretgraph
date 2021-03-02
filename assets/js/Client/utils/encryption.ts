@@ -1,20 +1,10 @@
 import { mapEncryptionAlgorithms, mapHashNames } from '../constants'
-import {
-    CryptoGCMInInterface,
-    CryptoGCMOutInterface,
-    CryptoRSAInInterface,
-    CryptoRSAOutInterface,
-    KeyInput,
-    KeyOutInterface,
-    NonKeyInput,
-    PWInterface,
-    RawInput,
-} from '../interfaces'
+import * as Interfaces from '../interfaces'
 import * as IterableOps from './iterable'
 import { utf8encoder } from './misc'
 
 export async function toPBKDF2key(
-    inp: RawInput | PromiseLike<RawInput>
+    inp: Interfaces.RawInput | PromiseLike<Interfaces.RawInput>
 ): Promise<CryptoKey> {
     let data: ArrayBuffer
     const _inp = await inp
@@ -36,7 +26,9 @@ export async function toPBKDF2key(
         return _inp as CryptoKey
     } else {
         throw Error(
-            `Invalid input: ${_inp} (${(_inp as RawInput).constructor})`
+            `Invalid input: ${_inp} (${
+                (_inp as Interfaces.RawInput).constructor
+            })`
         )
     }
 
@@ -50,7 +42,7 @@ export async function toPBKDF2key(
 }
 
 export async function toPublicKey(
-    inp: KeyInput | PromiseLike<KeyInput>,
+    inp: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>,
     params: any
 ) {
     let _key: CryptoKey
@@ -69,7 +61,7 @@ export async function toPublicKey(
         }
         return await crypto.subtle.importKey(
             'raw' as const,
-            await unserializeToArrayBuffer(_inp as RawInput),
+            await unserializeToArrayBuffer(_inp as Interfaces.RawInput),
             params,
             true,
             mapEncryptionAlgorithms[params.name].usages
@@ -80,7 +72,7 @@ export async function toPublicKey(
         }
         _key = await crypto.subtle.importKey(
             'pkcs8' as const,
-            await unserializeToArrayBuffer(_inp as RawInput),
+            await unserializeToArrayBuffer(_inp as Interfaces.RawInput),
             params,
             true,
             mapEncryptionAlgorithms[`${params.name}private`].usages
@@ -111,7 +103,10 @@ export async function toPublicKey(
 }
 
 export async function unserializeToArrayBuffer(
-    inp: RawInput | KeyOutInterface | PromiseLike<RawInput | KeyOutInterface>
+    inp:
+        | Interfaces.RawInput
+        | Interfaces.KeyOutInterface
+        | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
 ): Promise<ArrayBuffer> {
     const _inp = await inp
     let _result: ArrayBuffer
@@ -119,7 +114,7 @@ export async function unserializeToArrayBuffer(
         _result = Uint8Array.from(atob(_inp), (c) => c.charCodeAt(0))
     } else {
         let _data
-        const _finp = (_inp as KeyOutInterface).data
+        const _finp = (_inp as Interfaces.KeyOutInterface).data
         if (
             _finp &&
             (_finp instanceof ArrayBuffer ||
@@ -162,7 +157,9 @@ export async function unserializeToArrayBuffer(
             }
         } else {
             throw Error(
-                `Invalid input: ${_inp} (${(_inp as RawInput).constructor})`
+                `Invalid input: ${_inp} (${
+                    (_inp as Interfaces.RawInput).constructor
+                })`
             )
         }
     }
@@ -170,7 +167,10 @@ export async function unserializeToArrayBuffer(
 }
 
 export async function serializeToBase64(
-    inp: RawInput | KeyOutInterface | PromiseLike<RawInput | KeyOutInterface>
+    inp:
+        | Interfaces.RawInput
+        | Interfaces.KeyOutInterface
+        | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
 ): Promise<string> {
     return btoa(
         String.fromCharCode.apply(
@@ -193,7 +193,7 @@ function compareObjects(obj1: any, obj2: any) {
 class KeyTypeError extends Error {}
 
 export async function unserializeToCryptoKey(
-    inp: KeyInput | PromiseLike<KeyInput>,
+    inp: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>,
     params: any,
     type: 'privateKey' | 'publicKey' = 'publicKey',
     failInsteadConvert?: boolean
@@ -224,7 +224,7 @@ export async function unserializeToCryptoKey(
         }
         _data = await unserializeToArrayBuffer(temp2)
     } else {
-        _data = await unserializeToArrayBuffer(temp1 as RawInput)
+        _data = await unserializeToArrayBuffer(temp1 as Interfaces.RawInput)
     }
     if (params.name.startsWith('AES-')) {
         if (!mapEncryptionAlgorithms[params.name]) {
@@ -287,8 +287,10 @@ export async function unserializeToCryptoKey(
 }
 
 export async function encryptRSAOEAP(
-    options: CryptoRSAInInterface | Promise<CryptoRSAInInterface>
-): Promise<CryptoRSAOutInterface> {
+    options:
+        | Interfaces.CryptoRSAInInterface
+        | Promise<Interfaces.CryptoRSAInInterface>
+): Promise<Interfaces.CryptoRSAOutInterface> {
     const _options = await options
     const hashalgo = await _options.hashAlgorithm
     if (!mapHashNames['' + hashalgo]) {
@@ -312,8 +314,10 @@ export async function encryptRSAOEAP(
 }
 
 export async function decryptRSAOEAP(
-    options: CryptoRSAInInterface | Promise<CryptoRSAInInterface>
-): Promise<CryptoRSAOutInterface> {
+    options:
+        | Interfaces.CryptoRSAInInterface
+        | Promise<Interfaces.CryptoRSAInInterface>
+): Promise<Interfaces.CryptoRSAOutInterface> {
     const _options = await options
     let hashValue = undefined,
         nonce: ArrayBuffer | undefined = undefined,
@@ -405,8 +409,10 @@ export async function decryptRSAOEAP(
 }
 
 export async function encryptAESGCM(
-    options: CryptoGCMInInterface | Promise<CryptoGCMInInterface>
-): Promise<CryptoGCMOutInterface> {
+    options:
+        | Interfaces.CryptoGCMInInterface
+        | Promise<Interfaces.CryptoGCMInInterface>
+): Promise<Interfaces.CryptoGCMOutInterface> {
     const _options = await options
     const nonce = _options.nonce
         ? await unserializeToArrayBuffer(_options.nonce)
@@ -433,8 +439,10 @@ export async function encryptAESGCM(
     }
 }
 export async function decryptAESGCM(
-    options: CryptoGCMInInterface | Promise<CryptoGCMInInterface>
-): Promise<CryptoGCMOutInterface> {
+    options:
+        | Interfaces.CryptoGCMInInterface
+        | Promise<Interfaces.CryptoGCMInInterface>
+): Promise<Interfaces.CryptoGCMOutInterface> {
     const _options = await options
     const _key = await _options.key
     const _nonce = _options.nonce
@@ -518,7 +526,7 @@ export async function decryptAESGCM(
 }
 
 export async function derivePW(
-    options: PWInterface | PromiseLike<PWInterface>
+    options: Interfaces.PWInterface | PromiseLike<Interfaces.PWInterface>
 ): Promise<{ data: ArrayBuffer; key: CryptoKey }> {
     const _options = await options
     const key = await toPBKDF2key(_options.pw)
@@ -546,13 +554,13 @@ export async function derivePW(
 
 // use tag="" for flags
 export async function encryptTag(
-    options: CryptoGCMInInterface & {
+    options: Interfaces.CryptoGCMInInterface & {
         readonly tag?: string | PromiseLike<string>
         readonly encrypt?: Set<string>
     }
 ): Promise<string> {
     let tag: string | undefined,
-        data: Exclude<CryptoGCMInInterface['data'], 'PromiseLike'>
+        data: Exclude<Interfaces.CryptoGCMInInterface['data'], 'PromiseLike'>
     if (options.tag !== undefined) {
         tag = await options.tag
         data = await options.data
@@ -600,7 +608,7 @@ export async function encryptTag(
     return `${tag}=${data as string}`
 }
 
-export async function decryptTagRaw(options: CryptoGCMInInterface) {
+export async function decryptTagRaw(options: Interfaces.CryptoGCMInInterface) {
     const data = await unserializeToArrayBuffer(options.data)
     const nonce = new Uint8Array(data.slice(0, 13))
     const realdata = data.slice(13)
@@ -612,7 +620,7 @@ export async function decryptTagRaw(options: CryptoGCMInInterface) {
 }
 
 export async function decryptTag(
-    options: Omit<CryptoGCMInInterface, 'data'> & {
+    options: Omit<Interfaces.CryptoGCMInInterface, 'data'> & {
         readonly data: string | PromiseLike<string>
     }
 ) {
@@ -646,7 +654,7 @@ export async function extractUnencryptedTags(options: {
 }
 
 export async function extractTags(
-    options: Omit<CryptoGCMInInterface, 'data'> & {
+    options: Omit<Interfaces.CryptoGCMInInterface, 'data'> & {
         readonly tags:
             | PromiseLike<Iterable<string | PromiseLike<string>>>
             | Iterable<string | PromiseLike<string>>
@@ -690,7 +698,7 @@ export async function encryptPreKey({
     iterations,
 }: {
     prekey: ArrayBuffer
-    pw: NonKeyInput
+    pw: Interfaces.NonKeyInput
     hashAlgorithm: string
     iterations: number
 }) {
@@ -709,7 +717,7 @@ export async function encryptPreKey({
 
 async function _pwsdecryptprekey(options: {
     readonly prekey: ArrayBuffer | string
-    pws: NonKeyInput[]
+    pws: Interfaces.NonKeyInput[]
     hashAlgorithm: string
     iterations: number | string
 }) {
@@ -750,7 +758,7 @@ async function _pwsdecryptprekey(options: {
 
 export async function decryptPreKeys(options: {
     prekeys: ArrayBuffer[] | string[]
-    pws: NonKeyInput[]
+    pws: Interfaces.NonKeyInput[]
     hashAlgorithm: string
     iterations: number | string
 }) {
@@ -772,7 +780,7 @@ export async function decryptPreKeys(options: {
 
 export async function decryptFirstPreKey(options: {
     prekeys: ArrayBuffer[] | string[]
-    pws: NonKeyInput[]
+    pws: Interfaces.NonKeyInput[]
     hashAlgorithm: string
     iterations: number | string
     fn?: any

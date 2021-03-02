@@ -24,13 +24,8 @@ import StateSelect from '../components/forms/StateSelect'
 import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import * as Constants from '../constants'
-import {
-    ActiveUrlContext,
-    InitializedConfigContext,
-    MainContext,
-    SearchContext,
-} from '../contexts'
-import { ConfigInterface, MainContextInterface } from '../interfaces'
+import * as Contexts from '../contexts'
+import * as Interfaces from '../interfaces'
 import { newClusterLabel } from '../messages'
 import { getContentConfigurationQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
@@ -179,8 +174,8 @@ const TextFileAdapter = ({
 
 const ViewFile = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { config } = React.useContext(InitializedConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
 
     //
@@ -191,7 +186,7 @@ const ViewFile = () => {
             if (!data) {
                 return
             }
-            const updateOb: Partial<MainContextInterface> = {
+            const updateOb: Partial<Interfaces.MainContextInterface> = {
                 deleted: data.nodeData.deleted || null,
                 updateId: data.nodeData.updateId,
             }
@@ -204,7 +199,7 @@ const ViewFile = () => {
         },
         suspense: true,
         client: client,
-        config: config as ConfigInterface,
+        config: config as Interfaces.ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
         decrypt: decryptSet,
@@ -290,10 +285,10 @@ const ViewFile = () => {
 
 const AddFile = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { activeUrl } = React.useContext(ActiveUrlContext)
-    const { searchCtx } = React.useContext(SearchContext)
-    const { config } = React.useContext(InitializedConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     const client = useApolloClient()
 
@@ -720,8 +715,8 @@ const AddFile = () => {
 
 const EditFile = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { config } = React.useContext(InitializedConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
     const { data, reload } = useAsync({
         promiseFn: decryptContentId,
@@ -730,7 +725,7 @@ const EditFile = () => {
             if (!data) {
                 return
             }
-            const updateOb: Partial<MainContextInterface> = {
+            const updateOb: Partial<Interfaces.MainContextInterface> = {
                 deleted: data.nodeData.deleted || null,
                 updateId: data.nodeData.updateId,
             }
@@ -743,7 +738,7 @@ const EditFile = () => {
         },
         suspense: true,
         client: client,
-        config: config as ConfigInterface,
+        config: config as Interfaces.ConfigInterface,
         url: mainCtx.url as string,
         id: mainCtx.item as string,
         decrypt: decryptSet,
@@ -1032,7 +1027,7 @@ const EditFile = () => {
 }
 
 export default function FileComponent() {
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx } = React.useContext(Contexts.Main)
     return (
         <DecisionFrame
             mainCtx={mainCtx}

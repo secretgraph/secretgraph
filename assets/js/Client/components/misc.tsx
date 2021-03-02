@@ -23,7 +23,7 @@ export const CenteredSpinner = React.forwardRef(
 )
 
 export class CapturingSuspense extends React.PureComponent<
-    {},
+    { noSuspense?: boolean },
     { error: null | any }
 > {
     constructor(props: any) {
@@ -37,6 +37,9 @@ export class CapturingSuspense extends React.PureComponent<
                     {`${this.state.error}`}
                 </Typography>
             )
+        }
+        if (this.props.noSuspense) {
+            return this.props.children
         }
         return (
             <React.Suspense fallback={<CenteredSpinner />}>

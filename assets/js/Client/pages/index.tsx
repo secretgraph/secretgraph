@@ -7,20 +7,9 @@ import ActionBar from '../components/ActionBar'
 import HeaderBar from '../components/HeaderBar'
 import { CapturingSuspense } from '../components/misc'
 import SideBar from '../components/SideBar'
-import {
-    ActiveUrlContext,
-    ConfigContext,
-    MainContext,
-    SearchContext,
-} from '../contexts'
+import * as Contexts from '../contexts'
 import { elements } from '../editors'
-import {
-    ConfigInputInterface,
-    ConfigInterface,
-    ElementEntryInterface,
-    MainContextInterface,
-    SearchContextInterface,
-} from '../interfaces'
+import * as Interfaces from '../interfaces'
 import { useStylesAndTheme } from '../theme'
 import { loadConfigSync, updateConfigReducer } from '../utils/config'
 import { createClient } from '../utils/graphql'
@@ -41,7 +30,7 @@ function MainPage(props: Props) {
     const query = new URLSearchParams(document.location.search)
     const { defaultPath } = props
     const { classes, theme } = useStylesAndTheme()
-    const [drawerOpen, setDrawerOpen] = React.useState(true)
+    const [openSidebar, updateOpenSidebar] = React.useState(false)
     const [config, updateConfig] = React.useReducer(
         updateConfigReducer,
         null,
@@ -59,16 +48,16 @@ function MainPage(props: Props) {
         shareUrl: null,
         deleted: null,
     }) as [
-        MainContextInterface,
-        (update: Partial<MainContextInterface>) => void
+        Interfaces.MainContextInterface,
+        (update: Partial<Interfaces.MainContextInterface>) => void
     ]
     const [searchCtx, updateSearchCtx] = React.useReducer(updateState, {
         cluster: null,
         include: [],
         exclude: [],
     }) as [
-        SearchContextInterface,
-        (update: Partial<SearchContextInterface>) => void
+        Interfaces.SearchContextInterface,
+        (update: Partial<Interfaces.SearchContextInterface>) => void
     ]
     const [activeUrl, updateActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
@@ -84,9 +73,9 @@ function MainPage(props: Props) {
             if (!FrameElementWrapper) {
                 FrameElementWrapper = elements.get(
                     'undefined'
-                ) as ElementEntryInterface
+                ) as Interfaces.ElementEntryInterface
             }
-            const FrameElementType = (FrameElementWrapper as ElementEntryInterface)
+            const FrameElementType = (FrameElementWrapper as Interfaces.ElementEntryInterface)
                 .component
             if (activeUrl == mainCtx.url || !mainCtx.url) {
                 frameElement = (
@@ -123,47 +112,46 @@ function MainPage(props: Props) {
             break
     }
     return (
-        <ApolloProvider client={createClient(activeUrl)}>
-            <ActiveUrlContext.Provider value={{ activeUrl, updateActiveUrl }}>
-                <MainContext.Provider value={{ mainCtx, updateMainCtx }}>
-                    <SearchContext.Provider
-                        value={{ searchCtx, updateSearchCtx }}
-                    >
-                        <ConfigContext.Provider
-                            value={{ config, updateConfig }}
+        <Contexts.OpenSidebar.Provider
+            value={{ open: openSidebar, updateOpen: updateOpenSidebar }}
+        >
+            <ApolloProvider client={createClient(activeUrl)}>
+                <Contexts.ActiveUrl.Provider
+                    value={{ activeUrl, updateActiveUrl }}
+                >
+                    <Contexts.Main.Provider value={{ mainCtx, updateMainCtx }}>
+                        <Contexts.Search.Provider
+                            value={{ searchCtx, updateSearchCtx }}
                         >
-                            <CssBaseline />
-                            <div
-                                className={
-                                    config && drawerOpen
-                                        ? classes.rootShifted
-                                        : classes.root
-                                }
+                            <Contexts.Config.Provider
+                                value={{ config, updateConfig }}
                             >
-                                <SideBar
-                                    openState={{ drawerOpen, setDrawerOpen }}
-                                />
-                                <HeaderBar
-                                    openState={{
-                                        drawerOpen: !!(drawerOpen && config),
-                                        setDrawerOpen,
-                                    }}
-                                />
-                                <div className={classes.content}>
-                                    <ActionBar />
-                                    <Paper
-                                        component="main"
-                                        className={classes.mainSection}
-                                    >
-                                        {frameElement}
-                                    </Paper>
+                                <CssBaseline />
+                                <div
+                                    className={
+                                        config && open
+                                            ? classes.rootShifted
+                                            : classes.root
+                                    }
+                                >
+                                    <SideBar />
+                                    <HeaderBar />
+                                    <div className={classes.content}>
+                                        <ActionBar />
+                                        <Paper
+                                            component="main"
+                                            className={classes.mainSection}
+                                        >
+                                            {frameElement}
+                                        </Paper>
+                                    </div>
                                 </div>
-                            </div>
-                        </ConfigContext.Provider>
-                    </SearchContext.Provider>
-                </MainContext.Provider>
-            </ActiveUrlContext.Provider>
-        </ApolloProvider>
+                            </Contexts.Config.Provider>
+                        </Contexts.Search.Provider>
+                    </Contexts.Main.Provider>
+                </Contexts.ActiveUrl.Provider>
+            </ApolloProvider>
+        </Contexts.OpenSidebar.Provider>
     )
 }
 

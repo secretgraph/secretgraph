@@ -20,14 +20,8 @@ import Autocomplete from '@material-ui/lab/Autocomplete'
 import * as React from 'react'
 
 import { mapHashNames } from '../../constants'
-import {
-    ActiveUrlContext,
-    ConfigContext,
-    InitializedConfigContext,
-    MainContext,
-    SearchContext,
-} from '../../contexts'
-import { AuthInfoInterface } from '../../interfaces'
+import * as Contexts from '../../contexts'
+import * as Interfaces from '../../interfaces'
 import { getClusterQuery } from '../../queries/cluster'
 import { serverConfigQuery } from '../../queries/server'
 import { useStylesAndTheme } from '../../theme'
@@ -40,200 +34,8 @@ const SideBarContents = React.lazy(() => import('./contents'))
 const SideBarNotifications = React.lazy(() => import('./notifications')) */
 import SideBarClusters from './clusters'
 import SideBarContents from './contents'
+import SideBarHeader from './header'
 import SideBarNotifications from './notifications'
-
-type SideBarProps = {
-    openState: any
-}
-
-type SideBarHeaderProps = {
-    closeButton: any
-    headerExpanded: boolean
-    setHeaderExpanded: any
-}
-
-const SideBarHeader = (props: SideBarHeaderProps) => {
-    const { classes, theme } = useStylesAndTheme()
-    const { closeButton, headerExpanded, setHeaderExpanded } = props
-    const { activeUrl, updateActiveUrl } = React.useContext(ActiveUrlContext)
-    const { config, updateConfig } = React.useContext(ConfigContext)
-    const { searchCtx, updateSearchCtx } = React.useContext(SearchContext)
-    const client = useApolloClient()
-    const headerElements = (
-        <Autocomplete
-            onFocus={() => setHeaderExpanded(true)}
-            className={classes.sideBarHeaderSelect}
-            freeSolo
-            value={activeUrl}
-            options={Object.keys(config ? config.hosts : {})}
-            disableClearable
-            onChange={async (event: any, value: any, reason: string) => {
-                if (!value) return
-                switch (reason) {
-                    case 'create-option':
-                        if (config && !config.hosts[value]) {
-                            const hashAlgos = []
-                            try {
-                                const result = await client.query({
-                                    query: serverConfigQuery,
-                                })
-                                for (const algo of result.data.secretgraph
-                                    .config.hashAlgorithms) {
-                                    const mappedName =
-                                        mapHashNames[algo].operationName
-                                    if (mappedName) {
-                                        hashAlgos.push(mappedName)
-                                    }
-                                }
-                            } catch (exc) {
-                                console.warn('Cannot add host', exc)
-                                return
-                            }
-                            if (!hashAlgos) {
-                                console.warn(
-                                    'Cannot add host, no fitting hash algos found'
-                                )
-                                return
-                            }
-                            const newConfig = {
-                                ...config,
-                                hosts: {
-                                    ...config.hosts,
-                                },
-                            }
-                            hashAlgos
-                            newConfig.hosts[value] = {
-                                hashAlgorithms: hashAlgos,
-                                clusters: {},
-                                contents: {},
-                            }
-                            updateConfig(newConfig)
-                        }
-                        updateActiveUrl(value)
-                        break
-                    case 'select-option':
-                        // TODO: update hash list
-                        updateActiveUrl(value)
-                        break
-                    case 'remove-option':
-                        if (
-                            config &&
-                            config.hosts[value] &&
-                            Object.keys(config.hosts[value]).length === 0
-                        ) {
-                            const newConfig = {
-                                ...config,
-                                clusters: {
-                                    ...config.hosts,
-                                },
-                            }
-                            delete newConfig.hosts[value]
-                            updateConfig(newConfig)
-                        }
-                }
-            }}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    label="Set Url"
-                    variant="outlined"
-                    size="small"
-                    margin="dense"
-                />
-            )}
-        />
-    )
-    return (
-        <React.Fragment>
-            <div>
-                <div className={classes.sideBarHeader}>
-                    {theme.direction === 'ltr' ? headerElements : null}
-                    {closeButton}
-                    {theme.direction === 'rtl' ? headerElements : null}
-                </div>
-                <Button
-                    className={classes.sideBarHeaderExpandButton}
-                    onClick={() => setHeaderExpanded(!headerExpanded)}
-                    size="small"
-                >
-                    <ExpandMoreIcon
-                        className={
-                            headerExpanded
-                                ? classes.sideBarHeaderExpandButtonIconExpanded
-                                : classes.sideBarHeaderExpandButtonIcon
-                        }
-                    />
-                </Button>
-            </div>
-            <Collapse in={headerExpanded} timeout="auto" unmountOnExit>
-                <Autocomplete
-                    multiple
-                    value={searchCtx.include}
-                    freeSolo
-                    fullWidth
-                    options={searchCtx.include}
-                    onChange={(event: any, value: any, reason: string) => {
-                        if (!value) return
-                        updateSearchCtx({ include: value })
-                    }}
-                    renderTags={(value: string[], getTagProps: any) =>
-                        value.map((option: string, index: number) => (
-                            <Chip
-                                size="small"
-                                variant="outlined"
-                                label={option}
-                                {...getTagProps({ index })}
-                            />
-                        ))
-                    }
-                    renderInput={(params: any) => (
-                        <TextField
-                            {...params}
-                            label="Include Tags"
-                            variant="outlined"
-                            size="small"
-                            margin="dense"
-                            multiline
-                        />
-                    )}
-                />
-                <Autocomplete
-                    multiple
-                    value={searchCtx.exclude}
-                    freeSolo
-                    fullWidth
-                    options={searchCtx.exclude}
-                    id="tags-excluded"
-                    onChange={(event: any, value: any, reason: string) => {
-                        if (!value) return
-                        updateSearchCtx({ exclude: value })
-                    }}
-                    renderTags={(value: string[], getTagProps: any) =>
-                        value.map((option: string, index: number) => (
-                            <Chip
-                                size="small"
-                                variant="outlined"
-                                label={option}
-                                {...getTagProps({ index })}
-                            />
-                        ))
-                    }
-                    renderInput={(params: any) => (
-                        <TextField
-                            {...params}
-                            label="Exclude tags"
-                            variant="outlined"
-                            size="small"
-                            margin="dense"
-                            multiline
-                            value={activeUrl}
-                        />
-                    )}
-                />
-            </Collapse>
-        </React.Fragment>
-    )
-}
 
 async function title_helper({
     client,
@@ -272,10 +74,10 @@ const ActiveElements = ({
     setHeaderExpanded: any
 }) => {
     const { classes, theme } = useStylesAndTheme()
-    const { config } = React.useContext(InitializedConfigContext)
-    const { activeUrl } = React.useContext(ActiveUrlContext)
-    const { searchCtx, updateSearchCtx } = React.useContext(SearchContext)
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const { config } = React.useContext(Contexts.InitializedConfig)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const client = useApolloClient()
     const [clusterName, setClusterName] = React.useState(searchCtx.cluster)
     const [clusterNote, setClusterNote] = React.useState('')
@@ -428,10 +230,10 @@ const SideBarItems = ({
     setOpenMenu: any
 }) => {
     const { classes, theme } = useStylesAndTheme()
-    const { config } = React.useContext(InitializedConfigContext)
-    const { activeUrl } = React.useContext(ActiveUrlContext)
-    const { searchCtx, updateSearchCtx } = React.useContext(SearchContext)
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const { config } = React.useContext(Contexts.InitializedConfig)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const authinfo = React.useMemo(
         () => extractAuthInfo({ config, url: activeUrl }),
         [config, activeUrl]
@@ -556,25 +358,14 @@ const SideBarItems = ({
     )
 }
 
-const SideBar = (props: SideBarProps) => {
+export default function SideBar() {
     const { classes, theme } = useStylesAndTheme()
-    const { openState } = props
-    const { config } = React.useContext(ConfigContext)
+    const { config } = React.useContext(Contexts.Config)
+    const { open } = React.useContext(Contexts.OpenSidebar)
     const [headerExpanded, setHeaderExpanded] = React.useState(false)
     const [openMenu, setOpenMenu] = React.useState('notifications')
     let activeElements: any = null
     let sideBarItems: any = null
-    const closeButton = (
-        <Hidden lgUp>
-            <IconButton onClick={() => openState.setDrawerOpen(false)}>
-                {theme.direction === 'ltr' ? (
-                    <ChevronLeftIcon key="closeicoltr" />
-                ) : (
-                    <ChevronRightIcon key="closeicortl" />
-                )}
-            </IconButton>
-        </Hidden>
-    )
     if (config) {
         activeElements = (
             <ActiveElements
@@ -596,13 +387,12 @@ const SideBar = (props: SideBarProps) => {
         <Drawer
             variant="persistent"
             anchor={theme.direction === 'ltr' ? 'left' : 'right'}
-            open={!!(openState.drawerOpen && config)}
+            open={!!(open && config)}
             classes={{
                 paper: classes.drawerPaper,
             }}
         >
             <SideBarHeader
-                closeButton={closeButton}
                 headerExpanded={headerExpanded}
                 setHeaderExpanded={setHeaderExpanded}
             />
@@ -613,5 +403,3 @@ const SideBar = (props: SideBarProps) => {
         </Drawer>
     )
 }
-
-export default SideBar

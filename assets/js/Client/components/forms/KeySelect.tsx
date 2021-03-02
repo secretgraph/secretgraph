@@ -2,7 +2,7 @@ import { gql, useLazyQuery, useQuery } from '@apollo/client'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
-import { InitializedConfigContext } from '../../contexts'
+import { InitializedConfig } from '../../contexts'
 import { clusterFeedQuery } from '../../queries/cluster'
 import { extractPublicInfo } from '../../utils/cluster'
 import { extractAuthInfo } from '../../utils/config'
@@ -22,7 +22,7 @@ export interface KeySelectProps<
     firstIfEmpty?: boolean
 }
 
-export default function ClusterSelect<
+export default function KeySelect<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined,

@@ -11,13 +11,13 @@ import MailIcon from '@material-ui/icons/Mail'
 import MovieIcon from '@material-ui/icons/Movie'
 import * as React from 'react'
 
-import { ActiveUrlContext, SearchContext } from '../../contexts'
+import { ActiveUrl, Search } from '../../contexts'
 import { elements } from '../../editors'
-import { AuthInfoInterface } from '../../interfaces'
+import * as Interfaces from '../../interfaces'
 import { useStylesAndTheme } from '../../theme'
 
 type SideBarItemsProps = {
-    authinfo?: AuthInfoInterface
+    authinfo?: Interfaces.AuthInfoInterface
     selectItem: any
     state?: string
     activeContent: string | null
@@ -95,8 +95,8 @@ export default function Contents({
     ...props
 }: SideBarItemsProps & ListProps) {
     const { classes, theme } = useStylesAndTheme()
-    const { searchCtx } = React.useContext(SearchContext)
-    const { activeUrl } = React.useContext(ActiveUrlContext)
+    const { searchCtx } = React.useContext(Search)
+    const { activeUrl } = React.useContext(ActiveUrl)
     const _usePublic = usePublic === undefined ? null : usePublic
     const incl = searchCtx.include.concat([])
     if (state) {

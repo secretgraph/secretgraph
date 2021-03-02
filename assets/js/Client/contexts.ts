@@ -1,11 +1,6 @@
 import { Context, createContext } from 'react'
 
-import {
-    ConfigInputInterface,
-    ConfigInterface,
-    MainContextInterface,
-    SearchContextInterface,
-} from './interfaces'
+import * as Interfaces from './interfaces'
 
 /**export const VisibleStateContext = createContext({
     visibility: 'default' as 'default' | 'draft' | 'public' | 'internal',
@@ -13,27 +8,32 @@ import {
         update: 'default' | 'draft' | 'public' | 'internal'
     ) => {},
 })*/
-export const MainContext = createContext({
-    mainCtx: { title: '' } as MainContextInterface,
-    updateMainCtx: (update: Partial<MainContextInterface>) => {},
+export const Main = createContext({
+    mainCtx: { title: '' } as Interfaces.MainContextInterface,
+    updateMainCtx: (update: Partial<Interfaces.MainContextInterface>) => {},
 })
-export const SearchContext = createContext({
-    searchCtx: {} as SearchContextInterface,
-    updateSearchCtx: (update: Partial<SearchContextInterface>) => {},
+export const Search = createContext({
+    searchCtx: {} as Interfaces.SearchContextInterface,
+    updateSearchCtx: (update: Partial<Interfaces.SearchContextInterface>) => {},
 })
-export const ConfigContext = createContext({
-    config: null as ConfigInterface | null,
+export const Config = createContext({
+    config: null as Interfaces.ConfigInterface | null,
     updateConfig: (
-        update: ConfigInputInterface | null,
+        update: Interfaces.ConfigInputInterface | null,
         replace?: boolean
     ) => {},
 })
-export const InitializedConfigContext = ConfigContext as Context<{
-    config: ConfigInterface
-    updateConfig: React.ContextType<typeof ConfigContext>['updateConfig']
+export const InitializedConfig = Config as Context<{
+    config: Interfaces.ConfigInterface
+    updateConfig: React.ContextType<typeof Config>['updateConfig']
 }>
 
-export const ActiveUrlContext = createContext({
+export const ActiveUrl = createContext({
     activeUrl: '' as string,
     updateActiveUrl: (update: string) => {},
+})
+
+export const OpenSidebar = createContext({
+    open: false,
+    updateOpen: (arg: boolean) => {},
 })

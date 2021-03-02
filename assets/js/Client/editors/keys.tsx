@@ -27,13 +27,8 @@ import { useAsync } from 'react-async'
 import DecisionFrame from '../components/DecisionFrame'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import * as Constants from '../constants'
-import {
-    ActiveUrlContext,
-    InitializedConfigContext,
-    MainContext,
-    SearchContext,
-} from '../contexts'
-import { ConfigInterface, MainContextInterface } from '../interfaces'
+import * as Contexts from '../contexts'
+import * as Interfaces from '../interfaces'
 import { newClusterLabel } from '../messages'
 import {
     findPublicKeyQuery,
@@ -71,7 +66,7 @@ async function loadKeys({
 }: {
     client: ApolloClient<any>
     id: string
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
     url: string
 }) {
     const { keys: authorization } = extractAuthInfo({
@@ -412,8 +407,8 @@ function InnerKeys({
 const ViewKeys = () => {
     const { classes, theme } = useStylesAndTheme()
     const client = useApolloClient()
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { config } = React.useContext(InitializedConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const { data, isLoading } = useAsync({
         promiseFn: loadKeys,
         onReject: console.error,
@@ -421,7 +416,7 @@ const ViewKeys = () => {
             if (!data) {
                 return
             }
-            const updateOb: Partial<MainContextInterface> = {
+            const updateOb: Partial<Interfaces.MainContextInterface> = {
                 deleted: publicKey.nodeData.deleted,
                 updateId: publicKey.nodeData.updateId,
             }
@@ -490,9 +485,11 @@ const ViewKeys = () => {
 }
 const EditKeys = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const client = useApolloClient()
-    const { config, updateConfig } = React.useContext(InitializedConfigContext)
+    const { config, updateConfig } = React.useContext(
+        Contexts.InitializedConfig
+    )
     const { data, isLoading, reload } = useAsync({
         promiseFn: loadKeys,
         suspense: true,
@@ -725,11 +722,13 @@ const EditKeys = () => {
 
 const AddKeys = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { activeUrl } = React.useContext(ActiveUrlContext)
-    const { searchCtx } = React.useContext(SearchContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const { searchCtx } = React.useContext(Contexts.Search)
     const client = useApolloClient()
-    const { config, updateConfig } = React.useContext(InitializedConfigContext)
+    const { config, updateConfig } = React.useContext(
+        Contexts.InitializedConfig
+    )
     const { data } = useAsync<ApolloQueryResult<any>>({
         promiseFn: client.query,
         onReject: console.error,
@@ -881,7 +880,7 @@ async function findOrReturn({
     url,
 }: {
     client: ApolloClient<any>
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
     id: string | null
     url: string | null
 }) {
@@ -914,8 +913,8 @@ async function findOrReturn({
 }
 
 export default function KeyComponent() {
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { config } = React.useContext(InitializedConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
     const { data, isLoading } = useAsync({
         promiseFn: findOrReturn,

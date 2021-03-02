@@ -2,11 +2,7 @@ import { ApolloClient } from '@apollo/client'
 import { saveAs } from 'file-saver'
 
 import { mapHashNames } from '../constants'
-import {
-    AuthInfoInterface,
-    ConfigInputInterface,
-    ConfigInterface,
-} from '../interfaces'
+import * as Interfaces from '../interfaces'
 import { findConfigQuery } from '../queries/content'
 import {
     decryptAESGCM,
@@ -21,7 +17,9 @@ import {
 import { b64toarr, mergeDeleteObjects, utf8encoder } from './misc'
 import * as SetOps from './set'
 
-export function cleanConfig(config: ConfigInterface | null | undefined) {
+export function cleanConfig(
+    config: Interfaces.ConfigInterface | null | undefined
+) {
     if (!config) {
         return null
     }
@@ -51,7 +49,7 @@ export function cleanConfig(config: ConfigInterface | null | undefined) {
 
 export async function checkConfigObject(
     client: ApolloClient<any>,
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
 ) {
     let actions: string[] = [],
         cert: Uint8Array | null = null
@@ -88,7 +86,7 @@ export async function checkConfigObject(
 
 export const loadConfigSync = (
     obj: Storage = window.localStorage
-): ConfigInterface | null => {
+): Interfaces.ConfigInterface | null => {
     let result = obj.getItem('secretgraphConfig')
     if (!result) {
         return null
@@ -99,7 +97,7 @@ export const loadConfigSync = (
 export const loadConfig = async (
     obj: string | File | Request | Storage = window.localStorage,
     pws?: string[]
-): Promise<ConfigInterface | null> => {
+): Promise<Interfaces.ConfigInterface | null> => {
     if (obj instanceof Storage) {
         return loadConfigSync(obj)
     } else if (obj instanceof File) {
@@ -255,7 +253,7 @@ export const loadConfig = async (
 }
 
 export function saveConfig(
-    config: ConfigInterface | string,
+    config: Interfaces.ConfigInterface | string,
     storage: Storage = window.localStorage
 ) {
     if (typeof config !== 'string') {
@@ -265,7 +263,7 @@ export function saveConfig(
 }
 
 export async function exportConfig(
-    config: ConfigInterface | string,
+    config: Interfaces.ConfigInterface | string,
     pws?: string[] | string,
     iterations?: number,
     name?: string
@@ -316,7 +314,7 @@ export async function exportConfigAsUrl({
     iterations = 100000,
 }: {
     client: ApolloClient<any>
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
     iterations: number
     pw?: string
 }) {
@@ -424,12 +422,12 @@ export function extractAuthInfo({
     require = new Set(['view', 'update', 'manage']),
     ...props
 }: {
-    readonly config: ConfigInterface
+    readonly config: Interfaces.ConfigInterface
     readonly url: string
     readonly clusters?: Set<string>
     readonly content?: string
     readonly require?: Set<string>
-}): AuthInfoInterface {
+}): Interfaces.AuthInfoInterface {
     const keys = new Set<string>()
     const hashes = new Set<string>()
     if (url === undefined || url === null) {
@@ -491,7 +489,7 @@ export function extractPrivKeys({
     url,
     ...props
 }: {
-    readonly config: ConfigInterface
+    readonly config: Interfaces.ConfigInterface
     readonly url: string
     readonly clusters?: Set<string>
     readonly hashAlgorithm: string
@@ -522,7 +520,7 @@ export function extractPrivKeys({
 }
 
 export function findCertCandidatesForRefs(
-    config: ConfigInterface,
+    config: Interfaces.ConfigInterface,
     nodeData: any
 ) {
     const found: {
@@ -603,27 +601,27 @@ export function findCertCandidatesForRefs(
 }
 
 export function updateConfigReducer(
-    state: ConfigInterface | null,
-    update: ConfigInputInterface,
+    state: Interfaces.ConfigInterface | null,
+    update: Interfaces.ConfigInputInterface,
     replace?: boolean
-): ConfigInterface
+): Interfaces.ConfigInterface
 export function updateConfigReducer(
-    state: ConfigInterface | null,
-    update: ConfigInputInterface | null,
+    state: Interfaces.ConfigInterface | null,
+    update: Interfaces.ConfigInputInterface | null,
     replace?: boolean
-): ConfigInterface | null
+): Interfaces.ConfigInterface | null
 export function updateConfigReducer(
-    state: ConfigInterface | null,
-    update: ConfigInputInterface | null,
+    state: Interfaces.ConfigInterface | null,
+    update: Interfaces.ConfigInputInterface | null,
     replace?: boolean
-): ConfigInterface | null {
+): Interfaces.ConfigInterface | null {
     if (update === null) {
         return null
     }
     if (replace) {
-        return update as ConfigInterface
+        return update as Interfaces.ConfigInterface
     }
-    const newState: ConfigInterface = Object.create(state || {})
+    const newState: Interfaces.ConfigInterface = Object.create(state || {})
     if (update.certificates) {
         newState.certificates = mergeDeleteObjects(
             newState.certificates,

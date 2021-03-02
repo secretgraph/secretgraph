@@ -9,14 +9,14 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import GroupWorkIcon from '@material-ui/icons/GroupWork'
 import * as React from 'react'
 
-import { ActiveUrlContext } from '../../contexts'
-import { AuthInfoInterface } from '../../interfaces'
+import { ActiveUrl } from '../../contexts'
+import * as Interfaces from '../../interfaces'
 import { clusterFeedQuery } from '../../queries/cluster'
 import { useStylesAndTheme } from '../../theme'
 import { extractPublicInfo } from '../../utils/cluster'
 
 type SideBarItemsProps = {
-    authinfo: AuthInfoInterface
+    authinfo: Interfaces.AuthInfoInterface
     selectItem: any
     loadMoreExtra?: any
     activeCluster: string | null
@@ -32,7 +32,7 @@ export default function Clusters({
     ...props
 }: SideBarItemsProps & ListProps) {
     const { classes } = useStylesAndTheme()
-    const { activeUrl } = React.useContext(ActiveUrlContext)
+    const { activeUrl } = React.useContext(ActiveUrl)
 
     let { data, fetchMore, error, loading } = useQuery(clusterFeedQuery, {
         variables: {

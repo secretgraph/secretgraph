@@ -1,11 +1,11 @@
-import * as React from 'react'
-import Skeleton from '@material-ui/lab/Skeleton'
 import Typography from '@material-ui/core/Typography'
+import Skeleton from '@material-ui/lab/Skeleton'
+import * as React from 'react'
 
-import { MainContextInterface } from '../interfaces'
+import * as Interfaces from '../interfaces'
 
 interface DecisionFrameProps {
-    mainCtx: MainContextInterface
+    mainCtx: Interfaces.MainContextInterface
     view: any
     edit: any
     add: any

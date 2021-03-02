@@ -1,18 +1,7 @@
 import { ApolloClient, FetchResult } from '@apollo/client'
 
 import { mapHashNames } from '../constants'
-import {
-    ActionInterface,
-    AuthInfoInterface,
-    ConfigInputInterface,
-    ConfigInterface,
-    CryptoGCMInInterface,
-    CryptoGCMOutInterface,
-    CryptoHashPair,
-    KeyInput,
-    RawInput,
-    ReferenceInterface,
-} from '../interfaces'
+import * as Interfaces from '../interfaces'
 import {
     createClusterMutation,
     getClusterQuery,
@@ -98,15 +87,15 @@ export async function createContent({
     ...options
 }: {
     client: ApolloClient<any>
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
     cluster: string
-    value: CryptoGCMInInterface['data']
+    value: Interfaces.CryptoGCMInInterface['data']
     pubkeys: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     tags: Iterable<string | PromiseLike<string>>
     contentHash?: string | null
-    references?: Iterable<ReferenceInterface> | null
-    actions?: Iterable<ActionInterface>
+    references?: Iterable<Interfaces.ReferenceInterface> | null
+    actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
     authorization: Iterable<string>
     encryptTags?: Iterable<string>
@@ -146,7 +135,7 @@ export async function createContent({
         mutation: createContentMutation,
         variables: {
             cluster,
-            references: ([] as ReferenceInterface[]).concat(
+            references: ([] as Interfaces.ReferenceInterface[]).concat(
                 await publicKeyReferencesPromise,
                 await signatureReferencesPromise,
                 options.references ? [...options.references] : []
@@ -171,17 +160,17 @@ export async function createKeys({
     ...options
 }: {
     client: ApolloClient<any>
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
     cluster: string
-    privateKey?: KeyInput | PromiseLike<KeyInput>
-    publicKey: KeyInput | PromiseLike<KeyInput>
+    privateKey?: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>
+    publicKey: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     privateTags?: Iterable<string | PromiseLike<string>>
     publicTags?: Iterable<string | PromiseLike<string>>
     contentHash?: string | null
-    privateActions?: Iterable<ActionInterface>
-    publicActions?: Iterable<ActionInterface>
+    privateActions?: Iterable<Interfaces.ActionInterface>
+    publicActions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
     authorization: Iterable<string>
 }): Promise<FetchResult<any>> {
@@ -269,20 +258,20 @@ export async function updateContent({
     id: string
     updateId: string
     client: ApolloClient<any>
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
     cluster?: string
-    value?: CryptoGCMInInterface['data']
+    value?: Interfaces.CryptoGCMInInterface['data']
     pubkeys: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     tags?: Iterable<string | PromiseLike<string>>
     contentHash?: string | null
-    references?: Iterable<ReferenceInterface> | null
-    actions?: Iterable<ActionInterface>
+    references?: Iterable<Interfaces.ReferenceInterface> | null
+    actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
     authorization: Iterable<string>
     encryptTags?: Iterable<string>
     // only for tag only updates if encryptTags is used
-    oldKey?: RawInput
+    oldKey?: Interfaces.RawInput
 }): Promise<FetchResult<any>> {
     let references
     const tags = options.tags
@@ -331,7 +320,7 @@ export async function updateContent({
             options.privkeys ? options.privkeys : [],
             options.hashAlgorithm
         )
-        references = ([] as ReferenceInterface[]).concat(
+        references = ([] as Interfaces.ReferenceInterface[]).concat(
             await publicKeyReferencesPromise,
             await signatureReferencesPromise,
             options.references ? [...options.references] : []
@@ -378,20 +367,20 @@ export async function updateKey({
     id: string
     updateId: string
     client: ApolloClient<any>
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
     cluster?: string
     key?: CryptoKey | PromiseLike<CryptoKey> // key or key data
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     tags?: Iterable<string | PromiseLike<string>>
     contentHash?: string | null
-    references?: Iterable<ReferenceInterface> | null
-    actions?: Iterable<ActionInterface>
+    references?: Iterable<Interfaces.ReferenceInterface> | null
+    actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
     authorization: Iterable<string>
     encryptTags?: Iterable<string>
     // only for tag only updates if encryptTags is used
-    oldKey?: RawInput
+    oldKey?: Interfaces.RawInput
 }): Promise<FetchResult<any>> {
     let references
     const updatedKey = await options.key
@@ -504,7 +493,7 @@ export async function updateKey({
 
 export async function createCluster(options: {
     client: ApolloClient<any>
-    actions: Iterable<ActionInterface>
+    actions: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
     publicInfo: string
     publicKey: CryptoKey
@@ -557,7 +546,7 @@ export async function updateCluster(options: {
     id: string
     client: ApolloClient<any>
     updateId: string
-    actions?: ActionInterface[]
+    actions?: Interfaces.ActionInterface[]
     publicInfo?: string
     authorization: string[]
 }): Promise<FetchResult<any>> {
@@ -575,7 +564,7 @@ export async function updateCluster(options: {
 
 export async function initializeCluster(
     client: ApolloClient<any>,
-    config: ConfigInterface
+    config: Interfaces.ConfigInterface
 ) {
     const key = crypto.getRandomValues(new Uint8Array(32))
     const halgo = mapHashNames[config.hosts[config.baseUrl].hashAlgorithms[0]]
@@ -668,7 +657,7 @@ export async function initializeCluster(
 }
 
 interface decryptContentObjectInterface
-    extends Omit<CryptoGCMOutInterface, 'nonce' | 'key'> {
+    extends Omit<Interfaces.CryptoGCMOutInterface, 'nonce' | 'key'> {
     tags: { [tag: string]: string[] }
     updateId: string
     nodeData: any
@@ -680,7 +669,7 @@ export async function decryptContentObject({
     blobOrTokens,
     decrypt = new Set(),
 }: {
-    config: ConfigInterface | PromiseLike<ConfigInterface>
+    config: Interfaces.ConfigInterface | PromiseLike<Interfaces.ConfigInterface>
     nodeData: any | PromiseLike<any>
     blobOrTokens:
         | Blob
@@ -763,13 +752,13 @@ export async function decryptContentId({
     decrypt,
 }: {
     client: ApolloClient<any>
-    config: ConfigInterface | PromiseLike<ConfigInterface>
+    config: Interfaces.ConfigInterface | PromiseLike<Interfaces.ConfigInterface>
     url: string
     id: string
     decrypt?: Set<string>
 }) {
     const _config = await config
-    const authinfo: AuthInfoInterface = extractAuthInfo({
+    const authinfo: Interfaces.AuthInfoInterface = extractAuthInfo({
         config: _config,
         url,
     })
@@ -799,17 +788,17 @@ export async function decryptContentId({
 }
 
 export async function updateConfigRemoteReducer(
-    state: ConfigInterface | null,
+    state: Interfaces.ConfigInterface | null,
     {
         update,
         authInfo,
         client,
     }: {
-        update: ConfigInputInterface | null
+        update: Interfaces.ConfigInputInterface | null
         client: ApolloClient<any>
-        authInfo?: AuthInfoInterface
+        authInfo?: Interfaces.AuthInfoInterface
     }
-): Promise<ConfigInterface | null> {
+): Promise<Interfaces.ConfigInterface | null> {
     if (update === null) {
         return null
     }

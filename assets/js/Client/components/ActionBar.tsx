@@ -18,8 +18,7 @@ import ShareIcon from '@material-ui/icons/Share'
 import VisibilityIcon from '@material-ui/icons/Visibility'
 import * as React from 'react'
 
-import { contentStates } from '../constants'
-import { InitializedConfigContext, MainContext } from '../contexts'
+import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo } from '../utils/config'
@@ -31,8 +30,8 @@ type Props = {}
 function ActionBar(props: Props) {
     const { classes, theme } = useStylesAndTheme()
     const [shareOpen, setShareOpen] = React.useState(false)
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { config } = React.useContext(InitializedConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
 
     return (

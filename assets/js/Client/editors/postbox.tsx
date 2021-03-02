@@ -1,25 +1,21 @@
+import { useApolloClient, useQuery } from '@apollo/client'
+import { saveAs } from 'file-saver'
 import * as React from 'react'
 
-import { saveAs } from 'file-saver'
-import { useQuery, useApolloClient } from '@apollo/client'
-
-import { ConfigInterface } from '../interfaces'
-import { MainContext, ConfigContext } from '../contexts'
-import { decryptContentId } from '../utils/operations'
-
+import DecisionFrame from '../components/DecisionFrame'
+import * as Contexts from '../contexts'
+import { newClusterLabel } from '../messages'
 import { contentRetrievalQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
-import { newClusterLabel } from '../messages'
-
-import DecisionFrame from '../components/DecisionFrame'
+import { decryptContentId } from '../utils/operations'
 
 type Props = {}
 
 const ViewPostbox = (props: Props) => {
     const { classes, theme } = useStylesAndTheme()
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx } = React.useContext(Contexts.Main)
     const client = useApolloClient()
-    const { config } = React.useContext(ConfigContext)
+    const { config } = React.useContext(Contexts.Config)
     return <></>
 }
 
@@ -36,7 +32,7 @@ const EditPostbox = (props: Props) => {
 }
 
 export default function PostboxComponent(props: Props) {
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx } = React.useContext(Contexts.Main)
     if (mainCtx.action == 'view' && mainCtx.item) {
         return <ViewPostbox />
     } else if (mainCtx.action == 'edit' && mainCtx.item) {

@@ -1,10 +1,10 @@
-import * as React from 'react'
 import { Theme } from '@material-ui/core/styles'
+import * as React from 'react'
 
-import { MainContext, ConfigContext } from '../contexts'
+import * as Contexts from '../contexts'
+import { newClusterLabel } from '../messages'
 import { getClusterQuery } from '../queries/cluster'
 import { useStylesAndTheme } from '../theme'
-import { newClusterLabel } from '../messages'
 
 type Props = {}
 
@@ -27,7 +27,7 @@ const EditCluster = (props: Props) => {
 }
 
 export default function ConfigComponent(props: Props) {
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx } = React.useContext(Contexts.Main)
     if (mainCtx.action == 'view' && mainCtx.item) {
         return <ViewCluster />
     } else if (mainCtx.action == 'edit' && mainCtx.item) {

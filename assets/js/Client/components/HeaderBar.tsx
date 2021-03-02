@@ -18,27 +18,24 @@ import AccountCircle from '@material-ui/icons/AccountCircle'
 import MenuIcon from '@material-ui/icons/Menu'
 import * as React from 'react'
 
-import { ConfigContext, MainContext } from '../contexts'
+import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import { encryptingPasswordHelp, encryptingPasswordLabel } from '../messages'
 import { serverConfigQuery } from '../queries/server'
 import { useStylesAndTheme } from '../theme'
 import { exportConfig, exportConfigAsUrl } from '../utils/config'
 
-type Props = {
-    openState: any
-}
 const menuRef: React.RefObject<any> = React.createRef()
 
-function HeaderBar(props: Props) {
-    const { openState } = props
+export default function HeaderBar() {
+    const { open, updateOpen } = React.useContext(Contexts.OpenSidebar)
     const { classes, theme } = useStylesAndTheme()
     const [menuOpen, setMenuOpen] = React.useState(false)
     const [exportOpen, setExportOpen] = React.useState(false)
     const [exportUrl, setExportUrl] = React.useState('')
     const [loadingExport, setLoadingExport] = React.useState(false)
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { config, updateConfig } = React.useContext(ConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config, updateConfig } = React.useContext(Contexts.Config)
     let client: ApolloClient<any> | null = null
     try {
         client = useApolloClient()
@@ -137,12 +134,12 @@ function HeaderBar(props: Props) {
     }
 
     let sidebarButton = null
-    if (!openState.drawerOpen && config) {
+    if (!open && config) {
         sidebarButton = (
             <IconButton
                 edge="start"
                 className={classes.sidebarButton}
-                onClick={() => openState.setDrawerOpen(true)}
+                onClick={() => updateOpen(true)}
                 color="inherit"
                 aria-label="menu"
             >
@@ -267,5 +264,3 @@ function HeaderBar(props: Props) {
         </AppBar>
     )
 }
-
-export default HeaderBar

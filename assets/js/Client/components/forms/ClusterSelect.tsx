@@ -1,13 +1,11 @@
+import { gql, useLazyQuery, useQuery } from '@apollo/client'
+import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
-import { gql, useLazyQuery, useQuery } from '@apollo/client'
-import { FieldProps, Field } from 'formik'
-
-import { InitializedConfigContext } from '../../contexts'
-import { extractAuthInfo } from '../../utils/config'
-import { extractPublicInfo } from '../../utils/cluster'
+import { InitializedConfig } from '../../contexts'
 import { clusterFeedQuery } from '../../queries/cluster'
-
+import { extractPublicInfo } from '../../utils/cluster'
+import { extractAuthInfo } from '../../utils/config'
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
 export interface ClusterSelectProps<
@@ -32,7 +30,7 @@ export default function ClusterSelect<
     firstIfEmpty,
     ...props
 }: ClusterSelectProps<Multiple, DisableClearable, FreeSolo> & FieldProps<V>) {
-    const { config } = React.useContext(InitializedConfigContext)
+    const { config } = React.useContext(InitializedConfig)
     const authinfo = React.useMemo(() => {
         if (url === undefined) {
             throw Error(`no url: ${url}`)

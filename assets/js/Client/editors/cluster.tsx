@@ -26,13 +26,8 @@ import { useAsync } from 'react-async'
 
 import DecisionFrame from '../components/DecisionFrame'
 import { CLUSTER, RDF, SECRETGRAPH, XSD, contentStates } from '../constants'
-import {
-    ActiveUrlContext,
-    InitializedConfigContext,
-    MainContext,
-    SearchContext,
-} from '../contexts'
-import { ConfigInterface, MainContextInterface } from '../interfaces'
+import * as Contexts from '../contexts'
+import * as Interfaces from '../interfaces'
 import { getClusterQuery } from '../queries/cluster'
 import { useStylesAndTheme } from '../theme'
 import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
@@ -59,7 +54,7 @@ function item_retrieval_helper({
 }
 
 function extractPublicInfo(
-    config: ConfigInterface,
+    config: Interfaces.ConfigInterface,
     node: any,
     url?: string | null | undefined,
     id?: string | null | undefined
@@ -172,9 +167,11 @@ interface ClusterInternProps {
 
 const ClusterIntern = (props: ClusterInternProps) => {
     const client = useApolloClient()
-    const { config, updateConfig } = React.useContext(InitializedConfigContext)
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { updateSearchCtx } = React.useContext(SearchContext)
+    const { config, updateConfig } = React.useContext(
+        Contexts.InitializedConfig
+    )
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { updateSearchCtx } = React.useContext(Contexts.Search)
     React.useLayoutEffect(() => {
         updateMainCtx({ title: props.name || '' })
     }, [props.name, props.note])
@@ -403,8 +400,8 @@ const ClusterIntern = (props: ClusterInternProps) => {
 }
 
 const ViewCluster = () => {
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
-    const { config } = React.useContext(InitializedConfigContext)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
     const authinfo = extractAuthInfo({
         config,
@@ -458,8 +455,8 @@ const ViewCluster = () => {
 }
 
 const AddCluster = () => {
-    const { config } = React.useContext(InitializedConfigContext)
-    const { activeUrl } = React.useContext(ActiveUrlContext)
+    const { config } = React.useContext(Contexts.InitializedConfig)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const authinfo = extractAuthInfo({
         config,
         url: activeUrl,
@@ -479,8 +476,8 @@ const AddCluster = () => {
 }
 
 const EditCluster = () => {
-    const { config } = React.useContext(InitializedConfigContext)
-    const { mainCtx, updateMainCtx } = React.useContext(MainContext)
+    const { config } = React.useContext(Contexts.InitializedConfig)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const client = useApolloClient()
     const authinfo = extractAuthInfo({
         config,
@@ -558,7 +555,7 @@ const EditCluster = () => {
 }
 
 export default function ClusterComponent() {
-    const { mainCtx } = React.useContext(MainContext)
+    const { mainCtx } = React.useContext(Contexts.Main)
     return (
         <DecisionFrame
             mainCtx={mainCtx}
