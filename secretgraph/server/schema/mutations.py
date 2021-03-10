@@ -8,7 +8,7 @@ from itertools import chain
 import graphene
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Subquery
 from django.utils import timezone
 from graphene import relay
 
@@ -25,7 +25,7 @@ from ..models import Cluster, Content
 from ..signals import generateFlexid
 from ..utils.auth import (
     fetch_by_id,
-    id_to_result,
+    ids_to_results,
     initializeCachedResult,
     retrieve_allowed_objects,
 )
@@ -43,16 +43,16 @@ logger = logging.getLogger(__name__)
 
 class RegenerateFlexidMutation(relay.ClientIDMutation):
     class Input:
-        id = graphene.ID(required=True)
+        ids = graphene.ID(required=True)
         authorization = AuthList()
 
-    node = graphene.Field(FlexidType)
+    nodes = graphene.List(graphene.NonNullable(FlexidType))
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, id, authorization=None):
-        result = id_to_result(
+    def mutate_and_get_payload(cls, root, info, ids, authorization=None):
+        results = ids_to_results(
             info.context,
-            id,
+            ids,
             (Content, Cluster),
             "update",
             authset=authorization,
@@ -62,24 +62,25 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
         #    components = retrieve_allowed_objects(
         #        info, "manage", components
         #    )
-        obj = result["objects"].first()
-        if not obj:
-            raise ValueError("Object not found")
-        generateFlexid(type(obj), obj, True)
+        nodes = []
+        for result in results.values():
+            for obj in result["objects"]:
+                generateFlexid(type(obj), obj, True)
+                nodes.append(obj)
+
         initializeCachedResult(info.context, authset=authorization)
         return cls(node=obj)
 
 
 class DeleteContentOrClusterMutation(relay.ClientIDMutation):
     class Input:
-        id = graphene.ID(required=True)
+        ids = graphene.List(graphene.ID, required=True)
         authorization = AuthList()
 
-    id = graphene.ID()
-    deleted = graphene.DateTime()
+    latest_deleted = graphene.DateTime()
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, id, authorization=None):
+    def mutate_and_get_payload(cls, root, info, ids, authorization=None):
         now = timezone.now()
         now_plus_x = now + td(minutes=20)
         # TODO: admin permission
@@ -87,79 +88,82 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         #    components = retrieve_allowed_objects(
         #        info, "manage", components
         #    )
-        result = id_to_result(
+        results = ids_to_results(
             info.context,
-            id,
+            ids,
             (Content, Cluster),
             "delete",
             authset=authorization,
         )
-        obj = result["objects"].first()
-        if not obj:
-            raise ValueError("Object does not exist")
-        oid = obj.id
-        markForDestruction = now
-        if isinstance(obj, Content):
-            if (
-                not obj.markForDestruction
-                or obj.markForDestruction > now_plus_x
-            ):
-                obj.markForDestruction = now_plus_x
-                markForDestruction = now_plus_x
-                obj.save(update_fields=["markForDestruction"])
-        elif isinstance(obj, Cluster):
-            if not obj.contents.exists():
-                obj.delete()
-            else:
-                obj.contents.filter(
-                    Q(markForDestruction__isnull=True)
-                    | Q(markForDestruction__gt=now_plus_x)
-                ).update(markForDestruction=now_plus_x)
-                markForDestruction = now_plus_x
-                if not obj.markForDestruction or obj.markForDestruction > now:
-                    obj.markForDestruction = now
-                    obj.save(update_fields=["markForDestruction"])
-        return cls(id=oid, deleted=markForDestruction)
+        results["Content"].objects.filter(
+            Q(markForDestruction__isnull=True)
+            | Q(markForDestruction__gt=now_plus_x)
+        ).update(markForDestruction=now_plus_x)
+        Content.objects.filter(
+            Q(markForDestruction__isnull=True)
+            | Q(markForDestruction__gt=now_plus_x),
+            cluster_id__in=results["Cluster"].objects.values_list(
+                "id", flat=True
+            )
+        ).update(markForDestruction=now_plus_x)
+        results["Cluster"].objects.filter(
+            Q(markForDestruction__isnull=True)
+            | Q(markForDestruction__gt=now)
+        ).update(markForDestruction=now)
+        calc_last = Content.objects.filter(
+            Q(id__in=results["Content"].objects.values_list("id", flat=True)) |
+            Q(cluster_id__in=results["Cluster"].objects.values_list(
+                "id", flat=True)),
+            markForDestruction__isnull=False
+        ).latest("markForDestruction__gt")
+
+        return cls(
+            latest_deleted=calc_last.markForDestruction if calc_last else now
+        )
 
 
 class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
     class Input:
-        id = graphene.ID(required=True)
+        ids = graphene.List(graphene.ID, required=True)
         authorization = AuthList()
-
-    id = graphene.ID()
-    deleted = graphene.DateTime()
+    ids = graphene.List(graphene.ID, required=False)
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, id, authorization=None):
+    def mutate_and_get_payload(cls, root, info, ids, authorization=None):
         # TODO: admin permission
         # if not info.context.user.has_perm("TODO"):
         #    clusters = retrieve_allowed_objects(
         #        info, "manage", clusters
         #    )
-        result = id_to_result(
+        results = ids_to_results(
             info.context,
-            id,
+            ids,
             (Content, Cluster),
             "delete",
             authset=authorization,
         )
-        obj = result["objects"].first()
-        if not obj:
-            raise ValueError("Object does not exist")
-        if isinstance(obj, Content):
-            obj.markForDestruction = None
-            obj.save(update_fields=["markForDestruction"])
-            if obj.cluster.markForDestruction:
-                obj.cluster.markForDestruction = None
-                obj.cluster.save(update_fields=["markForDestruction"])
-        elif isinstance(obj, Cluster):
-            obj.contents.filter(markForDestruction__isnull=False).update(
-                markForDestruction=None
+        contents = Content.objects.filter(
+            Q(cluster_id__in=Subquery(results["Cluster"].objects.values(
+                "id"))) |
+            Q(id__in=Subquery(results["Content"].objects.values("id"))),
+            markForDestruction__isnull=False
+        )
+        contents.update(markForDestruction=None)
+        clusters = Cluster.objects.filter(
+            Q(id__in=Subquery(results["Cluster"].objects.values(
+                "id"))) |
+            Q(id__in=Subquery(contents.values("cluster_id"))),
+            markForDestruction__isnull=False
+        )
+        clusters.update(markForDestruction=None)
+        return cls(ids=[
+            *results["Content"].objects.filter(
+                id__in=Subquery(contents.values("id"))
+            ),
+            *results["Cluster"].objects.filter(
+                id__in=Subquery(clusters.values("id"))
             )
-            obj.markForDestruction = None
-            obj.save(update_fields=["markForDestruction"])
-        return cls(id=obj.id, deleted=obj.markForDestruction)
+        ])
 
 
 class ClusterMutation(relay.ClientIDMutation):
@@ -187,9 +191,9 @@ class ClusterMutation(relay.ClientIDMutation):
                 raise ValueError("no cluster update data")
             if not updateId:
                 raise ValueError("updateId required")
-            result = id_to_result(
+            result = ids_to_results(
                 info.context, id, Cluster, "manage", authset=authorization
-            )
+            )["Cluster"]
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError()
@@ -249,9 +253,9 @@ class ContentMutation(relay.ClientIDMutation):
         if id:
             if not updateId:
                 raise ValueError("updateId required")
-            result = id_to_result(
+            result = ids_to_results(
                 info.context, id, Content, "update", authset=authorization
-            )
+            )["Content"]
             content_obj = result["objects"].first()
             if not content_obj:
                 raise ValueError()
@@ -306,13 +310,13 @@ class ContentMutation(relay.ClientIDMutation):
                 )(transaction.atomic)
             )
         else:
-            result = id_to_result(
+            result = ids_to_results(
                 info.context,
                 content.cluster,
                 Cluster,
                 "create",
                 authset=authorization,
-            )
+            )["Cluster"]
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError("Cluster for Content not found")
@@ -361,9 +365,9 @@ class PushContentMutation(relay.ClientIDMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, content, authorization=None):
         parent_id = content.pop("parent")
-        result = id_to_result(
+        result = ids_to_results(
             info.context, parent_id, Content, "push", authset=authorization
-        )
+        )["Content"]
         source = result["objects"].first()
         if not source:
             raise ValueError("Content not found")
@@ -437,9 +441,9 @@ class TransferMutation(relay.ClientIDMutation):
         authorization=None,
         headers=None,
     ):
-        result = id_to_result(
+        result = ids_to_results(
             info.context, id, Content, "update", authset=authorization
-        )
+        )["Content"]
         content_obj = result.objects.first()
         if not content_obj:
             raise ValueError()
@@ -480,7 +484,7 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         references = graphene.List(ReferenceInput, required=False)
         operation = graphene.Enum.from_enum(MetadataOperations)
 
-    content = graphene.Field(ContentNode, required=False)
+    content = graphene.Field(graphene.NonNull(ContentNode), required=False)
 
     @classmethod
     def mutate_and_get_payload(
@@ -493,9 +497,9 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         authorization=None,
         headers=None,
     ):
-        result = id_to_result(
+        result = ids_to_results(
             info.context, id, Content, "update", authset=authorization
-        )
+        )["Content"]
         content_obj = result.objects.first()
         if not content_obj:
             raise ValueError("no content object found")

@@ -16,7 +16,7 @@ from django.db.models import OuterRef, Q, Subquery
 from graphql_relay import to_global_id
 
 from .... import constants
-from ...utils.auth import id_to_result, initializeCachedResult
+from ...utils.auth import ids_to_results, initializeCachedResult
 from ...utils.encryption import default_padding, encrypt_into_file
 from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag
@@ -97,13 +97,13 @@ def _update_or_create_content_or_key(
 ):
     if isinstance(objdata.get("cluster"), str):
         objdata["cluster"] = (
-            id_to_result(
+            ids_to_results(
                 request,
                 objdata["cluster"],
                 Cluster,
                 scope="update",
                 authset=authset,
-            )["objects"]
+            )["Cluster"]["objects"]
             .filter(markForDestruction=None)
             .first()
         )
@@ -355,9 +355,9 @@ def create_key_fn(request, objdata, authset=None):
         raise ValueError("Requires key")
     if isinstance(objdata.get("cluster"), str):
         objdata["cluster"] = (
-            id_to_result(
+            ids_to_results(
                 request, objdata["cluster"], Cluster, authset=authset
-            )["objects"]
+            )["Cluster"]["objects"]
             .filter(markForDestruction=None)
             .first()
         )

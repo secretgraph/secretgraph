@@ -12,7 +12,7 @@ from graphql_relay import from_global_id
 
 from ..server.actions.update import create_cluster_fn
 from ..server.models import Cluster, Content
-from ..server.utils.auth import id_to_result, retrieve_allowed_objects
+from ..server.utils.auth import ids_to_results, retrieve_allowed_objects
 
 
 class UserNode(DjangoObjectType):
@@ -45,7 +45,9 @@ class UserMutation(relay.ClientIDMutation):
         if id:
             if not user:
                 raise ValueError()
-            result = id_to_result(info.context, id, Cluster, "manage")
+            result = ids_to_results(
+                info.context, id, Cluster, "manage"
+            )["Cluster"]
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError()

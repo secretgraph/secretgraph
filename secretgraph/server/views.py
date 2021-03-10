@@ -56,7 +56,7 @@ class ClusterView(AllowCORSMixin, FormView):
         )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
-        # why not id_to_result => uses flexid directly
+        # why not ids_to_results => uses flexid directly
         cluster = fetch_by_id(
             initializeCachedResult(request, authset=authset)["Cluster"][
                 "objects"
@@ -115,7 +115,7 @@ class ContentView(AllowCORSMixin, FormView):
         )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
-        # why not id_to_result => uses flexid directly
+        # why not ids_to_results => uses flexid directly
         self.result = initializeCachedResult(request, authset=authset)[
             "Content"
         ]
@@ -145,7 +145,7 @@ class ContentView(AllowCORSMixin, FormView):
         )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
-        # why not id_to_result => uses flexid directly
+        # why not ids_to_results => uses flexid directly
         self.result = retrieve_allowed_objects(
             request,
             Content.objects.filter(flexid=kwargs["id"]),
