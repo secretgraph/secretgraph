@@ -482,33 +482,37 @@ class TransferMutation(relay.ClientIDMutation):
 
 class MetadataUpdateMutation(relay.ClientIDMutation):
     class Input:
-        id = graphene.ID(required=True)
+        ids = graphene.ID(required=True)
         authorization = AuthList()
         tags = graphene.List(graphene.String, required=False)
         references = graphene.List(ReferenceInput, required=False)
         operation = graphene.Enum.from_enum(MetadataOperations)
 
-    content = graphene.Field(graphene.NonNull(ContentNode), required=False)
+    contents = graphene.List(graphene.NonNull(ContentNode), required=False)
 
     @classmethod
     def mutate_and_get_payload(
         cls,
         root,
         info,
-        id,
+        ids,
         tags=None,
         operation=None,
         authorization=None,
         headers=None,
     ):
         result = ids_to_results(
-            info.context, id, Content, "update", authset=authorization
+            info.context, ids, Content, "update", authset=authorization
         )["Content"]
-        content_obj = result.objects.first()
-        if not content_obj:
-            raise ValueError("no content object found")
-        return cls(
-            content=update_metadata_fn(
-                info.context, content_obj, tags=tags, operation=operation
-            )(transaction.atomic)
-        )
+        requests = []
+        for content_obj in result.objects.all():
+            requests.append(
+                update_metadata_fn(
+                    info.context, content_obj, tags=tags, operation=operation
+                )
+            )
+        contents = []
+        with transaction.atomic():
+            for f in requests:
+                contents.push(f())
+        return cls(contents=contents)

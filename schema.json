@@ -3364,14 +3364,18 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "content",
+              "name": "contents",
               "type": {
-                "kind": "NON_NULL",
+                "kind": "LIST",
                 "name": null,
                 "ofType": {
-                  "kind": "OBJECT",
-                  "name": "Content",
-                  "ofType": null
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "Content",
+                    "ofType": null
+                  }
                 }
               }
             },
@@ -3402,7 +3406,7 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "id",
+              "name": "ids",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
