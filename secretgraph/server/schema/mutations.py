@@ -276,6 +276,7 @@ class ContentMutation(relay.ClientIDMutation):
                     required_keys.values_list("contentHash", flat=True)
                 )
             try:
+                # TODO: should calculate content/action related forms
                 form = next(iter(result["forms"].values()))
                 # None should be possible here for not updating
                 if content.get("tags") is not None:
@@ -330,6 +331,7 @@ class ContentMutation(relay.ClientIDMutation):
                 )
 
             try:
+                # TODO: should calculate content/action related forms
                 form = next(iter(result["forms"].values()))
                 content["tags"] = chain(
                     form.get("tags", []), content.get("tags") or []
@@ -451,10 +453,9 @@ class TransferMutation(relay.ClientIDMutation):
             raise ValueError()
 
         verifiers = set()
-        for action_id in content_obj.active_action_ids:
-            verifiers.update(
-                result["forms"][action_id].get("requiredKeys") or []
-            )
+        # TODO: should calculate content/action related forms
+        form = next(iter(result["forms"].values()))
+        verifiers.update(form.get("requiredKeys") or [])
         if not verifiers:
             verifiers = None
         else:

@@ -80,6 +80,7 @@ idea: unique operation names. It would be nice to have namespaces
 
 # TODO
 
+-   correctly calculate injected keys (test all possibilities until one works)
 -   use serialized algo name for certificates/tokens?
 -   test permissions
 -   disable editing/prompt for keys if keys are missing
@@ -94,7 +95,7 @@ idea: unique operation names. It would be nice to have namespaces
 -   simplify config url export (no private key anymore)
 -   implement form with send for Message
 -   if type=Message switch strings to Inbox, Send
--   find out how Messages sent can be differed from messages received
+-   find way how Messages sent can be differed from messages received
 -   contents handler for bigger list of contents
 
 -   merge configuration client side in case of updates
