@@ -3366,9 +3366,13 @@
               "isDeprecated": false,
               "name": "content",
               "type": {
-                "kind": "OBJECT",
-                "name": "Content",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "Content",
+                  "ofType": null
+                }
               }
             },
             {
@@ -3649,11 +3653,19 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "node",
+              "name": "nodes",
               "type": {
-                "kind": "UNION",
-                "name": "FlexidType",
-                "ofType": null
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "UNION",
+                    "name": "FlexidType",
+                    "ofType": null
+                  }
+                }
               }
             },
             {
@@ -3704,7 +3716,7 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "id",
+              "name": "ids",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
@@ -3758,19 +3770,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "id",
-              "type": {
-                "kind": "SCALAR",
-                "name": "ID",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "deleted",
+              "name": "latestDeleted",
               "type": {
                 "kind": "SCALAR",
                 "name": "DateTime",
@@ -3804,14 +3804,18 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "id",
+              "name": "ids",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
                 "ofType": {
-                  "kind": "SCALAR",
-                  "name": "ID",
-                  "ofType": null
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
                 }
               }
             },
@@ -3858,23 +3862,15 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "id",
+              "name": "ids",
               "type": {
-                "kind": "SCALAR",
-                "name": "ID",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "deleted",
-              "type": {
-                "kind": "SCALAR",
-                "name": "DateTime",
-                "ofType": null
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                }
               }
             },
             {
@@ -3904,14 +3900,18 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "id",
+              "name": "ids",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
                 "ofType": {
-                  "kind": "SCALAR",
-                  "name": "ID",
-                  "ofType": null
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
                 }
               }
             },

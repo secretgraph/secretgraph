@@ -46,7 +46,7 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
         ids = graphene.ID(required=True)
         authorization = AuthList()
 
-    nodes = graphene.List(graphene.NonNullable(FlexidType))
+    nodes = graphene.List(graphene.NonNull(FlexidType))
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, ids, authorization=None):
@@ -104,17 +104,19 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
             | Q(markForDestruction__gt=now_plus_x),
             cluster_id__in=results["Cluster"].objects.values_list(
                 "id", flat=True
-            )
+            ),
         ).update(markForDestruction=now_plus_x)
         results["Cluster"].objects.filter(
-            Q(markForDestruction__isnull=True)
-            | Q(markForDestruction__gt=now)
+            Q(markForDestruction__isnull=True) | Q(markForDestruction__gt=now)
         ).update(markForDestruction=now)
         calc_last = Content.objects.filter(
-            Q(id__in=results["Content"].objects.values_list("id", flat=True)) |
-            Q(cluster_id__in=results["Cluster"].objects.values_list(
-                "id", flat=True)),
-            markForDestruction__isnull=False
+            Q(id__in=results["Content"].objects.values_list("id", flat=True))
+            | Q(
+                cluster_id__in=results["Cluster"].objects.values_list(
+                    "id", flat=True
+                )
+            ),
+            markForDestruction__isnull=False,
         ).latest("markForDestruction__gt")
 
         return cls(
@@ -126,6 +128,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
     class Input:
         ids = graphene.List(graphene.ID, required=True)
         authorization = AuthList()
+
     ids = graphene.List(graphene.ID, required=False)
 
     @classmethod
@@ -143,27 +146,27 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
             authset=authorization,
         )
         contents = Content.objects.filter(
-            Q(cluster_id__in=Subquery(results["Cluster"].objects.values(
-                "id"))) |
-            Q(id__in=Subquery(results["Content"].objects.values("id"))),
-            markForDestruction__isnull=False
+            Q(cluster_id__in=Subquery(results["Cluster"].objects.values("id")))
+            | Q(id__in=Subquery(results["Content"].objects.values("id"))),
+            markForDestruction__isnull=False,
         )
         contents.update(markForDestruction=None)
         clusters = Cluster.objects.filter(
-            Q(id__in=Subquery(results["Cluster"].objects.values(
-                "id"))) |
-            Q(id__in=Subquery(contents.values("cluster_id"))),
-            markForDestruction__isnull=False
+            Q(id__in=Subquery(results["Cluster"].objects.values("id")))
+            | Q(id__in=Subquery(contents.values("cluster_id"))),
+            markForDestruction__isnull=False,
         )
         clusters.update(markForDestruction=None)
-        return cls(ids=[
-            *results["Content"].objects.filter(
-                id__in=Subquery(contents.values("id"))
-            ),
-            *results["Cluster"].objects.filter(
-                id__in=Subquery(clusters.values("id"))
-            )
-        ])
+        return cls(
+            ids=[
+                *results["Content"].objects.filter(
+                    id__in=Subquery(contents.values("id"))
+                ),
+                *results["Cluster"].objects.filter(
+                    id__in=Subquery(clusters.values("id"))
+                ),
+            ]
+        )
 
 
 class ClusterMutation(relay.ClientIDMutation):
