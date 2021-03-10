@@ -302,54 +302,80 @@ def fetch_by_id(
     return query.filter(**filters)
 
 
-def id_to_result(request, id, klasses, scope="view", authset=None):
+def ids_to_results(
+    request, ids, klasses, scope="view", authset=None, initialize_missing=True
+):
+    klasses_d = {}
     if not isinstance(klasses, tuple):
-        klasses = (klasses,)
-    if isinstance(id, str):
-        type_name, flexid = from_global_id(id)
-        try:
-            flexid = UUID(flexid)
-        except ValueError:
-            raise ValueError("Malformed id")
-        result = None
+        klasses_d[klasses.__name__] = klasses
+    else:
         for klass in klasses:
-            if type_name == klass.__name__:
-                if scope == "view" and type(id).__name__ in _cached_classes:
-                    result = initializeCachedResult(request, authset=authset)[
-                        type(id).__name__
-                    ]
-                    result = result.copy()
-                    result["objects"] = result["objects"].filter(flexid=flexid)
-                else:
-                    result = retrieve_allowed_objects(
-                        request,
-                        scope,
-                        klass.objects.filter(flexid=flexid),
-                        authset=authset,
-                    )
-                break
-        if not result:
+            klasses_d[klass.__name__] = klass
+    if not isinstance(ids, tuple):
+        ids = (ids,)
+    flexid_d = {}
+    for id in ids:
+        if isinstance(id, str):
+            type_name, flexid = from_global_id(id)
+            try:
+                flexid = UUID(flexid)
+            except ValueError:
+                raise ValueError("Malformed id")
+        elif isinstance(id, klasses):
+            flexid = id.flexid
+            type_name = type(id).__name__
+        else:
+            raise ValueError(
+                "Only for {}".format(
+                    ",".join(map(lambda x: x.__name__, klasses))
+                )
+            )
+
+        if type_name not in klasses_d:
             raise ValueError(
                 "Only for {} (ids)".format(
                     ",".join(map(lambda x: x.__name__, klasses))
                 )
             )
-    elif not isinstance(id, klasses):
-        raise ValueError(
-            "Only for {}".format(",".join(map(lambda x: x.__name__, klasses)))
-        )
-    else:
-        if scope == "view" and type(id).__name__ in _cached_classes:
-            result = initializeCachedResult(request, authset=authset)[
-                type(id).__name__
-            ]
-            result = result.copy()
-            result["objects"] = result["objects"].filter(pk=id.pk)
+        flexid_d.setdefault(type_name, set()).add(flexid)
+    results = {}
+    for type_name, klass in klasses_d.items():
+        flexids = flexid_d.get(type_name, set())
+        if not initialize_missing and not flexids:
+            pass
+        elif scope == "view" and type_name in _cached_classes:
+            results[type_name] = initializeCachedResult(
+                request, authset=authset
+            )[type_name].copy()
+            results[type_name]["objects"] = results[type_name][
+                "objects"
+            ].filter(flexid__in=flexids)
         else:
-            result = retrieve_allowed_objects(
+            results[type_name] = retrieve_allowed_objects(
                 request,
                 scope,
-                type(id).objects.filter(pk=id.pk),
+                klass.objects.filter(flexid__in=flexids)
+                if flexids
+                else klass.objects.none(),
                 authset=authset,
             )
-    return result
+    return results
+
+
+def id_to_result(request, id, klasses, scope="view", authset=None):
+    fallback = None
+    for res in ids_to_results(
+        request,
+        id,
+        klasses,
+        scope=scope,
+        authset=authset,
+        initialize_missing=False,
+    ).values():
+        if not fallback:
+            fallback = res
+        elif res["objects"].exists():
+            return res
+    if not fallback:
+        raise ValueError("Not even a class found, klasses empty?", klasses, id)
+    return fallback

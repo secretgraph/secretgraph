@@ -66,12 +66,10 @@ async function title_helper({
 
 const ActiveElements = ({
     setOpenMenu,
-    setHeaderExpanded,
     ...props
 }: {
     openMenu: string
     setOpenMenu: any
-    setHeaderExpanded: any
 }) => {
     const { classes, theme } = useStylesAndTheme()
     const { config } = React.useContext(Contexts.InitializedConfig)
@@ -130,7 +128,6 @@ const ActiveElements = ({
                         action: 'view',
                         title: '',
                     })
-                    setHeaderExpanded(false)
                 }}
             >
                 {props.openMenu === 'clusters' ? (
@@ -172,7 +169,6 @@ const ActiveElements = ({
                         action: 'view',
                         title: '',
                     })
-                    setHeaderExpanded(false)
                 }}
             >
                 {closedSymbol}
@@ -221,12 +217,10 @@ const ActiveElements = ({
 }
 
 const SideBarItems = ({
-    setHeaderExpanded,
     setOpenMenu,
     ...props
 }: {
     openMenu: string
-    setHeaderExpanded: any
     setOpenMenu: any
 }) => {
     const { classes, theme } = useStylesAndTheme()
@@ -277,7 +271,6 @@ const SideBarItems = ({
                         updateSearchCtx({
                             cluster: cluster.id,
                         })
-                        setHeaderExpanded(false)
                         setOpenMenu('contents')
                     }}
                 />
@@ -314,7 +307,6 @@ const SideBarItems = ({
                             url: activeUrl,
                             shareUrl: `${url.origin}${content.link}`,
                         })
-                        setHeaderExpanded(false)
                         setOpenMenu('notifications')
                     }}
                 />
@@ -349,7 +341,6 @@ const SideBarItems = ({
                             url: activeUrl,
                             shareUrl: `${url.origin}${content.link}`,
                         })
-                        setHeaderExpanded(false)
                         setOpenMenu('notifications')
                     }}
                 />
@@ -362,25 +353,16 @@ export default function SideBar() {
     const { classes, theme } = useStylesAndTheme()
     const { config } = React.useContext(Contexts.Config)
     const { open } = React.useContext(Contexts.OpenSidebar)
-    const [headerExpanded, setHeaderExpanded] = React.useState(false)
     const [openMenu, setOpenMenu] = React.useState('notifications')
     let activeElements: any = null
     let sideBarItems: any = null
     if (config) {
         activeElements = (
-            <ActiveElements
-                openMenu={openMenu}
-                setHeaderExpanded={setHeaderExpanded}
-                setOpenMenu={setOpenMenu}
-            />
+            <ActiveElements openMenu={openMenu} setOpenMenu={setOpenMenu} />
         )
 
         sideBarItems = (
-            <SideBarItems
-                openMenu={openMenu}
-                setHeaderExpanded={setHeaderExpanded}
-                setOpenMenu={setOpenMenu}
-            />
+            <SideBarItems openMenu={openMenu} setOpenMenu={setOpenMenu} />
         )
     }
     return (
@@ -392,10 +374,7 @@ export default function SideBar() {
                 paper: classes.drawerPaper,
             }}
         >
-            <SideBarHeader
-                headerExpanded={headerExpanded}
-                setHeaderExpanded={setHeaderExpanded}
-            />
+            <SideBarHeader />
             <Divider />
             {activeElements}
             <Divider />
