@@ -53,7 +53,7 @@ import {
     createKeys,
     decryptContentId,
     decryptContentObject,
-    deleteNode,
+    deleteNodes,
     updateConfigRemoteReducer,
     updateKey,
 } from '../utils/operations'
@@ -582,9 +582,9 @@ const EditKeys = () => {
                     )
                 } else if (data.privateKey) {
                     // privateKey is empty
-                    await deleteNode({
+                    await deleteNodes({
                         client,
-                        id: data.privateKey.nodeData.id,
+                        ids: [data.privateKey.nodeData.id],
                         authorization: authinfo.keys,
                     })
                 }
@@ -607,16 +607,16 @@ const EditKeys = () => {
                 ) {
                     // delete and recreate
                     console.log('Public Key changed, recreate')
-                    await deleteNode({
+                    await deleteNodes({
                         client,
-                        id: data.publicKey.nodeData.id,
+                        ids: [data.publicKey.nodeData.id],
                         authorization: authinfo.keys,
                     })
                     // recursively deletes private key but it would still be visible, so do it here
                     if (data.privateKey && privKey) {
-                        await deleteNode({
+                        await deleteNodes({
                             client,
-                            id: data.privateKey.nodeData.id,
+                            ids: [data.privateKey.nodeData.id],
                             authorization: authinfo.keys,
                         })
                     }

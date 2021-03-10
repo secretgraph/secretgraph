@@ -3774,7 +3774,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "latestDeleted",
+              "name": "latestDeletion",
               "type": {
                 "kind": "SCALAR",
                 "name": "DateTime",
@@ -3866,7 +3866,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "ids",
+              "name": "restored",
               "type": {
                 "kind": "LIST",
                 "name": null,

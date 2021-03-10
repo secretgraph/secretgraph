@@ -15,8 +15,8 @@ import {
     updateKeyMutation,
 } from '../queries/content'
 import {
-    deleteNode as deleteNodeQuery,
-    resetDeletionNode as resetDeletionNodeQuery,
+    deleteNodes as deleteNodeQuery,
+    resetDeletionNodes as resetDeletionNodeQuery,
 } from '../queries/node'
 import { extractPublicInfo } from './cluster'
 import {
@@ -45,37 +45,37 @@ import {
 } from './graphql'
 import { b64toarr, sortedHash, utf8encoder } from './misc'
 
-export async function deleteNode({
-    id,
+export async function deleteNodes({
+    ids,
     client,
     authorization,
 }: {
-    id: string
+    ids: string[]
     client: ApolloClient<any>
     authorization: string[]
 }) {
     return await client.mutate({
         mutation: deleteNodeQuery,
         variables: {
-            id,
+            ids,
             authorization,
         },
     })
 }
 
-export async function resetDeletionNode({
-    id,
+export async function resetDeletionNodes({
+    ids,
     client,
     authorization,
 }: {
-    id: string
+    ids: string[]
     client: ApolloClient<any>
     authorization: string[]
 }) {
     return await client.mutate({
         mutation: resetDeletionNodeQuery,
         variables: {
-            id,
+            ids,
             authorization,
         },
     })

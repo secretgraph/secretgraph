@@ -22,7 +22,7 @@ import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo } from '../utils/config'
-import { deleteNode, resetDeletionNode } from '../utils/operations'
+import { deleteNodes, resetDeletionNodes } from '../utils/operations'
 import MapSelect from './MapSelect'
 
 type Props = {}
@@ -123,9 +123,9 @@ function ActionBar(props: Props) {
                                     require: new Set(['delete', 'manage']),
                                 }).keys
                                 if (mainCtx.deleted) {
-                                    const { data } = await resetDeletionNode({
+                                    const { data } = await resetDeletionNodes({
                                         client,
-                                        id: mainCtx.item as string,
+                                        ids: [mainCtx.item as string],
                                         authorization: authkeys,
                                     })
                                     updateMainCtx({
@@ -134,9 +134,9 @@ function ActionBar(props: Props) {
                                                 .deleted,
                                     })
                                 } else {
-                                    const { data } = await deleteNode({
+                                    const { data } = await deleteNodes({
                                         client,
-                                        id: mainCtx.item as string,
+                                        ids: [mainCtx.item as string],
                                         authorization: authkeys,
                                     })
                                     updateMainCtx({

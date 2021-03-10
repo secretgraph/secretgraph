@@ -77,7 +77,7 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         ids = graphene.List(graphene.ID, required=True)
         authorization = AuthList()
 
-    latest_deleted = graphene.DateTime()
+    latestDeletion = graphene.DateTime()
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, ids, authorization=None):
@@ -120,7 +120,7 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         ).latest("markForDestruction__gt")
 
         return cls(
-            latest_deleted=calc_last.markForDestruction if calc_last else now
+            latestDeletion=calc_last.markForDestruction if calc_last else now
         )
 
 
@@ -129,7 +129,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
         ids = graphene.List(graphene.ID, required=True)
         authorization = AuthList()
 
-    ids = graphene.List(graphene.ID, required=False)
+    restored = graphene.List(graphene.ID, required=False)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, ids, authorization=None):
@@ -158,7 +158,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
         )
         clusters.update(markForDestruction=None)
         return cls(
-            ids=[
+            restored=[
                 *results["Content"].objects.filter(
                     id__in=Subquery(contents.values("id"))
                 ),

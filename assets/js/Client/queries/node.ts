@@ -1,22 +1,20 @@
 import { gql } from '@apollo/client'
 
-export const deleteNode = gql`
-    mutation nodeDelete($id: ID!, $authorization: [String!]) {
+export const deleteNodes = gql`
+    mutation nodesDelete($ids: [ID!]!, $authorization: [String!]) {
         deleteContentOrCluster(
-            input: { id: $id, authorization: $authorization }
+            input: { ids: $ids, authorization: $authorization }
         ) {
-            id
-            deleted
+            latestDeletion
         }
     }
 `
-export const resetDeletionNode = gql`
-    mutation nodeResetDelete($id: ID!, $authorization: [String!]) {
+export const resetDeletionNodes = gql`
+    mutation nodesResetDelete($ids: [ID!]!, $authorization: [String!]) {
         resetDeletionContentOrCluster(
-            input: { id: $id, authorization: $authorization }
+            input: { ids: $ids, authorization: $authorization }
         ) {
-            id
-            deleted
+            restored
         }
     }
 `
