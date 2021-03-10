@@ -80,7 +80,9 @@ idea: unique operation names. It would be nice to have namespaces
 
 # TODO
 
--   correctly calculate injected keys (test all possibilities until one works)
+-   delete: limit amount?
+-   metadata: limit amount of changed contents/clusters
+-   tags: limit amount tags
 -   use serialized algo name for certificates/tokens?
 -   test permissions
 -   disable editing/prompt for keys if keys are missing
@@ -97,6 +99,3 @@ idea: unique operation names. It would be nice to have namespaces
 -   if type=Message switch strings to Inbox, Send
 -   find way how Messages sent can be differed from messages received
 -   contents handler for bigger list of contents
-
--   merge configuration client side in case of updates
--   maybe: encrypt some content tags, like name

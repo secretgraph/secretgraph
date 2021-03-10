@@ -278,31 +278,40 @@ class ContentMutation(relay.ClientIDMutation):
                 required_keys = list(
                     required_keys.values_list("contentHash", flat=True)
                 )
-            try:
-                # TODO: should calculate content/action related forms
-                form = next(iter(result["forms"].values()))
-                # None should be possible here for not updating
-                if content.get("tags") is not None:
-                    allowed = form.get("allowedTags", None)
-                    if allowed is not None:
-                        matcher = re.compile(
-                            "^(?:%s)(?:(?<==)|$)"
-                            % "|".join(map(re.escape, allowed))
+
+            requiredKeys = set()
+            allowedTags = []
+            injectedTags = []
+            for action in result["actions"].filter(
+                Q(contentAction__content_id=content_obj.id) |
+                Q(contentAction__isnull=True),
+                cluster_id=content_obj.cluster_id,
+                group="update"
+            ):
+                form = result["forms"].get(action.id)
+                if form:
+                    requiredKeys.update(form.get("requiredKeys") or [])
+                    # None should be possible here for not updating
+                    if content.get("tags") is not None:
+                        allowed = form.get("allowedTags", None)
+                        if allowed is not None:
+                            matcher = re.compile(
+                                "^(?:%s)(?:(?<==)|$)"
+                                % "|".join(map(re.escape, allowed))
+                            )
+                            allowedTags.append(matcher)
+                        injectedTags = chain(
+                            form.get("injectedTags", []), injectedTags
                         )
-                        content["tags"] = filter(
-                            lambda x: matcher.fullmatch(x), content["tags"]
-                        )
-                    content["tags"] = chain(
-                        form.get("injectedTags", []), content["tags"]
-                    )
-                # None should be possible here for not updating
-                if content.get("references") is not None:
-                    content["references"] = chain(
-                        form.get("injectReferences", []), content["references"]
-                    )
-                required_keys.extend(form.get("requiredKeys", []))
-            except StopIteration:
-                pass
+
+            def validTag(tag):
+                for i in allowedTags:
+                    if i.fullmatch(tag):
+                        return True
+                return False
+            if content.get("tags") is not None:
+                content["tags"] = chain(
+                    filter(validTag, content["tags"]), injectedTags)
             returnval = cls(
                 **update_content_fn(
                     info.context,
@@ -333,19 +342,38 @@ class ContentMutation(relay.ClientIDMutation):
                     ).values_list("contentHash", flat=True)
                 )
 
-            try:
-                # TODO: should calculate content/action related forms
-                form = next(iter(result["forms"].values()))
+            requiredKeys = set()
+            allowedTags = []
+            injectedTags = []
+            for action in result["actions"].filter(
+                Q(contentAction__isnull=True),
+                cluster_id=cluster_obj.id,
+                group="create"
+            ):
+                form = result["forms"].get(action.id)
+                if form:
+                    requiredKeys.update(form.get("requiredKeys") or [])
+                    # None should be possible here for not updating
+                    if content.get("tags") is not None:
+                        allowed = form.get("allowedTags", None)
+                        if allowed is not None:
+                            matcher = re.compile(
+                                "^(?:%s)(?:(?<==)|$)"
+                                % "|".join(map(re.escape, allowed))
+                            )
+                            allowedTags.append(matcher)
+                        injectedTags = chain(
+                            form.get("injectedTags", []), injectedTags
+                        )
+
+            def validTag(tag):
+                for i in allowedTags:
+                    if i.fullmatch(tag):
+                        return True
+                return False
+            if content.get("tags") is not None:
                 content["tags"] = chain(
-                    form.get("tags", []), content.get("tags") or []
-                )
-                content["references"] = chain(
-                    form.get("injectReferences", []),
-                    content.get("references") or [],
-                )
-                required_keys.extend(form.get("requiredKeys", []))
-            except StopIteration:
-                pass
+                    filter(validTag, content["tags"]), injectedTags)
             returnval = cls(
                 **create_content_fn(
                     info.context,
@@ -430,8 +458,8 @@ class TransferMutation(relay.ClientIDMutation):
         id = graphene.ID(required=True)
         url = graphene.String(required=False)
         key = graphene.String(required=False, description="Transfer Key")
+        headers = graphene.JSONString(required=False)
         authorization = AuthList()
-        headers = graphene.JSONString()
 
     content = graphene.Field(ContentNode, required=False)
 
@@ -455,15 +483,20 @@ class TransferMutation(relay.ClientIDMutation):
         if key and url:
             raise ValueError()
 
-        verifiers = set()
-        # TODO: should calculate content/action related forms
-        form = next(iter(result["forms"].values()))
-        verifiers.update(form.get("requiredKeys") or [])
-        if not verifiers:
+        requiredKeys = set()
+        for action in result["actions"].filter(
+            Q(contentAction__content_id=content_obj.id) |
+            Q(contentAction__isnull=True),
+            cluster_id=content_obj.cluster_id
+        ):
+            form = result["forms"].get(action.id)
+            if form:
+                requiredKeys.update(form.get("requiredKeys") or [])
+        if not requiredKeys:
             verifiers = None
         else:
             verifiers = Content.objects.filter(
-                id__in=verifiers, tags__tag="type=PublicKey"
+                id__in=requiredKeys, tags__tag="type=PublicKey"
             )
 
         tres = transfer_value(

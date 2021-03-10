@@ -360,22 +360,3 @@ def ids_to_results(
                 authset=authset,
             )
     return results
-
-
-def id_to_result(request, id, klasses, scope="view", authset=None):
-    fallback = None
-    for res in ids_to_results(
-        request,
-        id,
-        klasses,
-        scope=scope,
-        authset=authset,
-        initialize_missing=False,
-    ).values():
-        if not fallback:
-            fallback = res
-        elif res["objects"].exists():
-            return res
-    if not fallback:
-        raise ValueError("Not even a class found, klasses empty?", klasses, id)
-    return fallback
