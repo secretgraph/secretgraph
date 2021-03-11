@@ -6,6 +6,7 @@ from datetime import timedelta as td
 from itertools import chain
 
 import graphene
+from graphql_relay import to_global_id
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q, Subquery
@@ -36,7 +37,7 @@ from .arguments import (
     PushContentInput,
     ReferenceInput,
 )
-from .definitions import ClusterNode, ContentNode, FlexidType
+from .definitions import ClusterNode, ContentNode
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
         ids = graphene.ID(required=True)
         authorization = AuthList()
 
-    nodes = graphene.List(graphene.NonNull(FlexidType))
+    updated = graphene.List(graphene.NonNull(graphene.ID))
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, ids, authorization=None):
@@ -62,14 +63,12 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
         #    components = retrieve_allowed_objects(
         #        info, "manage", components
         #    )
-        nodes = []
+        updated = []
         for result in results.values():
             for obj in result["objects"]:
                 generateFlexid(type(obj), obj, True)
-                nodes.append(obj)
-
-        initializeCachedResult(info.context, authset=authorization)
-        return cls(node=obj)
+                updated.append(to_global_id(type(obj).__name__, obj.flexid))
+        return cls(updated=updated)
 
 
 class DeleteContentOrClusterMutation(relay.ClientIDMutation):
@@ -158,14 +157,17 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
         )
         clusters.update(markForDestruction=None)
         return cls(
-            restored=[
-                *results["Content"].objects.filter(
-                    id__in=Subquery(contents.values("id"))
-                ),
-                *results["Cluster"].objects.filter(
-                    id__in=Subquery(clusters.values("id"))
-                ),
-            ]
+            restored=map(
+                lambda x: to_global_id("Content", x),
+                chain(
+                    results["Content"].objects.filter(
+                        id__in=Subquery(contents.values("id"))
+                    ),
+                    results["Cluster"].objects.filter(
+                        id__in=Subquery(clusters.values("id"))
+                    )
+                )
+            )
         )
 
 
@@ -521,7 +523,7 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         references = graphene.List(ReferenceInput, required=False)
         operation = graphene.Enum.from_enum(MetadataOperations)
 
-    contents = graphene.List(graphene.NonNull(ContentNode), required=False)
+    updated = graphene.List(graphene.NonNull(graphene.ID), required=False)
 
     @classmethod
     def mutate_and_get_payload(
@@ -547,5 +549,5 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         contents = []
         with transaction.atomic():
             for f in requests:
-                contents.push(f())
-        return cls(contents=contents)
+                contents.push(to_global_id("Content", f().flexid))
+        return cls(updated=contents)

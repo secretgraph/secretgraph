@@ -3364,7 +3364,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "contents",
+              "name": "updated",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -3372,8 +3372,8 @@
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "kind": "OBJECT",
-                    "name": "Content",
+                    "kind": "SCALAR",
+                    "name": "ID",
                     "ofType": null
                   }
                 }
@@ -3657,7 +3657,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "nodes",
+              "name": "updated",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -3665,8 +3665,8 @@
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "kind": "UNION",
-                    "name": "FlexidType",
+                    "kind": "SCALAR",
+                    "name": "ID",
                     "ofType": null
                   }
                 }
@@ -3690,27 +3690,6 @@
           "kind": "OBJECT",
           "name": "RegenerateFlexidMutationPayload",
           "possibleTypes": null
-        },
-        {
-          "description": null,
-          "enumValues": null,
-          "fields": null,
-          "inputFields": null,
-          "interfaces": null,
-          "kind": "UNION",
-          "name": "FlexidType",
-          "possibleTypes": [
-            {
-              "kind": "OBJECT",
-              "name": "Cluster",
-              "ofType": null
-            },
-            {
-              "kind": "OBJECT",
-              "name": "Content",
-              "ofType": null
-            }
-          ]
         },
         {
           "description": null,
