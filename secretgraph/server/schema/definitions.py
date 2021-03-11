@@ -24,14 +24,14 @@ class RegisterUrl(GenericScalar):
 
 
 class KeyLink(graphene.ObjectType):
-    hash = graphene.String()
-    link = graphene.String()
+    hash = graphene.String(required=True)
+    link = graphene.String(required=True)
 
 
 class ClusterGroupEntry(graphene.ObjectType):
-    group = graphene.String()
-    clusters = graphene.List(graphene.NonNull(graphene.ID))
-    keys = graphene.List(graphene.NonNull(KeyLink),
+    group = graphene.String(required=True)
+    clusters = graphene.List(graphene.NonNull(graphene.ID), required=True)
+    keys = graphene.List(graphene.NonNull(KeyLink), required=True,
                          description="Links to injected keys")
 
     def resolve_keys(self, info):
@@ -44,10 +44,12 @@ class ClusterGroupEntry(graphene.ObjectType):
 
 
 class SecretgraphConfig(ObjectType):
-    id = graphene.ID()
-    hashAlgorithms = graphene.List(graphene.NonNull(graphene.String))
-    injectedClusters = graphene.List(graphene.NonNull(ClusterGroupEntry))
-    registerUrl = graphene.Field(RegisterUrl)
+    id = graphene.ID(required=True)
+    hashAlgorithms = graphene.List(
+        graphene.NonNull(graphene.String), required=True)
+    injectedClusters = graphene.List(
+        graphene.NonNull(ClusterGroupEntry), required=True)
+    registerUrl = graphene.Field(RegisterUrl, required=False)
     loginUrl = graphene.String(required=False)
 
     def resolve_id(self, info):
@@ -100,13 +102,15 @@ class FlexidMixin:
 
 
 class ActionEntry(graphene.ObjectType):
-    id = graphene.ID()
+    id = graphene.ID(required=True)
     # of action key
-    keyHash = graphene.String()
-    type = graphene.String()
+    keyHash = graphene.String(required=True)
+    type = graphene.String(required=True)
     # of content keys
-    requiredKeys = graphene.List(graphene.NonNull(graphene.String))
-    allowedTags = graphene.List(graphene.NonNull(graphene.String))
+    requiredKeys = graphene.List(
+        graphene.NonNull(graphene.String), required=True)
+    allowedTags = graphene.List(
+        graphene.NonNull(graphene.String), required=True)
 
 
 class ActionMixin(object):
@@ -152,7 +156,7 @@ class ContentReferenceNode(DjangoObjectType):
         interfaces = (relay.Node,)
         fields = ["source", "target", "group", "extra"]
 
-    deleteRecursive = DeleteRecursive(required=False)
+    deleteRecursive = DeleteRecursive(required=True)
 
     def resolve_id(self, info):
         return f"{self.source.flexid}:{self.target.flexid}:{self.group}"
@@ -235,22 +239,22 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         ]
 
     deleted = graphene.DateTime(required=False)
-    cluster = graphene.Field(lambda: ClusterNode)
-    references = ContentReferenceConnectionField()
-    referencedBy = ContentReferenceConnectionField()
+    cluster = graphene.Field(lambda: ClusterNode, required=True)
+    references = ContentReferenceConnectionField(required=True)
+    referencedBy = ContentReferenceConnectionField(required=True)
     tags = graphene.Field(
-        graphene.List(graphene.NonNull(graphene.String)),
+        graphene.List(graphene.NonNull(graphene.String), required=True),
         includeTags=graphene.List(graphene.NonNull(
             graphene.String), required=False),
         excludeTags=graphene.List(graphene.NonNull(
             graphene.String), required=False),
     )
     signatures = graphene.Field(
-        graphene.List(graphene.NonNull(graphene.String)),
+        graphene.List(graphene.NonNull(graphene.String), required=True),
         includeAlgorithms=graphene.List(graphene.NonNull(
             graphene.String), required=False),
     )
-    link = graphene.String()
+    link = graphene.String(required=True)
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
