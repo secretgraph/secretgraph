@@ -517,7 +517,7 @@ class TransferMutation(relay.ClientIDMutation):
 
 class MetadataUpdateMutation(relay.ClientIDMutation):
     class Input:
-        ids = graphene.ID(required=True)
+        ids = graphene.List(graphene.NonNull(graphene.ID), required=True)
         authorization = AuthList()
         tags = graphene.List(graphene.NonNull(graphene.String), required=False)
         references = graphene.List(
