@@ -713,9 +713,13 @@
               "isDeprecated": false,
               "name": "contents",
               "type": {
-                "kind": "OBJECT",
-                "name": "ContentConnection",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "ContentConnection",
+                  "ofType": null
+                }
               }
             },
             {
@@ -737,9 +741,13 @@
               "isDeprecated": false,
               "name": "updated",
               "type": {
-                "kind": "SCALAR",
-                "name": "DateTime",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "DateTime",
+                  "ofType": null
+                }
               }
             },
             {
@@ -749,9 +757,13 @@
               "isDeprecated": false,
               "name": "updateId",
               "type": {
-                "kind": "SCALAR",
-                "name": "UUID",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "UUID",
+                  "ofType": null
+                }
               }
             },
             {
@@ -773,9 +785,13 @@
               "isDeprecated": false,
               "name": "publicInfo",
               "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
               }
             },
             {
@@ -785,9 +801,13 @@
               "isDeprecated": false,
               "name": "link",
               "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
               }
             }
           ],

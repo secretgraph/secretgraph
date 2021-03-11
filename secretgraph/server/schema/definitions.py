@@ -428,14 +428,15 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         interfaces = (relay.Node,)
         fields = ["group"]
 
-    contents = ContentConnectionField()
+    contents = ContentConnectionField(required=True)
     deleted = graphene.DateTime(required=False)
-    updated = graphene.DateTime(required=False)
-    updateId = graphene.UUID(required=False)
+    updated = graphene.DateTime(required=True)
+    updateId = graphene.UUID(required=True)
+    # MAYBE: reference user directly if possible
     user = relay.GlobalID(required=False)
-    publicInfo = graphene.String(required=False)
+    publicInfo = graphene.String(required=True)
     link = graphene.String(
-        required=False,
+        required=True,
         description=_("Link to turtle document with injected Contents"),
     )
 
