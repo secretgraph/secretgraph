@@ -30,8 +30,9 @@ class KeyLink(graphene.ObjectType):
 
 class ClusterGroupEntry(graphene.ObjectType):
     group = graphene.String()
-    clusters = graphene.List(graphene.ID)
-    keys = graphene.List(KeyLink, description="Links to injected keys")
+    clusters = graphene.List(graphene.NonNull(graphene.ID))
+    keys = graphene.List(graphene.NonNull(KeyLink),
+                         description="Links to injected keys")
 
     def resolve_keys(self, info):
         return map(
@@ -44,8 +45,8 @@ class ClusterGroupEntry(graphene.ObjectType):
 
 class SecretgraphConfig(ObjectType):
     id = graphene.ID()
-    hashAlgorithms = graphene.List(graphene.String)
-    injectedClusters = graphene.List(ClusterGroupEntry)
+    hashAlgorithms = graphene.List(graphene.NonNull(graphene.String))
+    injectedClusters = graphene.List(graphene.NonNull(ClusterGroupEntry))
     registerUrl = graphene.Field(RegisterUrl)
     loginUrl = graphene.String(required=False)
 
@@ -104,12 +105,12 @@ class ActionEntry(graphene.ObjectType):
     keyHash = graphene.String()
     type = graphene.String()
     # of content keys
-    requiredKeys = graphene.List(graphene.String)
-    allowedTags = graphene.List(graphene.String, required=False)
+    requiredKeys = graphene.List(graphene.NonNull(graphene.String))
+    allowedTags = graphene.List(graphene.NonNull(graphene.String))
 
 
 class ActionMixin(object):
-    availableActions = graphene.List(ActionEntry)
+    availableActions = graphene.List(graphene.NonNull(ActionEntry))
 
     def resolve_availableActions(self, info):
         name = self.__class__.__name__
@@ -203,16 +204,20 @@ class ContentReferenceNode(DjangoObjectType):
 class ContentReferenceConnectionField(DjangoConnectionField):
     def __init__(self, of_type=ContentReferenceNode, *args, **kwargs):
         kwargs.setdefault(
-            "includeTags", graphene.List(graphene.String, required=False)
+            "includeTags", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault(
-            "excludeTags", graphene.List(graphene.String, required=False)
+            "excludeTags", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault(
-            "contentHashes", graphene.List(graphene.String, required=False)
+            "contentHashes", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault(
-            "groups", graphene.List(graphene.String, required=False)
+            "groups", graphene.List(graphene.NonNull(
+                graphene.String), required=False)
         )
         super().__init__(of_type, *args, **kwargs)
 
@@ -234,13 +239,16 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     references = ContentReferenceConnectionField()
     referencedBy = ContentReferenceConnectionField()
     tags = graphene.Field(
-        graphene.List(graphene.String),
-        includeTags=graphene.List(graphene.String, required=False),
-        excludeTags=graphene.List(graphene.String, required=False),
+        graphene.List(graphene.NonNull(graphene.String)),
+        includeTags=graphene.List(graphene.NonNull(
+            graphene.String), required=False),
+        excludeTags=graphene.List(graphene.NonNull(
+            graphene.String), required=False),
     )
     signatures = graphene.Field(
-        graphene.List(graphene.String),
-        includeAlgos=graphene.List(graphene.String, required=False),
+        graphene.List(graphene.NonNull(graphene.String)),
+        includeAlgorithms=graphene.List(graphene.NonNull(
+            graphene.String), required=False),
     )
     link = graphene.String()
 
@@ -335,13 +343,15 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             )
         return tags
 
-    def resolve_signatures(self, info, authorization=None, includeAlgos=None):
+    def resolve_signatures(
+        self, info, authorization=None, includeAlgorithms=None
+    ):
         # authorization often cannot be used, but it is ok, we have cache then
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
         ]
         return self.signatures(
-            includeAlgos,
+            includeAlgorithms,
             ContentReference.objects.filter(target__in=result["objects"]),
         )
 
@@ -357,13 +367,16 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 class ContentConnectionField(DjangoConnectionField):
     def __init__(self, type=ContentNode, *args, **kwargs):
         kwargs.setdefault(
-            "includeTags", graphene.List(graphene.String, required=False)
+            "includeTags", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault(
-            "excludeTags", graphene.List(graphene.String, required=False)
+            "excludeTags", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault(
-            "contentHashes", graphene.List(graphene.String, required=False)
+            "contentHashes", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault("public", graphene.Boolean(required=False))
         kwargs.setdefault("deleted", graphene.Boolean(required=False))
@@ -493,13 +506,16 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
 class ClusterConnectionField(DjangoConnectionField):
     def __init__(self, type=ClusterNode, *args, **kwargs):
         kwargs.setdefault(
-            "includeTags", graphene.List(graphene.String, required=False)
+            "includeTags", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault(
-            "excludeTags", graphene.List(graphene.String, required=False)
+            "excludeTags", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault(
-            "contentHashes", graphene.List(graphene.String, required=False)
+            "contentHashes", graphene.List(
+                graphene.NonNull(graphene.String), required=False)
         )
         kwargs.setdefault("user", graphene.ID(required=False))
         kwargs.setdefault("public", graphene.Boolean(required=False))

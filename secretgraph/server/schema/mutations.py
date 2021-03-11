@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 class RegenerateFlexidMutation(relay.ClientIDMutation):
     class Input:
-        ids = graphene.ID(required=True)
+        ids = graphene.List(graphene.NonNull(graphene.ID), required=True)
         authorization = AuthList()
 
     updated = graphene.List(graphene.NonNull(graphene.ID))
@@ -73,7 +73,7 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
 
 class DeleteContentOrClusterMutation(relay.ClientIDMutation):
     class Input:
-        ids = graphene.List(graphene.ID, required=True)
+        ids = graphene.List(graphene.NonNull(graphene.ID), required=True)
         authorization = AuthList()
 
     latestDeletion = graphene.DateTime()
@@ -125,10 +125,10 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
 
 class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
     class Input:
-        ids = graphene.List(graphene.ID, required=True)
+        ids = graphene.List(graphene.NonNull(graphene.ID), required=True)
         authorization = AuthList()
 
-    restored = graphene.List(graphene.ID, required=False)
+    restored = graphene.List(graphene.NonNull(graphene.ID), required=False)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, ids, authorization=None):
@@ -519,8 +519,9 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
     class Input:
         ids = graphene.ID(required=True)
         authorization = AuthList()
-        tags = graphene.List(graphene.String, required=False)
-        references = graphene.List(ReferenceInput, required=False)
+        tags = graphene.List(graphene.NonNull(graphene.String), required=False)
+        references = graphene.List(
+            graphene.NonNull(ReferenceInput), required=False)
         operation = graphene.Enum.from_enum(MetadataOperations)
 
     updated = graphene.List(graphene.NonNull(graphene.ID), required=False)
