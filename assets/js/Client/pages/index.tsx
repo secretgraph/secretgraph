@@ -55,6 +55,7 @@ function MainPage(props: Props) {
         cluster: null,
         include: [],
         exclude: [],
+        categories: new Set('notifications'),
     }) as [
         Interfaces.SearchContextInterface,
         (update: Partial<Interfaces.SearchContextInterface>) => void
