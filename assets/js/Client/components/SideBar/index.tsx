@@ -4,7 +4,6 @@ import Chip from '@material-ui/core/Chip'
 import Collapse from '@material-ui/core/Collapse'
 import Divider from '@material-ui/core/Divider'
 import Drawer from '@material-ui/core/Drawer'
-import Hidden from '@material-ui/core/Hidden'
 import IconButton from '@material-ui/core/IconButton'
 import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
@@ -17,6 +16,8 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight'
 import ExpandLessIcon from '@material-ui/icons/ExpandLess'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import Autocomplete from '@material-ui/lab/Autocomplete'
+import TreeItem from '@material-ui/lab/TreeItem'
+import TreeView from '@material-ui/lab/TreeView'
 import * as React from 'react'
 
 import { mapHashNames } from '../../constants'
@@ -25,9 +26,9 @@ import * as Interfaces from '../../interfaces'
 import { getClusterQuery } from '../../queries/cluster'
 import { serverConfigQuery } from '../../queries/server'
 import { useStylesAndTheme } from '../../theme'
-import { extractPublicInfo } from '../../utils/cluster'
 import { extractAuthInfo } from '../../utils/config'
 import { loadAndExtractClusterInfo } from '../../utils/operations'
+import * as SetOps from '../../utils/set'
 import { CapturingSuspense } from '../misc'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))
@@ -353,6 +354,9 @@ export default function SideBar() {
     const { classes, theme } = useStylesAndTheme()
     const { config } = React.useContext(Contexts.Config)
     const { open } = React.useContext(Contexts.OpenSidebar)
+    const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
+    const [selected, setSelected] = React.useState<string[]>([])
+    const [expanded, setExpanded] = React.useState<string[]>([])
     const [openMenu, setOpenMenu] = React.useState('notifications')
     let activeElements: any = null
     let sideBarItems: any = null
@@ -376,6 +380,19 @@ export default function SideBar() {
         >
             <SideBarHeader />
             <Divider />
+            <TreeView
+                multiSelect
+                selected={selected}
+                expanded={expanded}
+                onNodeToggle={(ev, items) => {
+                    setExpanded(items)
+                }}
+                onNodeSelect={(ev, items) => {
+                    setSelected(items.filter((val) => !expanded.includes(val)))
+                }}
+                defaultCollapseIcon={<ExpandMoreIcon />}
+                defaultExpandIcon={<ChevronRightIcon />}
+            ></TreeView>
             {activeElements}
             <Divider />
             {sideBarItems}

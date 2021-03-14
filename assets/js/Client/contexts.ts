@@ -37,3 +37,12 @@ export const OpenSidebar = createContext({
     open: false,
     updateOpen: (arg: boolean) => {},
 })
+
+export const SidebarItemsSelected = createContext({
+    selected: [] as string[],
+    setSelected: (arg0: string[]) => {},
+})
+export const SidebarItemsExpanded = createContext({
+    expanded: [] as string[],
+    setExpanded: (arg0: string[]) => {},
+})
