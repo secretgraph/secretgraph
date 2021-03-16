@@ -103,24 +103,14 @@ const ActiveElements = ({
         return cancel
     }, [searchCtx.cluster, mainCtx.type == 'Cluster' ? mainCtx.updateId : ''])
 
-    const closedSymbol =
-        theme.direction === 'ltr' ? (
-            <ChevronRightIcon key="closedicoltr" />
-        ) : (
-            <ChevronLeftIcon key="closedicortl" />
-        )
     const activeElements = []
     if (searchCtx.cluster) {
         const inner = (
-            <ListItem
-                button
-                key="clusters:show:known"
-                onClick={() => {
-                    if (props.openMenu === 'clusters') {
-                        setOpenMenu('notifications')
-                    } else {
-                        setOpenMenu('clusters')
-                    }
+            <TreeItem
+                nodeId={`active::${searchCtx.cluster}`}
+                key="clusters:show:known.text"
+                label={clusterName}
+                onDoubleClick={() => {
                     updateMainCtx({
                         item: searchCtx.cluster,
                         url: activeUrl,
@@ -130,18 +120,7 @@ const ActiveElements = ({
                         title: '',
                     })
                 }}
-            >
-                {props.openMenu === 'clusters' ? (
-                    <ExpandMoreIcon />
-                ) : (
-                    closedSymbol
-                )}
-                <ListItemText
-                    key={'clusters:show:known.text'}
-                    className={classes.sideBarEntry}
-                    primary={`Cluster: ${clusterName}`}
-                />
-            </ListItem>
+            />
         )
         if (clusterNote) {
             activeElements.push(
@@ -152,69 +131,28 @@ const ActiveElements = ({
         } else {
             activeElements.push(inner)
         }
-    } else {
+    }
+    if (mainCtx.item && mainCtx.type != 'Cluster') {
         activeElements.push(
-            <ListItem
-                button
-                key="clusters:show:unknown"
-                onClick={() => {
-                    if (props.openMenu === 'clusters') {
-                        setOpenMenu('notifications')
-                    } else {
-                        setOpenMenu('clusters')
-                    }
+            <TreeItem
+                key="content:show.text"
+                className={classes.sideBarEntry}
+                nodeId={`active::${mainCtx.item}`}
+                label={`${mainCtx.type}: ${mainCtx.title || mainCtx.item}`}
+                onDoubleClick={() => {
                     updateMainCtx({
-                        item: null,
-                        updateId: null,
-                        type: 'Cluster',
+                        item: mainCtx.item,
+                        url: activeUrl,
+                        deleted: false,
+                        type: mainCtx.type,
                         action: 'view',
                         title: '',
                     })
                 }}
-            >
-                {closedSymbol}
-                <ListItemText
-                    key="clusters:show:unknown.text"
-                    className={classes.sideBarEntry}
-                    primary={
-                        props.openMenu === 'clusters'
-                            ? 'Show Notifications'
-                            : 'Show Clusters'
-                    }
-                />
-            </ListItem>
+            />
         )
     }
-    if (mainCtx.item && mainCtx.type != 'Cluster') {
-        activeElements.push(
-            <ListItem
-                button
-                className={classes.sideBarContentList}
-                key="content:show"
-                onClick={() => {
-                    if (props.openMenu === 'contents') {
-                        setOpenMenu('notifications')
-                    } else {
-                        setOpenMenu('contents')
-                    }
-                }}
-            >
-                {props.openMenu === 'contents' ? (
-                    <ExpandMoreIcon />
-                ) : (
-                    closedSymbol
-                )}
-                <ListItemText
-                    key="content:show.text"
-                    className={classes.sideBarEntry}
-                    primary={`Content: ${mainCtx.type}: ${
-                        mainCtx.title || mainCtx.item
-                    }`}
-                />
-            </ListItem>
-        )
-    }
-    return <List>{...activeElements}</List>
+    return <>{activeElements}</>
 }
 
 const SideBarItems = ({
