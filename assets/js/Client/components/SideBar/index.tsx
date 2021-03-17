@@ -330,8 +330,9 @@ export default function SideBar() {
                 }}
                 defaultCollapseIcon={<ExpandMoreIcon />}
                 defaultExpandIcon={<ChevronRightIcon />}
-            ></TreeView>
-            {activeElements}
+            >
+                {activeElements}
+            </TreeView>
             <Divider />
             {sideBarItems}
         </Drawer>

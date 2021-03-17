@@ -1,42 +1,120 @@
-import { useQuery } from '@apollo/client'
+import { ApolloClient, useApolloClient, useQuery } from '@apollo/client'
 import Divider from '@material-ui/core/Divider'
-import List, { ListProps } from '@material-ui/core/List'
-import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
 import ListSubheader from '@material-ui/core/ListSubheader'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import GroupWorkIcon from '@material-ui/icons/GroupWork'
+import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
 import * as React from 'react'
 
-import { ActiveUrl } from '../../contexts'
+import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
 import { clusterFeedQuery } from '../../queries/cluster'
 import { useStylesAndTheme } from '../../theme'
 import { extractPublicInfo } from '../../utils/cluster'
+import { loadAndExtractClusterInfo } from '../../utils/operations'
 
+async function title_helper({
+    client,
+    authorization,
+    id,
+    canceled,
+    setName,
+    setNote,
+}: {
+    client: ApolloClient<any>
+    authorization: string[]
+    id: string
+    canceled: () => boolean
+    setName: (arg: string) => void
+    setNote: (arg: string) => void
+}) {
+    const { name, note } = await loadAndExtractClusterInfo({
+        client,
+        authorization,
+        id,
+    })
+    if (canceled()) {
+        return
+    }
+    name && setName(name)
+    note && setNote(note)
+}
+
+function ActiveCluster({
+    authinfo,
+    cluster,
+    ...props
+}: {
+    authinfo: Interfaces.AuthInfoInterface
+    cluster: string
+} & Omit<TreeItemProps, 'label' | 'nodeId'>) {
+    const { classes, theme } = useStylesAndTheme()
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const client = useApolloClient()
+    const [clusterName, setClusterName] = React.useState<undefined | string>(
+        undefined
+    )
+    const [clusterNote, setClusterNote] = React.useState('')
+
+    React.useLayoutEffect(() => {
+        setClusterName(undefined)
+
+        let finished = false
+        const cancel = () => {
+            finished = true
+        }
+        title_helper({
+            client,
+            authorization: authinfo.keys,
+            id: cluster,
+            setName: setClusterName,
+            setNote: setClusterNote,
+            canceled: () => finished == true,
+        })
+        return cancel
+    }, [cluster])
+    return (
+        <TreeItem
+            nodeId={`active:${activeUrl}:${cluster}`}
+            label={
+                <span title={clusterNote || undefined}>
+                    <GroupWorkIcon fontSize="small" />
+                    {clusterName !== undefined
+                        ? clusterName
+                        : `...${cluster.substr(-48)}`}
+                </span>
+            }
+            {...props}
+        />
+    )
+}
 type SideBarItemsProps = {
     authinfo: Interfaces.AuthInfoInterface
-    selectItem: any
-    loadMoreExtra?: any
-    activeCluster: string | null
-    header?: string
+    goTo: (node: any) => void
+    activeCluster?: string | null
 }
 
 export default function Clusters({
     authinfo,
-    selectItem,
+    goTo,
     activeCluster,
-    header,
-    loadMoreExtra,
     ...props
-}: SideBarItemsProps & ListProps) {
+}: SideBarItemsProps & TreeItemProps) {
     const { classes } = useStylesAndTheme()
-    const { activeUrl } = React.useContext(ActiveUrl)
-
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const { searchCtx } = React.useContext(Contexts.Search)
+    if (!activeCluster) {
+        activeCluster = searchCtx.cluster
+    }
     let { data, fetchMore, error, loading } = useQuery(clusterFeedQuery, {
         variables: {
             authorization: authinfo.keys,
+            include: searchCtx.include,
+            exclude: searchCtx.cluster
+                ? [`id=${activeCluster}`, ...searchCtx.exclude]
+                : searchCtx.exclude,
         },
     })
 
@@ -45,10 +123,6 @@ export default function Clusters({
             variables: {
                 cursor: data.clusters.clusters.pageInfo.endCursor,
             },
-        }).then(() => {
-            if (loadMoreExtra) {
-                loadMoreExtra()
-            }
         })
     }
     const clustersFinished: JSX.Element[] = React.useMemo(() => {
@@ -56,85 +130,48 @@ export default function Clusters({
             return []
         }
         return data.clusters.clusters.edges.map((edge: any) => {
-            const { name, note } = extractPublicInfo(edge.node.publicInfo)
-            if (edge.node.id === activeCluster) {
+            if (edge.node.id !== activeCluster) {
+                const { name, note } = extractPublicInfo(edge.node.publicInfo)
+                const nodeId = `${activeUrl}:cluster::${edge.node.id}`
                 return (
-                    <ListItem
-                        button
-                        key={`${activeUrl}:cluster:entry:${edge.node.id}`}
-                        onClick={() => selectItem(edge.node)}
-                    >
-                        <ListItemIcon
-                            key={`${activeUrl}:cluster:entry:${edge.node.id}.icon`}
-                        >
-                            <GroupWorkIcon />
-                        </ListItemIcon>
-                        <ListItemText
-                            key={`${activeUrl}:cluster:entry:${edge.node.id}.text`}
-                            className={classes.sideBarEntry}
-                            primaryTypographyProps={{ variant: 'body2' }}
-                            primary={
-                                name ? name : `...${edge.node.id.substr(-48)}`
-                            }
-                            title={note || undefined}
-                        />
-                        {edge.node.id !== activeCluster ? (
-                            <ExpandMoreIcon />
-                        ) : null}
-                    </ListItem>
-                )
-            } else {
-                return (
-                    <ListItem
-                        button
-                        key={`${activeUrl}:cluster:entry:${edge.node.id}`}
-                        onClick={() => selectItem(edge.node)}
-                    >
-                        <ListItemIcon
-                            key={`${activeUrl}:cluster:entry:${edge.node.id}.icon`}
-                        >
-                            <GroupWorkIcon />
-                        </ListItemIcon>
-                        <ListItemText
-                            key={`${activeUrl}:cluster:entry:${edge.node.id}.text`}
-                            className={classes.sideBarEntry}
-                            primary={
-                                name ? name : `...${edge.node.id.substr(-48)}`
-                            }
-                            title={note || undefined}
-                        />
-                    </ListItem>
+                    <TreeItem
+                        label={
+                            <span title={note || undefined}>
+                                <GroupWorkIcon fontSize="small" />
+                                {name ? name : `...${edge.node.id.substr(-48)}`}
+                            </span>
+                        }
+                        nodeId={nodeId}
+                        key={nodeId}
+                        onDoubleClick={() => goTo(edge.node)}
+                    />
                 )
             }
         })
     }, [data])
-
-    return (
-        <List {...props}>
-            {header && (
-                <ListSubheader key="header" className={classes.sideBarEntry}>
-                    {header}
-                </ListSubheader>
-            )}
-            {clustersFinished}
-            <Divider />
-            <ListItem
-                button
-                key={`${activeUrl}:cluster:loadmore`}
+    /*
                 disabled={
                     loading ||
                     !!error ||
                     !data.clusters.clusters.pageInfo.hasNextPage
-                }
-                onClick={() => {
-                    _loadMore()
-                }}
-            >
-                <ListItemText
-                    key={`${activeUrl}:cluster:loadmore.text`}
-                    primary={'Load more clusters...'}
+                }*/
+    return (
+        <TreeItem {...props}>
+            {activeCluster && (
+                <ActiveCluster authinfo={authinfo} cluster={activeCluster} />
+            )}
+            {clustersFinished}
+            {!loading && !error && data.clusters.clusters.pageInfo.hasNextPage && (
+                <TreeItem
+                    label="Load more clusters..."
+                    nodeId={`${activeUrl}:cluster:loadmore`}
+                    onClick={(ev) => {
+                        ev.preventDefault()
+                        ev.stopPropagation()
+                        _loadMore()
+                    }}
                 />
-            </ListItem>
-        </List>
+            )}
+        </TreeItem>
     )
 }
