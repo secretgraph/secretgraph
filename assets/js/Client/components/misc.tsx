@@ -33,7 +33,7 @@ export class CapturingSuspense extends React.PureComponent<
     render() {
         if (this.state.error) {
             return (
-                <Typography color="textPrimary" gutterBottom paragraph>
+                <Typography color="error" gutterBottom paragraph>
                     {`${this.state.error}`}
                 </Typography>
             )

@@ -171,120 +171,79 @@ const SideBarItems = ({
         () => extractAuthInfo({ config, url: activeUrl }),
         [config, activeUrl]
     )
+    const activeUrlAsURL = new URL(activeUrl)
+    const goTo = (node: any) => {
+        let type =
+            node.__typename == 'Cluster'
+                ? 'Cluster'
+                : node.tags.find((flag: string) => flag.startsWith('type='))
+        if (type && type != 'Cluster') {
+            // split works different in js, so 2
+            type = type.match(/=(.*)/)[1]
+        }
+        if (type == 'PrivateKey') {
+            type = 'PublicKey'
+        }
+        updateMainCtx({
+            item: node.id,
+            updateId: node.updateId,
+            type,
+            deleted: false,
+            action: 'view',
+            url: activeUrl,
+            shareUrl: `${activeUrlAsURL.origin}${node.link}`,
+            title: '',
+        })
+        if (type == 'Cluster') {
+            updateSearchCtx({
+                cluster: node.id,
+            })
+        }
+    }
 
     return (
-        <div className={classes.sideBarBody}>
+        <>
             <CapturingSuspense>
-                <SideBarNotifications
-                    key="SideBarNotifications"
-                    authinfo={authinfo}
-                    header={'Notifications'}
-                    className={
-                        props.openMenu != 'notifications'
-                            ? classes.hidden
-                            : undefined
-                    }
-                />
                 <SideBarClusters
                     key="SideBarClusters"
-                    className={
-                        props.openMenu != 'clusters'
-                            ? classes.hidden
-                            : undefined
-                    }
+                    nodeId="clusters"
                     authinfo={authinfo}
                     activeCluster={searchCtx.cluster}
-                    header="Clusters"
-                    selectItem={(cluster: any) => {
-                        const url = new URL(activeUrl)
-                        updateMainCtx({
-                            item: cluster.id,
-                            updateId: cluster.updateId,
-                            type: 'Cluster',
-                            deleted: false,
-                            action: 'view',
-                            url: activeUrl,
-                            shareUrl: `${url.origin}${cluster.link}`,
-                            title: '',
-                        })
-                        updateSearchCtx({
-                            cluster: cluster.id,
-                        })
-                        setOpenMenu('contents')
-                    }}
-                />
-                <SideBarContents
-                    key="SideBarContentsPublic"
-                    className={
-                        props.openMenu != 'contents'
-                            ? classes.hidden
-                            : undefined
-                    }
-                    activeCluster={searchCtx.cluster}
-                    activeContent={mainCtx.item}
-                    usePublic
-                    header="Public"
-                    selectItem={(content: any) => {
-                        let type = content.tags.find((flag: string) =>
-                            flag.startsWith('type=')
-                        )
-                        if (type) {
-                            // split works different in js, so 2
-                            type = type.match(/=(.*)/)[1]
-                        }
-                        if (type == 'PrivateKey') {
-                            type = 'PublicKey'
-                        }
-                        const url = new URL(activeUrl)
-                        updateMainCtx({
-                            action: 'view',
-                            title: '',
-                            type: type,
-                            deleted: false,
-                            item: content.id,
-                            updateId: content.updateId,
-                            url: activeUrl,
-                            shareUrl: `${url.origin}${content.link}`,
-                        })
-                        setOpenMenu('notifications')
-                    }}
-                />
-                <SideBarContents
-                    key="SideBarContentsInternal"
-                    className={
-                        props.openMenu != 'contents'
-                            ? classes.hidden
-                            : undefined
-                    }
-                    authinfo={authinfo}
-                    activeCluster={searchCtx.cluster}
-                    activeContent={mainCtx.item}
-                    header="Internal"
-                    state="internal"
-                    selectItem={(content: any) => {
-                        let type = content.tags.find((flag: string) =>
-                            flag.startsWith('type=')
-                        )
-                        if (type) {
-                            // split works different in js, so 2
-                            type = type.match(/=(.*)/)[1]
-                        }
-                        const url = new URL(activeUrl)
-                        updateMainCtx({
-                            action: 'view',
-                            title: '',
-                            type: type,
-                            deleted: false,
-                            item: content.id,
-                            updateId: content.updateId,
-                            url: activeUrl,
-                            shareUrl: `${url.origin}${content.link}`,
-                        })
-                        setOpenMenu('notifications')
-                    }}
+                    goTo={goTo}
                 />
             </CapturingSuspense>
-        </div>
+            <CapturingSuspense>
+                <SideBarContents
+                    key="SideBarContentsPublic"
+                    nodeId="contents-public"
+                    className={
+                        props.openMenu != 'contents'
+                            ? classes.hidden
+                            : undefined
+                    }
+                    activeContent={mainCtx.item}
+                    usePublic
+                    label="Public"
+                    goTo={goTo}
+                />
+            </CapturingSuspense>
+            <CapturingSuspense>
+                <SideBarContents
+                    key="SideBarContentsInternal"
+                    nodeId="contents-internal"
+                    className={
+                        props.openMenu != 'contents'
+                            ? classes.hidden
+                            : undefined
+                    }
+                    authinfo={authinfo}
+                    activeContent={mainCtx.item}
+                    state="internal"
+                    label="Internal"
+                    goTo={goTo}
+                />
+            </CapturingSuspense>
+        </>
     )
 }
 
@@ -292,7 +251,6 @@ export default function SideBar() {
     const { classes, theme } = useStylesAndTheme()
     const { config } = React.useContext(Contexts.Config)
     const { open } = React.useContext(Contexts.OpenSidebar)
-    const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
     const [selected, setSelected] = React.useState<string[]>([])
     const [expanded, setExpanded] = React.useState<string[]>([])
     const [openMenu, setOpenMenu] = React.useState('notifications')
@@ -316,25 +274,39 @@ export default function SideBar() {
                 paper: classes.drawerPaper,
             }}
         >
-            <SideBarHeader />
-            <Divider />
-            <TreeView
-                multiSelect
-                selected={selected}
-                expanded={expanded}
-                onNodeToggle={(ev, items) => {
-                    setExpanded(items)
-                }}
-                onNodeSelect={(ev, items) => {
-                    setSelected(items.filter((val) => !expanded.includes(val)))
-                }}
-                defaultCollapseIcon={<ExpandMoreIcon />}
-                defaultExpandIcon={<ChevronRightIcon />}
+            <Contexts.SidebarItemsSelected.Provider
+                value={{ selected, setSelected }}
             >
-                {activeElements}
-            </TreeView>
-            <Divider />
-            {sideBarItems}
+                <Contexts.SidebarItemsExpanded.Provider
+                    value={{ expanded, setExpanded }}
+                >
+                    <SideBarHeader />
+                    <Divider />
+                    <TreeView
+                        multiSelect
+                        selected={selected}
+                        expanded={expanded}
+                        onNodeToggle={(ev, items) => {
+                            setExpanded(
+                                items.filter((val) => val.includes('::'))
+                            )
+                        }}
+                        onNodeSelect={(ev, items) => {
+                            setSelected(
+                                items.filter(
+                                    (val) =>
+                                        val.includes('::') &&
+                                        !expanded.includes(val)
+                                )
+                            )
+                        }}
+                        defaultCollapseIcon={<ExpandMoreIcon />}
+                        defaultExpandIcon={<ChevronRightIcon />}
+                    >
+                        {activeElements}
+                    </TreeView>
+                </Contexts.SidebarItemsExpanded.Provider>
+            </Contexts.SidebarItemsSelected.Provider>
         </Drawer>
     )
 }
