@@ -53,7 +53,7 @@ class SecretgraphConfig(ObjectType):
     loginUrl = graphene.String(required=False)
 
     def resolve_id(self, info):
-        return getattr(settings, "LAST_CONFIG_RELOAD", None)
+        return getattr(settings, "LAST_CONFIG_RELOAD", None) or ""
 
     def resolve_hashAlgorithms(self, info):
         return settings.SECRETGRAPH_HASH_ALGORITHMS

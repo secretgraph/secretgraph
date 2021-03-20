@@ -287,8 +287,7 @@ class ContentMutation(relay.ClientIDMutation):
             for action in result["actions"].filter(
                 Q(contentAction__content_id=content_obj.id) |
                 Q(contentAction__isnull=True),
-                cluster_id=content_obj.cluster_id,
-                group="update"
+                cluster_id=content_obj.cluster_id
             ):
                 form = result["forms"].get(action.id)
                 if form:
@@ -350,7 +349,6 @@ class ContentMutation(relay.ClientIDMutation):
             for action in result["actions"].filter(
                 Q(contentAction__isnull=True),
                 cluster_id=cluster_obj.id,
-                group="create"
             ):
                 form = result["forms"].get(action.id)
                 if form:
@@ -406,7 +404,8 @@ class PushContentMutation(relay.ClientIDMutation):
         source = result["objects"].first()
         if not source:
             raise ValueError("Content not found")
-        form = result["forms"][source.actions.get(group="push").id]
+        form = result["forms"][result["actions"].get(
+            contentAction__content_id=source.id).id]
         if content.get("tags") is not None:
             allowed = form.get("allowedTags", None)
             if allowed is not None:
