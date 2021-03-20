@@ -63,55 +63,58 @@ function MainPage(props: Props) {
     const [activeUrl, updateActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
-    let frameElement = null
-    switch (mainCtx.action) {
-        case 'view':
-        case 'add':
-        case 'edit':
-            let FrameElementWrapper = elements.get(
-                mainCtx.type ? mainCtx.type : 'undefined'
-            )
-            if (!FrameElementWrapper) {
-                FrameElementWrapper = elements.get(
-                    'undefined'
-                ) as Interfaces.ElementEntryInterface
-            }
-            const FrameElementType = (FrameElementWrapper as Interfaces.ElementEntryInterface)
-                .component
-            if (activeUrl == mainCtx.url || !mainCtx.url) {
-                frameElement = (
-                    <CapturingSuspense>
-                        <FrameElementType />
-                    </CapturingSuspense>
+    const frameElement = React.useMemo(() => {
+        let frameElement = null
+        switch (mainCtx.action) {
+            case 'view':
+            case 'add':
+            case 'edit':
+                let FrameElementWrapper = elements.get(
+                    mainCtx.type ? mainCtx.type : 'undefined'
                 )
-            } else {
-                frameElement = (
-                    <ApolloProvider
-                        client={createClient(mainCtx.url as string)}
-                    >
+                if (!FrameElementWrapper) {
+                    FrameElementWrapper = elements.get(
+                        'undefined'
+                    ) as Interfaces.ElementEntryInterface
+                }
+                const FrameElementType = (FrameElementWrapper as Interfaces.ElementEntryInterface)
+                    .component
+                if (activeUrl == mainCtx.url || !mainCtx.url) {
+                    frameElement = (
                         <CapturingSuspense>
                             <FrameElementType />
                         </CapturingSuspense>
-                    </ApolloProvider>
+                    )
+                } else {
+                    frameElement = (
+                        <ApolloProvider
+                            client={createClient(mainCtx.url as string)}
+                        >
+                            <CapturingSuspense>
+                                <FrameElementType />
+                            </CapturingSuspense>
+                        </ApolloProvider>
+                    )
+                }
+                break
+            case 'start':
+            case 'import':
+                frameElement = (
+                    <CapturingSuspense>
+                        <SettingsImporter />
+                    </CapturingSuspense>
                 )
-            }
-            break
-        case 'start':
-        case 'import':
-            frameElement = (
-                <CapturingSuspense>
-                    <SettingsImporter />
-                </CapturingSuspense>
-            )
-            break
-        case 'help':
-            frameElement = (
-                <CapturingSuspense>
-                    <Help />
-                </CapturingSuspense>
-            )
-            break
-    }
+                break
+            case 'help':
+                frameElement = (
+                    <CapturingSuspense>
+                        <Help />
+                    </CapturingSuspense>
+                )
+                break
+        }
+        return frameElement
+    }, [mainCtx.action, mainCtx.url, mainCtx.type])
     return (
         <Contexts.OpenSidebar.Provider
             value={{ open: openSidebar, updateOpen: updateOpenSidebar }}

@@ -155,20 +155,14 @@ const ActiveElements = ({
     return <>{activeElements}</>
 }
 
-const SideBarItems = ({
-    setOpenMenu,
-    ...props
-}: {
-    openMenu: string
-    setOpenMenu: any
-}) => {
+const SideBarItems = () => {
     const { classes, theme } = useStylesAndTheme()
-    const { config } = React.useContext(Contexts.InitializedConfig)
+    const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const authinfo = React.useMemo(
-        () => extractAuthInfo({ config, url: activeUrl }),
+        () => (config ? extractAuthInfo({ config, url: activeUrl }) : null),
         [config, activeUrl]
     )
     const activeUrlAsURL = new URL(activeUrl)
@@ -203,46 +197,40 @@ const SideBarItems = ({
 
     return (
         <>
-            <CapturingSuspense>
-                <SideBarClusters
-                    key="SideBarClusters"
-                    nodeId="clusters"
-                    authinfo={authinfo}
-                    activeCluster={searchCtx.cluster}
-                    goTo={goTo}
-                />
-            </CapturingSuspense>
+            {authinfo && (
+                <CapturingSuspense>
+                    <SideBarClusters
+                        key="SideBarClusters"
+                        nodeId="clusters"
+                        authinfo={authinfo}
+                        activeCluster={searchCtx.cluster}
+                        goTo={goTo}
+                    />
+                </CapturingSuspense>
+            )}
             <CapturingSuspense>
                 <SideBarContents
                     key="SideBarContentsPublic"
                     nodeId="contents-public"
-                    className={
-                        props.openMenu != 'contents'
-                            ? classes.hidden
-                            : undefined
-                    }
                     activeContent={mainCtx.item}
                     usePublic
                     label="Public"
                     goTo={goTo}
                 />
             </CapturingSuspense>
-            <CapturingSuspense>
-                <SideBarContents
-                    key="SideBarContentsInternal"
-                    nodeId="contents-internal"
-                    className={
-                        props.openMenu != 'contents'
-                            ? classes.hidden
-                            : undefined
-                    }
-                    authinfo={authinfo}
-                    activeContent={mainCtx.item}
-                    state="internal"
-                    label="Internal"
-                    goTo={goTo}
-                />
-            </CapturingSuspense>
+            {authinfo && (
+                <CapturingSuspense>
+                    <SideBarContents
+                        key="SideBarContentsInternal"
+                        nodeId="contents-internal"
+                        authinfo={authinfo}
+                        activeContent={mainCtx.item}
+                        state="internal"
+                        label="Internal"
+                        goTo={goTo}
+                    />
+                </CapturingSuspense>
+            )}
         </>
     )
 }
@@ -253,32 +241,26 @@ export default function SideBar() {
     const { open } = React.useContext(Contexts.OpenSidebar)
     const [selected, setSelected] = React.useState<string[]>([])
     const [expanded, setExpanded] = React.useState<string[]>([])
-    const [openMenu, setOpenMenu] = React.useState('notifications')
-    let activeElements: any = null
-    let sideBarItems: any = null
+    /**let activeElements: any = null
     if (config) {
         activeElements = (
             <ActiveElements openMenu={openMenu} setOpenMenu={setOpenMenu} />
         )
-
-        sideBarItems = (
-            <SideBarItems openMenu={openMenu} setOpenMenu={setOpenMenu} />
-        )
-    }
+    }*/
     return (
-        <Drawer
-            variant="persistent"
-            anchor={theme.direction === 'ltr' ? 'left' : 'right'}
-            open={!!(open && config)}
-            classes={{
-                paper: classes.drawerPaper,
-            }}
+        <Contexts.SidebarItemsSelected.Provider
+            value={{ selected, setSelected }}
         >
-            <Contexts.SidebarItemsSelected.Provider
-                value={{ selected, setSelected }}
+            <Contexts.SidebarItemsExpanded.Provider
+                value={{ expanded, setExpanded }}
             >
-                <Contexts.SidebarItemsExpanded.Provider
-                    value={{ expanded, setExpanded }}
+                <Drawer
+                    variant="persistent"
+                    anchor={theme.direction === 'ltr' ? 'left' : 'right'}
+                    open={!!(open && config)}
+                    classes={{
+                        paper: classes.drawerPaper,
+                    }}
                 >
                     <SideBarHeader />
                     <Divider />
@@ -303,10 +285,10 @@ export default function SideBar() {
                         defaultCollapseIcon={<ExpandMoreIcon />}
                         defaultExpandIcon={<ChevronRightIcon />}
                     >
-                        {activeElements}
+                        <SideBarItems />
                     </TreeView>
-                </Contexts.SidebarItemsExpanded.Provider>
-            </Contexts.SidebarItemsSelected.Provider>
-        </Drawer>
+                </Drawer>
+            </Contexts.SidebarItemsExpanded.Provider>
+        </Contexts.SidebarItemsSelected.Provider>
     )
 }
