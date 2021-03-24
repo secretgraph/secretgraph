@@ -165,7 +165,7 @@ const SideBarItems = () => {
         () => (config ? extractAuthInfo({ config, url: activeUrl }) : null),
         [config, activeUrl]
     )
-    const activeUrlAsURL = new URL(activeUrl)
+    const activeUrlAsURL = new URL(activeUrl, window.location.href)
     const goTo = (node: any) => {
         let type =
             node.__typename == 'Cluster'

@@ -157,7 +157,10 @@ export const useStyles = makeStyles((theme: Theme) =>
     createStyles(secretgraphTheme(theme))
 )
 
-export const useStylesAndTheme = (): { classes: any; theme: Theme } => {
+export const useStylesAndTheme = (): {
+    classes: ReturnType<typeof useStyles>
+    theme: Theme
+} => {
     return {
         classes: useStyles(),
         theme: useTheme(),

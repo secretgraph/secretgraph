@@ -139,7 +139,7 @@ export const loadConfig = async (
         if (!contentResult.ok) {
             return null
         }
-        const decrypturl = new URL(request.url)
+        const decrypturl = new URL(request.url, window.location.href)
         const prekeys = decrypturl.searchParams.getAll('prekey')
         decrypturl.searchParams.delete('prekey')
         if (pws) {
@@ -373,7 +373,7 @@ export async function exportConfigAsUrl({
             const privkeykey = privkeyrefnode.node.target.tags
                 .find((tag: string) => tag.startsWith('key='))
                 .match(/=(.*)/)[1]
-            const url = new URL(config.baseUrl)
+            const url = new URL(config.baseUrl, window.location.href)
             const sharedKeyPrivateKeyRes = await decryptRSAOEAP({
                 key: cert,
                 data: privkeykey,
