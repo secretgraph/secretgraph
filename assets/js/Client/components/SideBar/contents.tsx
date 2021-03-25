@@ -167,7 +167,7 @@ export default function Contents({
             if (state == 'draft') {
                 Icon = DraftsIcon
             }
-            const nodeId = `${activeUrl}:contents::${node.id}`
+            const nodeId = `${activeUrl}-contents::${node.id}`
             return (
                 <TreeItem
                     label={
@@ -200,7 +200,7 @@ export default function Contents({
                 data.contents.contents.pageInfo.hasNextPage && (
                     <TreeItem
                         label="Load more contents..."
-                        nodeId={`${props.nodeId}:contents:loadmore`}
+                        nodeId={`${props.nodeId}-contents-loadmore`}
                         onClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()

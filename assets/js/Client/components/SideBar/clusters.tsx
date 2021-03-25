@@ -156,7 +156,7 @@ export default function Clusters({
         return data.clusters.clusters.edges.map((edge: any) => {
             if (edge.node.id !== activeCluster) {
                 const { name, note } = extractPublicInfo(edge.node.publicInfo)
-                const nodeId = `${activeUrl}:cluster::${edge.node.id}`
+                const nodeId = `${activeUrl}-cluster::${edge.node.id}`
                 return (
                     <SideBarContents
                         goTo={goTo}
@@ -203,7 +203,7 @@ export default function Clusters({
                 data.clusters.clusters.pageInfo.hasNextPage && (
                     <TreeItem
                         label="Load more clusters..."
-                        nodeId={`${props.nodeId}:cluster:loadmore`}
+                        nodeId={`${props.nodeId}-cluster-loadmore`}
                         onClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()

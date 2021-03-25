@@ -1,6 +1,5 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
 import { Grid } from '@material-ui/core'
-import Button from '@material-ui/core/Button'
 import Chip from '@material-ui/core/Chip'
 import Collapse from '@material-ui/core/Collapse'
 import Divider from '@material-ui/core/Divider'
@@ -12,9 +11,11 @@ import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
+import Paper from '@material-ui/core/Paper'
 import Popover from '@material-ui/core/Popover'
 import TextField from '@material-ui/core/TextField'
 import Tooltip from '@material-ui/core/Tooltip'
+import Typography from '@material-ui/core/Typography'
 import useMediaQuery from '@material-ui/core/useMediaQuery'
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft'
 import ChevronRightIcon from '@material-ui/icons/ChevronRight'
@@ -98,26 +99,33 @@ function TagsSelect({
 function HeaderPopover() {
     const { searchCtx, updateSearchCtx } = React.useContext(contexts.Search)
     return (
-        <Grid container>
-            <Grid item xs={12}>
-                <TagsSelect
-                    label="Include Tags"
-                    value={searchCtx.include}
-                    onChange={(event, value, reason) => {
-                        updateSearchCtx({ include: value })
-                    }}
-                />
+        <Paper style={{ padding: '16px' }}>
+            <Grid container spacing={2}>
+                <Grid item xs={12}>
+                    <Typography align="center" variant="h3">
+                        Filter
+                    </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                    <TagsSelect
+                        label="Include Tags"
+                        value={searchCtx.include}
+                        onChange={(event, value, reason) => {
+                            updateSearchCtx({ include: value })
+                        }}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <TagsSelect
+                        label="Exclude Tags"
+                        value={searchCtx.exclude}
+                        onChange={(event, value, reason) => {
+                            updateSearchCtx({ exclude: value })
+                        }}
+                    />
+                </Grid>
             </Grid>
-            <Grid item xs={12}>
-                <TagsSelect
-                    label="Exclude Tags"
-                    value={searchCtx.exclude}
-                    onChange={(event, value, reason) => {
-                        updateSearchCtx({ exclude: value })
-                    }}
-                />
-            </Grid>
-        </Grid>
+        </Paper>
     )
 }
 
