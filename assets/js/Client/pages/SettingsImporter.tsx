@@ -381,7 +381,7 @@ function SettingsImporter() {
                     <Card raised={mainCtx.action === 'start'}>
                         <CardContent>
                             <Typography
-                                className={classes.title}
+                                variant="h5"
                                 color="textPrimary"
                                 gutterBottom
                                 paragraph
@@ -420,7 +420,7 @@ function SettingsImporter() {
             <Card>
                 <CardContent>
                     <Typography
-                        className={classes.title}
+                        variant="h5"
                         color="textPrimary"
                         gutterBottom
                         paragraph
@@ -500,7 +500,9 @@ function SettingsImporter() {
                             </FormHelperText>
                         </FormControl>
                     </div>
-                    <FormControl className={needsPw ? null : classes.hidden}>
+                    <FormControl
+                        className={needsPw ? undefined : classes.hidden}
+                    >
                         <TextField
                             variant="outlined"
                             disabled={loadingStart || loadingImport}

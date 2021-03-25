@@ -133,7 +133,7 @@ function MainPage(props: Props) {
                                 <CssBaseline />
                                 <div
                                     className={
-                                        config && open
+                                        config && openSidebar
                                             ? classes.rootShifted
                                             : classes.root
                                     }

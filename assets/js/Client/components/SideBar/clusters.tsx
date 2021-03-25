@@ -151,18 +151,26 @@ export default function Clusters({
     }
     const clustersFinished: JSX.Element[] = React.useMemo(() => {
         if (!data) {
-            return []
+            return [null]
         }
         return data.clusters.clusters.edges.map((edge: any) => {
             if (edge.node.id !== activeCluster) {
                 const { name, note } = extractPublicInfo(edge.node.publicInfo)
                 const nodeId = `${activeUrl}:cluster::${edge.node.id}`
                 return (
-                    <TreeItem
+                    <SideBarContents
+                        goTo={goTo}
                         label={
-                            <span title={note || undefined}>
+                            <span
+                                title={note || undefined}
+                                style={{ whiteSpace: 'nowrap' }}
+                            >
                                 <GroupWorkIcon fontSize="small" />
-                                {name ? name : `...${edge.node.id.substr(-48)}`}
+                                <span style={{ wordBreak: 'break-all' }}>
+                                    {name
+                                        ? name
+                                        : `...${edge.node.id.substr(-48)}`}
+                                </span>
                             </span>
                         }
                         nodeId={nodeId}

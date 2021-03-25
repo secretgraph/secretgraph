@@ -241,19 +241,19 @@ export default function HeaderBar() {
                     onClose={() => setMenuOpen(false)}
                 >
                     <MenuItem
-                        className={!config ? classes.hidden : null}
+                        className={!config ? classes.hidden : undefined}
                         onClick={() => setMenuOpen(false)}
                     >
                         Update Settings
                     </MenuItem>
                     <MenuItem
-                        className={!config ? classes.hidden : null}
+                        className={!config ? classes.hidden : undefined}
                         onClick={openImporter}
                     >
                         Load Settings
                     </MenuItem>
                     <MenuItem
-                        className={!config ? classes.hidden : null}
+                        className={!config ? classes.hidden : undefined}
                         onClick={exportSettingsOpener}
                     >
                         Export Settings

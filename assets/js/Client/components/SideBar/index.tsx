@@ -202,35 +202,38 @@ const SideBarItems = () => {
                     <SideBarClusters
                         key="SideBarClusters"
                         nodeId="clusters"
+                        label="Clusters"
                         authinfo={authinfo}
                         activeCluster={searchCtx.cluster}
                         goTo={goTo}
                     />
                 </CapturingSuspense>
             )}
-            <CapturingSuspense>
-                <SideBarContents
-                    key="SideBarContentsPublic"
-                    nodeId="contents-public"
-                    activeContent={mainCtx.item}
-                    usePublic
-                    label="Public"
-                    goTo={goTo}
-                />
-            </CapturingSuspense>
-            {authinfo && (
+            <TreeItem nodeId="contents" label="Contents">
                 <CapturingSuspense>
                     <SideBarContents
-                        key="SideBarContentsInternal"
-                        nodeId="contents-internal"
-                        authinfo={authinfo}
+                        key="SideBarContentsPublic"
+                        nodeId="contents-public"
                         activeContent={mainCtx.item}
-                        state="internal"
-                        label="Internal"
+                        usePublic
+                        label="Public"
                         goTo={goTo}
                     />
                 </CapturingSuspense>
-            )}
+                {authinfo && (
+                    <CapturingSuspense>
+                        <SideBarContents
+                            key="SideBarContentsInternal"
+                            nodeId="contents-internal"
+                            authinfo={authinfo}
+                            activeContent={mainCtx.item}
+                            state="internal"
+                            label="Internal"
+                            goTo={goTo}
+                        />
+                    </CapturingSuspense>
+                )}
+            </TreeItem>
         </>
     )
 }
@@ -259,7 +262,9 @@ export default function SideBar() {
                     anchor={theme.direction === 'ltr' ? 'left' : 'right'}
                     open={!!(open && config)}
                     classes={{
-                        paper: classes.drawerPaper,
+                        paper: !!(open && config)
+                            ? classes.drawerPaper
+                            : classes.hidden,
                     }}
                 >
                     <SideBarHeader />
@@ -269,16 +274,14 @@ export default function SideBar() {
                         selected={selected}
                         expanded={expanded}
                         onNodeToggle={(ev, items) => {
-                            setExpanded(
-                                items.filter((val) => val.includes('::'))
-                            )
+                            setExpanded(items)
                         }}
                         onNodeSelect={(ev, items) => {
                             setSelected(
                                 items.filter(
                                     (val) =>
                                         val.includes('::') &&
-                                        !expanded.includes(val)
+                                        expanded.includes(val)
                                 )
                             )
                         }}

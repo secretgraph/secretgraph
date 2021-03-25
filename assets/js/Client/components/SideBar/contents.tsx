@@ -129,7 +129,7 @@ export default function Contents({
 
     const contentsFinished: JSX.Element[] = React.useMemo(() => {
         if (!data) {
-            return []
+            return [null]
         }
         const render_item = (node: any) => {
             let type = node.tags.find((flag: string) =>

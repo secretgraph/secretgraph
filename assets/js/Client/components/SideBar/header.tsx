@@ -129,7 +129,13 @@ function MainSearchField() {
     const client = useApolloClient()
     return (
         <>
-            <Popover open={!!anchorEl} anchorEl={anchorEl}>
+            <Popover
+                open={!!anchorEl}
+                anchorEl={anchorEl}
+                onClose={() => {
+                    setAnchorEl(null)
+                }}
+            >
                 <HeaderPopover />
             </Popover>
             <Autocomplete

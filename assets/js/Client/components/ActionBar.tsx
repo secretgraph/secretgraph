@@ -75,7 +75,7 @@ function ActionBar(props: Props) {
                 <Tooltip
                     title={mainCtx.action === 'view' ? 'Edit' : 'View'}
                     arrow
-                    className={mainCtx.item ? null : classes.hidden}
+                    className={mainCtx.item ? undefined : classes.hidden}
                 >
                     <IconButton
                         className={classes.actionToolBarButton}
@@ -103,7 +103,7 @@ function ActionBar(props: Props) {
                             : 'Delete'
                     }
                     arrow
-                    className={!mainCtx.item ? classes.hidden : null}
+                    className={!mainCtx.item ? classes.hidden : undefined}
                 >
                     <span>
                         <IconButton
@@ -199,7 +199,7 @@ function ActionBar(props: Props) {
                 <Tooltip
                     title="Share "
                     arrow
-                    className={mainCtx.shareUrl ? null : classes.hidden}
+                    className={mainCtx.shareUrl ? undefined : classes.hidden}
                 >
                     <IconButton
                         className={classes.actionToolBarButton}
