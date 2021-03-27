@@ -1,5 +1,4 @@
 import { ApolloProvider } from '@apollo/client'
-import CssBaseline from '@material-ui/core/CssBaseline'
 import Paper from '@material-ui/core/Paper'
 import * as React from 'react'
 

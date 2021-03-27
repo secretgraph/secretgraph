@@ -1,13 +1,27 @@
 import {
     Theme,
     createStyles,
-    fade,
     makeStyles,
     useTheme,
     withStyles,
+    createMuiTheme,
+    responsiveFontSizes,
 } from '@material-ui/core/styles'
 
 const drawerWidth = '16rem'
+
+export const theme = responsiveFontSizes(
+    createMuiTheme({
+        /**overrides: {
+            MuiTreeItem: {
+                label: {
+                    fontSize: '1.1rem',
+                    lineHeight: '2',
+                },
+            },
+        } as any,*/
+    })
+)
 
 export function secretgraphTheme(theme: Theme) {
     return {
@@ -35,6 +49,10 @@ export function secretgraphTheme(theme: Theme) {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
             }),
+        },
+        sidebarHeading: {
+            fontSize: '1.1rem',
+            lineHeight: '1.7',
         },
         appBarToolBar: {},
         appBarTitle: {

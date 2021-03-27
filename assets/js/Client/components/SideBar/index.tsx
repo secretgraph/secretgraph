@@ -200,6 +200,7 @@ const SideBarItems = () => {
             {authinfo && (
                 <CapturingSuspense>
                     <SideBarClusters
+                        classes={{ label: classes.sidebarHeading }}
                         key="SideBarClusters"
                         nodeId="clusters"
                         label="Clusters"
@@ -209,7 +210,11 @@ const SideBarItems = () => {
                     />
                 </CapturingSuspense>
             )}
-            <TreeItem nodeId="contents" label="Contents">
+            <TreeItem
+                nodeId="contents"
+                label="Contents"
+                classes={{ label: classes.sidebarHeading }}
+            >
                 <CapturingSuspense>
                     <SideBarContents
                         key="SideBarContentsPublic"
@@ -217,6 +222,7 @@ const SideBarItems = () => {
                         activeContent={mainCtx.item}
                         usePublic
                         label="Public"
+                        classes={{ label: classes.sidebarHeading }}
                         goTo={goTo}
                     />
                 </CapturingSuspense>
@@ -229,6 +235,7 @@ const SideBarItems = () => {
                             activeContent={mainCtx.item}
                             state="internal"
                             label="Internal"
+                            classes={{ label: classes.sidebarHeading }}
                             goTo={goTo}
                         />
                     </CapturingSuspense>

@@ -1,12 +1,14 @@
 import { ApolloProvider } from '@apollo/client'
 import CssBaseline from '@material-ui/core/CssBaseline'
+import useMediaQuery from '@material-ui/core/useMediaQuery'
 import * as React from 'react'
-
+import { ThemeProvider } from '@material-ui/core/styles'
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import * as Interfaces from '../interfaces'
 import { loadConfigSync, updateConfigReducer } from '../utils/config'
 import { createClient } from '../utils/graphql'
+import { theme as themeDefinition } from '../theme'
 import Main from './Main'
 
 type Props = {
@@ -54,28 +56,35 @@ function Definitions(props: Props) {
         () => (config ? config.baseUrl : defaultPath) as string
     )
     return (
-        <Contexts.OpenSidebar.Provider
-            value={{ open: openSidebar, updateOpen: updateOpenSidebar }}
-        >
-            <ApolloProvider client={createClient(activeUrl)}>
-                <Contexts.ActiveUrl.Provider
-                    value={{ activeUrl, updateActiveUrl }}
-                >
-                    <Contexts.Main.Provider value={{ mainCtx, updateMainCtx }}>
-                        <Contexts.Search.Provider
-                            value={{ searchCtx, updateSearchCtx }}
+        <ThemeProvider theme={themeDefinition}>
+            <Contexts.OpenSidebar.Provider
+                value={{
+                    open: openSidebar,
+                    updateOpen: updateOpenSidebar,
+                }}
+            >
+                <ApolloProvider client={createClient(activeUrl)}>
+                    <Contexts.ActiveUrl.Provider
+                        value={{ activeUrl, updateActiveUrl }}
+                    >
+                        <Contexts.Main.Provider
+                            value={{ mainCtx, updateMainCtx }}
                         >
-                            <Contexts.Config.Provider
-                                value={{ config, updateConfig }}
+                            <Contexts.Search.Provider
+                                value={{ searchCtx, updateSearchCtx }}
                             >
-                                <CssBaseline />
-                                <Main />
-                            </Contexts.Config.Provider>
-                        </Contexts.Search.Provider>
-                    </Contexts.Main.Provider>
-                </Contexts.ActiveUrl.Provider>
-            </ApolloProvider>
-        </Contexts.OpenSidebar.Provider>
+                                <Contexts.Config.Provider
+                                    value={{ config, updateConfig }}
+                                >
+                                    <CssBaseline />
+                                    <Main />
+                                </Contexts.Config.Provider>
+                            </Contexts.Search.Provider>
+                        </Contexts.Main.Provider>
+                    </Contexts.ActiveUrl.Provider>
+                </ApolloProvider>
+            </Contexts.OpenSidebar.Provider>
+        </ThemeProvider>
     )
 }
 
