@@ -123,6 +123,7 @@ export interface SearchContextInterface {
     cluster: null | string
     include: string[]
     exclude: string[]
+    deleted: boolean
     // environment: Environment | null;
 }
 

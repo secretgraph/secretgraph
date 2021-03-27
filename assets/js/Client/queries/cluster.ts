@@ -5,6 +5,7 @@ export const clusterFeedQuery = gql`
         $authorization: [String!]
         $include: [String!]
         $exclude: [String!]
+        $deleted: Boolean
         $public: Boolean
         $count: Int
         $cursor: String
@@ -13,13 +14,14 @@ export const clusterFeedQuery = gql`
             clusters(
                 includeTags: $include
                 excludeTags: $exclude
+                deleted: $deleted
                 public: $public
                 first: $count
                 after: $cursor
             )
                 @connection(
                     key: "feed_clusters"
-                    filters: ["include", "exclude", "public"]
+                    filters: ["include", "exclude", "public", "deleted"]
                 ) {
                 edges {
                     node {

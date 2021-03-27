@@ -130,6 +130,7 @@ export default function Clusters({
         {
             variables: {
                 authorization: authinfo && authinfo.keys,
+                deleted: searchCtx.deleted,
                 include: searchCtx.include,
                 exclude: searchCtx.cluster
                     ? [`id=${activeCluster}`, ...searchCtx.exclude]

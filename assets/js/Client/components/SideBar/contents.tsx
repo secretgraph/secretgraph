@@ -20,6 +20,7 @@ const contentFeedQuery = gql`
         $authorization: [String!]
         $include: [String!]
         $exclude: [String!]
+        $deleted: Boolean
         $public: Boolean
         $includeTags: [String!]
         $count: Int
@@ -30,13 +31,20 @@ const contentFeedQuery = gql`
                 clusters: $clusters
                 includeTags: $include
                 excludeTags: $exclude
+                deleted: $deleted
                 public: $public
                 first: $count
                 after: $cursor
             )
                 @connection(
                     key: "SideBar_contents"
-                    filters: ["include", "exclude", "clusters", "public"]
+                    filters: [
+                        "include"
+                        "exclude"
+                        "clusters"
+                        "public"
+                        "deleted"
+                    ]
                 ) {
                 edges {
                     node {
@@ -110,6 +118,7 @@ export default function Contents({
                 exclude: searchCtx.exclude,
                 clusters: activeCluster ? [activeCluster] : undefined,
                 public: _usePublic,
+                deleted: searchCtx.deleted,
                 count: 30,
                 cursor: null,
             },

@@ -1,7 +1,7 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
 import { Grid } from '@material-ui/core'
+import Button from '@material-ui/core/Button'
 import Chip from '@material-ui/core/Chip'
-import Collapse from '@material-ui/core/Collapse'
 import Divider from '@material-ui/core/Divider'
 import Drawer from '@material-ui/core/Drawer'
 import Hidden from '@material-ui/core/Hidden'
@@ -29,6 +29,7 @@ import Autocomplete, {
 import * as React from 'react'
 
 import { mapHashNames } from '../../constants'
+import * as Contexts from '../../contexts'
 import * as contexts from '../../contexts'
 import { getClusterQuery } from '../../queries/cluster'
 import { serverConfigQuery } from '../../queries/server'
@@ -98,8 +99,9 @@ function TagsSelect({
 }
 function HeaderPopover() {
     const { searchCtx, updateSearchCtx } = React.useContext(contexts.Search)
+    const { theme } = useStylesAndTheme()
     return (
-        <Paper style={{ padding: '16px' }}>
+        <Paper style={{ padding: theme.spacing(2) }}>
             <Grid container spacing={2}>
                 <Grid item xs={12}>
                     <Typography align="center" variant="h3">
@@ -123,6 +125,15 @@ function HeaderPopover() {
                             updateSearchCtx({ exclude: value })
                         }}
                     />
+                </Grid>
+                <Grid item xs={12}>
+                    <Button
+                        onClick={(event) => {
+                            updateSearchCtx({ deleted: !searchCtx.deleted })
+                        }}
+                    >
+                        Deleted
+                    </Button>
                 </Grid>
             </Grid>
         </Paper>
@@ -259,11 +270,17 @@ function MainSearchField() {
 
 export default function SideBarHeader() {
     const { classes, theme } = useStylesAndTheme()
+    const { selected } = React.useContext(Contexts.SidebarItemsSelected)
     return (
-        <div className={classes.sideBarHeader}>
-            {theme.direction === 'rtl' ? <CloseButton /> : null}
-            <MainSearchField />
-            {theme.direction === 'ltr' ? <CloseButton /> : null}
-        </div>
+        <>
+            <div className={classes.sideBarHeader}>
+                {theme.direction === 'rtl' ? <CloseButton /> : null}
+                <MainSearchField />
+                {theme.direction === 'ltr' ? <CloseButton /> : null}
+            </div>
+            <div className={selected.length ? undefined : classes.hidden}>
+                <Button>{true ? 'Delete' : 'Restore'}</Button>
+            </div>
+        </>
     )
 }
