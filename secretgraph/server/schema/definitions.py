@@ -281,11 +281,14 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
         ]
+        query = result["objects"]
+        if deleted is not None:
+            query = result["objects"].filter(
+                markForDestruction__isnull=not deleted)
         return ContentReference.objects.filter(
             source=self,
             target__in=fetch_contents(
-                result["objects"].filter(
-                    markForDestruction__isnull=not deleted),
+                query,
                 result["actions"],
                 includeTags=kwargs.get("tagsInclude"),
                 excludeTags=kwargs.get("tagsExclude"),
