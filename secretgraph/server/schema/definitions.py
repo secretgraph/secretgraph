@@ -223,6 +223,9 @@ class ContentReferenceConnectionField(DjangoConnectionField):
             "groups", graphene.List(graphene.NonNull(
                 graphene.String), required=False)
         )
+        kwargs.setdefault(
+            "deleted", graphene.Boolean(required=False)
+        )
         super().__init__(of_type, *args, **kwargs)
 
 
@@ -256,7 +259,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     )
     link = graphene.String(required=True)
 
-    @classmethod
+    @ classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
@@ -271,7 +274,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.markForDestruction
 
     def resolve_references(
-        self, info, authorization=None, groups=None, **kwargs
+        self, info, authorization=None, groups=None, deleted=None, **kwargs
     ):
         if self.limited:
             return ContentReference.objects.none()
@@ -281,7 +284,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return ContentReference.objects.filter(
             source=self,
             target__in=fetch_contents(
-                result["objects"],
+                result["objects"].filter(
+                    markForDestruction__isnull=not deleted),
                 result["actions"],
                 includeTags=kwargs.get("tagsInclude"),
                 excludeTags=kwargs.get("tagsExclude"),
@@ -292,17 +296,22 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )
 
     def resolve_referencedBy(
-        self, info, authorization=None, groups=None, **kwargs
+        self, info, authorization=None, groups=None, deleted=None, **kwargs
     ):
         if self.limited:
             return ContentReference.objects.none()
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
         ]
+        query = result["objects"]
+        if deleted is not None:
+            query = result["objects"].filter(
+                markForDestruction__isnull=not deleted)
+
         return ContentReference.objects.filter(
             target=self,
             source__in=fetch_contents(
-                result["objects"],
+                query,
                 result["actions"],
                 includeTags=kwargs.get("tagsInclude"),
                 excludeTags=kwargs.get("tagsExclude"),
@@ -401,12 +410,14 @@ class ContentConnectionField(DjangoConnectionField):
                 type_name="Cluster",
                 limit_ids=10,
             )
-        queryset = queryset.filter(markForDestruction__isnull=not deleted)
         if public in {True, False}:
             if public:
                 queryset = queryset.filter(tags__tag="state=public")
             else:
                 queryset = queryset.exclude(tags__tag="state=public")
+
+        if deleted is not None:
+            queryset = queryset.filter(markForDestruction__isnull=not deleted)
         result = initializeCachedResult(
             info.context, authset=args.get("authorization")
         )["Content"]
@@ -550,7 +561,8 @@ class ClusterConnectionField(DjangoConnectionField):
                 except Exception:
                     pass
                 queryset = queryset.filter(user__pk=user)
-        queryset = queryset.filter(markForDestruction__isnull=not deleted)
+        if deleted is not None:
+            queryset = queryset.filter(markForDestruction__isnull=not deleted)
         if public in {True, False}:
             queryset = queryset.filter(public=public)
 

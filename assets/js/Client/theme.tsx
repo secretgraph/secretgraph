@@ -112,9 +112,6 @@ export function secretgraphTheme(theme: Theme) {
             border: '1px solid black' as const,
             margin: theme.spacing(0, 1, 0, 0),
         },
-        actionToolBarButton: {
-            color: 'white' as const,
-        },
         mainSection: {
             minHeight: '200px' as const,
             flexGrow: 1,
@@ -146,13 +143,6 @@ export function secretgraphTheme(theme: Theme) {
         sideBarHeaderExpandButtonIconExpanded: {
             width: '100%',
             transform: 'rotate(180deg)',
-        },
-        sideBarContentList: {
-            paddingLeft: theme.spacing(4),
-        },
-        sideBarEntry: {
-            overflowWrap: 'anywhere' as const,
-            wordWrap: 'break-word' as const,
         },
         import_Wrapper: {
             display: 'flex',

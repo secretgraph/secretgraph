@@ -207,7 +207,11 @@ export default function Contents({
                     }
                     nodeId={nodeId}
                     key={nodeId}
-                    onDoubleClick={() => goTo(node)}
+                    onDoubleClick={(ev) => {
+                        ev.preventDefault()
+                        ev.stopPropagation()
+                        goTo(node)
+                    }}
                 />
             )
         }

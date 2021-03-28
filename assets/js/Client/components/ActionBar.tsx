@@ -78,7 +78,7 @@ function ActionBar(props: Props) {
                     className={mainCtx.item ? undefined : classes.hidden}
                 >
                     <IconButton
-                        className={classes.actionToolBarButton}
+                        color="inherit"
                         aria-label={mainCtx.action === 'view' ? 'Edit' : 'View'}
                         onClick={() =>
                             updateMainCtx({
@@ -108,7 +108,7 @@ function ActionBar(props: Props) {
                     <span>
                         <IconButton
                             disabled={mainCtx.deleted === false}
-                            className={classes.actionToolBarButton}
+                            color="inherit"
                             aria-label={
                                 mainCtx.deleted
                                     ? 'Restore'
@@ -172,13 +172,17 @@ function ActionBar(props: Props) {
                             }}
                             value={mainCtx.type || undefined}
                             options={elements}
+                            InputProps={{
+                                disableUnderline: true,
+                            }}
                         />
                         <IconButton
                             className={
-                                mainCtx.action != 'add'
-                                    ? classes.actionToolBarButton
-                                    : classes.hidden
+                                mainCtx.action == 'add'
+                                    ? classes.hidden
+                                    : undefined
                             }
+                            color="inherit"
                             aria-label="add"
                             onClick={(event) => {
                                 updateMainCtx({
@@ -202,18 +206,15 @@ function ActionBar(props: Props) {
                     className={mainCtx.shareUrl ? undefined : classes.hidden}
                 >
                     <IconButton
-                        className={classes.actionToolBarButton}
-                        aria-label="share "
+                        color="inherit"
+                        aria-label="share"
                         onClick={() => setShareOpen(true)}
                     >
                         <ShareIcon />
                     </IconButton>
                 </Tooltip>
                 <Tooltip title="Help" arrow>
-                    <IconButton
-                        className={classes.actionToolBarButton}
-                        aria-label="help"
-                    >
+                    <IconButton color="inherit" aria-label="help">
                         <HelpOutlineOutlinedIcon />
                     </IconButton>
                 </Tooltip>

@@ -2,6 +2,7 @@ import { ApolloClient, useApolloClient, useLazyQuery } from '@apollo/client'
 import GroupWorkIcon from '@material-ui/icons/GroupWork'
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
 import * as React from 'react'
+import { useAsync } from 'react-async'
 
 import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
@@ -11,36 +12,6 @@ import { extractPublicInfo } from '../../utils/cluster'
 import { loadAndExtractClusterInfo } from '../../utils/operations'
 import SideBarContents from './contents'
 
-async function title_helper({
-    client,
-    authorization,
-    id,
-    canceled,
-    setName,
-    setNote,
-    setDeleted,
-}: {
-    client: ApolloClient<any>
-    authorization: string[]
-    id: string
-    canceled: () => boolean
-    setName: (arg: string) => void
-    setNote: (arg: string) => void
-    setDeleted: (arg: Date | null) => void
-}) {
-    const { name, note, node } = await loadAndExtractClusterInfo({
-        client,
-        authorization,
-        id,
-    })
-    if (canceled()) {
-        return
-    }
-    name && setName(name)
-    note && setNote(note)
-    setDeleted(node.deleted)
-}
-
 function ActiveCluster({
     authinfo,
     cluster,
@@ -49,83 +20,42 @@ function ActiveCluster({
 }: {
     authinfo?: Interfaces.AuthInfoInterface
     cluster: string
-    goTo?: (node: any) => void
-} & Omit<TreeItemProps, 'label' | 'nodeId'>) {
-    const { classes, theme } = useStylesAndTheme()
-    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    goTo: (node: any) => void
+} & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const client = useApolloClient()
-    const [clusterName, setClusterName] = React.useState<undefined | string>(
-        undefined
-    )
-    const [clusterNote, setClusterNote] = React.useState('')
-    const [deleted, setDeleted] = React.useState<undefined | Date | null>(
-        undefined
-    )
+    const { data } = useAsync({
+        promiseFn: loadAndExtractClusterInfo,
+        id: cluster,
+        authorization: authinfo?.keys,
+        client,
+        watch: cluster,
+    })
 
-    React.useLayoutEffect(() => {
-        setClusterName(undefined)
-
-        let finished = false
-        const cancel = () => {
-            finished = true
-        }
-        title_helper({
-            client,
-            authorization: authinfo ? authinfo.keys : [],
-            id: cluster,
-            setName: setClusterName,
-            setNote: setClusterNote,
-            setDeleted,
-            canceled: () => finished == true,
-        })
-        return cancel
-    }, [cluster])
-    if (goTo) {
-        return (
-            <SideBarContents
-                nodeId={`active:${activeUrl}:${cluster}`}
-                goTo={goTo}
-                label={
-                    <span
-                        title={clusterNote || undefined}
-                        style={{ color: deleted ? 'red' : undefined }}
-                    >
-                        <GroupWorkIcon
-                            fontSize="small"
-                            style={{ marginRight: '4px' }}
-                        />
-                        <span style={{ wordBreak: 'break-all' }}>
-                            {clusterName !== undefined
-                                ? clusterName
-                                : `...${cluster.substr(-48)}`}
-                        </span>
+    return (
+        <SideBarContents
+            goTo={goTo}
+            label={
+                <span
+                    title={data?.note || undefined}
+                    style={{ color: data?.node?.deleted ? 'red' : undefined }}
+                >
+                    <GroupWorkIcon
+                        fontSize="small"
+                        style={{ marginRight: '4px' }}
+                    />
+                    <span style={{ wordBreak: 'break-all' }}>
+                        {data?.name ? data?.name : `...${cluster.substr(-48)}`}
                     </span>
-                }
-                {...props}
-            />
-        )
-    } else {
-        return (
-            <TreeItem
-                nodeId={`active:${activeUrl}:${cluster}`}
-                label={
-                    <span
-                        title={clusterNote || undefined}
-                        style={{ color: deleted ? 'red' : undefined }}
-                    >
-                        <GroupWorkIcon
-                            fontSize="small"
-                            style={{ marginRight: '4px' }}
-                        />
-                        {clusterName !== undefined
-                            ? clusterName
-                            : `...${cluster.substr(-48)}`}
-                    </span>
-                }
-                {...props}
-            />
-        )
-    }
+                </span>
+            }
+            onDoubleClick={(ev) => {
+                ev.preventDefault()
+                ev.stopPropagation()
+                data?.node && goTo(data.node)
+            }}
+            {...props}
+        />
+    )
 }
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
@@ -201,7 +131,11 @@ export default function Clusters({
                         }
                         nodeId={nodeId}
                         key={nodeId}
-                        onDoubleClick={() => goTo(node)}
+                        onDoubleClick={(ev) => {
+                            ev.preventDefault()
+                            ev.stopPropagation()
+                            goTo(node)
+                        }}
                     />
                 )
             }
@@ -217,6 +151,7 @@ export default function Clusters({
         <TreeItem {...props}>
             {activeCluster && (
                 <ActiveCluster
+                    nodeId={`${activeUrl}-clusters::${activeCluster}`}
                     authinfo={authinfo}
                     goTo={goTo}
                     cluster={activeCluster}

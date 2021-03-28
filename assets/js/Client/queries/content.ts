@@ -214,7 +214,11 @@ export const keysRetrievalQuery = gql`
                         id
                         publicInfo
                     }
-                    references(groups: ["signature"], includeTags: $keyhashes) {
+                    references(
+                        groups: ["signature"]
+                        includeTags: $keyhashes
+                        deleted: false
+                    ) {
                         edges {
                             node {
                                 extra
@@ -288,6 +292,7 @@ export const contentRetrievalQuery = gql`
                     references(
                         groups: ["key", "signature"]
                         includeTags: $keyhashes
+                        deleted: null
                     ) {
                         edges {
                             node {
@@ -317,6 +322,7 @@ export const findConfigQuery = gql`
             }
             contents(
                 public: false
+                deleted: false
                 clusters: [$cluster]
                 includeTags: ["type=Config"]
                 contentHashes: $contentHashes
@@ -390,7 +396,7 @@ export const getContentConfigurationQuery = gql`
                         allowedTags
                     }
 
-                    contents(includeTags: ["type=PublicKey"]) {
+                    contents(includeTags: ["type=PublicKey"], deleted: false) {
                         edges {
                             node {
                                 link
@@ -414,7 +420,10 @@ export const getContentConfigurationQuery = gql`
                     cluster {
                         id
                         group
-                        contents(includeTags: ["type=PublicKey"]) {
+                        contents(
+                            includeTags: ["type=PublicKey"]
+                            deleted: false
+                        ) {
                             edges {
                                 node {
                                     link
