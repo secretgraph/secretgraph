@@ -18,6 +18,7 @@ async function title_helper({
     canceled,
     setName,
     setNote,
+    setDeleted,
 }: {
     client: ApolloClient<any>
     authorization: string[]
@@ -25,8 +26,9 @@ async function title_helper({
     canceled: () => boolean
     setName: (arg: string) => void
     setNote: (arg: string) => void
+    setDeleted: (arg: Date | null) => void
 }) {
-    const { name, note } = await loadAndExtractClusterInfo({
+    const { name, note, node } = await loadAndExtractClusterInfo({
         client,
         authorization,
         id,
@@ -36,6 +38,7 @@ async function title_helper({
     }
     name && setName(name)
     note && setNote(note)
+    setDeleted(node.deleted)
 }
 
 function ActiveCluster({
@@ -55,6 +58,9 @@ function ActiveCluster({
         undefined
     )
     const [clusterNote, setClusterNote] = React.useState('')
+    const [deleted, setDeleted] = React.useState<undefined | Date | null>(
+        undefined
+    )
 
     React.useLayoutEffect(() => {
         setClusterName(undefined)
@@ -69,6 +75,7 @@ function ActiveCluster({
             id: cluster,
             setName: setClusterName,
             setNote: setClusterNote,
+            setDeleted,
             canceled: () => finished == true,
         })
         return cancel
@@ -79,11 +86,19 @@ function ActiveCluster({
                 nodeId={`active:${activeUrl}:${cluster}`}
                 goTo={goTo}
                 label={
-                    <span title={clusterNote || undefined}>
-                        <GroupWorkIcon fontSize="small" />
-                        {clusterName !== undefined
-                            ? clusterName
-                            : `...${cluster.substr(-48)}`}
+                    <span
+                        title={clusterNote || undefined}
+                        style={{ color: deleted ? 'red' : undefined }}
+                    >
+                        <GroupWorkIcon
+                            fontSize="small"
+                            style={{ marginRight: '4px' }}
+                        />
+                        <span style={{ wordBreak: 'break-all' }}>
+                            {clusterName !== undefined
+                                ? clusterName
+                                : `...${cluster.substr(-48)}`}
+                        </span>
                     </span>
                 }
                 {...props}
@@ -94,8 +109,14 @@ function ActiveCluster({
             <TreeItem
                 nodeId={`active:${activeUrl}:${cluster}`}
                 label={
-                    <span title={clusterNote || undefined}>
-                        <GroupWorkIcon fontSize="small" />
+                    <span
+                        title={clusterNote || undefined}
+                        style={{ color: deleted ? 'red' : undefined }}
+                    >
+                        <GroupWorkIcon
+                            fontSize="small"
+                            style={{ marginRight: '4px' }}
+                        />
                         {clusterName !== undefined
                             ? clusterName
                             : `...${cluster.substr(-48)}`}
@@ -154,29 +175,33 @@ export default function Clusters({
         if (!data) {
             return [null]
         }
-        return data.clusters.clusters.edges.map((edge: any) => {
-            if (edge.node.id !== activeCluster) {
-                const { name, note } = extractPublicInfo(edge.node.publicInfo)
-                const nodeId = `${activeUrl}-cluster::${edge.node.id}`
+        return data.clusters.clusters.edges.map(({ node }: any) => {
+            if (node.id !== activeCluster) {
+                const { name, note } = extractPublicInfo(node.publicInfo)
+                const nodeId = `${activeUrl}-cluster::${node.id}`
                 return (
                     <SideBarContents
                         goTo={goTo}
                         label={
                             <span
                                 title={note || undefined}
-                                style={{ whiteSpace: 'nowrap' }}
+                                style={{
+                                    whiteSpace: 'nowrap',
+                                    color: node.deleted ? 'red' : undefined,
+                                }}
                             >
-                                <GroupWorkIcon fontSize="small" />
+                                <GroupWorkIcon
+                                    fontSize="small"
+                                    style={{ marginRight: '4px' }}
+                                />
                                 <span style={{ wordBreak: 'break-all' }}>
-                                    {name
-                                        ? name
-                                        : `...${edge.node.id.substr(-48)}`}
+                                    {name ? name : `...${node.id.substr(-48)}`}
                                 </span>
                             </span>
                         }
                         nodeId={nodeId}
                         key={nodeId}
-                        onDoubleClick={() => goTo(edge.node)}
+                        onDoubleClick={() => goTo(node)}
                     />
                 )
             }
@@ -195,6 +220,9 @@ export default function Clusters({
                     authinfo={authinfo}
                     goTo={goTo}
                     cluster={activeCluster}
+                    classes={{
+                        content: classes.treeItemMarked,
+                    }}
                 />
             )}
             {clustersFinished}

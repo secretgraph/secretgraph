@@ -200,7 +200,7 @@ const SideBarItems = () => {
             {authinfo && (
                 <CapturingSuspense>
                     <SideBarClusters
-                        classes={{ label: classes.sidebarHeading }}
+                        classes={{ label: classes.treeItemHeading }}
                         key="SideBarClusters"
                         nodeId="clusters"
                         label="Clusters"
@@ -213,32 +213,43 @@ const SideBarItems = () => {
             <TreeItem
                 nodeId="contents"
                 label="Contents"
-                classes={{ label: classes.sidebarHeading }}
+                classes={{ label: classes.treeItemHeading }}
             >
                 <CapturingSuspense>
                     <SideBarContents
-                        key="SideBarContentsPublic"
                         nodeId="contents-public"
                         activeContent={mainCtx.item}
                         usePublic
                         label="Public"
-                        classes={{ label: classes.sidebarHeading }}
+                        classes={{ label: classes.treeItemHeading }}
                         goTo={goTo}
                     />
                 </CapturingSuspense>
                 {authinfo && (
-                    <CapturingSuspense>
-                        <SideBarContents
-                            key="SideBarContentsInternal"
-                            nodeId="contents-internal"
-                            authinfo={authinfo}
-                            activeContent={mainCtx.item}
-                            state="internal"
-                            label="Internal"
-                            classes={{ label: classes.sidebarHeading }}
-                            goTo={goTo}
-                        />
-                    </CapturingSuspense>
+                    <>
+                        <CapturingSuspense>
+                            <SideBarContents
+                                nodeId="contents-drafts"
+                                authinfo={authinfo}
+                                activeContent={mainCtx.item}
+                                injectInclude={['state=draft']}
+                                label="Drafts"
+                                classes={{ label: classes.treeItemHeading }}
+                                goTo={goTo}
+                            />
+                        </CapturingSuspense>
+                        <CapturingSuspense>
+                            <SideBarContents
+                                nodeId="contents-internal"
+                                authinfo={authinfo}
+                                activeContent={mainCtx.item}
+                                injectInclude={['state=internal']}
+                                label="Internal"
+                                classes={{ label: classes.treeItemHeading }}
+                                goTo={goTo}
+                            />
+                        </CapturingSuspense>
+                    </>
                 )}
             </TreeItem>
         </>
@@ -285,11 +296,7 @@ export default function SideBar() {
                         }}
                         onNodeSelect={(ev, items) => {
                             setSelected(
-                                items.filter(
-                                    (val) =>
-                                        val.includes('::') &&
-                                        expanded.includes(val)
-                                )
+                                items.filter((val) => val.includes('::'))
                             )
                         }}
                         defaultCollapseIcon={<ExpandMoreIcon />}

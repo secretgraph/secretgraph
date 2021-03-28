@@ -885,5 +885,8 @@ export async function loadAndExtractClusterInfo({
             authorization,
         },
     })
-    return extractPublicInfo(data.secretgraph.node.publicInfo, false)
+    return {
+        ...extractPublicInfo(data.secretgraph.node.publicInfo, false),
+        node: data.secretgraph.node,
+    }
 }

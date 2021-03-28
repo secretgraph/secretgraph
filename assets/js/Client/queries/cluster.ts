@@ -25,6 +25,7 @@ export const clusterFeedQuery = gql`
                 ) {
                 edges {
                     node {
+                        deleted
                         updateId
                         link
                         id

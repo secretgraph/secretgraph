@@ -9,7 +9,6 @@ import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
-import { ActiveUrl, Search } from '../../contexts'
 import { elements } from '../../editors'
 import * as Interfaces from '../../interfaces'
 import { useStylesAndTheme } from '../../theme'
@@ -52,6 +51,7 @@ const contentFeedQuery = gql`
                         nonce
                         link
                         updateId
+                        deleted
                         tags(includeTags: $includeTags)
                         references(
                             groups: ["key", "signature"]
@@ -79,32 +79,33 @@ const contentFeedQuery = gql`
 
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
-    state?: string
     goTo: (node: any) => void
     activeContent?: string | null
     activeCluster?: string | null
     usePublic?: boolean
+    injectInclude?: string[]
+    injectExclude?: string[]
 }
 
 // ["type=", "state=", ...
 export default function Contents({
     authinfo,
-    state,
     goTo,
     activeContent,
     activeCluster,
     usePublic,
+    injectInclude = [],
+    injectExclude = [],
     ...props
 }: SideBarItemsProps & TreeItemProps) {
     const { classes, theme } = useStylesAndTheme()
-    const { searchCtx } = React.useContext(Search)
-    const { activeUrl } = React.useContext(ActiveUrl)
+    const { mainCtx } = React.useContext(Contexts.Main)
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     const _usePublic = usePublic === undefined ? null : usePublic
-    const incl = searchCtx.include.concat([])
-    if (state) {
-        incl.push(`state=${state}`)
-    }
+    const incl = searchCtx.include.concat(injectInclude)
+    const excl = searchCtx.exclude.concat(injectExclude)
     if (authinfo) {
         incl.push(...authinfo.hashes.map((value) => `hash=${value}`))
     }
@@ -115,7 +116,7 @@ export default function Contents({
                 authorization: authinfo ? authinfo.keys : null,
                 includeTags: ['state=', 'type=', 'name='],
                 include: incl,
-                exclude: searchCtx.exclude,
+                exclude: excl,
                 clusters: activeCluster ? [activeCluster] : undefined,
                 public: _usePublic,
                 deleted: searchCtx.deleted,
@@ -179,14 +180,29 @@ export default function Contents({
             const nodeId = `${activeUrl}-contents::${node.id}`
             return (
                 <TreeItem
+                    classes={{
+                        content:
+                            mainCtx.item == node.id
+                                ? classes.treeItemMarked
+                                : undefined,
+                    }}
                     label={
-                        <span>
-                            <Icon fontSize="small" />
-                            {`${
-                                elements.get(type)
-                                    ? elements.get(type)?.label
-                                    : type
-                            }: ${name ? name : '...' + node.id.substr(-48)}`}
+                        <span
+                            style={{ color: node.deleted ? 'red' : undefined }}
+                        >
+                            <Icon
+                                fontSize="small"
+                                style={{ marginRight: '4px' }}
+                            />
+                            <span style={{ wordBreak: 'break-all' }}>
+                                {`${
+                                    elements.get(type)
+                                        ? elements.get(type)?.label
+                                        : type
+                                }: ${
+                                    name ? name : '...' + node.id.substr(-48)
+                                }`}
+                            </span>
                         </span>
                     }
                     nodeId={nodeId}

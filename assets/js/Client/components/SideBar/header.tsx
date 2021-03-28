@@ -1,9 +1,12 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
 import { Grid } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
+import Checkbox from '@material-ui/core/Checkbox'
 import Chip from '@material-ui/core/Chip'
 import Divider from '@material-ui/core/Divider'
 import Drawer from '@material-ui/core/Drawer'
+import FormControlLabel from '@material-ui/core/FormControlLabel'
+import FormGroup from '@material-ui/core/FormGroup'
 import Hidden from '@material-ui/core/Hidden'
 import IconButton from '@material-ui/core/IconButton'
 import InputAdornment from '@material-ui/core/InputAdornment'
@@ -127,13 +130,21 @@ function HeaderPopover() {
                     />
                 </Grid>
                 <Grid item xs={12}>
-                    <Button
-                        onClick={(event) => {
-                            updateSearchCtx({ deleted: !searchCtx.deleted })
-                        }}
-                    >
-                        Deleted
-                    </Button>
+                    <FormGroup row>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={searchCtx.deleted}
+                                    onChange={(event) => {
+                                        updateSearchCtx({
+                                            deleted: event.target.checked,
+                                        })
+                                    }}
+                                />
+                            }
+                            label="Deleted"
+                        />
+                    </FormGroup>
                 </Grid>
             </Grid>
         </Paper>
@@ -141,6 +152,7 @@ function HeaderPopover() {
 }
 
 function MainSearchField() {
+    const { searchCtx } = React.useContext(contexts.Search)
     const { classes, theme } = useStylesAndTheme()
     const { activeUrl, updateActiveUrl } = React.useContext(contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(contexts.Config)
@@ -243,7 +255,14 @@ function MainSearchField() {
                                         onMouseDown={(event) => {
                                             event.preventDefault()
                                         }}
-                                        edge="end"
+                                        style={{
+                                            color:
+                                                searchCtx.deleted ||
+                                                searchCtx.exclude.length ||
+                                                searchCtx.include.length
+                                                    ? 'red'
+                                                    : undefined,
+                                        }}
                                     >
                                         <FilterListIcon />
                                     </IconButton>
