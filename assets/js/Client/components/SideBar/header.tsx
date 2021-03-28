@@ -33,18 +33,15 @@ import * as React from 'react'
 
 import { mapHashNames } from '../../constants'
 import * as Contexts from '../../contexts'
-import * as contexts from '../../contexts'
 import { getClusterQuery } from '../../queries/cluster'
 import { serverConfigQuery } from '../../queries/server'
 import { useStylesAndTheme } from '../../theme'
-import { extractPublicInfo } from '../../utils/cluster'
 import { extractAuthInfo } from '../../utils/config'
-import { loadAndExtractClusterInfo } from '../../utils/operations'
-import { CapturingSuspense } from '../misc'
+import { deleteNodes, resetDeletionNodes } from '../../utils/operations'
 
 function CloseButton() {
     const { theme } = useStylesAndTheme()
-    const { updateOpen } = React.useContext(contexts.OpenSidebar)
+    const { updateOpen } = React.useContext(Contexts.OpenSidebar)
     const matches = useMediaQuery(theme.breakpoints.up('lg'))
     return (
         <IconButton
@@ -101,7 +98,7 @@ function TagsSelect({
     )
 }
 function HeaderPopover() {
-    const { searchCtx, updateSearchCtx } = React.useContext(contexts.Search)
+    const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
     const { theme } = useStylesAndTheme()
     return (
         <Paper style={{ padding: theme.spacing(2) }}>
@@ -152,10 +149,10 @@ function HeaderPopover() {
 }
 
 function MainSearchField() {
-    const { searchCtx } = React.useContext(contexts.Search)
+    const { searchCtx } = React.useContext(Contexts.Search)
     const { classes, theme } = useStylesAndTheme()
-    const { activeUrl, updateActiveUrl } = React.useContext(contexts.ActiveUrl)
-    const { config, updateConfig } = React.useContext(contexts.Config)
+    const { activeUrl, updateActiveUrl } = React.useContext(Contexts.ActiveUrl)
+    const { config, updateConfig } = React.useContext(Contexts.Config)
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null)
     const client = useApolloClient()
     return (
@@ -290,6 +287,20 @@ function MainSearchField() {
 export default function SideBarHeader() {
     const { classes, theme } = useStylesAndTheme()
     const { selected } = React.useContext(Contexts.SidebarItemsSelected)
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const { config } = React.useContext(Contexts.Config)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const client = useApolloClient()
+    const authorization = React.useMemo(() => {
+        if (!config) {
+            return []
+        }
+        return extractAuthInfo({
+            config,
+            url: activeUrl,
+            require: new Set(['delete', 'manage']),
+        }).keys
+    }, [config, activeUrl])
     return (
         <>
             <div className={classes.sideBarHeader}>
@@ -298,7 +309,34 @@ export default function SideBarHeader() {
                 {theme.direction === 'ltr' ? <CloseButton /> : null}
             </div>
             <div className={selected.length ? undefined : classes.hidden}>
-                <Button>{true ? 'Delete' : 'Restore'}</Button>
+                <Button
+                    onClick={async () => {
+                        const ids = selected
+                            .map((val) => {
+                                const m = val.match(/.*::(.+?)$/)
+                                if (!m) {
+                                    return null
+                                }
+                                return m[1]
+                            })
+                            .filter((val) => val) as string[]
+                        if (searchCtx.deleted) {
+                            await resetDeletionNodes({
+                                client,
+                                authorization,
+                                ids,
+                            })
+                        } else {
+                            await deleteNodes({
+                                client,
+                                authorization,
+                                ids,
+                            })
+                        }
+                    }}
+                >
+                    {searchCtx.deleted ? 'Restore selected' : 'Delete selected'}
+                </Button>
             </div>
         </>
     )

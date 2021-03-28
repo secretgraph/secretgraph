@@ -56,7 +56,7 @@ const contentFeedQuery = gql`
                         references(
                             groups: ["key", "signature"]
                             includeTags: $include
-                        ) {
+                        ) @connection(key: "refs", filters: ["include"]) {
                             edges {
                                 node {
                                     extra

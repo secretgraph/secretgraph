@@ -175,7 +175,8 @@ export const findPublicKeyQuery = gql`
                 ... on Content {
                     id
                     tags(includeTags: ["type="])
-                    references(groups: ["public_key"]) {
+                    references(groups: ["public_key"])
+                        @connection(key: "pubkey", filters: ["id"]) {
                         edges {
                             node {
                                 target {
@@ -293,7 +294,7 @@ export const contentRetrievalQuery = gql`
                         groups: ["key", "signature"]
                         includeTags: $keyhashes
                         deleted: null
-                    ) {
+                    ) @connection(key: "refs", filters: ["id", "keyhashes"]) {
                         edges {
                             node {
                                 extra
@@ -326,7 +327,11 @@ export const findConfigQuery = gql`
                 clusters: [$cluster]
                 includeTags: ["type=Config"]
                 contentHashes: $contentHashes
-            ) {
+            )
+                @connection(
+                    key: "refs"
+                    filters: ["cluster", "contentHashes", "authorization"]
+                ) {
                 edges {
                     node {
                         id
@@ -396,7 +401,11 @@ export const getContentConfigurationQuery = gql`
                         allowedTags
                     }
 
-                    contents(includeTags: ["type=PublicKey"], deleted: false) {
+                    contents(includeTags: ["type=PublicKey"], deleted: false)
+                        @connection(
+                            key: "keys"
+                            filters: ["id", "authorization"]
+                        ) {
                         edges {
                             node {
                                 link
@@ -423,7 +432,11 @@ export const getContentConfigurationQuery = gql`
                         contents(
                             includeTags: ["type=PublicKey"]
                             deleted: false
-                        ) {
+                        )
+                            @connection(
+                                key: "keys"
+                                filters: ["id", "authorization"]
+                            ) {
                             edges {
                                 node {
                                     link
