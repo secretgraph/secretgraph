@@ -41,12 +41,12 @@ import { deleteNodes, resetDeletionNodes } from '../../utils/operations'
 
 function CloseButton() {
     const { theme } = useStylesAndTheme()
-    const { updateOpen } = React.useContext(Contexts.OpenSidebar)
+    const { setOpen } = React.useContext(Contexts.OpenSidebar)
     const matches = useMediaQuery(theme.breakpoints.up('lg'))
     return (
         <IconButton
             style={{ display: matches ? 'none' : undefined }}
-            onClick={() => updateOpen(false)}
+            onClick={() => setOpen(false)}
         >
             {theme.direction === 'ltr' ? (
                 <ChevronLeftIcon />
@@ -151,7 +151,7 @@ function HeaderPopover() {
 function MainSearchField() {
     const { searchCtx } = React.useContext(Contexts.Search)
     const { classes, theme } = useStylesAndTheme()
-    const { activeUrl, updateActiveUrl } = React.useContext(Contexts.ActiveUrl)
+    const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null)
     const client = useApolloClient()
@@ -214,11 +214,11 @@ function MainSearchField() {
                                 }
                                 updateConfig(newConfig)
                             }
-                            updateActiveUrl(value)
+                            setActiveUrl(value)
                             break
                         case 'select-option':
                             // TODO: update hash list
-                            updateActiveUrl(value)
+                            setActiveUrl(value)
                             break
                         case 'remove-option':
                             if (

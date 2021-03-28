@@ -899,6 +899,16 @@ async function findOrReturn({
         },
     })
     const node = data.secretgraph.node
+    if (!node) {
+        const { data } = await client.query({
+            query: findPublicKeyQuery,
+            variables: {
+                authorization: [],
+                id,
+            },
+        })
+        console.log(data)
+    }
     if (node.tags.includes('type=PublicKey')) {
         return true
     }

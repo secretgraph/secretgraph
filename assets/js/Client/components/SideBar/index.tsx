@@ -58,6 +58,7 @@ const SideBarItems = () => {
             // split works different in js, so 2
             type = type.match(/=(.*)/)[1]
         }
+        console.log(type, node.id)
         if (type == 'PrivateKey') {
             type = 'PublicKey'
         }
@@ -71,6 +72,7 @@ const SideBarItems = () => {
             shareUrl: `${activeUrlAsURL.origin}${node.link}`,
             title: '',
         })
+        console.log(node?.cluster)
         if (type == 'Cluster') {
             updateSearchCtx({
                 cluster: node.id,
@@ -81,57 +83,52 @@ const SideBarItems = () => {
     return (
         <>
             {authinfo && (
-                <CapturingSuspense>
-                    <SideBarClusters
-                        classes={{ label: classes.treeItemHeading }}
-                        key="SideBarClusters"
-                        nodeId="clusters"
-                        label="Clusters"
-                        authinfo={authinfo}
-                        activeCluster={searchCtx.cluster}
-                        goTo={goTo}
-                    />
-                </CapturingSuspense>
+                <SideBarClusters
+                    classes={{ label: classes.treeItemHeading }}
+                    key="SideBarClusters"
+                    nodeId="clusters"
+                    label="Clusters"
+                    authinfo={authinfo}
+                    activeCluster={searchCtx.cluster}
+                    goTo={goTo}
+                />
             )}
             <TreeItem
                 nodeId="contents"
                 label="Contents"
                 classes={{ label: classes.treeItemHeading }}
             >
-                <CapturingSuspense>
-                    <SideBarContents
-                        nodeId="contents-public"
-                        activeContent={mainCtx.item}
-                        usePublic
-                        label="Public"
-                        classes={{ label: classes.treeItemHeading }}
-                        goTo={goTo}
-                    />
-                </CapturingSuspense>
+                <SideBarContents
+                    key="SideBarContentsPublic"
+                    nodeId="contents-public"
+                    activeContent={mainCtx.item}
+                    usePublic
+                    label="Public"
+                    classes={{ label: classes.treeItemHeading }}
+                    goTo={goTo}
+                />
                 {authinfo && (
                     <>
-                        <CapturingSuspense>
-                            <SideBarContents
-                                nodeId="contents-drafts"
-                                authinfo={authinfo}
-                                activeContent={mainCtx.item}
-                                injectInclude={['state=draft']}
-                                label="Drafts"
-                                classes={{ label: classes.treeItemHeading }}
-                                goTo={goTo}
-                            />
-                        </CapturingSuspense>
-                        <CapturingSuspense>
-                            <SideBarContents
-                                nodeId="contents-internal"
-                                authinfo={authinfo}
-                                activeContent={mainCtx.item}
-                                injectInclude={['state=internal']}
-                                label="Internal"
-                                classes={{ label: classes.treeItemHeading }}
-                                goTo={goTo}
-                            />
-                        </CapturingSuspense>
+                        <SideBarContents
+                            key="SideBarContentsDraft"
+                            nodeId="contents-drafts"
+                            authinfo={authinfo}
+                            activeContent={mainCtx.item}
+                            injectInclude={['state=draft']}
+                            label="Drafts"
+                            classes={{ label: classes.treeItemHeading }}
+                            goTo={goTo}
+                        />
+                        <SideBarContents
+                            key="SideBarContentsInternal"
+                            nodeId="contents-internal"
+                            authinfo={authinfo}
+                            activeContent={mainCtx.item}
+                            injectInclude={['state=internal']}
+                            label="Internal"
+                            classes={{ label: classes.treeItemHeading }}
+                            goTo={goTo}
+                        />
                     </>
                 )}
             </TreeItem>

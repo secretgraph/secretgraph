@@ -200,7 +200,7 @@ export default function Contents({
                                         ? elements.get(type)?.label
                                         : type
                                 }: ${
-                                    name ? name : '...' + node.id.substr(-48)
+                                    name ? name : `...${node.id.substr(-48)}`
                                 }`}
                             </span>
                         </span>

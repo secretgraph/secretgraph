@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 from uuid import UUID
+from functools import reduce
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.apps import apps
@@ -102,7 +103,6 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             models.Q(contentAction__isnull=True)
             | models.Q(contentAction__content__in=query)
         )
-    clusters = set()
     all_filters = models.Q()
     returnval = {
         "authset": authset,
@@ -215,36 +215,65 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 Action.objects.filter(keyHash=action.keyHash).update(
                     keyHash=keyhashes[0]
                 )
-        returnval["clusters"][clusterflexid] = {
-            "filters": filters,
-            "accesslevel": accesslevel,
-            "action_key": action_key,
-            "actions": actions,
-        }
+
         returnval["actions"] |= actions
         for h in keyhashes:
             returnval["action_key_map"][h] = action_key
-        clusters.add(clusterflexid)
+        # apply filters to a private query
         if issubclass(query.model, Cluster):
-            all_filters |= filters & models.Q(id=actions[0].cluster_id)
+            _query = query.filter(filters & models.Q(id=actions[0].cluster_id))
         else:
-            all_filters |= filters & models.Q(cluster_id=actions[0].cluster_id)
+            _query = query.filter(filters & models.Q(
+                cluster_id=actions[0].cluster_id))
+        if clusterflexid in returnval["clusters"]:
+            oldval = returnval["clusters"]
+            if oldval["accesslevel"] > accesslevel:
+                continue
+            elif oldval["accesslevel"] == accesslevel:
+                oldval["filters"] |= filters
+                oldval["actions"] |= actions
+                oldval["_query"] |= _query
+                continue
+        returnval["clusters"][clusterflexid] = {
+            "filters": filters,
+            "accesslevel": accesslevel,
+            "actions": actions,
+            "_query": _query
+        }
+
+    all_query = reduce(
+        lambda x, y: x | y,
+        map(
+            lambda x: x.pop("_query"),
+            returnval["clusters"].values()
+        ), query.none()
+    )
 
     if issubclass(query.model, Cluster):
-        all_filters &= models.Q(
-            id__in=list(returnval["required_keys_clusters"].keys())
-        ) | models.Q(public=True)
+        all_filters = (
+            models.Q(
+                id__in={*returnval["required_keys_clusters"].keys(),
+                        *all_query.values_list("id", flat=True)}
+            ) | models.Q(public=True)
+        )
     elif issubclass(query.model, Content):
-        all_filters &= (
-            models.Q(tags__tag="state=public")
-            | models.Q(id__in=list(returnval["required_keys_contents"].keys()))
-            | models.Q(
-                cluster_id__in=list(returnval["required_keys_clusters"].keys())
-            )
+        all_filters = (
+            models.Q(tags__tag="state=public") |
+            (
+                models.Q(id__in=models.Subquery(all_query.values("id"))) &
+                (
+                    models.Q(id__in=list(
+                        returnval["required_keys_contents"].keys()))
+                    | models.Q(
+                        cluster_id__in=list(
+                            returnval["required_keys_clusters"].keys())
+                    )
+                ))
         )
     else:
         assert issubclass(query.model, Action), "invalid type %r" % query.model
-        all_filters &= models.Q(
+        all_filters = models.Q(
+            id__in=models.Subquery(all_query.values("id")),
             cluster_id__in=list(returnval["required_keys_clusters"].keys())
         )
     # for sorting. First action is always the most important action
@@ -252,7 +281,6 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     returnval["actions"] = Action.objects.filter(
         id__in=models.Subquery(returnval["actions"].values("id"))
     ).order_by("-start", "-id")
-    # fixes problems with result["objects"]
     returnval["objects"] = query.filter(
         id__in=models.Subquery(query.filter(all_filters).values("id"))
     )

@@ -72,7 +72,7 @@ function SettingsImporter() {
         ? mainElement.dataset.graphqlPath
         : undefined
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { activeUrl, updateActiveUrl } = React.useContext(Contexts.ActiveUrl)
+    const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
 
     const handleSecretgraphEvent_inner = async (event: any) => {
@@ -128,7 +128,7 @@ function SettingsImporter() {
         }
         updateConfig(newConfig, true)
         setRegisterUrl(undefined)
-        updateActiveUrl(newConfig.baseUrl)
+        setActiveUrl(newConfig.baseUrl)
         updateMainCtx({
             action: 'add',
         })
@@ -196,7 +196,7 @@ function SettingsImporter() {
             setRegisterUrl(undefined)
             saveConfig(newConfig)
             updateConfig(newConfig, true)
-            updateActiveUrl(newConfig.baseUrl)
+            setActiveUrl(newConfig.baseUrl)
             updateMainCtx({
                 action: 'add',
             })
@@ -266,7 +266,7 @@ function SettingsImporter() {
 
         // const env = createEnvironment(newConfig.baseUrl);
         updateConfig(newConfig, true)
-        updateActiveUrl(newConfig.baseUrl)
+        setActiveUrl(newConfig.baseUrl)
         updateMainCtx({
             action: 'add',
         })

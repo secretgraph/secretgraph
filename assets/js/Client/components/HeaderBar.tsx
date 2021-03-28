@@ -28,7 +28,7 @@ import { exportConfig, exportConfigAsUrl } from '../utils/config'
 const menuRef: React.RefObject<any> = React.createRef()
 
 export default function HeaderBar() {
-    const { open, updateOpen } = React.useContext(Contexts.OpenSidebar)
+    const { open, setOpen } = React.useContext(Contexts.OpenSidebar)
     const { classes, theme } = useStylesAndTheme()
     const [menuOpen, setMenuOpen] = React.useState(false)
     const [exportOpen, setExportOpen] = React.useState(false)
@@ -66,10 +66,8 @@ export default function HeaderBar() {
             documenttitle = title
             break
         default:
-            if (mainCtx.title) {
-                title = mainCtx.title as string
-            } else if (mainCtx.item) {
-                title = mainCtx.item as string
+            if (mainCtx.item) {
+                title = `...${mainCtx.item.substr(-48)}`
             } else {
                 title = '-'
             }
@@ -139,7 +137,7 @@ export default function HeaderBar() {
             <IconButton
                 edge="start"
                 className={classes.sidebarButton}
-                onClick={() => updateOpen(true)}
+                onClick={() => setOpen(true)}
                 color="inherit"
                 aria-label="menu"
             >

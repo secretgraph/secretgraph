@@ -259,13 +259,13 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     )
     link = graphene.String(required=True)
 
-    @ classmethod
+    @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
         ]
         return fetch_contents(
-            result["objects"], result["actions"], str(id)
+            result["objects"], result["actions"], id=str(id)
         ).first()
 
     def resolve_deleted(self, info, **kwargs):
@@ -452,7 +452,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     updateId = graphene.UUID(required=True)
     # MAYBE: reference user directly if possible
     user = relay.GlobalID(required=False)
-    publicInfo = graphene.String(required=True)
+    publicInfo = graphene.String(required=False)
     link = graphene.String(
         required=True,
         description=_("Link to turtle document with injected Contents"),

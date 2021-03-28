@@ -1,14 +1,15 @@
 import { ApolloProvider } from '@apollo/client'
 import CssBaseline from '@material-ui/core/CssBaseline'
+import { ThemeProvider } from '@material-ui/core/styles'
 import useMediaQuery from '@material-ui/core/useMediaQuery'
 import * as React from 'react'
-import { ThemeProvider } from '@material-ui/core/styles'
+
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import * as Interfaces from '../interfaces'
+import { theme as themeDefinition } from '../theme'
 import { loadConfigSync, updateConfigReducer } from '../utils/config'
 import { createClient } from '../utils/graphql'
-import { theme as themeDefinition } from '../theme'
 import Main from './Main'
 
 type Props = {
@@ -22,7 +23,12 @@ function updateState<T>(state: T, update: Partial<T>): T {
 function Definitions(props: Props) {
     const query = new URLSearchParams(document.location.search)
     const { defaultPath } = props
-    const [openSidebar, updateOpenSidebar] = React.useState(false)
+    const [openSidebar, _setOpenSidebar] = React.useState(() => {
+        return JSON.parse(sessionStorage.getItem('openSidebar') || 'false')
+    })
+    function setOpenSidebar(arg: boolean) {
+        sessionStorage.setItem('openSidebar', JSON.stringify(arg))
+    }
     const [config, updateConfig] = React.useReducer(
         updateConfigReducer,
         null,
@@ -52,7 +58,7 @@ function Definitions(props: Props) {
         Interfaces.SearchContextInterface,
         (update: Partial<Interfaces.SearchContextInterface>) => void
     ]
-    const [activeUrl, updateActiveUrl] = React.useState(
+    const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
     return (
@@ -60,12 +66,12 @@ function Definitions(props: Props) {
             <Contexts.OpenSidebar.Provider
                 value={{
                     open: openSidebar,
-                    updateOpen: updateOpenSidebar,
+                    setOpen: setOpenSidebar,
                 }}
             >
                 <ApolloProvider client={createClient(activeUrl)}>
                     <Contexts.ActiveUrl.Provider
-                        value={{ activeUrl, updateActiveUrl }}
+                        value={{ activeUrl, setActiveUrl }}
                     >
                         <Contexts.Main.Provider
                             value={{ mainCtx, updateMainCtx }}

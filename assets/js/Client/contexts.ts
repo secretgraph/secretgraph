@@ -30,12 +30,12 @@ export const InitializedConfig = Config as Context<{
 
 export const ActiveUrl = createContext({
     activeUrl: '' as string,
-    updateActiveUrl: (update: string) => {},
+    setActiveUrl: (update: string) => {},
 })
 
 export const OpenSidebar = createContext({
     open: false,
-    updateOpen: (arg: boolean) => {},
+    setOpen: (arg: boolean) => {},
 })
 
 export const SidebarItemsSelected = createContext({
