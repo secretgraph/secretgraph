@@ -326,7 +326,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
     def resolve_cluster(self, info, authorization=None):
         if self.limited:
-            return Cluster.objects.none()
+            return None
         # authorization often cannot be used, but it is ok, we have cache then
         res = (
             initializeCachedResult(info.context, authset=authorization)[

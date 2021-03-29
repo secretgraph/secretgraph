@@ -167,23 +167,25 @@ export default function SideBar() {
                 >
                     <SideBarHeader />
                     <Divider />
-                    <TreeView
-                        multiSelect
-                        selected={selected}
-                        expanded={expanded}
-                        onNodeToggle={(ev, items) => {
-                            setExpanded(items)
-                        }}
-                        onNodeSelect={(ev, items) => {
-                            setSelected(
-                                items.filter((val) => val.includes('::'))
-                            )
-                        }}
-                        defaultCollapseIcon={<ExpandMoreIcon />}
-                        defaultExpandIcon={<ChevronRightIcon />}
-                    >
-                        <SideBarItems />
-                    </TreeView>
+                    <CapturingSuspense>
+                        <TreeView
+                            multiSelect
+                            selected={selected}
+                            expanded={expanded}
+                            onNodeToggle={(ev, items) => {
+                                setExpanded(items)
+                            }}
+                            onNodeSelect={(ev, items) => {
+                                setSelected(
+                                    items.filter((val) => val.includes('::'))
+                                )
+                            }}
+                            defaultCollapseIcon={<ExpandMoreIcon />}
+                            defaultExpandIcon={<ChevronRightIcon />}
+                        >
+                            <SideBarItems />
+                        </TreeView>
+                    </CapturingSuspense>
                 </Drawer>
             </Contexts.SidebarItemsExpanded.Provider>
         </Contexts.SidebarItemsSelected.Provider>

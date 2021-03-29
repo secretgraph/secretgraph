@@ -72,7 +72,7 @@ def initializeCachedResult(
     return getattr(request, name)
 
 
-_allowed_types = {"Cluster"}
+_allowed_types = {"Cluster", "Content"}
 
 
 def retrieve_allowed_objects(request, scope, query, authset=None):
@@ -102,7 +102,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         pre_filtered_actions = pre_filtered_actions.filter(
             models.Q(contentAction__isnull=True)
             | models.Q(contentAction__content__in=query)
-        )
+        ).select_related("cluster")
     all_filters = models.Q()
     returnval = {
         "authset": authset,
@@ -123,15 +123,17 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         if len(spitem) != 2:
             continue
 
-        clusterflexid, action_key = spitem
+        flexid, action_key = spitem
         _type = "Cluster"
         try:
-            _type, clusterflexid = from_global_id(clusterflexid)
+            _type, flexid = from_global_id(flexid)
         finally:
             if _type not in _allowed_types:
                 continue
+            _type = {_type}
         try:
-            clusterflexid = UUID(clusterflexid)
+            flexid = UUID(flexid)
+            _type = {"Cluster", "Content"}
         except ValueError:
             continue
         try:
@@ -142,8 +144,13 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         aesgcm = AESGCM(action_key)
         keyhashes = calculate_hashes(action_key)
 
+        q = models.Q()
+        if "Content" in _type:
+            q |= models.Q(contentAction__content__flexid=flexid)
+        if "Cluster" in _type:
+            q |= models.Q(cluster__flexid=flexid)
         actions = pre_filtered_actions.filter(
-            cluster__flexid=clusterflexid, keyHash__in=keyhashes
+            q, keyHash__in=keyhashes
         )
         if not actions:
             continue
@@ -225,7 +232,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         else:
             _query = query.filter(filters & models.Q(
                 cluster_id=actions[0].cluster_id))
-        if clusterflexid in returnval["clusters"]:
+        if actions[0].cluster.flexid in returnval["clusters"]:
             oldval = returnval["clusters"]
             if oldval["accesslevel"] > accesslevel:
                 continue
@@ -234,7 +241,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 oldval["actions"] |= actions
                 oldval["_query"] |= _query
                 continue
-        returnval["clusters"][clusterflexid] = {
+        returnval["clusters"][actions[0].cluster.flexid] = {
             "filters": filters,
             "accesslevel": accesslevel,
             "actions": actions,

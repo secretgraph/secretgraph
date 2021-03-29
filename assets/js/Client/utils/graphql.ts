@@ -19,8 +19,8 @@ export const createClient = (url: string) => {
                     queryType: true,
                     fields: {
                         // could be dangerous to activate, wait until tests are possible
-                        //clusters: relayStylePagination(),
-                        //contents: relayStylePagination()
+                        clusters: relayStylePagination(),
+                        contents: relayStylePagination(),
                     },
                 },
             },
