@@ -36,13 +36,14 @@ const contentFeedQuery = gql`
                 after: $cursor
             )
                 @connection(
-                    key: "SideBar_contents"
-                    filters: [
+                    key: "feedContents"
+                    filter: [
+                        "authorization"
+                        "clusters"
                         "include"
                         "exclude"
-                        "clusters"
-                        "public"
                         "deleted"
+                        "public"
                     ]
                 ) {
                 edges {
@@ -56,7 +57,11 @@ const contentFeedQuery = gql`
                         references(
                             groups: ["key", "signature"]
                             includeTags: $include
-                        ) @connection(key: "refs", filters: ["include"]) {
+                        )
+                            @connection(
+                                key: "feedContents_refs"
+                                filter: ["include", "authorization"]
+                            ) {
                             edges {
                                 node {
                                     extra
@@ -81,18 +86,18 @@ type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
     goTo: (node: any) => void
     activeContent?: string | null
-    activeCluster?: string | null
+    cluster?: string | null
     usePublic?: boolean
     injectInclude?: string[]
     injectExclude?: string[]
 }
 
 // ["type=", "state=", ...
-export default function Contents({
+export default React.memo(function Contents({
     authinfo,
     goTo,
     activeContent,
-    activeCluster,
+    cluster,
     usePublic,
     injectInclude = [],
     injectExclude = [],
@@ -117,7 +122,7 @@ export default function Contents({
                 includeTags: ['state=', 'type=', 'name='],
                 include: incl,
                 exclude: excl,
-                clusters: activeCluster ? [activeCluster] : undefined,
+                clusters: cluster ? [cluster] : undefined,
                 public: _usePublic,
                 deleted: searchCtx.deleted,
                 count: 30,
@@ -132,7 +137,7 @@ export default function Contents({
         fetchMore &&
             fetchMore({
                 variables: {
-                    cursor: data.contents.contents.pageInfo.endCursor,
+                    cursor: data.contents.pageInfo.endCursor,
                 },
             }).then((result: any) => {})
     }
@@ -239,4 +244,4 @@ export default function Contents({
                 )}
         </TreeItem>
     )
-}
+})

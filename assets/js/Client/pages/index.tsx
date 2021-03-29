@@ -28,6 +28,7 @@ function Definitions(props: Props) {
     })
     function setOpenSidebar(arg: boolean) {
         sessionStorage.setItem('openSidebar', JSON.stringify(arg))
+        _setOpenSidebar(arg)
     }
     const [config, updateConfig] = React.useReducer(
         updateConfigReducer,

@@ -20,8 +20,14 @@ export const clusterFeedQuery = gql`
                 after: $cursor
             )
                 @connection(
-                    key: "feed_clusters"
-                    filters: ["include", "exclude", "public", "deleted"]
+                    key: "feedClusters"
+                    filter: [
+                        "authorization"
+                        "include"
+                        "exclude"
+                        "public"
+                        "deleted"
+                    ]
                 ) {
                 edges {
                     node {

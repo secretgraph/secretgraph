@@ -176,7 +176,7 @@ export const findPublicKeyQuery = gql`
                     id
                     tags(includeTags: ["type="])
                     references(groups: ["public_key"])
-                        @connection(key: "pubkey", filters: ["id"]) {
+                        @connection(key: "pubkey", filter: ["id"]) {
                         edges {
                             node {
                                 target {
@@ -294,7 +294,7 @@ export const contentRetrievalQuery = gql`
                         groups: ["key", "signature"]
                         includeTags: $keyhashes
                         deleted: null
-                    ) @connection(key: "refs", filters: ["id", "keyhashes"]) {
+                    ) @connection(key: "refs", filter: ["id", "keyhashes"]) {
                         edges {
                             node {
                                 extra
@@ -329,8 +329,8 @@ export const findConfigQuery = gql`
                 contentHashes: $contentHashes
             )
                 @connection(
-                    key: "refs"
-                    filters: ["cluster", "contentHashes", "authorization"]
+                    key: "feedConfig"
+                    filter: ["cluster", "contentHashes", "authorization"]
                 ) {
                 edges {
                     node {
@@ -339,7 +339,8 @@ export const findConfigQuery = gql`
                         link
                         tags
                         updateId
-                        references(groups: ["key"]) {
+                        references(groups: ["key"])
+                            @connection(key: "feedConfig_key") {
                             edges {
                                 node {
                                     extra
@@ -347,7 +348,10 @@ export const findConfigQuery = gql`
                                         tags(includeTags: ["key_hash="])
                                         contentHash
                                         link
-                                        referencedBy(groups: ["public_key"]) {
+                                        referencedBy(groups: ["public_key"])
+                                            @connection(
+                                                key: "feedConfig_key_public"
+                                            ) {
                                             edges {
                                                 node {
                                                     extra
@@ -403,8 +407,8 @@ export const getContentConfigurationQuery = gql`
 
                     contents(includeTags: ["type=PublicKey"], deleted: false)
                         @connection(
-                            key: "keys"
-                            filters: ["id", "authorization"]
+                            key: "KeySearch_key_cluster"
+                            filter: ["id", "authorization"]
                         ) {
                         edges {
                             node {
@@ -434,8 +438,8 @@ export const getContentConfigurationQuery = gql`
                             deleted: false
                         )
                             @connection(
-                                key: "keys"
-                                filters: ["id", "authorization"]
+                                key: "KeySearch_keys_content"
+                                filter: ["id", "authorization"]
                             ) {
                             edges {
                                 node {

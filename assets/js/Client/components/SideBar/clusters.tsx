@@ -12,7 +12,7 @@ import { extractPublicInfo } from '../../utils/cluster'
 import { loadAndExtractClusterInfo } from '../../utils/operations'
 import SideBarContents from './contents'
 
-function ActiveCluster({
+const ActiveCluster = React.memo(function ActiveCluster({
     authinfo,
     cluster,
     goTo,
@@ -30,7 +30,6 @@ function ActiveCluster({
         client,
         watch: cluster,
     })
-
     return (
         <SideBarContents
             goTo={goTo}
@@ -53,17 +52,18 @@ function ActiveCluster({
                 ev.stopPropagation()
                 data?.node && goTo(data.node)
             }}
+            cluster={cluster}
             {...props}
         />
     )
-}
+})
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
     goTo: (node: any) => void
     activeCluster?: string | null
 }
 
-export default function Clusters({
+export default React.memo(function Clusters({
     authinfo,
     goTo,
     activeCluster,
@@ -73,9 +73,6 @@ export default function Clusters({
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
-    if (!activeCluster) {
-        activeCluster = searchCtx.cluster
-    }
     let [loadQuery, { data, fetchMore, error, loading }] = useLazyQuery(
         clusterFeedQuery,
         {
@@ -112,6 +109,7 @@ export default function Clusters({
                 return (
                     <SideBarContents
                         goTo={goTo}
+                        cluster={node.id}
                         label={
                             <span
                                 title={note || undefined}
@@ -177,4 +175,4 @@ export default function Clusters({
                 )}
         </TreeItem>
     )
-}
+})

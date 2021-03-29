@@ -72,7 +72,6 @@ const SideBarItems = () => {
             shareUrl: `${activeUrlAsURL.origin}${node.link}`,
             title: '',
         })
-        console.log(node?.cluster)
         if (type == 'Cluster') {
             updateSearchCtx({
                 cluster: node.id,
@@ -136,7 +135,7 @@ const SideBarItems = () => {
     )
 }
 
-export default function SideBar() {
+export default React.memo(function SideBar() {
     const { classes, theme } = useStylesAndTheme()
     const { config } = React.useContext(Contexts.Config)
     const { open } = React.useContext(Contexts.OpenSidebar)
@@ -190,4 +189,4 @@ export default function SideBar() {
             </Contexts.SidebarItemsExpanded.Provider>
         </Contexts.SidebarItemsSelected.Provider>
     )
-}
+})
