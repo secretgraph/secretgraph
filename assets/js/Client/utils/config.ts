@@ -472,12 +472,12 @@ export function extractAuthInfo({
                 (config.tokens[hash_algo] || config.tokens[hash]) &&
                 SetOps.hasIntersection(require, contentconf.hashes[hash_algo])
             ) {
-                /**if (
+                if (
                     (!config.tokens[hash_algo] && !config.tokens[hash]) ||
                     !hash
                 ) {
                     console.warn('token not found for:', hash_algo, hash)
-                }*/
+                }
                 hashes.add(hash)
                 keys.add(
                     `${contentconf.id}:${

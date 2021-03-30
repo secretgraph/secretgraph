@@ -80,6 +80,8 @@ idea: unique operation names. It would be nice to have namespaces
 
 # TODO
 
+-   maybe: own apollo context with multiple instances (config/base, active url)
+-   subscribe to config, watch changes
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters
 -   tags: limit amount tags
