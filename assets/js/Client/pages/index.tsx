@@ -62,6 +62,9 @@ function Definitions(props: Props) {
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
+    const client = React.useMemo(() => {
+        return createClient(activeUrl)
+    }, [activeUrl])
     return (
         <ThemeProvider theme={themeDefinition}>
             <Contexts.OpenSidebar.Provider
@@ -70,7 +73,7 @@ function Definitions(props: Props) {
                     setOpen: setOpenSidebar,
                 }}
             >
-                <ApolloProvider client={createClient(activeUrl)}>
+                <ApolloProvider client={client}>
                     <Contexts.ActiveUrl.Provider
                         value={{ activeUrl, setActiveUrl }}
                     >

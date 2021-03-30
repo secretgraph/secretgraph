@@ -18,9 +18,30 @@ export const createClient = (url: string) => {
                 SecretgraphObject: {
                     queryType: true,
                     fields: {
-                        // could be dangerous to activate, wait until tests are possible
-                        clusters: relayStylePagination(),
-                        contents: relayStylePagination(),
+                        // is dangerous
+                        // all filters must be specified, otherwise errors
+                        /**
+                         * problem: logout
+                         * clusters: relayStylePagination([
+                            'includeTags',
+                            'excludeTags',
+                            'contentHashes',
+                            'user',
+                            'public',
+                            'featured',
+                            'deleted',
+                            'minUpdated',
+                            'maxUpdated',
+                        ]),
+                        contents: relayStylePagination([
+                            'includeTags',
+                            'excludeTags',
+                            'contentHashes',
+                            'public',
+                            'deleted',
+                            'minUpdated',
+                            'maxUpdated',
+                        ]),*/
                     },
                 },
             },

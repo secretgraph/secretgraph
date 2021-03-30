@@ -40,8 +40,8 @@ const contentFeedQuery = gql`
                     filter: [
                         "authorization"
                         "clusters"
-                        "include"
-                        "exclude"
+                        "includeTags"
+                        "excludeTags"
                         "deleted"
                         "public"
                     ]
@@ -57,11 +57,7 @@ const contentFeedQuery = gql`
                         references(
                             groups: ["key", "signature"]
                             includeTags: $include
-                        )
-                            @connection(
-                                key: "feedContents_refs"
-                                filter: ["include", "authorization"]
-                            ) {
+                        ) {
                             edges {
                                 node {
                                     extra
@@ -114,6 +110,7 @@ export default React.memo(function Contents({
     if (authinfo) {
         incl.push(...authinfo.hashes.map((value) => `hash=${value}`))
     }
+    console.log(incl, excl)
     const [loadQuery, { data, error, fetchMore, loading }] = useLazyQuery(
         contentFeedQuery,
         {

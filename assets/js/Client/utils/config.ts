@@ -472,6 +472,12 @@ export function extractAuthInfo({
                 (config.tokens[hash_algo] || config.tokens[hash]) &&
                 SetOps.hasIntersection(require, contentconf.hashes[hash_algo])
             ) {
+                /**if (
+                    (!config.tokens[hash_algo] && !config.tokens[hash]) ||
+                    !hash
+                ) {
+                    console.warn('token not found for:', hash_algo, hash)
+                }*/
                 hashes.add(hash)
                 keys.add(
                     `${contentconf.id}:${
@@ -481,7 +487,8 @@ export function extractAuthInfo({
             }
         }
     }
-    return { hashes: [...hashes], keys: [...keys] }
+    // sorted is better for cache
+    return { hashes: [...hashes].sort(), keys: [...keys].sort() }
 }
 
 export function extractPrivKeys({

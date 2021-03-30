@@ -23,8 +23,8 @@ export const clusterFeedQuery = gql`
                     key: "feedClusters"
                     filter: [
                         "authorization"
-                        "include"
-                        "exclude"
+                        "includeTags"
+                        "excludeTags"
                         "public"
                         "deleted"
                     ]
