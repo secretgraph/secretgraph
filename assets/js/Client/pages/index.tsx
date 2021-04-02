@@ -62,9 +62,22 @@ function Definitions(props: Props) {
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
-    const client = React.useMemo(() => {
+    const navClient = React.useMemo(() => {
         return createClient(activeUrl)
     }, [activeUrl])
+    const configClient = React.useMemo(() => {
+        if (config && config.baseUrl != activeUrl) {
+            return createClient(config.baseUrl)
+        }
+        return navClient
+    }, [config ? config.baseUrl : ''])
+    const itemClient = React.useMemo(() => {
+        if (mainCtx.url && mainCtx.url != activeUrl) {
+            return createClient(mainCtx.url)
+        }
+        return navClient
+    }, [config ? config.baseUrl : ''])
+
     return (
         <ThemeProvider theme={themeDefinition}>
             <Contexts.OpenSidebar.Provider
@@ -73,7 +86,9 @@ function Definitions(props: Props) {
                     setOpen: setOpenSidebar,
                 }}
             >
-                <ApolloProvider client={client}>
+                <Contexts.Clients.Provider
+                    value={{ navClient, itemClient, baseClient: configClient }}
+                >
                     <Contexts.ActiveUrl.Provider
                         value={{ activeUrl, setActiveUrl }}
                     >
@@ -92,7 +107,7 @@ function Definitions(props: Props) {
                             </Contexts.Search.Provider>
                         </Contexts.Main.Provider>
                     </Contexts.ActiveUrl.Provider>
-                </ApolloProvider>
+                </Contexts.Clients.Provider>
             </Contexts.OpenSidebar.Provider>
         </ThemeProvider>
     )

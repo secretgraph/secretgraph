@@ -1,3 +1,4 @@
+import { ApolloClient } from '@apollo/client'
 import { Context, createContext } from 'react'
 
 import * as Interfaces from './interfaces'
@@ -46,3 +47,11 @@ export const SidebarItemsExpanded = createContext({
     expanded: [] as string[],
     setExpanded: (arg0: string[]) => {},
 })
+
+export const Clients = createContext(
+    {} as {
+        baseClient: ApolloClient<any>
+        navClient: ApolloClient<any>
+        itemClient: ApolloClient<any>
+    }
+)

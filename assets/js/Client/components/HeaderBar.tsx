@@ -36,10 +36,7 @@ export default function HeaderBar() {
     const [loadingExport, setLoadingExport] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config, updateConfig } = React.useContext(Contexts.Config)
-    let client: ApolloClient<any> | null = null
-    try {
-        client = useApolloClient()
-    } catch (exc) {}
+    const { baseClient: client } = React.useContext(Contexts.Clients)
     let title: string, documenttitle: string
     switch (mainCtx.action) {
         case 'add':
@@ -81,7 +78,7 @@ export default function HeaderBar() {
         const encryptingPw = (document.getElementById(
             'secretgraph-export-pw'
         ) as HTMLInputElement).value
-        const sconfig: any = await (client as ApolloClient<any>)
+        const sconfig: any = await client
             .query({
                 query: serverConfigQuery,
             })
@@ -109,7 +106,7 @@ export default function HeaderBar() {
         let _exportUrl
         try {
             _exportUrl = await exportConfigAsUrl({
-                client: client as ApolloClient<any>,
+                client,
                 config,
                 pw: encryptingPw,
                 iterations: 100000,

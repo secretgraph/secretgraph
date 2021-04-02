@@ -20,7 +20,7 @@ function MainPage() {
     const { classes } = useStylesAndTheme()
     const { config } = React.useContext(Contexts.Config)
     const { mainCtx } = React.useContext(Contexts.Main)
-    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const { navClient, itemClient } = React.useContext(Contexts.Clients)
     const { open: openSidebar } = React.useContext(Contexts.OpenSidebar)
     const frameElement = React.useMemo(() => {
         let frameElement = null
@@ -38,23 +38,12 @@ function MainPage() {
                 }
                 const FrameElementType = (FrameElementWrapper as Interfaces.ElementEntryInterface)
                     .component
-                if (activeUrl == mainCtx.url || !mainCtx.url) {
-                    frameElement = (
-                        <CapturingSuspense>
-                            <FrameElementType />
-                        </CapturingSuspense>
-                    )
-                } else {
-                    frameElement = (
-                        <ApolloProvider
-                            client={createClient(mainCtx.url as string)}
-                        >
-                            <CapturingSuspense>
-                                <FrameElementType />
-                            </CapturingSuspense>
-                        </ApolloProvider>
-                    )
-                }
+                frameElement = (
+                    <CapturingSuspense>
+                        <FrameElementType />
+                    </CapturingSuspense>
+                )
+
                 break
             case 'start':
             case 'import':
@@ -80,12 +69,16 @@ function MainPage() {
                 config && openSidebar ? classes.rootShifted : classes.root
             }
         >
-            <SideBar />
+            <ApolloProvider client={navClient}>
+                <SideBar />
+            </ApolloProvider>
             <HeaderBar />
             <div className={classes.content}>
                 <ActionBar />
                 <Paper component="main" className={classes.mainSection}>
-                    {frameElement}
+                    <ApolloProvider client={itemClient}>
+                        {frameElement}
+                    </ApolloProvider>
                 </Paper>
             </div>
         </div>
