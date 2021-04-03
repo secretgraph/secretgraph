@@ -24,7 +24,7 @@ function Definitions(props: Props) {
     const query = new URLSearchParams(document.location.search)
     const { defaultPath } = props
     const [openSidebar, _setOpenSidebar] = React.useState(() => {
-        return JSON.parse(sessionStorage.getItem('openSidebar') || 'false')
+        return JSON.parse(sessionStorage.getItem('openSidebar') || 'true')
     })
     function setOpenSidebar(arg: boolean) {
         sessionStorage.setItem('openSidebar', JSON.stringify(arg))
