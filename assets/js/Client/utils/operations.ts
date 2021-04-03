@@ -744,6 +744,7 @@ export async function decryptContentObject({
     }
 }
 
+// TODO: replace by polling query
 export async function decryptContentId({
     client,
     config,
