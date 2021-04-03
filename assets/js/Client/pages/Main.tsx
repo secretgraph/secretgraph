@@ -74,12 +74,12 @@ function MainPage() {
             </ApolloProvider>
             <HeaderBar />
             <div className={classes.content}>
-                <ActionBar />
-                <Paper component="main" className={classes.mainSection}>
-                    <ApolloProvider client={itemClient}>
+                <ApolloProvider client={itemClient}>
+                    <ActionBar />
+                    <Paper component="main" className={classes.mainSection}>
                         {frameElement}
-                    </ApolloProvider>
-                </Paper>
+                    </Paper>
+                </ApolloProvider>
             </div>
         </div>
     )

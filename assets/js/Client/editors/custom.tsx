@@ -51,18 +51,23 @@ const InnerCustom = ({
     setEncryptedTags,
     disabled,
     viewOnly,
+    url,
 }: {
     encryptedTags: string[]
     setEncryptedTags: (arg: string[]) => void
     disabled?: boolean
     viewOnly?: boolean
+    url: string
 }) => {
     const { classes, theme } = useStylesAndTheme()
     const { isSubmitting, dirty, submitForm } = useFormikContext()
-    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     return (
         <Form>
             <Grid container spacing={2}>
+                <Grid item xs={12}>
+                    <Typography>Active Url</Typography>
+                    <Typography>{url}</Typography>
+                </Grid>
                 <Grid item xs={12} md={4}>
                     <FastField
                         component={SimpleSelect}
@@ -77,7 +82,7 @@ const InnerCustom = ({
                 <Grid item xs={12} md={4}>
                     <FastField
                         component={ClusterSelect}
-                        url={activeUrl as string}
+                        url={url}
                         name="cluster"
                         disabled={disabled || isSubmitting}
                         label="Cluster"
@@ -118,6 +123,8 @@ const InnerCustom = ({
                         disabled={disabled || isSubmitting}
                         label="Content"
                         multiline
+                        fullWidth
+                        variant="outlined"
                     />
                 </Grid>
                 <Grid item xs={12}>
@@ -279,6 +286,7 @@ const EditCustom = ({
         >
             {() => (
                 <InnerCustom
+                    url={mainCtx.url as string}
                     encryptedTags={encryptedTags}
                     setEncryptedTags={setEncryptedTags}
                     viewOnly={viewOnly}
@@ -303,7 +311,7 @@ const AddCustom = () => {
     const initialValues = {
         tags: [] as string[],
         content: '',
-        cluster: searchCtx.cluster || '',
+        cluster: searchCtx.cluster,
     }
     return (
         <Formik
@@ -312,7 +320,7 @@ const AddCustom = () => {
                 const value: Blob = new Blob([values.content])
                 const authinfo = extractAuthInfo({
                     config,
-                    clusters: new Set([values.cluster]),
+                    clusters: new Set([values.cluster as string]),
                     url: mainCtx.url as string,
                     require: new Set(['create']),
                 })
@@ -343,7 +351,7 @@ const AddCustom = () => {
                     const result = await createContent({
                         client,
                         config,
-                        cluster: values.cluster,
+                        cluster: values.cluster as string,
                         value,
                         tags: values.tags,
                         encryptTags: new Set(encryptedTags),
@@ -370,6 +378,7 @@ const AddCustom = () => {
         >
             {() => (
                 <InnerCustom
+                    url={activeUrl}
                     encryptedTags={encryptedTags}
                     setEncryptedTags={setEncryptedTags}
                 />

@@ -110,7 +110,7 @@ export default React.memo(function Contents({
     if (authinfo) {
         incl.push(...authinfo.hashes.map((value) => `hash=${value}`))
     }
-    console.log(incl, excl)
+    //console.log(incl, excl)
     const [loadQuery, { data, error, fetchMore, loading }] = useLazyQuery(
         contentFeedQuery,
         {
