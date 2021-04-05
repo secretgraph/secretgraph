@@ -620,10 +620,11 @@ export async function initializeCluster(
     config.hosts[config['baseUrl']].clusters[
         clusterResult.cluster['id']
     ].hashes[digestCertificate] = []
-    config['certificates'][digestCertificate] = await serializeToBase64(
-        privateKey
-    )
-    config.tokens[digestActionKey] = keyb64
+    config['certificates'][digestCertificate] = {
+        token: await serializeToBase64(privateKey),
+        note: '',
+    }
+    config.tokens[digestActionKey] = { token: keyb64, note: '' }
     if (!cleanConfig(config)) {
         console.error('invalid config created')
         return
@@ -715,7 +716,7 @@ export async function decryptContentObject({
             await Promise.any(
                 found.map(async (value) => {
                     return await decryptRSAOEAP({
-                        key: config.certificates[value.hash],
+                        key: config.certificates[value.hash].token,
                         data: value.sharedKey,
                         hashAlgorithm: value.hashAlgorithm,
                     })

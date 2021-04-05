@@ -67,7 +67,7 @@ function extractPublicInfo(
     )
     if (url && id && config.hosts[url] && config.hosts[url].clusters[id]) {
         for (const hash in config.hosts[url].clusters[id].hashes) {
-            const token = config.tokens[hash]
+            const token = config.tokens[hash].token
             if (!token) continue
             if (publicTokens.includes(token)) continue
             const actions = config.hosts[url].clusters[id].hashes[hash]
@@ -315,10 +315,11 @@ const ClusterIntern = (props: ClusterInternProps) => {
                                 },
                             },
                             tokens: {
-                                [digestActionKey]: keyb64,
-                                [digestCertificate]: await serializeToBase64(
-                                    privateKey
-                                ),
+                                [digestActionKey]: { token: keyb64, note: '' },
+                                [digestCertificate]: {
+                                    token: await serializeToBase64(privateKey),
+                                    note: '',
+                                },
                             },
                         }
                         // TODO: merge and refetch config

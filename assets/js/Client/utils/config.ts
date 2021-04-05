@@ -54,9 +54,9 @@ export async function checkConfigObject(
         cert: Uint8Array | null = null
     for (const hash of config.configHashes) {
         if (config.tokens[hash]) {
-            actions.push(config.tokens[hash])
+            actions.push(config.tokens[hash].token)
         } else if (config.certificates[hash]) {
-            cert = b64toarr(config.certificates[hash])
+            cert = b64toarr(config.certificates[hash].token)
         }
     }
     if (!actions || !cert) {
@@ -321,9 +321,9 @@ export async function exportConfigAsUrl({
         cert: Uint8Array | null = null
     for (const hash of config.configHashes) {
         if (config.tokens[hash]) {
-            actions.push(config.tokens[hash])
+            actions.push(config.tokens[hash].token)
         } else if (config.certificates[hash]) {
-            cert = b64toarr(config.certificates[hash])
+            cert = b64toarr(config.certificates[hash].token)
         }
     }
     if (!actions) {
@@ -512,7 +512,7 @@ export function extractPrivKeys({
         for (const hash in clusterconf.hashes) {
             if (config.certificates[hash] && !privkeys[hash]) {
                 privkeys[hash] = unserializeToCryptoKey(
-                    config.certificates[hash],
+                    config.certificates[hash].token,
                     {
                         name: 'RSA-OAEP',
                         hash: mapHashNames[props.hashAlgorithm].operationName,

@@ -260,10 +260,11 @@ function InnerKeys({
                         name="publicKey"
                         component={FormikTextField}
                         validate={async (val: string) => {
+                            // validate has side effects
                             if (!val) {
+                                setJoinedHashes('')
                                 return 'empty'
                             }
-                            // validate has side effects
                             return await calcHashes(val, hashAlgorithms).then(
                                 (data) => {
                                     setJoinedHashes(data.join(', '))
@@ -690,7 +691,12 @@ const EditKeys = () => {
                                                 )
                                             )
                                         )]: privKey
-                                            ? await serializeToBase64(privKey)
+                                            ? {
+                                                  token: await serializeToBase64(
+                                                      privKey
+                                                  ),
+                                                  note: '',
+                                              }
                                             : null,
                                     },
                                 },
@@ -846,7 +852,10 @@ const AddKeys = () => {
                                                 pubKey
                                             )
                                         )
-                                    )]: await serializeToBase64(privKey),
+                                    )]: {
+                                        token: await serializeToBase64(privKey),
+                                        note: '',
+                                    },
                                 },
                             },
                             client,

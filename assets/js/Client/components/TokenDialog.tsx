@@ -1,5 +1,5 @@
 import { ApolloClient, useApolloClient, useQuery } from '@apollo/client'
-import { DialogContent } from '@material-ui/core'
+import { DialogActions, DialogContent } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
 import Collapse from '@material-ui/core/Collapse'
 import Dialog, { DialogProps } from '@material-ui/core/Dialog'
@@ -76,7 +76,7 @@ export const TokenDialog = ({
                     token: config.tokens[hash],
                     newHash: serializeToBase64(
                         unserializeToArrayBuffer(
-                            config.tokens[hash]
+                            config.tokens[hash].token
                         ).then((val) => crypto.subtle.digest(hashalgo, val))
                     ),
                     oldHash: hash,
@@ -95,14 +95,28 @@ export const TokenDialog = ({
         if (!dataUnfinished) {
             return []
         }
+
+        const finishedList = []
+        for (const action of dataUnfinished.node.availableActions) {
+            const existingActionData = hashMapper[action.keyHash]
+            finishedList.push(<ListItem></ListItem>)
+        }
+        return finishedList
     }, [dataUnfinished, config])
 
     return (
         <Dialog {...props}>
             <DialogTitle>Tokens</DialogTitle>
             <DialogContent>
-                <List></List>
+                <List>
+                    <ListItem></ListItem>
+                </List>
             </DialogContent>
+            <DialogActions>
+                <Button>Persist Tokens</Button>
+                <Button>Update Tokens</Button>
+                <Button>Close</Button>
+            </DialogActions>
         </Dialog>
     )
 }
