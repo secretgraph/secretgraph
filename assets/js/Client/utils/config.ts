@@ -11,7 +11,6 @@ import {
     encryptAESGCM,
     encryptPreKey,
     serializeToBase64,
-    unserializeToArrayBuffer,
     unserializeToCryptoKey,
 } from './encryption'
 import { b64toarr, mergeDeleteObjects, utf8encoder } from './misc'
@@ -488,7 +487,7 @@ export function extractAuthInfo({
         }
     }
     // sorted is better for cache
-    return { hashes: [...hashes].sort(), keys: [...keys].sort() }
+    return { hashes: [...hashes].sort(), tokens: [...keys].sort() }
 }
 
 export function extractPrivKeys({

@@ -80,15 +80,20 @@ def create_actions_fn(
         # add content_action
         group = action_value.pop("contentActionGroup", "") or ""
         if action.get("idOrHash"):
-            actionObj = (
+            actionObjs = (
                 result["objects"]
                 .filter(
                     Q(id=action["idOrHash"]) | Q(keyHash=action["idOrHash"])
                 )
-                .first()
             )
-            if not actionObj:
+            if not actionObjs.exists():
                 continue
+            else:
+                actionObj = actionObjs.first()
+                for obj in actionObjs[1:]:
+                    if obj.id in modify_actions:
+                        continue
+                    delete_actions.add(obj.id)
         elif content:
             actionObj = Action(contentAction=ContentAction(content=content))
         else:

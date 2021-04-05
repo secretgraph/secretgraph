@@ -51,7 +51,6 @@ import {
 } from '../utils/graphql'
 import {
     createKeys,
-    decryptContentId,
     decryptContentObject,
     deleteNodes,
     updateConfigRemoteReducer,
@@ -69,7 +68,7 @@ async function loadKeys({
     config: Interfaces.ConfigInterface
     url: string
 }) {
-    const { keys: authorization } = extractAuthInfo({
+    const { tokens: authorization } = extractAuthInfo({
         config,
         url,
     })
@@ -545,7 +544,7 @@ const EditKeys = () => {
                 const pubkeysResult = await client.query({
                     query: getContentConfigurationQuery,
                     variables: {
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                         id: mainCtx.item,
                     },
                 })
@@ -565,7 +564,7 @@ const EditKeys = () => {
                 }
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                     params: keyParams,
                 })
                 let privKey = null
@@ -585,7 +584,7 @@ const EditKeys = () => {
                     await deleteNodes({
                         client,
                         ids: [data.privateKey.nodeData.id],
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                     })
                 }
 
@@ -610,14 +609,14 @@ const EditKeys = () => {
                     await deleteNodes({
                         client,
                         ids: [data.publicKey.nodeData.id],
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                     })
                     // recursively deletes private key but it would still be visible, so do it here
                     if (data.privateKey && privKey) {
                         await deleteNodes({
                             client,
                             ids: [data.privateKey.nodeData.id],
-                            authorization: authinfo.keys,
+                            authorization: authinfo.tokens,
                         })
                     }
                     const { data: newData } = await createKeys({
@@ -629,7 +628,7 @@ const EditKeys = () => {
                         privkeys: Object.values(privkeys),
                         pubkeys: Object.values(pubkeys),
                         hashAlgorithm: data.hashAlgorithms[0],
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                     })
                     updateMainCtx({
                         item: newData.updateOrCreateContent.content.id,
@@ -645,7 +644,7 @@ const EditKeys = () => {
                         privkeys: await Promise.all(Object.values(privkeys)),
                         pubkeys: Object.values(pubkeys),
                         hashAlgorithm: data.hashAlgorithms[0],
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                     })
                     if (data.privateKey && privKey) {
                         await updateKey({
@@ -659,7 +658,7 @@ const EditKeys = () => {
                             ),
                             pubkeys: Object.values(pubkeys),
                             hashAlgorithm: data.hashAlgorithms[0],
-                            authorization: authinfo.keys,
+                            authorization: authinfo.tokens,
                         })
                     } else if (privKey) {
                         await createKeys({
@@ -671,7 +670,7 @@ const EditKeys = () => {
                             privkeys: Object.values(privkeys),
                             pubkeys: Object.values(pubkeys),
                             hashAlgorithm: data.hashAlgorithms[0],
-                            authorization: authinfo.keys,
+                            authorization: authinfo.tokens,
                         })
                     }
 
@@ -768,7 +767,7 @@ const AddKeys = () => {
                 const pubkeysResult = await client.query({
                     query: getContentConfigurationQuery,
                     variables: {
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                         id: values.cluster,
                     },
                 })
@@ -791,7 +790,7 @@ const AddKeys = () => {
                 }
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                     params: keyParams,
                 })
 
@@ -825,7 +824,7 @@ const AddKeys = () => {
                     privkeys: Object.values(privkeys),
                     pubkeys: Object.values(pubkeys),
                     hashAlgorithm: hashAlgorithm,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                 })
                 updateMainCtx({
                     action: 'edit',
@@ -887,7 +886,7 @@ async function findOrReturn({
     if (!id || !url) {
         return true
     }
-    const { keys: authorization } = extractAuthInfo({
+    const { tokens: authorization } = extractAuthInfo({
         config,
         url,
     })

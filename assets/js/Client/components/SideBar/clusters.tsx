@@ -26,7 +26,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
     const { data } = useAsync({
         promiseFn: loadAndExtractClusterInfo,
         id: cluster,
-        authorization: authinfo?.keys,
+        authorization: authinfo?.tokens,
         client,
         watch: cluster,
     })
@@ -77,7 +77,7 @@ export default React.memo(function Clusters({
         clusterFeedQuery,
         {
             variables: {
-                authorization: authinfo && authinfo.keys,
+                authorization: authinfo && authinfo.tokens,
                 deleted: searchCtx.deleted,
                 include: searchCtx.include,
                 exclude: searchCtx.cluster

@@ -44,7 +44,7 @@ export default function ClusterSelect<
 
     const { fetchMore, data, loading } = useQuery(clusterFeedQuery, {
         variables: {
-            authorization: authinfo.keys,
+            authorization: authinfo.tokens,
         },
         onCompleted: (data) => {
             if (data.clusters.clusters.pageInfo.hasNextPage) {

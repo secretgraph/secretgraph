@@ -116,6 +116,7 @@ export interface MainContextInterface {
     type: null | string
     shareUrl: null | string
     deleted: Date | null | false
+    tokens: string[]
     // editable
 }
 
@@ -128,7 +129,7 @@ export interface SearchContextInterface {
 }
 
 export interface AuthInfoInterface {
-    keys: string[]
+    tokens: string[]
     hashes: string[]
 }
 

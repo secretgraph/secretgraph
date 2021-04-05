@@ -1,4 +1,4 @@
-import { useApolloClient } from '@apollo/client'
+import { useApolloClient, useQuery } from '@apollo/client'
 import Button from '@material-ui/core/Button'
 import Checkbox from '@material-ui/core/Checkbox'
 import FormControlLabel from '@material-ui/core/FormControlLabel'
@@ -26,17 +26,17 @@ import UploadButton from '../components/UploadButton'
 import * as Constants from '../constants'
 import * as Contexts from '../contexts'
 import * as Interfaces from '../interfaces'
-import { newClusterLabel } from '../messages'
+import { contentRetrievalQuery } from '../queries/content'
 import { getContentConfigurationQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
 import { extractPubKeysCluster } from '../utils/graphql'
-import { b64toutf8, utf8ToBinary, utf8decoder } from '../utils/misc'
 import {
     createContent,
-    decryptContentId,
+    decryptContentObject,
     updateContent,
 } from '../utils/operations'
+import { UnpackPromise } from '../utils/typing'
 
 const decryptSet = new Set(['mime', 'ename'])
 const ViewWidget = ({
@@ -177,37 +177,30 @@ const ViewFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
+    const [data, setData] = React.useState<
+        UnpackPromise<ReturnType<typeof decryptContentObject>>
+    >(null)
 
-    //
-    const { data, isLoading } = useAsync({
-        promiseFn: decryptContentId,
-        onReject: console.error,
-        onResolve: (data) => {
-            if (!data) {
-                return
-            }
-            const updateOb: Partial<Interfaces.MainContextInterface> = {
-                deleted: data.nodeData.deleted || null,
-                updateId: data.nodeData.updateId,
-            }
-            if (data.tags.ename && data.tags.ename.length > 0) {
-                updateOb['title'] = data.tags.ename[0]
-            } else if (data.tags.name && data.tags.name.length > 0) {
-                updateOb['title'] = data.tags.name[0]
-            }
-            updateMainCtx(updateOb)
+    const { data: dataUnfinished } = useQuery(contentRetrievalQuery, {
+        pollInterval: 60000,
+        variables: {
+            variables: {
+                id: mainCtx.item as string,
+                authorization: mainCtx.tokens,
+            },
         },
-        suspense: true,
-        client: client,
-        config: config as Interfaces.ConfigInterface,
-        url: mainCtx.url as string,
-        id: mainCtx.item as string,
-        decrypt: decryptSet,
-        watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
-    if (isLoading) {
-        return null
-    }
+    React.useEffect(() => {
+        if (!dataUnfinished) {
+            return
+        }
+        decryptContentObject({
+            config,
+            nodeData: dataUnfinished.secretgraph.node,
+            blobOrTokens: mainCtx.tokens,
+            decrypt: decryptSet,
+        }).then(setData)
+    }, [dataUnfinished])
     if (!data) {
         return null
     }
@@ -352,7 +345,7 @@ const AddFile = () => {
                 const pubkeysResult = await client.query({
                     query: getContentConfigurationQuery,
                     variables: {
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                         id: values.cluster,
                     },
                 })
@@ -365,7 +358,7 @@ const AddFile = () => {
                 })
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                     params: {
                         name: 'RSA-OAEP',
                         hash: hashAlgorithm,
@@ -393,7 +386,7 @@ const AddFile = () => {
                         privkeys: await Promise.all(Object.values(privkeys)),
                         pubkeys: Object.values(pubkeys),
                         hashAlgorithm,
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                     })
                     updateMainCtx({
                         item: result.data.updateOrCreateContent.content.id,
@@ -718,32 +711,32 @@ const EditFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
-    const { data, reload } = useAsync({
-        promiseFn: decryptContentId,
-        onReject: console.error,
-        onResolve: (data) => {
-            if (!data) {
-                return
-            }
-            const updateOb: Partial<Interfaces.MainContextInterface> = {
-                deleted: data.nodeData.deleted || null,
-                updateId: data.nodeData.updateId,
-            }
-            if (data.tags.ename && data.tags.ename.length > 0) {
-                updateOb['title'] = data.tags.ename[0]
-            } else if (data.tags.name && data.tags.name.length > 0) {
-                updateOb['title'] = data.tags.name[0]
-            }
-            updateMainCtx(updateOb)
+    const [data, setData] = React.useState<
+        UnpackPromise<ReturnType<typeof decryptContentObject>>
+    >(null)
+
+    const { data: dataUnfinished, refetch } = useQuery(contentRetrievalQuery, {
+        variables: {
+            variables: {
+                id: mainCtx.item as string,
+                authorization: mainCtx.tokens,
+            },
         },
-        suspense: true,
-        client: client,
-        config: config as Interfaces.ConfigInterface,
-        url: mainCtx.url as string,
-        id: mainCtx.item as string,
-        decrypt: decryptSet,
-        watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
+    React.useEffect(() => {
+        if (!dataUnfinished) {
+            return
+        }
+        decryptContentObject({
+            config,
+            nodeData: dataUnfinished.secretgraph.node,
+            blobOrTokens: mainCtx.tokens,
+            decrypt: decryptSet,
+        }).then(setData)
+    }, [dataUnfinished])
+    if (!data) {
+        return null
+    }
 
     if (!data) {
         return null
@@ -804,7 +797,7 @@ const EditFile = () => {
                 const pubkeysResult = await client.query({
                     query: getContentConfigurationQuery,
                     variables: {
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                         id: mainCtx.item,
                     },
                 })
@@ -818,7 +811,7 @@ const EditFile = () => {
                 })
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node.cluster,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                     params: {
                         name: 'RSA-OAEP',
                         hash: hashAlgorithm,
@@ -845,7 +838,7 @@ const EditFile = () => {
                     privkeys: await Promise.all(Object.values(privkeys)),
                     pubkeys: Object.values(pubkeys),
                     hashAlgorithm,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                 })
                 if (result.errors) {
                     console.error(result.errors)
@@ -855,7 +848,7 @@ const EditFile = () => {
                         result
                     )
                 }
-                reload()
+                refetch()
             }}
         >
             {({

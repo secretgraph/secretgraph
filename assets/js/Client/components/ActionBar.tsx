@@ -117,16 +117,16 @@ function ActionBar(props: Props) {
                                     : 'Delete'
                             }
                             onClick={async () => {
-                                const authkeys = extractAuthInfo({
+                                const authtokens = extractAuthInfo({
                                     config,
                                     url: mainCtx.url as string,
                                     require: new Set(['delete', 'manage']),
-                                }).keys
+                                }).tokens
                                 if (mainCtx.deleted) {
                                     const { data } = await resetDeletionNodes({
                                         client,
                                         ids: [mainCtx.item as string],
-                                        authorization: authkeys,
+                                        authorization: authtokens,
                                     })
                                     updateMainCtx({
                                         deleted:
@@ -137,7 +137,7 @@ function ActionBar(props: Props) {
                                     const { data } = await deleteNodes({
                                         client,
                                         ids: [mainCtx.item as string],
-                                        authorization: authkeys,
+                                        authorization: authtokens,
                                     })
                                     updateMainCtx({
                                         deleted:

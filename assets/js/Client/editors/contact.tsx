@@ -9,7 +9,6 @@ import * as Interfaces from '../interfaces'
 import { newClusterLabel } from '../messages'
 import { contentRetrievalQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
-import { decryptContentId } from '../utils/operations'
 
 type Props = {}
 
@@ -18,8 +17,7 @@ const ViewFile = (props: Props) => {
     const { mainCtx } = React.useContext(Contexts.Main)
     const client = useApolloClient()
     const { config } = React.useContext(Contexts.Config)
-    const { data, error } = useAsync({
-        promiseFn: decryptContentId,
+    /**const { data, error } = useAsync({
         suspense: true,
         onReject: console.error,
         client: client,
@@ -27,7 +25,7 @@ const ViewFile = (props: Props) => {
         url: mainCtx.url as string,
         id: mainCtx.item as string,
         decryptTags: ['mime', 'name'],
-    })
+    })*/
     /**
   saveAs(
     new File(

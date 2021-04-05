@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client'
 
 export const deleteNodes = gql`
-    mutation nodesDelete($ids: [ID!]!, $authorization: [String!]) {
+    mutation nodeDelete($ids: [ID!]!, $authorization: [String!]) {
         deleteContentOrCluster(
             input: { ids: $ids, authorization: $authorization }
         ) {
@@ -10,11 +10,42 @@ export const deleteNodes = gql`
     }
 `
 export const resetDeletionNodes = gql`
-    mutation nodesResetDelete($ids: [ID!]!, $authorization: [String!]) {
+    mutation nodeResetDelete($ids: [ID!]!, $authorization: [String!]) {
         resetDeletionContentOrCluster(
             input: { ids: $ids, authorization: $authorization }
         ) {
             restored
+        }
+    }
+`
+
+export const getActionsQuery = gql`
+    query nodeGetActions($id: ID!, $authorization: [String!]) {
+        secretgraph(authorization: $authorization) {
+            config {
+                id
+                hashAlgorithms
+            }
+            node(id: $id) {
+                ... on Cluster {
+                    availableActions {
+                        id
+                        keyHash
+                        type
+                        requiredKeys
+                        allowedTags
+                    }
+                }
+                ... on Content {
+                    availableActions {
+                        id
+                        keyHash
+                        type
+                        requiredKeys
+                        allowedTags
+                    }
+                }
+            }
         }
     }
 `

@@ -115,7 +115,7 @@ export default React.memo(function Contents({
         contentFeedQuery,
         {
             variables: {
-                authorization: authinfo ? authinfo.keys : null,
+                authorization: authinfo ? authinfo.tokens : null,
                 includeTags: ['state=', 'type=', 'name='],
                 include: incl,
                 exclude: excl,

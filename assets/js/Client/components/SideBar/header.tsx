@@ -299,7 +299,7 @@ export default function SideBarHeader() {
             config,
             url: activeUrl,
             require: new Set(['delete', 'manage']),
-        }).keys
+        }).tokens
     }, [config, activeUrl])
     return (
         <>

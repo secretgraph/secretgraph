@@ -19,6 +19,7 @@ type Props = {
 function updateState<T>(state: T, update: Partial<T>): T {
     return Object.assign({}, state, update)
 }
+type updateStateType<T> = (state: T, update: Partial<T>) => T
 
 function Definitions(props: Props) {
     const query = new URLSearchParams(document.location.search)
@@ -35,9 +36,11 @@ function Definitions(props: Props) {
         null,
         () => loadConfigSync()
     )
-    const [mainCtx, updateMainCtx] = React.useReducer(updateState, {
+    const [mainCtx, updateMainCtx] = React.useReducer<
+        updateStateType<Interfaces.MainContextInterface>
+    >(updateState, {
         action: config ? 'add' : 'start',
-        title: null,
+        title: '',
         item: null,
         updateId: null,
         url: null,
@@ -46,19 +49,16 @@ function Definitions(props: Props) {
             : elements.keys().next().value,
         shareUrl: null,
         deleted: null,
-    }) as [
-        Interfaces.MainContextInterface,
-        (update: Partial<Interfaces.MainContextInterface>) => void
-    ]
-    const [searchCtx, updateSearchCtx] = React.useReducer(updateState, {
+        tokens: [],
+    })
+    const [searchCtx, updateSearchCtx] = React.useReducer<
+        updateStateType<Interfaces.SearchContextInterface>
+    >(updateState, {
         cluster: null,
         include: [],
         exclude: [],
         deleted: false,
-    }) as [
-        Interfaces.SearchContextInterface,
-        (update: Partial<Interfaces.SearchContextInterface>) => void
-    ]
+    })
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )

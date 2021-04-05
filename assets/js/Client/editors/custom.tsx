@@ -186,10 +186,9 @@ const EditCustom = ({
             variables: {
                 variables: {
                     id: mainCtx.item as string,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                 },
             },
-            onCompleted: async (data: any) => {},
         }
     )
     React.useEffect(() => {
@@ -199,7 +198,7 @@ const EditCustom = ({
         decryptContentObject({
             config,
             nodeData: dataUnfinished.secretgraph.node,
-            blobOrTokens: authinfo.keys,
+            blobOrTokens: authinfo.tokens,
             decrypt: new Set(encryptedTags),
         }).then(async (res) => {
             res && setData({ ...res, text: await new Blob([res.data]).text() })
@@ -239,7 +238,7 @@ const EditCustom = ({
                 const pubkeysResult = await client.query({
                     query: getContentConfigurationQuery,
                     variables: {
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                         id: mainCtx.item,
                     },
                 })
@@ -253,7 +252,7 @@ const EditCustom = ({
                 })
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node.cluster,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                     params: {
                         name: 'RSA-OAEP',
                         hash: hashAlgorithm,
@@ -271,7 +270,7 @@ const EditCustom = ({
                     privkeys: await Promise.all(Object.values(privkeys)),
                     pubkeys: Object.values(pubkeys),
                     hashAlgorithm,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                 })
                 if (result.errors) {
                     console.error(result.errors)
@@ -327,7 +326,7 @@ const AddCustom = () => {
                 const pubkeysResult = await client.query({
                     query: getContentConfigurationQuery,
                     variables: {
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                         id: values.cluster,
                     },
                 })
@@ -341,7 +340,7 @@ const AddCustom = () => {
                 })
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node.cluster,
-                    authorization: authinfo.keys,
+                    authorization: authinfo.tokens,
                     params: {
                         name: 'RSA-OAEP',
                         hash: hashAlgorithm,
@@ -358,7 +357,7 @@ const AddCustom = () => {
                         privkeys: await Promise.all(Object.values(privkeys)),
                         pubkeys: Object.values(pubkeys),
                         hashAlgorithm,
-                        authorization: authinfo.keys,
+                        authorization: authinfo.tokens,
                     })
                     if (result.errors) {
                         console.error(result.errors)

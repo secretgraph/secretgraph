@@ -7,7 +7,6 @@ import * as Contexts from '../contexts'
 import { newClusterLabel } from '../messages'
 import { contentRetrievalQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
-import { decryptContentId } from '../utils/operations'
 
 type Props = {}
 

@@ -37,18 +37,18 @@ import { createCluster, updateCluster } from '../utils/operations'
 
 function item_retrieval_helper({
     client,
-    keys,
+    tokens,
     item,
 }: {
     client: ApolloClient<any>
-    keys: string[]
+    tokens: string[]
     item: string
 }) {
     return client.query({
         query: getClusterQuery,
         variables: {
             id: item,
-            authorization: keys,
+            authorization: tokens,
         },
     })
 }
@@ -162,7 +162,7 @@ interface ClusterInternProps {
     disabled?: boolean | undefined
     publicTokens: string[]
     privateTokens: [token: string, actions: string[]][]
-    keys: string[]
+    tokens: string[]
 }
 
 const ClusterIntern = (props: ClusterInternProps) => {
@@ -227,7 +227,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
                             '_:',
                             'text/turtle'
                         ),
-                        authorization: props.keys,
+                        authorization: props.tokens,
                     })
                 } else {
                     const key = crypto.getRandomValues(new Uint8Array(32))
@@ -428,7 +428,7 @@ const ViewCluster = () => {
         },
         suspense: true,
         client: client,
-        keys: authinfo.keys,
+        tokens: authinfo.tokens,
         item: mainCtx.item,
         watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
     })
@@ -449,7 +449,7 @@ const ViewCluster = () => {
                 mainCtx.item
             )}
             disabled
-            keys={authinfo.keys}
+            tokens={authinfo.tokens}
         />
     )
 }
@@ -470,7 +470,7 @@ const AddCluster = () => {
             publicTokens={[]}
             privateTokens={[]}
             id={null}
-            keys={authinfo.keys}
+            tokens={authinfo.tokens}
         />
     )
 }
@@ -507,7 +507,7 @@ const EditCluster = () => {
             updateMainCtx(updateOb)
         },
         client: client,
-        keys: authinfo.keys,
+        tokens: authinfo.tokens,
         item: mainCtx.item,
         watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
         suspense: true,
@@ -524,7 +524,7 @@ const EditCluster = () => {
                 publicTokens={[]}
                 privateTokens={[]}
                 id={mainCtx.item}
-                keys={authinfo.keys}
+                tokens={authinfo.tokens}
             />
         )
     }
@@ -536,7 +536,7 @@ const EditCluster = () => {
                 publicTokens={[]}
                 privateTokens={[]}
                 id={mainCtx.item}
-                keys={authinfo.keys}
+                tokens={authinfo.tokens}
             />
         )
     }
@@ -549,7 +549,7 @@ const EditCluster = () => {
                 mainCtx.url,
                 mainCtx.item
             )}
-            keys={authinfo.keys}
+            tokens={authinfo.tokens}
         />
     )
 }

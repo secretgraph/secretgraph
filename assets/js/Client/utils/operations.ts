@@ -633,7 +633,7 @@ export async function initializeCluster(
         config['hosts'][config['baseUrl']].hashAlgorithms[0]
     )
 
-    const { keys: authorization } = extractAuthInfo({
+    const { tokens: authorization } = extractAuthInfo({
         config: config,
         clusters: new Set([clusterResult.cluster['id']]),
         require: new Set(['manage']),
@@ -744,50 +744,6 @@ export async function decryptContentObject({
     }
 }
 
-// TODO: replace by polling query
-export async function decryptContentId({
-    client,
-    config,
-    url,
-    id: contentId,
-    decrypt,
-}: {
-    client: ApolloClient<any>
-    config: Interfaces.ConfigInterface | PromiseLike<Interfaces.ConfigInterface>
-    url: string
-    id: string
-    decrypt?: Set<string>
-}) {
-    const _config = await config
-    const authinfo: Interfaces.AuthInfoInterface = extractAuthInfo({
-        config: _config,
-        url,
-    })
-    let result
-    // TODO: maybe remove try catch
-    try {
-        result = await client.query({
-            query: contentRetrievalQuery,
-            variables: {
-                id: contentId,
-                authorization: authinfo.keys,
-            },
-        })
-    } catch (error) {
-        console.error('fetching failed', error)
-        return null
-    }
-    if (!result.data) {
-        return null
-    }
-    return await decryptContentObject({
-        config: _config,
-        nodeData: result.data.secretgraph.node,
-        blobOrTokens: authinfo.keys,
-        decrypt,
-    })
-}
-
 export async function updateConfigRemoteReducer(
     state: Interfaces.ConfigInterface | null,
     {
@@ -818,7 +774,7 @@ export async function updateConfigRemoteReducer(
         const configQueryRes = await client.query({
             query: contentRetrievalQuery,
             variables: {
-                authorization: authInfo.keys,
+                authorization: authInfo.tokens,
             },
         })
         if (configQueryRes.errors) {
@@ -827,7 +783,7 @@ export async function updateConfigRemoteReducer(
         const node = configQueryRes.data.node
         const foundConfig = await fetch(node.link, {
             headers: {
-                Authorization: authInfo.keys.join(','),
+                Authorization: authInfo.tokens.join(','),
             },
         }).then((result) => result.json())
         const mergedConfig = updateConfigReducer(foundConfig, update)
@@ -841,7 +797,7 @@ export async function updateConfigRemoteReducer(
         })
         pubkeys = extractPubKeysReferences({
             node,
-            authorization: authInfo.keys,
+            authorization: authInfo.tokens,
             params: {
                 name: 'RSA-OAEP',
                 hash: configQueryRes.data.config.hashAlgorithms[0],
@@ -859,7 +815,7 @@ export async function updateConfigRemoteReducer(
             config: foundConfig,
             hashAlgorithm: configQueryRes.data.config.hashAlgorithms[0],
             value: new Blob([JSON.stringify(mergedConfig)]),
-            authorization: authInfo.keys,
+            authorization: authInfo.tokens,
         })
         if (result.errors) {
             throw configQueryRes.errors
