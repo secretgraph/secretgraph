@@ -1,5 +1,13 @@
 import { ApolloClient, useApolloClient, useQuery } from '@apollo/client'
-import { DialogActions, DialogContent } from '@material-ui/core'
+import {
+    Checkbox,
+    DialogActions,
+    DialogContent,
+    ListItemIcon,
+    ListSubheader,
+    Menu,
+    MenuItem,
+} from '@material-ui/core'
 import Button from '@material-ui/core/Button'
 import Collapse from '@material-ui/core/Collapse'
 import Dialog, { DialogProps } from '@material-ui/core/Dialog'
@@ -25,6 +33,7 @@ import {
     serializeToBase64,
     unserializeToArrayBuffer,
 } from '../utils/encryption'
+import * as SetOps from '../utils/set'
 
 interface TokenDialogProps extends Omit<DialogProps, 'children' | ''> {
     disabled?: boolean
@@ -35,6 +44,7 @@ interface TokenDialogProps extends Omit<DialogProps, 'children' | ''> {
 }
 
 const matcher = /^(?:[^:]+:)?(.*?)/.compile()
+const availableActionsSet = new Set(['manage', 'push', 'view', 'update'])
 
 // specify in hierachy for setting formik fields
 export const TokenDialog = ({
@@ -46,7 +56,17 @@ export const TokenDialog = ({
     ...props
 }: TokenDialogProps) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [hashMapper, setHashMapper] = React.useState<any[]>([])
+    const [selected, setSelected] = React.useState(new Set<string>())
+    const [hashMapper, setHashMapper] = React.useState<{
+        [keyHash: string]: {
+            token: string
+            note: string
+            newHash: string
+            oldHash: null | string
+            configActions: Set<string>
+            newActions: Set<string>
+        }
+    }>({})
     const { data: dataUnfinished } = useQuery(getActionsQuery, {
         pollInterval: 60000,
         variables: {
@@ -56,31 +76,65 @@ export const TokenDialog = ({
             },
         },
         onCompleted: async (data) => {
-            const prepare = []
+            const prepare: PromiseLike<{
+                token: string
+                note: string
+                newHash: string
+                oldHash: null | string
+                configActions: Set<string>
+                newActions: Set<string>
+            }>[] = []
+            const premapper: {
+                [hash: string]: { [type: string]: Set<string | null> }
+            } = {}
+            for (const entry of data.secretgraph.node.availableActions) {
+                if (!premapper[entry.keyHash]) {
+                    premapper[entry.keyHash] = { [entry.type]: new Set() }
+                }
+                if (!premapper[entry.keyHash][entry.type]) {
+                    premapper[entry.keyHash][entry.type] = new Set()
+                }
+                premapper[entry.keyHash][entry.type].add(entry.id)
+            }
             const hashalgo =
-                Constants.mapHashNames[data.config.hashAlgorithms[0]]
-                    .operationName
+                Constants.mapHashNames[
+                    data.secretgraph.config.hashAlgorithms[0]
+                ].operationName
             for (const token of unknownTokens) {
-                prepare.push({
-                    token,
-                    newHash: serializeToBase64(
+                prepare.push(
+                    serializeToBase64(
                         unserializeToArrayBuffer(
                             (token.match(matcher) as RegExpMatchArray)[1]
                         ).then((val) => crypto.subtle.digest(hashalgo, val))
-                    ),
-                    oldHash: null,
-                })
+                    ).then((val) => ({
+                        token,
+                        note: '',
+                        newHash: val,
+                        oldHash: null,
+                        configActions: new Set<string>(),
+                        newActions: new Set<string>(
+                            premapper[val] ? Object.keys(premapper[val]) : []
+                        ),
+                    }))
+                )
             }
-            for (const hash of Object.keys(knownHashes)) {
-                prepare.push({
-                    token: config.tokens[hash],
-                    newHash: serializeToBase64(
+            for (const [hash, actions] of Object.entries(knownHashes)) {
+                prepare.push(
+                    serializeToBase64(
                         unserializeToArrayBuffer(
                             config.tokens[hash].token
                         ).then((val) => crypto.subtle.digest(hashalgo, val))
-                    ),
-                    oldHash: hash,
-                })
+                    ).then((val) => ({
+                        token: config.tokens[hash].token,
+                        note: config.tokens[hash].note,
+                        newHash: val,
+                        oldHash: hash,
+                        configActions: new Set<string>(actions),
+                        newActions: new Set<string>(
+                            premapper[val] ? Object.keys(premapper[val]) : []
+                        ),
+                    }))
+                )
             }
             setHashMapper(
                 Object.fromEntries(
@@ -99,7 +153,19 @@ export const TokenDialog = ({
         const finishedList = []
         for (const action of dataUnfinished.node.availableActions) {
             const existingActionData = hashMapper[action.keyHash]
-            finishedList.push(<ListItem></ListItem>)
+            finishedList.push(
+                <ListItem>
+                    <ListItemIcon>
+                        <Checkbox
+                            edge="start"
+                            checked={selected.has(action.keyHash)}
+                            tabIndex={-1}
+                            disableRipple
+                        />
+                    </ListItemIcon>
+                    <ListItemText></ListItemText>
+                </ListItem>
+            )
         }
         return finishedList
     }, [dataUnfinished, config])
@@ -109,12 +175,36 @@ export const TokenDialog = ({
             <DialogTitle>Tokens</DialogTitle>
             <DialogContent>
                 <List>
-                    <ListItem></ListItem>
+                    <ListSubheader>
+                        <ListItemIcon>
+                            <Checkbox
+                                edge="start"
+                                checked={selected.size == finishedList.length}
+                                tabIndex={-1}
+                                disableRipple
+                            />
+                        </ListItemIcon>
+                    </ListSubheader>
                 </List>
             </DialogContent>
             <DialogActions>
                 <Button>Persist Tokens</Button>
-                <Button>Update Tokens</Button>
+                <Button
+                    disabled={Object.values(hashMapper).every(
+                        (val) =>
+                            !val.oldHash ||
+                            (val.oldHash == val.newHash &&
+                                SetOps.isNotEq(
+                                    SetOps.intersection(
+                                        availableActionsSet,
+                                        val.configActions
+                                    ),
+                                    val.newActions
+                                ))
+                    )}
+                >
+                    Update Tokens
+                </Button>
                 <Button>Close</Button>
             </DialogActions>
         </Dialog>
