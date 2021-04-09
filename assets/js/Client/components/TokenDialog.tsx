@@ -21,7 +21,14 @@ import ListItemText from '@material-ui/core/ListItemText'
 import Typography from '@material-ui/core/Typography'
 import AddIcon from '@material-ui/icons/Add'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
-import { FastField, Field, Form, Formik, useFormikContext } from 'formik'
+import {
+    FastField,
+    FieldArray,
+    Form,
+    Formik,
+    useField,
+    useFormikContext,
+} from 'formik'
 import { TextField as FormikTextField } from 'formik-material-ui'
 import * as React from 'react'
 import { useAsync } from 'react-async'
@@ -42,6 +49,7 @@ export const TokenEntry = React.memo(function TokenEntry({
     selected,
     setSelected,
     action,
+    index,
 }: {
     selected?: Set<string>
     setSelected?: (arg: Set<string>) => void
@@ -53,6 +61,7 @@ export const TokenEntry = React.memo(function TokenEntry({
         configActions: Set<string>
         newActions: Set<string>
     }
+    index: number
 }) {
     return (
         <ListItem>
@@ -75,7 +84,7 @@ export const TokenEntry = React.memo(function TokenEntry({
                     />
                 </ListItemIcon>
             )}
-            <Grid container spacing={1}>
+            <Grid container spacing={2}>
                 {/** here comes the FieldArray fields */}
             </Grid>
         </ListItem>
@@ -109,78 +118,91 @@ export default function TokenDialog({
         submitForm,
     } = useFormikContext<{
         tokens: {
-            idOrHash: string
+            keyHash: string
             start: Date
             stop: Date | null
             note: string
             value: any
         }[]
     }>()
-    const finishedList = React.useMemo(() => {
-        const finishedList = []
-        for (const action of Object.values(hashMapper)) {
-            finishedList.push(
-                <TokenEntry
-                    selected={selected}
-                    setSelected={setSelected}
-                    action={action}
-                />
-            )
-        }
-        return finishedList
-    }, [hashMapper])
 
     return (
-        <Dialog {...props} onClose={(ev) => handleClose()}>
-            <DialogTitle>Tokens</DialogTitle>
-            <DialogContent>
-                <List>
-                    <ListSubheader>
-                        <ListItemIcon>
-                            <Checkbox
-                                edge="start"
-                                checked={selected.size == finishedList.length}
-                                tabIndex={-1}
-                                disableRipple
-                            />
-                        </ListItemIcon>
-                    </ListSubheader>
-                    <TokenEntry />
-                </List>
-            </DialogContent>
-            <DialogActions>
-                <Button disabled={disabled} onClick={(ev) => handleClose()}>
-                    Close
-                </Button>
-                <Button
-                    disabled={
-                        disabled ||
-                        Object.values(hashMapper).every((val) => val.oldHash)
-                    }
-                >
-                    Persist Tokens
-                </Button>
-                <Button
-                    disabled={
-                        disabled ||
-                        Object.values(hashMapper).every(
-                            (val) =>
-                                !val.oldHash ||
-                                (val.oldHash == val.newHash &&
-                                    SetOps.isNotEq(
-                                        SetOps.intersection(
-                                            availableActionsSet,
-                                            val.configActions
-                                        ),
-                                        val.newActions
-                                    ))
-                        )
-                    }
-                >
-                    Update Tokens
-                </Button>
-                <Button>Close</Button>
-            </DialogActions>
-        </Dialog>
+        <FieldArray name="tokens">
+            {({ push, replace, form }) => {
+                return (
+                    <Dialog {...props} onClose={(ev) => handleClose()}>
+                        <DialogTitle>Tokens</DialogTitle>
+                        <DialogContent>
+                            <List>
+                                <ListSubheader>
+                                    <ListItemIcon>
+                                        <Checkbox
+                                            edge="start"
+                                            checked={
+                                                selected.size ==
+                                                form.values.tokens.length
+                                            }
+                                            tabIndex={-1}
+                                            disableRipple
+                                        />
+                                    </ListItemIcon>
+                                </ListSubheader>
+                                <TokenEntry index={-1} />
+                            </List>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                onClick={(ev) => {}}
+                                disabled={
+                                    disabled ||
+                                    Object.values(hashMapper).every(
+                                        (val) => val.oldHash
+                                    )
+                                }
+                            >
+                                Persist Tokens
+                            </Button>
+                            <Button
+                                disabled={
+                                    disabled ||
+                                    Object.values(hashMapper).every(
+                                        (val) =>
+                                            !val.oldHash ||
+                                            (val.oldHash == val.newHash &&
+                                                SetOps.isNotEq(
+                                                    SetOps.intersection(
+                                                        availableActionsSet,
+                                                        val.configActions
+                                                    ),
+                                                    val.newActions
+                                                ))
+                                    )
+                                }
+                            >
+                                Update Tokens
+                            </Button>
+                            <Button
+                                disabled={disabled}
+                                onClick={(ev) => {
+                                    form.setFieldValue(
+                                        'tokens',
+                                        form.initialValues.tokens
+                                    )
+                                    form.setFieldTouched('tokens', false)
+                                }}
+                            >
+                                Reset
+                            </Button>
+                            <Button
+                                disabled={disabled}
+                                onClick={(ev) => handleClose()}
+                            >
+                                Close
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                )
+            }}
+        </FieldArray>
     )
 }
