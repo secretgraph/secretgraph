@@ -21,7 +21,7 @@ import ListItemText from '@material-ui/core/ListItemText'
 import Typography from '@material-ui/core/Typography'
 import AddIcon from '@material-ui/icons/Add'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
-import { FastField, Field, Form, Formik } from 'formik'
+import { FastField, Field, Form, Formik, useFormikContext } from 'formik'
 import { TextField as FormikTextField } from 'formik-material-ui'
 import * as React from 'react'
 import { useAsync } from 'react-async'
@@ -29,35 +29,63 @@ import { useAsync } from 'react-async'
 import * as Constants from '../constants'
 import * as Contexts from '../contexts'
 import { getActionsQuery } from '../queries/node'
+import { calculateTokenMapper } from '../utils/config'
 import {
     serializeToBase64,
     unserializeToArrayBuffer,
 } from '../utils/encryption'
 import * as SetOps from '../utils/set'
 
-interface TokenDialogProps extends Omit<DialogProps, 'children' | ''> {
-    disabled?: boolean
-    tokens: string[]
-    unknownTokens?: string[]
-    knownHashes?: { [hash: string]: string[] }
-    id: string
-}
-
-const matcher = /^(?:[^:]+:)?(.*?)/.compile()
 const availableActionsSet = new Set(['manage', 'push', 'view', 'update'])
 
-// specify in hierachy for setting formik fields
-export const TokenDialog = ({
-    id,
-    disabled,
-    tokens,
-    unknownTokens = [],
-    knownHashes = {},
-    ...props
-}: TokenDialogProps) => {
-    const { config } = React.useContext(Contexts.InitializedConfig)
-    const [selected, setSelected] = React.useState(new Set<string>())
-    const [hashMapper, setHashMapper] = React.useState<{
+export const TokenEntry = React.memo(function TokenEntry({
+    selected,
+    setSelected,
+    action,
+}: {
+    selected?: Set<string>
+    setSelected?: (arg: Set<string>) => void
+    action?: {
+        token: string
+        note: string
+        newHash: string
+        oldHash: null | string
+        configActions: Set<string>
+        newActions: Set<string>
+    }
+}) {
+    return (
+        <ListItem>
+            {action && selected && setSelected && (
+                <ListItemIcon>
+                    <Checkbox
+                        edge="start"
+                        checked={selected.has(action.newHash)}
+                        tabIndex={-1}
+                        disableRipple
+                        onChange={(ev) => {
+                            const tmpselected = new Set(selected)
+                            if (ev.target.checked) {
+                                tmpselected.add(action.newHash)
+                            } else {
+                                tmpselected.delete(action.newHash)
+                            }
+                            setSelected(tmpselected)
+                        }}
+                    />
+                </ListItemIcon>
+            )}
+            <Grid container spacing={1}>
+                {/** here comes the FieldArray fields */}
+            </Grid>
+        </ListItem>
+    )
+})
+
+interface TokenDialogProps extends Omit<DialogProps, 'children' | 'onClose'> {
+    disabled?: boolean
+    handleClose: () => void
+    hashMapper: {
         [keyHash: string]: {
             token: string
             note: string
@@ -66,112 +94,44 @@ export const TokenDialog = ({
             configActions: Set<string>
             newActions: Set<string>
         }
-    }>({})
-    const { data: dataUnfinished } = useQuery(getActionsQuery, {
-        pollInterval: 60000,
-        variables: {
-            variables: {
-                id,
-                authorization: tokens,
-            },
-        },
-        onCompleted: async (data) => {
-            const prepare: PromiseLike<{
-                token: string
-                note: string
-                newHash: string
-                oldHash: null | string
-                configActions: Set<string>
-                newActions: Set<string>
-            }>[] = []
-            const premapper: {
-                [hash: string]: { [type: string]: Set<string | null> }
-            } = {}
-            for (const entry of data.secretgraph.node.availableActions) {
-                if (!premapper[entry.keyHash]) {
-                    premapper[entry.keyHash] = { [entry.type]: new Set() }
-                }
-                if (!premapper[entry.keyHash][entry.type]) {
-                    premapper[entry.keyHash][entry.type] = new Set()
-                }
-                premapper[entry.keyHash][entry.type].add(entry.id)
-            }
-            const hashalgo =
-                Constants.mapHashNames[
-                    data.secretgraph.config.hashAlgorithms[0]
-                ].operationName
-            for (const token of unknownTokens) {
-                prepare.push(
-                    serializeToBase64(
-                        unserializeToArrayBuffer(
-                            (token.match(matcher) as RegExpMatchArray)[1]
-                        ).then((val) => crypto.subtle.digest(hashalgo, val))
-                    ).then((val) => ({
-                        token,
-                        note: '',
-                        newHash: val,
-                        oldHash: null,
-                        configActions: new Set<string>(),
-                        newActions: new Set<string>(
-                            premapper[val] ? Object.keys(premapper[val]) : []
-                        ),
-                    }))
-                )
-            }
-            for (const [hash, actions] of Object.entries(knownHashes)) {
-                prepare.push(
-                    serializeToBase64(
-                        unserializeToArrayBuffer(
-                            config.tokens[hash].token
-                        ).then((val) => crypto.subtle.digest(hashalgo, val))
-                    ).then((val) => ({
-                        token: config.tokens[hash].token,
-                        note: config.tokens[hash].note,
-                        newHash: val,
-                        oldHash: hash,
-                        configActions: new Set<string>(actions),
-                        newActions: new Set<string>(
-                            premapper[val] ? Object.keys(premapper[val]) : []
-                        ),
-                    }))
-                )
-            }
-            setHashMapper(
-                Object.fromEntries(
-                    (await Promise.all(prepare)).map((val) => {
-                        return [val.newHash, val]
-                    })
-                )
-            )
-        },
-    })
+    }
+}
+// specify in hierachy for setting formik fields
+export default function TokenDialog({
+    disabled,
+    hashMapper,
+    handleClose,
+    ...props
+}: TokenDialogProps) {
+    const [selected, setSelected] = React.useState(new Set<string>())
+    const {
+        values: { tokens },
+        submitForm,
+    } = useFormikContext<{
+        tokens: {
+            idOrHash: string
+            start: Date
+            stop: Date | null
+            note: string
+            value: any
+        }[]
+    }>()
     const finishedList = React.useMemo(() => {
-        if (!dataUnfinished) {
-            return []
-        }
-
         const finishedList = []
-        for (const action of dataUnfinished.node.availableActions) {
-            const existingActionData = hashMapper[action.keyHash]
+        for (const action of Object.values(hashMapper)) {
             finishedList.push(
-                <ListItem>
-                    <ListItemIcon>
-                        <Checkbox
-                            edge="start"
-                            checked={selected.has(action.keyHash)}
-                            tabIndex={-1}
-                            disableRipple
-                        />
-                    </ListItemIcon>
-                    <ListItemText></ListItemText>
-                </ListItem>
+                <TokenEntry
+                    selected={selected}
+                    setSelected={setSelected}
+                    action={action}
+                />
             )
         }
         return finishedList
-    }, [dataUnfinished, config])
+    }, [hashMapper])
 
     return (
-        <Dialog {...props}>
+        <Dialog {...props} onClose={(ev) => handleClose()}>
             <DialogTitle>Tokens</DialogTitle>
             <DialogContent>
                 <List>
@@ -185,23 +145,37 @@ export const TokenDialog = ({
                             />
                         </ListItemIcon>
                     </ListSubheader>
+                    <TokenEntry />
                 </List>
             </DialogContent>
             <DialogActions>
-                <Button>Persist Tokens</Button>
+                <Button disabled={disabled} onClick={(ev) => handleClose()}>
+                    Close
+                </Button>
                 <Button
-                    disabled={Object.values(hashMapper).every(
-                        (val) =>
-                            !val.oldHash ||
-                            (val.oldHash == val.newHash &&
-                                SetOps.isNotEq(
-                                    SetOps.intersection(
-                                        availableActionsSet,
-                                        val.configActions
-                                    ),
-                                    val.newActions
-                                ))
-                    )}
+                    disabled={
+                        disabled ||
+                        Object.values(hashMapper).every((val) => val.oldHash)
+                    }
+                >
+                    Persist Tokens
+                </Button>
+                <Button
+                    disabled={
+                        disabled ||
+                        Object.values(hashMapper).every(
+                            (val) =>
+                                !val.oldHash ||
+                                (val.oldHash == val.newHash &&
+                                    SetOps.isNotEq(
+                                        SetOps.intersection(
+                                            availableActionsSet,
+                                            val.configActions
+                                        ),
+                                        val.newActions
+                                    ))
+                        )
+                    }
                 >
                     Update Tokens
                 </Button>

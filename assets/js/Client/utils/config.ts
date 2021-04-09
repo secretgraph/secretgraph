@@ -1,7 +1,7 @@
 import { ApolloClient } from '@apollo/client'
 import { saveAs } from 'file-saver'
 
-import { mapHashNames } from '../constants'
+import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { findConfigQuery } from '../queries/content'
 import {
@@ -11,6 +11,7 @@ import {
     encryptAESGCM,
     encryptPreKey,
     serializeToBase64,
+    unserializeToArrayBuffer,
     unserializeToCryptoKey,
 } from './encryption'
 import { b64toarr, mergeDeleteObjects, utf8encoder } from './misc'
@@ -344,7 +345,10 @@ export async function exportConfigAsUrl({
     certhashes = await Promise.all(
         obj.data.secretgraph.config.hashAlgorithms.map((hash: string) =>
             crypto.subtle
-                .digest(mapHashNames[hash].operationName, cert as Uint8Array)
+                .digest(
+                    Constants.mapHashNames[hash].operationName,
+                    cert as Uint8Array
+                )
                 .then((data) =>
                     btoa(String.fromCharCode(...new Uint8Array(data)))
                 )
@@ -515,7 +519,9 @@ export function extractPrivKeys({
                     config.certificates[hash].token,
                     {
                         name: 'RSA-OAEP',
-                        hash: mapHashNames[props.hashAlgorithm].operationName,
+                        hash:
+                            Constants.mapHashNames[props.hashAlgorithm]
+                                .operationName,
                     },
                     'privateKey'
                 )
@@ -672,6 +678,85 @@ export function updateConfigReducer(
         )
     }
     return newState
+}
+
+const tokenMatcher = /^(?:[^:]+:)?(.*?)/.compile()
+
+export async function calculateTokenMapper({
+    nodeData,
+    config,
+    knownHashes,
+    unknownTokens,
+    hashAlgorithm,
+}: {
+    nodeData: any
+    config: Interfaces.ConfigInterface
+    knownHashes: { [hash: string]: string[] }
+    unknownTokens: string[]
+    hashAlgorithm: string
+}) {
+    const prepare: PromiseLike<{
+        token: string
+        note: string
+        newHash: string
+        oldHash: null | string
+        configActions: Set<string>
+        newActions: Set<string>
+    }>[] = []
+    const premapper: {
+        [hash: string]: { [type: string]: Set<string | null> }
+    } = {}
+    for (const entry of nodeData.availableActions) {
+        if (!premapper[entry.keyHash]) {
+            premapper[entry.keyHash] = { [entry.type]: new Set() }
+        }
+        if (!premapper[entry.keyHash][entry.type]) {
+            premapper[entry.keyHash][entry.type] = new Set()
+        }
+        premapper[entry.keyHash][entry.type].add(entry.id)
+    }
+    const hashalgo = Constants.mapHashNames[hashAlgorithm].operationName
+    for (const token of unknownTokens) {
+        prepare.push(
+            serializeToBase64(
+                unserializeToArrayBuffer(
+                    (token.match(tokenMatcher) as RegExpMatchArray)[1]
+                ).then((val) => crypto.subtle.digest(hashalgo, val))
+            ).then((val) => ({
+                token,
+                note: '',
+                newHash: val,
+                oldHash: null,
+                configActions: new Set<string>(),
+                newActions: new Set<string>(
+                    premapper[val] ? Object.keys(premapper[val]) : []
+                ),
+            }))
+        )
+    }
+    for (const [hash, actions] of Object.entries(knownHashes)) {
+        prepare.push(
+            serializeToBase64(
+                unserializeToArrayBuffer(
+                    config.tokens[hash].token
+                ).then((val) => crypto.subtle.digest(hashalgo, val))
+            ).then((val) => ({
+                token: config.tokens[hash].token,
+                note: config.tokens[hash].note,
+                newHash: val,
+                oldHash: hash,
+                configActions: new Set<string>(actions),
+                newActions: new Set<string>(
+                    premapper[val] ? Object.keys(premapper[val]) : []
+                ),
+            }))
+        )
+    }
+    return Object.fromEntries(
+        (await Promise.all(prepare)).map((val) => {
+            return [val.newHash, val]
+        })
+    )
 }
 
 // update host specific or find a way to find missing refs

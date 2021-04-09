@@ -51,7 +51,7 @@ key refs are assigned to privatekey, the rest to the public key
 
 ## Operations
 
-idea: unique operation names. It would be nice to have namespaces
+idea: unique operation names. It would be nice to have namespaces like for queries
 
 -   updateOrCreateContent: what it says
 -   updateOrCreateCluster: what it says, can create keys
@@ -80,7 +80,8 @@ idea: unique operation names. It would be nice to have namespaces
 
 # TODO
 
--   maybe: own apollo context with multiple instances (config/base, active url)
+-   Available Actions are too limited, we need all action hashes => way to list stale actions
+-   Way to list stale actions (maybe: anonymize their description)
 -   subscribe to config, watch changes
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters

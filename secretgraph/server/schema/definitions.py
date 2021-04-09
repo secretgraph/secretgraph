@@ -1,4 +1,5 @@
 import graphene
+from itertools import chain
 from django.db.models import Subquery, Q
 from django.conf import settings
 from django.shortcuts import resolve_url
@@ -10,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
-from ..models import Cluster, Content, ContentReference
+from ..models import Action, Cluster, Content, ContentReference
 from .shared import DeleteRecursive
 
 
@@ -110,7 +111,8 @@ class ActionEntry(graphene.ObjectType):
     requiredKeys = graphene.List(
         graphene.NonNull(graphene.String), required=True)
     allowedTags = graphene.List(
-        graphene.NonNull(graphene.String), required=True)
+        graphene.NonNull(graphene.String), required=False
+    )
 
 
 class ActionMixin(object):
@@ -119,21 +121,19 @@ class ActionMixin(object):
     def resolve_availableActions(self, info):
         name = self.__class__.__name__
         result = getattr(info.context, "secretgraphResult", {}).get(name, {})
-        resultval = (
-            result.get("required_keys_%ss" % name.lower(), {})
-            .get(self.id, {})
-            .items()
-        )
+        resultval = []
         # only show some actions
-        # we cannot seperate with lambda. They appear as list
-        resultval = filter(
-            lambda key_val: key_val[0][0]
-            in {"manage", "push", "view", "update"},
-            resultval,
+        has_manage = False
+        mapper = result.get("required_keys_%ss" % name.lower(), {}).get(
+            self.id, {}
         )
-        has_manage = any(map(lambda x: x[0][0] == "manage", resultval))
-        # we cannot seperate with lambda. They appear as list
-        return map(
+        ids = set()
+        for key_val in mapper.items():
+            if key_val[0][0] in {"manage", "push", "view", "update"}:
+                ids.add(key_val[1]["id"])
+                if key_val[0][0] == "manage":
+                    has_manage = True
+        resultval = map(
             lambda key_val: ActionEntry(
                 id=None if not has_manage else key_val[1]["id"],
                 keyHash=key_val[0][1],
@@ -145,8 +145,49 @@ class ActionMixin(object):
                     else None
                 ),
             ),
-            resultval,
+            filter(lambda key_val: key_val[1]["id"] in ids, mapper.items())
         )
+        if has_manage:
+            if isinstance(self, Content):
+                resultval = chain(
+                    resultval,
+                    getattr(
+                        info.context, "secretgraphResult",
+                        {}
+                    ).get("Action", {"objects": Action.objects.none()}).filter(
+                        Q(contentAction__isnull=True) |
+                        Q(contentAction__content_id=self.id),
+                        cluster_id=self.cluster_id
+                    ).exclude(id__in=ids).map(
+                        lambda x: ActionEntry(
+                            id=None if not has_manage else x.id,
+                            keyHash=x.keyHash,
+                            type="other",
+                            requiredKeys=[],
+                            allowedTags=None,
+                        )
+                    )
+                )
+            else:
+                resultval = chain(
+                    resultval,
+                    getattr(
+                        info.context, "secretgraphResult",
+                        {}
+                    ).get("Action", {"objects": Action.objects.none()}).filter(
+                        contentAction__isnull=True,
+                        cluster_id=self.id
+                    ).exclude(id__in=ids).map(
+                        lambda x: ActionEntry(
+                            id=None if not has_manage else x.id,
+                            keyHash=x.keyHash,
+                            type="other",
+                            requiredKeys=[],
+                            allowedTags=None,
+                        )
+                    )
+                )
+        return resultval
 
 
 class ContentReferenceNode(DjangoObjectType):

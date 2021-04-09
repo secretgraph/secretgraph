@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 _cached_classes = {"Content", "Cluster", "Action"}
+_allowed_auth_types = {"Cluster", "Content"}
 
 
 class LazyViewResult(object):
@@ -70,9 +71,6 @@ def initializeCachedResult(
             ),
         )
     return getattr(request, name)
-
-
-_allowed_types = {"Cluster", "Content"}
 
 
 def retrieve_allowed_objects(request, scope, query, authset=None):
@@ -128,7 +126,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         try:
             _type, flexid = from_global_id(flexid)
         finally:
-            if _type not in _allowed_types:
+            if _type not in _allowed_auth_types:
                 continue
             _type = {_type}
         try:

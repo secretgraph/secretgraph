@@ -19,8 +19,10 @@ class ActionInput(graphene.InputObjectType):
     idOrHash = graphene.String(required=False)
     start = graphene.DateTime(required=False)
     stop = graphene.DateTime(required=False)
+    # delete for action deletion
     value = graphene.JSONString(required=True, description="Action definition")
-    # always required as actions must be checked and transformed by server
+    # except with deletion always required as actions must be checked and
+    # transformed by server
     key = graphene.String(
         required=False,
         description="Action key for encrypting action (base64, 32 bytes)",
