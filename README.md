@@ -63,30 +63,30 @@ key refs are assigned to privatekey, the rest to the public key
     -   requiredKeys: require keys within array for encryption
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
--   push:
+-   push (only contenAction):
     -   freeze: cannot update after be viewed
     -   updateable: can update newly created content
     -   requiredKeys: require keys within array for encryption
     -   injectedReferences: force inject references to Contents, entries have following props:
-        -   target:
-        -   group:
-        -   deleteRecursive:
+        -   target: id of content
+        -   group: group name
+        -   deleteRecursive: group behaviour:
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
--   manage:
+-   manage (never contentAction):
     -   exclude:
         -   Cluster: ids of clusters which are excluded
         -   Content: ids of contents which are excluded
-        -   Action: keyHashes of contents which are excluded
--   storedUpdate:
+        -   Action: keyHashes of actions which are excluded
+-   storedUpdate (never contentAction):
     -   delete:
         -   Cluster: ids of clusters which are deleted
         -   Content: ids of contents which are deleted
-        -   Action: keyHashes of contents which are deleted
+        -   Action: keyHashes of actions which are deleted
     -   update:
         -   Cluster: map id updated fields
         -   Content: map id updated fields
-        -   Action: map key updated fields
+        -   Action: map keyHash updated fields
 
 ## Operations
 

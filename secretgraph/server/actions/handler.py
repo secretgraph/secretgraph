@@ -241,13 +241,20 @@ class ActionHandler:
             fields=("flexid",),
             authset=authset,
         ):
+            deleteRecursive = references[_flexid].get(
+                "deleteRecursive", constants.DeleteRecursive.TRUE.value
+            )
+            # TODO: specify nicer
+            if deleteRecursive not in constants.DeleteRecursive.valide_values:
+                raise ValueError(
+                    "invalid deleteRecursive specification "
+                    "in injected reference"
+                )
             result["form"]["injectedReferences"].append(
                 {
                     "target": _id,
                     "group": references[_flexid].get("group", ""),
-                    "deleteRecursive": references[_flexid].get(
-                        "deleteRecursive", constants.DeleteRecursive.TRUE.value
-                    ),
+                    "deleteRecursive": deleteRecursive,
                 }
             )
         if action_dict.get("requiredKeys"):

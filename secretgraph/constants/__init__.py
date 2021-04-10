@@ -8,9 +8,14 @@ class Action(enum.Enum):
 
 
 class DeleteRecursive(enum.Enum):
+    __ignore__ = ["valide_values"]
     TRUE = "a"
     FALSE = "b"
     NO_GROUP = "c"
+
+
+DeleteRecursive.valide_values = set(map(lambda x: x.value,
+                                        DeleteRecursive.__members__.values()))
 
 
 class MetadataOperations(enum.Enum):
