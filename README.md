@@ -46,8 +46,47 @@ key refs are assigned to privatekey, the rest to the public key
 
 ## Special tags
 
--   "key_hash": 2 needed except for keys (1 needed)
--   "key": special, required tag for PrivateKey. Contains encrypted shared secret
+-   key_hash: 2 needed except for keys (1 needed)
+-   key: special, required tag for PrivateKey. Contains encrypted shared secret
+-   type: Content type
+-   state: Content state, one of public, internal, draft
+
+## Actions
+
+-   view
+    -   includeTags: like param, include only contents with tag
+    -   excludeTags: like param, exclude contents with tag
+-   update:
+    -   freeze: cannot update after be viewed
+    -   restricted: raise priority among filters only explicit specified
+    -   ids: only contents with ids in list (can be flexid)
+    -   requiredKeys: require keys within array for encryption
+    -   injectedTags: force inject tags
+    -   allowedTags: allow only tags specified here (if set)
+-   push:
+    -   freeze: cannot update after be viewed
+    -   updateable: can update newly created content
+    -   requiredKeys: require keys within array for encryption
+    -   injectedReferences: force inject references to Contents, entries have following props:
+        -   target:
+        -   group:
+        -   deleteRecursive:
+    -   injectedTags: force inject tags
+    -   allowedTags: allow only tags specified here (if set)
+-   manage:
+    -   exclude:
+        -   Cluster: ids of clusters which are excluded
+        -   Content: ids of contents which are excluded
+        -   Action: keyHashes of contents which are excluded
+-   storedUpdate:
+    -   delete:
+        -   Cluster: ids of clusters which are deleted
+        -   Content: ids of contents which are deleted
+        -   Action: keyHashes of contents which are deleted
+    -   update:
+        -   Cluster: map id updated fields
+        -   Content: map id updated fields
+        -   Action: map key updated fields
 
 ## Operations
 

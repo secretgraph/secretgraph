@@ -422,10 +422,10 @@ class PushContentMutation(relay.ClientIDMutation):
             content["tags"] = form.get("injectedTags") or []
         if content.get("references") is not None:
             content["references"] = chain(
-                form.get("injectReferences", []), content["references"]
+                form.get("injectedReferences", []), content["references"]
             )
         else:
-            content["references"] = form.get("injectReferences") or []
+            content["references"] = form.get("injectedReferences") or []
         required_keys = list(
             Content.objects.injected_keys(group=source.group).values_list(
                 "contentHash", flat=True

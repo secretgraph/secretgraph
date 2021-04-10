@@ -79,10 +79,10 @@ class PushForm(forms.Form):
             ret["tags"] = form.get("injectedTags") or []
         if ret.get("references") is not None:
             ret["references"] = chain(
-                form.get("injectReferences", []), ret["references"]
+                form.get("injectedReferences", []), ret["references"]
             )
         else:
-            ret["references"] = form.get("injectReferences") or []
+            ret["references"] = form.get("injectedReferences") or []
         required_keys = list(
             Content.objects.injected_keys(
                 group=self.instance.group

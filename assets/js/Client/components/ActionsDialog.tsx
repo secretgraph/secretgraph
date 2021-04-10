@@ -9,20 +9,22 @@ import {
     MenuItem,
 } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
-import Collapse from '@material-ui/core/Collapse'
 import Dialog, { DialogProps } from '@material-ui/core/Dialog'
 import DialogTitle from '@material-ui/core/DialogTitle'
 import Grid from '@material-ui/core/Grid'
 import IconButton from '@material-ui/core/IconButton'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import List from '@material-ui/core/List'
-import ListItem from '@material-ui/core/ListItem'
+import ListItem, { ListItemProps } from '@material-ui/core/ListItem'
+import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction'
 import ListItemText from '@material-ui/core/ListItemText'
+import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
 import AddIcon from '@material-ui/icons/Add'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
 import {
     FastField,
+    Field,
     FieldArray,
     FieldArrayRenderProps,
     Form,
@@ -31,7 +33,11 @@ import {
     useField,
     useFormikContext,
 } from 'formik'
-import { TextField as FormikTextField } from 'formik-material-ui'
+import {
+    Checkbox as FormikCheckBox,
+    CheckboxWithLabel as FormikCheckboxWithLabel,
+    TextField as FormikTextField,
+} from 'formik-material-ui'
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
@@ -45,51 +51,134 @@ import {
 } from '../utils/encryption'
 import { deepEqual } from '../utils/misc'
 import * as SetOps from '../utils/set'
+import SimpleSelect from './forms/SimpleSelect'
+
+interface ActionProps {
+    keyHash: string | null
+    start: Date | null
+    stop: Date | null
+    note: string
+    value: { [key: string]: any } & { action: string }
+    update?: undefined | boolean
+    delete: boolean
+    readonly: boolean
+}
 
 const availableActionsSet = new Set(['manage', 'push', 'view', 'update'])
 
-export const ActionEntry = React.memo(function TokenEntry({
-    selected,
-    setSelected,
+const ActionFields = React.memo(function ActionFields({
     action,
     index,
 }: {
-    selected?: Set<string>
-    setSelected?: (arg: Set<string>) => void
-    action?: {
-        token: string
-        note: string
-        newHash: string
-        oldHash: null | string
-        configActions: Set<string>
-        newActions: Set<string>
-    }
-    index: number
+    action: string
+    index: number | undefined
 }) {
+    switch (action) {
+        case 'view':
+            return (
+                <>
+                    <Grid item>
+                        <Typography color="error">
+                            Unsupported Actiontype
+                        </Typography>
+                    </Grid>
+                </>
+            )
+        default:
+            return (
+                <Grid item xs={12}>
+                    <Typography color="error">
+                        Unsupported Actiontype
+                    </Typography>
+                </Grid>
+            )
+    }
+})
+
+export const ActionEntry = React.memo(function ActionEntry({
+    action,
+    index,
+    disabled,
+    ...props
+}: Omit<ListItemProps, 'children' | 'button'> & {
+    action?: ActionProps
+    index?: number
+    disabled?: boolean
+}) {
+    /**
+    const {
+        values: { actions },
+    } = useFormikContext()
+    */
+
     return (
-        <ListItem>
-            {action && selected && setSelected && (
-                <ListItemIcon>
-                    <Checkbox
-                        edge="start"
-                        checked={selected.has(action.newHash)}
-                        tabIndex={-1}
-                        disableRipple
-                        onChange={(ev) => {
-                            const tmpselected = new Set(selected)
-                            if (ev.target.checked) {
-                                tmpselected.add(action.newHash)
-                            } else {
-                                tmpselected.delete(action.newHash)
-                            }
-                            setSelected(tmpselected)
+        <ListItem {...props}>
+            <Grid container spacing={2}>
+                <Grid item>
+                    <FastField
+                        name={`actions.${index}.action`}
+                        component={SimpleSelect}
+                        options={[]}
+                        disabled={disabled || action?.readonly}
+                    />
+                </Grid>
+                <Grid item>
+                    <FastField
+                        name={`actions.${index}.start`}
+                        component={FormikTextField}
+                        type="datetime-local"
+                        disabled={disabled || action?.readonly}
+                        inputProps={{
+                            pattern:
+                                '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
                         }}
                     />
-                </ListItemIcon>
-            )}
-            <Grid container spacing={2}>
-                {/** here comes the FieldArray fields */}
+                </Grid>
+                <Grid item>
+                    <FastField
+                        name={`actions.${index}.stop`}
+                        component={FormikTextField}
+                        type="datetime-local"
+                        inputProps={{
+                            pattern:
+                                '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
+                        }}
+                        disabled={disabled || action?.readonly}
+                    />
+                </Grid>
+                <Grid item container spacing={2}>
+                    <ActionFields
+                        action={action?.value?.action || ''}
+                        index={index}
+                    />
+                </Grid>
             </Grid>
+            <ListItemSecondaryAction>
+                {action && action.update !== undefined && (
+                    <Tooltip title="Update Action" arrow>
+                        <span>
+                            <Field
+                                name={`actions.${index}.update`}
+                                disabled={disabled || action?.readonly}
+                                component={FormikCheckBox}
+                                type="checkbox"
+                            />
+                        </span>
+                    </Tooltip>
+                )}
+                {action && (
+                    <Tooltip title="Delete" arrow>
+                        <span>
+                            <Field
+                                name={`actions.${index}.delete`}
+                                disabled={disabled || action?.readonly}
+                                component={FormikCheckBox}
+                                type="checkbox"
+                            />
+                        </span>
+                    </Tooltip>
+                )}
+            </ListItemSecondaryAction>
         </ListItem>
     )
 })
@@ -100,15 +189,7 @@ interface ActionsDialogProps
     disabled?: boolean
     handleClose: () => void
     form: FormikProps<{
-        actions: {
-            keyHash: string | null
-            start: Date | null
-            stop: Date | null
-            note: string
-            value: any
-            update?: undefined | boolean
-            disabled: boolean
-        }[]
+        actions: ActionProps[]
         button: string
     }>
 }
@@ -126,26 +207,20 @@ export default function ActionsDialog({
     replace,
     ...dialogProps
 }: ActionsDialogProps) {
-    const { hashIdMapper } = React.useMemo(() => {
-        return {
-            hashIdMapper: Object.fromEntries(
-                form.values.actions.map((val, id) => [val.keyHash, id])
-            ),
-            // TODO: actually sort
-            // sortedList: actions.slice(),
-        }
-    }, [form.values.actions])
-
     return (
         <Dialog {...dialogProps} onClose={(ev) => handleClose()}>
             <DialogTitle>Access Control</DialogTitle>
             <DialogContent>
                 <List>
-                    <ActionEntry index={-1} />
+                    {form.values.actions.map((val) => {
+                        return ActionEntry
+                    })}
+                    <ActionEntry />
                 </List>
             </DialogContent>
             <DialogActions>
                 <Button
+                    variant="contained"
                     onClick={async (ev) => {
                         form.values.actions.forEach((val, index) => {
                             if (val.update !== undefined)
@@ -155,21 +230,16 @@ export default function ActionsDialog({
                                 })
                         })
                         form.setFieldTouched('actions', true)
-                        form.setFieldValue('button', 'only_actions', false)
-                        try {
-                            await form.submitForm()
-                        } finally {
-                            handleClose()
-                        }
                     }}
                     disabled={
                         disabled ||
                         form.values.actions.every((val) => !val.update)
                     }
                 >
-                    Update old tokens
+                    Accept all updates of actions
                 </Button>
                 <Button
+                    variant="contained"
                     disabled={
                         disabled ||
                         deepEqual(
@@ -186,9 +256,10 @@ export default function ActionsDialog({
                         }
                     }}
                 >
-                    Save only Tokens
+                    Save (only Tokens)
                 </Button>
                 <Button
+                    variant="contained"
                     disabled={disabled}
                     onClick={(ev) => {
                         form.setFieldValue(
@@ -198,7 +269,7 @@ export default function ActionsDialog({
                         form.setFieldTouched('actions', false)
                     }}
                 >
-                    Reset
+                    Reset Tokens
                 </Button>
                 <Button disabled={disabled} onClick={(ev) => handleClose()}>
                     Close

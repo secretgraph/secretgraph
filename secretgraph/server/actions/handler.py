@@ -146,7 +146,7 @@ class ActionHandler:
                 "requiredKeys": [],
                 "injectedTags": [],
                 "allowedTags": [],
-                "references": [],
+                "injectedReferences": [],
             },
         }
 
@@ -210,7 +210,7 @@ class ActionHandler:
                 "updateable": bool(action_dict.get("updateable")),
                 # freeze when fetched
                 "freeze": bool(action_dict.get("freeze")),
-                "injectReferences": [
+                "injectedReferences": [
                     {
                         "group": "push",
                         "target": content.id,
@@ -231,7 +231,7 @@ class ActionHandler:
                 if i in {"type=PublicKey", "type=PrivateKey", "type="}:
                     raise ValueError()
             result["form"]["allowedTags"].extend(action_dict["allowedTags"])
-        references = action_dict.get("injectReferences") or {}
+        references = action_dict.get("injectedReferences") or {}
         if isinstance(references, list):
             references = dict(map(lambda x: (x["target"], x), references))
         for _flexid, _id in _only_owned_helper(
@@ -241,7 +241,7 @@ class ActionHandler:
             fields=("flexid",),
             authset=authset,
         ):
-            result["form"]["injectReferences"].append(
+            result["form"]["injectedReferences"].append(
                 {
                     "target": _id,
                     "group": references[_flexid].get("group", ""),
@@ -284,14 +284,14 @@ class ActionHandler:
                 "requiredKeys": [],
                 "injectedTags": [],
                 "allowedTags": None,
-                "injectReferences": [],
+                "injectedReferences": [],
             },
         }
 
     @staticmethod
     def clean_manage(action_dict, request, content, authset):
         if content:
-            raise ValueError("manage cannot be changed to content")
+            raise ValueError("manage cannot be used as contentaction")
         result = {
             "action": "manage",
             "exclude": {"Cluster": [], "Content": [], "Action": []},
@@ -355,6 +355,8 @@ class ActionHandler:
 
     @staticmethod
     def clean_storedUpdate(action_dict, request, content, authset):
+        if content:
+            raise ValueError("storedUpdate cannot be used as contentaction")
         now_plus_x = timezone.now() + td(minutes=20)
         result = {
             "action": "storedUpdate",
