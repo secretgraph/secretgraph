@@ -483,7 +483,7 @@ export function extractAuthInfo({
                 }
                 hashes.add(hash)
                 keys.add(
-                    `${contentconf.id}:${
+                    `${contentconf.cluster}:${
                         config.tokens[hash_algo] || config.tokens[hash]
                     }`
                 )
@@ -680,9 +680,9 @@ export function updateConfigReducer(
     return newState
 }
 
-const tokenMatcher = /^(?:[^:]+:)?(.*?)/.compile()
+const actionMatcher = /^(?:[^:]+:)?(.*?)/.compile()
 
-export async function calculateTokenMapper({
+export async function calculateActionMapper({
     nodeData,
     config,
     knownHashes,
@@ -720,7 +720,7 @@ export async function calculateTokenMapper({
         prepare.push(
             serializeToBase64(
                 unserializeToArrayBuffer(
-                    (token.match(tokenMatcher) as RegExpMatchArray)[1]
+                    (token.match(actionMatcher) as RegExpMatchArray)[1]
                 ).then((val) => crypto.subtle.digest(hashalgo, val))
             ).then((val) => ({
                 token,

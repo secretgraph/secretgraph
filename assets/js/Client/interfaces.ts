@@ -55,7 +55,7 @@ export interface ReferenceInterface {
 
 export interface ConfigContentInterface {
     hashes: { [hash: string]: string[] }
-    id: string
+    cluster: string
 }
 
 export interface ConfigClusterInterface {

@@ -12,8 +12,8 @@ export function b64toutf8(inp: string) {
     return utf8decoder.decode(b64toarr(inp))
 }
 
-export function sortedHash(inp: string[], algo: string): PromiseLike<string> {
-    return crypto.subtle
+export async function sortedHash(inp: string[], algo: string): Promise<string> {
+    return await crypto.subtle
         .digest(algo, utf8encoder.encode(inp.sort().join('')))
         .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))))
 }
@@ -25,6 +25,9 @@ export function mergeDeleteObjects(
 ) {
     const copied = Object.create(oldObj || {})
     for (const [key, value] of Object.entries(newObj)) {
+        if (!key) {
+            continue
+        }
         if (value === null) {
             delete copied[key]
         } else if (typeof value === 'object') {
@@ -34,4 +37,44 @@ export function mergeDeleteObjects(
         }
     }
     return copied
+}
+
+export function deepEqual<T>(a: T, b: T) {
+    if (a === null || b === null) {
+        return a === b
+    }
+    if (a instanceof Set || b instanceof Set) {
+        if (!(a instanceof Set && b instanceof Set)) {
+            return false
+        }
+        if (a.size != b.size) {
+            return false
+        }
+        for (const key of a) {
+            if (!b.has(key)) {
+                return false
+            }
+        }
+        return true
+    } else if (typeof a == 'object' && typeof b == 'object') {
+        const keys = new Set<string>()
+        for (const key of a instanceof Array || a instanceof Map
+            ? a.keys()
+            : Object.keys(a)) {
+            keys.add(key)
+        }
+        for (const key of b instanceof Array || b instanceof Map
+            ? b
+            : Object.keys(b)) {
+            keys.add(key)
+        }
+        for (const key of keys) {
+            if (!deepEqual((a as any)[key], (b as any)[key])) {
+                return false
+            }
+        }
+        return true
+    } else {
+        return a === b
+    }
 }

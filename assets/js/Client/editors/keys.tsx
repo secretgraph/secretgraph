@@ -490,6 +490,7 @@ const EditKeys = () => {
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
+    const { baseClient } = React.useContext(Contexts.Clients)
     const { data, isLoading, reload } = useAsync({
         promiseFn: loadKeys,
         suspense: true,
@@ -700,7 +701,7 @@ const EditKeys = () => {
                                             : null,
                                     },
                                 },
-                                client,
+                                client: baseClient,
                             }),
                             true
                         )
@@ -734,6 +735,7 @@ const AddKeys = () => {
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
+    const { baseClient } = React.useContext(Contexts.Clients)
     const { data } = useAsync<ApolloQueryResult<any>>({
         promiseFn: client.query,
         onReject: console.error,
@@ -858,7 +860,7 @@ const AddKeys = () => {
                                     },
                                 },
                             },
-                            client,
+                            client: baseClient,
                         })
                     )
                 }
