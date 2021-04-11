@@ -69,19 +69,25 @@ const availableActionsSet = new Set(['manage', 'push', 'view', 'update'])
 const ActionFields = React.memo(function ActionFields({
     action,
     index,
+    disabled,
 }: {
     action: string
     index: number | undefined
+    disabled?: boolean
 }) {
     switch (action) {
         case 'view':
+        case 'update':
+        case 'manage':
             return (
                 <>
-                    <Grid item>
-                        <Typography color="error">
-                            Unsupported Actiontype
-                        </Typography>
-                    </Grid>
+                    <Grid item></Grid>
+                </>
+            )
+        case 'push':
+            return (
+                <>
+                    <Grid item></Grid>
                 </>
             )
         default:
@@ -114,27 +120,31 @@ export const ActionEntry = React.memo(function ActionEntry({
     return (
         <ListItem {...props}>
             <Grid container spacing={2}>
-                <Grid item>
+                <Grid item xs={4}>
                     <FastField
-                        name={`actions.${index}.action`}
+                        name={`actions.${index}.value.action`}
                         component={SimpleSelect}
-                        options={[]}
-                        disabled={disabled || action?.readonly}
+                        options={['view', 'update', 'manage']}
+                        disabled={
+                            disabled || action?.delete || action?.readonly
+                        }
                     />
                 </Grid>
-                <Grid item>
+                <Grid item xs={4}>
                     <FastField
                         name={`actions.${index}.start`}
                         component={FormikTextField}
                         type="datetime-local"
-                        disabled={disabled || action?.readonly}
+                        disabled={
+                            disabled || action?.delete || action?.readonly
+                        }
                         inputProps={{
                             pattern:
                                 '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
                         }}
                     />
                 </Grid>
-                <Grid item>
+                <Grid item xs={4}>
                     <FastField
                         name={`actions.${index}.stop`}
                         component={FormikTextField}
@@ -143,13 +153,27 @@ export const ActionEntry = React.memo(function ActionEntry({
                             pattern:
                                 '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
                         }}
-                        disabled={disabled || action?.readonly}
+                        disabled={
+                            disabled || action?.delete || action?.readonly
+                        }
                     />
                 </Grid>
-                <Grid item container spacing={2}>
+                <Grid item xs={12}>
+                    <FastField
+                        name={`actions.${index}.note`}
+                        component={FormikTextField}
+                        disabled={
+                            disabled || action?.delete || action?.readonly
+                        }
+                    />
+                </Grid>
+                <Grid item container spacing={2} xs={12}>
                     <ActionFields
                         action={action?.value?.action || ''}
                         index={index}
+                        disabled={
+                            disabled || action?.delete || action?.readonly
+                        }
                     />
                 </Grid>
             </Grid>
@@ -159,7 +183,11 @@ export const ActionEntry = React.memo(function ActionEntry({
                         <span>
                             <Field
                                 name={`actions.${index}.update`}
-                                disabled={disabled || action?.readonly}
+                                disabled={
+                                    disabled ||
+                                    action?.delete ||
+                                    action?.readonly
+                                }
                                 component={FormikCheckBox}
                                 type="checkbox"
                             />

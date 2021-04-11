@@ -173,15 +173,13 @@ const TextFileAdapter = ({
 }
 
 const ViewFile = () => {
-    const { classes, theme } = useStylesAndTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const client = useApolloClient()
     const [data, setData] = React.useState<
         UnpackPromise<ReturnType<typeof decryptContentObject>>
     >(null)
 
-    const { data: dataUnfinished } = useQuery(contentRetrievalQuery, {
+    const { loading } = useQuery(contentRetrievalQuery, {
         pollInterval: 60000,
         variables: {
             variables: {
@@ -189,18 +187,15 @@ const ViewFile = () => {
                 authorization: mainCtx.tokens,
             },
         },
+        onCompleted: (data) => {
+            decryptContentObject({
+                config,
+                nodeData: data.secretgraph.node,
+                blobOrTokens: mainCtx.tokens,
+                decrypt: decryptSet,
+            }).then(setData)
+        },
     })
-    React.useEffect(() => {
-        if (!dataUnfinished) {
-            return
-        }
-        decryptContentObject({
-            config,
-            nodeData: dataUnfinished.secretgraph.node,
-            blobOrTokens: mainCtx.tokens,
-            decrypt: decryptSet,
-        }).then(setData)
-    }, [dataUnfinished])
     if (!data) {
         return null
     }
@@ -277,7 +272,6 @@ const ViewFile = () => {
 }
 
 const AddFile = () => {
-    const { classes, theme } = useStylesAndTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
@@ -715,25 +709,22 @@ const EditFile = () => {
         UnpackPromise<ReturnType<typeof decryptContentObject>>
     >(null)
 
-    const { data: dataUnfinished, refetch } = useQuery(contentRetrievalQuery, {
+    const { refetch } = useQuery(contentRetrievalQuery, {
         variables: {
             variables: {
                 id: mainCtx.item as string,
                 authorization: mainCtx.tokens,
             },
         },
+        onCompleted: (data) => {
+            decryptContentObject({
+                config,
+                nodeData: data.secretgraph.node,
+                blobOrTokens: mainCtx.tokens,
+                decrypt: decryptSet,
+            }).then(setData)
+        },
     })
-    React.useEffect(() => {
-        if (!dataUnfinished) {
-            return
-        }
-        decryptContentObject({
-            config,
-            nodeData: dataUnfinished.secretgraph.node,
-            blobOrTokens: mainCtx.tokens,
-            decrypt: decryptSet,
-        }).then(setData)
-    }, [dataUnfinished])
     if (!data) {
         return null
     }

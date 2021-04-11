@@ -1,4 +1,9 @@
-import { ApolloClient, FetchResult, useApolloClient } from '@apollo/client'
+import {
+    ApolloClient,
+    FetchResult,
+    useApolloClient,
+    useQuery,
+} from '@apollo/client'
 import Button from '@material-ui/core/Button'
 import Collapse from '@material-ui/core/Collapse'
 import Grid from '@material-ui/core/Grid'
@@ -303,11 +308,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
                                     clusters: {
                                         [newNode.id as string]: {
                                             hashes: {
-                                                [digestActionKey]: [
-                                                    'manage',
-                                                    'create',
-                                                    'update',
-                                                ],
+                                                [digestActionKey]: ['manage'],
                                                 [digestCertificate]: [],
                                             },
                                         },
@@ -403,16 +404,17 @@ const ClusterIntern = (props: ClusterInternProps) => {
 const ViewCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const client = useApolloClient()
-    const authinfo = extractAuthInfo({
-        config,
-        url: mainCtx.url as string,
-        require: new Set(['view', 'manage']),
-    })
-    const { data, isLoading } = useAsync({
-        promiseFn: item_retrieval_helper,
-        onReject: console.error,
-        onResolve: (data) => {
+    const [data, setData] = React.useState<any>(null)
+
+    const { loading } = useQuery(getClusterQuery, {
+        pollInterval: 60000,
+        variables: {
+            variables: {
+                id: mainCtx.item as string,
+                authorization: mainCtx.tokens,
+            },
+        },
+        onCompleted: (data) => {
             const updateOb = {
                 shareUrl: data.data.secretgraph.node.link,
                 deleted: data.data.secretgraph.node.deleted || null,
@@ -426,18 +428,14 @@ const ViewCluster = () => {
                 updateOb.deleted = false
             }
             updateMainCtx(updateOb)
+            setData(data)
         },
-        suspense: true,
-        client: client,
-        tokens: authinfo.tokens,
-        item: mainCtx.item,
-        watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
     })
-    if (isLoading) {
+    if (!data) {
         return null
     }
-    if (!(data as any).data.secretgraph.node) {
-        console.error('Node empty', data, authinfo)
+    if (!data.secretgraph.node) {
+        console.error('Node empty', data)
         return null
     }
 
@@ -445,12 +443,12 @@ const ViewCluster = () => {
         <ClusterIntern
             {...extractPublicInfo(
                 config,
-                data?.data?.secretgraph?.node,
+                data?.secretgraph?.node,
                 mainCtx.url,
                 mainCtx.item
             )}
             disabled
-            tokens={authinfo.tokens}
+            tokens={mainCtx.tokens}
         />
     )
 }
@@ -479,78 +477,64 @@ const AddCluster = () => {
 const EditCluster = () => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const client = useApolloClient()
+    const [data, setData] = React.useState<any>(null)
     const authinfo = extractAuthInfo({
         config,
         clusters: new Set([mainCtx.item as string]),
         url: mainCtx.url as string,
         require: new Set(['manage']),
     })
-    const { data, isLoading, promise } = useAsync({
-        promiseFn: item_retrieval_helper,
-        onReject: console.error,
-        onResolve: (data) => {
-            if (!data) {
-                return
-            }
+    const { loading } = useQuery(getClusterQuery, {
+        pollInterval: 60000,
+        variables: {
+            variables: {
+                id: mainCtx.item as string,
+                authorization: mainCtx.tokens,
+            },
+        },
+        onCompleted: (data) => {
             const updateOb = {
                 shareUrl: data.data.secretgraph.node.link,
                 deleted: data.data.secretgraph.node.deleted || null,
                 updateId: data.data.secretgraph.node.updateId,
             }
             if (
-                data?.data.secretgraph.node.id == config.configCluster &&
+                data.data.secretgraph.node.id == config.configCluster &&
                 mainCtx.url == config.baseUrl &&
                 !updateOb.deleted
             ) {
                 updateOb.deleted = false
             }
             updateMainCtx(updateOb)
+            setData(data)
         },
-        client: client,
-        tokens: authinfo.tokens,
-        item: mainCtx.item,
-        watch: mainCtx.item + '' + mainCtx.url + '' + mainCtx.deleted,
-        suspense: true,
     })
 
-    if (isLoading) {
-        return null
-    }
-    if (!data) {
-        return (
-            <ClusterIntern
-                name=""
-                note=""
-                publicTokens={[]}
-                privateTokens={[]}
-                id={mainCtx.item}
-                tokens={authinfo.tokens}
-            />
-        )
-    }
     if (!data?.data?.secretgraph?.node) {
         return (
             <ClusterIntern
+                key="disabled"
+                disabled
                 name=""
                 note=""
                 publicTokens={[]}
                 privateTokens={[]}
                 id={mainCtx.item}
-                tokens={authinfo.tokens}
+                tokens={mainCtx.tokens}
             />
         )
     }
 
     return (
         <ClusterIntern
+            key="enabled"
             {...extractPublicInfo(
                 config,
                 data.data?.secretgraph?.node,
                 mainCtx.url,
                 mainCtx.item
             )}
-            tokens={authinfo.tokens}
+            tokens={mainCtx.tokens}
         />
     )
 }

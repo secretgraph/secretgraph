@@ -62,6 +62,9 @@ function Definitions(props: Props) {
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
+    const [message, sendMessage] = React.useState<
+        React.ContextType<typeof Contexts.Snackbar>['message']
+    >(undefined)
     const navClient = React.useMemo(() => {
         return createClient(activeUrl)
     }, [activeUrl])
@@ -101,8 +104,12 @@ function Definitions(props: Props) {
                                 <Contexts.Config.Provider
                                     value={{ config, updateConfig }}
                                 >
-                                    <CssBaseline />
-                                    <Main />
+                                    <Contexts.Snackbar.Provider
+                                        value={{ message, sendMessage }}
+                                    >
+                                        <CssBaseline />
+                                        <Main />
+                                    </Contexts.Snackbar.Provider>
                                 </Contexts.Config.Provider>
                             </Contexts.Search.Provider>
                         </Contexts.Main.Provider>

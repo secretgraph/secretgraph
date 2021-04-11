@@ -1,5 +1,7 @@
 import { ApolloProvider } from '@apollo/client'
 import Paper from '@material-ui/core/Paper'
+import Snackbar from '@material-ui/core/Snackbar'
+import Alert from '@material-ui/lab/Alert'
 import * as React from 'react'
 
 import ActionBar from '../components/ActionBar'
@@ -20,6 +22,7 @@ function MainPage() {
     const { classes } = useStylesAndTheme()
     const { config } = React.useContext(Contexts.Config)
     const { mainCtx } = React.useContext(Contexts.Main)
+    const { message, sendMessage } = React.useContext(Contexts.Snackbar)
     const { navClient, itemClient } = React.useContext(Contexts.Clients)
     const { open: openSidebar } = React.useContext(Contexts.OpenSidebar)
     const frameElement = React.useMemo(() => {
@@ -69,6 +72,20 @@ function MainPage() {
                 config && openSidebar ? classes.rootShifted : classes.root
             }
         >
+            <Snackbar
+                open={message ? true : false}
+                autoHideDuration={12000}
+                onClose={() => sendMessage(undefined)}
+            >
+                <Alert
+                    onClose={() => sendMessage(undefined)}
+                    severity={message ? message.severity : undefined}
+                    elevation={6}
+                    variant="filled"
+                >
+                    {message ? message.message : undefined}
+                </Alert>
+            </Snackbar>
             <ApolloProvider client={navClient}>
                 <SideBar />
             </ApolloProvider>

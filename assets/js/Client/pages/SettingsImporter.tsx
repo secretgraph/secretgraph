@@ -14,7 +14,6 @@ import TextField from '@material-ui/core/TextField'
 import Typography from '@material-ui/core/Typography'
 import CheckIcon from '@material-ui/icons/Check'
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt'
-import MuiAlert from '@material-ui/lab/Alert'
 import * as React from 'react'
 
 import * as Constants from '../constants'
@@ -35,10 +34,7 @@ import { checkConfigObject, loadConfig, saveConfig } from '../utils/config'
 import { createClient } from '../utils/graphql'
 import { initializeCluster } from '../utils/operations'
 
-function Alert(props: any) {
-    return <MuiAlert elevation={6} variant="filled" {...props} />
-}
-
+// TODO: use formik
 function checkInputs(needsPw: boolean, hasPw: boolean) {
     return (
         (document.getElementById('secretgraph-import-url') as HTMLInputElement)
@@ -62,15 +58,12 @@ function SettingsImporter() {
         any
     ]
     const [loginUrl, setLoginUrl] = React.useState(undefined)
-    const [message, setMessage] = React.useState(undefined) as [
-        Interfaces.SnackMessageInterface | undefined,
-        any
-    ]
     const [hasFile, setHasFile] = React.useState(false)
     const mainElement = document.getElementById('content-main')
     const defaultPath: string | undefined = mainElement
         ? mainElement.dataset.graphqlPath
         : undefined
+    const { sendMessage } = React.useContext(Contexts.Snackbar)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
@@ -99,7 +92,7 @@ function SettingsImporter() {
             }
         }
         if (!hashAlgos) {
-            setMessage({
+            sendMessage({
                 severity: 'warning',
                 message: 'unsupported hash algorithm',
             })
@@ -142,7 +135,7 @@ function SettingsImporter() {
         } catch (errors) {
             console.error(errors)
             updateConfig(oldConfig, true)
-            setMessage({
+            sendMessage({
                 severity: 'error',
                 message: 'error while registration',
             })
@@ -170,7 +163,7 @@ function SettingsImporter() {
             }
         }
         if (!hashAlgos) {
-            setMessage({
+            sendMessage({
                 severity: 'warning',
                 message: 'unsupported hash algorithm',
             })
@@ -203,7 +196,10 @@ function SettingsImporter() {
         } else if (typeof sconfig.registerUrl === 'string') {
             setRegisterUrl(sconfig.registerUrl)
         } else {
-            setMessage({ severity: 'warning', message: 'cannot register here' })
+            sendMessage({
+                severity: 'warning',
+                message: 'cannot register here',
+            })
         }
     }
     const handleStart = async () => {
@@ -214,7 +210,7 @@ function SettingsImporter() {
         } catch (errors) {
             console.error(errors)
             updateConfig(oldConfig, true)
-            setMessage({
+            sendMessage({
                 severity: 'error',
                 message: 'error while registration',
             })
@@ -246,7 +242,7 @@ function SettingsImporter() {
 
         return;
       } else {*/
-            setMessage({
+            sendMessage({
                 severity: 'error',
                 message: 'Configuration is invalid',
             })
@@ -255,7 +251,7 @@ function SettingsImporter() {
         }
         const newClient = createClient(newConfig.baseUrl)
         if (!(await checkConfigObject(newClient, newConfig))) {
-            setMessage({
+            sendMessage({
                 severity: 'error',
                 message: 'Configuration is invalid (server-side)',
             })
@@ -279,7 +275,7 @@ function SettingsImporter() {
         } catch (errors) {
             console.error(errors)
             updateConfig(oldConfig, true)
-            setMessage({ severity: 'error', message: 'error while import' })
+            sendMessage({ severity: 'error', message: 'error while import' })
             // in success case unmounted so this would be a noop
             // because state is forgotten
             setLoadingImport(false)
@@ -364,18 +360,6 @@ function SettingsImporter() {
                     </Button>
                 </DialogActions>
             </Dialog>
-            <Snackbar
-                open={message ? true : false}
-                autoHideDuration={12000}
-                onClose={() => setMessage(undefined)}
-            >
-                <Alert
-                    onClose={() => setMessage(undefined)}
-                    severity={message ? message.severity : undefined}
-                >
-                    {message ? message.message : undefined}
-                </Alert>
-            </Snackbar>
             <Card>
                 <CardContent>
                     <Card raised={mainCtx.action === 'start'}>

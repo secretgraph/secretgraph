@@ -121,6 +121,7 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 -   Available Actions are too limited, we need all action hashes => way to list stale actions
 -   Way to list stale actions (maybe: anonymize their description)
+-   Switch to mainCtx tokens
 -   subscribe to config, watch changes
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters

@@ -616,15 +616,18 @@ export async function initializeCluster(
     }
     config.hosts[config['baseUrl']].clusters[
         clusterResult.cluster['id']
-    ].hashes[digestActionKey] = ['manage', 'create', 'update']
+    ].hashes[digestActionKey] = ['manage']
     config.hosts[config['baseUrl']].clusters[
         clusterResult.cluster['id']
     ].hashes[digestCertificate] = []
     config['certificates'][digestCertificate] = {
         token: await serializeToBase64(privateKey),
-        note: '',
+        note: 'initial certificate',
     }
-    config.tokens[digestActionKey] = { token: keyb64, note: '' }
+    config.tokens[digestActionKey] = {
+        token: keyb64,
+        note: 'initial token',
+    }
     if (!cleanConfig(config)) {
         console.error('invalid config created')
         return

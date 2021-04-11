@@ -285,6 +285,13 @@ export const contentRetrievalQuery = gql`
                     link
                     updateId
                     tags(includeTags: $includeTags)
+                    availableActions {
+                        id
+                        keyHash
+                        type
+                        requiredKeys
+                        allowedTags
+                    }
                     cluster {
                         id
                         publicInfo

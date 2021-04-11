@@ -103,11 +103,6 @@ export interface SecretgraphEventInterface {
     pingCreate?: boolean
 }
 
-export interface SnackMessageInterface {
-    severity: string
-    message: string
-}
-
 export interface MainContextInterface {
     action: 'start' | 'add' | 'view' | 'edit' | 'help' | 'import'
     updateId: null | string
