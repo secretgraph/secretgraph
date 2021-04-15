@@ -702,7 +702,7 @@ export async function calculateActionMapper({
         oldHash: null | string
         configActions: Set<string>
         newActions: Set<string>
-    }>[] = []
+    } | null>[] = []
     const premapper: {
         [hash: string]: { [type: string]: Set<string | null> }
     } = {}
@@ -722,16 +722,21 @@ export async function calculateActionMapper({
                 unserializeToArrayBuffer(
                     (token.match(actionMatcher) as RegExpMatchArray)[1]
                 ).then((val) => crypto.subtle.digest(hashalgo, val))
-            ).then((val) => ({
-                token,
-                note: '',
-                newHash: val,
-                oldHash: null,
-                configActions: new Set<string>(),
-                newActions: new Set<string>(
-                    premapper[val] ? Object.keys(premapper[val]) : []
-                ),
-            }))
+            ).then((val) => {
+                if (knownHashes[val]) {
+                    return null
+                }
+                return {
+                    token,
+                    note: '',
+                    newHash: val,
+                    oldHash: null,
+                    configActions: new Set<string>(),
+                    newActions: new Set<string>(
+                        premapper[val] ? Object.keys(premapper[val]) : []
+                    ),
+                }
+            })
         )
     }
     for (const [hash, actions] of Object.entries(knownHashes)) {
@@ -753,9 +758,20 @@ export async function calculateActionMapper({
         )
     }
     return Object.fromEntries(
-        (await Promise.all(prepare)).map((val) => {
-            return [val.newHash, val]
-        })
+        (await Promise.all(prepare))
+            .filter((val) => val)
+            .map(
+                (val: {
+                    token: string
+                    note: string
+                    newHash: string
+                    oldHash: null | string
+                    configActions: Set<string>
+                    newActions: Set<string>
+                }) => {
+                    return [val.newHash, val]
+                }
+            )
     )
 }
 

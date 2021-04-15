@@ -15,7 +15,7 @@ import ListItemText from '@material-ui/core/ListItemText'
 import Typography from '@material-ui/core/Typography'
 import AddIcon from '@material-ui/icons/Add'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
-import { FastField, Field, Form, Formik } from 'formik'
+import { FastField, Field, FieldArray, Form, Formik, FormikProps } from 'formik'
 import { TextField as FormikTextField } from 'formik-material-ui'
 import {
     BlankNode,
@@ -29,6 +29,7 @@ import {
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
+import { ActionEntry } from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import { CLUSTER, RDF, SECRETGRAPH, XSD, contentStates } from '../constants'
 import * as Contexts from '../contexts'
@@ -39,24 +40,6 @@ import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
 import { extractAuthInfo } from '../utils/config'
 import { serializeToBase64 } from '../utils/encryption'
 import { createCluster, updateCluster } from '../utils/operations'
-
-function item_retrieval_helper({
-    client,
-    tokens,
-    item,
-}: {
-    client: ApolloClient<any>
-    tokens: string[]
-    item: string
-}) {
-    return client.query({
-        query: getClusterQuery,
-        variables: {
-            id: item,
-            authorization: tokens,
-        },
-    })
-}
 
 function extractPublicInfo(
     config: Interfaces.ConfigInterface,
@@ -88,74 +71,6 @@ function extractPublicInfo(
         url,
         id,
     }
-}
-
-interface TokenListProps {
-    initialOpen: boolean
-    disabled?: boolean
-    privateTokens: [token: string, actions: string[]][]
-    publicTokens: string[]
-}
-
-const TokenList = ({
-    disabled,
-    initialOpen,
-    privateTokens,
-    publicTokens,
-}: TokenListProps) => {
-    const [openTokens, setOpenTokens] = React.useState(initialOpen)
-    return (
-        <div>
-            <div>
-                {!disabled ? (
-                    <IconButton
-                        aria-label="add"
-                        onClick={() => console.log('implement')}
-                    >
-                        <AddIcon />
-                    </IconButton>
-                ) : null}
-                <Typography variant="h4" component="span">
-                    Tokens
-                </Typography>
-                {
-                    <IconButton
-                        aria-label="tokens"
-                        onClick={() => setOpenTokens(!openTokens)}
-                    >
-                        <MoreVertIcon />
-                    </IconButton>
-                }
-            </div>
-            <Collapse in={openTokens} timeout="auto">
-                <List>
-                    {publicTokens.map((token: string, index: number) => (
-                        <ListItem key={`public:${index}:wrapper`}>
-                            <ListItemText primary={`Public Token: ${token}`} />
-                        </ListItem>
-                    ))}
-                    {privateTokens.map(
-                        (
-                            [token, actions]: [
-                                token: string,
-                                actions: string[]
-                            ],
-                            index: number
-                        ) => (
-                            <ListItem key={`private:${index}:wrapper`}>
-                                <ListItemText
-                                    primary={`Private Token: ${token}`}
-                                    secondary={
-                                        'allows actions: ' + actions.join(', ')
-                                    }
-                                />
-                            </ListItem>
-                        )
-                    )}
-                </List>
-            </Collapse>
-        </div>
-    )
 }
 
 interface ClusterInternProps {
@@ -333,7 +248,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
                 }
                 updateMainCtx({
                     title: values.name || '',
-                    action: 'edit',
+                    action: 'update',
                     item: clusterResponse.data.updateOrCreateCluster.cluster.id,
                     updateId:
                         clusterResponse.data.updateOrCreateCluster.cluster
@@ -346,7 +261,7 @@ const ClusterIntern = (props: ClusterInternProps) => {
                 setSubmitting(false)
             }}
         >
-            {({ submitForm, isSubmitting }) => (
+            {({ submitForm, isSubmitting, initialValues }) => (
                 <Form>
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
@@ -372,6 +287,31 @@ const ClusterIntern = (props: ClusterInternProps) => {
                             />
                         </Grid>
                         <Grid item xs={12}>
+                            <List style={{ maxHeight: '90vh' }}>
+                                <FieldArray name="actions">
+                                    {({
+                                        form,
+                                    }: {
+                                        form: FormikProps<typeof initialValues>
+                                    }) =>
+                                        form.values.actions.map(
+                                            (val, index) => {
+                                                return (
+                                                    <ActionEntry
+                                                        index={index}
+                                                        disabled={
+                                                            props.disabled
+                                                        }
+                                                        action={val}
+                                                    />
+                                                )
+                                            }
+                                        )
+                                    }
+                                </FieldArray>
+                            </List>
+                        </Grid>
+                        <Grid item xs={12}>
                             {isSubmitting && <LinearProgress />}
                         </Grid>
                         <Grid item xs={12}>
@@ -385,14 +325,6 @@ const ClusterIntern = (props: ClusterInternProps) => {
                                     Submit
                                 </Button>
                             )}
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TokenList
-                                publicTokens={props.publicTokens}
-                                privateTokens={props.privateTokens}
-                                initialOpen
-                                disabled={props.disabled || isSubmitting}
-                            />
                         </Grid>
                     </Grid>
                 </Form>

@@ -56,8 +56,10 @@ key refs are assigned to privatekey, the rest to the public key
 -   view
     -   includeTags: like param, include only contents with tag
     -   excludeTags: like param, exclude contents with tag
+    -   delete: can delete
 -   update:
     -   freeze: cannot update after be viewed
+    -   delete: can delete
     -   restricted: raise priority among filters only explicit specified
     -   ids: only contents with ids in list (can be flexid)
     -   requiredKeys: require keys within array for encryption
@@ -119,6 +121,7 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # TODO
 
+-   harmonize naming of add /create
 -   Available Actions are too limited, we need all action hashes => way to list stale actions
 -   Way to list stale actions (maybe: anonymize their description)
 -   Switch to mainCtx tokens

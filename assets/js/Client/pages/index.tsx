@@ -50,6 +50,7 @@ function Definitions(props: Props) {
         shareUrl: null,
         deleted: null,
         tokens: [],
+        tokenPermissions: new Set(),
     })
     const [searchCtx, updateSearchCtx] = React.useReducer<
         updateStateType<Interfaces.SearchContextInterface>

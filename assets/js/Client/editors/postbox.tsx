@@ -34,7 +34,7 @@ export default function PostboxComponent(props: Props) {
     const { mainCtx } = React.useContext(Contexts.Main)
     if (mainCtx.action == 'view' && mainCtx.item) {
         return <ViewPostbox />
-    } else if (mainCtx.action == 'edit' && mainCtx.item) {
+    } else if (mainCtx.action == 'update' && mainCtx.item) {
         return <EditPostbox />
     } else if (mainCtx.action == 'add') {
         return <AddPostbox />

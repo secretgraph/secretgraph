@@ -23,6 +23,7 @@ import { elements } from '../editors'
 import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo } from '../utils/config'
 import { deleteNodes, resetDeletionNodes } from '../utils/operations'
+import * as SetOps from '../utils/set'
 import MapSelect from './MapSelect'
 
 type Props = {}
@@ -32,7 +33,39 @@ function ActionBar(props: Props) {
     const [shareOpen, setShareOpen] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const client = useApolloClient()
+    const updateTokens = React.useMemo(() => {
+        if (
+            SetOps.hasIntersection(mainCtx.tokenPermissions, [
+                'update',
+                'manage',
+            ])
+        ) {
+            return mainCtx.tokens
+        }
+        return extractAuthInfo({
+            config,
+            url: mainCtx.url + '',
+            require: new Set(['update', 'manage']),
+        }).tokens
+    }, [mainCtx.tokens, mainCtx.tokenPermissions])
+
+    const createTokens = React.useMemo(() => {
+        if (
+            SetOps.hasIntersection(mainCtx.tokenPermissions, [
+                'create',
+                'manage',
+            ])
+        ) {
+            return mainCtx.tokens
+        }
+        return extractAuthInfo({
+            config,
+            url: mainCtx.url + '',
+            require: new Set(['create', 'manage']),
+        }).tokens
+    }, [mainCtx.tokens, mainCtx.tokenPermissions])
 
     return (
         <nav className={classes.actionToolBarOuter}>
@@ -80,10 +113,21 @@ function ActionBar(props: Props) {
                     <IconButton
                         color="inherit"
                         aria-label={mainCtx.action === 'view' ? 'Edit' : 'View'}
+                        disabled={
+                            mainCtx.action == 'update'
+                                ? !updateTokens.length
+                                : !mainCtx.tokens.length
+                        }
                         onClick={() =>
                             updateMainCtx({
                                 action:
-                                    mainCtx.action === 'view' ? 'edit' : 'view',
+                                    mainCtx.action === 'view'
+                                        ? 'update'
+                                        : 'view',
+                                tokens:
+                                    mainCtx.action == 'update'
+                                        ? updateTokens
+                                        : mainCtx.tokens,
                             })
                         }
                     >
@@ -160,14 +204,17 @@ function ActionBar(props: Props) {
                             classes={{
                                 root: classes.newItemSelect,
                             }}
+                            disabled={!createTokens.length}
                             onChange={(event: any) => {
                                 updateMainCtx({
                                     action: 'add',
                                     title: '',
                                     item: null,
+                                    url: mainCtx.url || activeUrl,
                                     shareUrl: null,
                                     deleted: null,
                                     type: event.target.value,
+                                    tokens: createTokens,
                                 })
                             }}
                             value={mainCtx.type || undefined}
@@ -184,6 +231,7 @@ function ActionBar(props: Props) {
                             }
                             color="inherit"
                             aria-label="add"
+                            disabled={!createTokens.length}
                             onClick={(event) => {
                                 updateMainCtx({
                                     action: 'add',
@@ -193,6 +241,7 @@ function ActionBar(props: Props) {
                                     shareUrl: null,
                                     deleted: null,
                                     type: mainCtx.type,
+                                    tokens: createTokens,
                                 })
                             }}
                         >

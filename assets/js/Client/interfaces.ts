@@ -104,7 +104,7 @@ export interface SecretgraphEventInterface {
 }
 
 export interface MainContextInterface {
-    action: 'start' | 'add' | 'view' | 'edit' | 'help' | 'import'
+    action: 'start' | 'add' | 'view' | 'update' | 'help' | 'import'
     updateId: null | string
     title: string
     item: null | string
@@ -114,7 +114,7 @@ export interface MainContextInterface {
     shareUrl: null | string
     deleted: Date | null | false
     tokens: string[]
-    // editable
+    tokenPermissions: Set<string>
 }
 
 export interface SearchContextInterface {

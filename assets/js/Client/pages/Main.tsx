@@ -30,7 +30,7 @@ function MainPage() {
         switch (mainCtx.action) {
             case 'view':
             case 'add':
-            case 'edit':
+            case 'update':
                 let FrameElementWrapper = elements.get(
                     mainCtx.type ? mainCtx.type : 'undefined'
                 )

@@ -73,8 +73,17 @@ class ActionHandler:
 
     @staticmethod
     def do_view(action_dict, scope, sender, accesslevel, action, **kwargs):
-        if accesslevel > 1 or scope != "view":
+        if scope not in {"view", "delete"}:
             return None
+        if scope == "delete":
+            if not action_dict.get("delete"):
+                return None
+            ownaccesslevel = 0
+        else:
+            ownaccesslevel = 1
+        if accesslevel > ownaccesslevel:
+            return None
+
         if issubclass(sender, Content):
             excl_filters = Q()
             for i in action_dict["excludeTags"]:
@@ -84,12 +93,18 @@ class ActionHandler:
             for i in action_dict["includeTags"]:
                 incl_filters |= Q(tags__tag__startswith=i)
 
-            return {"filters": ~excl_filters & incl_filters, "accesslevel": 1}
+            return {
+                "filters": ~excl_filters & incl_filters,
+                "accesslevel": ownaccesslevel
+            }
         return None
 
     @staticmethod
     def clean_view(action_dict, request, content, authset):
-        result = {"action": "view"}
+        result = {
+            "action": "view",
+            "delete": bool(action_dict.get("delete"))
+        }
         exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
         result["excludeTags"] = list(map(str, exclude_tags))
         include_tags = action_dict.get("includeTags", [])
@@ -104,7 +119,11 @@ class ActionHandler:
             ownaccesslevel = 1
         else:
             ownaccesslevel = 0
-        if accesslevel > ownaccesslevel or scope not in {"update", "view"}:
+        if accesslevel > ownaccesslevel or scope not in {
+            "update", "view", "delete"
+        }:
+            return None
+        if scope == "delete" and not action_dict.get("delete"):
             return None
         if issubclass(sender, Content):
             incl_filters = Q(id__in=action_dict.get("ids", []))
@@ -133,6 +152,7 @@ class ActionHandler:
             "action": "update",
             "contentActionGroup": "update",
             "restricted": bool(action_dict.get("restricted")),
+            "delete": bool(action_dict.get("delete")),
             "freeze": bool(action_dict.get("freeze")),
             "ids": list(
                 _only_owned_helper(

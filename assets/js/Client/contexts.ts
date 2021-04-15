@@ -26,6 +26,7 @@ export const Main = createContext<{
         shareUrl: null,
         deleted: null,
         tokens: [],
+        tokenPermissions: new Set(),
     },
     updateMainCtx: stubFn,
 })

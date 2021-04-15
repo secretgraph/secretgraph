@@ -24,7 +24,7 @@ export default class DecisionFrame extends React.Component<
         if (this.props.mainCtx.action == 'view' && this.props.mainCtx.item) {
             Elem = this.props.view
         } else if (
-            this.props.mainCtx.action == 'edit' &&
+            this.props.mainCtx.action == 'update' &&
             this.props.mainCtx.item
         ) {
             Elem = this.props.edit

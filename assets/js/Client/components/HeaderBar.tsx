@@ -44,8 +44,8 @@ export default function HeaderBar() {
             title = `Add: ${temp ? temp.label : 'unknown'}`
             documenttitle = `Secretgraph: ${title}`
             break
-        case 'edit':
-            title = `Edit: ${mainCtx.type}: ${
+        case 'update':
+            title = `Update: ${mainCtx.type}: ${
                 mainCtx.title ? mainCtx.title : mainCtx.item
             }`
             documenttitle = `Secretgraph: ${title}`

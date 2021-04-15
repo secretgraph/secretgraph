@@ -78,6 +78,17 @@ const ActionFields = React.memo(function ActionFields({
     switch (action) {
         case 'view':
         case 'update':
+            return (
+                <>
+                    <Grid item>
+                        <Field
+                            name={`actions.${index}.value.delete`}
+                            component={FormikCheckboxWithLabel}
+                            Label={{ label: 'Can delete' }}
+                        />
+                    </Grid>
+                </>
+            )
         case 'manage':
             return (
                 <>
@@ -105,11 +116,13 @@ export const ActionEntry = React.memo(function ActionEntry({
     action,
     index,
     disabled,
+    addFn,
     ...props
 }: Omit<ListItemProps, 'children' | 'button'> & {
     action?: ActionProps
     index?: number
     disabled?: boolean
+    addFn?: () => void
 }) {
     /**
     const {
@@ -126,7 +139,12 @@ export const ActionEntry = React.memo(function ActionEntry({
                         component={SimpleSelect}
                         options={['view', 'update', 'manage']}
                         disabled={
-                            disabled || action?.delete || action?.readonly
+                            disabled ||
+                            action?.delete ||
+                            action?.readonly ||
+                            !availableActionsSet.has(
+                                action?.value?.action || ''
+                            )
                         }
                     />
                 </Grid>
@@ -178,6 +196,20 @@ export const ActionEntry = React.memo(function ActionEntry({
                 </Grid>
             </Grid>
             <ListItemSecondaryAction>
+                {addFn && (
+                    <Tooltip title="Add Action" arrow>
+                        <span>
+                            <Button
+                                disabled={
+                                    disabled ||
+                                    action?.delete ||
+                                    action?.readonly
+                                }
+                                onClick={addFn}
+                            />
+                        </span>
+                    </Tooltip>
+                )}
                 {action && action.update !== undefined && (
                     <Tooltip title="Update Action" arrow>
                         <span>
@@ -218,7 +250,6 @@ interface ActionsDialogProps
     handleClose: () => void
     form: FormikProps<{
         actions: ActionProps[]
-        button: string
     }>
 }
 // specify in hierachy for setting formik fields
@@ -240,8 +271,14 @@ export default function ActionsDialog({
             <DialogTitle>Access Control</DialogTitle>
             <DialogContent>
                 <List>
-                    {form.values.actions.map((val) => {
-                        return ActionEntry
+                    {form.values.actions.map((val, index) => {
+                        return (
+                            <ActionEntry
+                                index={index}
+                                disabled={disabled}
+                                action={val}
+                            />
+                        )
                     })}
                     <ActionEntry />
                 </List>
@@ -276,7 +313,10 @@ export default function ActionsDialog({
                         )
                     }
                     onClick={async (ev) => {
-                        form.setFieldValue('button', 'only_actions', false)
+                        form.setStatus({
+                            ...form.status,
+                            button: 'only_actions',
+                        })
                         try {
                             await form.submitForm()
                         } finally {

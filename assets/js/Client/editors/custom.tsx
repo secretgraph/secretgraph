@@ -367,7 +367,7 @@ const AddCustom = () => {
                         updateId:
                             result.data.updateOrCreateContent.content.updateId,
                         url: activeUrl,
-                        action: 'edit',
+                        action: 'update',
                     })
                 } catch (exc) {
                     console.error(exc)
@@ -398,7 +398,7 @@ export default function CustomComponent(props: Props) {
     const { mainCtx } = React.useContext(Contexts.Main)
     if (mainCtx.action == 'view' && mainCtx.item) {
         return <ViewCustom />
-    } else if (mainCtx.action == 'edit' && mainCtx.item) {
+    } else if (mainCtx.action == 'update' && mainCtx.item) {
         return <EditCustom />
     } else if (mainCtx.action == 'add') {
         return <AddCustom />

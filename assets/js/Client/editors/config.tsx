@@ -30,7 +30,7 @@ export default function ConfigComponent(props: Props) {
     const { mainCtx } = React.useContext(Contexts.Main)
     if (mainCtx.action == 'view' && mainCtx.item) {
         return <ViewCluster />
-    } else if (mainCtx.action == 'edit' && mainCtx.item) {
+    } else if (mainCtx.action == 'update' && mainCtx.item) {
         return <EditCluster />
     } else if (mainCtx.action == 'add') {
         return <AddCluster />

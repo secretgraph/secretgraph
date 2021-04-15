@@ -82,7 +82,7 @@ export default function ContactComponent(props: Props) {
     const { mainCtx } = React.useContext(Contexts.Main)
     if (mainCtx.action == 'view' && mainCtx.item) {
         return <ViewFile />
-    } else if (mainCtx.action == 'edit' && mainCtx.item) {
+    } else if (mainCtx.action == 'update' && mainCtx.item) {
         return <EditFile />
     } else if (mainCtx.action == 'add') {
         return <AddFile />

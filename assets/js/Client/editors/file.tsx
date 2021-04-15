@@ -387,7 +387,7 @@ const AddFile = () => {
                         updateId:
                             result.data.updateOrCreateContent.content.updateId,
                         url: activeUrl,
-                        action: 'edit',
+                        action: 'update',
                     })
                 } catch (exc) {
                     console.error(exc)

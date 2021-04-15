@@ -835,7 +835,7 @@ const AddKeys = () => {
                     authorization: authinfo.tokens,
                 })
                 updateMainCtx({
-                    action: 'edit',
+                    action: 'update',
                     url: activeUrl,
                     item: newData.updateOrCreateContent.content.id,
                     updateId: newData.updateOrCreateContent.content.updateId,
