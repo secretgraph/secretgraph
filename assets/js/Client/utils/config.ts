@@ -682,6 +682,15 @@ export function updateConfigReducer(
 
 const actionMatcher = /^(?:[^:]+:)?(.*?)/.compile()
 
+export type ActionMapperEntry = {
+    token: string
+    note: string
+    newHash: string
+    oldHash: null | string
+    configActions: Set<string>
+    newActions: { [type: string]: Set<string | null> }
+}
+
 export async function calculateActionMapper({
     nodeData,
     config,
@@ -695,14 +704,7 @@ export async function calculateActionMapper({
     unknownTokens: string[]
     hashAlgorithm: string
 }) {
-    const prepare: PromiseLike<{
-        token: string
-        note: string
-        newHash: string
-        oldHash: null | string
-        configActions: Set<string>
-        newActions: Set<string>
-    } | null>[] = []
+    const prepare: PromiseLike<ActionMapperEntry | null>[] = []
     const premapper: {
         [hash: string]: { [type: string]: Set<string | null> }
     } = {}
@@ -732,9 +734,7 @@ export async function calculateActionMapper({
                     newHash: val,
                     oldHash: null,
                     configActions: new Set<string>(),
-                    newActions: new Set<string>(
-                        premapper[val] ? Object.keys(premapper[val]) : []
-                    ),
+                    newActions: premapper[val] || {},
                 }
             })
         )
@@ -751,27 +751,16 @@ export async function calculateActionMapper({
                 newHash: val,
                 oldHash: hash,
                 configActions: new Set<string>(actions),
-                newActions: new Set<string>(
-                    premapper[val] ? Object.keys(premapper[val]) : []
-                ),
+                newActions: premapper[val] || {},
             }))
         )
     }
     return Object.fromEntries(
         (await Promise.all(prepare))
             .filter((val) => val)
-            .map(
-                (val: {
-                    token: string
-                    note: string
-                    newHash: string
-                    oldHash: null | string
-                    configActions: Set<string>
-                    newActions: Set<string>
-                }) => {
-                    return [val.newHash, val]
-                }
-            )
+            .map((val: ActionMapperEntry) => {
+                return [val.newHash, val]
+            })
     )
 }
 

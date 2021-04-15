@@ -53,15 +53,17 @@ import { deepEqual } from '../utils/misc'
 import * as SetOps from '../utils/set'
 import SimpleSelect from './forms/SimpleSelect'
 
-interface ActionProps {
+export interface ActionProps {
     keyHash: string | null
+    token: string
     start: Date | null
     stop: Date | null
     note: string
     value: { [key: string]: any } & { action: string }
-    update?: undefined | boolean
-    delete: boolean
-    readonly: boolean
+    update?: boolean
+    delete?: boolean
+    readonly?: boolean
+    locked?: boolean
 }
 
 const availableActionsSet = new Set(['manage', 'push', 'view', 'update'])
@@ -85,6 +87,7 @@ const ActionFields = React.memo(function ActionFields({
                             name={`actions.${index}.value.delete`}
                             component={FormikCheckboxWithLabel}
                             Label={{ label: 'Can delete' }}
+                            disabled={disabled}
                         />
                     </Grid>
                 </>
@@ -117,35 +120,39 @@ export const ActionEntry = React.memo(function ActionEntry({
     index,
     disabled,
     addFn,
+    tokens,
     ...props
 }: Omit<ListItemProps, 'children' | 'button'> & {
     action?: ActionProps
     index?: number
     disabled?: boolean
     addFn?: () => void
+    tokens: string[]
 }) {
     /**
     const {
         values: { actions },
     } = useFormikContext()
     */
+    disabled = !!(
+        disabled ||
+        action?.readonly ||
+        !availableActionsSet.has(action?.value?.action || '')
+    )
 
     return (
         <ListItem {...props}>
             <Grid container spacing={2}>
+                <Grid item xs={12}>
+                    For security reasons action values are not shown after
+                    update/creation. Use note field
+                </Grid>
                 <Grid item xs={4}>
                     <FastField
                         name={`actions.${index}.value.action`}
                         component={SimpleSelect}
                         options={['view', 'update', 'manage']}
-                        disabled={
-                            disabled ||
-                            action?.delete ||
-                            action?.readonly ||
-                            !availableActionsSet.has(
-                                action?.value?.action || ''
-                            )
-                        }
+                        disabled={disabled || action?.delete || action?.locked}
                     />
                 </Grid>
                 <Grid item xs={4}>
@@ -153,9 +160,7 @@ export const ActionEntry = React.memo(function ActionEntry({
                         name={`actions.${index}.start`}
                         component={FormikTextField}
                         type="datetime-local"
-                        disabled={
-                            disabled || action?.delete || action?.readonly
-                        }
+                        disabled={disabled || action?.delete || action?.locked}
                         inputProps={{
                             pattern:
                                 '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
@@ -171,9 +176,15 @@ export const ActionEntry = React.memo(function ActionEntry({
                             pattern:
                                 '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
                         }}
-                        disabled={
-                            disabled || action?.delete || action?.readonly
-                        }
+                        disabled={disabled || action?.delete || action?.locked}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <Field
+                        name={`actions.${index}.token`}
+                        component={SimpleSelect}
+                        options={tokens}
+                        disabled={disabled || action?.delete || action?.locked}
                     />
                 </Grid>
                 <Grid item xs={12}>
@@ -266,6 +277,10 @@ export default function ActionsDialog({
     replace,
     ...dialogProps
 }: ActionsDialogProps) {
+    const tokens = React.useMemo(
+        () => form.values.actions.map((val) => val.token),
+        [form.values.actions]
+    )
     return (
         <Dialog {...dialogProps} onClose={(ev) => handleClose()}>
             <DialogTitle>Access Control</DialogTitle>
@@ -277,10 +292,11 @@ export default function ActionsDialog({
                                 index={index}
                                 disabled={disabled}
                                 action={val}
+                                tokens={tokens}
                             />
                         )
                     })}
-                    <ActionEntry />
+                    <ActionEntry tokens={tokens} />
                 </List>
             </DialogContent>
             <DialogActions>

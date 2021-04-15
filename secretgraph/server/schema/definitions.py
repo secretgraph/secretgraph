@@ -143,7 +143,7 @@ class ActionMixin(object):
                     key_val[1]["allowedTags"]
                     if key_val[0][0] != "view"
                     else None
-                ),
+                )
             ),
             filter(lambda key_val: key_val[1]["id"] in ids, mapper.items())
         )
@@ -160,11 +160,11 @@ class ActionMixin(object):
                         cluster_id=self.cluster_id
                     ).exclude(id__in=ids).map(
                         lambda x: ActionEntry(
-                            id=None if not has_manage else x.id,
+                            id=x.id,
                             keyHash=x.keyHash,
                             type="other",
                             requiredKeys=[],
-                            allowedTags=None,
+                            allowedTags=None
                         )
                     )
                 )
@@ -179,11 +179,11 @@ class ActionMixin(object):
                         cluster_id=self.id
                     ).exclude(id__in=ids).map(
                         lambda x: ActionEntry(
-                            id=None if not has_manage else x.id,
+                            id=x.id,
                             keyHash=x.keyHash,
                             type="other",
                             requiredKeys=[],
-                            allowedTags=None,
+                            allowedTags=None
                         )
                     )
                 )
