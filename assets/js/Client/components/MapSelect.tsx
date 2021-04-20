@@ -26,6 +26,7 @@ export default function MapSelect({ options, ...props }: MapSelectProps) {
             style={{ color: 'inherit' }}
             SelectProps={{
                 native: true,
+                style: { color: 'inherit' },
             }}
             {...props}
         >

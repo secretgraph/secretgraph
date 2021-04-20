@@ -101,7 +101,8 @@ def _update_or_create_content_or_key(
                 request,
                 objdata["cluster"],
                 Cluster,
-                scope="update",
+                # create includes move permission
+                scope="create",
                 authset=authset,
             )["Cluster"]["objects"]
             .filter(markForDestruction=None)

@@ -111,6 +111,9 @@ export function secretgraphTheme(theme: Theme) {
             borderRadius: '15px 15px 0 0' as const,
             border: '1px solid black' as const,
             margin: theme.spacing(0, 1, 0, 0),
+            '& *': {
+                color: 'white' as const,
+            },
         },
         mainSection: {
             minHeight: '200px' as const,

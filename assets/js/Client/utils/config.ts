@@ -458,7 +458,8 @@ export function extractAuthInfo({
                     hashes.add(hash_algo)
                     keys.add(
                         `${id}:${
-                            config.tokens[hash_algo] || config.tokens[hash]
+                            config.tokens[hash_algo]?.token ||
+                            config.tokens[hash]?.token
                         }`
                     )
                 }
@@ -484,7 +485,8 @@ export function extractAuthInfo({
                 hashes.add(hash)
                 keys.add(
                     `${contentconf.cluster}:${
-                        config.tokens[hash_algo] || config.tokens[hash]
+                        config.tokens[hash_algo]?.token ||
+                        config.tokens[hash]?.token
                     }`
                 )
             }

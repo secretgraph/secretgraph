@@ -20,7 +20,7 @@
 ## Permissions
 
 -   manage: can change and create clusters, full access like admin
--   create: can add contents
+-   create: can add or move contents to cluster TODO: should check permission of cluster it moves from
 -   delete: can delete contents or clusters and contents (depending on scope)
 -   update: update contents or clusters (depending on scope)
 -   push: create subcontents via push
