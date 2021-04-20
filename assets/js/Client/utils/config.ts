@@ -698,9 +698,9 @@ export async function calculateActionMapper({
     unknownTokens,
     hashAlgorithm,
 }: {
-    nodeData: any
+    nodeData?: any
     config: Interfaces.ConfigInterface
-    knownHashes: { [hash: string]: string[] }
+    knownHashes?: { [hash: string]: string[] }
     unknownTokens: string[]
     hashAlgorithm: string
 }) {
@@ -708,7 +708,7 @@ export async function calculateActionMapper({
     const premapper: {
         [hash: string]: { [type: string]: Set<string | null> }
     } = {}
-    for (const entry of nodeData.availableActions) {
+    for (const entry of nodeData?.availableActions || []) {
         if (!premapper[entry.keyHash]) {
             premapper[entry.keyHash] = { [entry.type]: new Set() }
         }
@@ -725,7 +725,7 @@ export async function calculateActionMapper({
                     (token.match(actionMatcher) as RegExpMatchArray)[1]
                 ).then((val) => crypto.subtle.digest(hashalgo, val))
             ).then((val) => {
-                if (knownHashes[val]) {
+                if (knownHashes && knownHashes[val]) {
                     return null
                 }
                 return {
@@ -739,7 +739,7 @@ export async function calculateActionMapper({
             })
         )
     }
-    for (const [hash, actions] of Object.entries(knownHashes)) {
+    for (const [hash, actions] of Object.entries(knownHashes || {})) {
         prepare.push(
             serializeToBase64(
                 unserializeToArrayBuffer(

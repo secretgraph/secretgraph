@@ -32,7 +32,7 @@ function ActionBar(props: Props) {
     const { classes, theme } = useStylesAndTheme()
     const [shareOpen, setShareOpen] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { config } = React.useContext(Contexts.InitializedConfig)
+    const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const client = useApolloClient()
     const updateTokens = React.useMemo(() => {
@@ -43,6 +43,9 @@ function ActionBar(props: Props) {
             ])
         ) {
             return mainCtx.tokens
+        }
+        if (!config) {
+            return []
         }
         return extractAuthInfo({
             config,
@@ -59,6 +62,9 @@ function ActionBar(props: Props) {
             ])
         ) {
             return mainCtx.tokens
+        }
+        if (!config) {
+            return []
         }
         return extractAuthInfo({
             config,
@@ -110,33 +116,37 @@ function ActionBar(props: Props) {
                     arrow
                     className={mainCtx.item ? undefined : classes.hidden}
                 >
-                    <IconButton
-                        color="inherit"
-                        aria-label={mainCtx.action === 'view' ? 'Edit' : 'View'}
-                        disabled={
-                            mainCtx.action == 'update'
-                                ? !updateTokens.length
-                                : !mainCtx.tokens.length
-                        }
-                        onClick={() =>
-                            updateMainCtx({
-                                action:
-                                    mainCtx.action === 'view'
-                                        ? 'update'
-                                        : 'view',
-                                tokens:
-                                    mainCtx.action == 'update'
-                                        ? updateTokens
-                                        : mainCtx.tokens,
-                            })
-                        }
-                    >
-                        {mainCtx.action === 'view' ? (
-                            <EditIcon />
-                        ) : (
-                            <VisibilityIcon />
-                        )}
-                    </IconButton>
+                    <span>
+                        <IconButton
+                            color="inherit"
+                            aria-label={
+                                mainCtx.action === 'view' ? 'Edit' : 'View'
+                            }
+                            disabled={
+                                mainCtx.action == 'update'
+                                    ? !updateTokens.length
+                                    : !mainCtx.tokens.length
+                            }
+                            onClick={() =>
+                                updateMainCtx({
+                                    action:
+                                        mainCtx.action === 'view'
+                                            ? 'update'
+                                            : 'view',
+                                    tokens:
+                                        mainCtx.action == 'update'
+                                            ? updateTokens
+                                            : mainCtx.tokens,
+                                })
+                            }
+                        >
+                            {mainCtx.action === 'view' ? (
+                                <EditIcon />
+                            ) : (
+                                <VisibilityIcon />
+                            )}
+                        </IconButton>
+                    </span>
                 </Tooltip>
                 <Tooltip
                     title={
@@ -151,7 +161,7 @@ function ActionBar(props: Props) {
                 >
                     <span>
                         <IconButton
-                            disabled={mainCtx.deleted === false}
+                            disabled={mainCtx.deleted === false || !config}
                             color="inherit"
                             aria-label={
                                 mainCtx.deleted
@@ -161,6 +171,9 @@ function ActionBar(props: Props) {
                                     : 'Delete'
                             }
                             onClick={async () => {
+                                if (!config) {
+                                    return []
+                                }
                                 const authtokens = extractAuthInfo({
                                     config,
                                     url: mainCtx.url as string,
@@ -254,18 +267,22 @@ function ActionBar(props: Props) {
                     arrow
                     className={mainCtx.shareUrl ? undefined : classes.hidden}
                 >
-                    <IconButton
-                        color="inherit"
-                        aria-label="share"
-                        onClick={() => setShareOpen(true)}
-                    >
-                        <ShareIcon />
-                    </IconButton>
+                    <span>
+                        <IconButton
+                            color="inherit"
+                            aria-label="share"
+                            onClick={() => setShareOpen(true)}
+                        >
+                            <ShareIcon />
+                        </IconButton>
+                    </span>
                 </Tooltip>
                 <Tooltip title="Help" arrow>
-                    <IconButton color="inherit" aria-label="help">
-                        <HelpOutlineOutlinedIcon />
-                    </IconButton>
+                    <span>
+                        <IconButton color="inherit" aria-label="help">
+                            <HelpOutlineOutlinedIcon />
+                        </IconButton>
+                    </span>
                 </Tooltip>
             </Toolbar>
         </nav>

@@ -34,27 +34,40 @@ import DecisionFrame from '../components/DecisionFrame'
 import { CLUSTER, RDF, SECRETGRAPH, XSD, contentStates } from '../constants'
 import * as Contexts from '../contexts'
 import * as Interfaces from '../interfaces'
-import { getClusterQuery } from '../queries/cluster'
+import {
+    getClusterConfigurationQuery,
+    getClusterQuery,
+} from '../queries/cluster'
 import { useStylesAndTheme } from '../theme'
 import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
 import { calculateActionMapper, extractAuthInfo } from '../utils/config'
-import { serializeToBase64 } from '../utils/encryption'
+import {
+    findWorkingHashAlgorithms,
+    hashObject,
+    serializeToBase64,
+} from '../utils/encryption'
 import {
     createCluster,
     updateCluster,
     updateConfigRemoteReducer,
 } from '../utils/operations'
 import * as SetOps from '../utils/set'
+import { RequireAttributes } from '../utils/typing'
 import { UnpackPromise, ValueType } from '../utils/typing'
 
-async function extractPublicInfo(
-    config: Interfaces.ConfigInterface,
-    node: any,
-    url: string,
-    id: string,
-    tokens: string[],
-    hashAlgorithm?: string
-) {
+async function extractPublicInfo({
+    config,
+    node,
+    url,
+    tokens,
+    hashAlgorithm,
+}: {
+    config: Interfaces.ConfigInterface
+    node?: any
+    url: string
+    tokens: string[]
+    hashAlgorithm: string
+}) {
     const { name, note, publicTokens } = extractPublicInfoShared(
         node.publicInfo,
         true
@@ -63,27 +76,28 @@ async function extractPublicInfo(
         nodeData: node,
         config,
         unknownTokens: [...publicTokens, ...tokens],
-        knownHashes: config.hosts[url].clusters[id].hashes,
-        hashAlgorithm: hashAlgorithm || config.hosts[url].hashAlgorithms[0],
+        knownHashes:
+            (node && url && config.hosts[url]?.clusters[node.id]?.hashes) || {},
+        hashAlgorithm,
     })
     return {
         publicInfo: node.publicInfo,
         mapper,
-        name,
-        note,
+        name: name || '',
+        note: note || '',
         url,
-        id,
-        node,
+        hashAlgorithm,
     }
 }
 
 interface ClusterInternProps {
     readonly publicInfo?: string
-    readonly name: string | null
-    readonly note: string | null
-    url?: string | null | undefined
-    disabled?: boolean | undefined
-    mapper?: UnpackPromise<ReturnType<typeof calculateActionMapper>>
+    readonly name: string
+    readonly note: string
+    url: string
+    disabled?: boolean
+    mapper: UnpackPromise<ReturnType<typeof calculateActionMapper>>
+    hashAlgorithm: string
 }
 
 const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
@@ -99,53 +113,32 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
     }, [props.name, props.note])
 
     const actions: ActionProps[] = []
-    if (mapper) {
-        Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
-            const entry = mapper[params.newHash]
-            const existingActions = entry.configActions
-            for (const actionType of existingActions.size
-                ? existingActions
-                : ['other']) {
-                actions.push({
-                    token: params.token,
-                    keyHash: params.newHash,
-                    start: null,
-                    stop: null,
-                    note: entry.note || '',
-                    value: {
-                        action: actionType,
-                    },
-                    update: SetOps.isNotEq(
-                        SetOps.difference(Object.keys(entry.newActions), [
-                            'other',
-                        ]),
-                        Object.keys(entry.configActions)
-                    ),
-                    delete: false,
-                    readonly: false,
-                    locked: true,
-                })
-            }
-        })
-    } else {
-        const key = crypto.getRandomValues(new Uint8Array(32))
-        const keyb64 = btoa(String.fromCharCode(...key))
-        // TODO generate keyHash
-        actions.push({
-            token: keyb64,
-            keyHash: '',
-            start: null,
-            stop: null,
-            note: '',
-            value: {
-                action: 'manage',
-            },
-            update: false,
-            delete: false,
-            readonly: false,
-            locked: false,
-        })
-    }
+    Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
+        const entry = mapper[params.newHash]
+        const existingActions = entry.configActions
+        for (const actionType of existingActions.size
+            ? existingActions
+            : ['other']) {
+            actions.push({
+                token: params.token,
+                newHash: params.newHash,
+                start: null,
+                stop: null,
+                note: entry.note || '',
+                value: {
+                    action: actionType,
+                },
+                update: SetOps.isNotEq(
+                    SetOps.difference(Object.keys(entry.newActions), ['other']),
+                    Object.keys(entry.configActions)
+                ),
+                delete: false,
+                readonly: false,
+                locked: true,
+                clusterAction: true,
+            })
+        }
+    })
     const actionTokens = React.useMemo(
         () => (mapper ? actions.map((val) => val.token) : mainCtx.tokens),
         [actions]
@@ -201,12 +194,74 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                     new Literal(values.note || '', null, XSD('string'))
                 )
                 let clusterResponse: FetchResult<any>
-                if (mainCtx.item && mainCtx.type != 'Cluster') {
+                const finishedActions: Interfaces.ActionInterface[] = []
+                const configUpdate: RequireAttributes<
+                    Interfaces.ConfigInputInterface,
+                    'hosts' | 'tokens' | 'certificates'
+                > = {
+                    hosts: {},
+                    tokens: {},
+                    certificates: {},
+                }
+                const hashes: { [hash: string]: string[] } = {}
+                actions.forEach((val) => {
+                    const mapperval =
+                        val.newHash && mapper ? mapper[val.newHash] : undefined
+                    if (val.readonly) {
+                        return
+                    }
+                    if (val.delete) {
+                        if (!val.oldHash) {
+                            return
+                        }
+                        finishedActions.push({
+                            idOrHash: val.oldHash,
+                            value: 'delete',
+                        })
+                        return
+                    }
+                    if (val.newHash) {
+                        if (val.update) {
+                            if (!mapperval) {
+                                throw Error('requires mapper')
+                            }
+                            hashes[val.newHash] = [
+                                ...new Set([
+                                    ...Object.keys(mapperval.newActions),
+                                ]),
+                            ]
+                            if (
+                                mapperval.oldHash &&
+                                val.newHash != mapperval.oldHash
+                            ) {
+                                configUpdate.tokens[mapperval.oldHash] = null
+                            }
+                        }
+                        if (!mapperval || mapperval?.note != val.note) {
+                            configUpdate.tokens[val.newHash] = {
+                                ...config.tokens[val.newHash],
+                                note: val.note,
+                            }
+                        }
+                    }
+
+                    if (val.locked) {
+                        return
+                    }
+                    finishedActions.push({
+                        idOrHash: val.oldHash,
+                        start: val.start || undefined,
+                        stop: val.stop || undefined,
+                        value: JSON.stringify(val.value),
+                        key: val.token,
+                    })
+                })
+                if (mainCtx.item && mainCtx.type == 'Cluster') {
                     clusterResponse = await updateCluster({
                         id: mainCtx.item as string,
                         client,
                         updateId: mainCtx.updateId as string,
-                        actions,
+                        actions: finishedActions,
                         publicInfo: serialize(
                             null as any,
                             store,
@@ -215,6 +270,14 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                         ),
                         authorization: mainCtx.tokens,
                     })
+                    if (!clusterResponse.errors && clusterResponse.data) {
+                        configUpdate['hosts'][props.url as string] = {
+                            hashAlgorithms: findWorkingHashAlgorithms(
+                                clusterResponse.data.data.secretgraph.config
+                                    .hashAlgorithms
+                            ),
+                        }
+                    }
                 } else {
                     const key = crypto.getRandomValues(new Uint8Array(32))
                     const {
@@ -226,8 +289,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                             //modulusLength: 8192,
                             modulusLength: 2048,
                             publicExponent: new Uint8Array([1, 0, 1]),
-                            hash:
-                                config.hosts[config.baseUrl].hashAlgorithms[0],
+                            hash: props.hashAlgorithm,
                         },
                         true,
                         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
@@ -236,11 +298,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                         .exportKey('spki' as const, publicKey)
                         .then((keydata) =>
                             crypto.subtle
-                                .digest(
-                                    config.hosts[config.baseUrl]
-                                        .hashAlgorithms[0],
-                                    keydata
-                                )
+                                .digest(props.hashAlgorithm, keydata)
                                 .then((data) =>
                                     btoa(
                                         String.fromCharCode(
@@ -251,22 +309,17 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                         )
                     const digestActionKeyPromise = crypto.subtle
                         .digest(
-                            config.hosts[config.baseUrl].hashAlgorithms[0],
+                            props.hashAlgorithm,
                             crypto.getRandomValues(new Uint8Array(32))
                         )
                         .then((data) =>
                             btoa(String.fromCharCode(...new Uint8Array(data)))
                         )
-                    const keyb64 = btoa(String.fromCharCode(...key))
                     clusterResponse = await createCluster({
                         client,
-                        actions: actions.map(({ start, stop, val }) => ({
-                            start,
-                            stop,
-                        })),
+                        actions: finishedActions,
                         publicInfo: '',
-                        hashAlgorithm:
-                            config.hosts[config.baseUrl].hashAlgorithms[0],
+                        hashAlgorithm: props.hashAlgorithm,
                         publicKey,
                         privateKey,
                         privateKeyKey: key,
@@ -279,45 +332,40 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                             digestActionKeyPromise,
                             digestCertificatePromise,
                         ])
-                        const newNode =
-                            clusterResponse.data.data.secretgraph.node
-                        const configUpdate = {
-                            hosts: {
-                                [props.url as string]: {
-                                    hashAlgorithms:
-                                        clusterResponse.data.data.secretgraph
-                                            .config.hashAlgorithms,
-                                    clusters: {
-                                        [newNode.id as string]: {
-                                            hashes: {
-                                                [digestActionKey]: ['manage'],
-                                                [digestCertificate]: [],
-                                            },
-                                        },
+                        const newNode = clusterResponse.data.secretgraph.node
+                        configUpdate.hosts[props.url as string] = {
+                            hashAlgorithms: findWorkingHashAlgorithms(
+                                clusterResponse.data.secretgraph.config
+                                    .hashAlgorithms
+                            ),
+                            clusters: {
+                                [newNode.id as string]: {
+                                    hashes: {
+                                        [digestActionKey]: ['manage'],
+                                        [digestCertificate]: [],
                                     },
                                 },
                             },
-                            tokens: {
-                                [digestActionKey]: { token: keyb64, note: '' },
-                                [digestCertificate]: {
-                                    token: await serializeToBase64(privateKey),
-                                    note: '',
-                                },
-                            },
+                            contents: {},
                         }
-                        updateConfig(
-                            await updateConfigRemoteReducer(config, {
-                                update: configUpdate,
-                                client: baseClient,
-                            }),
-                            true
-                        )
+                        configUpdate.tokens[digestCertificate] = {
+                            token: await serializeToBase64(privateKey),
+                            note: '',
+                        }
                     }
                 }
                 if (clusterResponse.errors || !clusterResponse.data) {
                     setSubmitting(false)
                     return
                 }
+                updateConfig(
+                    await updateConfigRemoteReducer(config, {
+                        update: configUpdate,
+                        client: baseClient,
+                    }),
+                    true
+                )
+
                 updateMainCtx({
                     title: values.name || '',
                     action: 'update',
@@ -436,13 +484,15 @@ const ViewCluster = () => {
             }
             updateMainCtx(updateOb)
             setData(
-                await extractPublicInfo(
+                await extractPublicInfo({
                     config,
-                    data.secretgraph.node,
-                    mainCtx.url as string,
-                    mainCtx.item as string,
-                    mainCtx.tokens
-                )
+                    node: data.secretgraph.node,
+                    url: mainCtx.url as string,
+                    tokens: mainCtx.tokens,
+                    hashAlgorithm: findWorkingHashAlgorithms(
+                        data.secretgraph.config.hashAlgorithms
+                    )[0],
+                })
             )
         },
     })
@@ -454,15 +504,52 @@ const ViewCluster = () => {
 }
 
 const AddCluster = () => {
-    const { config } = React.useContext(Contexts.InitializedConfig)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
-    const authinfo = extractAuthInfo({
-        config,
-        url: activeUrl,
-        require: new Set(['manage']),
-    })
+    const { config } = React.useContext(Contexts.Config)
+    const [data, setData] = React.useState<ClusterInternProps | null>(null)
 
-    return <ClusterIntern name="" note="" />
+    const { loading } = useQuery(getClusterQuery, {
+        pollInterval: 60000,
+        variables: {},
+        onCompleted: async (data) => {
+            updateMainCtx({
+                shareUrl: null,
+                deleted: false,
+                updateId: null,
+            })
+
+            const key = crypto.getRandomValues(new Uint8Array(32))
+            const keyb64 = btoa(String.fromCharCode(...key))
+            const { data: hashKey, hashAlgorithms } = await hashObject(
+                key,
+                data.config.hashAlgorithms
+            )
+            setData({
+                name: '',
+                note: '',
+                url: mainCtx.url as string,
+                mapper: {
+                    [hashKey]: {
+                        token: keyb64,
+                        note: '',
+                        newHash: hashKey,
+                        oldHash: null,
+                        configActions: new Set(['manage']),
+                        newActions: {
+                            manage: new Set([null]),
+                        },
+                    },
+                },
+                hashAlgorithm: hashAlgorithms[0],
+            })
+        },
+    })
+    if (!data) {
+        return null
+    }
+
+    return <ClusterIntern {...data} />
 }
 
 const EditCluster = () => {
@@ -481,12 +568,12 @@ const EditCluster = () => {
         },
         onCompleted: async (data) => {
             const updateOb = {
-                shareUrl: data.data.secretgraph.node.link,
-                deleted: data.data.secretgraph.node.deleted || null,
-                updateId: data.data.secretgraph.node.updateId,
+                shareUrl: data.secretgraph.node.link,
+                deleted: data.secretgraph.node.deleted || null,
+                updateId: data.secretgraph.node.updateId,
             }
             if (
-                data.data.secretgraph.node.id == config.configCluster &&
+                data.secretgraph.node.id == config.configCluster &&
                 mainCtx.url == config.baseUrl &&
                 !updateOb.deleted
             ) {
@@ -494,19 +581,21 @@ const EditCluster = () => {
             }
             updateMainCtx(updateOb)
             setData(
-                await extractPublicInfo(
+                await extractPublicInfo({
                     config,
-                    data.secretgraph.node,
-                    mainCtx.url as string,
-                    mainCtx.item as string,
-                    mainCtx.tokens
-                )
+                    node: data.secretgraph.node,
+                    url: mainCtx.url as string,
+                    tokens: mainCtx.tokens,
+                    hashAlgorithm: findWorkingHashAlgorithms(
+                        data.secretgraph.config.hashAlgorithms
+                    )[0],
+                })
             )
         },
     })
 
     if (!data) {
-        return <ClusterIntern key="disabled" disabled name="" note="" />
+        return null
     }
 
     return <ClusterIntern key="enabled" {...data} />

@@ -1,7 +1,37 @@
-import { mapEncryptionAlgorithms, mapHashNames } from '../constants'
+import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import * as IterableOps from './iterable'
 import { utf8encoder } from './misc'
+
+export function findWorkingHashAlgorithms(hashAlgorithms: string[]) {
+    const hashAlgos = []
+    for (const algo of hashAlgorithms) {
+        const mappedName = Constants.mapHashNames[algo]
+        if (mappedName) {
+            hashAlgos.push(mappedName.operationName)
+        }
+    }
+    return hashAlgos
+}
+
+export async function hashObject(
+    obj: Parameters<typeof unserializeToArrayBuffer>[0],
+    hashAlgorithms: string[]
+) {
+    const hashAlgos = findWorkingHashAlgorithms(hashAlgorithms)
+    if (!hashAlgos.length) {
+        throw Error('no working hashalgorithm found ' + hashAlgorithms)
+    }
+    return {
+        data: await serializeToBase64(
+            crypto.subtle.digest(
+                hashAlgos[0],
+                await unserializeToArrayBuffer(obj)
+            )
+        ),
+        hashAlgorithms: hashAlgos,
+    }
+}
 
 export async function toPBKDF2key(
     inp: Interfaces.RawInput | PromiseLike<Interfaces.RawInput>
@@ -37,7 +67,7 @@ export async function toPBKDF2key(
         data,
         'PBKDF2',
         false,
-        mapEncryptionAlgorithms.PBKDF2.usages
+        Constants.mapEncryptionAlgorithms.PBKDF2.usages
     )
 }
 
@@ -56,7 +86,7 @@ export async function toPublicKey(
         _key = (_inp as CryptoKeyPair).privateKey
     } else if (params.name.startsWith('AES-')) {
         // symmetric
-        if (!mapEncryptionAlgorithms[params.name]) {
+        if (!Constants.mapEncryptionAlgorithms[params.name]) {
             throw Error('Algorithm not supported: ' + params.name)
         }
         return await crypto.subtle.importKey(
@@ -64,10 +94,10 @@ export async function toPublicKey(
             await unserializeToArrayBuffer(_inp as Interfaces.RawInput),
             params,
             true,
-            mapEncryptionAlgorithms[params.name].usages
+            Constants.mapEncryptionAlgorithms[params.name].usages
         )
     } else {
-        if (!mapEncryptionAlgorithms[`${params.name}private`]) {
+        if (!Constants.mapEncryptionAlgorithms[`${params.name}private`]) {
             throw Error('Algorithm not supported: ' + params.name)
         }
         _key = await crypto.subtle.importKey(
@@ -75,7 +105,7 @@ export async function toPublicKey(
             await unserializeToArrayBuffer(_inp as Interfaces.RawInput),
             params,
             true,
-            mapEncryptionAlgorithms[`${params.name}private`].usages
+            Constants.mapEncryptionAlgorithms[`${params.name}private`].usages
         )
     }
     const tempkey = await crypto.subtle.exportKey('jwk', _key)
@@ -86,11 +116,13 @@ export async function toPublicKey(
     delete tempkey.q
     delete tempkey.qi
     tempkey.key_ops = ['sign', 'verify', 'encrypt', 'decrypt']
-    if (!mapEncryptionAlgorithms[`${params.name}public`]) {
+    if (!Constants.mapEncryptionAlgorithms[`${params.name}public`]) {
         throw Error(
             `Public version not available, should not happen: ${
                 params.name
-            } (private: ${mapEncryptionAlgorithms[`${params.name}private`]})`
+            } (private: ${
+                Constants.mapEncryptionAlgorithms[`${params.name}private`]
+            })`
         )
     }
     return await crypto.subtle.importKey(
@@ -98,7 +130,7 @@ export async function toPublicKey(
         tempkey,
         params,
         true,
-        mapEncryptionAlgorithms[`${params.name}public`].usages
+        Constants.mapEncryptionAlgorithms[`${params.name}public`].usages
     )
 }
 
@@ -227,7 +259,7 @@ export async function unserializeToCryptoKey(
         _data = await unserializeToArrayBuffer(temp1 as Interfaces.RawInput)
     }
     if (params.name.startsWith('AES-')) {
-        if (!mapEncryptionAlgorithms[params.name]) {
+        if (!Constants.mapEncryptionAlgorithms[params.name]) {
             throw Error('Algorithm not supported: ' + params.name)
         }
         // symmetric
@@ -236,12 +268,12 @@ export async function unserializeToCryptoKey(
             _data,
             params,
             true,
-            mapEncryptionAlgorithms[params.name].usages
+            Constants.mapEncryptionAlgorithms[params.name].usages
         )
     } else {
         if (
-            !mapEncryptionAlgorithms[`${params.name}private`] ||
-            !mapEncryptionAlgorithms[`${params.name}public`]
+            !Constants.mapEncryptionAlgorithms[`${params.name}private`] ||
+            !Constants.mapEncryptionAlgorithms[`${params.name}public`]
         ) {
             throw Error('Algorithm not supported: ' + params.name)
         }
@@ -251,7 +283,8 @@ export async function unserializeToCryptoKey(
                 _data,
                 params,
                 true,
-                mapEncryptionAlgorithms[`${params.name}private`].usages
+                Constants.mapEncryptionAlgorithms[`${params.name}private`]
+                    .usages
             )
             if (type == 'publicKey' && _result.type == 'private') {
                 if (failInsteadConvert) {
@@ -270,14 +303,15 @@ export async function unserializeToCryptoKey(
                     _data,
                     params,
                     true,
-                    mapEncryptionAlgorithms[`${params.name}public`].usages
+                    Constants.mapEncryptionAlgorithms[`${params.name}public`]
+                        .usages
                 )
             } else {
                 console.debug(
                     'error, parameters: ',
                     _data,
                     params,
-                    mapEncryptionAlgorithms[`${params.name}public`]
+                    Constants.mapEncryptionAlgorithms[`${params.name}public`]
                 )
                 throw Error('Not a PrivateKey')
             }
@@ -293,12 +327,12 @@ export async function encryptRSAOEAP(
 ): Promise<Interfaces.CryptoRSAOutInterface> {
     const _options = await options
     const hashalgo = await _options.hashAlgorithm
-    if (!mapHashNames['' + hashalgo]) {
+    if (!Constants.mapHashNames['' + hashalgo]) {
         throw Error('hashalgorithm not supported: ' + hashalgo)
     }
     const key = await unserializeToCryptoKey(_options.key, {
         name: 'RSA-OAEP',
-        hash: mapHashNames['' + hashalgo].operationName,
+        hash: Constants.mapHashNames['' + hashalgo].operationName,
     })
     return {
         data: await crypto.subtle.encrypt(
@@ -329,7 +363,7 @@ export async function decryptRSAOEAP(
         switch (split.length) {
             case 1:
                 _hashalgo = await _options.hashAlgorithm
-                hashValue = mapHashNames['' + _hashalgo]
+                hashValue = Constants.mapHashNames['' + _hashalgo]
                 if (!hashValue) {
                     throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
@@ -344,7 +378,7 @@ export async function decryptRSAOEAP(
                 break
             case 2:
                 _hashalgo = split[0]
-                hashValue = mapHashNames['' + _hashalgo]
+                hashValue = Constants.mapHashNames['' + _hashalgo]
                 if (!hashValue) {
                     throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
@@ -365,7 +399,7 @@ export async function decryptRSAOEAP(
                     split[0],
                     await unserializeToArrayBuffer(split[1]),
                 ]
-                hashValue = mapHashNames['' + _hashalgo]
+                hashValue = Constants.mapHashNames['' + _hashalgo]
                 if (!hashValue) {
                     throw Error('hashalgorithm not supported: ' + _hashalgo)
                 }
@@ -381,7 +415,7 @@ export async function decryptRSAOEAP(
         }
     } else {
         const _hashalgo = await _options.hashAlgorithm
-        hashValue = mapHashNames['' + _hashalgo]
+        hashValue = Constants.mapHashNames['' + _hashalgo]
         if (!hashValue) {
             Error('hashalgorithm not supported: ' + _hashalgo)
         }
@@ -533,7 +567,7 @@ export async function derivePW(
     const salt = await unserializeToArrayBuffer(_options.salt)
     const iterations = parseInt('' + (await _options.iterations))
     const _hashalgo = await _options.hashAlgorithm
-    if (!mapHashNames['' + _hashalgo]) {
+    if (!Constants.mapHashNames['' + _hashalgo]) {
         throw Error('hashalgorithm not supported: ' + _hashalgo)
     }
 
@@ -543,7 +577,7 @@ export async function derivePW(
                 name: 'PBKDF2',
                 salt: salt,
                 iterations: iterations,
-                hash: mapHashNames['' + _hashalgo].operationName,
+                hash: Constants.mapHashNames['' + _hashalgo].operationName,
             },
             key,
             256 // cap at 256 for AESGCM compatibility

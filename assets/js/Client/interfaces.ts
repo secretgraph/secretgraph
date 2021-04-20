@@ -40,10 +40,11 @@ export interface PWInterface {
 }
 
 export interface ActionInterface {
-    start?: string
-    stop?: string
+    idOrHash?: string
+    start?: Date
+    stop?: Date
     value: string
-    key: string
+    key?: string
 }
 
 export interface ReferenceInterface {

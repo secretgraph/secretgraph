@@ -31,6 +31,7 @@ import {
 import { serverConfigQuery } from '../queries/server'
 import { useStylesAndTheme } from '../theme'
 import { checkConfigObject, loadConfig, saveConfig } from '../utils/config'
+import { findWorkingHashAlgorithms } from '../utils/encryption'
 import { createClient } from '../utils/graphql'
 import { initializeCluster } from '../utils/operations'
 
@@ -155,14 +156,8 @@ function SettingsImporter() {
             return
         }
         const sconfig = result.data.secretgraph.config
-        const hashAlgos = []
-        for (const algo of sconfig.hashAlgorithms) {
-            const mappedName = Constants.mapHashNames[algo]
-            if (mappedName) {
-                hashAlgos.push(mappedName.operationName)
-            }
-        }
-        if (!hashAlgos) {
+        const hashAlgos = findWorkingHashAlgorithms(sconfig.hashAlgorithms)
+        if (!hashAlgos.length) {
             sendMessage({
                 severity: 'warning',
                 message: 'unsupported hash algorithm',

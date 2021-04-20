@@ -54,12 +54,14 @@ import * as SetOps from '../utils/set'
 import SimpleSelect from './forms/SimpleSelect'
 
 export interface ActionProps {
-    keyHash: string | null
+    newHash?: string
+    oldHash?: string
     token: string
     start: Date | null
     stop: Date | null
     note: string
     value: { [key: string]: any } & { action: string }
+    clusterAction: boolean
     update?: boolean
     delete?: boolean
     readonly?: boolean
