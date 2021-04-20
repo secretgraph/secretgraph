@@ -171,20 +171,23 @@ class ActionMixin(object):
             else:
                 resultval = chain(
                     resultval,
-                    getattr(
-                        info.context, "secretgraphResult",
-                        {}
-                    ).get("Action", {"objects": Action.objects.none()}).filter(
-                        contentAction__isnull=True,
-                        cluster_id=self.id
-                    ).exclude(id__in=ids).map(
+                    map(
                         lambda x: ActionEntry(
                             id=x.id,
                             keyHash=x.keyHash,
                             type="other",
                             requiredKeys=[],
                             allowedTags=None
-                        )
+                        ),
+                        getattr(
+                            info.context, "secretgraphResult",
+                            {}
+                        ).get(
+                            "Action", {"objects": Action.objects.none()}
+                        )["objects"].filter(
+                            contentAction__isnull=True,
+                            cluster_id=self.id
+                        ).exclude(id__in=ids)
                     )
                 )
         return resultval

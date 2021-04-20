@@ -464,10 +464,8 @@ const ViewCluster = () => {
     const { loading } = useQuery(getClusterQuery, {
         pollInterval: 60000,
         variables: {
-            variables: {
-                id: mainCtx.item as string,
-                authorization: mainCtx.tokens,
-            },
+            id: mainCtx.item as string,
+            authorization: mainCtx.tokens,
         },
         onCompleted: async (data) => {
             const updateOb = {
@@ -509,7 +507,7 @@ const AddCluster = () => {
     const { config } = React.useContext(Contexts.Config)
     const [data, setData] = React.useState<ClusterInternProps | null>(null)
 
-    const { loading } = useQuery(getClusterQuery, {
+    const { loading } = useQuery(getClusterConfigurationQuery, {
         pollInterval: 60000,
         variables: {},
         onCompleted: async (data) => {
@@ -561,10 +559,8 @@ const EditCluster = () => {
     const { loading } = useQuery(getClusterQuery, {
         pollInterval: 60000,
         variables: {
-            variables: {
-                id: mainCtx.item as string,
-                authorization: mainCtx.tokens,
-            },
+            id: mainCtx.item as string,
+            authorization: mainCtx.tokens,
         },
         onCompleted: async (data) => {
             const updateOb = {

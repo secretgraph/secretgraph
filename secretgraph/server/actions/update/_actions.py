@@ -77,7 +77,7 @@ def create_actions_fn(
         # create Action object
         aesgcm = AESGCM(action_key)
         nonce = os.urandom(13)
-        # add content_action
+        # add contentAction
         group = action_value.pop("contentActionGroup", "") or ""
         if action.get("idOrHash"):
             actionObjs = (

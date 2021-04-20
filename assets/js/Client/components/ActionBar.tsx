@@ -49,7 +49,7 @@ function ActionBar(props: Props) {
         }
         return extractAuthInfo({
             config,
-            url: mainCtx.url + '',
+            url: mainCtx.url || activeUrl,
             require: new Set(['update', 'manage']),
         }).tokens
     }, [mainCtx.tokens, mainCtx.tokenPermissions])
@@ -68,7 +68,7 @@ function ActionBar(props: Props) {
         }
         return extractAuthInfo({
             config,
-            url: mainCtx.url + '',
+            url: mainCtx.url || activeUrl,
             require: new Set(['create', 'manage']),
         }).tokens
     }, [mainCtx.tokens, mainCtx.tokenPermissions])

@@ -300,7 +300,7 @@ class ActionHandler:
             excl_filters |= Q(cluster_id__in=action_dict["exclude"]["Cluster"])
         if type_name == "Action":
             excl_filters |= Q(
-                content_action__content_id__in=action_dict["exclude"][
+                contentAction__content_id__in=action_dict["exclude"][
                     "Content"
                 ]
             )

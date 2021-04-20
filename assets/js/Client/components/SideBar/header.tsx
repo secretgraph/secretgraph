@@ -33,7 +33,6 @@ import * as React from 'react'
 
 import { mapHashNames } from '../../constants'
 import * as Contexts from '../../contexts'
-import { getClusterQuery } from '../../queries/cluster'
 import { serverConfigQuery } from '../../queries/server'
 import { useStylesAndTheme } from '../../theme'
 import { extractAuthInfo } from '../../utils/config'

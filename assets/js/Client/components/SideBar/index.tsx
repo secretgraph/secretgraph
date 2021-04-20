@@ -23,8 +23,6 @@ import * as React from 'react'
 import { mapHashNames } from '../../constants'
 import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
-import { getClusterQuery } from '../../queries/cluster'
-import { serverConfigQuery } from '../../queries/server'
 import { useStylesAndTheme } from '../../theme'
 import { extractAuthInfo } from '../../utils/config'
 import { loadAndExtractClusterInfo } from '../../utils/operations'
@@ -62,6 +60,12 @@ const SideBarItems = () => {
         if (type == 'PrivateKey') {
             type = 'PublicKey'
         }
+        const tokens = config
+            ? extractAuthInfo({
+                  config,
+                  url: activeUrl,
+              }).tokens
+            : []
         updateMainCtx({
             item: node.id,
             updateId: node.updateId,
@@ -71,6 +75,8 @@ const SideBarItems = () => {
             url: activeUrl,
             shareUrl: `${activeUrlAsURL.origin}${node.link}`,
             title: '',
+            tokens,
+            tokenPermissions: new Set(['view']),
         })
         if (type == 'Cluster') {
             updateSearchCtx({

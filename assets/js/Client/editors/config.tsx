@@ -3,7 +3,6 @@ import * as React from 'react'
 
 import * as Contexts from '../contexts'
 import { newClusterLabel } from '../messages'
-import { getClusterQuery } from '../queries/cluster'
 import { useStylesAndTheme } from '../theme'
 
 type Props = {}
