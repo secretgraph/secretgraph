@@ -4,6 +4,7 @@ import {
     useApolloClient,
     useQuery,
 } from '@apollo/client'
+import { ListSubheader } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
 import Collapse from '@material-ui/core/Collapse'
 import Grid from '@material-ui/core/Grid'
@@ -122,14 +123,16 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
             actions.push({
                 token: params.token,
                 newHash: params.newHash,
-                start: null,
-                stop: null,
+                start: '',
+                stop: '',
                 note: entry.note || '',
                 value: {
                     action: actionType,
                 },
                 update: SetOps.isNotEq(
-                    SetOps.difference(Object.keys(entry.newActions), ['other']),
+                    SetOps.difference(Object.keys(entry.foundActions), [
+                        'other',
+                    ]),
                     Object.keys(entry.configActions)
                 ),
                 delete: false,
@@ -227,7 +230,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                             }
                             hashes[val.newHash] = [
                                 ...new Set([
-                                    ...Object.keys(mapperval.newActions),
+                                    ...Object.keys(mapperval.foundActions),
                                 ]),
                             ]
                             if (
@@ -408,27 +411,40 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                         </Grid>
                         <Grid item xs={12}>
                             <List style={{ maxHeight: '90vh' }}>
+                                <ListSubheader>Tokens</ListSubheader>
                                 <FieldArray name="actions">
                                     {({
                                         form,
                                     }: {
                                         form: FormikProps<typeof initialValues>
-                                    }) =>
-                                        form.values.actions.map(
+                                    }) => {
+                                        const items = form.values.actions.map(
                                             (val, index) => {
                                                 return (
                                                     <ActionEntry
                                                         index={index}
+                                                        key={index}
                                                         disabled={
                                                             props.disabled
                                                         }
                                                         action={val}
                                                         tokens={actionTokens}
+                                                        divider
                                                     />
                                                 )
                                             }
                                         )
-                                    }
+                                        if (!props.disabled) {
+                                            items.push(
+                                                <ActionEntry
+                                                    key="new"
+                                                    disabled={props.disabled}
+                                                    tokens={actionTokens}
+                                                />
+                                            )
+                                        }
+                                        return items
+                                    }}
                                 </FieldArray>
                             </List>
                         </Grid>
@@ -534,7 +550,7 @@ const AddCluster = () => {
                         newHash: hashKey,
                         oldHash: null,
                         configActions: new Set(['manage']),
-                        newActions: {
+                        foundActions: {
                             manage: new Set([null]),
                         },
                     },

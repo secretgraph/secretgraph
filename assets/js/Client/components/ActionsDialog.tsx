@@ -161,6 +161,7 @@ export const ActionEntry = React.memo(function ActionEntry({
                     <FastField
                         name={`actions.${index}.start`}
                         component={FormikTextField}
+                        fullWidth
                         type="datetime-local"
                         disabled={disabled || action?.delete || action?.locked}
                         inputProps={{
@@ -173,6 +174,7 @@ export const ActionEntry = React.memo(function ActionEntry({
                     <FastField
                         name={`actions.${index}.stop`}
                         component={FormikTextField}
+                        fullWidth
                         type="datetime-local"
                         inputProps={{
                             pattern:
@@ -185,6 +187,7 @@ export const ActionEntry = React.memo(function ActionEntry({
                     <Field
                         name={`actions.${index}.token`}
                         component={SimpleSelect}
+                        fullWidth
                         options={tokens}
                         disabled={disabled || action?.delete || action?.locked}
                     />
@@ -193,65 +196,62 @@ export const ActionEntry = React.memo(function ActionEntry({
                     <FastField
                         name={`actions.${index}.note`}
                         component={FormikTextField}
+                        fullWidth
                         disabled={
                             disabled || action?.delete || action?.readonly
                         }
                     />
                 </Grid>
-                <Grid item container spacing={2} xs={12}>
-                    <ActionFields
-                        action={action?.value?.action || ''}
-                        index={index}
-                        disabled={
-                            disabled || action?.delete || action?.readonly
-                        }
-                    />
+                <Grid item xs={12}>
+                    <Grid container spacing={2}>
+                        <ActionFields
+                            action={action?.value?.action || ''}
+                            index={index}
+                            disabled={
+                                disabled || action?.delete || action?.readonly
+                            }
+                        />
+                    </Grid>
                 </Grid>
             </Grid>
-            <ListItemSecondaryAction>
-                {addFn && (
-                    <Tooltip title="Add Action" arrow>
-                        <span>
-                            <Button
-                                disabled={
-                                    disabled ||
-                                    action?.delete ||
-                                    action?.readonly
-                                }
-                                onClick={addFn}
-                            />
-                        </span>
-                    </Tooltip>
-                )}
-                {action && action.update !== undefined && (
-                    <Tooltip title="Update Action" arrow>
-                        <span>
-                            <Field
-                                name={`actions.${index}.update`}
-                                disabled={
-                                    disabled ||
-                                    action?.delete ||
-                                    action?.readonly
-                                }
-                                component={FormikCheckBox}
-                                type="checkbox"
-                            />
-                        </span>
-                    </Tooltip>
-                )}
-                {action && (
-                    <Tooltip title="Delete" arrow>
-                        <span>
-                            <Field
-                                name={`actions.${index}.delete`}
-                                disabled={disabled || action?.readonly}
-                                component={FormikCheckBox}
-                                type="checkbox"
-                            />
-                        </span>
-                    </Tooltip>
-                )}
-            </ListItemSecondaryAction>
+            {addFn && (
+                <Tooltip title="Add Action" arrow>
+                    <span>
+                        <Button
+                            disabled={
+                                disabled || action?.delete || action?.readonly
+                            }
+                            onClick={addFn}
+                        />
+                    </span>
+                </Tooltip>
+            )}
+            {action && action.update !== undefined && (
+                <Tooltip title="Update Action" arrow>
+                    <span>
+                        <Field
+                            name={`actions.${index}.update`}
+                            disabled={
+                                disabled || action?.delete || action?.readonly
+                            }
+                            component={FormikCheckBox}
+                            type="checkbox"
+                        />
+                    </span>
+                </Tooltip>
+            )}
+            {action && (
+                <Tooltip title="Delete" arrow>
+                    <span>
+                        <Field
+                            name={`actions.${index}.delete`}
+                            disabled={disabled || action?.readonly}
+                            component={FormikCheckBox}
+                            type="checkbox"
+                        />
+                    </span>
+                </Tooltip>
+            )}
         </ListItem>
     )
 })

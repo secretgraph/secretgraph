@@ -437,7 +437,7 @@ export function extractAuthInfo({
         throw Error(`no url: ${url}`)
     }
     const host = config.hosts[new URL(url, window.location.href).href]
-    if (!props.content || props.clusters) {
+    if (host && (!props.content || props.clusters)) {
         for (const id in host.clusters) {
             if (props.clusters && !props.clusters.has(id)) {
                 continue
@@ -466,7 +466,7 @@ export function extractAuthInfo({
             }
         }
     }
-    if (props.content) {
+    if (host && props.content) {
         const contentconf = host.contents[props.content]
         for (const hash_algo in contentconf.hashes) {
             const [_, hash] = hash_algo.match(
@@ -682,15 +682,21 @@ export function updateConfigReducer(
     return newState
 }
 
-const actionMatcher = /^(?:[^:]+:)?(.*?)/.compile()
+const actionMatcher = /:(.*)/
 
 export type ActionMapperEntry = {
-    token: string
-    note: string
     newHash: string
     oldHash: null | string
+    note: string
+    token: string
     configActions: Set<string>
-    newActions: { [type: string]: Set<string | null> }
+    foundActions: { [type: string]: Set<string | null> }
+}
+
+export type CertificateEntry = {
+    newHash: string
+    oldHash: string
+    note: string
 }
 
 export async function calculateActionMapper({
@@ -698,15 +704,17 @@ export async function calculateActionMapper({
     config,
     knownHashes,
     unknownTokens,
+    unknownKeyhashes,
     hashAlgorithm,
 }: {
     nodeData?: any
     config: Interfaces.ConfigInterface
     knownHashes?: { [hash: string]: string[] }
+    unknownKeyhashes?: string[]
     unknownTokens: string[]
     hashAlgorithm: string
 }) {
-    const prepare: PromiseLike<ActionMapperEntry | null>[] = []
+    const prepareActions: PromiseLike<ActionMapperEntry | null>[] = []
     const premapper: {
         [hash: string]: { [type: string]: Set<string | null> }
     } = {}
@@ -721,11 +729,15 @@ export async function calculateActionMapper({
     }
     const hashalgo = Constants.mapHashNames[hashAlgorithm].operationName
     for (const token of unknownTokens) {
-        prepare.push(
+        const match = (token.match(actionMatcher) as RegExpMatchArray)[1]
+        if (!match) {
+            continue
+        }
+        prepareActions.push(
             serializeToBase64(
-                unserializeToArrayBuffer(
-                    (token.match(actionMatcher) as RegExpMatchArray)[1]
-                ).then((val) => crypto.subtle.digest(hashalgo, val))
+                unserializeToArrayBuffer(match).then((val) =>
+                    crypto.subtle.digest(hashalgo, val)
+                )
             ).then((val) => {
                 if (knownHashes && knownHashes[val]) {
                     return null
@@ -736,29 +748,33 @@ export async function calculateActionMapper({
                     newHash: val,
                     oldHash: null,
                     configActions: new Set<string>(),
-                    newActions: premapper[val] || {},
+                    foundActions: premapper[val] || {},
                 }
             })
         )
     }
     for (const [hash, actions] of Object.entries(knownHashes || {})) {
-        prepare.push(
-            serializeToBase64(
-                unserializeToArrayBuffer(
-                    config.tokens[hash].token
-                ).then((val) => crypto.subtle.digest(hashalgo, val))
-            ).then((val) => ({
-                token: config.tokens[hash].token,
-                note: config.tokens[hash].note,
-                newHash: val,
-                oldHash: hash,
-                configActions: new Set<string>(actions),
-                newActions: premapper[val] || {},
-            }))
-        )
+        if (config.tokens[hash]) {
+            prepareActions.push(
+                serializeToBase64(
+                    unserializeToArrayBuffer(
+                        config.tokens[hash].token
+                    ).then((val) => crypto.subtle.digest(hashalgo, val))
+                ).then((val) => {
+                    return {
+                        newHash: val,
+                        oldHash: hash,
+                        note: config.tokens[hash].note,
+                        token: config.tokens[hash].token,
+                        configActions: new Set<string>(actions),
+                        foundActions: premapper[val] || {},
+                    }
+                })
+            )
+        }
     }
     return Object.fromEntries(
-        (await Promise.all(prepare))
+        (await Promise.all(prepareActions))
             .filter((val) => val)
             .map((val: ActionMapperEntry) => {
                 return [val.newHash, val]

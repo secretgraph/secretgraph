@@ -56,7 +56,6 @@ const SideBarItems = () => {
             // split works different in js, so 2
             type = type.match(/=(.*)/)[1]
         }
-        console.log(type, node.id)
         if (type == 'PrivateKey') {
             type = 'PublicKey'
         }

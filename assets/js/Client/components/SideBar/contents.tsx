@@ -67,6 +67,9 @@ const contentFeedQuery = gql`
                                 }
                             }
                         }
+                        availableActions {
+                            type
+                        }
                     }
                 }
                 pageInfo {
@@ -179,7 +182,11 @@ export default React.memo(function Contents({
             if (state == 'draft') {
                 Icon = DraftsIcon
             }
-            const nodeId = `${activeUrl}-contents::${node.id}`
+            const nodeId = (node.availableActions as { type: string }[]).some(
+                (val) => val.type == 'delete' || val.type == 'manage'
+            )
+                ? `${activeUrl}-contents::${node.id}`
+                : `${activeUrl}-contents.${node.id}`
             return (
                 <TreeItem
                     classes={{
@@ -209,6 +216,7 @@ export default React.memo(function Contents({
                     }
                     nodeId={nodeId}
                     key={nodeId}
+                    onLabelClick={(ev) => ev.preventDefault()}
                     onDoubleClick={(ev) => {
                         ev.preventDefault()
                         ev.stopPropagation()
@@ -232,6 +240,7 @@ export default React.memo(function Contents({
                     <TreeItem
                         label="Load more contents..."
                         nodeId={`${props.nodeId}-contents-loadmore`}
+                        onLabelClick={(ev) => ev.preventDefault()}
                         onClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()

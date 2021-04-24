@@ -36,6 +36,9 @@ export const clusterFeedQuery = gql`
                         link
                         id
                         publicInfo
+                        availableActions {
+                            type
+                        }
                     }
                 }
                 pageInfo {
@@ -86,6 +89,7 @@ export const getClusterQuery = gql`
         secretgraph(authorization: $authorization) {
             config {
                 id
+                hashAlgorithms
                 injectedClusters {
                     group
                     clusters

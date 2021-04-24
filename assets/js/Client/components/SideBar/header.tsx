@@ -307,8 +307,9 @@ export default function SideBarHeader() {
                 <MainSearchField />
                 {theme.direction === 'ltr' ? <CloseButton /> : null}
             </div>
-            <div className={selected.length ? undefined : classes.hidden}>
+            <div>
                 <Button
+                    disabled={!selected.length}
                     onClick={async () => {
                         const ids = selected
                             .map((val) => {

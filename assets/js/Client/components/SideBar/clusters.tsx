@@ -105,7 +105,11 @@ export default React.memo(function Clusters({
         return data.clusters.clusters.edges.map(({ node }: any) => {
             if (node.id !== activeCluster) {
                 const { name, note } = extractPublicInfo(node.publicInfo)
-                const nodeId = `${activeUrl}-cluster::${node.id}`
+                const nodeId = (node.availableActions as {
+                    type: string
+                }[]).some((val) => val.type == 'delete' || val.type == 'manage')
+                    ? `${activeUrl}-clusters::${node.id}`
+                    : `${activeUrl}-clusters.${node.id}`
                 return (
                     <SideBarContents
                         goTo={goTo}
@@ -129,6 +133,7 @@ export default React.memo(function Clusters({
                         }
                         nodeId={nodeId}
                         key={nodeId}
+                        onLabelClick={(ev) => ev.preventDefault()}
                         onDoubleClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
@@ -145,6 +150,7 @@ export default React.memo(function Clusters({
                     !!error ||
                     !data.clusters.clusters.pageInfo.hasNextPage
                 }*/
+
     return (
         <TreeItem {...props}>
             {activeCluster && (
@@ -152,6 +158,7 @@ export default React.memo(function Clusters({
                     nodeId={`${activeUrl}-clusters::${activeCluster}`}
                     authinfo={authinfo}
                     goTo={goTo}
+                    onLabelClick={(ev) => ev.preventDefault()}
                     cluster={activeCluster}
                     classes={{
                         content: classes.treeItemMarked,
@@ -166,6 +173,7 @@ export default React.memo(function Clusters({
                     <TreeItem
                         label="Load more clusters..."
                         nodeId={`${props.nodeId}-cluster-loadmore`}
+                        onLabelClick={(ev) => ev.preventDefault()}
                         onClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
