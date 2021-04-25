@@ -275,7 +275,9 @@ export function extractPubKeysReferences(props: {
     readonly onlyPubkeys?: boolean
 }): { [hash: string]: Promise<CryptoKey> } {
     const pubkeys = props.old || {}
-    for (const { target: keyNode } of props.node.references.edges) {
+    for (const {
+        node: { target: keyNode },
+    } of props.node.references.edges) {
         if (!props.onlyPubkeys && !keyNode.tags.includes('type=PublicKey')) {
             continue
         }

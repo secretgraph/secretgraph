@@ -609,7 +609,7 @@ export async function encryptTag(
         throw Error('missing data')
     }
 
-    if (!options.encrypt || options.encrypt.has(tag)) {
+    if (options.encrypt && options.encrypt.has(tag)) {
         const nonce = crypto.getRandomValues(new Uint8Array(13))
         const { data: encrypted } = await encryptAESGCM({
             ...options,

@@ -299,7 +299,6 @@ export const contentRetrievalQuery = gql`
                     references(
                         groups: ["key", "signature"]
                         includeTags: $keyhashes
-                        deleted: null
                     ) {
                         edges {
                             node {

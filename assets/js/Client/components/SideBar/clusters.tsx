@@ -47,10 +47,13 @@ const ActiveCluster = React.memo(function ActiveCluster({
                     </span>
                 </span>
             }
+            onLabelClick={(ev) => {
+                ev.preventDefault()
+            }}
             onDoubleClick={(ev) => {
                 ev.preventDefault()
                 ev.stopPropagation()
-                data?.node && goTo(data.node)
+                data?.node && goTo({ ...data.node, title: data?.name })
             }}
             cluster={cluster}
             {...props}
@@ -137,7 +140,7 @@ export default React.memo(function Clusters({
                         onDoubleClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
-                            goTo(node)
+                            goTo({ ...node, title: name })
                         }}
                     />
                 )

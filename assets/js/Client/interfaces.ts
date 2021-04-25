@@ -71,7 +71,6 @@ interface BaseHostInterface<ClusterType, ContentType> {
 
 interface BaseConfigInterface<SType = { token: string; note: string }> {
     baseUrl: string
-    configHashes: string[]
     configCluster: string
     certificates: { [hash: string]: SType }
     tokens: { [hash: string]: SType }
@@ -129,6 +128,7 @@ export interface SearchContextInterface {
 export interface AuthInfoInterface {
     tokens: string[]
     hashes: string[]
+    certificateHashes: string[]
 }
 
 export interface ElementEntryInterface {

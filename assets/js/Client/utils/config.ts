@@ -28,7 +28,6 @@ export function cleanConfig(
         !(config.hosts instanceof Object) ||
         !(config.tokens instanceof Object) ||
         !(config.certificates instanceof Object) ||
-        !(config.configHashes instanceof Array) ||
         !config.configCluster
     ) {
         console.error(config)
@@ -53,13 +52,6 @@ export async function checkConfigObject(
 ) {
     let actions: string[] = [],
         cert: Uint8Array | null = null
-    for (const hash of config.configHashes) {
-        if (config.tokens[hash]) {
-            actions.push(config.tokens[hash].token)
-        } else if (config.certificates[hash]) {
-            cert = b64toarr(config.certificates[hash].token)
-        }
-    }
     if (!actions || !cert) {
         return false
     }
@@ -318,24 +310,20 @@ export async function exportConfigAsUrl({
     iterations: number
     pw?: string
 }) {
-    let actions: string[] = [],
-        cert: Uint8Array | null = null
-    for (const hash of config.configHashes) {
-        if (config.tokens[hash]) {
-            actions.push(config.tokens[hash].token)
-        } else if (config.certificates[hash]) {
-            cert = b64toarr(config.certificates[hash].token)
-        }
-    }
-    if (!actions) {
-        return
-    }
-    const tokens = actions.map((action) => `${config.configCluster}:${action}`)
+    const authInfo = extractAuthInfo({
+        config,
+        url: config.baseUrl,
+        clusters: new Set([config.configCluster]),
+    })
+    const cert: Uint8Array | null = authInfo.certificateHashes.length
+        ? b64toarr(config.certificates[authInfo.certificateHashes[0]].token)
+        : null
+
     const obj = await client.query({
         query: findConfigQuery,
         variables: {
             cluster: config.configCluster,
-            authorization: tokens,
+            authorization: authInfo.tokens,
         },
     })
     let certhashes: string[] = []
@@ -354,7 +342,9 @@ export async function exportConfigAsUrl({
                 )
         )
     )
-    const searchcerthashes = new Set(actions.map((hash) => `key_hash=${hash}`))
+    const searchcerthashes = new Set(
+        authInfo.hashes.map((hash) => `key_hash=${hash}`)
+    )
     for (const { node: configContent } of obj.data.contents.edges) {
         if (!configContent.tags.includes('type=Config')) {
             continue
@@ -400,13 +390,13 @@ export async function exportConfigAsUrl({
                 })
                 return `${url.origin}${
                     configContent.link
-                }?decrypt&token=${tokens.join('token=')}&prekey=${
+                }?decrypt&token=${authInfo.tokens.join('token=')}&prekey=${
                     certhashes[0]
                 }:${prekey}&prekey=shared:${prekey2}`
             } else {
                 return `${url.origin}${
                     configContent.link
-                }?decrypt&token=${tokens.join('token=')}&token=${
+                }?decrypt&token=${authInfo.tokens.join('token=')}&token=${
                     certhashes[0]
                 }:${btoa(
                     String.fromCharCode(
@@ -433,6 +423,7 @@ export function extractAuthInfo({
 }): Interfaces.AuthInfoInterface {
     const keys = new Set<string>()
     const hashes = new Set<string>()
+    const certificateHashes = new Set<string>()
     if (url === undefined || url === null) {
         throw Error(`no url: ${url}`)
     }
@@ -443,57 +434,43 @@ export function extractAuthInfo({
                 continue
             }
             const clusterconf = host.clusters[id]
-            for (const hash_algo in clusterconf.hashes) {
-                const [_, hash] = hash_algo.match(
-                    /(?:[^:]*:)?(.*?)/
-                ) as RegExpMatchArray
+            for (const hash in clusterconf.hashes) {
                 if (
-                    (config.tokens[hash_algo] || config.tokens[hash]) &&
-                    SetOps.hasIntersection(
-                        require,
-                        clusterconf.hashes[hash_algo]
-                    )
+                    config.tokens[hash] &&
+                    SetOps.hasIntersection(require, clusterconf.hashes[hash])
                 ) {
                     hashes.add(hash)
-                    hashes.add(hash_algo)
-                    keys.add(
-                        `${id}:${
-                            config.tokens[hash_algo]?.token ||
-                            config.tokens[hash]?.token
-                        }`
-                    )
+                    keys.add(`${id}:${config.tokens[hash]?.token}`)
+                }
+                if (config.certificates[hash]) {
+                    certificateHashes.add(hash)
                 }
             }
         }
     }
     if (host && props.content) {
         const contentconf = host.contents[props.content]
-        for (const hash_algo in contentconf.hashes) {
-            const [_, hash] = hash_algo.match(
-                /(?:[^:]*:)?(.*?)/
-            ) as RegExpMatchArray
-            if (
-                (config.tokens[hash_algo] || config.tokens[hash]) &&
-                SetOps.hasIntersection(require, contentconf.hashes[hash_algo])
+        for (const hash in contentconf.hashes) {
+            if (config.certificates[hash]) {
+                certificateHashes.add(hash)
+            } else if (
+                config.tokens[hash] &&
+                SetOps.hasIntersection(require, contentconf.hashes[hash])
             ) {
-                if (
-                    (!config.tokens[hash_algo] && !config.tokens[hash]) ||
-                    !hash
-                ) {
-                    console.warn('token not found for:', hash_algo, hash)
+                if (!config.tokens[hash] || !hash) {
+                    console.warn('token not found for:', hash)
                 }
                 hashes.add(hash)
-                keys.add(
-                    `${contentconf.cluster}:${
-                        config.tokens[hash_algo]?.token ||
-                        config.tokens[hash]?.token
-                    }`
-                )
+                keys.add(`${contentconf.cluster}:${config.tokens[hash]?.token}`)
             }
         }
     }
     // sorted is better for cache
-    return { hashes: [...hashes].sort(), tokens: [...keys].sort() }
+    return {
+        certificateHashes: [...certificateHashes].sort(),
+        hashes: [...hashes].sort(),
+        tokens: [...keys].sort(),
+    }
 }
 
 export function extractPrivKeys({
@@ -648,9 +625,6 @@ export function updateConfigReducer(
     if (update.baseUrl) {
         newState.baseUrl = update.baseUrl
     }
-    if (update.configHashes) {
-        newState.configHashes = update.configHashes
-    }
     if (update.configCluster) {
         newState.configCluster = update.configCluster
     }
@@ -690,7 +664,7 @@ export type ActionMapperEntry = {
     note: string
     token: string
     configActions: Set<string>
-    foundActions: { [type: string]: Set<string | null> }
+    foundActions: Set<string>
 }
 
 export type CertificateEntry = {
@@ -716,16 +690,13 @@ export async function calculateActionMapper({
 }) {
     const prepareActions: PromiseLike<ActionMapperEntry | null>[] = []
     const premapper: {
-        [hash: string]: { [type: string]: Set<string | null> }
+        [hash: string]: Set<string>
     } = {}
     for (const entry of nodeData?.availableActions || []) {
         if (!premapper[entry.keyHash]) {
-            premapper[entry.keyHash] = { [entry.type]: new Set() }
+            premapper[entry.keyHash] = new Set()
         }
-        if (!premapper[entry.keyHash][entry.type]) {
-            premapper[entry.keyHash][entry.type] = new Set()
-        }
-        premapper[entry.keyHash][entry.type].add(entry.id)
+        premapper[entry.keyHash].add(entry.type)
     }
     const hashalgo = Constants.mapHashNames[hashAlgorithm].operationName
     for (const token of unknownTokens) {

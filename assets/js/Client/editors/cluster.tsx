@@ -1,3 +1,5 @@
+import {} from '../utils/typing'
+
 import {
     ApolloClient,
     FetchResult,
@@ -16,7 +18,15 @@ import ListItemText from '@material-ui/core/ListItemText'
 import Typography from '@material-ui/core/Typography'
 import AddIcon from '@material-ui/icons/Add'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
-import { FastField, Field, FieldArray, Form, Formik, FormikProps } from 'formik'
+import {
+    ArrayHelpers,
+    FastField,
+    Field,
+    FieldArray,
+    Form,
+    Formik,
+    FormikProps,
+} from 'formik'
 import { TextField as FormikTextField } from 'formik-material-ui'
 import {
     BlankNode,
@@ -39,6 +49,7 @@ import {
     getClusterConfigurationQuery,
     getClusterQuery,
 } from '../queries/cluster'
+import { serverConfigQuery } from '../queries/server'
 import { useStylesAndTheme } from '../theme'
 import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
 import { calculateActionMapper, extractAuthInfo } from '../utils/config'
@@ -53,21 +64,20 @@ import {
     updateConfigRemoteReducer,
 } from '../utils/operations'
 import * as SetOps from '../utils/set'
-import { RequireAttributes } from '../utils/typing'
-import { UnpackPromise, ValueType } from '../utils/typing'
+import { RequireAttributes, UnpackPromise, ValueType } from '../utils/typing'
 
 async function extractPublicInfo({
     config,
     node,
     url,
     tokens,
-    hashAlgorithm,
+    hashAlgorithms,
 }: {
     config: Interfaces.ConfigInterface
     node?: any
     url: string
     tokens: string[]
-    hashAlgorithm: string
+    hashAlgorithms: string[]
 }) {
     const { name, note, publicTokens } = extractPublicInfoShared(
         node.publicInfo,
@@ -79,7 +89,7 @@ async function extractPublicInfo({
         unknownTokens: [...publicTokens, ...tokens],
         knownHashes:
             (node && url && config.hosts[url]?.clusters[node.id]?.hashes) || {},
-        hashAlgorithm,
+        hashAlgorithm: hashAlgorithms[0],
     })
     return {
         publicInfo: node.publicInfo,
@@ -87,7 +97,7 @@ async function extractPublicInfo({
         name: name || '',
         note: note || '',
         url,
-        hashAlgorithm,
+        hashAlgorithms,
     }
 }
 
@@ -98,7 +108,7 @@ interface ClusterInternProps {
     url: string
     disabled?: boolean
     mapper: UnpackPromise<ReturnType<typeof calculateActionMapper>>
-    hashAlgorithm: string
+    hashAlgorithms: string[]
 }
 
 const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
@@ -130,11 +140,11 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                     action: actionType,
                 },
                 update: SetOps.isNotEq(
-                    SetOps.difference(Object.keys(entry.foundActions), [
-                        'other',
-                    ]),
+                    SetOps.difference(entry.foundActions, ['other']),
                     Object.keys(entry.configActions)
-                ),
+                )
+                    ? false
+                    : undefined,
                 delete: false,
                 readonly: false,
                 locked: true,
@@ -197,6 +207,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                     new Literal(values.note || '', null, XSD('string'))
                 )
                 let clusterResponse: FetchResult<any>
+                // create actions ready to be feed to createCluster or updateCluster
                 const finishedActions: Interfaces.ActionInterface[] = []
                 const configUpdate: RequireAttributes<
                     Interfaces.ConfigInputInterface,
@@ -253,8 +264,8 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                     }
                     finishedActions.push({
                         idOrHash: val.oldHash,
-                        start: val.start || undefined,
-                        stop: val.stop || undefined,
+                        start: val.start ? new Date(val.start) : undefined,
+                        stop: val.stop ? new Date(val.stop) : undefined,
                         value: JSON.stringify(val.value),
                         key: val.token,
                     })
@@ -275,10 +286,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                     })
                     if (!clusterResponse.errors && clusterResponse.data) {
                         configUpdate['hosts'][props.url as string] = {
-                            hashAlgorithms: findWorkingHashAlgorithms(
-                                clusterResponse.data.data.secretgraph.config
-                                    .hashAlgorithms
-                            ),
+                            hashAlgorithms: props.hashAlgorithms,
                         }
                     }
                 } else {
@@ -292,7 +300,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                             //modulusLength: 8192,
                             modulusLength: 2048,
                             publicExponent: new Uint8Array([1, 0, 1]),
-                            hash: props.hashAlgorithm,
+                            hash: props.hashAlgorithms[0],
                         },
                         true,
                         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
@@ -301,7 +309,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                         .exportKey('spki' as const, publicKey)
                         .then((keydata) =>
                             crypto.subtle
-                                .digest(props.hashAlgorithm, keydata)
+                                .digest(props.hashAlgorithms[0], keydata)
                                 .then((data) =>
                                     btoa(
                                         String.fromCharCode(
@@ -312,7 +320,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                         )
                     const digestActionKeyPromise = crypto.subtle
                         .digest(
-                            props.hashAlgorithm,
+                            props.hashAlgorithms[0],
                             crypto.getRandomValues(new Uint8Array(32))
                         )
                         .then((data) =>
@@ -322,7 +330,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                         client,
                         actions: finishedActions,
                         publicInfo: '',
-                        hashAlgorithm: props.hashAlgorithm,
+                        hashAlgorithm: props.hashAlgorithms[0],
                         publicKey,
                         privateKey,
                         privateKeyKey: key,
@@ -410,14 +418,17 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                             />
                         </Grid>
                         <Grid item xs={12}>
-                            <List style={{ maxHeight: '90vh' }}>
-                                <ListSubheader>Tokens</ListSubheader>
+                            <List>
+                                <ListSubheader disableSticky>
+                                    Tokens
+                                </ListSubheader>
                                 <FieldArray name="actions">
                                     {({
+                                        push,
                                         form,
                                     }: {
                                         form: FormikProps<typeof initialValues>
-                                    }) => {
+                                    } & ArrayHelpers) => {
                                         const items = form.values.actions.map(
                                             (val, index) => {
                                                 return (
@@ -440,6 +451,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                                                     key="new"
                                                     disabled={props.disabled}
                                                     tokens={actionTokens}
+                                                    addFn={push}
                                                 />
                                             )
                                         }
@@ -503,9 +515,9 @@ const ViewCluster = () => {
                     node: data.secretgraph.node,
                     url: mainCtx.url as string,
                     tokens: mainCtx.tokens,
-                    hashAlgorithm: findWorkingHashAlgorithms(
+                    hashAlgorithms: findWorkingHashAlgorithms(
                         data.secretgraph.config.hashAlgorithms
-                    )[0],
+                    ),
                 })
             )
         },
@@ -550,12 +562,10 @@ const AddCluster = () => {
                         newHash: hashKey,
                         oldHash: null,
                         configActions: new Set(['manage']),
-                        foundActions: {
-                            manage: new Set([null]),
-                        },
+                        foundActions: new Set(['manage']),
                     },
                 },
-                hashAlgorithm: hashAlgorithms[0],
+                hashAlgorithms,
             })
         },
     })
@@ -598,9 +608,9 @@ const EditCluster = () => {
                     node: data.secretgraph.node,
                     url: mainCtx.url as string,
                     tokens: mainCtx.tokens,
-                    hashAlgorithm: findWorkingHashAlgorithms(
+                    hashAlgorithms: findWorkingHashAlgorithms(
                         data.secretgraph.config.hashAlgorithms
-                    )[0],
+                    ),
                 })
             )
         },

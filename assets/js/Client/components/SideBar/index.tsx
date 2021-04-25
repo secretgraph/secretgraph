@@ -73,7 +73,7 @@ const SideBarItems = () => {
             action: 'view',
             url: activeUrl,
             shareUrl: `${activeUrlAsURL.origin}${node.link}`,
-            title: '',
+            title: node.title || '',
             tokens,
             tokenPermissions: new Set(['view']),
         })

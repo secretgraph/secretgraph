@@ -66,7 +66,7 @@ export const getClusterConfigurationQuery = gql`
                     }
                 }
             }
-            node(id: $id) {
+            node(id: $id) @include(if: $id) {
                 ... on Cluster {
                     id
                     group

@@ -62,14 +62,20 @@ export default function HeaderBar() {
             title = 'Secretgraph - Import'
             documenttitle = title
             break
-        default:
-            if (mainCtx.item) {
-                title = `...${mainCtx.item.substr(-48)}`
+        case 'view':
+            if (mainCtx.title) {
+                title = mainCtx.title
             } else {
-                title = '-'
+                if (mainCtx.item) {
+                    title = `...${mainCtx.item.substr(-48)}`
+                } else {
+                    title = '-'
+                }
             }
             documenttitle = `Secretgraph: ${title}`
             break
+        default:
+            throw Error(`Invalid type: ${mainCtx.action}`)
     }
 
     const exportSettingsFile = async () => {

@@ -11,6 +11,7 @@ import {
     contentRetrievalQuery,
     createContentMutation,
     createKeysMutation,
+    findConfigQuery,
     updateContentMutation,
     updateKeyMutation,
 } from '../queries/content'
@@ -33,6 +34,7 @@ import {
     encryptRSAOEAP,
     encryptTag,
     extractTags,
+    findWorkingHashAlgorithms,
     serializeToBase64,
     unserializeToArrayBuffer,
     unserializeToCryptoKey,
@@ -610,7 +612,6 @@ export async function initializeCluster(
         digestCertificatePromise,
     ])
     config.configCluster = clusterResult.cluster['id']
-    config.configHashes = [digestActionKey, digestCertificate]
     config.hosts[config['baseUrl']].clusters[clusterResult.cluster['id']] = {
         hashes: {},
     }
@@ -776,27 +777,35 @@ export async function updateConfigRemoteReducer(
 
     while (true) {
         const configQueryRes = await client.query({
-            query: contentRetrievalQuery,
+            query: findConfigQuery,
             variables: {
+                cluster: config.configCluster,
                 authorization: authInfo.tokens,
             },
         })
         if (configQueryRes.errors) {
             throw configQueryRes.errors
         }
-        const node = configQueryRes.data.node
-        const foundConfig = await fetch(node.link, {
-            headers: {
-                Authorization: authInfo.tokens.join(','),
-            },
-        }).then((result) => result.json())
+        const node = configQueryRes.data.secretgraph.contents.edges[0]?.node
+        const retrieved = await decryptContentObject({
+            nodeData: node,
+            config,
+            blobOrTokens: authInfo.tokens,
+        })
+        if (!retrieved) {
+            throw Error('could not retrieve config object')
+        }
+        const foundConfig = JSON.parse(
+            String.fromCharCode(...new Uint8Array(retrieved.data))
+        )
         const mergedConfig = updateConfigReducer(foundConfig, update)
-        mergedConfig.hosts[mergedConfig.baseUrl].hashAlgorithms =
-            configQueryRes.data.config.hashAlgorithms
+        const algos = findWorkingHashAlgorithms(
+            configQueryRes.data.secretgraph.config.hashAlgorithms
+        )
         privkeys = extractPrivKeys({
             config: mergedConfig,
             url: mergedConfig.baseUrl,
-            hashAlgorithm: configQueryRes.data.config.hashAlgorithms[0],
+            hashAlgorithm: algos[0],
             old: privkeys,
         })
         pubkeys = extractPubKeysReferences({
@@ -804,7 +813,7 @@ export async function updateConfigRemoteReducer(
             authorization: authInfo.tokens,
             params: {
                 name: 'RSA-OAEP',
-                hash: configQueryRes.data.config.hashAlgorithms[0],
+                hash: algos[0],
             },
             old: pubkeys,
             onlyPubkeys: true,
@@ -816,13 +825,14 @@ export async function updateConfigRemoteReducer(
             updateId: node.updateId,
             privkeys: Object.values(privkeys),
             pubkeys: Object.values(pubkeys),
+            tags: ['type=Config', 'state=internal'],
             config: foundConfig,
-            hashAlgorithm: configQueryRes.data.config.hashAlgorithms[0],
+            hashAlgorithm: algos[0],
             value: new Blob([JSON.stringify(mergedConfig)]),
             authorization: authInfo.tokens,
         })
         if (result.errors) {
-            throw configQueryRes.errors
+            throw new Error(`Update failed: ${configQueryRes.errors}`)
         }
         if (result.data.writeok) {
             return mergedConfig

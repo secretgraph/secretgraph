@@ -7,7 +7,9 @@ import {
     ListSubheader,
     Menu,
     MenuItem,
+    Portal,
 } from '@material-ui/core'
+import { Divider } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
 import Dialog, { DialogProps } from '@material-ui/core/Dialog'
 import DialogTitle from '@material-ui/core/DialogTitle'
@@ -41,10 +43,6 @@ import {
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
-import * as Constants from '../constants'
-import * as Contexts from '../contexts'
-import * as Interfaces from '../interfaces'
-import { getActionsQuery } from '../queries/node'
 import {
     serializeToBase64,
     unserializeToArrayBuffer,
@@ -57,8 +55,8 @@ export interface ActionProps {
     newHash?: string
     oldHash?: string
     token: string
-    start: Date | null
-    stop: Date | null
+    start: Date | ''
+    stop: Date | ''
     note: string
     value: { [key: string]: any } & { action: string }
     clusterAction: boolean
@@ -90,6 +88,7 @@ const ActionFields = React.memo(function ActionFields({
                             component={FormikCheckboxWithLabel}
                             Label={{ label: 'Can delete' }}
                             disabled={disabled}
+                            type="checkbox"
                         />
                     </Grid>
                 </>
@@ -117,6 +116,173 @@ const ActionFields = React.memo(function ActionFields({
     }
 })
 
+function ActionEntryIntern({
+    action,
+    index,
+    disabled,
+    submitFn,
+    tokens,
+}: {
+    action?: ActionProps
+    index?: number
+    disabled?: boolean
+    submitFn?: () => void
+    tokens: string[]
+}) {
+    const { values } = useFormikContext<any>()
+    disabled = !!(disabled || action?.readonly)
+    const locked =
+        action?.delete ||
+        action?.locked ||
+        !availableActionsSet.has(action?.value?.action || 'view')
+
+    return (
+        <Grid container spacing={2} direction="column">
+            <Grid item container wrap="nowrap" spacing={2}>
+                <Grid item container spacing={2}>
+                    <Grid item xs={12}>
+                        For security reasons action values are not shown after
+                        creation. Use note field to document
+                    </Grid>
+                    <Grid item xs={4}>
+                        <FastField
+                            name={
+                                !submitFn
+                                    ? `actions.${index}.value.action`
+                                    : 'value.action'
+                            }
+                            component={SimpleSelect}
+                            options={['view', 'update', 'manage']}
+                            disabled={disabled || locked}
+                            label="Action"
+                        />
+                    </Grid>
+                    <Grid item xs={4}>
+                        <FastField
+                            name={
+                                !submitFn ? `actions.${index}.start` : 'start'
+                            }
+                            component={FormikTextField}
+                            fullWidth
+                            type="datetime-local"
+                            disabled={disabled || locked}
+                            inputProps={{
+                                pattern:
+                                    '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
+                            }}
+                            label="Start"
+                        />
+                    </Grid>
+                    <Grid item xs={4}>
+                        <FastField
+                            name={!submitFn ? `actions.${index}.stop` : 'stop'}
+                            component={FormikTextField}
+                            fullWidth
+                            type="datetime-local"
+                            inputProps={{
+                                pattern:
+                                    '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
+                            }}
+                            disabled={disabled || locked}
+                            label="Stop"
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Field
+                            name={
+                                !submitFn ? `actions.${index}.token` : 'token'
+                            }
+                            component={SimpleSelect}
+                            fullWidth
+                            freeSolo
+                            options={tokens}
+                            disabled={disabled || locked}
+                            label="Token"
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <FastField
+                            name={!submitFn ? `actions.${index}.note` : 'note'}
+                            component={FormikTextField}
+                            fullWidth
+                            disabled={disabled || action?.delete}
+                            label="Note"
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Grid container spacing={2}>
+                            <ActionFields
+                                action={
+                                    !submitFn
+                                        ? action?.value?.action
+                                        : values?.value?.action
+                                }
+                                index={index}
+                                disabled={disabled || locked}
+                            />
+                        </Grid>
+                    </Grid>
+                </Grid>
+                {action && action.update !== undefined && !submitFn && (
+                    <Grid item>
+                        <Tooltip title="Update Action" arrow>
+                            <span>
+                                <Field
+                                    name={`actions.${index}.update`}
+                                    disabled={
+                                        disabled ||
+                                        action?.delete ||
+                                        action?.readonly
+                                    }
+                                    component={FormikCheckBox}
+                                    type="checkbox"
+                                />
+                            </span>
+                        </Tooltip>
+                    </Grid>
+                )}
+                {action && !submitFn && (
+                    <Grid item>
+                        <Tooltip title="Delete" arrow>
+                            <span>
+                                <Field
+                                    name={`actions.${index}.delete`}
+                                    disabled={disabled || action?.readonly}
+                                    component={FormikCheckBox}
+                                    type="checkbox"
+                                />
+                            </span>
+                        </Tooltip>
+                    </Grid>
+                )}
+            </Grid>
+            {submitFn && [
+                <Grid key="0" item>
+                    <Divider />
+                </Grid>,
+                <Grid key="1" item>
+                    <Tooltip title="Add Action" arrow>
+                        <span>
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                disabled={
+                                    disabled ||
+                                    action?.delete ||
+                                    action?.readonly
+                                }
+                                onClick={submitFn}
+                            >
+                                Add
+                            </Button>
+                        </span>
+                    </Tooltip>
+                </Grid>,
+            ]}
+        </Grid>
+    )
+}
+
 export const ActionEntry = React.memo(function ActionEntry({
     action,
     index,
@@ -128,132 +294,67 @@ export const ActionEntry = React.memo(function ActionEntry({
     action?: ActionProps
     index?: number
     disabled?: boolean
-    addFn?: () => void
+    addFn?: (arg: ActionProps) => void | Promise<void>
     tokens: string[]
 }) {
-    /**
-    const {
-        values: { actions },
-    } = useFormikContext()
-    */
-    disabled = !!(
-        disabled ||
-        action?.readonly ||
-        !availableActionsSet.has(action?.value?.action || '')
-    )
+    if (addFn) {
+        const ref = React.useRef<any>()
+        const newTokens = React.useMemo(() => tokens.concat('new'), [tokens])
 
-    return (
-        <ListItem {...props}>
-            <Grid container spacing={2}>
-                <Grid item xs={12}>
-                    For security reasons action values are not shown after
-                    update/creation. Use note field
-                </Grid>
-                <Grid item xs={4}>
-                    <FastField
-                        name={`actions.${index}.value.action`}
-                        component={SimpleSelect}
-                        options={['view', 'update', 'manage']}
-                        disabled={disabled || action?.delete || action?.locked}
-                    />
-                </Grid>
-                <Grid item xs={4}>
-                    <FastField
-                        name={`actions.${index}.start`}
-                        component={FormikTextField}
-                        fullWidth
-                        type="datetime-local"
-                        disabled={disabled || action?.delete || action?.locked}
-                        inputProps={{
-                            pattern:
-                                '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
+        return (
+            <ListItem {...props}>
+                <div ref={ref} />
+                <Portal container={ref.current}>
+                    <Formik
+                        initialValues={{
+                            token: 'new',
+                            start: '',
+                            stop: '',
+                            note: '',
+                            value: {
+                                action: 'view',
+                            },
                         }}
-                    />
-                </Grid>
-                <Grid item xs={4}>
-                    <FastField
-                        name={`actions.${index}.stop`}
-                        component={FormikTextField}
-                        fullWidth
-                        type="datetime-local"
-                        inputProps={{
-                            pattern:
-                                '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
+                        onSubmit={async (
+                            { token, ...values },
+                            { resetForm }
+                        ) => {
+                            if (token == 'new') {
+                                token = btoa(
+                                    String.fromCharCode(
+                                        ...crypto.getRandomValues(
+                                            new Uint8Array(32)
+                                        )
+                                    )
+                                )
+                            }
+                            await addFn({ token, ...values })
+                            resetForm()
                         }}
-                        disabled={disabled || action?.delete || action?.locked}
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <Field
-                        name={`actions.${index}.token`}
-                        component={SimpleSelect}
-                        fullWidth
-                        options={tokens}
-                        disabled={disabled || action?.delete || action?.locked}
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <FastField
-                        name={`actions.${index}.note`}
-                        component={FormikTextField}
-                        fullWidth
-                        disabled={
-                            disabled || action?.delete || action?.readonly
-                        }
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <Grid container spacing={2}>
-                        <ActionFields
-                            action={action?.value?.action || ''}
-                            index={index}
-                            disabled={
-                                disabled || action?.delete || action?.readonly
-                            }
-                        />
-                    </Grid>
-                </Grid>
-            </Grid>
-            {addFn && (
-                <Tooltip title="Add Action" arrow>
-                    <span>
-                        <Button
-                            disabled={
-                                disabled || action?.delete || action?.readonly
-                            }
-                            onClick={addFn}
-                        />
-                    </span>
-                </Tooltip>
-            )}
-            {action && action.update !== undefined && (
-                <Tooltip title="Update Action" arrow>
-                    <span>
-                        <Field
-                            name={`actions.${index}.update`}
-                            disabled={
-                                disabled || action?.delete || action?.readonly
-                            }
-                            component={FormikCheckBox}
-                            type="checkbox"
-                        />
-                    </span>
-                </Tooltip>
-            )}
-            {action && (
-                <Tooltip title="Delete" arrow>
-                    <span>
-                        <Field
-                            name={`actions.${index}.delete`}
-                            disabled={disabled || action?.readonly}
-                            component={FormikCheckBox}
-                            type="checkbox"
-                        />
-                    </span>
-                </Tooltip>
-            )}
-        </ListItem>
-    )
+                    >
+                        {(formikProps: FormikProps<any>) => (
+                            <ActionEntryIntern
+                                disabled={disabled}
+                                tokens={newTokens}
+                                submitFn={formikProps.submitForm}
+                            />
+                        )}
+                    </Formik>
+                </Portal>
+            </ListItem>
+        )
+    } else {
+        return (
+            <ListItem {...props}>
+                <ActionEntryIntern
+                    action={action}
+                    index={index}
+                    disabled={disabled}
+                    tokens={tokens}
+                />
+            </ListItem>
+        )
+    }
 })
 
 interface ActionsDialogProps

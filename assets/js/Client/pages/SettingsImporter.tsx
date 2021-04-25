@@ -106,7 +106,6 @@ function SettingsImporter() {
                 tokens: {},
                 hosts: {},
                 baseUrl: new URL(providerUrl, window.location.href).href,
-                configHashes: [],
                 configCluster: '',
             }
             newConfig.hosts[newConfig.baseUrl] = {
@@ -170,7 +169,6 @@ function SettingsImporter() {
                 tokens: {},
                 hosts: {},
                 baseUrl: new URL(providerUrl, window.location.href).href,
-                configHashes: [],
                 configCluster: '',
             }
             newConfig.hosts[newConfig.baseUrl] = {
