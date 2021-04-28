@@ -167,14 +167,17 @@ def fetch_contents(
         incl_filters = Q()
         hash_filters = Q()
         excl_filters = Q()
+        # only if tags are specified the filtering starts,
+        # empty array does no harm
         for i in includeTags or []:
             incl_filters |= Q(tags__tag__startswith=i)
 
-        for i in contentHashes or []:
-            hash_filters |= Q(contentHash=i)
-
+        # only if tags are specified the filtering starts,
+        # empty array does no harm
         for i in excludeTags or []:
             excl_filters |= Q(tags__tag__startswith=i)
+        for i in contentHashes or []:
+            hash_filters |= Q(contentHash=i)
         query = query.filter((~excl_filters) & incl_filters & hash_filters)
 
     if minUpdated and not maxUpdated:

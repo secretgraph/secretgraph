@@ -140,6 +140,13 @@ function ActionEntryIntern({
         <Grid container spacing={2} direction="column">
             <Grid item container wrap="nowrap" spacing={2}>
                 <Grid item container spacing={2}>
+                    {submitFn && (
+                        <Grid item xs={12}>
+                            <Typography variant="h4" align="center">
+                                Add
+                            </Typography>
+                        </Grid>
+                    )}
                     <Grid item xs={12}>
                         For security reasons action values are not shown after
                         creation. Use note field to document
@@ -209,19 +216,21 @@ function ActionEntryIntern({
                             label="Note"
                         />
                     </Grid>
-                    <Grid item xs={12}>
-                        <Grid container spacing={2}>
-                            <ActionFields
-                                action={
-                                    !submitFn
-                                        ? action?.value?.action
-                                        : values?.value?.action
-                                }
-                                index={index}
-                                disabled={disabled || locked}
-                            />
+                    {!locked && (
+                        <Grid item xs={12}>
+                            <Grid container spacing={2}>
+                                <ActionFields
+                                    action={
+                                        !submitFn
+                                            ? action?.value?.action
+                                            : values?.value?.action
+                                    }
+                                    index={index}
+                                    disabled={disabled || locked}
+                                />
+                            </Grid>
                         </Grid>
-                    </Grid>
+                    )}
                 </Grid>
                 {action && action.update !== undefined && !submitFn && (
                     <Grid item>
@@ -313,7 +322,8 @@ export const ActionEntry = React.memo(function ActionEntry({
                             note: '',
                             value: {
                                 action: 'view',
-                            },
+                                delete: false,
+                            } as any,
                         }}
                         onSubmit={async (
                             { token, ...values },

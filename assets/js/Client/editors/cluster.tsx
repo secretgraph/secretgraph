@@ -141,7 +141,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                 },
                 update: SetOps.isNotEq(
                     SetOps.difference(entry.foundActions, ['other']),
-                    Object.keys(entry.configActions)
+                    entry.configActions
                 )
                     ? false
                     : undefined,
