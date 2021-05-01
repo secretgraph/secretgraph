@@ -627,7 +627,9 @@ export function updateConfigReducer(
     if (replace) {
         return update as Interfaces.ConfigInterface
     }
-    const newState: Interfaces.ConfigInterface = Object.create(state || {})
+    const newState: Interfaces.ConfigInterface = state
+        ? Object.assign({}, state)
+        : ({} as any)
     if (update.certificates) {
         newState.certificates = mergeDeleteObjects(
             newState.certificates,
@@ -648,7 +650,7 @@ export function updateConfigReducer(
             newState.hosts,
             update.hosts,
             (oldval: any, newval: any) => {
-                const newState = Object.create(oldval || {})
+                const newState = oldval ? Object.assign({}, oldval) : {}
                 if (newval.hashAlgorithms) {
                     newState.hashAlgorithms = newval.hashAlgorithms
                 }
@@ -668,7 +670,11 @@ export function updateConfigReducer(
             }
         )
     }
-    return newState
+    const ret = cleanConfig(newState)
+    if (!ret) {
+        throw Error('invalid merge')
+    }
+    return ret
 }
 
 const actionMatcher = /:(.*)/

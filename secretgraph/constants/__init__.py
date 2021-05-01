@@ -14,14 +14,22 @@ class DeleteRecursive(enum.Enum):
     NO_GROUP = "c"
 
 
-DeleteRecursive.valide_values = set(map(lambda x: x.value,
-                                        DeleteRecursive.__members__.values()))
+DeleteRecursive.valide_values = set(
+    map(lambda x: x.value, DeleteRecursive.__members__.values())
+)
 
 
+# not active yet
 class ShowDeleted(enum.Enum):
+    __ignore__ = ["valide_values"]
     false = "false"
     true = "true"
     both = "both"
+
+
+ShowDeleted.valide_values = set(
+    map(lambda x: x.value, ShowDeleted.__members__.values())
+)
 
 
 class MetadataOperations(enum.Enum):

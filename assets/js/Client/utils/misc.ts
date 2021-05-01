@@ -23,7 +23,7 @@ export function mergeDeleteObjects(
     newObj: any,
     objHandler = (oldval: any, newval: any) => newval
 ) {
-    const copied = Object.create(oldObj || {})
+    const copied = oldObj ? Object.assign({}, oldObj) : {}
     for (const [key, value] of Object.entries(newObj)) {
         if (!key) {
             continue

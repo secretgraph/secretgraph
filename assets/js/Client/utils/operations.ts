@@ -776,7 +776,6 @@ export async function updateConfigRemoteReducer(
     let pubkeys = undefined
 
     while (true) {
-        console.log('call')
         const configQueryRes = await client.query({
             query: findConfigQuery,
             variables: {
@@ -838,7 +837,7 @@ export async function updateConfigRemoteReducer(
         if (result.errors) {
             throw new Error(`Update failed: ${configQueryRes.errors}`)
         }
-        if (result.data.writeok) {
+        if (result.data.updateOrCreateContent.writeok) {
             return mergedConfig
         }
     }

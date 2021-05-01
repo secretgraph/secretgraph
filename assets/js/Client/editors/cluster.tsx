@@ -389,7 +389,7 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                     cluster:
                         clusterResponse.data.updateOrCreateCluster.cluster.id,
                 })
-                setSubmitting(false)
+                // reset form
             }}
         >
             {({ submitForm, isSubmitting, initialValues, dirty }) => (
