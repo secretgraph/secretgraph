@@ -23,6 +23,7 @@ import ListItemText from '@material-ui/core/ListItemText'
 import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
 import AddIcon from '@material-ui/icons/Add'
+import DeleteIcon from '@material-ui/icons/Delete'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
 import {
     FastField,
@@ -84,7 +85,11 @@ const ActionFields = React.memo(function ActionFields({
                 <>
                     <Grid item>
                         <Field
-                            name={`actions.${index}.value.delete`}
+                            name={
+                                index !== undefined
+                                    ? `actions.${index}.value.delete`
+                                    : 'value.delete'
+                            }
                             component={FormikCheckboxWithLabel}
                             Label={{ label: 'Can delete' }}
                             disabled={disabled}
@@ -120,12 +125,14 @@ function ActionEntryIntern({
     action,
     index,
     disabled,
+    deleteFn,
     submitFn,
     tokens,
 }: {
     action?: ActionProps
     index?: number
     disabled?: boolean
+    deleteFn?: () => void
     submitFn?: () => void
     tokens: string[]
 }) {
@@ -203,6 +210,16 @@ function ActionEntryIntern({
                             fullWidth
                             freeSolo
                             options={tokens}
+                            renderOption={(val: string) => {
+                                if (val == 'new') {
+                                    return (
+                                        <Typography style={{ color: 'green' }}>
+                                            {val}
+                                        </Typography>
+                                    )
+                                }
+                                return val
+                            }}
                             disabled={disabled || locked}
                             label="Token"
                         />
@@ -214,6 +231,8 @@ function ActionEntryIntern({
                             fullWidth
                             disabled={disabled || action?.delete}
                             label="Note"
+                            multiline
+                            variant="outlined"
                         />
                     </Grid>
                     {!locked && (
@@ -254,12 +273,18 @@ function ActionEntryIntern({
                     <Grid item>
                         <Tooltip title="Delete" arrow>
                             <span>
-                                <Field
-                                    name={`actions.${index}.delete`}
-                                    disabled={disabled || action?.readonly}
-                                    component={FormikCheckBox}
-                                    type="checkbox"
-                                />
+                                {!deleteFn ? (
+                                    <Field
+                                        name={`actions.${index}.delete`}
+                                        disabled={disabled || action?.readonly}
+                                        component={FormikCheckBox}
+                                        type="checkbox"
+                                    />
+                                ) : (
+                                    <IconButton onClick={deleteFn}>
+                                        <DeleteIcon />
+                                    </IconButton>
+                                )}
                             </span>
                         </Tooltip>
                     </Grid>
@@ -320,6 +345,8 @@ export const ActionEntry = React.memo(function ActionEntry({
                             start: '',
                             stop: '',
                             note: '',
+                            delete: false,
+                            update: undefined,
                             value: {
                                 action: 'view',
                                 delete: false,

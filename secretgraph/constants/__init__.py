@@ -18,6 +18,12 @@ DeleteRecursive.valide_values = set(map(lambda x: x.value,
                                         DeleteRecursive.__members__.values()))
 
 
+class ShowDeleted(enum.Enum):
+    false = "false"
+    true = "true"
+    both = "both"
+
+
 class MetadataOperations(enum.Enum):
     append = "append"
     remove = "remove"

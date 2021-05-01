@@ -693,7 +693,7 @@ const EditKeys = () => {
                                             )
                                         )]: privKey
                                             ? {
-                                                  token: await serializeToBase64(
+                                                  data: await serializeToBase64(
                                                       privKey
                                                   ),
                                                   note: '',
@@ -855,7 +855,7 @@ const AddKeys = () => {
                                             )
                                         )
                                     )]: {
-                                        token: await serializeToBase64(privKey),
+                                        data: await serializeToBase64(privKey),
                                         note: '',
                                     },
                                 },

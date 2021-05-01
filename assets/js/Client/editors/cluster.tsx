@@ -111,7 +111,7 @@ interface ClusterInternProps {
     hashAlgorithms: string[]
 }
 
-const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
+const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
     const client = useApolloClient()
     const { baseClient } = React.useContext(Contexts.Clients)
     const { config, updateConfig } = React.useContext(
@@ -172,7 +172,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                 name: props.name || '',
                 note: props.note || '',
             }}
-            onSubmit={async (values, { setSubmitting, setValues }) => {
+            onSubmit={async (values, { setSubmitting }) => {
                 let root: BlankNode | undefined = undefined
                 const store = graph()
                 if (props.publicInfo) {
@@ -360,7 +360,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                             contents: {},
                         }
                         configUpdate.tokens[digestCertificate] = {
-                            token: await serializeToBase64(privateKey),
+                            data: await serializeToBase64(privateKey),
                             note: '',
                         }
                     }
@@ -392,7 +392,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                 setSubmitting(false)
             }}
         >
-            {({ submitForm, isSubmitting, initialValues }) => (
+            {({ submitForm, isSubmitting, initialValues, dirty }) => (
                 <Form>
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
@@ -402,7 +402,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                                 type="text"
                                 label="Name"
                                 fullWidth
-                                disabled={props.disabled || isSubmitting}
+                                disabled={disabled || isSubmitting}
                             />
                         </Grid>
 
@@ -414,7 +414,7 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                                 label="Note"
                                 fullWidth
                                 multiline
-                                disabled={props.disabled || isSubmitting}
+                                disabled={disabled || isSubmitting}
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -436,7 +436,8 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                                                         index={index}
                                                         key={index}
                                                         disabled={
-                                                            props.disabled
+                                                            disabled ||
+                                                            isSubmitting
                                                         }
                                                         action={val}
                                                         tokens={actionTokens}
@@ -445,11 +446,13 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                                                 )
                                             }
                                         )
-                                        if (!props.disabled) {
+                                        if (!disabled) {
                                             items.push(
                                                 <ActionEntry
                                                     key="new"
-                                                    disabled={props.disabled}
+                                                    disabled={
+                                                        disabled || isSubmitting
+                                                    }
                                                     tokens={actionTokens}
                                                     addFn={push}
                                                 />
@@ -464,11 +467,13 @@ const ClusterIntern = ({ mapper, ...props }: ClusterInternProps) => {
                             {isSubmitting && <LinearProgress />}
                         </Grid>
                         <Grid item xs={12}>
-                            {props.disabled ? null : (
+                            {disabled ? null : (
                                 <Button
                                     variant="contained"
                                     color="primary"
-                                    disabled={isSubmitting}
+                                    disabled={
+                                        isSubmitting || disabled || !dirty
+                                    }
                                     onClick={submitForm}
                                 >
                                     Submit

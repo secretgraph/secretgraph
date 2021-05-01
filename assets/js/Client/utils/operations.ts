@@ -622,11 +622,11 @@ export async function initializeCluster(
         clusterResult.cluster['id']
     ].hashes[digestCertificate] = []
     config['certificates'][digestCertificate] = {
-        token: await serializeToBase64(privateKey),
+        data: await serializeToBase64(privateKey),
         note: 'initial certificate',
     }
     config.tokens[digestActionKey] = {
-        token: keyb64,
+        data: keyb64,
         note: 'initial token',
     }
     if (!cleanConfig(config)) {
@@ -720,7 +720,7 @@ export async function decryptContentObject({
             await Promise.any(
                 found.map(async (value) => {
                     return await decryptRSAOEAP({
-                        key: config.certificates[value.hash].token,
+                        key: config.certificates[value.hash].data,
                         data: value.sharedKey,
                         hashAlgorithm: value.hashAlgorithm,
                     })
@@ -776,6 +776,7 @@ export async function updateConfigRemoteReducer(
     let pubkeys = undefined
 
     while (true) {
+        console.log('call')
         const configQueryRes = await client.query({
             query: findConfigQuery,
             variables: {
@@ -798,7 +799,11 @@ export async function updateConfigRemoteReducer(
         const foundConfig = JSON.parse(
             String.fromCharCode(...new Uint8Array(retrieved.data))
         )
+
         const mergedConfig = updateConfigReducer(foundConfig, update)
+        if (!cleanConfig(mergedConfig)) {
+            throw Error('invalid merged config')
+        }
         const algos = findWorkingHashAlgorithms(
             configQueryRes.data.secretgraph.config.hashAlgorithms
         )
@@ -818,7 +823,6 @@ export async function updateConfigRemoteReducer(
             old: pubkeys,
             onlyPubkeys: true,
         })
-
         const result = await updateContent({
             client,
             id: node.id,
@@ -826,7 +830,7 @@ export async function updateConfigRemoteReducer(
             privkeys: Object.values(privkeys),
             pubkeys: Object.values(pubkeys),
             tags: ['type=Config', 'state=internal'],
-            config: foundConfig,
+            config: mergedConfig,
             hashAlgorithm: algos[0],
             value: new Blob([JSON.stringify(mergedConfig)]),
             authorization: authInfo.tokens,

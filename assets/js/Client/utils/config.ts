@@ -33,8 +33,23 @@ export function cleanConfig(
         console.error(config)
         return null
     }
-    for (const _host in config.hosts) {
-        const host = config.hosts[_host]
+    for (const [key, val] of Object.entries(config.tokens)) {
+        if (typeof val == 'string') {
+            config.tokens[key] = {
+                data: val,
+                note: '',
+            }
+        }
+    }
+    for (const [key, val] of Object.entries(config.certificates)) {
+        if (typeof val == 'string') {
+            config.certificates[key] = {
+                data: val,
+                note: '',
+            }
+        }
+    }
+    for (const host of Object.values(config.hosts)) {
         if (!host['clusters']) {
             host['clusters'] = {}
         }
@@ -316,7 +331,7 @@ export async function exportConfigAsUrl({
         clusters: new Set([config.configCluster]),
     })
     const cert: Uint8Array | null = authInfo.certificateHashes.length
-        ? b64toarr(config.certificates[authInfo.certificateHashes[0]].token)
+        ? b64toarr(config.certificates[authInfo.certificateHashes[0]].data)
         : null
 
     const obj = await client.query({
@@ -440,7 +455,7 @@ export function extractAuthInfo({
                     SetOps.hasIntersection(require, clusterconf.hashes[hash])
                 ) {
                     hashes.add(hash)
-                    keys.add(`${id}:${config.tokens[hash]?.token}`)
+                    keys.add(`${id}:${config.tokens[hash]?.data}`)
                 }
                 if (config.certificates[hash]) {
                     certificateHashes.add(hash)
@@ -461,7 +476,7 @@ export function extractAuthInfo({
                     console.warn('token not found for:', hash)
                 }
                 hashes.add(hash)
-                keys.add(`${contentconf.cluster}:${config.tokens[hash]?.token}`)
+                keys.add(`${contentconf.cluster}:${config.tokens[hash]?.data}`)
             }
         }
     }
@@ -495,7 +510,7 @@ export function extractPrivKeys({
         for (const hash in clusterconf.hashes) {
             if (config.certificates[hash] && !privkeys[hash]) {
                 privkeys[hash] = unserializeToCryptoKey(
-                    config.certificates[hash].token,
+                    config.certificates[hash].data,
                     {
                         name: 'RSA-OAEP',
                         hash:
@@ -719,7 +734,7 @@ export async function calculateActionMapper({
                     newHash: val,
                     oldHash: null,
                     configActions: new Set<string>(),
-                    foundActions: premapper[val] || {},
+                    foundActions: premapper[val] || new Set(),
                 }
             })
         )
@@ -729,16 +744,16 @@ export async function calculateActionMapper({
             prepareActions.push(
                 serializeToBase64(
                     unserializeToArrayBuffer(
-                        config.tokens[hash].token
+                        config.tokens[hash].data
                     ).then((val) => crypto.subtle.digest(hashalgo, val))
                 ).then((val) => {
                     return {
                         newHash: val,
                         oldHash: hash,
                         note: config.tokens[hash].note,
-                        token: config.tokens[hash].token,
+                        token: config.tokens[hash].data,
                         configActions: new Set<string>(actions),
-                        foundActions: premapper[val] || {},
+                        foundActions: premapper[val] || new Set(),
                     }
                 })
             )

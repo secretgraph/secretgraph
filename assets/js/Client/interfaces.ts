@@ -69,7 +69,7 @@ interface BaseHostInterface<ClusterType, ContentType> {
     contents: { [flexid: string]: ContentType }
 }
 
-interface BaseConfigInterface<SType = { token: string; note: string }> {
+interface BaseConfigInterface<SType = { data: string; note: string }> {
     baseUrl: string
     configCluster: string
     certificates: { [hash: string]: SType }
@@ -87,7 +87,7 @@ export interface ConfigInterface extends BaseConfigInterface {
 
 export interface ConfigInputInterface
     extends Partial<
-        BaseConfigInterface<{ token: string; note: string } | null>
+        BaseConfigInterface<{ data: string; note: string } | null>
     > {
     hosts?: {
         [url: string]: Partial<

@@ -121,9 +121,9 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # TODO
 
+-   deleted contents only visible with delete permission, needs Constant instead of boolean (ShowDeleted)
 -   harmonize naming of add /create
--   Available Actions are too limited, we need all action hashes => way to list stale actions
--   Way to list stale actions (maybe: anonymize their description)
+-   Way to list stale actions (via hashes and anonymized description)
 -   Switch to mainCtx tokens
 -   subscribe to config, watch changes
 -   delete: limit amount?
