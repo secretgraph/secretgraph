@@ -1,15 +1,18 @@
-import { ApolloClient, useApolloClient, useLazyQuery } from '@apollo/client'
+import {
+    ApolloClient,
+    useApolloClient,
+    useLazyQuery,
+    useQuery,
+} from '@apollo/client'
 import GroupWorkIcon from '@material-ui/icons/GroupWork'
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
 import * as React from 'react'
-import { useAsync } from 'react-async'
 
 import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
-import { clusterFeedQuery } from '../../queries/cluster'
+import { clusterFeedQuery, getClusterQuery } from '../../queries/cluster'
 import { useStylesAndTheme } from '../../theme'
 import { extractPublicInfo } from '../../utils/cluster'
-import { loadAndExtractClusterInfo } from '../../utils/operations'
 import SideBarContents from './contents'
 
 const ActiveCluster = React.memo(function ActiveCluster({
@@ -22,13 +25,19 @@ const ActiveCluster = React.memo(function ActiveCluster({
     cluster: string
     goTo: (node: any) => void
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
-    const client = useApolloClient()
-    const { data } = useAsync({
-        promiseFn: loadAndExtractClusterInfo,
-        id: cluster,
-        authorization: authinfo?.tokens,
-        client,
-        watch: cluster,
+    const [data, setData] = React.useState<any>(undefined)
+    const {} = useQuery(getClusterQuery, {
+        //pollInterval: ,
+        variables: {
+            id: cluster,
+            authorization: authinfo?.tokens,
+        },
+        onCompleted: (data) => {
+            setData({
+                ...extractPublicInfo(data.secretgraph.node.publicInfo, false),
+                node: data.secretgraph.node,
+            })
+        },
     })
     return (
         <SideBarContents

@@ -20,15 +20,15 @@ DeleteRecursive.valide_values = set(
 
 
 # not active yet
-class ShowDeleted(enum.Enum):
+class ShowElements(enum.Enum):
     __ignore__ = ["valide_values"]
-    false = "false"
-    true = "true"
-    both = "both"
+    DEFAULT = "default"
+    DELETED = "deleted"
+    HIDDEN = "hidden"
 
 
-ShowDeleted.valide_values = set(
-    map(lambda x: x.value, ShowDeleted.__members__.values())
+ShowElements.valide_values = set(
+    map(lambda x: x.value, ShowElements.__members__.values())
 )
 
 

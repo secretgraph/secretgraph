@@ -121,7 +121,9 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # TODO
 
+-   sanitize hashAlgorithms
 -   deleted contents only visible with delete permission, needs Constant instead of boolean (ShowDeleted)
+-   implement hidden attribute, for administrative hidding of contents, combine with deleted?
 -   harmonize naming of add /create
 -   Way to list stale actions (via hashes and anonymized description)
 -   Switch to mainCtx tokens
@@ -129,14 +131,13 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters
 -   tags: limit amount tags
--   use serialized algo name for certificates/tokens?
+-   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
 -   test permissions
 -   disable editing/prompt for keys if keys are missing
 -   cleanup serverside encryption
     -   remove many "key" arguments
     -   document when it is possible to push unencrypted content
 -   document permissions, specialize
--   implement hidden, for administrative hidding of contents
 -   cleanup js structure, harmonize naming, modulize more
 -   updateId in form
 -   prekey implement form

@@ -3,7 +3,7 @@ import {} from '../utils/typing'
 import {
     ApolloClient,
     FetchResult,
-    useApolloClient,
+    useLazyQuery,
     useQuery,
 } from '@apollo/client'
 import { ListSubheader } from '@material-ui/core'
@@ -92,6 +92,7 @@ async function extractPublicInfo({
         hashAlgorithm: hashAlgorithms[0],
     })
     return {
+        key: node.updateId,
         publicInfo: node.publicInfo,
         mapper,
         name: name || '',
@@ -112,8 +113,7 @@ interface ClusterInternProps {
 }
 
 const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
-    const client = useApolloClient()
-    const { baseClient } = React.useContext(Contexts.Clients)
+    const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
@@ -172,7 +172,7 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                 name: props.name || '',
                 note: props.note || '',
             }}
-            onSubmit={async (values, { setSubmitting }) => {
+            onSubmit={async (values, { setSubmitting, resetForm }) => {
                 let root: BlankNode | undefined = undefined
                 const store = graph()
                 if (props.publicInfo) {
@@ -273,7 +273,7 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                 if (mainCtx.item && mainCtx.type == 'Cluster') {
                     clusterResponse = await updateCluster({
                         id: mainCtx.item as string,
-                        client,
+                        client: itemClient,
                         updateId: mainCtx.updateId as string,
                         actions: finishedActions,
                         publicInfo: serialize(
@@ -327,7 +327,7 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                             btoa(String.fromCharCode(...new Uint8Array(data)))
                         )
                     clusterResponse = await createCluster({
-                        client,
+                        client: itemClient,
                         actions: finishedActions,
                         publicInfo: '',
                         hashAlgorithm: props.hashAlgorithms[0],
@@ -376,7 +376,6 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                     }),
                     true
                 )
-
                 updateMainCtx({
                     title: values.name || '',
                     action: 'update',
@@ -389,7 +388,6 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                     cluster:
                         clusterResponse.data.updateOrCreateCluster.cluster.id,
                 })
-                // reset form
             }}
         >
             {({ submitForm, isSubmitting, initialValues, dirty }) => (
@@ -494,12 +492,13 @@ const ViewCluster = () => {
         ReturnType<typeof extractPublicInfo>
     > | null>(null)
 
-    const { loading } = useQuery(getClusterQuery, {
+    useQuery(getClusterQuery, {
         pollInterval: 60000,
         variables: {
             id: mainCtx.item as string,
             authorization: mainCtx.tokens,
         },
+        onError: console.error,
         onCompleted: async (data) => {
             const updateOb = {
                 shareUrl: data.secretgraph.node.link,
@@ -536,14 +535,16 @@ const ViewCluster = () => {
 
 const AddCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
-    const { config } = React.useContext(Contexts.Config)
     const [data, setData] = React.useState<ClusterInternProps | null>(null)
 
-    const { loading } = useQuery(getClusterConfigurationQuery, {
+    useQuery(getClusterConfigurationQuery, {
         pollInterval: 60000,
         variables: {},
+        onError: console.error,
         onCompleted: async (data) => {
+            if (!data) {
+                return
+            }
             updateMainCtx({
                 shareUrl: null,
                 deleted: false,
@@ -587,13 +588,17 @@ const EditCluster = () => {
     const [data, setData] = React.useState<UnpackPromise<
         ReturnType<typeof extractPublicInfo>
     > | null>(null)
-    const { loading } = useQuery(getClusterQuery, {
+    const { refetch } = useQuery(getClusterQuery, {
         pollInterval: 60000,
         variables: {
             id: mainCtx.item as string,
             authorization: mainCtx.tokens,
         },
+        onError: console.error,
         onCompleted: async (data) => {
+            if (!data) {
+                return
+            }
             const updateOb = {
                 shareUrl: data.secretgraph.node.link,
                 deleted: data.secretgraph.node.deleted || null,
@@ -620,12 +625,15 @@ const EditCluster = () => {
             )
         },
     })
+    React.useEffect(() => {
+        data && refetch()
+    }, [mainCtx.updateId])
 
     if (!data) {
         return null
     }
 
-    return <ClusterIntern key="enabled" {...data} />
+    return <ClusterIntern {...data} />
 }
 
 export default function ClusterComponent() {

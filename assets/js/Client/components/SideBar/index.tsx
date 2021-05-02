@@ -25,7 +25,6 @@ import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
 import { useStylesAndTheme } from '../../theme'
 import { extractAuthInfo } from '../../utils/config'
-import { loadAndExtractClusterInfo } from '../../utils/operations'
 import * as SetOps from '../../utils/set'
 import { CapturingSuspense } from '../misc'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))

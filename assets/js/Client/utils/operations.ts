@@ -685,11 +685,10 @@ export async function decryptContentObject({
 }): Promise<decryptContentObjectInterface | null> {
     let arrPromise: PromiseLike<ArrayBufferLike>
     const _info = await blobOrTokens
-    const _node = await nodeData
     const config = await _config
+    const _node = await nodeData
     if (!_node) {
-        console.error('no node found')
-        return null
+        throw Error('no node found')
     }
     if (_info instanceof Blob) {
         arrPromise = _info.arrayBuffer()
@@ -702,6 +701,7 @@ export async function decryptContentObject({
             },
         }).then((result) => result.arrayBuffer())
     }
+    // skip decryption as always unencrypted
     if (_node.tags.includes('type=PublicKey')) {
         return {
             data: await arrPromise,
@@ -716,6 +716,7 @@ export async function decryptContentObject({
         if (!found.length) {
             return null
         }
+        // find key (=first result of decoding shared key)
         key = (
             await Promise.any(
                 found.map(async (value) => {
@@ -728,10 +729,11 @@ export async function decryptContentObject({
             )
         ).data
     } catch (exc) {
-        console.error(exc, exc?.errors)
+        console.debug('No matching certificate found', exc, exc?.errors)
         return null
     }
 
+    // if this fails, it means shared key and encrypted object doesn't match
     try {
         return {
             ...(await decryptAESGCM({
@@ -744,8 +746,8 @@ export async function decryptContentObject({
             nodeData,
         }
     } catch (exc) {
-        console.error(exc)
-        return null
+        console.debug('Decoding content failed', exc)
+        throw Error("Encrypted content and shared key doesn't match")
     }
 }
 
@@ -770,6 +772,7 @@ export async function updateConfigRemoteReducer(
             config,
             url: config.baseUrl,
             clusters: new Set([config.configCluster]),
+            require: new Set(['update', 'manage']),
         })
     }
     let privkeys = undefined
@@ -793,7 +796,7 @@ export async function updateConfigRemoteReducer(
             blobOrTokens: authInfo.tokens,
         })
         if (!retrieved) {
-            throw Error('could not retrieve config object')
+            throw Error('could not retrieve and decode config object')
         }
         const foundConfig = JSON.parse(
             String.fromCharCode(...new Uint8Array(retrieved.data))
@@ -840,27 +843,5 @@ export async function updateConfigRemoteReducer(
         if (result.data.updateOrCreateContent.writeok) {
             return mergedConfig
         }
-    }
-}
-
-export async function loadAndExtractClusterInfo({
-    client,
-    authorization,
-    id,
-}: {
-    client: ApolloClient<any>
-    authorization: string[]
-    id: string
-}) {
-    const { data } = await client.query({
-        query: getClusterQuery,
-        variables: {
-            id,
-            authorization,
-        },
-    })
-    return {
-        ...extractPublicInfo(data.secretgraph.node.publicInfo, false),
-        node: data.secretgraph.node,
     }
 }
