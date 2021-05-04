@@ -123,35 +123,38 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
         updateMainCtx({ title: props.name || '' })
     }, [props.name, props.note])
 
-    const actions: ActionProps[] = []
-    Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
-        const entry = mapper[params.newHash]
-        const existingActions = entry.configActions
-        for (const actionType of existingActions.size
-            ? existingActions
-            : ['other']) {
-            actions.push({
-                token: params.token,
-                newHash: params.newHash,
-                start: '',
-                stop: '',
-                note: entry.note || '',
-                value: {
-                    action: actionType,
-                },
-                update: SetOps.isNotEq(
-                    SetOps.difference(entry.foundActions, ['other']),
-                    entry.configActions
-                )
-                    ? false
-                    : undefined,
-                delete: false,
-                readonly: false,
-                locked: true,
-                clusterAction: true,
-            })
-        }
-    })
+    const actions = React.useMemo(() => {
+        const actions: ActionProps[] = []
+        Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
+            const entry = mapper[params.newHash]
+            const existingActions = entry.configActions
+            for (const actionType of existingActions.size
+                ? existingActions
+                : ['other']) {
+                actions.push({
+                    token: params.token,
+                    newHash: params.newHash,
+                    start: '',
+                    stop: '',
+                    note: entry.note || '',
+                    value: {
+                        action: actionType,
+                    },
+                    update: SetOps.isNotEq(
+                        SetOps.difference(entry.foundActions, ['other']),
+                        entry.configActions
+                    )
+                        ? false
+                        : undefined,
+                    delete: false,
+                    readonly: false,
+                    locked: true,
+                    clusterAction: true,
+                })
+            }
+        })
+        return actions
+    }, [mapper])
     const actionTokens = React.useMemo(
         () => (mapper ? actions.map((val) => val.token) : mainCtx.tokens),
         [actions]
@@ -172,7 +175,10 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                 name: props.name || '',
                 note: props.note || '',
             }}
-            onSubmit={async (values, { setSubmitting, resetForm }) => {
+            onSubmit={async (
+                { actions: actionsNew, ...values },
+                { setSubmitting, resetForm }
+            ) => {
                 let root: BlankNode | undefined = undefined
                 const store = graph()
                 if (props.publicInfo) {
@@ -218,7 +224,7 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                     certificates: {},
                 }
                 const hashes: { [hash: string]: string[] } = {}
-                actions.forEach((val) => {
+                actionsNew.forEach((val) => {
                     const mapperval =
                         val.newHash && mapper ? mapper[val.newHash] : undefined
                     if (val.readonly) {
@@ -235,6 +241,7 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                         return
                     }
                     if (val.newHash) {
+                        // BUG: compeletely broken, causes note entries without token
                         if (val.update) {
                             if (!mapperval) {
                                 throw Error('requires mapper')
@@ -253,7 +260,7 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                         }
                         if (!mapperval || mapperval?.note != val.note) {
                             configUpdate.tokens[val.newHash] = {
-                                ...config.tokens[val.newHash],
+                                data: val.token,
                                 note: val.note,
                             }
                         }
@@ -263,14 +270,14 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                         return
                     }
                     finishedActions.push({
-                        idOrHash: val.oldHash,
+                        idOrHash: val.newHash,
                         start: val.start ? new Date(val.start) : undefined,
                         stop: val.stop ? new Date(val.stop) : undefined,
                         value: JSON.stringify(val.value),
                         key: val.token,
                     })
                 })
-                if (mainCtx.item && mainCtx.type == 'Cluster') {
+                if (mainCtx.item) {
                     clusterResponse = await updateCluster({
                         id: mainCtx.item as string,
                         client: itemClient,

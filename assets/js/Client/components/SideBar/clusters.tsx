@@ -32,7 +32,11 @@ const ActiveCluster = React.memo(function ActiveCluster({
             id: cluster,
             authorization: authinfo?.tokens,
         },
+        onError: console.error,
         onCompleted: (data) => {
+            if (!data) {
+                return
+            }
             setData({
                 ...extractPublicInfo(data.secretgraph.node.publicInfo, false),
                 node: data.secretgraph.node,

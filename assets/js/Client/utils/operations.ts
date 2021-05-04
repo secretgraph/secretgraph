@@ -785,11 +785,16 @@ export async function updateConfigRemoteReducer(
                 cluster: config.configCluster,
                 authorization: authInfo.tokens,
             },
+            // but why? should be updated by cache updates
+            fetchPolicy: 'network-only',
         })
         if (configQueryRes.errors) {
             throw configQueryRes.errors
         }
         const node = configQueryRes.data.secretgraph.contents.edges[0]?.node
+        if (!node) {
+            throw Error('could not find config object')
+        }
         const retrieved = await decryptContentObject({
             nodeData: node,
             config,

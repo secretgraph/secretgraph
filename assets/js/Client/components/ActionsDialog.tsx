@@ -317,7 +317,7 @@ function ActionEntryIntern({
     )
 }
 
-export const ActionEntry = React.memo(function ActionEntry({
+export function ActionEntry({
     action,
     index,
     disabled,
@@ -392,7 +392,7 @@ export const ActionEntry = React.memo(function ActionEntry({
             </ListItem>
         )
     }
-})
+}
 
 interface ActionsDialogProps
     extends FieldArrayRenderProps,

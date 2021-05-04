@@ -71,7 +71,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
 
         # if issubclass(sender, Content):
         #    fname = instance.file.name
-        #    instance.file.save("", instance.file.open("rb"))
+        #    instance.file.save("ignored", instance.file.open("rb"))
         #    instance.file.storage.delete(fname)
         #    instance.tags.filter(tag__startswith="id=").update(
         #        tag=f"id={instance.flexid}"

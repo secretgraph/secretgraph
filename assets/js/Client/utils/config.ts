@@ -705,8 +705,8 @@ export async function calculateActionMapper({
     nodeData?: any
     config: Interfaces.ConfigInterface
     knownHashes?: { [hash: string]: string[] }
-    unknownKeyhashes?: string[]
     unknownTokens: string[]
+    unknownKeyhashes?: string[]
     hashAlgorithm: string
 }) {
     const prepareActions: PromiseLike<ActionMapperEntry | null>[] = []
