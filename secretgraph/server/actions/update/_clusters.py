@@ -72,7 +72,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
         action_save_fn = create_actions_fn(
             cluster, objdata["actions"], request, created, authset=authset
         )
-        assert created and not cluster.id, "Don't save cluster in action clean"
+        assert cluster.id, "Cluster wasn't saved in action clean"
 
         m_actions = filter(
             lambda x: x.action_type == "manage", action_save_fn.actions

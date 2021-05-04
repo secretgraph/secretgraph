@@ -80,11 +80,8 @@ def create_actions_fn(
         # add contentAction
         group = action_value.pop("contentActionGroup", "") or ""
         if action.get("idOrHash"):
-            actionObjs = (
-                result["objects"]
-                .filter(
-                    Q(id=action["idOrHash"]) | Q(keyHash=action["idOrHash"])
-                )
+            actionObjs = result["objects"].filter(
+                Q(id=action["idOrHash"]) | Q(keyHash=action["idOrHash"])
             )
             if not actionObjs.exists():
                 continue
@@ -163,10 +160,20 @@ def create_actions_fn(
                                 lambda x: x.contentAction,
                                 modify_actions.values(),
                             )
-                        ]
+                        ],
+                        ["content", "used", "group"],
                     )
                 Action.objects.bulk_create(add_actions)
-                Action.objects.bulk_update(modify_actions.values())
+                Action.objects.bulk_update(
+                    modify_actions.values(),
+                    [
+                        "keyHash",
+                        "nonce",
+                        "value",
+                        "start",
+                        "stop",
+                    ],
+                )
 
     setattr(save_fn, "actions", [*add_actions, *modify_actions.values()])
     setattr(save_fn, "action_types", action_types)
