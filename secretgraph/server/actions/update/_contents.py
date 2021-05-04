@@ -156,7 +156,7 @@ def _update_or_create_content_or_key(
         def save_fn_value():
             content.file.delete(False)
             content.updateId = uuid4()
-            content.file.save("", objdata["value"])
+            content.file.save("ignored", objdata["value"])
 
     else:
 

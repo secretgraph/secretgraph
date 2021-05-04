@@ -53,14 +53,14 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
 
             def cluster_save_fn():
                 cluster.updateId = uuid4()
-                cluster.publicInfo.save("", objdata["publicInfo"])
+                cluster.publicInfo.save("ignored", objdata["publicInfo"])
 
         else:
 
             def cluster_save_fn():
                 cluster.updateId = uuid4()
                 cluster.publicInfo.delete(False)
-                cluster.publicInfo.save("", objdata["publicInfo"])
+                cluster.publicInfo.save("ignored", objdata["publicInfo"])
 
     elif cluster.id is not None:
         public_secret_hashes = {}
@@ -68,11 +68,11 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
     else:
         raise ValueError("no publicInfo")
 
+    # path: actions are specified
     if objdata.get("actions"):
         action_save_fn = create_actions_fn(
-            cluster, objdata["actions"], request, created, authset=authset
+            cluster, objdata["actions"], request, authset=authset
         )
-        assert cluster.id, "Cluster wasn't saved in action clean"
 
         m_actions = filter(
             lambda x: x.action_type == "manage", action_save_fn.actions
@@ -90,8 +90,9 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
             action_save_fn()
             return cluster
 
-    elif cluster.id is not None and not public_secret_hashes:
-        # is not newly created and has also no new public_secret_hashes
+    elif not created and not public_secret_hashes:
+        # path: actions are not specified but cluster exists and no
+        # new public_secret_hashes
         def save_fn():
             cluster_save_fn()
             return cluster
