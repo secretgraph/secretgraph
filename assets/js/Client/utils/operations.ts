@@ -591,10 +591,7 @@ export async function initializeCluster(
                 )
         )
     const digestActionKeyPromise = crypto.subtle
-        .digest(
-            config.hosts[config.baseUrl].hashAlgorithms[0],
-            crypto.getRandomValues(new Uint8Array(32))
-        )
+        .digest(config.hosts[config.baseUrl].hashAlgorithms[0], key)
         .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))))
     const keyb64 = btoa(String.fromCharCode(...key))
     const clusterResponse = await createCluster({

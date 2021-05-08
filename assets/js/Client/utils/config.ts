@@ -649,21 +649,75 @@ export function updateConfigReducer(
         newState.hosts = mergeDeleteObjects(
             newState.hosts,
             update.hosts,
-            (oldval: any, newval: any) => {
-                const newState = oldval ? Object.assign({}, oldval) : {}
+            (
+                oldval: Interfaces.ConfigInterface['hosts'][string],
+                newval: NonNullable<
+                    NonNullable<
+                        Interfaces.ConfigInputInterface['hosts']
+                    >[string]
+                >
+            ) => {
+                const newState: Interfaces.ConfigInterface['hosts'][string] = oldval
+                    ? Object.assign({}, oldval)
+                    : {
+                          hashAlgorithms: [],
+                          clusters: {},
+                          contents: {},
+                      }
                 if (newval.hashAlgorithms) {
                     newState.hashAlgorithms = newval.hashAlgorithms
                 }
                 if (newval.clusters) {
                     newState.clusters = mergeDeleteObjects(
                         newState.clusters,
-                        newval.clusters
+                        newval.clusters,
+                        (
+                            oldval: Interfaces.ConfigClusterInterface,
+                            newval: Interfaces.ConfigClusterInterface<null>
+                        ) => {
+                            const newState: Interfaces.ConfigClusterInterface = oldval
+                                ? Object.assign({}, oldval)
+                                : {
+                                      hashes: {},
+                                  }
+                            if (newval.hashes) {
+                                newState.hashes = mergeDeleteObjects(
+                                    newState.hashes,
+                                    newval.hashes
+                                )
+                            }
+                            return newState
+                        }
                     )
                 }
                 if (newval.contents) {
                     newState.contents = mergeDeleteObjects(
                         newState.contents,
-                        newval.contents
+                        newval.contents,
+                        (
+                            oldval: Interfaces.ConfigContentInterface,
+                            newval: Interfaces.ConfigContentInterface<null>
+                        ) => {
+                            const newState: Interfaces.ConfigContentInterface = oldval
+                                ? Object.assign({}, oldval)
+                                : {
+                                      hashes: {},
+                                      cluster: '',
+                                  }
+                            if (newval.hashes) {
+                                newState.hashes = mergeDeleteObjects(
+                                    newState.hashes,
+                                    newval.hashes
+                                )
+                            }
+                            if (newval.cluster) {
+                                newState.cluster = newval.cluster
+                            }
+                            if (!newState.cluster) {
+                                throw Error('cluster is missing')
+                            }
+                            return newState
+                        }
                     )
                 }
                 return newState
@@ -709,15 +763,16 @@ export async function calculateActionMapper({
     unknownKeyhashes?: string[]
     hashAlgorithm: string
 }) {
+    // TODO: rework, name variables better and merge old actions of type other
     const prepareActions: PromiseLike<ActionMapperEntry | null>[] = []
-    const premapper: {
+    const inNodeFoundActions: {
         [hash: string]: Set<string>
     } = {}
     for (const entry of nodeData?.availableActions || []) {
-        if (!premapper[entry.keyHash]) {
-            premapper[entry.keyHash] = new Set()
+        if (!inNodeFoundActions[entry.keyHash]) {
+            inNodeFoundActions[entry.keyHash] = new Set()
         }
-        premapper[entry.keyHash].add(entry.type)
+        inNodeFoundActions[entry.keyHash].add(entry.type)
     }
     const hashalgo = Constants.mapHashNames[hashAlgorithm].operationName
     for (const token of unknownTokens) {
@@ -740,7 +795,7 @@ export async function calculateActionMapper({
                     newHash: val,
                     oldHash: null,
                     configActions: new Set<string>(),
-                    foundActions: premapper[val] || new Set(),
+                    foundActions: inNodeFoundActions[val] || new Set(),
                 }
             })
         )
@@ -759,7 +814,7 @@ export async function calculateActionMapper({
                         note: config.tokens[hash].note,
                         token: config.tokens[hash].data,
                         configActions: new Set<string>(actions),
-                        foundActions: premapper[val] || new Set(),
+                        foundActions: inNodeFoundActions[val] || new Set(),
                     }
                 })
             )

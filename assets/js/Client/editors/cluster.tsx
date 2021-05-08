@@ -52,11 +52,16 @@ import {
 import { serverConfigQuery } from '../queries/server'
 import { useStylesAndTheme } from '../theme'
 import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
-import { calculateActionMapper, extractAuthInfo } from '../utils/config'
+import {
+    calculateActionMapper,
+    extractAuthInfo,
+    saveConfig,
+} from '../utils/config'
 import {
     findWorkingHashAlgorithms,
     hashObject,
     serializeToBase64,
+    unserializeToArrayBuffer,
 } from '../utils/encryption'
 import {
     createCluster,
@@ -112,7 +117,12 @@ interface ClusterInternProps {
     hashAlgorithms: string[]
 }
 
-const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
+const ClusterIntern = ({
+    mapper,
+    disabled,
+    hashAlgorithms,
+    ...props
+}: ClusterInternProps) => {
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
@@ -223,60 +233,103 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                     tokens: {},
                     certificates: {},
                 }
-                const hashes: { [hash: string]: string[] } = {}
-                actionsNew.forEach((val) => {
-                    const mapperval =
-                        val.newHash && mapper ? mapper[val.newHash] : undefined
-                    if (val.readonly) {
-                        return
-                    }
-                    if (val.delete) {
-                        if (!val.oldHash) {
+                const hashes: Interfaces.ConfigClusterInterface<null>['hashes'] = {}
+                await Promise.all(
+                    actionsNew.map(async (val) => {
+                        if (val.readonly) {
                             return
                         }
-                        finishedActions.push({
-                            idOrHash: val.oldHash,
-                            value: 'delete',
-                        })
-                        return
-                    }
-                    if (val.newHash) {
-                        // BUG: compeletely broken, causes note entries without token
+                        // autogenerate newHash if not available
+                        const newHash =
+                            val.newHash ||
+                            (await serializeToBase64(
+                                crypto.subtle.digest(
+                                    hashAlgorithms[0],
+                                    await unserializeToArrayBuffer(val.token)
+                                )
+                            ))
+                        // find mapper value
+                        const mapperval =
+                            mapper && mapper[newHash]
+                                ? mapper[newHash]
+                                : undefined
+                        // delete action
+                        if (val.delete) {
+                            if (!val.oldHash) {
+                                throw Error('requires oldHash')
+                            }
+                            finishedActions.push({
+                                idOrHash: val.oldHash,
+                                value: 'delete',
+                            })
+                            return
+                        }
+                        // updates config with new action information
                         if (val.update) {
                             if (!mapperval) {
                                 throw Error('requires mapper')
                             }
-                            hashes[val.newHash] = [
-                                ...new Set([
-                                    ...Object.keys(mapperval.foundActions),
-                                ]),
-                            ]
+                            const newHashValues = new Set<string>()
+                            for (const v of mapperval.configActions) {
+                                if (
+                                    ['view', 'update', 'manage'].includes(v) &&
+                                    mapperval.foundActions.has(v)
+                                ) {
+                                    newHashValues.add(v)
+                                }
+                                if (
+                                    !['view', 'update', 'manage'].includes(v) &&
+                                    mapperval.foundActions.has('other')
+                                ) {
+                                    newHashValues.add(v)
+                                }
+                            }
+                            for (const v of mapperval.configActions) {
+                                if (v == 'other') {
+                                    if (!newHashValues.size) {
+                                        newHashValues.add(v)
+                                    }
+                                } else {
+                                    newHashValues.add(v)
+                                }
+                            }
+                            hashes[newHash] = [...newHashValues]
                             if (
                                 mapperval.oldHash &&
                                 val.newHash != mapperval.oldHash
                             ) {
+                                hashes[mapperval.oldHash] = null
                                 configUpdate.tokens[mapperval.oldHash] = null
                             }
                         }
+                        // update note or create new entry
                         if (!mapperval || mapperval?.note != val.note) {
-                            configUpdate.tokens[val.newHash] = {
+                            configUpdate.tokens[newHash] = {
                                 data: val.token,
                                 note: val.note,
                             }
                         }
-                    }
 
-                    if (val.locked) {
-                        return
-                    }
-                    finishedActions.push({
-                        idOrHash: val.newHash,
-                        start: val.start ? new Date(val.start) : undefined,
-                        stop: val.stop ? new Date(val.stop) : undefined,
-                        value: JSON.stringify(val.value),
-                        key: val.token,
+                        if (val.locked) {
+                            return
+                        }
+                        if (!hashes[newHash]) {
+                            hashes[newHash] = []
+                        }
+                        ;(hashes[newHash] as NonNullable<
+                            typeof hashes[string]
+                        >).push(val.value.action)
+                        finishedActions.push({
+                            idOrHash: val.oldHash || undefined,
+                            start: val.start ? new Date(val.start) : undefined,
+                            stop: val.stop ? new Date(val.stop) : undefined,
+                            value: JSON.stringify(val.value),
+                            key: val.token,
+                        })
                     })
-                })
+                )
+                let digestCert = undefined,
+                    privPromise = undefined
                 if (mainCtx.item) {
                     clusterResponse = await updateCluster({
                         id: mainCtx.item as string,
@@ -291,11 +344,6 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                         ),
                         authorization: mainCtx.tokens,
                     })
-                    if (!clusterResponse.errors && clusterResponse.data) {
-                        configUpdate['hosts'][props.url as string] = {
-                            hashAlgorithms: props.hashAlgorithms,
-                        }
-                    }
                 } else {
                     const key = crypto.getRandomValues(new Uint8Array(32))
                     const {
@@ -307,16 +355,17 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                             //modulusLength: 8192,
                             modulusLength: 2048,
                             publicExponent: new Uint8Array([1, 0, 1]),
-                            hash: props.hashAlgorithms[0],
+                            hash: hashAlgorithms[0],
                         },
                         true,
                         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
                     )) as CryptoKeyPair
-                    const digestCertificatePromise = crypto.subtle
+                    privPromise = serializeToBase64(privateKey)
+                    digestCert = await crypto.subtle
                         .exportKey('spki' as const, publicKey)
                         .then((keydata) =>
                             crypto.subtle
-                                .digest(props.hashAlgorithms[0], keydata)
+                                .digest(hashAlgorithms[0], keydata)
                                 .then((data) =>
                                     btoa(
                                         String.fromCharCode(
@@ -325,64 +374,53 @@ const ClusterIntern = ({ mapper, disabled, ...props }: ClusterInternProps) => {
                                     )
                                 )
                         )
-                    const digestActionKeyPromise = crypto.subtle
-                        .digest(
-                            props.hashAlgorithms[0],
-                            crypto.getRandomValues(new Uint8Array(32))
-                        )
-                        .then((data) =>
-                            btoa(String.fromCharCode(...new Uint8Array(data)))
-                        )
                     clusterResponse = await createCluster({
                         client: itemClient,
                         actions: finishedActions,
                         publicInfo: '',
-                        hashAlgorithm: props.hashAlgorithms[0],
+                        hashAlgorithm: hashAlgorithms[0],
                         publicKey,
                         privateKey,
                         privateKeyKey: key,
                     })
-                    if (!clusterResponse.errors && clusterResponse.data) {
-                        const [
-                            digestActionKey,
-                            digestCertificate,
-                        ] = await Promise.all([
-                            digestActionKeyPromise,
-                            digestCertificatePromise,
-                        ])
-                        const newNode = clusterResponse.data.secretgraph.node
-                        configUpdate.hosts[props.url as string] = {
-                            hashAlgorithms: findWorkingHashAlgorithms(
-                                clusterResponse.data.secretgraph.config
-                                    .hashAlgorithms
-                            ),
-                            clusters: {
-                                [newNode.id as string]: {
-                                    hashes: {
-                                        [digestActionKey]: ['manage'],
-                                        [digestCertificate]: [],
-                                    },
-                                },
-                            },
-                            contents: {},
-                        }
-                        configUpdate.tokens[digestCertificate] = {
-                            data: await serializeToBase64(privateKey),
-                            note: '',
-                        }
-                    }
                 }
                 if (clusterResponse.errors || !clusterResponse.data) {
                     setSubmitting(false)
                     return
                 }
-                updateConfig(
-                    await updateConfigRemoteReducer(config, {
-                        update: configUpdate,
-                        client: baseClient,
-                    }),
-                    true
-                )
+                // should be solved better
+                if (!clusterResponse.errors && clusterResponse.data) {
+                    const newNode =
+                        clusterResponse.data.updateOrCreateCluster.cluster
+                    configUpdate.hosts[props.url as string] = {
+                        hashAlgorithms,
+                        clusters: {
+                            [newNode.id as string]: {
+                                hashes: {
+                                    ...hashes,
+                                },
+                            },
+                        },
+                        contents: {},
+                    }
+                    if (digestCert && privPromise) {
+                        ;(configUpdate.hosts as Interfaces.ConfigInterface['hosts'])[
+                            props.url as string
+                        ].clusters[newNode.id as string].hashes[digestCert] = []
+                        configUpdate.tokens[digestCert] = {
+                            data: await privPromise,
+                            note: 'initial certificate',
+                        }
+                    }
+                }
+                console.log(configUpdate, actionsNew)
+
+                const newConfig = await updateConfigRemoteReducer(config, {
+                    update: configUpdate,
+                    client: baseClient,
+                })
+                saveConfig(newConfig as Interfaces.ConfigInterface)
+                updateConfig(newConfig, true)
                 updateMainCtx({
                     title: values.name || '',
                     action: 'update',

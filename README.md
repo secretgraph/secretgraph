@@ -119,6 +119,10 @@ idea: unique operation names. It would be nice to have namespaces like for queri
     Other types are:
 -   {"}
 
+# JS
+
+-   updateConfig doesn't persist state in browser, use saveConfig for this
+
 # TODO
 
 -   sanitize hashAlgorithms

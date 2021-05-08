@@ -175,7 +175,7 @@ function MainSearchField() {
                     if (!value) return
                     switch (reason) {
                         case 'create-option':
-                            if (config && !config.hosts[value]) {
+                            /*if (config && !config.hosts[value]) {
                                 const hashAlgos = []
                                 try {
                                     const result = await client.query({
@@ -212,7 +212,7 @@ function MainSearchField() {
                                     contents: {},
                                 }
                                 updateConfig(newConfig)
-                            }
+                            }*/
                             setActiveUrl(value)
                             break
                         case 'select-option':
@@ -220,7 +220,8 @@ function MainSearchField() {
                             setActiveUrl(value)
                             break
                         case 'remove-option':
-                            if (
+                            config && setActiveUrl(config?.baseUrl)
+                            /*if (
                                 config &&
                                 config.hosts[value] &&
                                 Object.keys(config.hosts[value]).length === 0
@@ -233,7 +234,8 @@ function MainSearchField() {
                                 }
                                 delete newConfig.hosts[value]
                                 updateConfig(newConfig)
-                            }
+                            }*/
+                            break
                     }
                 }}
                 renderInput={({ InputProps, ...params }) => {

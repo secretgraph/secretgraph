@@ -54,13 +54,13 @@ export interface ReferenceInterface {
     deleteRecursive?: 'NO_GROUP' | 'TRUE' | 'FALSE'
 }
 
-export interface ConfigContentInterface {
-    hashes: { [hash: string]: string[] }
-    cluster: string
+export interface ConfigContentInterface<N = never> {
+    hashes: { [hash: string]: string[] | N }
+    cluster: string | N
 }
 
-export interface ConfigClusterInterface {
-    hashes: { [hash: string]: string[] }
+export interface ConfigClusterInterface<N = never> {
+    hashes: { [hash: string]: string[] | N }
 }
 
 interface BaseHostInterface<ClusterType, ContentType> {
@@ -92,8 +92,8 @@ export interface ConfigInputInterface
     hosts?: {
         [url: string]: Partial<
             BaseHostInterface<
-                ConfigClusterInterface | null,
-                ConfigContentInterface | null
+                ConfigClusterInterface<null> | null,
+                ConfigContentInterface<null> | null
             >
         > | null
     }
