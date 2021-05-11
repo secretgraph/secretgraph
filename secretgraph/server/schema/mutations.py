@@ -165,8 +165,8 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
                     ),
                     results["Cluster"].objects.filter(
                         id__in=Subquery(clusters.values("id"))
-                    )
-                )
+                    ),
+                ),
             )
         )
 
@@ -285,9 +285,9 @@ class ContentMutation(relay.ClientIDMutation):
             allowedTags = []
             injectedTags = []
             for action in result["actions"].filter(
-                Q(contentAction__content_id=content_obj.id) |
-                Q(contentAction__isnull=True),
-                cluster_id=content_obj.cluster_id
+                Q(contentAction__content_id=content_obj.id)
+                | Q(contentAction__isnull=True),
+                cluster_id=content_obj.cluster_id,
             ):
                 form = result["forms"].get(action.id)
                 if form:
@@ -310,9 +310,11 @@ class ContentMutation(relay.ClientIDMutation):
                     if i.fullmatch(tag):
                         return True
                 return False
+
             if content.get("tags") is not None:
                 content["tags"] = chain(
-                    filter(validTag, content["tags"]), injectedTags)
+                    filter(validTag, content["tags"]), injectedTags
+                )
             returnval = cls(
                 **update_content_fn(
                     info.context,
@@ -371,9 +373,11 @@ class ContentMutation(relay.ClientIDMutation):
                     if i.fullmatch(tag):
                         return True
                 return False
+
             if content.get("tags") is not None:
                 content["tags"] = chain(
-                    filter(validTag, content["tags"]), injectedTags)
+                    filter(validTag, content["tags"]), injectedTags
+                )
             returnval = cls(
                 **create_content_fn(
                     info.context,
@@ -404,8 +408,9 @@ class PushContentMutation(relay.ClientIDMutation):
         source = result["objects"].first()
         if not source:
             raise ValueError("Content not found")
-        form = result["forms"][result["actions"].get(
-            contentAction__content_id=source.id).id]
+        form = result["forms"][
+            result["actions"].get(contentAction__content_id=source.id).id
+        ]
         if content.get("tags") is not None:
             allowed = form.get("allowedTags", None)
             if allowed is not None:
@@ -486,9 +491,9 @@ class TransferMutation(relay.ClientIDMutation):
 
         requiredKeys = set()
         for action in result["actions"].filter(
-            Q(contentAction__content_id=content_obj.id) |
-            Q(contentAction__isnull=True),
-            cluster_id=content_obj.cluster_id
+            Q(contentAction__content_id=content_obj.id)
+            | Q(contentAction__isnull=True),
+            cluster_id=content_obj.cluster_id,
         ):
             form = result["forms"].get(action.id)
             if form:
@@ -520,7 +525,8 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         authorization = AuthList()
         tags = graphene.List(graphene.NonNull(graphene.String), required=False)
         references = graphene.List(
-            graphene.NonNull(ReferenceInput), required=False)
+            graphene.NonNull(ReferenceInput), required=False
+        )
         operation = graphene.Enum.from_enum(MetadataOperations)
 
     updated = graphene.List(graphene.NonNull(graphene.ID), required=False)

@@ -3225,7 +3225,7 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "idOrHash",
+              "name": "existingHash",
               "type": {
                 "kind": "SCALAR",
                 "name": "String",

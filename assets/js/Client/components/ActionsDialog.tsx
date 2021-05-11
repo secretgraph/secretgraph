@@ -202,7 +202,7 @@ function ActionEntryIntern({
                         />
                     </Grid>
                     <Grid item xs={12}>
-                        <Field
+                        <FastField
                             name={
                                 !submitFn ? `actions.${index}.token` : 'token'
                             }
@@ -255,7 +255,7 @@ function ActionEntryIntern({
                     <Grid item>
                         <Tooltip title="Update Action" arrow>
                             <span>
-                                <Field
+                                <FastField
                                     name={`actions.${index}.update`}
                                     disabled={
                                         disabled ||
@@ -322,6 +322,7 @@ export function ActionEntry({
     index,
     disabled,
     addFn,
+    deleteFn,
     tokens,
     ...props
 }: Omit<ListItemProps, 'children' | 'button'> & {
@@ -329,6 +330,7 @@ export function ActionEntry({
     index?: number
     disabled?: boolean
     addFn?: (arg: ActionProps) => void | Promise<void>
+    deleteFn?: () => void
     tokens: string[]
 }) {
     if (addFn) {
@@ -388,6 +390,7 @@ export function ActionEntry({
                     index={index}
                     disabled={disabled}
                     tokens={tokens}
+                    deleteFn={deleteFn}
                 />
             </ListItem>
         )
@@ -415,6 +418,7 @@ export default function ActionsDialog({
     unshift,
     pop,
     replace,
+    remove,
     ...dialogProps
 }: ActionsDialogProps) {
     const tokens = React.useMemo(
@@ -433,6 +437,11 @@ export default function ActionsDialog({
                                 disabled={disabled}
                                 action={val}
                                 tokens={tokens}
+                                deleteFn={
+                                    val.oldHash
+                                        ? undefined
+                                        : () => remove(index)
+                                }
                             />
                         )
                     })}

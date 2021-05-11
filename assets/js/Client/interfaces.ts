@@ -40,7 +40,7 @@ export interface PWInterface {
 }
 
 export interface ActionInterface {
-    idOrHash?: string
+    existingHash?: string
     start?: Date
     stop?: Date
     value: string

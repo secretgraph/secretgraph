@@ -16,10 +16,10 @@ class AuthList(graphene.List):
 
 
 class ActionInput(graphene.InputObjectType):
-    idOrHash = graphene.String(required=False)
+    existingHash = graphene.String(required=False)
     start = graphene.DateTime(required=False)
     stop = graphene.DateTime(required=False)
-    # delete for action deletion
+    # "delete" for action deletion
     value = graphene.JSONString(required=True, description="Action definition")
     # except with deletion always required as actions must be checked and
     # transformed by server

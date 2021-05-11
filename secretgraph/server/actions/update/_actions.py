@@ -45,8 +45,8 @@ def create_actions_fn(
         raise ValueError("Invalid type")
 
     result = retrieve_allowed_objects(request, "manage", cluster.actions.all())
-
     for action in actionlist:
+        # if already decoded by e.g. graphql
         if action["value"] == "delete":
             action_value = "delete"
         else:
@@ -54,10 +54,10 @@ def create_actions_fn(
             if isinstance(action_value, str):
                 action_value = json.loads(action_value)
         if action_value == "delete":
-            if "idOrHash" in action:
-                if action["idOrHash"] in modify_actions:
+            if "existingHash" in action:
+                if action["existingHash"] in modify_actions:
                     raise ValueError("update id in delete set")
-                delete_actions.add(action["idOrHash"])
+                delete_actions.add(action["existingHash"])
             continue
         action_key = action.get("key")
         if isinstance(action_key, bytes):
@@ -79,9 +79,10 @@ def create_actions_fn(
         nonce = os.urandom(13)
         # add contentAction
         group = action_value.pop("contentActionGroup", "") or ""
-        if action.get("idOrHash"):
+        if action.get("existingHash"):
             actionObjs = result["objects"].filter(
-                Q(id=action["idOrHash"]) | Q(keyHash=action["idOrHash"])
+                Q(id=action["existingHash"])
+                | Q(keyHash=action["existingHash"])
             )
             if not actionObjs.exists():
                 continue
@@ -122,7 +123,7 @@ def create_actions_fn(
             delete_q = Q(ContentAction__isnull=True)
     else:
         ldelete_actions = list(delete_actions)
-        delete_q = Q(id__in=ldelete_actions) | Q(keyHash__in=ldelete_actions)
+        delete_q = Q(keyHash__in=ldelete_actions)
 
     def save_fn(context=nullcontext):
         if callable(context):

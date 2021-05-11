@@ -493,7 +493,10 @@ export async function updateKey({
     })
 }
 
-export async function createCluster(options: {
+export async function createCluster({
+    fetchPolicy,
+    ...options
+}: {
     client: ApolloClient<any>
     actions: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
@@ -502,6 +505,7 @@ export async function createCluster(options: {
     privateKey?: CryptoKey
     privateKeyKey?: Uint8Array
     authorization?: string[]
+    fetchPolicy?: Parameters<ApolloClient<any>['mutate']>[0]['fetchPolicy']
 }): Promise<FetchResult<any>> {
     let nonce: null | Uint8Array = null
     const halgo = mapHashNames[options.hashAlgorithm]
@@ -532,6 +536,7 @@ export async function createCluster(options: {
     }
     return await options.client.mutate({
         mutation: createClusterMutation,
+        fetchPolicy,
         variables: {
             publicInfo: new Blob([utf8encoder.encode(options.publicInfo)]),
             publicKey: await publicKeyPromise,
@@ -544,16 +549,21 @@ export async function createCluster(options: {
     })
 }
 
-export async function updateCluster(options: {
+export async function updateCluster({
+    fetchPolicy,
+    ...options
+}: {
     id: string
     client: ApolloClient<any>
     updateId: string
     actions?: Interfaces.ActionInterface[]
     publicInfo?: string
     authorization: string[]
+    fetchPolicy?: Parameters<ApolloClient<any>['mutate']>[0]['fetchPolicy']
 }): Promise<FetchResult<any>> {
     return await options.client.mutate({
         mutation: updateClusterMutation,
+        fetchPolicy,
         variables: {
             id: options.id,
             updateId: options.updateId,

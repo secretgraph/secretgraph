@@ -2,6 +2,8 @@ import { Namespace } from 'rdflib'
 
 declare var gettext: any
 
+export const visibleActions = new Set(['manage', 'push', 'view', 'update'])
+
 export const contentStates = new Map([
     ['draft', { label: gettext('Draft') }],
     ['internal', { label: gettext('Internal') }],

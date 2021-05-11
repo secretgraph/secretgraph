@@ -32,8 +32,11 @@ class KeyLink(graphene.ObjectType):
 class ClusterGroupEntry(graphene.ObjectType):
     group = graphene.String(required=True)
     clusters = graphene.List(graphene.NonNull(graphene.ID), required=True)
-    keys = graphene.List(graphene.NonNull(KeyLink), required=True,
-                         description="Links to injected keys")
+    keys = graphene.List(
+        graphene.NonNull(KeyLink),
+        required=True,
+        description="Links to injected keys",
+    )
 
     def resolve_keys(self, info):
         return map(
@@ -47,9 +50,11 @@ class ClusterGroupEntry(graphene.ObjectType):
 class SecretgraphConfig(ObjectType):
     id = graphene.ID(required=True)
     hashAlgorithms = graphene.List(
-        graphene.NonNull(graphene.String), required=True)
+        graphene.NonNull(graphene.String), required=True
+    )
     injectedClusters = graphene.List(
-        graphene.NonNull(ClusterGroupEntry), required=True)
+        graphene.NonNull(ClusterGroupEntry), required=True
+    )
     registerUrl = graphene.Field(RegisterUrl, required=False)
     loginUrl = graphene.String(required=False)
 
@@ -109,7 +114,8 @@ class ActionEntry(graphene.ObjectType):
     type = graphene.String(required=True)
     # of content keys
     requiredKeys = graphene.List(
-        graphene.NonNull(graphene.String), required=True)
+        graphene.NonNull(graphene.String), required=True
+    )
     allowedTags = graphene.List(
         graphene.NonNull(graphene.String), required=False
     )
@@ -143,30 +149,31 @@ class ActionMixin(object):
                     key_val[1]["allowedTags"]
                     if key_val[0][0] != "view"
                     else None
-                )
+                ),
             ),
-            filter(lambda key_val: key_val[1]["id"] in ids, mapper.items())
+            filter(lambda key_val: key_val[1]["id"] in ids, mapper.items()),
         )
         if has_manage:
             if isinstance(self, Content):
                 resultval = chain(
                     resultval,
-                    getattr(
-                        info.context, "secretgraphResult",
-                        {}
-                    ).get("Action", {"objects": Action.objects.none()}).filter(
-                        Q(contentAction__isnull=True) |
-                        Q(contentAction__content_id=self.id),
-                        cluster_id=self.cluster_id
-                    ).exclude(id__in=ids).map(
+                    getattr(info.context, "secretgraphResult", {})
+                    .get("Action", {"objects": Action.objects.none()})
+                    .filter(
+                        Q(contentAction__isnull=True)
+                        | Q(contentAction__content_id=self.id),
+                        cluster_id=self.cluster_id,
+                    )
+                    .exclude(id__in=ids)
+                    .map(
                         lambda x: ActionEntry(
                             id=x.id,
                             keyHash=x.keyHash,
                             type="other",
                             requiredKeys=[],
-                            allowedTags=None
+                            allowedTags=None,
                         )
-                    )
+                    ),
                 )
             else:
                 resultval = chain(
@@ -177,18 +184,15 @@ class ActionMixin(object):
                             keyHash=x.keyHash,
                             type="other",
                             requiredKeys=[],
-                            allowedTags=None
+                            allowedTags=None,
                         ),
-                        getattr(
-                            info.context, "secretgraphResult",
-                            {}
-                        ).get(
-                            "Action", {"objects": Action.objects.none()}
-                        )["objects"].filter(
-                            contentAction__isnull=True,
-                            cluster_id=self.id
-                        ).exclude(id__in=ids)
-                    )
+                        getattr(info.context, "secretgraphResult", {})
+                        .get("Action", {"objects": Action.objects.none()})[
+                            "objects"
+                        ]
+                        .filter(contentAction__isnull=True, cluster_id=self.id)
+                        .exclude(id__in=ids),
+                    ),
                 )
         return resultval
 
@@ -252,24 +256,22 @@ class ContentReferenceNode(DjangoObjectType):
 class ContentReferenceConnectionField(DjangoConnectionField):
     def __init__(self, of_type=ContentReferenceNode, *args, **kwargs):
         kwargs.setdefault(
-            "includeTags", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "includeTags",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "excludeTags", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "excludeTags",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "contentHashes", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "contentHashes",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "groups", graphene.List(graphene.NonNull(
-                graphene.String), required=False)
+            "groups",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
-        kwargs.setdefault(
-            "deleted", graphene.Boolean(required=False)
-        )
+        kwargs.setdefault("deleted", graphene.Boolean(required=False))
         super().__init__(of_type, *args, **kwargs)
 
 
@@ -291,15 +293,18 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
     referencedBy = ContentReferenceConnectionField(required=True)
     tags = graphene.Field(
         graphene.List(graphene.NonNull(graphene.String), required=True),
-        includeTags=graphene.List(graphene.NonNull(
-            graphene.String), required=False),
-        excludeTags=graphene.List(graphene.NonNull(
-            graphene.String), required=False),
+        includeTags=graphene.List(
+            graphene.NonNull(graphene.String), required=False
+        ),
+        excludeTags=graphene.List(
+            graphene.NonNull(graphene.String), required=False
+        ),
     )
     signatures = graphene.Field(
         graphene.List(graphene.NonNull(graphene.String), required=True),
-        includeAlgorithms=graphene.List(graphene.NonNull(
-            graphene.String), required=False),
+        includeAlgorithms=graphene.List(
+            graphene.NonNull(graphene.String), required=False
+        ),
     )
     link = graphene.String(required=True)
 
@@ -328,7 +333,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         query = result["objects"]
         if deleted is not None:
             query = result["objects"].filter(
-                markForDestruction__isnull=not deleted)
+                markForDestruction__isnull=not deleted
+            )
         return ContentReference.objects.filter(
             source=self,
             target__in=fetch_contents(
@@ -353,7 +359,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         query = result["objects"]
         if deleted is not None:
             query = result["objects"].filter(
-                markForDestruction__isnull=not deleted)
+                markForDestruction__isnull=not deleted
+            )
 
         return ContentReference.objects.filter(
             target=self,
@@ -427,16 +434,16 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 class ContentConnectionField(DjangoConnectionField):
     def __init__(self, type=ContentNode, *args, **kwargs):
         kwargs.setdefault(
-            "includeTags", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "includeTags",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "excludeTags", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "excludeTags",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "contentHashes", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "contentHashes",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault("public", graphene.Boolean(required=False))
         kwargs.setdefault("deleted", graphene.Boolean(required=False))
@@ -569,16 +576,16 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
 class ClusterConnectionField(DjangoConnectionField):
     def __init__(self, type=ClusterNode, *args, **kwargs):
         kwargs.setdefault(
-            "includeTags", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "includeTags",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "excludeTags", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "excludeTags",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "contentHashes", graphene.List(
-                graphene.NonNull(graphene.String), required=False)
+            "contentHashes",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault("user", graphene.ID(required=False))
         kwargs.setdefault("public", graphene.Boolean(required=False))

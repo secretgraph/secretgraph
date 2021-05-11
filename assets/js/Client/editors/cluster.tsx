@@ -42,7 +42,7 @@ import { useAsync } from 'react-async'
 
 import { ActionEntry, ActionProps } from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
-import { CLUSTER, RDF, SECRETGRAPH, XSD, contentStates } from '../constants'
+import { CLUSTER, RDF, SECRETGRAPH, XSD, visibleActions } from '../constants'
 import * as Contexts from '../contexts'
 import * as Interfaces from '../interfaces'
 import {
@@ -70,6 +70,7 @@ import {
 } from '../utils/operations'
 import * as SetOps from '../utils/set'
 import { RequireAttributes, UnpackPromise, ValueType } from '../utils/typing'
+import MapsPersonPin from 'material-ui/svg-icons/maps/person-pin'
 
 async function extractPublicInfo({
     config,
@@ -141,21 +142,24 @@ const ClusterIntern = ({
             for (const actionType of existingActions.size
                 ? existingActions
                 : ['other']) {
+                const diffactions = SetOps.difference(entry.foundActions, [
+                    'other',
+                ])
                 actions.push({
                     token: params.token,
                     newHash: params.newHash,
+                    oldHash: params.oldHash || undefined,
                     start: '',
                     stop: '',
                     note: entry.note || '',
                     value: {
                         action: actionType,
                     },
-                    update: SetOps.isNotEq(
-                        SetOps.difference(entry.foundActions, ['other']),
-                        entry.configActions
-                    )
-                        ? false
-                        : undefined,
+                    update:
+                        diffactions.size &&
+                        SetOps.isNotEq(diffactions, entry.configActions)
+                            ? false
+                            : undefined,
                     delete: false,
                     readonly: false,
                     locked: true,
@@ -167,7 +171,7 @@ const ClusterIntern = ({
     }, [mapper])
     const actionTokens = React.useMemo(
         () => (mapper ? actions.map((val) => val.token) : mainCtx.tokens),
-        [actions]
+        [actions, mapper]
     )
     /** 
     keyHash: string | null
@@ -259,8 +263,8 @@ const ClusterIntern = ({
                                 throw Error('requires oldHash')
                             }
                             finishedActions.push({
-                                idOrHash: val.oldHash,
-                                value: 'delete',
+                                existingHash: val.oldHash,
+                                value: '"delete"',
                             })
                             return
                         }
@@ -271,17 +275,14 @@ const ClusterIntern = ({
                             }
                             const newHashValues = new Set<string>()
                             for (const v of mapperval.configActions) {
-                                if (
-                                    ['view', 'update', 'manage'].includes(v) &&
-                                    mapperval.foundActions.has(v)
-                                ) {
-                                    newHashValues.add(v)
-                                }
-                                if (
-                                    !['view', 'update', 'manage'].includes(v) &&
-                                    mapperval.foundActions.has('other')
-                                ) {
-                                    newHashValues.add(v)
+                                if (visibleActions.has(v)) {
+                                    if (mapperval.foundActions.has(v)) {
+                                        newHashValues.add(v)
+                                    }
+                                } else {
+                                    if (mapperval.foundActions.has('other')) {
+                                        newHashValues.add(v)
+                                    }
                                 }
                             }
                             for (const v of mapperval.configActions) {
@@ -320,7 +321,7 @@ const ClusterIntern = ({
                             typeof hashes[string]
                         >).push(val.value.action)
                         finishedActions.push({
-                            idOrHash: val.oldHash || undefined,
+                            existingHash: val.oldHash || undefined,
                             start: val.start ? new Date(val.start) : undefined,
                             stop: val.stop ? new Date(val.stop) : undefined,
                             value: JSON.stringify(val.value),
@@ -335,6 +336,7 @@ const ClusterIntern = ({
                         id: mainCtx.item as string,
                         client: itemClient,
                         updateId: mainCtx.updateId as string,
+                        fetchPolicy: 'no-cache',
                         actions: finishedActions,
                         publicInfo: serialize(
                             null as any,
@@ -377,11 +379,18 @@ const ClusterIntern = ({
                     clusterResponse = await createCluster({
                         client: itemClient,
                         actions: finishedActions,
-                        publicInfo: '',
+                        publicInfo:
+                            serialize(
+                                null as any,
+                                store,
+                                '_:',
+                                'text/turtle'
+                            ) || '',
                         hashAlgorithm: hashAlgorithms[0],
                         publicKey,
                         privateKey,
                         privateKeyKey: key,
+                        fetchPolicy: 'no-cache',
                     })
                 }
                 if (clusterResponse.errors || !clusterResponse.data) {
@@ -413,7 +422,6 @@ const ClusterIntern = ({
                         }
                     }
                 }
-                console.log(configUpdate, actionsNew)
 
                 const newConfig = await updateConfigRemoteReducer(config, {
                     update: configUpdate,
@@ -421,6 +429,7 @@ const ClusterIntern = ({
                 })
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
+                console.log(clusterResponse.data.updateOrCreateCluster.cluster)
                 updateMainCtx({
                     title: values.name || '',
                     action: 'update',
@@ -468,6 +477,7 @@ const ClusterIntern = ({
                                 <FieldArray name="actions">
                                     {({
                                         push,
+                                        remove,
                                         form,
                                     }: {
                                         form: FormikProps<typeof initialValues>
@@ -484,6 +494,14 @@ const ClusterIntern = ({
                                                         }
                                                         action={val}
                                                         tokens={actionTokens}
+                                                        deleteFn={
+                                                            val.oldHash
+                                                                ? undefined
+                                                                : () =>
+                                                                      remove(
+                                                                          index
+                                                                      )
+                                                        }
                                                         divider
                                                     />
                                                 )
@@ -670,6 +688,7 @@ const EditCluster = () => {
             )
         },
     })
+    console.log(mainCtx.updateId)
     React.useEffect(() => {
         data && refetch()
     }, [mainCtx.updateId])

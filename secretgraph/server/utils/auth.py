@@ -147,9 +147,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             q |= models.Q(contentAction__content__flexid=flexid)
         if "Cluster" in _type:
             q |= models.Q(cluster__flexid=flexid)
-        actions = pre_filtered_actions.filter(
-            q, keyHash__in=keyhashes
-        )
+        actions = pre_filtered_actions.filter(q, keyHash__in=keyhashes)
         if not actions:
             continue
 
@@ -228,10 +226,11 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         if issubclass(query.model, Cluster):
             _query = query.filter(filters & models.Q(id=actions[0].cluster_id))
         else:
-            _query = query.filter(filters & models.Q(
-                cluster_id=actions[0].cluster_id))
+            _query = query.filter(
+                filters & models.Q(cluster_id=actions[0].cluster_id)
+            )
         if actions[0].cluster.flexid in returnval["clusters"]:
-            oldval = returnval["clusters"]
+            oldval = returnval["clusters"][actions[0].cluster.flexid]
             if oldval["accesslevel"] > accesslevel:
                 continue
             elif oldval["accesslevel"] == accesslevel:
@@ -243,43 +242,44 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             "filters": filters,
             "accesslevel": accesslevel,
             "actions": actions,
-            "_query": _query
+            "_query": _query,
         }
 
     all_query = reduce(
         lambda x, y: x | y,
-        map(
-            lambda x: x.pop("_query"),
-            returnval["clusters"].values()
-        ), query.none()
+        map(lambda x: x.pop("_query"), returnval["clusters"].values()),
+        query.none(),
     )
 
     if issubclass(query.model, Cluster):
         all_filters = (
             models.Q(
-                id__in={*returnval["required_keys_clusters"].keys(),
-                        *all_query.values_list("id", flat=True)}
-            ) | models.Q(public=True)
+                id__in={
+                    *returnval["required_keys_clusters"].keys(),
+                    *all_query.values_list("id", flat=True),
+                }
+            )
+            | models.Q(public=True)
         )
     elif issubclass(query.model, Content):
-        all_filters = (
-            models.Q(tags__tag="state=public") |
-            (
-                models.Q(id__in=models.Subquery(all_query.values("id"))) &
-                (
-                    models.Q(id__in=list(
-                        returnval["required_keys_contents"].keys()))
-                    | models.Q(
-                        cluster_id__in=list(
-                            returnval["required_keys_clusters"].keys())
+        all_filters = models.Q(tags__tag="state=public") | (
+            models.Q(id__in=models.Subquery(all_query.values("id")))
+            & (
+                models.Q(
+                    id__in=list(returnval["required_keys_contents"].keys())
+                )
+                | models.Q(
+                    cluster_id__in=list(
+                        returnval["required_keys_clusters"].keys()
                     )
-                ))
+                )
+            )
         )
     else:
         assert issubclass(query.model, Action), "invalid type %r" % query.model
         all_filters = models.Q(
             id__in=models.Subquery(all_query.values("id")),
-            cluster_id__in=list(returnval["required_keys_clusters"].keys())
+            cluster_id__in=list(returnval["required_keys_clusters"].keys()),
         )
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
