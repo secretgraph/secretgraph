@@ -188,6 +188,22 @@ const ViewFile = () => {
             },
         },
         onCompleted: (data) => {
+            if (!data) {
+                return
+            }
+            const updateOb = {
+                shareUrl: data.secretgraph.node.link,
+                deleted: data.secretgraph.node.deleted || null,
+                updateId: data.secretgraph.node.updateId,
+            }
+            if (
+                data.secretgraph.node.id == config.configCluster &&
+                mainCtx.url == config.baseUrl &&
+                !updateOb.deleted
+            ) {
+                updateOb.deleted = false
+            }
+            updateMainCtx(updateOb)
             decryptContentObject({
                 config,
                 nodeData: data.secretgraph.node,
@@ -717,6 +733,22 @@ const EditFile = () => {
             },
         },
         onCompleted: (data) => {
+            if (!data) {
+                return
+            }
+            const updateOb = {
+                shareUrl: data.secretgraph.node.link,
+                deleted: data.secretgraph.node.deleted || null,
+                updateId: data.secretgraph.node.updateId,
+            }
+            if (
+                data.secretgraph.node.id == config.configCluster &&
+                mainCtx.url == config.baseUrl &&
+                !updateOb.deleted
+            ) {
+                updateOb.deleted = false
+            }
+            updateMainCtx(updateOb)
             decryptContentObject({
                 config,
                 nodeData: data.secretgraph.node,
@@ -725,9 +757,6 @@ const EditFile = () => {
             }).then(setData)
         },
     })
-    if (!data) {
-        return null
-    }
 
     if (!data) {
         return null

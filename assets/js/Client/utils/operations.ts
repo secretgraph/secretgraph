@@ -135,6 +135,8 @@ export async function createContent({
     )
     return await client.mutate({
         mutation: createContentMutation,
+        // we need a current updateId
+        fetchPolicy: 'no-cache',
         variables: {
             cluster,
             references: ([] as Interfaces.ReferenceInterface[]).concat(
@@ -231,6 +233,8 @@ export async function createKeys({
     }
     return await client.mutate({
         mutation: createKeysMutation,
+        // we need a current updateId
+        fetchPolicy: 'no-cache',
         variables: {
             cluster,
             references: references.concat(await signatureReferencesPromise),
@@ -333,6 +337,8 @@ export async function updateContent({
     }
     return await client.mutate({
         mutation: updateContentMutation,
+        // we need a current updateId
+        fetchPolicy: 'no-cache',
         variables: {
             id,
             updateId,
@@ -465,6 +471,8 @@ export async function updateKey({
         throw Error('Missing state')
     }
     return await client.mutate({
+        // we need a current updateId
+        fetchPolicy: 'no-cache',
         mutation: updateKeyMutation,
         variables: {
             id,
@@ -493,10 +501,7 @@ export async function updateKey({
     })
 }
 
-export async function createCluster({
-    fetchPolicy,
-    ...options
-}: {
+export async function createCluster(options: {
     client: ApolloClient<any>
     actions: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
@@ -505,7 +510,6 @@ export async function createCluster({
     privateKey?: CryptoKey
     privateKeyKey?: Uint8Array
     authorization?: string[]
-    fetchPolicy?: Parameters<ApolloClient<any>['mutate']>[0]['fetchPolicy']
 }): Promise<FetchResult<any>> {
     let nonce: null | Uint8Array = null
     const halgo = mapHashNames[options.hashAlgorithm]
@@ -536,7 +540,8 @@ export async function createCluster({
     }
     return await options.client.mutate({
         mutation: createClusterMutation,
-        fetchPolicy,
+        // we need a current updateId
+        fetchPolicy: 'no-cache',
         variables: {
             publicInfo: new Blob([utf8encoder.encode(options.publicInfo)]),
             publicKey: await publicKeyPromise,
@@ -549,21 +554,18 @@ export async function createCluster({
     })
 }
 
-export async function updateCluster({
-    fetchPolicy,
-    ...options
-}: {
+export async function updateCluster(options: {
     id: string
     client: ApolloClient<any>
     updateId: string
     actions?: Interfaces.ActionInterface[]
     publicInfo?: string
     authorization: string[]
-    fetchPolicy?: Parameters<ApolloClient<any>['mutate']>[0]['fetchPolicy']
 }): Promise<FetchResult<any>> {
     return await options.client.mutate({
         mutation: updateClusterMutation,
-        fetchPolicy,
+        // we need a current updateId
+        fetchPolicy: 'no-cache',
         variables: {
             id: options.id,
             updateId: options.updateId,
@@ -792,8 +794,8 @@ export async function updateConfigRemoteReducer(
                 cluster: config.configCluster,
                 authorization: authInfo.tokens,
             },
-            // but why? should be updated by cache updates
-            fetchPolicy: 'network-only',
+            // but why? should be updated by cache updates (for this no-cache is required in config content updates)
+            //fetchPolicy: 'network-only',
         })
         if (configQueryRes.errors) {
             throw configQueryRes.errors
@@ -837,6 +839,7 @@ export async function updateConfigRemoteReducer(
             old: pubkeys,
             onlyPubkeys: true,
         })
+        // updates cache
         const result = await updateContent({
             client,
             id: node.id,

@@ -26,7 +26,8 @@ const ActiveCluster = React.memo(function ActiveCluster({
     goTo: (node: any) => void
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const [data, setData] = React.useState<any>(undefined)
-    const {} = useQuery(getClusterQuery, {
+    const { mainCtx } = React.useContext(Contexts.Main)
+    const { refetch } = useQuery(getClusterQuery, {
         //pollInterval: ,
         variables: {
             id: cluster,
@@ -43,6 +44,9 @@ const ActiveCluster = React.memo(function ActiveCluster({
             })
         },
     })
+    React.useEffect(() => {
+        mainCtx.type == 'Cluster' && refetch()
+    }, [mainCtx.updateId])
     return (
         <SideBarContents
             goTo={goTo}

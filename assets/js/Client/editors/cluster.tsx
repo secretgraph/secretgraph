@@ -28,6 +28,7 @@ import {
     FormikProps,
 } from 'formik'
 import { TextField as FormikTextField } from 'formik-material-ui'
+import MapsPersonPin from 'material-ui/svg-icons/maps/person-pin'
 import {
     BlankNode,
     Literal,
@@ -70,7 +71,6 @@ import {
 } from '../utils/operations'
 import * as SetOps from '../utils/set'
 import { RequireAttributes, UnpackPromise, ValueType } from '../utils/typing'
-import MapsPersonPin from 'material-ui/svg-icons/maps/person-pin'
 
 async function extractPublicInfo({
     config,
@@ -336,7 +336,6 @@ const ClusterIntern = ({
                         id: mainCtx.item as string,
                         client: itemClient,
                         updateId: mainCtx.updateId as string,
-                        fetchPolicy: 'no-cache',
                         actions: finishedActions,
                         publicInfo: serialize(
                             null as any,
@@ -390,7 +389,6 @@ const ClusterIntern = ({
                         publicKey,
                         privateKey,
                         privateKeyKey: key,
-                        fetchPolicy: 'no-cache',
                     })
                 }
                 if (clusterResponse.errors || !clusterResponse.data) {
@@ -429,7 +427,6 @@ const ClusterIntern = ({
                 })
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
-                console.log(clusterResponse.data.updateOrCreateCluster.cluster)
                 updateMainCtx({
                     title: values.name || '',
                     action: 'update',
@@ -688,7 +685,6 @@ const EditCluster = () => {
             )
         },
     })
-    console.log(mainCtx.updateId)
     React.useEffect(() => {
         data && refetch()
     }, [mainCtx.updateId])
