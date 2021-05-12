@@ -4,30 +4,40 @@ from rdflib import Namespace
 
 
 class Action(enum.Enum):
-    pass
+    __ignore__ = ["valid_values", "protected_values"]
+    protected_values = {"storedUpdate"}
+    view = "view"
+    delete = "delete"
+    update = "update"
+    push = "push"
+    manage = "manage"
+    storedUpdate = "storedUpdate"
+
+
+Action.valid_values = set(map(lambda x: x.value, Action.__members__.values()))
 
 
 class DeleteRecursive(enum.Enum):
-    __ignore__ = ["valide_values"]
+    __ignore__ = ["valid_values"]
     TRUE = "a"
     FALSE = "b"
     NO_GROUP = "c"
 
 
-DeleteRecursive.valide_values = set(
+DeleteRecursive.valid_values = set(
     map(lambda x: x.value, DeleteRecursive.__members__.values())
 )
 
 
 # not active yet
 class ShowElements(enum.Enum):
-    __ignore__ = ["valide_values"]
+    __ignore__ = ["valid_values"]
     DEFAULT = "default"
     DELETED = "deleted"
     HIDDEN = "hidden"
 
 
-ShowElements.valide_values = set(
+ShowElements.valid_values = set(
     map(lambda x: x.value, ShowElements.__members__.values())
 )
 

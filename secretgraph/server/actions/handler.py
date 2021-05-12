@@ -73,14 +73,9 @@ class ActionHandler:
 
     @staticmethod
     def do_view(action_dict, scope, sender, accesslevel, action, **kwargs):
-        if scope not in {"view", "delete"}:
+        if scope != "view":
             return None
-        if scope == "delete":
-            if not action_dict.get("delete"):
-                return None
-            ownaccesslevel = 0
-        else:
-            ownaccesslevel = 1
+        ownaccesslevel = 1
         if accesslevel > ownaccesslevel:
             return None
 
@@ -95,17 +90,46 @@ class ActionHandler:
 
             return {
                 "filters": ~excl_filters & incl_filters,
-                "accesslevel": ownaccesslevel
+                "accesslevel": ownaccesslevel,
             }
         return None
 
     @staticmethod
     def clean_view(action_dict, request, content, authset):
-        result = {
-            "action": "view",
-            "delete": bool(action_dict.get("delete"))
-        }
+        result = {"action": "view"}
         exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
+        result["excludeTags"] = list(map(str, exclude_tags))
+        include_tags = action_dict.get("includeTags", [])
+        result["includeTags"] = list(map(str, include_tags))
+        return result
+
+    @staticmethod
+    def do_delete(action_dict, scope, sender, accesslevel, action, **kwargs):
+        if scope != "delete":
+            return None
+        ownaccesslevel = 1
+        if accesslevel > ownaccesslevel:
+            return None
+
+        if issubclass(sender, Content):
+            excl_filters = Q()
+            for i in action_dict["excludeTags"]:
+                excl_filters |= Q(tags__tag__startswith=i)
+
+            incl_filters = Q()
+            for i in action_dict["includeTags"]:
+                incl_filters |= Q(tags__tag__startswith=i)
+
+            return {
+                "filters": ~excl_filters & incl_filters,
+                "accesslevel": ownaccesslevel,
+            }
+        return None
+
+    @staticmethod
+    def clean_delete(action_dict, request, content, authset):
+        result = {"action": "view", "delete": bool(action_dict.get("delete"))}
+        exclude_tags = action_dict.get("excludeTags", [])
         result["excludeTags"] = list(map(str, exclude_tags))
         include_tags = action_dict.get("includeTags", [])
         result["includeTags"] = list(map(str, include_tags))
@@ -120,10 +144,9 @@ class ActionHandler:
         else:
             ownaccesslevel = 0
         if accesslevel > ownaccesslevel or scope not in {
-            "update", "view", "delete"
+            "update",
+            "view",
         }:
-            return None
-        if scope == "delete" and not action_dict.get("delete"):
             return None
         if issubclass(sender, Content):
             incl_filters = Q(id__in=action_dict.get("ids", []))
@@ -152,16 +175,7 @@ class ActionHandler:
             "action": "update",
             "contentActionGroup": "update",
             "restricted": bool(action_dict.get("restricted")),
-            "delete": bool(action_dict.get("delete")),
             "freeze": bool(action_dict.get("freeze")),
-            "ids": list(
-                _only_owned_helper(
-                    Content,
-                    action_dict.get("ids", content and [content.id]),
-                    request,
-                    authset=authset,
-                )
-            ),
             "form": {
                 "requiredKeys": [],
                 "injectedTags": [],
@@ -265,7 +279,7 @@ class ActionHandler:
                 "deleteRecursive", constants.DeleteRecursive.TRUE.value
             )
             # TODO: specify nicer
-            if deleteRecursive not in constants.DeleteRecursive.valide_values:
+            if deleteRecursive not in constants.DeleteRecursive.valid_values:
                 raise ValueError(
                     "invalid deleteRecursive specification "
                     "in injected reference"
@@ -300,9 +314,7 @@ class ActionHandler:
             excl_filters |= Q(cluster_id__in=action_dict["exclude"]["Cluster"])
         if type_name == "Action":
             excl_filters |= Q(
-                contentAction__content_id__in=action_dict["exclude"][
-                    "Content"
-                ]
+                contentAction__content_id__in=action_dict["exclude"]["Content"]
             )
         return {
             "filters": ~excl_filters,

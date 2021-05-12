@@ -9,6 +9,7 @@ from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
 from django.utils.translation import gettext_lazy as _
 
+from ... import constants
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Action, Cluster, Content, ContentReference
@@ -135,7 +136,7 @@ class ActionMixin(object):
         )
         ids = set()
         for key_val in mapper.items():
-            if key_val[0][0] in {"manage", "push", "view", "update"}:
+            if key_val[0][0] not in constants.Action.protected_values:
                 ids.add(key_val[1]["id"])
                 if key_val[0][0] == "manage":
                     has_manage = True

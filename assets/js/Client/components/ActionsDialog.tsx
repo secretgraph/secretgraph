@@ -67,7 +67,13 @@ export interface ActionProps {
     locked?: boolean
 }
 
-const availableActionsSet = new Set(['manage', 'push', 'view', 'update'])
+const availableActionsSet = new Set([
+    'manage',
+    'push',
+    'view',
+    'delete',
+    'update',
+])
 
 const ActionFields = React.memo(function ActionFields({
     action,
@@ -80,22 +86,16 @@ const ActionFields = React.memo(function ActionFields({
 }) {
     switch (action) {
         case 'view':
+        case 'delete':
+            return (
+                <>
+                    <Grid item></Grid>
+                </>
+            )
         case 'update':
             return (
                 <>
-                    <Grid item>
-                        <Field
-                            name={
-                                index !== undefined
-                                    ? `actions.${index}.value.delete`
-                                    : 'value.delete'
-                            }
-                            component={FormikCheckboxWithLabel}
-                            Label={{ label: 'Can delete' }}
-                            disabled={disabled}
-                            type="checkbox"
-                        />
-                    </Grid>
+                    <Grid item></Grid>
                 </>
             )
         case 'manage':

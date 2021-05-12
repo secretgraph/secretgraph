@@ -55,17 +55,17 @@ key refs are assigned to privatekey, the rest to the public key
 
 -   view
     -   includeTags: like param, include only contents with tag
-    -   excludeTags: like param, exclude contents with tag
-    -   delete: can delete
+    -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
+-   delete
+    -   includeTags: like param, include only contents with tag
+    -   excludeTags: like param, exclude contents with tag, default: \[\]
 -   update:
-    -   freeze: cannot update after be viewed
-    -   delete: can delete
+    -   freeze: cannot update after being viewed
     -   restricted: raise priority among filters only explicit specified
-    -   ids: only contents with ids in list (can be flexid)
     -   requiredKeys: require keys within array for encryption
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
--   push (only contenAction):
+-   push (only contentAction):
     -   freeze: cannot update after be viewed
     -   updateable: can update newly created content
     -   requiredKeys: require keys within array for encryption
