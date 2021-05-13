@@ -20,6 +20,11 @@ export const theme = responsiveFontSizes(
                 },
             },
         } as any,
+        props: {
+            MuiTextField: {
+                variant: 'outlined',
+            },
+        },
     })
 )
 

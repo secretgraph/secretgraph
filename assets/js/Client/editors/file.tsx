@@ -181,6 +181,7 @@ const ViewFile = () => {
 
     const { loading } = useQuery(contentRetrievalQuery, {
         pollInterval: 60000,
+        fetchPolicy: 'cache-and-network',
         variables: {
             variables: {
                 id: mainCtx.item as string,
@@ -353,6 +354,7 @@ const AddFile = () => {
                     require: new Set(['update']),
                 })
                 const pubkeysResult = await client.query({
+                    fetchPolicy: 'network-only',
                     query: getContentConfigurationQuery,
                     variables: {
                         authorization: authinfo.tokens,
@@ -725,7 +727,8 @@ const EditFile = () => {
         UnpackPromise<ReturnType<typeof decryptContentObject>>
     >(null)
 
-    const { refetch } = useQuery(contentRetrievalQuery, {
+    const { refetch, loading } = useQuery(contentRetrievalQuery, {
+        fetchPolicy: 'cache-and-network',
         variables: {
             variables: {
                 id: mainCtx.item as string,
@@ -815,6 +818,7 @@ const EditFile = () => {
                     require: new Set(['update']),
                 })
                 const pubkeysResult = await client.query({
+                    fetchPolicy: 'network-only',
                     query: getContentConfigurationQuery,
                     variables: {
                         authorization: authinfo.tokens,
@@ -879,162 +883,168 @@ const EditFile = () => {
                 dirty,
                 setFieldValue,
                 setFieldTouched,
-            }) => (
-                <Grid container spacing={2}>
-                    <ViewWidget
-                        arrayBuffer={values.fileInput.arrayBuffer()}
-                        mime={values.fileInput.type}
-                        name={values.name}
-                    />
-                    <Grid item xs={12} sm={10}>
-                        <FastField
-                            component={FormikTextField}
-                            name="name"
-                            fullWidth
-                            label="Name"
-                            disabled={isSubmitting}
-                            validate={(val: string) => {
-                                if (!val) {
-                                    return 'empty'
-                                }
-                                return null
-                            }}
+            }) => {
+                const disabled = loading || isSubmitting
+                return (
+                    <Grid container spacing={2}>
+                        <ViewWidget
+                            arrayBuffer={values.fileInput.arrayBuffer()}
+                            mime={values.fileInput.type}
+                            name={values.name}
                         />
-                    </Grid>
-                    <Grid item xs={12} sm={2}>
-                        <Tooltip title="Encrypt name">
-                            <span>
-                                <FastField
-                                    name="encryptName"
-                                    component={FormikCheckboxWithLabel}
-                                    Label={{
-                                        label: 'Encrypt',
-                                    }}
-                                    disabled={isSubmitting}
-                                    type="checkbox"
-                                />
-                            </span>
-                        </Tooltip>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <FastField
-                            component={StateSelect}
-                            name="state"
-                            fullWidth
-                            label="State"
-                            disabled={isSubmitting}
-                            validate={(val: string) => {
-                                if (!val) {
-                                    return 'empty'
-                                }
-                                return null
-                            }}
-                        />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <FastField
-                            component={SimpleSelect}
-                            name="keywords"
-                            disabled={isSubmitting}
-                            options={[]}
-                            label="Keywords"
-                            freeSolo
-                            multiple
-                        />
-                    </Grid>
+                        <Grid item xs={12} sm={10}>
+                            <FastField
+                                component={FormikTextField}
+                                name="name"
+                                fullWidth
+                                label="Name"
+                                disabled={disabled}
+                                validate={(val: string) => {
+                                    if (!val) {
+                                        return 'empty'
+                                    }
+                                    return null
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={2}>
+                            <Tooltip title="Encrypt name">
+                                <span>
+                                    <FastField
+                                        name="encryptName"
+                                        component={FormikCheckboxWithLabel}
+                                        Label={{
+                                            label: 'Encrypt',
+                                        }}
+                                        disabled={disabled}
+                                        type="checkbox"
+                                    />
+                                </span>
+                            </Tooltip>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <FastField
+                                component={StateSelect}
+                                name="state"
+                                fullWidth
+                                label="State"
+                                disabled={disabled}
+                                validate={(val: string) => {
+                                    if (!val) {
+                                        return 'empty'
+                                    }
+                                    return null
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <FastField
+                                component={SimpleSelect}
+                                name="keywords"
+                                disabled={disabled}
+                                options={[]}
+                                label="Keywords"
+                                freeSolo
+                                multiple
+                            />
+                        </Grid>
 
-                    <Grid item xs={12} md={4}>
-                        <FastField
-                            component={ClusterSelect}
-                            url={mainCtx.url as string}
-                            name="cluster"
-                            disabled={isSubmitting}
-                            label="Cluster"
-                            firstIfEmpty
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextFileAdapter
-                            value={values.textFInput}
-                            onChange={(blob) => {
-                                setFieldValue('fileInput', blob)
-                                if (!touched.fileInput) {
-                                    setFieldTouched('fileInput', true)
-                                }
-                            }}
-                            mime={mime}
-                            disabled={isSubmitting}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <FastField name="fileInput" disabled={isSubmitting}>
-                            {(formikFieldProps: FieldProps) => {
-                                return (
-                                    <>
-                                        <UploadButton
-                                            name="fileInput"
-                                            onChange={(ev) => {
-                                                if (
-                                                    ev.target.files &&
-                                                    ev.target.files.length
-                                                ) {
-                                                    setFieldValue(
-                                                        'fileInput',
-                                                        ev.target.files[0]
-                                                    )
-                                                    setFieldValue(
-                                                        'textFInput',
-                                                        ev.target.files[0]
-                                                    )
-                                                }
-                                            }}
-                                            accept={
-                                                mainCtx.type == 'Text'
-                                                    ? 'text/*'
-                                                    : undefined
-                                            }
-                                        >
-                                            <Button
-                                                disabled={isSubmitting}
-                                                variant="contained"
-                                                color="primary"
-                                                component="span"
-                                            >
-                                                Upload
-                                            </Button>
-                                        </UploadButton>
-                                        {formikFieldProps.meta.error && (
-                                            <Typography
-                                                color={
-                                                    formikFieldProps.meta
-                                                        .touched
-                                                        ? 'error'
+                        <Grid item xs={12} md={4}>
+                            <FastField
+                                component={ClusterSelect}
+                                url={mainCtx.url as string}
+                                name="cluster"
+                                disabled={disabled}
+                                label="Cluster"
+                                firstIfEmpty
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextFileAdapter
+                                value={values.textFInput}
+                                onChange={(blob) => {
+                                    setFieldValue('fileInput', blob)
+                                    if (!touched.fileInput) {
+                                        setFieldTouched('fileInput', true)
+                                    }
+                                }}
+                                mime={mime}
+                                disabled={disabled}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FastField name="fileInput" disabled={isSubmitting}>
+                                {(formikFieldProps: FieldProps) => {
+                                    return (
+                                        <>
+                                            <UploadButton
+                                                name="fileInput"
+                                                onChange={(ev) => {
+                                                    if (
+                                                        ev.target.files &&
+                                                        ev.target.files.length
+                                                    ) {
+                                                        setFieldValue(
+                                                            'fileInput',
+                                                            ev.target.files[0]
+                                                        )
+                                                        setFieldValue(
+                                                            'textFInput',
+                                                            ev.target.files[0]
+                                                        )
+                                                    }
+                                                }}
+                                                accept={
+                                                    mainCtx.type == 'Text'
+                                                        ? 'text/*'
                                                         : undefined
                                                 }
                                             >
-                                                {formikFieldProps.meta.error}
-                                            </Typography>
-                                        )}
-                                    </>
-                                )
-                            }}
-                        </FastField>
+                                                <Button
+                                                    disabled={isSubmitting}
+                                                    variant="contained"
+                                                    color="primary"
+                                                    component="span"
+                                                >
+                                                    Upload
+                                                </Button>
+                                            </UploadButton>
+                                            {formikFieldProps.meta.error && (
+                                                <Typography
+                                                    color={
+                                                        formikFieldProps.meta
+                                                            .touched
+                                                            ? 'error'
+                                                            : undefined
+                                                    }
+                                                >
+                                                    {
+                                                        formikFieldProps.meta
+                                                            .error
+                                                    }
+                                                </Typography>
+                                            )}
+                                        </>
+                                    )
+                                }}
+                            </FastField>
+                        </Grid>
+                        <Grid item xs={12}>
+                            {isSubmitting && <LinearProgress />}
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                disabled={disabled || !dirty}
+                                onClick={submitForm}
+                            >
+                                Submit
+                            </Button>
+                        </Grid>
                     </Grid>
-                    <Grid item xs={12}>
-                        {isSubmitting && <LinearProgress />}
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            disabled={isSubmitting || !dirty}
-                            onClick={submitForm}
-                        >
-                            Submit
-                        </Button>
-                    </Grid>
-                </Grid>
-            )}
+                )
+            }}
         </Formik>
     )
 }

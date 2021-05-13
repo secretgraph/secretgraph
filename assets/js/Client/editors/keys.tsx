@@ -73,6 +73,7 @@ async function loadKeys({
         url,
     })
     const { data } = await client.query({
+        fetchPolicy: 'network-only',
         query: keysRetrievalQuery,
         variables: {
             id,
@@ -738,6 +739,7 @@ const AddKeys = () => {
     const { baseClient } = React.useContext(Contexts.Clients)
     const { data } = useAsync<ApolloQueryResult<any>>({
         promiseFn: client.query,
+        fetchPolicy: 'network-only',
         onReject: console.error,
         suspense: true,
         query: serverConfigQuery,
@@ -773,6 +775,7 @@ const AddKeys = () => {
 
                 // steps: sign with all other keys, if private key specified: create cryptotag
                 const pubkeysResult = await client.query({
+                    fetchPolicy: 'network-only',
                     query: getContentConfigurationQuery,
                     variables: {
                         authorization: authinfo.tokens,
@@ -903,6 +906,7 @@ async function findOrReturn({
         url,
     })
     const { data } = await client.query({
+        fetchPolicy: 'network-only',
         query: findPublicKeyQuery,
         variables: {
             authorization,

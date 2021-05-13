@@ -136,7 +136,7 @@ export async function createContent({
     return await client.mutate({
         mutation: createContentMutation,
         // we need a current updateId
-        fetchPolicy: 'no-cache',
+        awaitRefetchQueries: true,
         variables: {
             cluster,
             references: ([] as Interfaces.ReferenceInterface[]).concat(
@@ -234,7 +234,7 @@ export async function createKeys({
     return await client.mutate({
         mutation: createKeysMutation,
         // we need a current updateId
-        fetchPolicy: 'no-cache',
+        awaitRefetchQueries: true,
         variables: {
             cluster,
             references: references.concat(await signatureReferencesPromise),
@@ -338,7 +338,7 @@ export async function updateContent({
     return await client.mutate({
         mutation: updateContentMutation,
         // we need a current updateId
-        fetchPolicy: 'no-cache',
+        awaitRefetchQueries: true,
         variables: {
             id,
             updateId,
@@ -427,16 +427,18 @@ export async function updateKey({
             data: updatedKey,
         })
 
-        const [[specialRef, ...publicKeyReferences], privateTags] =
-            await Promise.all(
-                encryptSharedKey(
-                    sharedKey as ArrayBuffer,
-                    (
-                        [updatedKey] as Parameters<typeof encryptSharedKey>[1]
-                    ).concat(options.pubkeys),
-                    options.hashAlgorithm
-                )
+        const [
+            [specialRef, ...publicKeyReferences],
+            privateTags,
+        ] = await Promise.all(
+            encryptSharedKey(
+                sharedKey as ArrayBuffer,
+                ([updatedKey] as Parameters<typeof encryptSharedKey>[1]).concat(
+                    options.pubkeys
+                ),
+                options.hashAlgorithm
             )
+        )
         ;(tags as string[]).push(`key=${specialRef.extra}`, ...privateTags)
         references = publicKeyReferences.concat(
             options.references ? [...options.references] : []
@@ -470,7 +472,7 @@ export async function updateKey({
     }
     return await client.mutate({
         // we need a current updateId
-        fetchPolicy: 'no-cache',
+        awaitRefetchQueries: true,
         mutation: updateKeyMutation,
         variables: {
             id,
@@ -539,7 +541,7 @@ export async function createCluster(options: {
     return await options.client.mutate({
         mutation: createClusterMutation,
         // we need a current updateId
-        fetchPolicy: 'no-cache',
+        awaitRefetchQueries: true,
         variables: {
             publicInfo: new Blob([utf8encoder.encode(options.publicInfo)]),
             publicKey: await publicKeyPromise,
@@ -563,7 +565,7 @@ export async function updateCluster(options: {
     return await options.client.mutate({
         mutation: updateClusterMutation,
         // we need a current updateId
-        fetchPolicy: 'no-cache',
+        awaitRefetchQueries: true,
         variables: {
             id: options.id,
             updateId: options.updateId,

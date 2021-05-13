@@ -232,6 +232,7 @@ function ActionBar(props: Props) {
                             }}
                             value={mainCtx.type || undefined}
                             options={elements}
+                            variant="standard"
                             InputProps={{
                                 disableUnderline: true,
                             }}

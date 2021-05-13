@@ -1,4 +1,3 @@
-import { ApolloClient, useApolloClient, useQuery } from '@apollo/client'
 import {
     Checkbox,
     DialogActions,
@@ -269,11 +268,11 @@ function ActionEntryIntern({
                         </Tooltip>
                     </Grid>
                 )}
-                {action && !submitFn && (
+                {action && !submitFn && deleteFn && (
                     <Grid item>
                         <Tooltip title="Delete" arrow>
                             <span>
-                                {!deleteFn ? (
+                                {action?.oldHash ? (
                                     <Field
                                         name={`actions.${index}.delete`}
                                         disabled={disabled || action?.readonly}
@@ -281,7 +280,10 @@ function ActionEntryIntern({
                                         type="checkbox"
                                     />
                                 ) : (
-                                    <IconButton onClick={deleteFn}>
+                                    <IconButton
+                                        onClick={deleteFn}
+                                        disabled={disabled || action?.readonly}
+                                    >
                                         <DeleteIcon />
                                     </IconButton>
                                 )}
@@ -333,10 +335,9 @@ export function ActionEntry({
     deleteFn?: () => void
     tokens: string[]
 }) {
+    const ref = React.useRef<any>()
+    const newTokens = React.useMemo(() => tokens.concat('new'), [tokens])
     if (addFn) {
-        const ref = React.useRef<any>()
-        const newTokens = React.useMemo(() => tokens.concat('new'), [tokens])
-
         return (
             <ListItem {...props}>
                 <div ref={ref} />
@@ -351,7 +352,6 @@ export function ActionEntry({
                             update: undefined,
                             value: {
                                 action: 'view',
-                                delete: false,
                             } as any,
                         }}
                         onSubmit={async (

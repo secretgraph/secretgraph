@@ -183,6 +183,7 @@ const EditCustom = ({
         contentRetrievalQuery,
         {
             pollInterval: 60000,
+            fetchPolicy: 'cache-and-network',
             variables: {
                 variables: {
                     id: mainCtx.item as string,
@@ -236,6 +237,7 @@ const EditCustom = ({
                     require: new Set(['update']),
                 })
                 const pubkeysResult = await client.query({
+                    fetchPolicy: 'network-only',
                     query: getContentConfigurationQuery,
                     variables: {
                         authorization: authinfo.tokens,
@@ -324,6 +326,7 @@ const AddCustom = () => {
                     require: new Set(['create']),
                 })
                 const pubkeysResult = await client.query({
+                    fetchPolicy: 'network-only',
                     query: getContentConfigurationQuery,
                     variables: {
                         authorization: authinfo.tokens,

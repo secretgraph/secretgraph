@@ -113,6 +113,7 @@ interface ClusterInternProps {
     readonly name: string
     readonly note: string
     url: string
+    loading?: boolean
     disabled?: boolean
     mapper: UnpackPromise<ReturnType<typeof calculateActionMapper>>
     hashAlgorithms: string[]
@@ -122,6 +123,7 @@ const ClusterIntern = ({
     mapper,
     disabled,
     hashAlgorithms,
+    loading: loadingIntern,
     ...props
 }: ClusterInternProps) => {
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
@@ -237,8 +239,7 @@ const ClusterIntern = ({
                     tokens: {},
                     certificates: {},
                 }
-                const hashes: Interfaces.ConfigClusterInterface<null>['hashes'] =
-                    {}
+                const hashes: Interfaces.ConfigClusterInterface<null>['hashes'] = {}
                 await Promise.all(
                     actionsNew.map(async (val) => {
                         if (val.readonly) {
@@ -323,11 +324,9 @@ const ClusterIntern = ({
                         if (!hashes[newHash]) {
                             hashes[newHash] = []
                         }
-                        ;(
-                            hashes[newHash] as NonNullable<
-                                typeof hashes[string]
-                            >
-                        ).push(val.value.action)
+                        ;(hashes[newHash] as NonNullable<
+                            typeof hashes[string]
+                        >).push(val.value.action)
                         finishedActions.push({
                             existingHash: val.oldHash || undefined,
                             start: val.start ? new Date(val.start) : undefined,
@@ -355,18 +354,20 @@ const ClusterIntern = ({
                     })
                 } else {
                     const key = crypto.getRandomValues(new Uint8Array(32))
-                    const { publicKey, privateKey } =
-                        (await crypto.subtle.generateKey(
-                            {
-                                name: 'RSA-OAEP',
-                                //modulusLength: 8192,
-                                modulusLength: 2048,
-                                publicExponent: new Uint8Array([1, 0, 1]),
-                                hash: hashAlgorithms[0],
-                            },
-                            true,
-                            ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-                        )) as CryptoKeyPair
+                    const {
+                        publicKey,
+                        privateKey,
+                    } = (await crypto.subtle.generateKey(
+                        {
+                            name: 'RSA-OAEP',
+                            //modulusLength: 8192,
+                            modulusLength: 2048,
+                            publicExponent: new Uint8Array([1, 0, 1]),
+                            hash: hashAlgorithms[0],
+                        },
+                        true,
+                        ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+                    )) as CryptoKeyPair
                     privPromise = serializeToBase64(privateKey)
                     digestCert = await crypto.subtle
                         .exportKey('spki' as const, publicKey)
@@ -398,34 +399,31 @@ const ClusterIntern = ({
                     })
                 }
                 if (clusterResponse.errors || !clusterResponse.data) {
+                    console.error('failed', clusterResponse.errors)
                     setSubmitting(false)
                     return
                 }
                 // should be solved better
-                if (!clusterResponse.errors && clusterResponse.data) {
-                    const newNode =
-                        clusterResponse.data.updateOrCreateCluster.cluster
-                    configUpdate.hosts[props.url as string] = {
-                        hashAlgorithms,
-                        clusters: {
-                            [newNode.id as string]: {
-                                hashes: {
-                                    ...hashes,
-                                },
+                const newNode =
+                    clusterResponse.data.updateOrCreateCluster.cluster
+                configUpdate.hosts[props.url as string] = {
+                    hashAlgorithms,
+                    clusters: {
+                        [newNode.id as string]: {
+                            hashes: {
+                                ...hashes,
                             },
                         },
-                        contents: {},
-                    }
-                    if (digestCert && privPromise) {
-                        ;(
-                            configUpdate.hosts as Interfaces.ConfigInterface['hosts']
-                        )[props.url as string].clusters[
-                            newNode.id as string
-                        ].hashes[digestCert] = []
-                        configUpdate.tokens[digestCert] = {
-                            data: await privPromise,
-                            note: 'initial certificate',
-                        }
+                    },
+                    contents: {},
+                }
+                if (digestCert && privPromise) {
+                    ;(configUpdate.hosts as Interfaces.ConfigInterface['hosts'])[
+                        props.url as string
+                    ].clusters[newNode.id as string].hashes[digestCert] = []
+                    configUpdate.tokens[digestCert] = {
+                        data: await privPromise,
+                        note: 'initial certificate',
                     }
                 }
 
@@ -433,6 +431,7 @@ const ClusterIntern = ({
                     update: configUpdate,
                     client: baseClient,
                 })
+                console.log(newConfig)
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
                 updateMainCtx({
@@ -449,106 +448,110 @@ const ClusterIntern = ({
                 })
             }}
         >
-            {({ submitForm, isSubmitting, initialValues, dirty }) => (
-                <Form>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                            <FastField
-                                component={FormikTextField}
-                                name="name"
-                                type="text"
-                                label="Name"
-                                fullWidth
-                                disabled={disabled || isSubmitting}
-                            />
-                        </Grid>
+            {({ submitForm, isSubmitting, initialValues, dirty }) => {
+                const loading = !!(isSubmitting || loadingIntern)
+                //console.log(isSubmitting, loadingIntern, disabled)
+                return (
+                    <Form>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <FastField
+                                    component={FormikTextField}
+                                    name="name"
+                                    type="text"
+                                    label="Name"
+                                    fullWidth
+                                    disabled={disabled || loading}
+                                />
+                            </Grid>
 
-                        <Grid item xs={12}>
-                            <FastField
-                                component={FormikTextField}
-                                name="note"
-                                type="text"
-                                label="Note"
-                                fullWidth
-                                multiline
-                                disabled={disabled || isSubmitting}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <List>
-                                <ListSubheader disableSticky>
-                                    Tokens
-                                </ListSubheader>
-                                <FieldArray name="actions">
-                                    {({
-                                        push,
-                                        remove,
-                                        form,
-                                    }: {
-                                        form: FormikProps<typeof initialValues>
-                                    } & ArrayHelpers) => {
-                                        const items = form.values.actions.map(
-                                            (val, index) => {
-                                                return (
+                            <Grid item xs={12}>
+                                <FastField
+                                    component={FormikTextField}
+                                    name="note"
+                                    type="text"
+                                    label="Note"
+                                    fullWidth
+                                    multiline
+                                    disabled={disabled || loading}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <List>
+                                    <ListSubheader disableSticky>
+                                        Tokens
+                                    </ListSubheader>
+                                    <FieldArray name="actions">
+                                        {({
+                                            push,
+                                            remove,
+                                            form,
+                                        }: {
+                                            form: FormikProps<
+                                                typeof initialValues
+                                            >
+                                        } & ArrayHelpers) => {
+                                            const items = form.values.actions.map(
+                                                (val, index) => {
+                                                    return (
+                                                        <ActionEntry
+                                                            index={index}
+                                                            key={index}
+                                                            disabled={
+                                                                disabled ||
+                                                                loading
+                                                            }
+                                                            action={val}
+                                                            tokens={
+                                                                actionTokens
+                                                            }
+                                                            deleteFn={
+                                                                disabled
+                                                                    ? undefined
+                                                                    : () =>
+                                                                          remove(
+                                                                              index
+                                                                          )
+                                                            }
+                                                            divider
+                                                        />
+                                                    )
+                                                }
+                                            )
+                                            if (!disabled) {
+                                                items.push(
                                                     <ActionEntry
-                                                        index={index}
-                                                        key={index}
-                                                        disabled={
-                                                            disabled ||
-                                                            isSubmitting
-                                                        }
-                                                        action={val}
+                                                        key="new"
+                                                        disabled={loading}
                                                         tokens={actionTokens}
-                                                        deleteFn={
-                                                            val.oldHash
-                                                                ? undefined
-                                                                : () =>
-                                                                      remove(
-                                                                          index
-                                                                      )
-                                                        }
-                                                        divider
+                                                        addFn={push}
                                                     />
                                                 )
                                             }
-                                        )
-                                        if (!disabled) {
-                                            items.push(
-                                                <ActionEntry
-                                                    key="new"
-                                                    disabled={
-                                                        disabled || isSubmitting
-                                                    }
-                                                    tokens={actionTokens}
-                                                    addFn={push}
-                                                />
-                                            )
-                                        }
-                                        return items
-                                    }}
-                                </FieldArray>
-                            </List>
+                                            return items
+                                        }}
+                                    </FieldArray>
+                                </List>
+                            </Grid>
+                            <Grid item xs={12}>
+                                {loading && <LinearProgress />}
+                            </Grid>
+                            <Grid item xs={12}>
+                                {disabled ? null : (
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        disabled={loading || disabled || !dirty}
+                                        onClick={submitForm}
+                                    >
+                                        Submit
+                                    </Button>
+                                )}
+                            </Grid>
                         </Grid>
-                        <Grid item xs={12}>
-                            {isSubmitting && <LinearProgress />}
-                        </Grid>
-                        <Grid item xs={12}>
-                            {disabled ? null : (
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    disabled={
-                                        isSubmitting || disabled || !dirty
-                                    }
-                                    onClick={submitForm}
-                                >
-                                    Submit
-                                </Button>
-                            )}
-                        </Grid>
-                    </Grid>
-                </Form>
-            )}
+                    </Form>
+                )
+            }}
         </Formik>
     )
 }
@@ -556,10 +559,9 @@ const ClusterIntern = ({
 const ViewCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] =
-        React.useState<UnpackPromise<
-            ReturnType<typeof extractPublicInfo>
-        > | null>(null)
+    const [data, setData] = React.useState<UnpackPromise<
+        ReturnType<typeof extractPublicInfo>
+    > | null>(null)
 
     useQuery(getClusterQuery, {
         pollInterval: 60000,
@@ -567,6 +569,7 @@ const ViewCluster = () => {
             id: mainCtx.item as string,
             authorization: mainCtx.tokens,
         },
+        fetchPolicy: 'cache-and-network',
         onError: console.error,
         onCompleted: async (data) => {
             const updateOb = {
@@ -654,12 +657,13 @@ const AddCluster = () => {
 const EditCluster = () => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] =
-        React.useState<UnpackPromise<
-            ReturnType<typeof extractPublicInfo>
-        > | null>(null)
-    const { refetch } = useQuery(getClusterQuery, {
+    const [data, setData] = React.useState<UnpackPromise<
+        ReturnType<typeof extractPublicInfo>
+    > | null>(null)
+    const { refetch, loading } = useQuery(getClusterQuery, {
         pollInterval: 60000,
+        fetchPolicy: 'cache-and-network',
+        nextFetchPolicy: 'network-only',
         variables: {
             id: mainCtx.item as string,
             authorization: mainCtx.tokens,
@@ -703,7 +707,7 @@ const EditCluster = () => {
         return null
     }
 
-    return <ClusterIntern {...data} />
+    return <ClusterIntern loading={loading} {...data} />
 }
 
 export default function ClusterComponent() {
