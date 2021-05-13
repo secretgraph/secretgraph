@@ -109,7 +109,7 @@ class FlexidMixin:
 
 
 class ActionEntry(graphene.ObjectType):
-    id = graphene.ID(required=True)
+    id = graphene.ID(required=False)
     # of action key
     keyHash = graphene.String(required=True)
     type = graphene.String(required=True)
@@ -138,8 +138,8 @@ class ActionMixin(object):
         for key_val in mapper.items():
             if key_val[0][0] not in constants.Action.protected_values:
                 ids.add(key_val[1]["id"])
-                if key_val[0][0] == "manage":
-                    has_manage = True
+            if key_val[0][0] == "manage":
+                has_manage = True
         resultval = map(
             lambda key_val: ActionEntry(
                 id=None if not has_manage else key_val[1]["id"],

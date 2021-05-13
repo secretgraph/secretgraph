@@ -203,7 +203,11 @@ class ClusterMutation(relay.ClientIDMutation):
             if not cluster_obj:
                 raise ValueError()
             _cluster_res = update_cluster_fn(
-                info.context, cluster_obj, cluster, updateId
+                info.context,
+                cluster_obj,
+                cluster,
+                updateId,
+                authset=authorization,
             )(transaction.atomic)
         else:
             user = None
@@ -232,9 +236,9 @@ class ClusterMutation(relay.ClientIDMutation):
                 is not True
             ):
                 raise ValueError("Cannot register new cluster")
-            _cluster_res = create_cluster_fn(info.context, cluster, user=user)(
-                transaction.atomic
-            )
+            _cluster_res = create_cluster_fn(
+                info.context, cluster, user=user, authset=authorization
+            )(transaction.atomic)
         initializeCachedResult(info.context, authset=authorization)
         return cls(**_cluster_res)
 
@@ -451,7 +455,10 @@ class PushContentMutation(relay.ClientIDMutation):
                 }
             ]
         c = create_content_fn(
-            info.context, content, required_keys=required_keys
+            info.context,
+            content,
+            required_keys=required_keys,
+            authset=authorization,
         )(transaction.atomic)
         initializeCachedResult(info.context, authset=authorization)
         return cls(
@@ -549,7 +556,11 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         for content_obj in result.objects.all():
             requests.append(
                 update_metadata_fn(
-                    info.context, content_obj, tags=tags, operation=operation
+                    info.context,
+                    content_obj,
+                    tags=tags,
+                    operation=operation,
+                    authset=authorization,
                 )
             )
         contents = []

@@ -173,7 +173,7 @@ const ClusterIntern = ({
         () => (mapper ? actions.map((val) => val.token) : mainCtx.tokens),
         [actions, mapper]
     )
-    /** 
+    /**
     keyHash: string | null
     start: Date | null
     stop: Date | null
@@ -237,7 +237,8 @@ const ClusterIntern = ({
                     tokens: {},
                     certificates: {},
                 }
-                const hashes: Interfaces.ConfigClusterInterface<null>['hashes'] = {}
+                const hashes: Interfaces.ConfigClusterInterface<null>['hashes'] =
+                    {}
                 await Promise.all(
                     actionsNew.map(async (val) => {
                         if (val.readonly) {
@@ -266,6 +267,11 @@ const ClusterIntern = ({
                                 existingHash: val.oldHash,
                                 value: '"delete"',
                             })
+                            configUpdate.tokens[val.oldHash] = null
+                            console.debug(
+                                'hash of deleted object:',
+                                val.oldHash
+                            )
                             return
                         }
                         // updates config with new action information
@@ -317,9 +323,11 @@ const ClusterIntern = ({
                         if (!hashes[newHash]) {
                             hashes[newHash] = []
                         }
-                        ;(hashes[newHash] as NonNullable<
-                            typeof hashes[string]
-                        >).push(val.value.action)
+                        ;(
+                            hashes[newHash] as NonNullable<
+                                typeof hashes[string]
+                            >
+                        ).push(val.value.action)
                         finishedActions.push({
                             existingHash: val.oldHash || undefined,
                             start: val.start ? new Date(val.start) : undefined,
@@ -347,20 +355,18 @@ const ClusterIntern = ({
                     })
                 } else {
                     const key = crypto.getRandomValues(new Uint8Array(32))
-                    const {
-                        publicKey,
-                        privateKey,
-                    } = (await crypto.subtle.generateKey(
-                        {
-                            name: 'RSA-OAEP',
-                            //modulusLength: 8192,
-                            modulusLength: 2048,
-                            publicExponent: new Uint8Array([1, 0, 1]),
-                            hash: hashAlgorithms[0],
-                        },
-                        true,
-                        ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-                    )) as CryptoKeyPair
+                    const { publicKey, privateKey } =
+                        (await crypto.subtle.generateKey(
+                            {
+                                name: 'RSA-OAEP',
+                                //modulusLength: 8192,
+                                modulusLength: 2048,
+                                publicExponent: new Uint8Array([1, 0, 1]),
+                                hash: hashAlgorithms[0],
+                            },
+                            true,
+                            ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+                        )) as CryptoKeyPair
                     privPromise = serializeToBase64(privateKey)
                     digestCert = await crypto.subtle
                         .exportKey('spki' as const, publicKey)
@@ -411,9 +417,11 @@ const ClusterIntern = ({
                         contents: {},
                     }
                     if (digestCert && privPromise) {
-                        ;(configUpdate.hosts as Interfaces.ConfigInterface['hosts'])[
-                            props.url as string
-                        ].clusters[newNode.id as string].hashes[digestCert] = []
+                        ;(
+                            configUpdate.hosts as Interfaces.ConfigInterface['hosts']
+                        )[props.url as string].clusters[
+                            newNode.id as string
+                        ].hashes[digestCert] = []
                         configUpdate.tokens[digestCert] = {
                             data: await privPromise,
                             note: 'initial certificate',
@@ -548,9 +556,10 @@ const ClusterIntern = ({
 const ViewCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] = React.useState<UnpackPromise<
-        ReturnType<typeof extractPublicInfo>
-    > | null>(null)
+    const [data, setData] =
+        React.useState<UnpackPromise<
+            ReturnType<typeof extractPublicInfo>
+        > | null>(null)
 
     useQuery(getClusterQuery, {
         pollInterval: 60000,
@@ -645,9 +654,10 @@ const AddCluster = () => {
 const EditCluster = () => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] = React.useState<UnpackPromise<
-        ReturnType<typeof extractPublicInfo>
-    > | null>(null)
+    const [data, setData] =
+        React.useState<UnpackPromise<
+            ReturnType<typeof extractPublicInfo>
+        > | null>(null)
     const { refetch } = useQuery(getClusterQuery, {
         pollInterval: 60000,
         variables: {

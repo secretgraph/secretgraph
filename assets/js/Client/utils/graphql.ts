@@ -15,6 +15,20 @@ export const createClient = (url: string) => {
     return new ApolloClient({
         cache: new InMemoryCache({
             typePolicies: {
+                Content: {
+                    fields: {
+                        availableActions: {
+                            merge: false,
+                        },
+                    },
+                },
+                Cluster: {
+                    fields: {
+                        availableActions: {
+                            merge: false,
+                        },
+                    },
+                },
                 SecretgraphObject: {
                     queryType: true,
                     fields: {
@@ -137,16 +151,14 @@ export function createSignatureReferences(
                 privKey,
                 hashalgo,
                 unserializeToArrayBuffer(content)
-            ).then(
-                ({ signature, hash }): Interfaces.ReferenceInterface => {
-                    return {
-                        target: hash,
-                        group: 'signature',
-                        extra: `${hashValue.serializedName}:${signature}`,
-                        deleteRecursive: 'FALSE',
-                    }
+            ).then(({ signature, hash }): Interfaces.ReferenceInterface => {
+                return {
+                    target: hash,
+                    group: 'signature',
+                    extra: `${hashValue.serializedName}:${signature}`,
+                    deleteRecursive: 'FALSE',
                 }
-            )
+            })
         )
     }
 
@@ -217,16 +229,14 @@ export function encryptSharedKey(
     for (const pubkey of pubkeys) {
         const temp = encryptSharedKey_helper(pubkey, hashalgo, sharedkey)
         references.push(
-            temp.then(
-                ({ encrypted, hash }): Interfaces.ReferenceInterface => {
-                    return {
-                        target: hash,
-                        group: 'key',
-                        extra: `${hashValue.serializedName}:${encrypted}`,
-                        deleteRecursive: 'NO_GROUP',
-                    }
+            temp.then(({ encrypted, hash }): Interfaces.ReferenceInterface => {
+                return {
+                    target: hash,
+                    group: 'key',
+                    extra: `${hashValue.serializedName}:${encrypted}`,
+                    deleteRecursive: 'NO_GROUP',
                 }
-            )
+            })
         )
         tags.push(temp.then(({ hash }): string => `key_hash=${hash}`))
     }

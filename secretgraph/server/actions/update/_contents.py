@@ -20,7 +20,7 @@ from ...utils.auth import ids_to_results, initializeCachedResult
 from ...utils.encryption import default_padding, encrypt_into_file
 from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag
-from ._actions import create_actions_fn
+from ._actions import manage_actions_fn
 from ._metadata import transform_references, transform_tags
 
 logger = logging.getLogger(__name__)
@@ -298,7 +298,7 @@ def _update_or_create_content_or_key(
         if not is_key and len(key_hashes_ref) < 1:
             raise ValueError(">=1 key references required for content")
     if objdata.get("actions") is not None:
-        actions_save_fn = create_actions_fn(
+        actions_save_fn = manage_actions_fn(
             content, objdata["actions"], request, authset=authset
         )
     else:

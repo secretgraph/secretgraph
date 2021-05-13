@@ -92,15 +92,25 @@ class ActionHandler:
                 "filters": ~excl_filters & incl_filters,
                 "accesslevel": ownaccesslevel,
             }
+        elif issubclass(sender, Cluster):
+            return {
+                "filters": Q(),
+                "accesslevel": ownaccesslevel,
+            }
         return None
 
     @staticmethod
     def clean_view(action_dict, request, content, authset):
-        result = {"action": "view"}
-        exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
-        result["excludeTags"] = list(map(str, exclude_tags))
-        include_tags = action_dict.get("includeTags", [])
-        result["includeTags"] = list(map(str, include_tags))
+        result = {"action": "view", "contentActionGroup": "view"}
+        if content:
+            # ignore tags if specified for a content
+            result["excludeTags"] = []
+            result["includeTags"] = []
+        else:
+            exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
+            result["excludeTags"] = list(map(str, exclude_tags))
+            include_tags = action_dict.get("includeTags", [])
+            result["includeTags"] = list(map(str, include_tags))
         return result
 
     @staticmethod
@@ -124,15 +134,28 @@ class ActionHandler:
                 "filters": ~excl_filters & incl_filters,
                 "accesslevel": ownaccesslevel,
             }
+        elif issubclass(sender, Cluster):
+            return {
+                "filters": Q(),
+                "accesslevel": ownaccesslevel,
+            }
         return None
 
     @staticmethod
     def clean_delete(action_dict, request, content, authset):
-        result = {"action": "view", "delete": bool(action_dict.get("delete"))}
-        exclude_tags = action_dict.get("excludeTags", [])
-        result["excludeTags"] = list(map(str, exclude_tags))
-        include_tags = action_dict.get("includeTags", [])
-        result["includeTags"] = list(map(str, include_tags))
+        result = {
+            "action": "delete",
+            "contentActionGroup": "delete"
+        }
+        if content:
+            # ignore tags if specified for a content
+            result["excludeTags"] = []
+            result["includeTags"] = []
+        else:
+            exclude_tags = action_dict.get("excludeTags", [])
+            result["excludeTags"] = list(map(str, exclude_tags))
+            include_tags = action_dict.get("includeTags", [])
+            result["includeTags"] = list(map(str, include_tags))
         return result
 
     @staticmethod
@@ -149,8 +172,13 @@ class ActionHandler:
         }:
             return None
         if issubclass(sender, Content):
-            incl_filters = Q(id__in=action_dict.get("ids", []))
             excl_filters = Q()
+            for i in action_dict["excludeTags"]:
+                excl_filters |= Q(tags__tag__startswith=i)
+
+            incl_filters = Q()
+            for i in action_dict["includeTags"]:
+                incl_filters |= Q(tags__tag__startswith=i)
             if scope == "update" and action_dict.get("freeze"):
                 excl_filters = Q(
                     action__in=Subquery(group="fetch", used=True).values("id")
@@ -183,6 +211,16 @@ class ActionHandler:
                 "injectedReferences": [],
             },
         }
+
+        if content:
+            # ignore tags if specified for a content
+            result["excludeTags"] = []
+            result["includeTags"] = []
+        else:
+            exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
+            result["excludeTags"] = list(map(str, exclude_tags))
+            include_tags = action_dict.get("includeTags", [])
+            result["includeTags"] = list(map(str, include_tags))
 
         if action_dict.get("requiredKeys"):
             result["form"]["requiredKeys"] = list(
@@ -330,7 +368,7 @@ class ActionHandler:
     @staticmethod
     def clean_manage(action_dict, request, content, authset):
         if content:
-            raise ValueError("manage cannot be used as contentaction")
+            raise ValueError("manage cannot be used for content")
         result = {
             "action": "manage",
             "exclude": {"Cluster": [], "Content": [], "Action": []},

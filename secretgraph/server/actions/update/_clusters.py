@@ -12,7 +12,7 @@ from rdflib import RDF, BNode, Graph
 from ....constants import CLUSTER
 from ...utils.misc import get_secrets, hash_object
 from ...models import Cluster
-from ._actions import create_actions_fn
+from ._actions import manage_actions_fn
 from ._contents import create_key_fn
 
 len_default_hash = len(hash_object(b""))
@@ -70,7 +70,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
 
     # path: actions are specified
     if objdata.get("actions"):
-        action_save_fn = create_actions_fn(
+        action_save_fn = manage_actions_fn(
             cluster, objdata["actions"], request, authset=authset
         )
 

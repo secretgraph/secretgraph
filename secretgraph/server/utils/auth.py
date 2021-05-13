@@ -101,7 +101,6 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             models.Q(contentAction__isnull=True)
             | models.Q(contentAction__content__in=query)
         ).select_related("cluster")
-    all_filters = models.Q()
     returnval = {
         "authset": authset,
         "scope": scope,
@@ -198,8 +197,10 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
 
                 required_keys_dict[(action_dict["action"], action.keyHash)] = {
                     "id": action.id,
-                    "requiredKeys": form.get("requiredKeys", []),
-                    "allowedTags": form.get("allowedTags"),
+                    "requiredKeys": form.get("requiredKeys", [])
+                    if form
+                    else [],
+                    "allowedTags": form.get("allowedTags") if form else [],
                 }
             elif accesslevel == foundaccesslevel:
                 filters &= result.get("filters", models.Q())
@@ -209,8 +210,10 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 required_keys_dict.setdefault(
                     (action_dict["action"], action.keyHash),
                     {
-                        "requiredKeys": form.get("requiredKeys", []),
-                        "allowedTags": form.get("allowedTags"),
+                        "requiredKeys": form.get("requiredKeys", [])
+                        if form
+                        else [],
+                        "allowedTags": form.get("allowedTags") if form else [],
                     },
                 )
 
@@ -245,6 +248,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             "_query": _query,
         }
 
+    # extract subqueries union them
     all_query = reduce(
         lambda x, y: x | y,
         map(lambda x: x.pop("_query"), returnval["clusters"].values()),
@@ -252,43 +256,47 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     )
 
     if issubclass(query.model, Cluster):
-        all_filters = (
-            models.Q(
-                id__in={
-                    *returnval["required_keys_clusters"].keys(),
-                    *all_query.values_list("id", flat=True),
-                }
-            )
-            | models.Q(public=True)
+        id_subquery = models.Subquery(
+            query.filter(
+                models.Q(
+                    id__in={
+                        *returnval["required_keys_clusters"].keys(),
+                        *all_query.values_list("id", flat=True),
+                    }
+                )
+                | models.Q(public=True)
+            ).values("id")
         )
     elif issubclass(query.model, Content):
-        all_filters = models.Q(tags__tag="state=public") | (
-            models.Q(id__in=models.Subquery(all_query.values("id")))
-            & (
-                models.Q(
-                    id__in=list(returnval["required_keys_contents"].keys())
-                )
-                | models.Q(
-                    cluster_id__in=list(
-                        returnval["required_keys_clusters"].keys()
+        id_subquery = models.Subquery(
+            query.filter(
+                models.Q(tags__tag="state=public")
+                | (
+                    models.Q(id__in=models.Subquery(all_query.values("id")))
+                    & (
+                        models.Q(
+                            id__in=list(
+                                returnval["required_keys_contents"].keys()
+                            )
+                        )
+                        | models.Q(
+                            cluster_id__in=list(
+                                returnval["required_keys_clusters"].keys()
+                            )
+                        )
                     )
                 )
-            )
+            ).values("id")
         )
     else:
         assert issubclass(query.model, Action), "invalid type %r" % query.model
-        all_filters = models.Q(
-            id__in=models.Subquery(all_query.values("id")),
-            cluster_id__in=list(returnval["required_keys_clusters"].keys()),
-        )
+        id_subquery = models.Subquery(all_query.values("id"))
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
     returnval["actions"] = Action.objects.filter(
         id__in=models.Subquery(returnval["actions"].values("id"))
     ).order_by("-start", "-id")
-    returnval["objects"] = query.filter(
-        id__in=models.Subquery(query.filter(all_filters).values("id"))
-    )
+    returnval["objects"] = query.filter(id__in=id_subquery)
     return returnval
 
 

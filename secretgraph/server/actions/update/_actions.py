@@ -1,4 +1,4 @@
-__all__ = ["create_actions_fn"]
+__all__ = ["manage_actions_fn"]
 
 
 import base64
@@ -16,7 +16,7 @@ from ...actions.handler import ActionHandler
 from ...models import Action, Content, Cluster, ContentAction
 
 
-def create_actions_fn(
+def manage_actions_fn(
     obj, actionlist, request, default_key=None, authset=None
 ):
     add_actions = []
@@ -44,7 +44,9 @@ def create_actions_fn(
     else:
         raise ValueError("Invalid type")
 
-    result = retrieve_allowed_objects(request, "manage", cluster.actions.all())
+    result = retrieve_allowed_objects(
+        request, "manage", cluster.actions.all(), authset=authset
+    )
     for action in actionlist:
         # if already decoded by e.g. graphql
         if action["value"] == "delete":

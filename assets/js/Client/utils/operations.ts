@@ -427,18 +427,16 @@ export async function updateKey({
             data: updatedKey,
         })
 
-        const [
-            [specialRef, ...publicKeyReferences],
-            privateTags,
-        ] = await Promise.all(
-            encryptSharedKey(
-                sharedKey as ArrayBuffer,
-                ([updatedKey] as Parameters<typeof encryptSharedKey>[1]).concat(
-                    options.pubkeys
-                ),
-                options.hashAlgorithm
+        const [[specialRef, ...publicKeyReferences], privateTags] =
+            await Promise.all(
+                encryptSharedKey(
+                    sharedKey as ArrayBuffer,
+                    (
+                        [updatedKey] as Parameters<typeof encryptSharedKey>[1]
+                    ).concat(options.pubkeys),
+                    options.hashAlgorithm
+                )
             )
-        )
         ;(tags as string[]).push(`key=${specialRef.extra}`, ...privateTags)
         references = publicKeyReferences.concat(
             options.references ? [...options.references] : []
@@ -795,7 +793,7 @@ export async function updateConfigRemoteReducer(
                 authorization: authInfo.tokens,
             },
             // but why? should be updated by cache updates (for this no-cache is required in config content updates)
-            //fetchPolicy: 'network-only',
+            fetchPolicy: 'network-only',
         })
         if (configQueryRes.errors) {
             throw configQueryRes.errors

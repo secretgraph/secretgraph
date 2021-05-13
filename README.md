@@ -53,19 +53,24 @@ key refs are assigned to privatekey, the rest to the public key
 
 ## Actions
 
--   view
-    -   includeTags: like param, include only contents with tag
-    -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
--   delete
-    -   includeTags: like param, include only contents with tag
-    -   excludeTags: like param, exclude contents with tag, default: \[\]
--   update:
+-   view (Content, Cluster) affects (Content, Cluster):
+    -   for Cluster:
+        -   includeTags: like param, include only contents with tag
+        -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
+-   delete (Content, Cluster):
+    -   for Cluster:
+        -   includeTags: like param, include only contents with tag
+        -   excludeTags: like param, exclude contents with tag, default: \[\]
+-   update (Content, Cluster) affects (Content, Cluster) (has default view permission):
+    -   for Cluster:
+        -   includeTags: like param, include only contents with tag
+        -   excludeTags: like param, exclude contents with tag,
     -   freeze: cannot update after being viewed
     -   restricted: raise priority among filters only explicit specified
     -   requiredKeys: require keys within array for encryption
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
--   push (only contentAction):
+-   push (Content):
     -   freeze: cannot update after be viewed
     -   updateable: can update newly created content
     -   requiredKeys: require keys within array for encryption
@@ -75,12 +80,12 @@ key refs are assigned to privatekey, the rest to the public key
         -   deleteRecursive: group behaviour:
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
--   manage (never contentAction):
+-   manage (Cluster) affects (Action, Content, Cluster):
     -   exclude:
         -   Cluster: ids of clusters which are excluded
         -   Content: ids of contents which are excluded
         -   Action: keyHashes of actions which are excluded
--   storedUpdate (never contentAction):
+-   storedUpdate (Cluster):
     -   delete:
         -   Cluster: ids of clusters which are deleted
         -   Content: ids of contents which are deleted

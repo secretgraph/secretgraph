@@ -155,8 +155,8 @@ function ActionEntryIntern({
                         </Grid>
                     )}
                     <Grid item xs={12}>
-                        For security reasons action values are not shown after
-                        creation. Use note field to document
+                        For security reasons action options are not shown after
+                        creation. Use note field to document them
                     </Grid>
                     <Grid item xs={4}>
                         <FastField
