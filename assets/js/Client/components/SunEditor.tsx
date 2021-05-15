@@ -34,7 +34,6 @@ export function SunEditorWrapper({
                 {...props}
                 setContents={value}
                 onChange={(val: string) => {
-                    //console.log(ref.current, props)
                     ref.current.editor.save()
                     ref.current &&
                         onChange &&
