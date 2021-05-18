@@ -29,6 +29,7 @@
     "react-dom": "latest",
     "style-loader": "*",
     "subscriptions-transport-ws": "*",
+    "suneditor": "latest",
     "suneditor-react": "latest",
     "ts-graphql-plugin": "latest",
     "ts-loader": "*",

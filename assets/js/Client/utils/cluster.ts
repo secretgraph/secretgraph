@@ -1,4 +1,5 @@
-import { parse, graph, SPARQLToQuery } from 'rdflib'
+import { SPARQLToQuery, graph, parse } from 'rdflib'
+
 import { CLUSTER, SECRETGRAPH } from '../constants'
 
 export function extractPublicInfo(

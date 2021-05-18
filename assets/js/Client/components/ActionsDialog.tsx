@@ -59,7 +59,6 @@ export interface ActionProps {
     stop: Date | ''
     note: string
     value: { [key: string]: any } & { action: string }
-    clusterAction: boolean
     update?: boolean
     delete?: boolean
     readonly?: boolean

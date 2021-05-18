@@ -2,7 +2,7 @@ import { Namespace } from 'rdflib'
 
 declare var gettext: any
 
-export const visibleActions = new Set(['manage', 'push', 'view', 'update'])
+export const protectedActions = new Set(['storedUpdate'])
 
 export const contentStates = new Map([
     ['draft', { label: gettext('Draft') }],

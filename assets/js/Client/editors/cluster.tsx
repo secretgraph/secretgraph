@@ -13,11 +13,6 @@ import Grid from '@material-ui/core/Grid'
 import IconButton from '@material-ui/core/IconButton'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import List from '@material-ui/core/List'
-import ListItem from '@material-ui/core/ListItem'
-import ListItemText from '@material-ui/core/ListItemText'
-import Typography from '@material-ui/core/Typography'
-import AddIcon from '@material-ui/icons/Add'
-import MoreVertIcon from '@material-ui/icons/MoreVert'
 import {
     ArrayHelpers,
     FastField,
@@ -28,7 +23,6 @@ import {
     FormikProps,
 } from 'formik'
 import { TextField as FormikTextField } from 'formik-material-ui'
-import MapsPersonPin from 'material-ui/svg-icons/maps/person-pin'
 import {
     BlankNode,
     Literal,
@@ -41,9 +35,9 @@ import {
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
-import { ActionEntry, ActionProps } from '../components/ActionsDialog'
+import { ActionEntry } from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
-import { CLUSTER, RDF, SECRETGRAPH, XSD, visibleActions } from '../constants'
+import { CLUSTER, RDF, SECRETGRAPH, XSD, protectedActions } from '../constants'
 import * as Contexts from '../contexts'
 import * as Interfaces from '../interfaces'
 import {
@@ -52,12 +46,13 @@ import {
 } from '../queries/cluster'
 import { serverConfigQuery } from '../queries/server'
 import { useStylesAndTheme } from '../theme'
-import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
 import {
-    calculateActionMapper,
-    extractAuthInfo,
-    saveConfig,
-} from '../utils/config'
+    ActionInputEntry,
+    generateActionMapper,
+    transformActions,
+} from '../utils/action'
+import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
+import { extractAuthInfo, saveConfig } from '../utils/config'
 import {
     findWorkingHashAlgorithms,
     hashObject,
@@ -89,7 +84,7 @@ async function extractPublicInfo({
         node.publicInfo,
         true
     )
-    const mapper = await calculateActionMapper({
+    const mapper = await generateActionMapper({
         nodeData: node,
         config,
         unknownTokens: [...publicTokens, ...tokens],
@@ -115,7 +110,7 @@ interface ClusterInternProps {
     url: string
     loading?: boolean
     disabled?: boolean
-    mapper: UnpackPromise<ReturnType<typeof calculateActionMapper>>
+    mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     hashAlgorithms: string[]
 }
 
@@ -137,7 +132,7 @@ const ClusterIntern = ({
     }, [props.name, props.note])
 
     const actions = React.useMemo(() => {
-        const actions: ActionProps[] = []
+        const actions: ActionInputEntry[] = []
         Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
             const entry = mapper[params.newHash]
             const existingActions = entry.configActions
@@ -165,7 +160,6 @@ const ClusterIntern = ({
                     delete: false,
                     readonly: false,
                     locked: true,
-                    clusterAction: true,
                 })
             }
         })
@@ -282,7 +276,7 @@ const ClusterIntern = ({
                             }
                             const newHashValues = new Set<string>()
                             for (const v of mapperval.configActions) {
-                                if (visibleActions.has(v)) {
+                                if (!protectedActions.has(v)) {
                                     if (mapperval.foundActions.has(v)) {
                                         newHashValues.add(v)
                                     }

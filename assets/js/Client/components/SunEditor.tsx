@@ -2,9 +2,8 @@ import 'suneditor/dist/css/suneditor.min.css'
 
 import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 import * as React from 'react'
-import SunEditorTyped, { SunEditorReactProps } from 'suneditor-react'
-
-const SunEditorUntyped = SunEditorTyped as any
+import SunEditor from 'suneditor-react'
+import SunEditorCore from 'suneditor/src/lib/core'
 
 export function SunEditorWrapper({
     inputRef,
@@ -13,44 +12,48 @@ export function SunEditorWrapper({
     onBlur,
     onChange,
     ...props
-}: { inputRef?: React.RefObject<any> } & SunEditorReactProps &
-    TextFieldProps['InputProps'] & { onChange: TextFieldProps['onChange'] }) {
-    const ref = React.useRef<any>()
+}: { inputRef?: React.RefObject<any> } & Parameters<typeof SunEditor>[0] &
+    TextFieldProps['inputProps']) {
+    const ref = React.useRef<SunEditorCore>()
     React.useImperativeHandle(
         inputRef,
         () => ({
-            value: ref.current ? ref.current.editor.getContents(true) : value,
+            value: ref.current ? ref.current.getContents(true) : value,
             focus: () => {
-                ref.current && ref.current.editor.show()
+                ref.current && ref.current.show()
             },
         }),
         [ref.current]
     )
     return (
         <div style={{ marginTop: '30px' }}>
-            <SunEditorUntyped
-                ref={ref}
+            <SunEditor
+                getSunEditorInstance={(instance) => (ref.current = instance)}
                 disable={disabled}
                 {...props}
                 setContents={value}
                 onChange={(val: string) => {
-                    ref.current.editor.save()
-                    ref.current &&
-                        onChange &&
+                    ref.current?.save()
+                    if (ref.current && onChange) {
                         onChange({
                             type: 'change',
-                            target: ref.current.txtArea.current,
-                            currentTarget: ref.current.txtArea.current,
+                            target:
+                                ref.current.core.context.element.originElement,
+                            currentTarget:
+                                ref.current.core.context.element.originElement,
                         } as any)
+                    }
                 }}
                 onBlur={() => {
-                    ref.current &&
-                        onBlur &&
+                    if (ref.current && onBlur) {
                         onBlur({
                             type: 'blur',
-                            target: ref.current.txtArea.current,
-                            currentTarget: ref.current.txtArea.current,
+                            target:
+                                ref.current.core.context.element.originElement,
+                            currentTarget:
+                                ref.current.core.context.element.originElement,
                         } as any)
+                    }
                 }}
             />
         </div>
@@ -69,7 +72,7 @@ export default function SunEditorField({
             {...props}
             InputProps={{
                 ...InputProps,
-                inputComponent: SunEditorWrapper as any,
+                inputComponent: SunEditorWrapper,
                 inputProps: {
                     width: '100%',
                 },
