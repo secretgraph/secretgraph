@@ -92,6 +92,7 @@ async function extractPublicInfo({
             (node && url && config.hosts[url]?.clusters[node.id]?.hashes) || {},
         hashAlgorithm: hashAlgorithms[0],
     })
+    console.log(node.updateId)
     return {
         key: node.updateId,
         publicInfo: node.publicInfo,
@@ -223,113 +224,15 @@ const ClusterIntern = ({
                     new Literal(values.note || '', null, XSD('string'))
                 )
                 let clusterResponse: FetchResult<any>
-                // create actions ready to be feed to createCluster or updateCluster
-                const finishedActions: Interfaces.ActionInterface[] = []
-                const configUpdate: RequireAttributes<
-                    Interfaces.ConfigInputInterface,
-                    'hosts' | 'tokens' | 'certificates'
-                > = {
-                    hosts: {},
-                    tokens: {},
-                    certificates: {},
-                }
-                const hashes: Interfaces.ConfigClusterInterface<null>['hashes'] = {}
-                await Promise.all(
-                    actionsNew.map(async (val) => {
-                        if (val.readonly) {
-                            return
-                        }
-                        // autogenerate newHash if not available
-                        const newHash =
-                            val.newHash ||
-                            (await serializeToBase64(
-                                crypto.subtle.digest(
-                                    hashAlgorithms[0],
-                                    await unserializeToArrayBuffer(val.token)
-                                )
-                            ))
-                        // find mapper value
-                        const mapperval =
-                            mapper && mapper[newHash]
-                                ? mapper[newHash]
-                                : undefined
-                        // delete action
-                        if (val.delete) {
-                            if (!val.oldHash) {
-                                throw Error('requires oldHash')
-                            }
-                            finishedActions.push({
-                                existingHash: val.oldHash,
-                                value: '"delete"',
-                            })
-                            configUpdate.tokens[val.oldHash] = null
-                            console.debug(
-                                'hash of deleted object:',
-                                val.oldHash
-                            )
-                            return
-                        }
-                        // updates config with new action information
-                        if (val.update) {
-                            if (!mapperval) {
-                                throw Error('requires mapper')
-                            }
-                            const newHashValues = new Set<string>()
-                            for (const v of mapperval.configActions) {
-                                if (!protectedActions.has(v)) {
-                                    if (mapperval.foundActions.has(v)) {
-                                        newHashValues.add(v)
-                                    }
-                                } else {
-                                    if (mapperval.foundActions.has('other')) {
-                                        newHashValues.add(v)
-                                    }
-                                }
-                            }
-                            for (const v of mapperval.configActions) {
-                                if (v == 'other') {
-                                    if (!newHashValues.size) {
-                                        newHashValues.add(v)
-                                    }
-                                } else {
-                                    newHashValues.add(v)
-                                }
-                            }
-                            hashes[newHash] = [...newHashValues]
-                            if (
-                                mapperval.oldHash &&
-                                val.newHash != mapperval.oldHash
-                            ) {
-                                hashes[mapperval.oldHash] = null
-                                configUpdate.tokens[mapperval.oldHash] = null
-                            }
-                        }
-                        // update note or create new entry
-                        if (!mapperval || mapperval?.note != val.note) {
-                            configUpdate.tokens[newHash] = {
-                                data: val.token,
-                                note: val.note,
-                            }
-                        }
-
-                        if (val.locked) {
-                            return
-                        }
-                        if (!hashes[newHash]) {
-                            hashes[newHash] = []
-                        }
-                        ;(hashes[newHash] as NonNullable<
-                            typeof hashes[string]
-                        >).push(val.value.action)
-                        finishedActions.push({
-                            existingHash: val.oldHash || undefined,
-                            start: val.start ? new Date(val.start) : undefined,
-                            stop: val.stop ? new Date(val.stop) : undefined,
-                            value: JSON.stringify(val.value),
-                            key: val.token,
-                        })
-                    })
-                )
+                const {
+                    hashes,
+                    actions: finishedActions,
+                    configUpdate,
+                } = await transformActions({
+                    actions: actionsNew,
+                    mapper,
+                    hashAlgorithm: hashAlgorithms[0],
+                })
                 let digestCert = undefined,
                     privPromise = undefined
                 if (mainCtx.item) {
@@ -436,6 +339,9 @@ const ClusterIntern = ({
                         clusterResponse.data.updateOrCreateCluster.cluster
                             .updateId,
                 })
+                console.log(
+                    clusterResponse.data.updateOrCreateCluster.cluster.updateId
+                )
                 updateSearchCtx({
                     cluster:
                         clusterResponse.data.updateOrCreateCluster.cluster.id,

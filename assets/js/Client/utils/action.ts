@@ -116,6 +116,28 @@ export async function generateActionMapper({
             )
         }
     }
+    if (unknownKeyhashes) {
+        for (const hash of unknownKeyhashes) {
+            if (config.tokens[hash]) {
+                prepareActions.push(
+                    serializeToBase64(
+                        unserializeToArrayBuffer(
+                            config.tokens[hash].data
+                        ).then((val) => crypto.subtle.digest(hashalgo, val))
+                    ).then((val) => {
+                        return {
+                            newHash: val,
+                            oldHash: hash,
+                            note: config.tokens[hash].note,
+                            token: config.tokens[hash].data,
+                            configActions: new Set(),
+                            foundActions: inNodeFoundActions[val] || new Set(),
+                        }
+                    })
+                )
+            }
+        }
+    }
     return Object.fromEntries(
         (await Promise.all(prepareActions))
             .filter((val) => val)
@@ -132,7 +154,9 @@ export async function transformActions({
 }: {
     actions: ActionInputEntry[]
     hashAlgorithm: string
-    mapper?: ReturnType<typeof generateActionMapper>
+    mapper?:
+        | ReturnType<typeof generateActionMapper>
+        | UnpackPromise<ReturnType<typeof generateActionMapper>>
 }) {
     const mapper = await _mapper
     const finishedActions: Interfaces.ActionInterface[] = []
@@ -234,6 +258,7 @@ export async function transformActions({
         })
     )
     return {
+        configUpdate,
         actions: finishedActions,
         hashes,
     }

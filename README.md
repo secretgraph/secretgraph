@@ -119,10 +119,9 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 ## Action updates
 
--   via value = "delete" or json variant of "delete" actions can be deleted
+-   via json variant of "delete" actions can be deleted
 -   actions are identified either by their hash or id
     Other types are:
--   {"}
 
 # JS
 
@@ -130,6 +129,7 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # TODO
 
+-   use JSON-editor for action fields put it in extra package (?)
 -   sanitize hashAlgorithms
 -   deleted contents only visible with delete permission, needs Constant instead of boolean (ShowDeleted)
 -   implement hidden attribute, for administrative hidding of contents, combine with deleted?

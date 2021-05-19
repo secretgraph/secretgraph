@@ -11,6 +11,7 @@
     "@types/apollo-upload-client": "latest",
     "@types/dompurify": "latest",
     "@types/file-saver": "latest",
+    "@types/json-editor": "*",
     "@types/material-ui": "latest",
     "@types/react": "latest",
     "@types/react-dom": "*",
