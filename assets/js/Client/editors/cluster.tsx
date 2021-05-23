@@ -92,7 +92,6 @@ async function extractPublicInfo({
             (node && url && config.hosts[url]?.clusters[node.id]?.hashes) || {},
         hashAlgorithm: hashAlgorithms[0],
     })
-    console.log(node.updateId)
     return {
         key: node.updateId,
         publicInfo: node.publicInfo,
@@ -251,20 +250,18 @@ const ClusterIntern = ({
                     })
                 } else {
                     const key = crypto.getRandomValues(new Uint8Array(32))
-                    const {
-                        publicKey,
-                        privateKey,
-                    } = (await crypto.subtle.generateKey(
-                        {
-                            name: 'RSA-OAEP',
-                            //modulusLength: 8192,
-                            modulusLength: 2048,
-                            publicExponent: new Uint8Array([1, 0, 1]),
-                            hash: hashAlgorithms[0],
-                        },
-                        true,
-                        ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-                    )) as CryptoKeyPair
+                    const { publicKey, privateKey } =
+                        (await crypto.subtle.generateKey(
+                            {
+                                name: 'RSA-OAEP',
+                                //modulusLength: 8192,
+                                modulusLength: 2048,
+                                publicExponent: new Uint8Array([1, 0, 1]),
+                                hash: hashAlgorithms[0],
+                            },
+                            true,
+                            ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+                        )) as CryptoKeyPair
                     privPromise = serializeToBase64(privateKey)
                     digestCert = await crypto.subtle
                         .exportKey('spki' as const, publicKey)
@@ -315,9 +312,11 @@ const ClusterIntern = ({
                     contents: {},
                 }
                 if (digestCert && privPromise) {
-                    ;(configUpdate.hosts as Interfaces.ConfigInterface['hosts'])[
-                        props.url as string
-                    ].clusters[newNode.id as string].hashes[digestCert] = []
+                    ;(
+                        configUpdate.hosts as Interfaces.ConfigInterface['hosts']
+                    )[props.url as string].clusters[
+                        newNode.id as string
+                    ].hashes[digestCert] = []
                     configUpdate.tokens[digestCert] = {
                         data: await privPromise,
                         note: 'initial certificate',
@@ -328,7 +327,6 @@ const ClusterIntern = ({
                     update: configUpdate,
                     client: baseClient,
                 })
-                console.log(newConfig)
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
                 updateMainCtx({
@@ -391,33 +389,34 @@ const ClusterIntern = ({
                                                 typeof initialValues
                                             >
                                         } & ArrayHelpers) => {
-                                            const items = form.values.actions.map(
-                                                (val, index) => {
-                                                    return (
-                                                        <ActionEntry
-                                                            index={index}
-                                                            key={index}
-                                                            disabled={
-                                                                disabled ||
-                                                                loading
-                                                            }
-                                                            action={val}
-                                                            tokens={
-                                                                actionTokens
-                                                            }
-                                                            deleteFn={
-                                                                disabled
-                                                                    ? undefined
-                                                                    : () =>
-                                                                          remove(
-                                                                              index
-                                                                          )
-                                                            }
-                                                            divider
-                                                        />
-                                                    )
-                                                }
-                                            )
+                                            const items =
+                                                form.values.actions.map(
+                                                    (val, index) => {
+                                                        return (
+                                                            <ActionEntry
+                                                                index={index}
+                                                                key={index}
+                                                                disabled={
+                                                                    disabled ||
+                                                                    loading
+                                                                }
+                                                                action={val}
+                                                                tokens={
+                                                                    actionTokens
+                                                                }
+                                                                deleteFn={
+                                                                    disabled
+                                                                        ? undefined
+                                                                        : () =>
+                                                                              remove(
+                                                                                  index
+                                                                              )
+                                                                }
+                                                                divider
+                                                            />
+                                                        )
+                                                    }
+                                                )
                                             if (!disabled) {
                                                 items.push(
                                                     <ActionEntry
@@ -459,9 +458,10 @@ const ClusterIntern = ({
 const ViewCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] = React.useState<UnpackPromise<
-        ReturnType<typeof extractPublicInfo>
-    > | null>(null)
+    const [data, setData] =
+        React.useState<UnpackPromise<
+            ReturnType<typeof extractPublicInfo>
+        > | null>(null)
 
     useQuery(getClusterQuery, {
         pollInterval: 60000,
@@ -557,9 +557,40 @@ const AddCluster = () => {
 const EditCluster = () => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] = React.useState<UnpackPromise<
-        ReturnType<typeof extractPublicInfo>
-    > | null>(null)
+    const [data, setData] =
+        React.useState<UnpackPromise<
+            ReturnType<typeof extractPublicInfo>
+        > | null>(null)
+    const updateDataFn = async (data: any) => {
+        console.log(!!data, 'queried')
+        if (!data) {
+            return
+        }
+        const updateOb = {
+            shareUrl: data.secretgraph.node.link,
+            deleted: data.secretgraph.node.deleted || null,
+            updateId: data.secretgraph.node.updateId,
+        }
+        if (
+            data.secretgraph.node.id == config.configCluster &&
+            mainCtx.url == config.baseUrl &&
+            !updateOb.deleted
+        ) {
+            updateOb.deleted = false
+        }
+        updateMainCtx(updateOb)
+        setData(
+            await extractPublicInfo({
+                config,
+                node: data.secretgraph.node,
+                url: mainCtx.url as string,
+                tokens: mainCtx.tokens,
+                hashAlgorithms: findWorkingHashAlgorithms(
+                    data.secretgraph.config.hashAlgorithms
+                ),
+            })
+        )
+    }
     const { refetch, loading } = useQuery(getClusterQuery, {
         pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
@@ -569,38 +600,12 @@ const EditCluster = () => {
             authorization: mainCtx.tokens,
         },
         onError: console.error,
-        onCompleted: async (data) => {
-            if (!data) {
-                return
-            }
-            const updateOb = {
-                shareUrl: data.secretgraph.node.link,
-                deleted: data.secretgraph.node.deleted || null,
-                updateId: data.secretgraph.node.updateId,
-            }
-            if (
-                data.secretgraph.node.id == config.configCluster &&
-                mainCtx.url == config.baseUrl &&
-                !updateOb.deleted
-            ) {
-                updateOb.deleted = false
-            }
-            updateMainCtx(updateOb)
-            setData(
-                await extractPublicInfo({
-                    config,
-                    node: data.secretgraph.node,
-                    url: mainCtx.url as string,
-                    tokens: mainCtx.tokens,
-                    hashAlgorithms: findWorkingHashAlgorithms(
-                        data.secretgraph.config.hashAlgorithms
-                    ),
-                })
-            )
-        },
+        onCompleted: updateDataFn,
     })
     React.useEffect(() => {
-        data && refetch()
+        if (data) {
+            refetch().then(({ data }) => updateDataFn(data))
+        }
     }, [mainCtx.updateId])
 
     if (!data) {

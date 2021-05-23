@@ -6,6 +6,7 @@ import { InitializedConfig } from '../../contexts'
 import { clusterFeedQuery } from '../../queries/cluster'
 import { extractPublicInfo } from '../../utils/cluster'
 import { extractAuthInfo } from '../../utils/config'
+import { fixedUseQuery } from '../../utils/hooks'
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
 export interface ClusterSelectProps<
@@ -42,7 +43,7 @@ export default function ClusterSelect<
         })
     }, [config, url])
 
-    const { fetchMore, data, loading } = useQuery(clusterFeedQuery, {
+    const { fetchMore, data, loading } = fixedUseQuery(clusterFeedQuery, {
         variables: {
             authorization: authinfo.tokens,
         },

@@ -27,26 +27,29 @@ const ActiveCluster = React.memo(function ActiveCluster({
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const [data, setData] = React.useState<any>(undefined)
     const { mainCtx } = React.useContext(Contexts.Main)
-    const { refetch } = useQuery(getClusterQuery, {
+    // onCompleted is buggy
+    const { refetch, data: dataUnfinished } = useQuery(getClusterQuery, {
         //pollInterval: ,
         variables: {
             id: cluster,
             authorization: authinfo?.tokens,
         },
         onError: console.error,
-        onCompleted: (data) => {
-            if (!data) {
-                return
-            }
+    })
+
+    React.useEffect(() => {
+        if (data && mainCtx.type == 'Cluster') {
+            refetch()
+        }
+    }, [mainCtx.updateId])
+    React.useLayoutEffect(() => {
+        if (dataUnfinished) {
             setData({
                 ...extractPublicInfo(data.secretgraph.node.publicInfo, false),
                 node: data.secretgraph.node,
             })
-        },
-    })
-    React.useEffect(() => {
-        mainCtx.type == 'Cluster' && refetch()
-    }, [mainCtx.updateId])
+        }
+    }, [dataUnfinished ? dataUnfinished.secretgraph.node.updateId : ''])
     return (
         <SideBarContents
             goTo={goTo}
@@ -125,9 +128,11 @@ export default React.memo(function Clusters({
         return data.clusters.clusters.edges.map(({ node }: any) => {
             if (node.id !== activeCluster) {
                 const { name, note } = extractPublicInfo(node.publicInfo)
-                const nodeId = (node.availableActions as {
-                    type: string
-                }[]).some((val) => val.type == 'delete' || val.type == 'manage')
+                const nodeId = (
+                    node.availableActions as {
+                        type: string
+                    }[]
+                ).some((val) => val.type == 'delete' || val.type == 'manage')
                     ? `${activeUrl}-clusters::${node.id}`
                     : `${activeUrl}-clusters.${node.id}`
                 return (

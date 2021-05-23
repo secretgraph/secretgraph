@@ -100,9 +100,9 @@ export async function generateActionMapper({
         if (config.tokens[hash]) {
             prepareActions.push(
                 serializeToBase64(
-                    unserializeToArrayBuffer(
-                        config.tokens[hash].data
-                    ).then((val) => crypto.subtle.digest(hashalgo, val))
+                    unserializeToArrayBuffer(config.tokens[hash].data).then(
+                        (val) => crypto.subtle.digest(hashalgo, val)
+                    )
                 ).then((val) => {
                     return {
                         newHash: val,
@@ -121,9 +121,9 @@ export async function generateActionMapper({
             if (config.tokens[hash]) {
                 prepareActions.push(
                     serializeToBase64(
-                        unserializeToArrayBuffer(
-                            config.tokens[hash].data
-                        ).then((val) => crypto.subtle.digest(hashalgo, val))
+                        unserializeToArrayBuffer(config.tokens[hash].data).then(
+                            (val) => crypto.subtle.digest(hashalgo, val)
+                        )
                     ).then((val) => {
                         return {
                             newHash: val,
