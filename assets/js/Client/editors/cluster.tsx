@@ -59,6 +59,7 @@ import {
     serializeToBase64,
     unserializeToArrayBuffer,
 } from '../utils/encryption'
+import { useFixedQuery } from '../utils/hooks'
 import {
     createCluster,
     updateCluster,
@@ -463,7 +464,7 @@ const ViewCluster = () => {
             ReturnType<typeof extractPublicInfo>
         > | null>(null)
 
-    useQuery(getClusterQuery, {
+    useFixedQuery(getClusterQuery, {
         pollInterval: 60000,
         variables: {
             id: mainCtx.item as string,
@@ -509,7 +510,7 @@ const AddCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<ClusterInternProps | null>(null)
 
-    useQuery(getClusterConfigurationQuery, {
+    useFixedQuery(getClusterConfigurationQuery, {
         pollInterval: 60000,
         variables: {},
         onError: console.error,
@@ -561,37 +562,7 @@ const EditCluster = () => {
         React.useState<UnpackPromise<
             ReturnType<typeof extractPublicInfo>
         > | null>(null)
-    const updateDataFn = async (data: any) => {
-        console.log(!!data, 'queried')
-        if (!data) {
-            return
-        }
-        const updateOb = {
-            shareUrl: data.secretgraph.node.link,
-            deleted: data.secretgraph.node.deleted || null,
-            updateId: data.secretgraph.node.updateId,
-        }
-        if (
-            data.secretgraph.node.id == config.configCluster &&
-            mainCtx.url == config.baseUrl &&
-            !updateOb.deleted
-        ) {
-            updateOb.deleted = false
-        }
-        updateMainCtx(updateOb)
-        setData(
-            await extractPublicInfo({
-                config,
-                node: data.secretgraph.node,
-                url: mainCtx.url as string,
-                tokens: mainCtx.tokens,
-                hashAlgorithms: findWorkingHashAlgorithms(
-                    data.secretgraph.config.hashAlgorithms
-                ),
-            })
-        )
-    }
-    const { refetch, loading } = useQuery(getClusterQuery, {
+    const { refetch, loading } = useFixedQuery(getClusterQuery, {
         pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
@@ -600,11 +571,39 @@ const EditCluster = () => {
             authorization: mainCtx.tokens,
         },
         onError: console.error,
-        onCompleted: updateDataFn,
+        onCompleted: async (data) => {
+            if (!data) {
+                return
+            }
+            const updateOb = {
+                shareUrl: data.secretgraph.node.link,
+                deleted: data.secretgraph.node.deleted || null,
+                updateId: data.secretgraph.node.updateId,
+            }
+            if (
+                data.secretgraph.node.id == config.configCluster &&
+                mainCtx.url == config.baseUrl &&
+                !updateOb.deleted
+            ) {
+                updateOb.deleted = false
+            }
+            updateMainCtx(updateOb)
+            setData(
+                await extractPublicInfo({
+                    config,
+                    node: data.secretgraph.node,
+                    url: mainCtx.url as string,
+                    tokens: mainCtx.tokens,
+                    hashAlgorithms: findWorkingHashAlgorithms(
+                        data.secretgraph.config.hashAlgorithms
+                    ),
+                })
+            )
+        },
     })
     React.useEffect(() => {
         if (data) {
-            refetch().then(({ data }) => updateDataFn(data))
+            refetch()
         }
     }, [mainCtx.updateId])
 

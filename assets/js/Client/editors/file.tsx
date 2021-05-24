@@ -31,6 +31,7 @@ import { getContentConfigurationQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
 import { extractPubKeysCluster } from '../utils/graphql'
+import { useFixedQuery } from '../utils/hooks'
 import {
     createContent,
     decryptContentObject,
@@ -175,11 +176,12 @@ const TextFileAdapter = ({
 const ViewFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] = React.useState<
-        UnpackPromise<ReturnType<typeof decryptContentObject>>
-    >(null)
+    const [data, setData] =
+        React.useState<UnpackPromise<ReturnType<typeof decryptContentObject>>>(
+            null
+        )
 
-    const { loading } = useQuery(contentRetrievalQuery, {
+    useFixedQuery(contentRetrievalQuery, {
         pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         variables: {
@@ -267,9 +269,11 @@ const ViewFile = () => {
                 <Typography variant="h5">State</Typography>
                 <Typography variant="body2">
                     {state
-                        ? (Constants.contentStates.get(state) as {
-                              label: string
-                          }).label
+                        ? (
+                              Constants.contentStates.get(state) as {
+                                  label: string
+                              }
+                          ).label
                         : 'unknown'}
                 </Typography>
             </Grid>
@@ -317,17 +321,19 @@ const AddFile = () => {
                     (values.plainInput && values.fileInput) ||
                     (values.htmlInput && values.fileInput)
                 ) {
-                    errors['plainInput'] = errors['htmlInput'] = errors[
-                        'fileInput'
-                    ] = 'only one can be set'
+                    errors['plainInput'] =
+                        errors['htmlInput'] =
+                        errors['fileInput'] =
+                            'only one can be set'
                 } else if (
                     !values.plainInput &&
                     !values.htmlInput &&
                     !values.fileInput
                 ) {
-                    errors['plainInput'] = errors['htmlInput'] = errors[
-                        'fileInput'
-                    ] = 'one field must be set'
+                    errors['plainInput'] =
+                        errors['htmlInput'] =
+                        errors['fileInput'] =
+                            'one field must be set'
                 }
 
                 return errors
@@ -723,12 +729,14 @@ const EditFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
-    const [data, setData] = React.useState<
-        UnpackPromise<ReturnType<typeof decryptContentObject>>
-    >(null)
+    const [data, setData] =
+        React.useState<UnpackPromise<ReturnType<typeof decryptContentObject>>>(
+            null
+        )
 
-    const { refetch, loading } = useQuery(contentRetrievalQuery, {
+    const { refetch, loading } = useFixedQuery(contentRetrievalQuery, {
         fetchPolicy: 'cache-and-network',
+        nextFetchPolicy: 'network-only',
         variables: {
             variables: {
                 id: mainCtx.item as string,

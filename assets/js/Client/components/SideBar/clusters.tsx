@@ -13,6 +13,7 @@ import * as Interfaces from '../../interfaces'
 import { clusterFeedQuery, getClusterQuery } from '../../queries/cluster'
 import { useStylesAndTheme } from '../../theme'
 import { extractPublicInfo } from '../../utils/cluster'
+import { useFixedQuery } from '../../utils/hooks'
 import SideBarContents from './contents'
 
 const ActiveCluster = React.memo(function ActiveCluster({
@@ -27,14 +28,24 @@ const ActiveCluster = React.memo(function ActiveCluster({
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const [data, setData] = React.useState<any>(undefined)
     const { mainCtx } = React.useContext(Contexts.Main)
-    // onCompleted is buggy
-    const { refetch, data: dataUnfinished } = useQuery(getClusterQuery, {
+    const { refetch } = useFixedQuery(getClusterQuery, {
         //pollInterval: ,
         variables: {
             id: cluster,
             authorization: authinfo?.tokens,
         },
         onError: console.error,
+        onCompleted: (data) => {
+            if (data) {
+                setData({
+                    ...extractPublicInfo(
+                        data.secretgraph.node.publicInfo,
+                        false
+                    ),
+                    node: data.secretgraph.node,
+                })
+            }
+        },
     })
 
     React.useEffect(() => {
@@ -42,14 +53,6 @@ const ActiveCluster = React.memo(function ActiveCluster({
             refetch()
         }
     }, [mainCtx.updateId])
-    React.useLayoutEffect(() => {
-        if (dataUnfinished) {
-            setData({
-                ...extractPublicInfo(data.secretgraph.node.publicInfo, false),
-                node: data.secretgraph.node,
-            })
-        }
-    }, [dataUnfinished ? dataUnfinished.secretgraph.node.updateId : ''])
     return (
         <SideBarContents
             goTo={goTo}

@@ -7,7 +7,7 @@ import {
 } from '@apollo/client'
 import * as React from 'react'
 
-export function fixedUseQuery<TData = any, TVariables = OperationVariables>(
+export function useFixedQuery<TData = any, TVariables = OperationVariables>(
     query: DocumentNode | TypedDocumentNode<TData, TVariables>,
     _props?: QueryHookOptions<TData, TVariables>
 ) {
