@@ -28,7 +28,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const [data, setData] = React.useState<any>(undefined)
     const { mainCtx } = React.useContext(Contexts.Main)
-    const { refetch } = useFixedQuery(getClusterQuery, {
+    const { refetch, previousData } = useFixedQuery(getClusterQuery, {
         //pollInterval: ,
         variables: {
             id: cluster,
@@ -44,6 +44,8 @@ const ActiveCluster = React.memo(function ActiveCluster({
                     ),
                     node: data.secretgraph.node,
                 })
+            } else {
+                console.log('onCompleted prevented')
             }
         },
     })

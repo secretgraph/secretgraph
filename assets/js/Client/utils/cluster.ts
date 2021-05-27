@@ -17,10 +17,9 @@ export function extractPublicInfo(
     note: string | null
     publicTokens: string[]
 }
-export function extractPublicInfo(publicInfo: string, withTokens = false) {
+export function extractPublicInfo(publicInfo: string) {
     let name: string | null = null,
-        note: string | null = null,
-        publicTokens: string[] = []
+        note: string | null = null
     try {
         const store = graph()
         parse(publicInfo as string, store, '_:')
@@ -43,7 +42,7 @@ export function extractPublicInfo(publicInfo: string, withTokens = false) {
                 ? name_note_results[0]['?note'].value
                 : ''
         }
-        if (withTokens) {
+        /*if (withTokens) {
             publicTokens = store
                 .querySync(
                     SPARQLToQuery(
@@ -59,7 +58,7 @@ export function extractPublicInfo(publicInfo: string, withTokens = false) {
                     )
                 )
                 .map((val: any) => val.token)
-        }
+        }*/
     } catch (exc) {
         console.error('Could not parse publicInfo', exc, publicInfo)
         throw exc
@@ -67,6 +66,6 @@ export function extractPublicInfo(publicInfo: string, withTokens = false) {
     return {
         name,
         note,
-        publicTokens: withTokens ? publicTokens : undefined,
+        //publicTokens: withTokens ? publicTokens : undefined,
     }
 }

@@ -81,14 +81,11 @@ async function extractPublicInfo({
     tokens: string[]
     hashAlgorithms: string[]
 }) {
-    const { name, note, publicTokens } = extractPublicInfoShared(
-        node.publicInfo,
-        true
-    )
+    const { name, note } = extractPublicInfoShared(node.publicInfo, true)
     const mapper = await generateActionMapper({
         nodeData: node,
         config,
-        unknownTokens: [...publicTokens, ...tokens],
+        unknownTokens: tokens,
         knownHashes:
             (node && url && config.hosts[url]?.clusters[node.id]?.hashes) || {},
         hashAlgorithm: hashAlgorithms[0],
@@ -338,9 +335,6 @@ const ClusterIntern = ({
                         clusterResponse.data.updateOrCreateCluster.cluster
                             .updateId,
                 })
-                console.log(
-                    clusterResponse.data.updateOrCreateCluster.cluster.updateId
-                )
                 updateSearchCtx({
                     cluster:
                         clusterResponse.data.updateOrCreateCluster.cluster.id,
@@ -390,6 +384,10 @@ const ClusterIntern = ({
                                                 typeof initialValues
                                             >
                                         } & ArrayHelpers) => {
+                                            console.log(
+                                                mapper,
+                                                form.values.actions
+                                            )
                                             const items =
                                                 form.values.actions.map(
                                                     (val, index) => {
