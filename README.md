@@ -53,6 +53,8 @@ key refs are assigned to privatekey, the rest to the public key
 
 ## Actions
 
+-   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored
+    -   for all
 -   view (Content, Cluster) affects (Content, Cluster):
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
