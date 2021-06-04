@@ -15,6 +15,7 @@
     "@types/material-ui": "latest",
     "@types/react": "latest",
     "@types/react-dom": "*",
+    "@types/webpack-env": "*",
     "apollo-upload-client": "latest",
     "clean-webpack-plugin": "*",
     "css-loader": "*",
@@ -29,7 +30,6 @@
     "react-async": "latest",
     "react-dom": "latest",
     "style-loader": "*",
-    "subscriptions-transport-ws": "*",
     "suneditor": "latest",
     "suneditor-react": "latest",
     "ts-graphql-plugin": "latest",
@@ -37,11 +37,12 @@
     "typescript": "latest",
     "webpack": "latest",
     "webpack-cli": "*",
+    "webpack-dev-server": "^4.0.0-beta.3",
     "webpack-manifest-plugin": "*"
   },
   "scripts": {
+    "serve:dev": "webpack serve --mode development",
     "watch:dev": "webpack --watch --mode development",
-    "watch": "webpack --watch --mode production",
     "build:dev": "webpack --mode development",
     "build": "webpack --mode production"
   },

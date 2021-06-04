@@ -1,5 +1,6 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
+
 import MainPage from './pages'
 
 document.addEventListener(
@@ -11,6 +12,11 @@ document.addEventListener(
             : undefined
 
         ReactDOM.render(<MainPage defaultPath={defaultPath} />, wrapper)
+        if (module.hot) {
+            module.hot.accept(function () {
+                ReactDOM.render(<MainPage defaultPath={defaultPath} />, wrapper)
+            })
+        }
     },
     false
 )
