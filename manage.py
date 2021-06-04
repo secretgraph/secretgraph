@@ -6,7 +6,8 @@ import sys
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent
 
-if __name__ == "__main__":
+
+def main():
     if str(BASE_DIR) not in sys.path:
         sys.path.append(str(BASE_DIR))
     os.environ.setdefault(
@@ -18,9 +19,9 @@ if __name__ == "__main__":
             "RUN_MAIN",  # is started with reloader
             os.environ.get(
                 "WERKZEUG_RUN_MAIN",  # is started with extensions reloader
-                None
-            )
-        )
+                None,
+            ),
+        ),
     ):
         print("USE SETTINGS:", os.environ["DJANGO_SETTINGS_MODULE"])
 
@@ -40,3 +41,7 @@ if __name__ == "__main__":
             )
         raise
     execute_from_command_line(sys.argv)
+
+
+if __name__ == "__main__":
+    main()
