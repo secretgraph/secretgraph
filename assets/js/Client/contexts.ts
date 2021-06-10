@@ -21,6 +21,7 @@ export const Main = createContext<{
         title: '',
         item: null,
         updateId: null,
+        configUpdateId: null,
         url: null,
         type: '',
         shareUrl: null,

@@ -427,18 +427,16 @@ export async function updateKey({
             data: updatedKey,
         })
 
-        const [
-            [specialRef, ...publicKeyReferences],
-            privateTags,
-        ] = await Promise.all(
-            encryptSharedKey(
-                sharedKey as ArrayBuffer,
-                ([updatedKey] as Parameters<typeof encryptSharedKey>[1]).concat(
-                    options.pubkeys
-                ),
-                options.hashAlgorithm
+        const [[specialRef, ...publicKeyReferences], privateTags] =
+            await Promise.all(
+                encryptSharedKey(
+                    sharedKey as ArrayBuffer,
+                    (
+                        [updatedKey] as Parameters<typeof encryptSharedKey>[1]
+                    ).concat(options.pubkeys),
+                    options.hashAlgorithm
+                )
             )
-        )
         ;(tags as string[]).push(`key=${specialRef.extra}`, ...privateTags)
         references = publicKeyReferences.concat(
             options.references ? [...options.references] : []
@@ -771,7 +769,7 @@ export async function updateConfigRemoteReducer(
         client: ApolloClient<any>
         authInfo?: Interfaces.AuthInfoInterface
     }
-): Promise<Interfaces.ConfigInterface | null> {
+): Promise<{ config: Interfaces.ConfigInterface; updateId: string } | null> {
     if (update === null) {
         return null
     }
@@ -856,7 +854,10 @@ export async function updateConfigRemoteReducer(
             throw new Error(`Update failed: ${configQueryRes.errors}`)
         }
         if (result.data.updateOrCreateContent.writeok) {
-            return mergedConfig
+            return {
+                config: mergedConfig,
+                updateId: result.data.updateOrCreateContent.content.updateId,
+            }
         }
     }
 }

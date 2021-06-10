@@ -327,6 +327,7 @@ const ClusterIntern = ({
                 })
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
+                console.log(newConfig)
                 updateMainCtx({
                     title: values.name || '',
                     action: 'update',
@@ -566,6 +567,7 @@ const EditCluster = () => {
         },
         onError: console.error,
         onCompleted: async (data) => {
+            console.log(config)
             if (!data) {
                 return
             }
@@ -599,7 +601,7 @@ const EditCluster = () => {
         if (data) {
             refetch()
         }
-    }, [mainCtx.updateId])
+    }, [mainCtx.updateId, config])
 
     if (!data) {
         return null
