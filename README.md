@@ -131,6 +131,7 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # TODO
 
+-   cache update broken, see cluster. Still old values for actions and config is not updated
 -   move public tokens to content itself (tag) or allow unencrypted uploads
 -   use JSON-editor for action fields put it in extra package (?)
 -   sanitize hashAlgorithms

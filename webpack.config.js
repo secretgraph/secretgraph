@@ -1,6 +1,5 @@
 const path = require('path')
 const { SourceMapDevToolPlugin } = require('webpack')
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin')
 const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
 
@@ -10,14 +9,9 @@ module.exports = (env, options) => {
     })
 
     const plugins = [
-        // remove outdated
-        new CleanWebpackPlugin({
-            verbose: true,
-            cleanOnceBeforeBuildPatterns: ['**/*', '!manifest.json'],
-        }),
         new WebpackManifestPlugin({
             writeToFileEmit: true,
-            publicPath: env['WEBPACK_SERVE'] ? 'http://localhost:8080/' : null,
+            publicPath: 'webpack_bundles/',
         }),
         tsgqlPlugin,
     ]
@@ -39,11 +33,20 @@ module.exports = (env, options) => {
                       transportMode: 'ws',
                       hot: true,
                       port: '8080',
+                      devMiddleware: {
+                          writeToDisk: true,
+                      },
+                      headers: {
+                          'Access-Control-Allow-Origin': '*',
+                          'Access-Control-Allow-Headers':
+                              'X-Requested-With, content-type, Authorization',
+                      },
                   }
                 : undefined,
         output: {
             publicPath: 'auto',
             path: path.resolve(__dirname, './webpack_bundles/'),
+            clean: true,
         },
         watchOptions: {
             ignored: /node_modules/,

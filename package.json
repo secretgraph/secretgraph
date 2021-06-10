@@ -17,7 +17,6 @@
     "@types/react-dom": "*",
     "@types/webpack-env": "*",
     "apollo-upload-client": "latest",
-    "clean-webpack-plugin": "*",
     "css-loader": "*",
     "dompurify": "*",
     "file-saver": "*",
@@ -41,7 +40,7 @@
     "webpack-manifest-plugin": "*"
   },
   "scripts": {
-    "serve:dev": "webpack serve --mode development",
+    "serve:dev": "webpack serve --mode development --no-client-overlay ",
     "watch:dev": "webpack --watch --mode development",
     "build:dev": "webpack --mode development",
     "build": "webpack --mode production"

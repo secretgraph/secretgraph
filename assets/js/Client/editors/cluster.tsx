@@ -384,17 +384,13 @@ const ClusterIntern = ({
                                                 typeof initialValues
                                             >
                                         } & ArrayHelpers) => {
-                                            console.log(
-                                                mapper,
-                                                form.values.actions
-                                            )
                                             const items =
                                                 form.values.actions.map(
                                                     (val, index) => {
                                                         return (
                                                             <ActionEntry
                                                                 index={index}
-                                                                key={index}
+                                                                key={`${index}`}
                                                                 disabled={
                                                                     disabled ||
                                                                     loading
