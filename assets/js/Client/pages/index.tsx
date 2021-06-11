@@ -43,6 +43,7 @@ function Definitions(props: Props) {
         title: '',
         item: null,
         updateId: null,
+        configUpdateId: '',
         url: null,
         type: elements.has(query.get('type') as any)
             ? query.get('type')
@@ -63,9 +64,10 @@ function Definitions(props: Props) {
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
-    const [message, sendMessage] = React.useState<
-        React.ContextType<typeof Contexts.Snackbar>['message']
-    >(undefined)
+    const [message, sendMessage] =
+        React.useState<React.ContextType<typeof Contexts.Snackbar>['message']>(
+            undefined
+        )
     const navClient = React.useMemo(() => {
         return createClient(activeUrl)
     }, [activeUrl])

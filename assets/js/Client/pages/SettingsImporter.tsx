@@ -40,9 +40,11 @@ function checkInputs(needsPw: boolean, hasPw: boolean) {
     return (
         (document.getElementById('secretgraph-import-url') as HTMLInputElement)
             ?.value ||
-        ((document.getElementById(
-            'secretgraph-import-file'
-        ) as HTMLInputElement)?.files &&
+        ((
+            document.getElementById(
+                'secretgraph-import-file'
+            ) as HTMLInputElement
+        )?.files &&
             (!needsPw || hasPw))
     )
 }
@@ -70,9 +72,9 @@ function SettingsImporter() {
     const { config, updateConfig } = React.useContext(Contexts.Config)
 
     const handleSecretgraphEvent_inner = async (event: any) => {
-        const providerUrl = (document.getElementById(
-            'secretgraph-provider'
-        ) as HTMLInputElement).value
+        const providerUrl = (
+            document.getElementById('secretgraph-provider') as HTMLInputElement
+        ).value
         let newConfig: Interfaces.ConfigInterface | null = null
         const client = createClient(providerUrl)
         if (!client) {
@@ -146,9 +148,9 @@ function SettingsImporter() {
     }
 
     const handleStart_inner = async () => {
-        const providerUrl: string = (document.getElementById(
-            'secretgraph-provider'
-        ) as HTMLInputElement).value
+        const providerUrl: string = (
+            document.getElementById('secretgraph-provider') as HTMLInputElement
+        ).value
         const client = createClient(providerUrl)
         const result: any = await client.query({ query: serverConfigQuery })
         if (!result) {
@@ -177,7 +179,7 @@ function SettingsImporter() {
                 contents: {},
             }
             const client = createClient(newConfig.baseUrl)
-            await initializeCluster(client, newConfig)
+            const result = await initializeCluster(client, newConfig)
             // TODO: handle exceptions and try with login
             setRegisterUrl(undefined)
             saveConfig(newConfig)
@@ -185,6 +187,7 @@ function SettingsImporter() {
             setActiveUrl(newConfig.baseUrl)
             updateMainCtx({
                 action: 'add',
+                configUpdateId: result?.content?.content?.updateId,
             })
         } else if (typeof sconfig.registerUrl === 'string') {
             setRegisterUrl(sconfig.registerUrl)
@@ -214,15 +217,21 @@ function SettingsImporter() {
     }
 
     const handleImport_inner = async () => {
-        const decryptingPw = (document.getElementById(
-            'secretgraph-decrypting'
-        ) as HTMLInputElement).value
-        const importFiles: FileList | null = (document.getElementById(
-            'secretgraph-import-file'
-        ) as HTMLInputElement).files
-        const importUrl: string = (document.getElementById(
-            'secretgraph-import-url'
-        ) as HTMLInputElement).value
+        const decryptingPw = (
+            document.getElementById(
+                'secretgraph-decrypting'
+            ) as HTMLInputElement
+        ).value
+        const importFiles: FileList | null = (
+            document.getElementById(
+                'secretgraph-import-file'
+            ) as HTMLInputElement
+        ).files
+        const importUrl: string = (
+            document.getElementById(
+                'secretgraph-import-url'
+            ) as HTMLInputElement
+        ).value
         if (!importFiles && !importUrl) {
             return
         }
@@ -413,12 +422,16 @@ function SettingsImporter() {
                                 id="secretgraph-import-file"
                                 aria-describedby="secretgraph-import-file-help"
                                 onChange={async () => {
-                                    ;(document.getElementById(
-                                        'secretgraph-import-url'
-                                    ) as HTMLInputElement).value = ''
-                                    const importFiles: FileList | null = (document.getElementById(
-                                        'secretgraph-import-file'
-                                    ) as HTMLInputElement).files
+                                    ;(
+                                        document.getElementById(
+                                            'secretgraph-import-url'
+                                        ) as HTMLInputElement
+                                    ).value = ''
+                                    const importFiles: FileList | null = (
+                                        document.getElementById(
+                                            'secretgraph-import-file'
+                                        ) as HTMLInputElement
+                                    ).files
                                     try {
                                         if (importFiles) {
                                             setNeedsPw(

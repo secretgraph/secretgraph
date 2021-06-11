@@ -637,8 +637,7 @@ export async function initializeCluster(
         note: 'initial token',
     }
     if (!cleanConfig(config)) {
-        console.error('invalid config created')
-        return
+        throw Error('invalid config created')
     }
     const digest = await sortedHash(
         ['type=Config'],
@@ -663,8 +662,12 @@ export async function initializeCluster(
         contentHash: digest,
         hashAlgorithm: config['hosts'][config['baseUrl']].hashAlgorithms[0],
         authorization,
-    }).then(() => {
-        return [config, clusterResult.cluster.id as string]
+    }).then(({ data }) => {
+        return {
+            config,
+            cluster: clusterResult,
+            content: data.updateOrCreateContent,
+        }
     })
 }
 
@@ -769,9 +772,12 @@ export async function updateConfigRemoteReducer(
         client: ApolloClient<any>
         authInfo?: Interfaces.AuthInfoInterface
     }
-): Promise<{ config: Interfaces.ConfigInterface; updateId: string } | null> {
+): Promise<{
+    config: Interfaces.ConfigInterface | null
+    updateId: string
+}> {
     if (update === null) {
-        return null
+        return { config: null, updateId: '' }
     }
     const config = state || updateConfigReducer(null, update)
     if (!authInfo) {
@@ -856,7 +862,8 @@ export async function updateConfigRemoteReducer(
         if (result.data.updateOrCreateContent.writeok) {
             return {
                 config: mergedConfig,
-                updateId: result.data.updateOrCreateContent.content.updateId,
+                updateId:
+                    result.data.updateOrCreateContent.content.updateId || '',
             }
         }
     }

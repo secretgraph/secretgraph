@@ -99,8 +99,8 @@ async function loadKeys({
 
     const keyParams = {
         name: 'RSA-OAEP',
-        hash:
-            Constants.mapHashNames[results['hashAlgorithms'][0]].operationName,
+        hash: Constants.mapHashNames[results['hashAlgorithms'][0]]
+            .operationName,
     }
     requests.push(
         fetch(data.secretgraph.node.link, {
@@ -166,9 +166,11 @@ async function calcPublicKey(key: string, hashAlgorithms: string[]) {
         hash: Constants.mapHashNames[hashAlgorithms[0]].operationName,
     }
     // can fail, fail wanted
-    const matchedPrivKey = (key.match(
-        /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
-    ) as string[])[1]
+    const matchedPrivKey = (
+        key.match(
+            /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
+        ) as string[]
+    )[1]
     const publicKey = await unserializeToArrayBuffer(
         unserializeToCryptoKey(matchedPrivKey, keyParams, 'publicKey')
     )
@@ -187,9 +189,11 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
         hash: Constants.mapHashNames['' + hashAlgorithms[0]].operationName,
     }
     // can fail, fail wanted
-    const matchedPubKey = (key.match(
-        /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
-    ) as string[])[1]
+    const matchedPubKey = (
+        key.match(
+            /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
+        ) as string[]
+    )[1]
     const rawKey = await unserializeToArrayBuffer(
         unserializeToCryptoKey(matchedPubKey, keyParams, 'publicKey', true)
     )
@@ -355,28 +359,24 @@ function InnerKeys({
                                 const operationName =
                                     Constants.mapHashNames[hashAlgorithms[0]]
                                         .operationName
-                                const {
-                                    publicKey,
-                                    privateKey,
-                                } = (await crypto.subtle.generateKey(
-                                    {
-                                        name: 'RSA-OAEP',
-                                        modulusLength: 4096,
-                                        publicExponent: new Uint8Array([
-                                            1,
-                                            0,
-                                            1,
-                                        ]),
-                                        hash: operationName,
-                                    },
-                                    true,
-                                    [
-                                        'wrapKey',
-                                        'unwrapKey',
-                                        'encrypt',
-                                        'decrypt',
-                                    ]
-                                )) as CryptoKeyPair
+                                const { publicKey, privateKey } =
+                                    (await crypto.subtle.generateKey(
+                                        {
+                                            name: 'RSA-OAEP',
+                                            modulusLength: 4096,
+                                            publicExponent: new Uint8Array([
+                                                1, 0, 1,
+                                            ]),
+                                            hash: operationName,
+                                        },
+                                        true,
+                                        [
+                                            'wrapKey',
+                                            'unwrapKey',
+                                            'encrypt',
+                                            'decrypt',
+                                        ]
+                                    )) as CryptoKeyPair
                                 setValues(
                                     {
                                         ...values,
@@ -561,9 +561,8 @@ const EditKeys = () => {
                 })
                 const keyParams = {
                     name: 'RSA-OAEP',
-                    hash:
-                        Constants.mapHashNames[data.hashAlgorithms[0]]
-                            .operationName,
+                    hash: Constants.mapHashNames[data.hashAlgorithms[0]]
+                        .operationName,
                 }
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
@@ -573,9 +572,11 @@ const EditKeys = () => {
                 let privKey = null
                 if (values.privateKey.trim()) {
                     // can fail, is wanted to crash
-                    const matchedPrivKey = (values.privateKey.match(
-                        /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
-                    ) as string[])[1]
+                    const matchedPrivKey = (
+                        values.privateKey.match(
+                            /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
+                        ) as string[]
+                    )[1]
                     privKey = await unserializeToCryptoKey(
                         matchedPrivKey,
                         keyParams,
@@ -592,9 +593,11 @@ const EditKeys = () => {
                 }
 
                 // can fail, is wanted to crash
-                const matchedPubKey = (values.publicKey.match(
-                    /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
-                ) as string[])[1]
+                const matchedPubKey = (
+                    values.publicKey.match(
+                        /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
+                    ) as string[]
+                )[1]
                 // can fail, is wanted to crash
                 const pubKey = await unserializeToCryptoKey(
                     matchedPubKey,
@@ -680,7 +683,7 @@ const EditKeys = () => {
                     if (privKey || data.privateKey) {
                         const halgo =
                             Constants.mapHashNames[data.hashAlgorithms[0]]
-                        updateConfig(
+                        const { config: configNew, updateId } =
                             await updateConfigRemoteReducer(config, {
                                 update: {
                                     certificates: {
@@ -703,9 +706,11 @@ const EditKeys = () => {
                                     },
                                 },
                                 client: baseClient,
-                            }),
-                            true
-                        )
+                            })
+                        updateConfig(configNew, true)
+                        updateMainCtx({
+                            configUpdateId: updateId,
+                        })
                     }
                     updateMainCtx({
                         updateId:
@@ -793,11 +798,9 @@ const AddKeys = () => {
                 })
                 const keyParams = {
                     name: 'RSA-OAEP',
-                    hash:
-                        Constants.mapHashNames[
-                            pubkeysResult.data.secretgraph.config
-                                .hashAlgorithms[0]
-                        ].operationName,
+                    hash: Constants.mapHashNames[
+                        pubkeysResult.data.secretgraph.config.hashAlgorithms[0]
+                    ].operationName,
                 }
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
@@ -808,9 +811,11 @@ const AddKeys = () => {
                 let privKey = null
                 if (values.privateKey.trim()) {
                     // can fail, is wanted to crash
-                    const matchedPrivKey = (values.privateKey.match(
-                        /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
-                    ) as string[])[1]
+                    const matchedPrivKey = (
+                        values.privateKey.match(
+                            /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
+                        ) as string[]
+                    )[1]
                     privKey = await unserializeToCryptoKey(
                         matchedPrivKey,
                         keyParams,
@@ -818,9 +823,11 @@ const AddKeys = () => {
                     )
                 }
                 // can fail, is wanted to crash
-                const matchedPubKey = (values.publicKey.match(
-                    /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
-                ) as string[])[1]
+                const matchedPubKey = (
+                    values.publicKey.match(
+                        /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
+                    ) as string[]
+                )[1]
                 const pubKey = await unserializeToCryptoKey(
                     matchedPubKey,
                     keyParams,
@@ -845,7 +852,7 @@ const AddKeys = () => {
                 })
                 if (privKey) {
                     const halgo = Constants.mapHashNames[hashAlgorithm]
-                    updateConfig(
+                    const { config: configNew, updateId } =
                         await updateConfigRemoteReducer(config, {
                             update: {
                                 certificates: {
@@ -864,9 +871,11 @@ const AddKeys = () => {
                                 },
                             },
                             client: baseClient,
-                        }),
-                        true
-                    )
+                        })
+                    updateConfig(configNew, true)
+                    updateMainCtx({
+                        configUpdateId: updateId,
+                    })
                 }
             }}
         >

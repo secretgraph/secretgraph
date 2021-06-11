@@ -321,10 +321,11 @@ const ClusterIntern = ({
                     }
                 }
 
-                const newConfig = await updateConfigRemoteReducer(config, {
-                    update: configUpdate,
-                    client: baseClient,
-                })
+                const { config: newConfig, updateId: configUpdateId } =
+                    await updateConfigRemoteReducer(config, {
+                        update: configUpdate,
+                        client: baseClient,
+                    })
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
                 console.log(newConfig)
@@ -335,6 +336,7 @@ const ClusterIntern = ({
                     updateId:
                         clusterResponse.data.updateOrCreateCluster.cluster
                             .updateId,
+                    configUpdateId,
                 })
                 updateSearchCtx({
                     cluster:
@@ -607,7 +609,12 @@ const EditCluster = () => {
         return null
     }
 
-    return <ClusterIntern loading={loading} {...data} />
+    return (
+        <ClusterIntern
+            loading={loading}
+            {...{ ...data, key: `${mainCtx.configUpdateId}${data?.key}` }}
+        />
+    )
 }
 
 export default function ClusterComponent() {
