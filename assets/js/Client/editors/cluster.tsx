@@ -559,7 +559,11 @@ const EditCluster = () => {
         React.useState<UnpackPromise<
             ReturnType<typeof extractPublicInfo>
         > | null>(null)
-    const { refetch, loading } = useFixedQuery(getClusterQuery, {
+    const {
+        data: dataUnfinished,
+        refetch,
+        loading,
+    } = useQuery(getClusterQuery, {
         pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
@@ -568,18 +572,25 @@ const EditCluster = () => {
             authorization: mainCtx.tokens,
         },
         onError: console.error,
-        onCompleted: async (data) => {
+    })
+    React.useEffect(() => {
+        if (data) {
+            refetch()
+        }
+    }, [mainCtx.updateId])
+    React.useEffect(() => {
+        const f = async () => {
             console.log(config)
-            if (!data) {
+            if (!dataUnfinished) {
                 return
             }
             const updateOb = {
-                shareUrl: data.secretgraph.node.link,
-                deleted: data.secretgraph.node.deleted || null,
-                updateId: data.secretgraph.node.updateId,
+                shareUrl: dataUnfinished.secretgraph.node.link,
+                deleted: dataUnfinished.secretgraph.node.deleted || null,
+                updateId: dataUnfinished.secretgraph.node.updateId,
             }
             if (
-                data.secretgraph.node.id == config.configCluster &&
+                dataUnfinished.secretgraph.node.id == config.configCluster &&
                 mainCtx.url == config.baseUrl &&
                 !updateOb.deleted
             ) {
@@ -589,32 +600,26 @@ const EditCluster = () => {
             setData(
                 await extractPublicInfo({
                     config,
-                    node: data.secretgraph.node,
+                    node: dataUnfinished.secretgraph.node,
                     url: mainCtx.url as string,
                     tokens: mainCtx.tokens,
                     hashAlgorithms: findWorkingHashAlgorithms(
-                        data.secretgraph.config.hashAlgorithms
+                        dataUnfinished.secretgraph.config.hashAlgorithms
                     ),
                 })
             )
-        },
-    })
-    React.useEffect(() => {
-        if (data) {
-            refetch()
         }
-    }, [mainCtx.updateId, config])
+        f()
+    }, [dataUnfinished, config])
 
-    if (!data) {
+    if (
+        !data ||
+        mainCtx.updateId != dataUnfinished?.secretgraph?.node?.updateId
+    ) {
         return null
     }
 
-    return (
-        <ClusterIntern
-            loading={loading}
-            {...{ ...data, key: `${mainCtx.configUpdateId}${data?.key}` }}
-        />
-    )
+    return <ClusterIntern loading={loading} {...data} />
 }
 
 export default function ClusterComponent() {
