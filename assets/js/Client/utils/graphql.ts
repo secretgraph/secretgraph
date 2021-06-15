@@ -15,19 +15,8 @@ export const createClient = (url: string) => {
     return new ApolloClient({
         cache: new InMemoryCache({
             typePolicies: {
-                Content: {
-                    fields: {
-                        availableActions: {
-                            merge: false,
-                        },
-                    },
-                },
-                Cluster: {
-                    fields: {
-                        availableActions: {
-                            merge: false,
-                        },
-                    },
+                ActionEntry: {
+                    merge: false,
                 },
                 SecretgraphObject: {
                     queryType: true,

@@ -91,7 +91,6 @@ async function extractPublicInfo({
         hashAlgorithm: hashAlgorithms[0],
     })
     return {
-        key: node.updateId,
         publicInfo: node.publicInfo,
         mapper,
         name: name || '',
@@ -328,7 +327,6 @@ const ClusterIntern = ({
                     })
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
-                console.log(newConfig)
                 updateMainCtx({
                     title: values.name || '',
                     action: 'update',
@@ -457,9 +455,12 @@ const ViewCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [data, setData] =
-        React.useState<UnpackPromise<
-            ReturnType<typeof extractPublicInfo>
-        > | null>(null)
+        React.useState<
+            | (UnpackPromise<ReturnType<typeof extractPublicInfo>> & {
+                  key: string
+              })
+            | null
+        >(null)
 
     useFixedQuery(getClusterQuery, {
         pollInterval: 60000,
@@ -483,8 +484,8 @@ const ViewCluster = () => {
                 updateOb.deleted = false
             }
             updateMainCtx(updateOb)
-            setData(
-                await extractPublicInfo({
+            setData({
+                ...(await extractPublicInfo({
                     config,
                     node: data.secretgraph.node,
                     url: mainCtx.url as string,
@@ -492,8 +493,9 @@ const ViewCluster = () => {
                     hashAlgorithms: findWorkingHashAlgorithms(
                         data.secretgraph.config.hashAlgorithms
                     ),
-                })
-            )
+                })),
+                key: `view${data.secretgraph.node.updateId}`,
+            })
         },
     })
     if (!data) {
@@ -505,7 +507,8 @@ const ViewCluster = () => {
 
 const AddCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] = React.useState<ClusterInternProps | null>(null)
+    const [data, setData] =
+        React.useState<(ClusterInternProps & { key: string }) | null>(null)
 
     useFixedQuery(getClusterConfigurationQuery, {
         pollInterval: 60000,
@@ -542,6 +545,7 @@ const AddCluster = () => {
                     },
                 },
                 hashAlgorithms,
+                key: 'add',
             })
         },
     })
@@ -556,9 +560,12 @@ const EditCluster = () => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] =
-        React.useState<UnpackPromise<
-            ReturnType<typeof extractPublicInfo>
-        > | null>(null)
+        React.useState<
+            | (UnpackPromise<ReturnType<typeof extractPublicInfo>> & {
+                  key: string
+              })
+            | null
+        >(null)
     const {
         data: dataUnfinished,
         refetch,
@@ -597,8 +604,8 @@ const EditCluster = () => {
                 updateOb.deleted = false
             }
             updateMainCtx(updateOb)
-            setData(
-                await extractPublicInfo({
+            setData({
+                ...(await extractPublicInfo({
                     config,
                     node: dataUnfinished.secretgraph.node,
                     url: mainCtx.url as string,
@@ -606,20 +613,18 @@ const EditCluster = () => {
                     hashAlgorithms: findWorkingHashAlgorithms(
                         dataUnfinished.secretgraph.config.hashAlgorithms
                     ),
-                })
-            )
+                })),
+                key: `edit${new Date().getTime()}`,
+            })
         }
         f()
     }, [dataUnfinished, config])
 
-    if (
-        !data ||
-        mainCtx.updateId != dataUnfinished?.secretgraph?.node?.updateId
-    ) {
+    if (!data) {
         return null
     }
 
-    return <ClusterIntern loading={loading} {...data} />
+    return <ClusterIntern disabled={false} loading={loading} {...data} />
 }
 
 export default function ClusterComponent() {
