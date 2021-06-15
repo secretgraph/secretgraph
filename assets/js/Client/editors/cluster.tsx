@@ -587,7 +587,6 @@ const EditCluster = () => {
     }, [mainCtx.updateId])
     React.useEffect(() => {
         const f = async () => {
-            console.log(config)
             if (!dataUnfinished) {
                 return
             }

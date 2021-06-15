@@ -49,6 +49,7 @@ import {
     extractPubKeysCluster,
     extractPubKeysReferences,
 } from '../utils/graphql'
+import { useFixedQuery } from '../utils/hooks'
 import {
     createKeys,
     decryptContentObject,
@@ -410,10 +411,12 @@ const ViewKeys = () => {
     const client = useApolloClient()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const { data, isLoading } = useAsync({
-        promiseFn: loadKeys,
-        onReject: console.error,
-        onResolve: ({ publicKey }) => {
+    const { data, loading } = useFixedQuery(keysRetrievalQuery, {
+        pollInterval: 60000,
+        fetchPolicy: 'cache-and-network',
+        nextFetchPolicy: 'network-only',
+        onError: console.error,
+        onCompleted: ({ publicKey }) => {
             if (!data) {
                 return
             }
