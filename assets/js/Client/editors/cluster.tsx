@@ -462,7 +462,7 @@ const ViewCluster = () => {
             | null
         >(null)
 
-    useFixedQuery(getClusterQuery, {
+    const { refetch } = useFixedQuery(getClusterQuery, {
         pollInterval: 60000,
         variables: {
             id: mainCtx.item as string,
@@ -498,6 +498,11 @@ const ViewCluster = () => {
             })
         },
     })
+    React.useEffect(() => {
+        if (data) {
+            refetch()
+        }
+    }, [config])
     if (!data) {
         return null
     }
@@ -581,7 +586,7 @@ const EditCluster = () => {
         onError: console.error,
     })
     React.useEffect(() => {
-        if (data) {
+        if (dataUnfinished) {
             refetch()
         }
     }, [mainCtx.updateId])

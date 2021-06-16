@@ -682,6 +682,7 @@ export async function decryptContentObject({
     config: _config,
     nodeData,
     blobOrTokens,
+    baseUrl,
     decrypt = new Set(),
 }: {
     config: Interfaces.ConfigInterface | PromiseLike<Interfaces.ConfigInterface>
@@ -691,6 +692,7 @@ export async function decryptContentObject({
         | string
         | string[]
         | PromiseLike<Blob | string | string[]>
+    baseUrl?: string
     decrypt?: Set<string>
 }): Promise<decryptContentObjectInterface | null> {
     let arrPromise: PromiseLike<ArrayBufferLike>
@@ -705,11 +707,14 @@ export async function decryptContentObject({
     } else if (typeof _info == 'string') {
         arrPromise = Promise.resolve(b64toarr(_info).buffer)
     } else {
-        arrPromise = fetch(_node.link, {
-            headers: {
-                Authorization: _info.join(','),
-            },
-        }).then((result) => result.arrayBuffer())
+        arrPromise = fetch(
+            new URL(_node.link, baseUrl || config.baseUrl).href,
+            {
+                headers: {
+                    Authorization: _info.join(','),
+                },
+            }
+        ).then((result) => result.arrayBuffer())
     }
     // skip decryption as always unencrypted
     if (_node.tags.includes('type=PublicKey')) {
@@ -812,6 +817,7 @@ export async function updateConfigRemoteReducer(
             nodeData: node,
             config,
             blobOrTokens: authInfo.tokens,
+            baseUrl: config.baseUrl,
         })
         if (!retrieved) {
             throw Error('could not retrieve and decode config object')

@@ -57,30 +57,19 @@ import {
     updateConfigRemoteReducer,
     updateKey,
 } from '../utils/operations'
+import { RequireAttributes, UnpackPromise, ValueType } from '../utils/typing'
 
 async function loadKeys({
-    client,
-    id,
+    data,
     config,
-    url,
+    baseUrl,
+    authorization,
 }: {
-    client: ApolloClient<any>
-    id: string
+    data: any
     config: Interfaces.ConfigInterface
-    url: string
+    baseUrl: string
+    authorization: string[]
 }) {
-    const { tokens: authorization } = extractAuthInfo({
-        config,
-        url,
-    })
-    const { data } = await client.query({
-        fetchPolicy: 'network-only',
-        query: keysRetrievalQuery,
-        variables: {
-            id,
-            authorization,
-        },
-    })
     const requests = []
     const results = {
         hashAlgorithms: data.secretgraph.config.hashAlgorithms,
@@ -104,7 +93,7 @@ async function loadKeys({
             .operationName,
     }
     requests.push(
-        fetch(data.secretgraph.node.link, {
+        fetch(new URL(data.secretgraph.node.link, baseUrl).href, {
             headers: {
                 Authorization: authorization.join(','),
             },
@@ -411,32 +400,54 @@ const ViewKeys = () => {
     const client = useApolloClient()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const { data, loading } = useFixedQuery(keysRetrievalQuery, {
+    const [data, setData] =
+        React.useState<
+            | (UnpackPromise<ReturnType<typeof loadKeys>> & {
+                  key: string
+              })
+            | null
+        >(null)
+    const { refetch } = useFixedQuery(keysRetrievalQuery, {
         pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
+        variables: {
+            id: mainCtx.item as string,
+            authorization: mainCtx.tokens,
+        },
         onError: console.error,
-        onCompleted: ({ publicKey }) => {
-            if (!data) {
+        onCompleted: async (dataUnfinished) => {
+            if (!dataUnfinished) {
                 return
             }
             const updateOb: Partial<Interfaces.MainContextInterface> = {
-                deleted: publicKey.nodeData.deleted,
-                updateId: publicKey.nodeData.updateId,
+                deleted: dataUnfinished.secretgraph.node.deleted,
+                updateId: dataUnfinished.secretgraph.node.updateId,
             }
-            if (publicKey.tags.key_hash && publicKey.tags.key_hash.length > 0) {
-                updateOb['title'] = publicKey.tags.key_hash[0]
+            for (const tag of dataUnfinished.secretgraph.node.tags) {
+                if (tag.startsWith('key_hash=')) {
+                    updateOb['title'] = tag.match(/=(.*)/)[1]
+                    break
+                }
             }
             updateMainCtx(updateOb)
+            setData({
+                ...(await loadKeys({
+                    baseUrl: mainCtx.url as string,
+                    data: dataUnfinished,
+                    config,
+                    authorization: mainCtx.tokens,
+                })),
+                key: `${new Date().getTime()}`,
+            })
         },
-        suspense: true,
-        id: mainCtx.item as string,
-        config,
-        client,
-        url: mainCtx.url as string,
-        watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
     })
-    if (!data || isLoading) {
+    React.useEffect(() => {
+        if (data) {
+            refetch()
+        }
+    }, [config])
+    if (!data) {
         return null
     }
 
@@ -495,17 +506,54 @@ const EditKeys = () => {
         Contexts.InitializedConfig
     )
     const { baseClient } = React.useContext(Contexts.Clients)
-    const { data, isLoading, reload } = useAsync({
-        promiseFn: loadKeys,
-        suspense: true,
-        onReject: console.error,
-        id: mainCtx.item as string,
-        config,
-        client,
-        url: mainCtx.url as string,
-        watch: (mainCtx.url as string) + mainCtx.item + '' + mainCtx.deleted,
+    const [data, setData] =
+        React.useState<
+            | (UnpackPromise<ReturnType<typeof loadKeys>> & {
+                  key: string
+              })
+            | null
+        >(null)
+    const { refetch, loading } = useFixedQuery(keysRetrievalQuery, {
+        pollInterval: 60000,
+        fetchPolicy: 'cache-and-network',
+        nextFetchPolicy: 'network-only',
+        variables: {
+            id: mainCtx.item as string,
+            authorization: mainCtx.tokens,
+        },
+        onError: console.error,
+        onCompleted: async (dataUnfinished) => {
+            if (!dataUnfinished) {
+                return
+            }
+            const updateOb: Partial<Interfaces.MainContextInterface> = {
+                deleted: dataUnfinished.secretgraph.node.deleted,
+                updateId: dataUnfinished.secretgraph.node.updateId,
+            }
+            for (const tag of dataUnfinished.secretgraph.node.tags) {
+                if (tag.startsWith('key_hash=')) {
+                    updateOb['title'] = tag.match(/=(.*)/)[1]
+                    break
+                }
+            }
+            updateMainCtx(updateOb)
+            setData({
+                ...(await loadKeys({
+                    baseUrl: mainCtx.url as string,
+                    data: dataUnfinished,
+                    config,
+                    authorization: mainCtx.tokens,
+                })),
+                key: `${new Date().getTime()}`,
+            })
+        },
     })
-    if (!data || isLoading) {
+    React.useEffect(() => {
+        if (data) {
+            refetch()
+        }
+    }, [config])
+    if (!data || loading) {
         return null
     }
     const initialValues = {
@@ -745,12 +793,9 @@ const AddKeys = () => {
         Contexts.InitializedConfig
     )
     const { baseClient } = React.useContext(Contexts.Clients)
-    const { data } = useAsync<ApolloQueryResult<any>>({
-        promiseFn: client.query,
-        fetchPolicy: 'network-only',
-        onReject: console.error,
-        suspense: true,
-        query: serverConfigQuery,
+    const { data } = useQuery(serverConfigQuery, {
+        pollInterval: 60000,
+        onError: console.error,
     })
     const initialValues = {
         cluster: searchCtx.cluster as string | null,
