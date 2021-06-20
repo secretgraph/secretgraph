@@ -963,7 +963,6 @@ async function findOrReturn({
         url,
     })
     const { data } = await client.query({
-        fetchPolicy: 'network-only',
         query: findPublicKeyQuery,
         variables: {
             authorization,
