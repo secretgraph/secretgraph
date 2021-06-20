@@ -106,8 +106,6 @@ export interface SecretgraphEventInterface {
 export interface MainContextInterface {
     action: 'start' | 'add' | 'view' | 'update' | 'help' | 'import'
     updateId: null | string
-    // when updating config
-    configUpdateId: string
     title: string
     item: null | string
     // activeUrl can be changed without changing active element, so cache it here

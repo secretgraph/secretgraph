@@ -734,8 +734,9 @@ const EditKeys = () => {
                     if (privKey || data.privateKey) {
                         const halgo =
                             Constants.mapHashNames[data.hashAlgorithms[0]]
-                        const { config: configNew, updateId } =
-                            await updateConfigRemoteReducer(config, {
+                        const configNew = await updateConfigRemoteReducer(
+                            config,
+                            {
                                 update: {
                                     certificates: {
                                         [await serializeToBase64(
@@ -757,11 +758,9 @@ const EditKeys = () => {
                                     },
                                 },
                                 client: baseClient,
-                            })
+                            }
+                        )
                         updateConfig(configNew, true)
-                        updateMainCtx({
-                            configUpdateId: updateId,
-                        })
                     }
                     updateMainCtx({
                         updateId:
@@ -900,30 +899,26 @@ const AddKeys = () => {
                 })
                 if (privKey) {
                     const halgo = Constants.mapHashNames[hashAlgorithm]
-                    const { config: configNew, updateId } =
-                        await updateConfigRemoteReducer(config, {
-                            update: {
-                                certificates: {
-                                    [await serializeToBase64(
-                                        crypto.subtle.digest(
-                                            halgo.operationName,
-                                            await crypto.subtle.exportKey(
-                                                'spki' as const,
-                                                pubKey
-                                            )
+                    const configNew = await updateConfigRemoteReducer(config, {
+                        update: {
+                            certificates: {
+                                [await serializeToBase64(
+                                    crypto.subtle.digest(
+                                        halgo.operationName,
+                                        await crypto.subtle.exportKey(
+                                            'spki' as const,
+                                            pubKey
                                         )
-                                    )]: {
-                                        data: await serializeToBase64(privKey),
-                                        note: '',
-                                    },
+                                    )
+                                )]: {
+                                    data: await serializeToBase64(privKey),
+                                    note: '',
                                 },
                             },
-                            client: baseClient,
-                        })
-                    updateConfig(configNew, true)
-                    updateMainCtx({
-                        configUpdateId: updateId,
+                        },
+                        client: baseClient,
                     })
+                    updateConfig(configNew, true)
                 }
             }}
         >

@@ -16,6 +16,7 @@ import {
 } from './encryption'
 import { b64toarr, mergeDeleteObjects, utf8encoder } from './misc'
 import * as SetOps from './set'
+import { EntryType } from './typing'
 
 export function cleanConfig(
     config: Interfaces.ConfigInterface | null | undefined
@@ -187,9 +188,11 @@ export const loadConfig = async (
                                     response.headers.get('X-NONCE') as string
                                 )
                                 const respdata = await response.arrayBuffer()
-                                for (const iterations of (response.headers.get(
-                                    'X-ITERATIONS'
-                                ) as string).split(',')) {
+                                for (const iterations of (
+                                    response.headers.get(
+                                        'X-ITERATIONS'
+                                    ) as string
+                                ).split(',')) {
                                     try {
                                         return await decryptFirstPreKey({
                                             prekeys,
@@ -513,9 +516,8 @@ export function extractPrivKeys({
                     config.certificates[hash].data,
                     {
                         name: 'RSA-OAEP',
-                        hash:
-                            Constants.mapHashNames[props.hashAlgorithm]
-                                .operationName,
+                        hash: Constants.mapHashNames[props.hashAlgorithm]
+                            .operationName,
                     },
                     'privateKey'
                 )
@@ -606,6 +608,144 @@ export function findCertCandidatesForRefs(
     return found
 }
 
+export function updateConfig(
+    old: Interfaces.ConfigInterface | null,
+    update: Interfaces.ConfigInputInterface
+): [Interfaces.ConfigInterface, number] {
+    let count = 0
+    const newState: Interfaces.ConfigInterface = old
+        ? Object.assign({}, old)
+        : ({} as any)
+    for (const key of Object.keys(
+        update
+    ) as (keyof Interfaces.ConfigInterface)[]) {
+        let res
+        const val = update[key]
+        switch (key) {
+            case 'certificates':
+            case 'tokens':
+                res = mergeDeleteObjects(newState[key], val)
+                newState[key] = res[0]
+                count += res[1]
+                break
+            case 'hosts':
+                res = mergeDeleteObjects(
+                    newState.hosts,
+                    update.hosts,
+                    (
+                        oldval: Interfaces.ConfigInterface['hosts'][string],
+                        newval: NonNullable<
+                            NonNullable<
+                                Interfaces.ConfigInputInterface['hosts']
+                            >[string]
+                        >
+                    ) => {
+                        let count = 0
+                        const newState: Interfaces.ConfigInterface['hosts'][string] =
+                            oldval
+                                ? Object.assign({}, oldval)
+                                : {
+                                      hashAlgorithms: [],
+                                      clusters: {},
+                                      contents: {},
+                                  }
+                        if (
+                            newval.hashAlgorithms &&
+                            SetOps.isNotEq(
+                                new Set(newState.hashAlgorithms),
+                                newval.hashAlgorithms
+                            )
+                        ) {
+                            newState.hashAlgorithms = newval.hashAlgorithms
+                            count += 1
+                        }
+                        if (newval.clusters) {
+                            const res = mergeDeleteObjects(
+                                newState.clusters,
+                                newval.clusters,
+                                (
+                                    oldval: Interfaces.ConfigClusterInterface,
+                                    newval: Interfaces.ConfigClusterInterface<null>
+                                ) => {
+                                    count = 0
+                                    const newState: Interfaces.ConfigClusterInterface =
+                                        oldval
+                                            ? Object.assign({}, oldval)
+                                            : {
+                                                  hashes: {},
+                                              }
+                                    if (newval.hashes) {
+                                        const res = mergeDeleteObjects(
+                                            newState.hashes,
+                                            newval.hashes
+                                        )
+                                        newState.hashes = res[0]
+                                        count += res[1]
+                                    }
+                                    return [newState, count]
+                                }
+                            )
+                            newState.clusters = res[0]
+                            count += res[1]
+                        }
+                        if (newval.contents) {
+                            const res = mergeDeleteObjects(
+                                newState.contents,
+                                newval.contents,
+                                (
+                                    oldval: Interfaces.ConfigContentInterface,
+                                    newval: Interfaces.ConfigContentInterface<null>
+                                ) => {
+                                    let count = 0
+                                    const newState: Interfaces.ConfigContentInterface =
+                                        oldval
+                                            ? Object.assign({}, oldval)
+                                            : {
+                                                  hashes: {},
+                                                  cluster: '',
+                                              }
+                                    if (newval.hashes) {
+                                        const res = mergeDeleteObjects(
+                                            newState.hashes,
+                                            newval.hashes
+                                        )
+                                        newState.hashes = res[0]
+                                        count += res[1]
+                                    }
+                                    if (newval.cluster) {
+                                        newState.cluster = newval.cluster
+                                    }
+                                    if (!newState.cluster) {
+                                        throw Error('cluster is missing')
+                                    }
+                                    return [newState, count]
+                                }
+                            )
+                            newState.contents = res[0]
+                            count += res[1]
+                        }
+                        return [newState, count]
+                    }
+                )
+                newState[key] = res[0]
+                count += res[1]
+                break
+            default:
+                if (val && (!newState[key] || newState[key] != val)) {
+                    newState[key] =
+                        val as Interfaces.ConfigInterface[typeof key]
+                    count++
+                }
+                break
+        }
+    }
+    const ret = cleanConfig(newState)
+    if (!ret) {
+        throw Error('invalid merge')
+    }
+    return [ret, count]
+}
+
 export function updateConfigReducer(
     state: Interfaces.ConfigInterface | null,
     update: Interfaces.ConfigInputInterface,
@@ -627,108 +767,7 @@ export function updateConfigReducer(
     if (replace) {
         return update as Interfaces.ConfigInterface
     }
-    const newState: Interfaces.ConfigInterface = state
-        ? Object.assign({}, state)
-        : ({} as any)
-    if (update.certificates) {
-        newState.certificates = mergeDeleteObjects(
-            newState.certificates,
-            update.certificates
-        )
-    }
-    if (update.tokens) {
-        newState.tokens = mergeDeleteObjects(newState.tokens, update.tokens)
-    }
-    if (update.baseUrl) {
-        newState.baseUrl = update.baseUrl
-    }
-    if (update.configCluster) {
-        newState.configCluster = update.configCluster
-    }
-    if (update.hosts) {
-        newState.hosts = mergeDeleteObjects(
-            newState.hosts,
-            update.hosts,
-            (
-                oldval: Interfaces.ConfigInterface['hosts'][string],
-                newval: NonNullable<
-                    NonNullable<
-                        Interfaces.ConfigInputInterface['hosts']
-                    >[string]
-                >
-            ) => {
-                const newState: Interfaces.ConfigInterface['hosts'][string] = oldval
-                    ? Object.assign({}, oldval)
-                    : {
-                          hashAlgorithms: [],
-                          clusters: {},
-                          contents: {},
-                      }
-                if (newval.hashAlgorithms) {
-                    newState.hashAlgorithms = newval.hashAlgorithms
-                }
-                if (newval.clusters) {
-                    newState.clusters = mergeDeleteObjects(
-                        newState.clusters,
-                        newval.clusters,
-                        (
-                            oldval: Interfaces.ConfigClusterInterface,
-                            newval: Interfaces.ConfigClusterInterface<null>
-                        ) => {
-                            const newState: Interfaces.ConfigClusterInterface = oldval
-                                ? Object.assign({}, oldval)
-                                : {
-                                      hashes: {},
-                                  }
-                            if (newval.hashes) {
-                                newState.hashes = mergeDeleteObjects(
-                                    newState.hashes,
-                                    newval.hashes
-                                )
-                            }
-                            return newState
-                        }
-                    )
-                }
-                if (newval.contents) {
-                    newState.contents = mergeDeleteObjects(
-                        newState.contents,
-                        newval.contents,
-                        (
-                            oldval: Interfaces.ConfigContentInterface,
-                            newval: Interfaces.ConfigContentInterface<null>
-                        ) => {
-                            const newState: Interfaces.ConfigContentInterface = oldval
-                                ? Object.assign({}, oldval)
-                                : {
-                                      hashes: {},
-                                      cluster: '',
-                                  }
-                            if (newval.hashes) {
-                                newState.hashes = mergeDeleteObjects(
-                                    newState.hashes,
-                                    newval.hashes
-                                )
-                            }
-                            if (newval.cluster) {
-                                newState.cluster = newval.cluster
-                            }
-                            if (!newState.cluster) {
-                                throw Error('cluster is missing')
-                            }
-                            return newState
-                        }
-                    )
-                }
-                return newState
-            }
-        )
-    }
-    const ret = cleanConfig(newState)
-    if (!ret) {
-        throw Error('invalid merge')
-    }
-    return ret
+    return updateConfig(state, update)[0]
 }
 
 // update host specific or find a way to find missing refs

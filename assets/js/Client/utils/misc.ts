@@ -21,22 +21,32 @@ export async function sortedHash(inp: string[], algo: string): Promise<string> {
 export function mergeDeleteObjects(
     oldObj: any,
     newObj: any,
-    objHandler = (oldval: any, newval: any) => newval
-) {
+    objHandler = mergeDeleteObjects
+): [any, number] {
+    let count = 0
+
     const copied = oldObj ? Object.assign({}, oldObj) : {}
     for (const [key, value] of Object.entries(newObj)) {
         if (!key) {
             continue
         }
         if (value === null) {
-            delete copied[key]
+            if (newObj[key]) {
+                delete copied[key]
+                count++
+            }
         } else if (typeof value === 'object') {
-            copied[key] = objHandler(copied[key], value)
-        } else {
-            copied[key] = value
+            const ret = objHandler(copied[key], value)
+            copied[key] = ret[0]
+            count += ret[1]
+        } else if (value !== undefined) {
+            if (newObj[key] != value) {
+                copied[key] = value
+                count++
+            }
         }
     }
-    return copied
+    return [copied, count]
 }
 
 export function deepEqual<T>(a: T, b: T) {

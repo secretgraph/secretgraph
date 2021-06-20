@@ -187,7 +187,6 @@ function SettingsImporter() {
             setActiveUrl(newConfig.baseUrl)
             updateMainCtx({
                 action: 'add',
-                configUpdateId: result?.content?.content?.updateId,
             })
         } else if (typeof sconfig.registerUrl === 'string') {
             setRegisterUrl(sconfig.registerUrl)

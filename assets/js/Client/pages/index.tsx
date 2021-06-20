@@ -43,7 +43,6 @@ function Definitions(props: Props) {
         title: '',
         item: null,
         updateId: null,
-        configUpdateId: '',
         url: null,
         type: elements.has(query.get('type') as any)
             ? query.get('type')

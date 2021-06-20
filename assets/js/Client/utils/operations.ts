@@ -25,6 +25,7 @@ import {
     extractAuthInfo,
     extractPrivKeys,
     findCertCandidatesForRefs,
+    updateConfig,
     updateConfigReducer,
 } from './config'
 import {
@@ -777,12 +778,9 @@ export async function updateConfigRemoteReducer(
         client: ApolloClient<any>
         authInfo?: Interfaces.AuthInfoInterface
     }
-): Promise<{
-    config: Interfaces.ConfigInterface | null
-    updateId: string
-}> {
+): Promise<Interfaces.ConfigInterface | null> {
     if (update === null) {
-        return { config: null, updateId: '' }
+        return null
     }
     const config = state || updateConfigReducer(null, update)
     if (!authInfo) {
@@ -826,7 +824,10 @@ export async function updateConfigRemoteReducer(
             String.fromCharCode(...new Uint8Array(retrieved.data))
         )
 
-        const mergedConfig = updateConfigReducer(foundConfig, update)
+        const [mergedConfig, changes] = updateConfig(foundConfig, update)
+        if (changes == 0) {
+            return foundConfig
+        }
         if (!cleanConfig(mergedConfig)) {
             throw Error('invalid merged config')
         }
@@ -866,11 +867,7 @@ export async function updateConfigRemoteReducer(
             throw new Error(`Update failed: ${configQueryRes.errors}`)
         }
         if (result.data.updateOrCreateContent.writeok) {
-            return {
-                config: mergedConfig,
-                updateId:
-                    result.data.updateOrCreateContent.content.updateId || '',
-            }
+            return mergedConfig
         }
     }
 }
