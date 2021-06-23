@@ -31,7 +31,8 @@ module.exports = (env, options) => {
             options.mode === 'development'
                 ? {
                       transportMode: 'ws',
-                      hot: true,
+                      // doesn't work
+                      hot: false,
                       port: '8080',
                       devMiddleware: {
                           writeToDisk: true,
@@ -53,7 +54,14 @@ module.exports = (env, options) => {
         },
         entry: {
             main: './assets/js/Client/index.tsx',
-            'editor-cluster': './assets/js/Client/editors/cluster.tsx',
+            'editor-cluster': {
+                dependOn: 'main',
+                import: './assets/js/Client/editors/cluster.tsx',
+            },
+            'editor-file': {
+                dependOn: 'main',
+                import: './assets/js/Client/editors/file.tsx',
+            },
         },
         module: {
             rules: [

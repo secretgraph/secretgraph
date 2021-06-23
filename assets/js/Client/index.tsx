@@ -10,11 +10,20 @@ document.addEventListener(
             ? wrapper.dataset.graphqlPath
             : undefined
 
-        ReactDOM.render(<MainPage defaultPath={defaultPath} />, wrapper, () => {
-            if (module.hot) {
-                module.hot.accept()
-            }
-        })
+        ReactDOM.render(<MainPage defaultPath={defaultPath} />, wrapper)
+        // doesn't work
+        if (module.hot) {
+            module.hot.accept(
+                ['./pages/index', './editors/file', './editors/cluster'],
+                () => {
+                    const MainPage = require('./pages/index').default
+                    ReactDOM.render(
+                        <MainPage defaultPath={defaultPath} />,
+                        wrapper
+                    )
+                }
+            )
+        }
     },
     false
 )

@@ -43,6 +43,7 @@ import {
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
+import { ActionInputEntry, CertificateInputEntry } from '../utils/action'
 import {
     serializeToBase64,
     unserializeToArrayBuffer,
@@ -50,20 +51,6 @@ import {
 import { deepEqual } from '../utils/misc'
 import * as SetOps from '../utils/set'
 import SimpleSelect from './forms/SimpleSelect'
-
-export interface ActionProps {
-    newHash?: string
-    oldHash?: string
-    token: string
-    start: Date | ''
-    stop: Date | ''
-    note: string
-    value: { [key: string]: any } & { action: string }
-    update?: boolean
-    delete?: boolean
-    readonly?: boolean
-    locked?: boolean
-}
 
 const availableActionsSet = new Set([
     'manage',
@@ -127,7 +114,7 @@ function ActionEntryIntern({
     submitFn,
     tokens,
 }: {
-    action?: ActionProps
+    action?: ActionInputEntry | CertificateInputEntry
     index?: number
     disabled?: boolean
     deleteFn?: () => void
@@ -201,9 +188,7 @@ function ActionEntryIntern({
                     </Grid>
                     <Grid item xs={12}>
                         <FastField
-                            name={
-                                !submitFn ? `actions.${index}.token` : 'token'
-                            }
+                            name={!submitFn ? `actions.${index}.data` : 'data'}
                             component={SimpleSelect}
                             fullWidth
                             freeSolo
@@ -233,7 +218,7 @@ function ActionEntryIntern({
                             variant="outlined"
                         />
                     </Grid>
-                    {!locked && (
+                    {!locked && action?.type != 'certificate' && (
                         <Grid item xs={12}>
                             <Grid container spacing={2}>
                                 <ActionFields
@@ -327,10 +312,10 @@ export function ActionEntry({
     tokens,
     ...props
 }: Omit<ListItemProps, 'children' | 'button'> & {
-    action?: ActionProps
+    action?: ActionInputEntry | CertificateInputEntry
     index?: number
     disabled?: boolean
-    addFn?: (arg: ActionProps) => void | Promise<void>
+    addFn?: (arg: ActionInputEntry) => void | Promise<void>
     deleteFn?: () => void
     tokens: string[]
 }) {
@@ -343,7 +328,7 @@ export function ActionEntry({
                 <Portal container={ref.current}>
                     <Formik
                         initialValues={{
-                            token: 'new',
+                            data: 'new',
                             start: '',
                             stop: '',
                             note: '',
@@ -354,11 +339,11 @@ export function ActionEntry({
                             } as any,
                         }}
                         onSubmit={async (
-                            { token, ...values },
+                            { data, ...values },
                             { resetForm }
                         ) => {
-                            if (token == 'new') {
-                                token = btoa(
+                            if (data == 'new') {
+                                data = btoa(
                                     String.fromCharCode(
                                         ...crypto.getRandomValues(
                                             new Uint8Array(32)
@@ -366,7 +351,7 @@ export function ActionEntry({
                                     )
                                 )
                             }
-                            await addFn({ token, ...values })
+                            await addFn({ data, ...values })
                             resetForm()
                         }}
                     >
@@ -402,7 +387,7 @@ interface ActionsDialogProps
     disabled?: boolean
     handleClose: () => void
     form: FormikProps<{
-        actions: ActionProps[]
+        actions: ActionInputEntry[]
     }>
 }
 // specify in hierachy for setting formik fields
@@ -420,10 +405,15 @@ export default function ActionsDialog({
     remove,
     ...dialogProps
 }: ActionsDialogProps) {
-    const tokens = React.useMemo(
-        () => form.values.actions.map((val) => val.token),
-        [form.values.actions]
-    )
+    const tokens = React.useMemo(() => {
+        const tokens: string[] = []
+        for (const action of form.values.actions) {
+            if (action.type == 'action') {
+                tokens.push(action.value.data)
+            }
+        }
+        return tokens
+    }, [form.values.actions])
     return (
         <Dialog {...dialogProps} onClose={(ev) => handleClose()}>
             <DialogTitle>Access Control</DialogTitle>

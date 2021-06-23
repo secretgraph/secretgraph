@@ -48,6 +48,7 @@ import { serverConfigQuery } from '../queries/server'
 import { useStylesAndTheme } from '../theme'
 import {
     ActionInputEntry,
+    CertificateInputEntry,
     generateActionMapper,
     transformActions,
 } from '../utils/action'
@@ -129,31 +130,45 @@ const ClusterIntern = ({
     }, [props.name, props.note])
 
     const actions = React.useMemo(() => {
-        const actions: ActionInputEntry[] = []
+        const actions: (ActionInputEntry | CertificateInputEntry)[] = []
         Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
             const entry = mapper[params.newHash]
-            const existingActions = entry.configActions
-            for (const actionType of existingActions.size
-                ? existingActions
-                : ['other']) {
-                const diffactions = SetOps.difference(entry.foundActions, [
-                    'other',
-                ])
+            if (entry.type == 'action') {
+                const existingActions = entry.configActions
+                for (const actionType of existingActions.size
+                    ? existingActions
+                    : ['other']) {
+                    const diffactions = SetOps.difference(entry.foundActions, [
+                        'other',
+                    ])
+                    actions.push({
+                        type: 'action',
+                        data: params.data,
+                        newHash: params.newHash,
+                        oldHash: params.oldHash || undefined,
+                        start: '',
+                        stop: '',
+                        note: entry.note || '',
+                        value: {
+                            action: actionType,
+                        },
+                        update:
+                            diffactions.size &&
+                            SetOps.isNotEq(diffactions, entry.configActions)
+                                ? false
+                                : undefined,
+                        delete: false,
+                        readonly: false,
+                        locked: true,
+                    })
+                }
+            } else {
                 actions.push({
-                    token: params.token,
+                    type: 'certificate',
+                    data: params.data,
                     newHash: params.newHash,
                     oldHash: params.oldHash || undefined,
-                    start: '',
-                    stop: '',
                     note: entry.note || '',
-                    value: {
-                        action: actionType,
-                    },
-                    update:
-                        diffactions.size &&
-                        SetOps.isNotEq(diffactions, entry.configActions)
-                            ? false
-                            : undefined,
                     delete: false,
                     readonly: false,
                     locked: true,
@@ -163,7 +178,12 @@ const ClusterIntern = ({
         return actions
     }, [mapper])
     const actionTokens = React.useMemo(
-        () => (mapper ? actions.map((val) => val.token) : mainCtx.tokens),
+        () =>
+            mapper
+                ? actions
+                      .filter((val) => val.type == 'action')
+                      .map((val) => val.data)
+                : mainCtx.tokens,
         [actions, mapper]
     )
     /**
@@ -539,7 +559,8 @@ const AddCluster = () => {
                 url: mainCtx.url as string,
                 mapper: {
                     [hashKey]: {
-                        token: keyb64,
+                        type: 'action',
+                        data: keyb64,
                         note: '',
                         newHash: hashKey,
                         oldHash: null,
