@@ -81,9 +81,9 @@ export default function HeaderBar() {
     const exportSettingsFile = async () => {
         if (!config) return
         setLoadingExport(true)
-        const encryptingPw = (document.getElementById(
-            'secretgraph-export-pw'
-        ) as HTMLInputElement).value
+        const encryptingPw = (
+            document.getElementById('secretgraph-export-pw') as HTMLInputElement
+        ).value
         const sconfig: any = await client
             .query({
                 query: serverConfigQuery,
@@ -106,9 +106,11 @@ export default function HeaderBar() {
 
     const exportSettingsOpener = async () => {
         if (!config) return
-        const encryptingPw = (document.getElementById(
-            'secretgraph-export-pw'
-        ) as HTMLInputElement | undefined)?.value
+        const encryptingPw = (
+            document.getElementById('secretgraph-export-pw') as
+                | HTMLInputElement
+                | undefined
+        )?.value
         let _exportUrl
         try {
             _exportUrl = await exportConfigAsUrl({
@@ -132,6 +134,25 @@ export default function HeaderBar() {
         updateMainCtx({
             action: 'import',
         })
+    }
+    const logout = () => {
+        setMenuOpen(false)
+
+        updateConfig(null, true)
+        // type is kept
+        updateMainCtx({
+            action: 'start',
+            title: '',
+            item: null,
+            updateId: null,
+            url: null,
+            shareUrl: null,
+            deleted: null,
+            tokens: [],
+            tokenPermissions: new Set(),
+        })
+        sessionStorage.clear()
+        localStorage.removeItem('secretgraphConfig')
     }
 
     let sidebarButton = null
@@ -251,7 +272,7 @@ export default function HeaderBar() {
                         className={!config ? classes.hidden : undefined}
                         onClick={openImporter}
                     >
-                        Load Settings
+                        Load Settings/Restart
                     </MenuItem>
                     <MenuItem
                         className={!config ? classes.hidden : undefined}
@@ -260,6 +281,12 @@ export default function HeaderBar() {
                         Export Settings
                     </MenuItem>
                     <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
+                    <MenuItem
+                        className={!config ? classes.hidden : undefined}
+                        onClick={logout}
+                    >
+                        Logout
+                    </MenuItem>
                 </Menu>
             </Toolbar>
         </AppBar>

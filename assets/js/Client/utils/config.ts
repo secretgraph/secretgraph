@@ -677,8 +677,19 @@ export function updateConfig(
                                     if (newval.hashes) {
                                         const res = mergeDeleteObjects(
                                             newState.hashes,
-                                            newval.hashes
+                                            newval.hashes,
+                                            // replace, we have arrays no hash objects
+                                            (old, newobj) => newobj
                                         )
+                                        // debug, remove later
+                                        if (
+                                            Object.values(res[0]).some(
+                                                (val) => !(val instanceof Array)
+                                            )
+                                        ) {
+                                            console.error(res[0])
+                                            throw Error('invalid merge')
+                                        }
                                         newState.hashes = res[0]
                                         count += res[1]
                                     }
