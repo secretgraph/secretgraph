@@ -625,9 +625,6 @@ export function updateConfig(
             case 'certificates':
             case 'tokens':
                 res = mergeDeleteObjects(newState[key], val)
-                if (!res[0].data || res[0].note === undefined) {
-                    throw Error('invalid merge of token/certificate')
-                }
                 newState[key] = res[0]
                 count += res[1]
                 break

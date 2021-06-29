@@ -21,7 +21,7 @@ export async function sortedHash(inp: string[], algo: string): Promise<string> {
 export function mergeDeleteObjects(
     oldObj: any,
     newObj: any,
-    objHandler = mergeDeleteObjects
+    objHandler: (a: any, b: any) => [any, number] = mergeDeleteObjects
 ): [any, number] {
     let count = 0
 
@@ -31,7 +31,7 @@ export function mergeDeleteObjects(
             continue
         }
         if (value === null) {
-            if (newObj[key]) {
+            if (copied[key]) {
                 delete copied[key]
                 count++
             }
@@ -40,7 +40,7 @@ export function mergeDeleteObjects(
             copied[key] = ret[0]
             count += ret[1]
         } else if (value !== undefined) {
-            if (newObj[key] != value) {
+            if (copied[key] != value) {
                 copied[key] = value
                 count++
             }
