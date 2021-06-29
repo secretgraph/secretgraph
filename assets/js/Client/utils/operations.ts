@@ -780,9 +780,10 @@ export async function updateConfigRemoteReducer(
     }
 ): Promise<Interfaces.ConfigInterface | null> {
     if (update === null) {
+        // protect config update against null
         return null
     }
-    const config = state || updateConfigReducer(null, update)
+    const config = state || updateConfigReducer(null, { update })
     if (!authInfo) {
         authInfo = extractAuthInfo({
             config,

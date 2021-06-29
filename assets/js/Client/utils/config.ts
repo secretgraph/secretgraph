@@ -625,6 +625,9 @@ export function updateConfig(
             case 'certificates':
             case 'tokens':
                 res = mergeDeleteObjects(newState[key], val)
+                if (!res[0].data || res[0].note === undefined) {
+                    throw Error('invalid merge of token/certificate')
+                }
                 newState[key] = res[0]
                 count += res[1]
                 break
@@ -678,18 +681,11 @@ export function updateConfig(
                                         const res = mergeDeleteObjects(
                                             newState.hashes,
                                             newval.hashes,
-                                            // replace, we have arrays no hash objects
-                                            (old, newobj) => newobj
+                                            // replace if not undefined, we have arrays
+                                            (old, newobj) => {
+                                                return [newobj, 1]
+                                            }
                                         )
-                                        // debug, remove later
-                                        if (
-                                            Object.values(res[0]).some(
-                                                (val) => !(val instanceof Array)
-                                            )
-                                        ) {
-                                            console.error(res[0])
-                                            throw Error('invalid merge')
-                                        }
                                         newState.hashes = res[0]
                                         count += res[1]
                                     }
@@ -759,18 +755,18 @@ export function updateConfig(
 
 export function updateConfigReducer(
     state: Interfaces.ConfigInterface | null,
-    update: Interfaces.ConfigInputInterface,
-    replace?: boolean
+    inp: { update: Interfaces.ConfigInputInterface | null; replace?: boolean }
 ): Interfaces.ConfigInterface
 export function updateConfigReducer(
     state: Interfaces.ConfigInterface | null,
-    update: Interfaces.ConfigInputInterface | null,
-    replace?: boolean
+    inp: { update: Interfaces.ConfigInputInterface | null; replace?: boolean }
 ): Interfaces.ConfigInterface | null
 export function updateConfigReducer(
     state: Interfaces.ConfigInterface | null,
-    update: Interfaces.ConfigInputInterface | null,
-    replace?: boolean
+    {
+        update,
+        replace,
+    }: { update: Interfaces.ConfigInputInterface | null; replace?: boolean }
 ): Interfaces.ConfigInterface | null {
     if (update === null) {
         return null

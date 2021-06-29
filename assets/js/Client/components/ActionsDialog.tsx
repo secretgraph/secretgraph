@@ -328,6 +328,7 @@ export function ActionEntry({
                 <Portal container={ref.current}>
                     <Formik
                         initialValues={{
+                            type: 'action',
                             data: 'new',
                             start: '',
                             stop: '',

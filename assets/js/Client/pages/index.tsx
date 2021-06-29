@@ -31,11 +31,15 @@ function Definitions(props: Props) {
         sessionStorage.setItem('openSidebar', JSON.stringify(arg))
         _setOpenSidebar(arg)
     }
-    const [config, updateConfig] = React.useReducer(
+    const [config, updateConfigIntern] = React.useReducer(
         updateConfigReducer,
         null,
         () => loadConfigSync()
     )
+    const updateConfig = (
+        update: Interfaces.ConfigInputInterface | null,
+        replace?: boolean
+    ) => updateConfigIntern({ update, replace })
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>
     >(updateState, {
