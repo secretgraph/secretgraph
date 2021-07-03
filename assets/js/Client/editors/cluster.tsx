@@ -33,7 +33,6 @@ import {
     serialize,
 } from 'rdflib'
 import * as React from 'react'
-import { useAsync } from 'react-async'
 
 import { ActionEntry } from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
@@ -67,7 +66,7 @@ import {
     updateConfigRemoteReducer,
 } from '../utils/operations'
 import * as SetOps from '../utils/set'
-import { RequireAttributes, UnpackPromise, ValueType } from '../utils/typing'
+import { UnpackPromise, ValueType } from '../utils/typing'
 
 async function extractPublicInfo({
     config,
@@ -117,6 +116,7 @@ const ClusterIntern = ({
     disabled,
     hashAlgorithms,
     loading: loadingIntern,
+    url,
     ...props
 }: ClusterInternProps) => {
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
@@ -317,7 +317,7 @@ const ClusterIntern = ({
                 // should be solved better
                 const newNode =
                     clusterResponse.data.updateOrCreateCluster.cluster
-                configUpdate.hosts[props.url as string] = {
+                configUpdate.hosts[url] = {
                     hashAlgorithms,
                     clusters: {
                         [newNode.id as string]: {
@@ -331,9 +331,8 @@ const ClusterIntern = ({
                 if (digestCert && privPromise) {
                     ;(
                         configUpdate.hosts as Interfaces.ConfigInterface['hosts']
-                    )[props.url as string].clusters[
-                        newNode.id as string
-                    ].hashes[digestCert] = []
+                    )[url].clusters[newNode.id as string].hashes[digestCert] =
+                        []
                     configUpdate.tokens[digestCert] = {
                         data: await privPromise,
                         note: 'initial certificate',
@@ -362,7 +361,6 @@ const ClusterIntern = ({
         >
             {({ submitForm, isSubmitting, initialValues, dirty }) => {
                 const loading = !!(isSubmitting || loadingIntern)
-                //console.log(isSubmitting, loadingIntern, disabled)
                 return (
                     <Form>
                         <Grid container spacing={2}>

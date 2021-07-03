@@ -277,6 +277,9 @@ export const contentRetrievalQuery = gql`
         $includeTags: [String!]
     ) {
         secretgraph(authorization: $authorization) {
+            config {
+                hashAlgorithms
+            }
             node(id: $id) {
                 ... on Content {
                     id

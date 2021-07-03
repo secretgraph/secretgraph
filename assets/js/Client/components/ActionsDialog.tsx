@@ -383,7 +383,7 @@ export function ActionEntry({
 }
 
 interface ActionsDialogProps
-    extends FieldArrayRenderProps,
+    extends Pick<FieldArrayRenderProps, 'remove' | 'replace'>,
         Omit<DialogProps, 'children' | 'onClose'> {
     disabled?: boolean
     handleClose: () => void
@@ -396,14 +396,8 @@ export default function ActionsDialog({
     disabled,
     handleClose,
     form,
-    move,
-    swap,
-    push,
-    insert,
-    unshift,
-    pop,
-    replace,
     remove,
+    replace,
     ...dialogProps
 }: ActionsDialogProps) {
     const tokens = React.useMemo(() => {
