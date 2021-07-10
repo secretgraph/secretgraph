@@ -355,9 +355,7 @@ export async function exportConfigAsUrl({
                     Constants.mapHashNames[hash].operationName,
                     cert as Uint8Array
                 )
-                .then((data) =>
-                    btoa(String.fromCharCode(...new Uint8Array(data)))
-                )
+                .then((data) => Buffer.from(data).toString('base64'))
         )
     )
     const searchcerthashes = new Set(
@@ -416,10 +414,8 @@ export async function exportConfigAsUrl({
                     configContent.link
                 }?decrypt&token=${authInfo.tokens.join('token=')}&token=${
                     certhashes[0]
-                }:${btoa(
-                    String.fromCharCode(
-                        ...new Uint8Array(sharedKeyPrivateKeyRes.data)
-                    )
+                }:${Buffer.from(sharedKeyPrivateKeyRes.data).toString(
+                    'base64'
                 )}`
             }
         }

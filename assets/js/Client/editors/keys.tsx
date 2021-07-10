@@ -165,8 +165,8 @@ async function calcPublicKey(key: string, hashAlgorithms: string[]) {
         unserializeToCryptoKey(matchedPrivKey, keyParams, 'publicKey')
     )
 
-    return `-----BEGIN PUBLIC KEY-----\n${btoa(
-        String.fromCharCode.apply(null, new Uint8Array(publicKey))
+    return `-----BEGIN PUBLIC KEY-----\n${Buffer.from(publicKey).toString(
+        'base64'
     )}\n-----END PUBLIC KEY-----`
 }
 
@@ -471,12 +471,9 @@ const ViewKeys = () => {
                     variant="body2"
                     style={{ whiteSpace: 'pre-line', wordBreak: 'break-all' }}
                 >
-                    {`-----BEGIN PUBLIC KEY-----\n${btoa(
-                        String.fromCharCode.apply(
-                            null,
-                            new Uint8Array(data.publicKey.data)
-                        )
-                    )}\n-----END PUBLIC KEY-----`}
+                    {`-----BEGIN PUBLIC KEY-----\n${Buffer.from(
+                        data.publicKey.data
+                    ).toString('base64')}\n-----END PUBLIC KEY-----`}
                 </Typography>
             </Grid>
             <Grid item xs={12}>
@@ -486,12 +483,9 @@ const ViewKeys = () => {
                     style={{ whiteSpace: 'pre-line', wordBreak: 'break-all' }}
                 >
                     {data.privateKey
-                        ? `-----BEGIN PRIVATE KEY-----\n${btoa(
-                              String.fromCharCode.apply(
-                                  null,
-                                  new Uint8Array(data.privateKey.data)
-                              )
-                          )}\n-----END PRIVATE KEY-----`
+                        ? `-----BEGIN PRIVATE KEY-----\n${Buffer.from(
+                              data.privateKey.data
+                          ).toString('base64')}\n-----END PRIVATE KEY-----`
                         : '-'}
                 </Typography>
             </Grid>
@@ -558,16 +552,13 @@ const EditKeys = () => {
     }
     const initialValues = {
         cluster: data.publicKey.nodeData.cluster.id as string,
-        publicKey: `-----BEGIN PUBLIC KEY-----\n${btoa(
-            String.fromCharCode.apply(null, new Uint8Array(data.publicKey.data))
-        )}\n-----END PUBLIC KEY-----`,
+        publicKey: `-----BEGIN PUBLIC KEY-----\n${Buffer.from(
+            data.publicKey.data
+        ).toString('base64')}\n-----END PUBLIC KEY-----`,
         privateKey: data.privateKey
-            ? `-----BEGIN PRIVATE KEY-----\n${btoa(
-                  String.fromCharCode.apply(
-                      null,
-                      new Uint8Array(data.privateKey.data)
-                  )
-              )}\n-----END PRIVATE KEY-----`
+            ? `-----BEGIN PRIVATE KEY-----\n${Buffer.from(
+                  data.privateKey.data
+              ).toString('base64')}\n-----END PRIVATE KEY-----`
             : '',
     }
 

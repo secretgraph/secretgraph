@@ -143,7 +143,7 @@ export async function unserializeToArrayBuffer(
     const _inp = await inp
     let _result: ArrayBuffer
     if (typeof _inp === 'string') {
-        _result = Uint8Array.from(atob(_inp), (c) => c.charCodeAt(0))
+        _result = Buffer.from(_inp, 'base64').buffer
     } else {
         let _data
         const _finp = (_inp as Interfaces.KeyOutInterface).data
@@ -204,11 +204,8 @@ export async function serializeToBase64(
         | Interfaces.KeyOutInterface
         | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
 ): Promise<string> {
-    return btoa(
-        String.fromCharCode.apply(
-            null,
-            new Uint8Array(await unserializeToArrayBuffer(inp))
-        )
+    return Buffer.from(await unserializeToArrayBuffer(inp)).toString(
+        'base64url'
     )
 }
 
@@ -744,9 +741,9 @@ export async function encryptPreKey({
         key,
         data: prekey,
     })
-    return `${btoa(String.fromCharCode(...nonce))}${btoa(
-        String.fromCharCode(...new Uint8Array(data))
-    )}`
+    return `${Buffer.from(nonce).toString('base64url')}${Buffer.from(
+        data
+    ).toString('base64url')}`
 }
 
 async function _pwsdecryptprekey(options: {
@@ -761,9 +758,9 @@ async function _pwsdecryptprekey(options: {
         const _prekey = options.prekey.split(':', 1)
         if (_prekey.length > 1) {
             prefix = _prekey[0]
-            prekey = Uint8Array.from(atob(_prekey[1]), (c) => c.charCodeAt(0))
+            prekey = Buffer.from(_prekey[1], 'base64').buffer
         } else {
-            prekey = Uint8Array.from(atob(_prekey[0]), (c) => c.charCodeAt(0))
+            prekey = Buffer.from(_prekey[0], 'base64').buffer
         }
     } else {
         prekey = options.prekey

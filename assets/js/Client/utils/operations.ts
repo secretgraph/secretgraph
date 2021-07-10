@@ -597,14 +597,12 @@ export async function initializeCluster(
         .then((keydata) =>
             crypto.subtle
                 .digest(halgo.operationName, keydata)
-                .then((data) =>
-                    btoa(String.fromCharCode(...new Uint8Array(data)))
-                )
+                .then((data) => Buffer.from(data).toString('base64url'))
         )
     const digestActionKeyPromise = crypto.subtle
         .digest(config.hosts[config.baseUrl].hashAlgorithms[0], key)
-        .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))))
-    const keyb64 = btoa(String.fromCharCode(...key))
+        .then((data) => Buffer.from(data).toString('base64url'))
+    const keyb64 = Buffer.from(key).toString('base64url')
     const clusterResponse = await createCluster({
         client,
         actions: [{ value: '{"action": "manage"}', key: keyb64 }],

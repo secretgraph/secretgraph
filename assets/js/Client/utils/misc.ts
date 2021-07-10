@@ -6,7 +6,7 @@ export function utf8ToBinary(inp: string): string {
 }
 
 export function b64toarr(inp: string) {
-    return Uint8Array.from(atob(inp), (c) => c.charCodeAt(0))
+    return new Uint8Array(Buffer.from(inp, 'base64').buffer)
 }
 export function b64toutf8(inp: string) {
     return utf8decoder.decode(b64toarr(inp))
@@ -15,7 +15,7 @@ export function b64toutf8(inp: string) {
 export async function sortedHash(inp: string[], algo: string): Promise<string> {
     return await crypto.subtle
         .digest(algo, utf8encoder.encode(inp.sort().join('')))
-        .then((data) => btoa(String.fromCharCode(...new Uint8Array(data))))
+        .then((data) => Buffer.from(data).toString('base64url'))
 }
 
 export function mergeDeleteObjects(

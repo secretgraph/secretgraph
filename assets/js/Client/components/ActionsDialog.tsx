@@ -344,13 +344,9 @@ export function ActionEntry({
                             { resetForm }
                         ) => {
                             if (data == 'new') {
-                                data = btoa(
-                                    String.fromCharCode(
-                                        ...crypto.getRandomValues(
-                                            new Uint8Array(32)
-                                        )
-                                    )
-                                )
+                                data = Buffer.from(
+                                    crypto.getRandomValues(new Uint8Array(32))
+                                ).toString('base64url')
                             }
                             await addFn({ data, ...values })
                             resetForm()

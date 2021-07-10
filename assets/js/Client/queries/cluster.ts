@@ -51,7 +51,7 @@ export const clusterFeedQuery = gql`
 `
 
 export const getClusterConfigurationQuery = gql`
-    query clusterGetConfigurationQuery($id: ID, $authorization: [String!]) {
+    query clusterGetConfigurationQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
                 id
@@ -66,7 +66,7 @@ export const getClusterConfigurationQuery = gql`
                     }
                 }
             }
-            node(id: $id) @include(if: $id) {
+            node(id: $id) {
                 ... on Cluster {
                     id
                     group

@@ -286,11 +286,7 @@ const ClusterIntern = ({
                             crypto.subtle
                                 .digest(hashAlgorithms[0], keydata)
                                 .then((data) =>
-                                    btoa(
-                                        String.fromCharCode(
-                                            ...new Uint8Array(data)
-                                        )
-                                    )
+                                    Buffer.from(data).toString('base64url')
                                 )
                         )
                     clusterResponse = await createCluster({
@@ -531,7 +527,7 @@ const AddCluster = () => {
     const [data, setData] =
         React.useState<(ClusterInternProps & { key: string }) | null>(null)
 
-    useFixedQuery(getClusterConfigurationQuery, {
+    useFixedQuery(serverConfigQuery, {
         pollInterval: 60000,
         variables: {},
         onError: console.error,
@@ -546,10 +542,10 @@ const AddCluster = () => {
             })
 
             const key = crypto.getRandomValues(new Uint8Array(32))
-            const keyb64 = btoa(String.fromCharCode(...key))
+            const keyb64 = Buffer.from(key).toString('base64url')
             const { data: hashKey, hashAlgorithms } = await hashObject(
                 key,
-                data.config.hashAlgorithms
+                data.secretgraph.config.hashAlgorithms
             )
             setData({
                 name: '',

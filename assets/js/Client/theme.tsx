@@ -1,7 +1,7 @@
 import {
     Theme,
-    createMuiTheme,
     createStyles,
+    createTheme,
     makeStyles,
     responsiveFontSizes,
     useTheme,
@@ -11,7 +11,7 @@ import {
 const drawerWidth = '16rem'
 
 export const theme = responsiveFontSizes(
-    createMuiTheme({
+    createTheme({
         overrides: {
             MuiTreeItem: {
                 iconContainer: {
