@@ -82,12 +82,12 @@ async function extractPublicInfo({
     hashAlgorithms: string[]
 }) {
     const { name, note } = extractPublicInfoShared(node.publicInfo, true)
+    const known = node && url && config.hosts[url]?.clusters[node.id]?.hashes
     const mapper = await generateActionMapper({
         nodeData: node,
         config,
         unknownTokens: tokens,
-        knownHashes:
-            (node && url && config.hosts[url]?.clusters[node.id]?.hashes) || {},
+        knownHashes: known ? [known] : undefined,
         hashAlgorithm: hashAlgorithms[0],
     })
     return {

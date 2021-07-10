@@ -1,7 +1,8 @@
 {
   "private": true,
   "dependencies": {
-    "@json-editor/json-editor": "*"
+    "@json-editor/json-editor": "*",
+    "buffer": "^6.0.3"
   },
   "devDependencies": {
     "@apollo/client": "latest",

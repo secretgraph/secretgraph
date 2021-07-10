@@ -9,7 +9,7 @@ import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
 import * as DOMPurify from 'dompurify'
-import { FastField, Field, FieldProps, Form, Formik } from 'formik'
+import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import {
     CheckboxWithLabel as FormikCheckboxWithLabel,
     TextField as FormikTextField,
@@ -17,6 +17,7 @@ import {
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
+import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
@@ -29,7 +30,14 @@ import * as Interfaces from '../interfaces'
 import { contentRetrievalQuery } from '../queries/content'
 import { getContentConfigurationQuery } from '../queries/content'
 import { useStylesAndTheme } from '../theme'
+import {
+    ActionInputEntry,
+    CertificateInputEntry,
+    generateActionMapper,
+    transformActions,
+} from '../utils/action'
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
+import { findWorkingHashAlgorithms } from '../utils/encryption'
 import { extractPubKeysCluster } from '../utils/graphql'
 import { useFixedQuery } from '../utils/hooks'
 import {
@@ -173,144 +181,60 @@ const TextFileAdapter = ({
     )
 }
 
-const ViewFile = () => {
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] =
-        React.useState<UnpackPromise<ReturnType<typeof decryptContentObject>>>(
-            null
-        )
-
-    useFixedQuery(contentRetrievalQuery, {
-        pollInterval: 60000,
-        fetchPolicy: 'cache-and-network',
-        variables: {
-            variables: {
-                id: mainCtx.item as string,
-                authorization: mainCtx.tokens,
-            },
-        },
-        onCompleted: (data) => {
-            if (!data) {
-                return
-            }
-            const updateOb = {
-                shareUrl: data.secretgraph.node.link,
-                deleted: data.secretgraph.node.deleted || null,
-                updateId: data.secretgraph.node.updateId,
-            }
-            if (
-                data.secretgraph.node.id == config.configCluster &&
-                mainCtx.url == config.baseUrl &&
-                !updateOb.deleted
-            ) {
-                updateOb.deleted = false
-            }
-            updateMainCtx(updateOb)
-            decryptContentObject({
-                config,
-                nodeData: data.secretgraph.node,
-                blobOrTokens: mainCtx.tokens,
-                decrypt: decryptSet,
-            }).then(setData)
-        },
-    })
-    if (!data) {
-        return null
-    }
-    const mime =
-        data.tags.mime && data.tags.mime.length > 0
-            ? data.tags.mime[0]
-            : 'application/octet-stream'
-    const state =
-        data.tags.state &&
-        data.tags.state.length > 0 &&
-        Constants.contentStates.has(data.tags.state[0])
-            ? data.tags.state[0]
-            : ''
-
-    let name: string = mainCtx.item as string
-    let encryptName = false
-    if (data.tags.ename && data.tags.ename.length > 0) {
-        name = data.tags.ename[0]
-        encryptName = true
-    } else if (data.tags.name && data.tags.name.length > 0) {
-        name = data.tags.name[0]
-    }
-    return (
-        <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-                <Typography variant="h5">Name</Typography>
-                <Typography variant="body2">{name}</Typography>
-            </Grid>
-            <Grid item>
-                <Tooltip
-                    title={
-                        encryptName
-                            ? 'Name is encrypted'
-                            : 'Name is unencrypted'
-                    }
-                >
-                    <FormControlLabel
-                        disabled
-                        checked={encryptName}
-                        control={<Checkbox />}
-                        label="Encrypted"
-                    />
-                </Tooltip>
-            </Grid>
-            <Grid item xs={12} md={4}>
-                <Typography variant="h5">Keywords</Typography>
-                <Typography variant="body2">
-                    {data.tags.keywords && data.tags.keywords.join(', ')}
-                </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-                <Typography variant="h5">State</Typography>
-                <Typography variant="body2">
-                    {state
-                        ? (
-                              Constants.contentStates.get(state) as {
-                                  label: string
-                              }
-                          ).label
-                        : 'unknown'}
-                </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-                <Typography variant="h5">Cluster</Typography>
-                <Typography variant="body2">
-                    {data.nodeData.cluster.id}
-                </Typography>
-            </Grid>
-            <ViewWidget
-                arrayBuffer={Promise.resolve(data.data)}
-                mime={mime}
-                name={name}
-            />
-        </Grid>
-    )
+interface FileInternProps {
+    disabled?: boolean
+    mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+    hashAlgorithms: string[]
+    node?: any
+    tags?: { [name: string]: string[] }
+    data?: Blob | null
+    setCluster: (arg: string) => void
 }
 
-const AddFile = () => {
+const FileIntern = ({
+    disabled,
+    node,
+    tags,
+    data,
+    setCluster,
+}: FileInternProps) => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { config } = React.useContext(Contexts.InitializedConfig)
+    const [open, setOpen] = React.useState(false)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     const client = useApolloClient()
+    let name: string = mainCtx.item as string
+    let encryptName = true
+    if (tags) {
+        if (tags['ename'] && tags['ename'].length > 0) {
+            name = tags['ename'][0]
+        } else if (tags.name && tags.name.length > 0) {
+            name = tags.name[0]
+            encryptName = false
+        }
+    }
+    const state =
+        tags?.state &&
+        tags.state.length > 0 &&
+        Constants.contentStates.has(tags.state[0])
+            ? tags.state[0]
+            : 'internal'
 
     return (
         <Formik
             initialValues={{
                 plainInput: '',
                 htmlInput: '',
-                fileInput: null as null | Blob,
-                state: 'internal',
-                name: '',
-                encryptName: true,
-                keywords: [] as string[],
-                cluster: searchCtx.cluster ? searchCtx.cluster : null,
+                fileInput: data ? data : null,
+                state,
+                name,
+                encryptName,
+                keywords: tags?.keywords || [],
+                cluster:
+                    node?.cluster?.id ||
+                    (searchCtx.cluster ? searchCtx.cluster : null),
             }}
             validate={(values) => {
                 const errors: Partial<
@@ -338,7 +262,10 @@ const AddFile = () => {
 
                 return errors
             }}
-            onSubmit={async (values, { setSubmitting, setValues }) => {
+            onSubmit={async (
+                values,
+                { setSubmitting, setValues, setFieldValue, setFieldTouched }
+            ) => {
                 let value: Blob
                 if (values.htmlInput) {
                     value = new Blob([DOMPurify.sanitize(values.htmlInput)], {
@@ -419,7 +346,19 @@ const AddFile = () => {
                 }
             }}
         >
-            {({ submitForm, isSubmitting, values, setValues, dirty }) => {
+            {({
+                submitForm,
+                isSubmitting,
+                values,
+                setValues,
+                dirty,
+                setFieldTouched,
+                touched,
+                setFieldValue,
+            }) => {
+                React.useEffect(() => {
+                    setCluster(values.cluster)
+                }, [values.cluster])
                 let preview = null
                 if (values.plainInput) {
                     preview = (
@@ -455,6 +394,21 @@ const AddFile = () => {
                 }
                 return (
                     <Form>
+                        <FieldArray name="actions">
+                            {({ remove, replace, form }) => {
+                                return (
+                                    <ActionsDialog
+                                        remove={remove}
+                                        replace={replace}
+                                        form={form}
+                                        disabled={isSubmitting}
+                                        handleClose={() => setOpen(false)}
+                                        open={open}
+                                    />
+                                )
+                            }}
+                        </FieldArray>
+
                         <Grid container spacing={2}>
                             {preview}
                             <Grid item xs={12} sm={10}>
@@ -529,180 +483,294 @@ const AddFile = () => {
                                     multiple
                                 />
                             </Grid>
-                            {mainCtx.type != 'Text' ? (
-                                <Grid item xs={12} sm={6}>
-                                    <Field
-                                        component={FormikTextField}
-                                        name="plainInput"
-                                        label="Text"
-                                        fullWidth
-                                        variant="outlined"
-                                        multiline
-                                        disabled={
-                                            !!(
-                                                isSubmitting ||
-                                                values.htmlInput ||
-                                                values.fileInput
-                                            )
-                                        }
-                                    />
-                                </Grid>
-                            ) : null}
-                            <Grid
-                                item
-                                xs={12}
-                                sm={mainCtx.type != 'Text' ? 6 : undefined}
-                            >
-                                <Field name="htmlInput">
-                                    {(formikFieldProps: FieldProps) => {
-                                        return (
-                                            <SunEditor
-                                                value={
-                                                    formikFieldProps.meta.value
-                                                }
-                                                name="htmlInput"
-                                                label="Html Text"
+                            {!data ? (
+                                <>
+                                    {mainCtx.type != 'Text' ? (
+                                        <Grid item xs={12} sm={6}>
+                                            <Field
+                                                component={FormikTextField}
+                                                name="plainInput"
+                                                label="Text"
+                                                fullWidth
                                                 variant="outlined"
-                                                onChange={(ev) => {
-                                                    formikFieldProps.form.setFieldValue(
-                                                        'htmlInput',
-                                                        ev.target.value
-                                                    )
-                                                }}
-                                                helperText={
-                                                    formikFieldProps.meta.error
-                                                }
-                                                error={
-                                                    !!formikFieldProps.meta
-                                                        .error &&
-                                                    !!formikFieldProps.meta
-                                                        .touched
-                                                }
+                                                multiline
                                                 disabled={
                                                     !!(
                                                         isSubmitting ||
-                                                        values.plainInput ||
+                                                        values.htmlInput ||
                                                         values.fileInput
                                                     )
                                                 }
                                             />
-                                        )
-                                    }}
-                                </Field>
-                            </Grid>
-
-                            <Grid item xs={12}>
-                                <Field
-                                    name="fileInput"
-                                    disabled={
-                                        !!(
-                                            isSubmitting ||
-                                            values.plainInput ||
-                                            values.htmlInput
-                                        )
-                                    }
-                                >
-                                    {(formikFieldProps: FieldProps) => {
-                                        return (
-                                            <>
-                                                <UploadButton
-                                                    name="fileInput"
-                                                    onChange={(ev) => {
-                                                        if (
-                                                            ev.target.files &&
-                                                            ev.target.files
-                                                                .length > 0
-                                                        ) {
-                                                            /**setPSelections([
-                                                                ev.target.files[0]
-                                                                    .name,
-                                                            ])*/
-                                                            if (
-                                                                !formikFieldProps
-                                                                    .form
-                                                                    .touched
-                                                                    .name
-                                                            ) {
-                                                                formikFieldProps.form.setFieldValue(
-                                                                    'name',
-                                                                    ev.target
-                                                                        .files[0]
-                                                                        .name
-                                                                )
-                                                            }
-                                                            formikFieldProps.form.setFieldValue(
-                                                                'fileInput',
-                                                                ev.target
-                                                                    .files[0]
-                                                            )
-                                                        } else {
-                                                            formikFieldProps.form.setFieldValue(
-                                                                'fileInput',
-                                                                null
-                                                            )
+                                        </Grid>
+                                    ) : null}
+                                    <Grid
+                                        item
+                                        xs={12}
+                                        sm={
+                                            mainCtx.type != 'Text'
+                                                ? 6
+                                                : undefined
+                                        }
+                                    >
+                                        <Field name="htmlInput">
+                                            {(formikFieldProps: FieldProps) => {
+                                                return (
+                                                    <SunEditor
+                                                        value={
+                                                            formikFieldProps
+                                                                .meta.value
                                                         }
-                                                    }}
-                                                    accept={
-                                                        mainCtx.type == 'Text'
-                                                            ? 'text/*'
-                                                            : undefined
-                                                    }
-                                                >
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        component="span"
+                                                        name="htmlInput"
+                                                        label="Html Text"
+                                                        variant="outlined"
+                                                        onChange={(ev) => {
+                                                            formikFieldProps.form.setFieldValue(
+                                                                'htmlInput',
+                                                                ev.target.value
+                                                            )
+                                                        }}
+                                                        helperText={
+                                                            formikFieldProps
+                                                                .meta.error
+                                                        }
+                                                        error={
+                                                            !!formikFieldProps
+                                                                .meta.error &&
+                                                            !!formikFieldProps
+                                                                .meta.touched
+                                                        }
                                                         disabled={
                                                             !!(
                                                                 isSubmitting ||
                                                                 values.plainInput ||
-                                                                values.htmlInput
+                                                                values.fileInput
                                                             )
                                                         }
-                                                    >
-                                                        Upload
-                                                    </Button>
-                                                </UploadButton>
-                                                <Button
-                                                    variant="contained"
-                                                    color="primary"
-                                                    disabled={
-                                                        !!(
-                                                            isSubmitting ||
-                                                            values.plainInput ||
-                                                            values.htmlInput
-                                                        )
-                                                    }
-                                                    onClick={() =>
-                                                        setValues({
-                                                            ...values,
-                                                            fileInput: null,
-                                                        })
-                                                    }
-                                                >
-                                                    Clear
-                                                </Button>
-                                                {formikFieldProps.meta
-                                                    .error && (
-                                                    <Typography
-                                                        color={
-                                                            formikFieldProps
-                                                                .meta.touched
-                                                                ? 'error'
-                                                                : undefined
-                                                        }
-                                                    >
-                                                        {
-                                                            formikFieldProps
-                                                                .meta.error
-                                                        }
-                                                    </Typography>
-                                                )}
-                                            </>
-                                        )
-                                    }}
-                                </Field>
-                            </Grid>
+                                                    />
+                                                )
+                                            }}
+                                        </Field>
+                                    </Grid>
+
+                                    <Grid item xs={12}>
+                                        <Field
+                                            name="fileInput"
+                                            disabled={
+                                                !!(
+                                                    isSubmitting ||
+                                                    values.plainInput ||
+                                                    values.htmlInput
+                                                )
+                                            }
+                                        >
+                                            {(formikFieldProps: FieldProps) => {
+                                                return (
+                                                    <>
+                                                        <UploadButton
+                                                            name="fileInput"
+                                                            onChange={(ev) => {
+                                                                if (
+                                                                    ev.target
+                                                                        .files &&
+                                                                    ev.target
+                                                                        .files
+                                                                        .length >
+                                                                        0
+                                                                ) {
+                                                                    /**setPSelections([
+                                                                ev.target.files[0]
+                                                                    .name,
+                                                            ])*/
+                                                                    if (
+                                                                        !formikFieldProps
+                                                                            .form
+                                                                            .touched
+                                                                            .name
+                                                                    ) {
+                                                                        formikFieldProps.form.setFieldValue(
+                                                                            'name',
+                                                                            ev
+                                                                                .target
+                                                                                .files[0]
+                                                                                .name
+                                                                        )
+                                                                    }
+                                                                    formikFieldProps.form.setFieldValue(
+                                                                        'fileInput',
+                                                                        ev
+                                                                            .target
+                                                                            .files[0]
+                                                                    )
+                                                                } else {
+                                                                    formikFieldProps.form.setFieldValue(
+                                                                        'fileInput',
+                                                                        null
+                                                                    )
+                                                                }
+                                                            }}
+                                                            accept={
+                                                                mainCtx.type ==
+                                                                'Text'
+                                                                    ? 'text/*'
+                                                                    : undefined
+                                                            }
+                                                        >
+                                                            <Button
+                                                                variant="contained"
+                                                                color="primary"
+                                                                component="span"
+                                                                disabled={
+                                                                    !!(
+                                                                        isSubmitting ||
+                                                                        values.plainInput ||
+                                                                        values.htmlInput
+                                                                    )
+                                                                }
+                                                            >
+                                                                Upload
+                                                            </Button>
+                                                        </UploadButton>
+                                                        <Button
+                                                            variant="contained"
+                                                            color="primary"
+                                                            disabled={
+                                                                !!(
+                                                                    isSubmitting ||
+                                                                    values.plainInput ||
+                                                                    values.htmlInput
+                                                                )
+                                                            }
+                                                            onClick={() =>
+                                                                setValues({
+                                                                    ...values,
+                                                                    fileInput:
+                                                                        null,
+                                                                })
+                                                            }
+                                                        >
+                                                            Clear
+                                                        </Button>
+                                                        {formikFieldProps.meta
+                                                            .error && (
+                                                            <Typography
+                                                                color={
+                                                                    formikFieldProps
+                                                                        .meta
+                                                                        .touched
+                                                                        ? 'error'
+                                                                        : undefined
+                                                                }
+                                                            >
+                                                                {
+                                                                    formikFieldProps
+                                                                        .meta
+                                                                        .error
+                                                                }
+                                                            </Typography>
+                                                        )}
+                                                    </>
+                                                )
+                                            }}
+                                        </Field>
+                                    </Grid>
+                                </>
+                            ) : (
+                                <>
+                                    <Grid item xs={12}>
+                                        <TextFileAdapter
+                                            value={values.fileInput as Blob}
+                                            onChange={(blob) => {
+                                                setFieldValue('fileInput', blob)
+                                                if (!touched.fileInput) {
+                                                    setFieldTouched(
+                                                        'fileInput',
+                                                        true
+                                                    )
+                                                }
+                                            }}
+                                            mime={
+                                                (values.fileInput as Blob).type
+                                            }
+                                            disabled={disabled}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <FastField
+                                            name="fileInput"
+                                            disabled={isSubmitting}
+                                        >
+                                            {(formikFieldProps: FieldProps) => {
+                                                return (
+                                                    <>
+                                                        <UploadButton
+                                                            name="fileInput"
+                                                            onChange={(ev) => {
+                                                                if (
+                                                                    ev.target
+                                                                        .files &&
+                                                                    ev.target
+                                                                        .files
+                                                                        .length
+                                                                ) {
+                                                                    setFieldValue(
+                                                                        'fileInput',
+                                                                        ev
+                                                                            .target
+                                                                            .files[0]
+                                                                    )
+                                                                    setFieldValue(
+                                                                        'textFInput',
+                                                                        ev
+                                                                            .target
+                                                                            .files[0]
+                                                                    )
+                                                                }
+                                                            }}
+                                                            accept={
+                                                                mainCtx.type ==
+                                                                'Text'
+                                                                    ? 'text/*'
+                                                                    : undefined
+                                                            }
+                                                        >
+                                                            <Button
+                                                                disabled={
+                                                                    isSubmitting
+                                                                }
+                                                                variant="contained"
+                                                                color="primary"
+                                                                component="span"
+                                                            >
+                                                                Upload
+                                                            </Button>
+                                                        </UploadButton>
+                                                        {formikFieldProps.meta
+                                                            .error && (
+                                                            <Typography
+                                                                color={
+                                                                    formikFieldProps
+                                                                        .meta
+                                                                        .touched
+                                                                        ? 'error'
+                                                                        : undefined
+                                                                }
+                                                            >
+                                                                {
+                                                                    formikFieldProps
+                                                                        .meta
+                                                                        .error
+                                                                }
+                                                            </Typography>
+                                                        )}
+                                                    </>
+                                                )
+                                            }}
+                                        </FastField>
+                                    </Grid>
+                                </>
+                            )}
+
                             <Grid item xs={12}>
                                 {isSubmitting && <LinearProgress />}
                             </Grid>
@@ -724,26 +792,29 @@ const AddFile = () => {
     )
 }
 
-const EditFile = () => {
-    const { classes, theme } = useStylesAndTheme()
+const ViewFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const client = useApolloClient()
     const [data, setData] =
-        React.useState<UnpackPromise<ReturnType<typeof decryptContentObject>>>(
-            null
-        )
+        React.useState<{
+            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+            hashAlgorithms: string[]
+            node: any
+            tags: { [name: string]: string[] }
+            data: Blob | null
+            key: string
+        } | null>(null)
 
-    const { refetch, loading } = useFixedQuery(contentRetrievalQuery, {
+    useFixedQuery(contentRetrievalQuery, {
+        pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
-        nextFetchPolicy: 'network-only',
         variables: {
             variables: {
                 id: mainCtx.item as string,
                 authorization: mainCtx.tokens,
             },
         },
-        onCompleted: (data) => {
+        onCompleted: async (data) => {
             if (!data) {
                 return
             }
@@ -752,309 +823,193 @@ const EditFile = () => {
                 deleted: data.secretgraph.node.deleted || null,
                 updateId: data.secretgraph.node.updateId,
             }
-            if (
-                data.secretgraph.node.id == config.configCluster &&
-                mainCtx.url == config.baseUrl &&
-                !updateOb.deleted
-            ) {
-                updateOb.deleted = false
-            }
             updateMainCtx(updateOb)
-            decryptContentObject({
+            const mapper = generateActionMapper({
+                nodeData: data.secretgraph.node,
+                config,
+                knownHashes: [
+                    data.secretgraph.node.cluster.availableActions,
+                    data.secretgraph.node.availableActions,
+                ],
+                hashAlgorithm: findWorkingHashAlgorithms(
+                    data.secretgraph.config.hashAlgorithms
+                )[0],
+            })
+            const obj = await decryptContentObject({
                 config,
                 nodeData: data.secretgraph.node,
                 blobOrTokens: mainCtx.tokens,
                 decrypt: decryptSet,
-            }).then(setData)
+            })
+            if (!obj) {
+                console.error('failed decoding')
+                return
+            }
+            setData({
+                hashAlgorithms: data.secretgraph.config.hashAlgorithms,
+                tags: obj.tags,
+                node: data.secretgraph.node,
+                mapper: await mapper,
+                data: new Blob([obj.data]),
+                key: `${new Date().getTime()}`,
+            })
         },
     })
+    if (!data) {
+        return null
+    }
+    return <FileIntern disabled {...data} setCluster={() => {}} />
+}
+
+const AddFile = () => {
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const { config } = React.useContext(Contexts.InitializedConfig)
+    const [open, setOpen] = React.useState(false)
+    const [data, setData] =
+        React.useState<{
+            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+            hashAlgorithms: string[]
+            data?: Blob | null
+            key: string | number
+        } | null>(null)
+    // const [PSelections, setPSelections] = React.useState<string[]>([])
+    const client = useApolloClient()
+    const [cluster, setCluster] = React.useState(
+        searchCtx.cluster || config.configCluster
+    )
+    const { data: dataUnfinished } = useQuery(getContentConfigurationQuery, {
+        fetchPolicy: 'cache-and-network',
+        variables: {
+            variables: {
+                id: cluster as string,
+                authorization: mainCtx.tokens,
+            },
+        },
+    })
+
+    React.useEffect(() => {
+        const f = async () => {
+            if (!dataUnfinished) {
+                return
+            }
+            const updateOb = {
+                shareUrl: dataUnfinished.secretgraph.node.link,
+                deleted: dataUnfinished.secretgraph.node.deleted || null,
+                updateId: dataUnfinished.secretgraph.node.updateId,
+            }
+            updateMainCtx(updateOb)
+            const mapper = generateActionMapper({
+                nodeData: dataUnfinished.secretgraph.node,
+                config,
+                knownHashes: [dataUnfinished.secretgraph.node.availableActions],
+                hashAlgorithm: findWorkingHashAlgorithms(
+                    dataUnfinished.secretgraph.config.hashAlgorithms
+                )[0],
+            })
+            setData({
+                hashAlgorithms:
+                    dataUnfinished.secretgraph.config.hashAlgorithms,
+                mapper: await mapper,
+                key: `${new Date().getTime()}`,
+            })
+        }
+        f()
+    }, [config, cluster])
+    if (!data) {
+        return null
+    }
+
+    return <FileIntern setCluster={setCluster} {...data} />
+}
+
+const EditFile = () => {
+    const { classes, theme } = useStylesAndTheme()
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
+    const [open, setOpen] = React.useState(false)
+    const client = useApolloClient()
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const [cluster, setCluster] = React.useState(searchCtx.cluster)
+    const [data, setData] =
+        React.useState<{
+            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+            hashAlgorithms: string[]
+            node: any
+            tags: { [name: string]: string[] }
+            data: Blob | null
+            key: string | number
+        } | null>(null)
+    const {
+        data: dataUnfinished,
+        refetch,
+        loading,
+    } = useQuery(contentRetrievalQuery, {
+        fetchPolicy: 'cache-and-network',
+        nextFetchPolicy: 'network-only',
+        variables: {
+            variables: {
+                id: mainCtx.item as string,
+                authorization: mainCtx.tokens,
+            },
+        },
+    })
+
+    React.useEffect(() => {
+        if (dataUnfinished) {
+            refetch()
+        }
+    }, [mainCtx.updateId])
+    React.useEffect(() => {
+        const f = async () => {
+            if (!dataUnfinished) {
+                return
+            }
+            const updateOb = {
+                shareUrl: dataUnfinished.secretgraph.node.link,
+                deleted: dataUnfinished.secretgraph.node.deleted || null,
+                updateId: dataUnfinished.secretgraph.node.updateId,
+            }
+            updateMainCtx(updateOb)
+            const mapper = generateActionMapper({
+                nodeData: dataUnfinished.secretgraph.node,
+                config,
+                knownHashes: [
+                    dataUnfinished.secretgraph.node.cluster.availableActions,
+                    dataUnfinished.secretgraph.node.availableActions,
+                ],
+                hashAlgorithm: findWorkingHashAlgorithms(
+                    dataUnfinished.secretgraph.config.hashAlgorithms
+                )[0],
+            })
+            const obj = await decryptContentObject({
+                config,
+                nodeData: dataUnfinished.secretgraph.node,
+                blobOrTokens: mainCtx.tokens,
+                decrypt: decryptSet,
+            })
+            if (!obj) {
+                console.error('failed decoding')
+                return
+            }
+            setData({
+                hashAlgorithms:
+                    dataUnfinished.secretgraph.config.hashAlgorithms,
+                tags: obj.tags,
+                node: dataUnfinished.secretgraph.node,
+                mapper: await mapper,
+                data: new Blob([obj.data]),
+                key: `${new Date().getTime()}`,
+            })
+        }
+        f()
+    }, [dataUnfinished, config, cluster])
 
     if (!data) {
         return null
     }
-    const mime =
-        data.tags.mime && data.tags.mime.length > 0
-            ? data.tags.mime[0]
-            : 'application/octet-stream'
-    const state =
-        data.tags.state &&
-        data.tags.state.length > 0 &&
-        Constants.contentStates.has(data.tags.state[0])
-            ? data.tags.state[0]
-            : 'internal'
-
-    let name: string = mainCtx.item as string
-    let encryptName = false
-    if (data.tags.ename && data.tags.ename.length > 0) {
-        name = data.tags.ename[0]
-        encryptName = true
-    } else if (data.tags.name && data.tags.name.length > 0) {
-        name = data.tags.name[0]
-    }
-    return (
-        <Formik
-            initialValues={{
-                textFInput: new Blob([data.data], { type: mime }),
-                fileInput: new Blob([data.data], { type: mime }),
-                name,
-                encryptName,
-                state,
-                keywords: data.tags.keywords || [],
-                cluster: data.nodeData?.cluster?.id as string,
-            }}
-            validate={(values) => {
-                const errors: Partial<
-                    { [key in keyof typeof values]: string }
-                > = {}
-                if (!values.name) {
-                    errors['name'] = 'Name required'
-                }
-                if (!values.fileInput) {
-                    errors['fileInput'] = 'empty'
-                }
-                return errors
-            }}
-            onSubmit={async (values, { setSubmitting, setValues }) => {
-                const value: Blob = values.fileInput
-                const authinfo = extractAuthInfo({
-                    config,
-                    clusters: new Set([
-                        values.cluster,
-                        data.nodeData.cluster.id,
-                    ]),
-                    url: mainCtx.url as string,
-                    require: new Set(['update']),
-                })
-                const pubkeysResult = await client.query({
-                    fetchPolicy: 'network-only',
-                    query: getContentConfigurationQuery,
-                    variables: {
-                        authorization: authinfo.tokens,
-                        id: mainCtx.item,
-                    },
-                })
-                const hashAlgorithm =
-                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
-                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
-                const privkeys = extractPrivKeys({
-                    config,
-                    url: mainCtx.url as string,
-                    hashAlgorithm,
-                })
-                const pubkeys = extractPubKeysCluster({
-                    node: pubkeysResult.data.secretgraph.node.cluster,
-                    authorization: authinfo.tokens,
-                    params: {
-                        name: 'RSA-OAEP',
-                        hash: hashAlgorithm,
-                    },
-                })
-                const result = await updateContent({
-                    id: mainCtx.item as string,
-                    updateId: data.nodeData.updateId,
-                    client,
-                    config,
-                    cluster: values.cluster, // can be null for keeping cluster
-                    value,
-                    tags: [
-                        values.encryptName
-                            ? `ename=${btoa(values.name)}`
-                            : `name=${values.name}`,
-                        `mime=${btoa(value.type)}`,
-                        `state=${values.state}`,
-                        `type=${
-                            value.type.startsWith('text/') ? 'Text' : 'File'
-                        }`,
-                    ].concat(values.keywords.map((val) => `keyword=${val}`)),
-                    encryptTags: new Set(['ename', 'mime']),
-                    privkeys: await Promise.all(Object.values(privkeys)),
-                    pubkeys: Object.values(pubkeys),
-                    hashAlgorithm,
-                    authorization: authinfo.tokens,
-                })
-                if (result.errors) {
-                    console.error(result.errors)
-                } else if (!result.data.updateOrCreateContent.writeok) {
-                    console.log(
-                        'Write failed because of update, load new version',
-                        result
-                    )
-                }
-                refetch()
-            }}
-        >
-            {({
-                submitForm,
-                isSubmitting,
-                values,
-                touched,
-                dirty,
-                setFieldValue,
-                setFieldTouched,
-            }) => {
-                const disabled = loading || isSubmitting
-                return (
-                    <Grid container spacing={2}>
-                        <ViewWidget
-                            arrayBuffer={values.fileInput.arrayBuffer()}
-                            mime={values.fileInput.type}
-                            name={values.name}
-                        />
-                        <Grid item xs={12} sm={10}>
-                            <FastField
-                                component={FormikTextField}
-                                name="name"
-                                fullWidth
-                                label="Name"
-                                disabled={disabled}
-                                validate={(val: string) => {
-                                    if (!val) {
-                                        return 'empty'
-                                    }
-                                    return null
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={2}>
-                            <Tooltip title="Encrypt name">
-                                <span>
-                                    <FastField
-                                        name="encryptName"
-                                        component={FormikCheckboxWithLabel}
-                                        Label={{
-                                            label: 'Encrypt',
-                                        }}
-                                        disabled={disabled}
-                                        type="checkbox"
-                                    />
-                                </span>
-                            </Tooltip>
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            <FastField
-                                component={StateSelect}
-                                name="state"
-                                fullWidth
-                                label="State"
-                                disabled={disabled}
-                                validate={(val: string) => {
-                                    if (!val) {
-                                        return 'empty'
-                                    }
-                                    return null
-                                }}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            <FastField
-                                component={SimpleSelect}
-                                name="keywords"
-                                disabled={disabled}
-                                options={[]}
-                                label="Keywords"
-                                freeSolo
-                                multiple
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} md={4}>
-                            <FastField
-                                component={ClusterSelect}
-                                url={mainCtx.url as string}
-                                name="cluster"
-                                disabled={disabled}
-                                label="Cluster"
-                                firstIfEmpty
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextFileAdapter
-                                value={values.textFInput}
-                                onChange={(blob) => {
-                                    setFieldValue('fileInput', blob)
-                                    if (!touched.fileInput) {
-                                        setFieldTouched('fileInput', true)
-                                    }
-                                }}
-                                mime={mime}
-                                disabled={disabled}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FastField name="fileInput" disabled={isSubmitting}>
-                                {(formikFieldProps: FieldProps) => {
-                                    return (
-                                        <>
-                                            <UploadButton
-                                                name="fileInput"
-                                                onChange={(ev) => {
-                                                    if (
-                                                        ev.target.files &&
-                                                        ev.target.files.length
-                                                    ) {
-                                                        setFieldValue(
-                                                            'fileInput',
-                                                            ev.target.files[0]
-                                                        )
-                                                        setFieldValue(
-                                                            'textFInput',
-                                                            ev.target.files[0]
-                                                        )
-                                                    }
-                                                }}
-                                                accept={
-                                                    mainCtx.type == 'Text'
-                                                        ? 'text/*'
-                                                        : undefined
-                                                }
-                                            >
-                                                <Button
-                                                    disabled={isSubmitting}
-                                                    variant="contained"
-                                                    color="primary"
-                                                    component="span"
-                                                >
-                                                    Upload
-                                                </Button>
-                                            </UploadButton>
-                                            {formikFieldProps.meta.error && (
-                                                <Typography
-                                                    color={
-                                                        formikFieldProps.meta
-                                                            .touched
-                                                            ? 'error'
-                                                            : undefined
-                                                    }
-                                                >
-                                                    {
-                                                        formikFieldProps.meta
-                                                            .error
-                                                    }
-                                                </Typography>
-                                            )}
-                                        </>
-                                    )
-                                }}
-                            </FastField>
-                        </Grid>
-                        <Grid item xs={12}>
-                            {isSubmitting && <LinearProgress />}
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                disabled={disabled || !dirty}
-                                onClick={submitForm}
-                            >
-                                Submit
-                            </Button>
-                        </Grid>
-                    </Grid>
-                )
-            }}
-        </Formik>
-    )
+    return <FileIntern {...data} setCluster={setCluster} disabled={loading} />
 }
 
 export default function FileComponent() {

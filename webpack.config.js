@@ -14,6 +14,9 @@ module.exports = (env, options) => {
             publicPath: 'webpack_bundles/',
         }),
         tsgqlPlugin,
+        new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer'],
+        }),
     ]
     if (options.mode == 'development') {
         plugins.push(

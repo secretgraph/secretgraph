@@ -51,18 +51,24 @@ export interface ActionInputEntry
 export async function generateActionMapper({
     nodeData,
     config,
-    knownHashes,
+    knownHashes: knownHashesIntern,
     unknownTokens,
     unknownKeyhashes,
     hashAlgorithm,
 }: {
     nodeData?: any
     config: Interfaces.ConfigInterface
-    knownHashes?: { [hash: string]: string[] } // cluster or content hashes
+    knownHashes?: { [hash: string]: string[] }[] // cluster or content hashes
     unknownTokens?: string[] // eg. tokens in url
     unknownKeyhashes?: string[] // eg tags
     hashAlgorithm: string
 }) {
+    const knownHashes: { [hash: string]: Set<string> } = {}
+    for (const k of knownHashesIntern || []) {
+        for (const [hash, val] of Object.entries(k)) {
+            knownHashes[hash] = SetOps.union(knownHashes[hash] || [], val)
+        }
+    }
     // TODO: rework, name variables better and merge old actions of type other
     const prepareActionsAndCerts: PromiseLike<
         ActionMapperEntry | CertificateEntry | null
@@ -77,7 +83,7 @@ export async function generateActionMapper({
         inNodeFoundActions[entry.keyHash].add(entry.type)
     }
     const hashalgo = Constants.mapHashNames[hashAlgorithm].operationName
-    for (const [hash, actions] of Object.entries(knownHashes || {})) {
+    for (const [hash, configActions] of Object.entries(knownHashes)) {
         if (config.tokens[hash]) {
             prepareActionsAndCerts.push(
                 serializeToBase64(
@@ -85,7 +91,6 @@ export async function generateActionMapper({
                         (val) => crypto.subtle.digest(hashalgo, val)
                     )
                 ).then((val) => {
-                    const configActions = new Set<string>(actions)
                     let newSet = inNodeFoundActions[val]
                         ? new Set(inNodeFoundActions[val])
                         : new Set<string>()
