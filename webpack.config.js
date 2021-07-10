@@ -1,5 +1,5 @@
 const path = require('path')
-const { SourceMapDevToolPlugin } = require('webpack')
+const { SourceMapDevToolPlugin, ProvidePlugin } = require('webpack')
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin')
 const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
 
@@ -14,7 +14,7 @@ module.exports = (env, options) => {
             publicPath: 'webpack_bundles/',
         }),
         tsgqlPlugin,
-        new webpack.ProvidePlugin({
+        new ProvidePlugin({
             Buffer: ['buffer', 'Buffer'],
         }),
     ]

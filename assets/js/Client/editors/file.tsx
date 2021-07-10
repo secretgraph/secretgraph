@@ -317,9 +317,13 @@ const FileIntern = ({
                         value,
                         tags: [
                             values.encryptName
-                                ? `ename=${btoa(values.name)}`
+                                ? `ename=${Buffer.from(values.name).toString(
+                                      'base64'
+                                  )}`
                                 : `name=${values.name}`,
-                            `mime=${btoa(value.type)}`,
+                            `mime=${Buffer.from(value.type).toString(
+                                'base64'
+                            )}`,
                             `state=${values.state}`,
                             `type=${
                                 value.type.startsWith('text/') ? 'Text' : 'File'
