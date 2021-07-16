@@ -1,11 +1,11 @@
 import { FieldProps } from 'formik'
-import { TextField as FormikTextField } from 'formik-material-ui'
 import * as React from 'react'
 
+import FormikTextField from '../../components/formik/FormikTextField'
 import { contentStates } from '../../constants'
 import { MapSelectProps, createOptionsIterator } from '../MapSelect'
 
-export default function StateSelect<V = any>(
+export default function StateSelect<V extends string | string[] = string>(
     props: Omit<MapSelectProps, 'options'> & FieldProps<V>
 ) {
     return (

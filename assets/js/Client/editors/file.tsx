@@ -10,15 +10,13 @@ import Typography from '@material-ui/core/Typography'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
-import {
-    CheckboxWithLabel as FormikCheckboxWithLabel,
-    TextField as FormikTextField,
-} from 'formik-material-ui'
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
 import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
+import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
+import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import StateSelect from '../components/forms/StateSelect'

@@ -35,14 +35,11 @@ import {
     useField,
     useFormikContext,
 } from 'formik'
-import {
-    Checkbox as FormikCheckBox,
-    CheckboxWithLabel as FormikCheckboxWithLabel,
-    TextField as FormikTextField,
-} from 'formik-material-ui'
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
+import FormikCheckBox from '../components/formik/FormikCheckbox'
+import FormikTextField from '../components/formik/FormikTextField'
 import { ActionInputEntry, CertificateInputEntry } from '../utils/action'
 import {
     serializeToBase64,

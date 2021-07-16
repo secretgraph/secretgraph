@@ -18,12 +18,9 @@ import {
     Formik,
     useFormikContext,
 } from 'formik'
-import {
-    CheckboxWithLabel as FormikCheckboxWithLabel,
-    TextField as FormikTextField,
-} from 'formik-material-ui'
 import * as React from 'react'
 
+import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import * as Contexts from '../contexts'
@@ -158,15 +155,16 @@ const EditCustom = ({
     const client = useApolloClient()
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] = React.useState<
-        | (Exclude<
-              UnpackPromise<ReturnType<typeof decryptContentObject>>,
-              null
-          > & {
-              text: string
-          })
-        | null
-    >(null)
+    const [data, setData] =
+        React.useState<
+            | (Exclude<
+                  UnpackPromise<ReturnType<typeof decryptContentObject>>,
+                  null
+              > & {
+                  text: string
+              })
+            | null
+        >(null)
     const [encryptedTags, setEncryptedTags] = React.useState<string[]>([
         'ename',
         'mime',
@@ -179,19 +177,20 @@ const EditCustom = ({
             }),
         [mainCtx.url, config]
     )
-    const { data: dataUnfinished, loading, refetch } = useQuery(
-        contentRetrievalQuery,
-        {
-            pollInterval: 60000,
-            fetchPolicy: 'cache-and-network',
+    const {
+        data: dataUnfinished,
+        loading,
+        refetch,
+    } = useQuery(contentRetrievalQuery, {
+        pollInterval: 60000,
+        fetchPolicy: 'cache-and-network',
+        variables: {
             variables: {
-                variables: {
-                    id: mainCtx.item as string,
-                    authorization: authinfo.tokens,
-                },
+                id: mainCtx.item as string,
+                authorization: authinfo.tokens,
             },
-        }
-    )
+        },
+    })
     React.useEffect(() => {
         if (!dataUnfinished) {
             return

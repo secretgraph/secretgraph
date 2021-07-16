@@ -1,22 +1,21 @@
-import * as React from 'react'
-
-import {
-    AutocompleteRenderInputParams,
-    AutocompleteProps,
-} from '@material-ui/lab/Autocomplete'
 import Chip from '@material-ui/core/Chip'
 import { TextFieldProps } from '@material-ui/core/TextField'
-import { TextField as FormikTextField } from 'formik-material-ui'
+import {
+    AutocompleteProps,
+    AutocompleteRenderInputParams,
+} from '@material-ui/lab/Autocomplete'
+import { Value } from '@material-ui/lab/useAutocomplete'
+import { Field, FieldInputProps, FieldMetaProps, FieldProps } from 'formik'
+import * as React from 'react'
 
-import { Autocomplete as FormikAutocomplete } from 'formik-material-ui-lab'
-
-import { FieldProps, Field } from 'formik'
+import FormikAutocomplete from '../formik/FormikAutocomplete'
+import FormikTextField from '../formik/FormikTextField'
 
 export interface SimpleSelectProps<
+    T,
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
-    FreeSolo extends boolean | undefined,
-    T = string
+    FreeSolo extends boolean | undefined
 > extends Omit<
         AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
         'renderTags' | 'renderInput'
@@ -40,11 +39,11 @@ export interface SimpleSelectProps<
 }
 
 interface SimpleSelectPropsTags<
+    T,
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
-    FreeSolo extends boolean | undefined,
-    T = string
-> extends SimpleSelectProps<Multiple, DisableClearable, FreeSolo, T> {
+    FreeSolo extends boolean | undefined
+> extends SimpleSelectProps<T, Multiple, DisableClearable, FreeSolo> {
     renderInput: AutocompleteProps<
         T,
         Multiple,
@@ -60,22 +59,21 @@ interface SimpleSelectPropsTags<
 }
 
 interface SimpleSelectPropsTagsStrict<
+    T,
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
-    FreeSolo extends boolean | undefined,
-    T = string
-> extends SimpleSelectPropsTags<Multiple, DisableClearable, FreeSolo, T> {
+    FreeSolo extends boolean | undefined
+> extends SimpleSelectPropsTags<T, Multiple, DisableClearable, FreeSolo> {
     renderTags: NonNullable<
         AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>['renderTags']
     >
 }
 
 export default function SimpleSelect<
+    T,
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
-    FreeSolo extends boolean | undefined,
-    V,
-    T = string
+    FreeSolo extends boolean | undefined
 >({
     label,
     InputProps: InputPropsMain,
@@ -83,7 +81,8 @@ export default function SimpleSelect<
     form,
     meta,
     ...appProps
-}: SimpleSelectProps<Multiple, DisableClearable, FreeSolo, T> & FieldProps<V>) {
+}: SimpleSelectProps<T, Multiple, DisableClearable, FreeSolo> &
+    FieldProps<Value<T, Multiple, DisableClearable, FreeSolo>>) {
     if (!appProps.getOptionLabel) {
         appProps.getOptionLabel = (option: T) => `${option}`
     }
@@ -93,9 +92,11 @@ export default function SimpleSelect<
                 return (
                     <Chip
                         variant="outlined"
-                        label={(appProps.getOptionLabel as NonNullable<
-                            typeof appProps['getOptionLabel']
-                        >)(option)}
+                        label={(
+                            appProps.getOptionLabel as NonNullable<
+                                typeof appProps['getOptionLabel']
+                            >
+                        )(option)}
                         size="small"
                         {...getTagProps({ index })}
                     />
@@ -115,10 +116,10 @@ export default function SimpleSelect<
             Object.assign(InputProps, params.InputProps)
             if (!appProps.multiple && appProps.renderTags) {
                 const appProps2 = appProps as SimpleSelectPropsTagsStrict<
+                    T,
                     Multiple,
                     DisableClearable,
-                    FreeSolo,
-                    T
+                    FreeSolo
                 >
                 InputProps['startAdornment'] = appProps2.renderTags(
                     appProps.options,
@@ -128,9 +129,9 @@ export default function SimpleSelect<
             return (
                 <FormikTextField
                     {...params}
-                    field={field}
+                    field={field as FieldInputProps<string>}
                     form={form}
-                    meta={meta}
+                    meta={meta as FieldMetaProps<string>}
                     InputProps={InputProps}
                     label={label}
                     fullWidth
@@ -142,10 +143,10 @@ export default function SimpleSelect<
     return (
         <FormikAutocomplete
             {...(appProps as SimpleSelectPropsTags<
+                T,
                 Multiple,
                 DisableClearable,
-                FreeSolo,
-                T
+                FreeSolo
             >)}
             field={field}
             meta={meta}

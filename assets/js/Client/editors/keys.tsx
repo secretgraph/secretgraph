@@ -20,11 +20,11 @@ import {
     FormikValues,
     useFormikContext,
 } from 'formik'
-import { TextField as FormikTextField } from 'formik-material-ui'
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
 import DecisionFrame from '../components/DecisionFrame'
+import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import * as Constants from '../constants'
 import * as Contexts from '../contexts'

@@ -22,7 +22,6 @@ import {
     Formik,
     FormikProps,
 } from 'formik'
-import { TextField as FormikTextField } from 'formik-material-ui'
 import {
     BlankNode,
     Literal,
@@ -36,6 +35,7 @@ import * as React from 'react'
 
 import { ActionEntry } from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
+import FormikTextField from '../components/formik/FormikTextField'
 import { CLUSTER, RDF, SECRETGRAPH, XSD, protectedActions } from '../constants'
 import * as Contexts from '../contexts'
 import * as Interfaces from '../interfaces'

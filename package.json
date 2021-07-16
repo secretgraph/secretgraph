@@ -22,8 +22,6 @@
     "dompurify": "*",
     "file-saver": "*",
     "formik": "latest",
-    "formik-material-ui": "latest",
-    "formik-material-ui-lab": "latest",
     "graphql": "*",
     "rdflib": "*",
     "react": "latest",
