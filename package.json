@@ -6,9 +6,9 @@
   },
   "devDependencies": {
     "@apollo/client": "latest",
-    "@material-ui/core": "latest",
-    "@material-ui/icons": "latest",
-    "@material-ui/lab": ">=4.0.0-alpha.57",
+    "@material-ui/core": "next",
+    "@material-ui/icons": "next",
+    "@material-ui/lab": ">=5.0.0-alpha.0",
     "@types/apollo-upload-client": "latest",
     "@types/dompurify": "latest",
     "@types/file-saver": "latest",

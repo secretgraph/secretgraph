@@ -1,5 +1,5 @@
-import Autocomplete, { AutocompleteProps } from '@material-ui/lab/Autocomplete'
-import { Value } from '@material-ui/lab/useAutocomplete'
+import Autocomplete, { AutocompleteProps } from '@material-ui/core/Autocomplete'
+import { Value } from '@material-ui/core/useAutocomplete'
 import {
     FieldHelperProps,
     FieldInputProps,
@@ -36,16 +36,16 @@ export function createOnChangeFn<
         if (field.multiple) {
             switch (reason) {
                 case 'blur':
-                case 'select-option':
+                case 'selectOption':
                     helpers.setValue(value)
                     break
-                case 'create-option':
+                case 'createOption':
                     helpers.setValue([
                         ...(field.value as T[]),
                         value as T,
                     ] as any)
                     break
-                case 'remove-option':
+                case 'removeOption':
                     helpers.setValue(
                         (field.value as T[]).filter(
                             (val) => val != value
@@ -56,11 +56,11 @@ export function createOnChangeFn<
         } else {
             switch (reason) {
                 case 'blur':
-                case 'select-option':
-                case 'create-option':
+                case 'selectOption':
+                case 'createOption':
                     helpers.setValue(value)
                     break
-                case 'remove-option':
+                case 'removeOption':
                     helpers.setValue(null as any)
                     break
             }
