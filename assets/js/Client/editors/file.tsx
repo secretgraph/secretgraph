@@ -812,11 +812,10 @@ const ViewFile = () => {
     useFixedQuery(contentRetrievalQuery, {
         pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
+        onError: console.error,
         variables: {
-            variables: {
-                id: mainCtx.item as string,
-                authorization: mainCtx.tokens,
-            },
+            id: mainCtx.item as string,
+            authorization: mainCtx.tokens,
         },
         onCompleted: async (data) => {
             if (!data) {
@@ -883,15 +882,23 @@ const AddFile = () => {
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster
     )
-    const { data: dataUnfinished } = useQuery(getContentConfigurationQuery, {
-        fetchPolicy: 'cache-and-network',
-        variables: {
+    const { data: dataUnfinished, refetch } = useQuery(
+        getContentConfigurationQuery,
+        {
+            fetchPolicy: 'cache-and-network',
             variables: {
                 id: cluster as string,
                 authorization: mainCtx.tokens,
             },
-        },
-    })
+            onError: console.error,
+        }
+    )
+
+    React.useEffect(() => {
+        if (dataUnfinished) {
+            refetch()
+        }
+    }, [cluster])
 
     React.useEffect(() => {
         const f = async () => {
@@ -920,7 +927,7 @@ const AddFile = () => {
             })
         }
         f()
-    }, [config, cluster])
+    }, [config, dataUnfinished])
     if (!data) {
         return null
     }
@@ -935,7 +942,7 @@ const EditFile = () => {
     const [open, setOpen] = React.useState(false)
     const client = useApolloClient()
     const { searchCtx } = React.useContext(Contexts.Search)
-    const [cluster, setCluster] = React.useState(searchCtx.cluster)
+    const [cluster, setCluster] = React.useState<string | null>(null)
     const [data, setData] =
         React.useState<{
             mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
@@ -945,7 +952,7 @@ const EditFile = () => {
             data: Blob | null
             key: string | number
         } | null>(null)
-    const {
+    let {
         data: dataUnfinished,
         refetch,
         loading,
@@ -953,23 +960,30 @@ const EditFile = () => {
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
         variables: {
-            variables: {
-                id: mainCtx.item as string,
-                authorization: mainCtx.tokens,
-            },
+            id: mainCtx.item as string,
+            authorization: mainCtx.tokens,
         },
+        onError: console.error,
     })
 
     React.useEffect(() => {
         if (dataUnfinished) {
+            loading = true
             refetch()
         }
-    }, [mainCtx.updateId])
+    }, [mainCtx.updateId, cluster])
     React.useEffect(() => {
-        const f = async () => {
-            if (!dataUnfinished) {
-                return
+        if (!dataUnfinished) {
+            return
+        }
+        if (!cluster) {
+            if (!dataUnfinished.secretgraph.node.cluster.id) {
+                throw Error('no cluster found')
             }
+            setCluster(dataUnfinished.secretgraph.node.cluster.id)
+        }
+        loading = true
+        const f = async () => {
             const updateOb = {
                 shareUrl: dataUnfinished.secretgraph.node.link,
                 deleted: dataUnfinished.secretgraph.node.deleted || null,
@@ -1006,9 +1020,10 @@ const EditFile = () => {
                 data: new Blob([obj.data]),
                 key: `${new Date().getTime()}`,
             })
+            loading = false
         }
         f()
-    }, [dataUnfinished, config, cluster])
+    }, [dataUnfinished, config])
 
     if (!data) {
         return null

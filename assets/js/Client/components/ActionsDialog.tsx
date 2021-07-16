@@ -346,7 +346,7 @@ export function ActionEntry({
                             if (data == 'new') {
                                 data = Buffer.from(
                                     crypto.getRandomValues(new Uint8Array(32))
-                                ).toString('base64url')
+                                ).toString('base64')
                             }
                             await addFn({ data, ...values })
                             resetForm()

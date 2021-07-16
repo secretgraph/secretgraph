@@ -204,9 +204,7 @@ export async function serializeToBase64(
         | Interfaces.KeyOutInterface
         | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
 ): Promise<string> {
-    return Buffer.from(await unserializeToArrayBuffer(inp)).toString(
-        'base64url'
-    )
+    return Buffer.from(await unserializeToArrayBuffer(inp)).toString('base64')
 }
 
 function compareObjects(obj1: any, obj2: any) {
@@ -741,9 +739,9 @@ export async function encryptPreKey({
         key,
         data: prekey,
     })
-    return `${Buffer.from(nonce).toString('base64url')}${Buffer.from(
+    return `${Buffer.from(nonce).toString('base64')}${Buffer.from(
         data
-    ).toString('base64url')}`
+    ).toString('base64')}`
 }
 
 async function _pwsdecryptprekey(options: {

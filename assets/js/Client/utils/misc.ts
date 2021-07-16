@@ -15,7 +15,7 @@ export function b64toutf8(inp: string) {
 export async function sortedHash(inp: string[], algo: string): Promise<string> {
     return await crypto.subtle
         .digest(algo, utf8encoder.encode(inp.sort().join('')))
-        .then((data) => Buffer.from(data).toString('base64url'))
+        .then((data) => Buffer.from(data).toString('base64'))
 }
 
 export function mergeDeleteObjects(

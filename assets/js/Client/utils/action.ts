@@ -62,7 +62,7 @@ export async function generateActionMapper({
     unknownTokens?: string[] // eg. tokens in url
     unknownKeyhashes?: string[] // eg tags
     hashAlgorithm: string
-}) {
+}): Promise<{ [newHash: string]: ActionMapperEntry | CertificateEntry }> {
     const knownHashes: { [hash: string]: Set<string> } = {}
     for (const k of knownHashesIntern || []) {
         for (const [hash, val] of Object.entries(k)) {
