@@ -1,8 +1,9 @@
+import '@material-ui/lab/themeAugmentation'
+
 import {
     Theme,
     createStyles,
     createTheme,
-    makeStyles,
     responsiveFontSizes,
     useTheme,
 } from '@material-ui/core/styles'
@@ -20,10 +21,10 @@ export const theme = responsiveFontSizes(
                     },
                 },
             },
-        } as any,
-        props: {
             MuiTextField: {
-                variant: 'outlined',
+                defaultProps: {
+                    variant: 'outlined',
+                },
             },
         },
     })
