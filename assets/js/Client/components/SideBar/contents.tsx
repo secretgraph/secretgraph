@@ -1,6 +1,7 @@
 import { gql, useLazyQuery } from '@apollo/client'
 import Divider from '@material-ui/core/Divider'
 import List, { ListProps } from '@material-ui/core/List'
+import { useTheme } from '@material-ui/core/styles'
 import DescriptionIcon from '@material-ui/icons/Description'
 import DraftsIcon from '@material-ui/icons/Drafts'
 import MailIcon from '@material-ui/icons/Mail'
@@ -11,7 +12,6 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import { elements } from '../../editors'
 import * as Interfaces from '../../interfaces'
-import { useStylesAndTheme } from '../../theme'
 
 const contentFeedQuery = gql`
     query SideBarContentFeedQuery(
@@ -102,7 +102,7 @@ export default React.memo(function Contents({
     injectExclude = [],
     ...props
 }: SideBarItemsProps & TreeItemProps) {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
@@ -189,12 +189,11 @@ export default React.memo(function Contents({
                 : `${activeUrl}-contents.${node.id}`
             return (
                 <TreeItem
-                    classes={{
-                        content:
-                            mainCtx.item == node.id
-                                ? classes.treeItemMarked
-                                : undefined,
-                    }}
+                    sx={
+                        mainCtx.item == node.id
+                            ? theme.classes.treeItemMarked
+                            : undefined
+                    }
                     label={
                         <span
                             style={{ color: node.deleted ? 'red' : undefined }}

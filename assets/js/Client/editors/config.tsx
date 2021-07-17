@@ -1,26 +1,26 @@
 import { Theme } from '@material-ui/core/styles'
+import { useTheme } from '@material-ui/core/styles'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
 import { newClusterLabel } from '../messages'
-import { useStylesAndTheme } from '../theme'
 
 type Props = {}
 
 const ViewCluster = (props: Props) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
 
     return <div />
 }
 
 const AddCluster = (props: Props) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
 
     return <div />
 }
 
 const EditCluster = (props: Props) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
 
     return <div />
 }

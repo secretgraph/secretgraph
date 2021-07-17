@@ -4,6 +4,7 @@ import Checkbox from '@material-ui/core/Checkbox'
 import FormControlLabel from '@material-ui/core/FormControlLabel'
 import Grid from '@material-ui/core/Grid'
 import LinearProgress from '@material-ui/core/LinearProgress'
+import { useTheme } from '@material-ui/core/styles'
 import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
@@ -27,7 +28,6 @@ import * as Contexts from '../contexts'
 import * as Interfaces from '../interfaces'
 import { contentRetrievalQuery } from '../queries/content'
 import { getContentConfigurationQuery } from '../queries/content'
-import { useStylesAndTheme } from '../theme'
 import {
     ActionInputEntry,
     CertificateInputEntry,
@@ -934,7 +934,7 @@ const AddFile = () => {
 }
 
 const EditFile = () => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [open, setOpen] = React.useState(false)

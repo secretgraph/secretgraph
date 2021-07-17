@@ -13,6 +13,7 @@ import Grid from '@material-ui/core/Grid'
 import IconButton from '@material-ui/core/IconButton'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import List from '@material-ui/core/List'
+import { useTheme } from '@material-ui/core/styles'
 import {
     ArrayHelpers,
     FastField,
@@ -44,7 +45,6 @@ import {
     getClusterQuery,
 } from '../queries/cluster'
 import { serverConfigQuery } from '../queries/server'
-import { useStylesAndTheme } from '../theme'
 import {
     ActionInputEntry,
     CertificateInputEntry,

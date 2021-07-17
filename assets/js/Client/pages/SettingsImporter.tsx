@@ -1,3 +1,4 @@
+import { Box } from '@material-ui/core'
 import Button from '@material-ui/core/Button'
 import Card from '@material-ui/core/Card'
 import CardActions from '@material-ui/core/CardActions'
@@ -10,6 +11,7 @@ import DialogTitle from '@material-ui/core/DialogTitle'
 import FormControl from '@material-ui/core/FormControl'
 import FormHelperText from '@material-ui/core/FormHelperText'
 import Snackbar from '@material-ui/core/Snackbar'
+import { useTheme } from '@material-ui/core/styles'
 import TextField from '@material-ui/core/TextField'
 import Typography from '@material-ui/core/Typography'
 import CheckIcon from '@material-ui/icons/Check'
@@ -29,7 +31,6 @@ import {
     startLabel,
 } from '../messages'
 import { serverConfigQuery } from '../queries/server'
-import { useStylesAndTheme } from '../theme'
 import { checkConfigObject, loadConfig, saveConfig } from '../utils/config'
 import { findWorkingHashAlgorithms } from '../utils/encryption'
 import { createClient } from '../utils/graphql'
@@ -50,7 +51,7 @@ function checkInputs(needsPw: boolean, hasPw: boolean) {
 }
 
 function SettingsImporter() {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const [registerUrl, setRegisterUrl] = React.useState(undefined)
     const [loadingStart, setLoadingStart] = React.useState(false)
     const [loadingImport, setLoadingImport] = React.useState(false)
@@ -323,7 +324,7 @@ function SettingsImporter() {
                         {loadingStart && (
                             <CircularProgress
                                 size={24}
-                                className={classes.buttonProgress}
+                                sx={theme.classes.buttonProgress}
                             />
                         )}
                     </Button>
@@ -355,7 +356,7 @@ function SettingsImporter() {
                         {loadingImport && (
                             <CircularProgress
                                 size={24}
-                                className={classes.buttonProgress}
+                                sx={theme.classes.buttonProgress}
                             />
                         )}
                     </Button>
@@ -412,11 +413,11 @@ function SettingsImporter() {
                     >
                         {importHelp}
                     </Typography>
-                    <div className={classes.import_Wrapper}>
-                        <FormControl className={classes.import_Item}>
+                    <Box sx={theme.classes.import_Wrapper}>
+                        <FormControl sx={theme.classes.import_Item}>
                             <input
                                 disabled={loadingStart || loadingImport}
-                                className={classes.hidden}
+                                style={{ display: 'none' }}
                                 type="file"
                                 id="secretgraph-import-file"
                                 aria-describedby="secretgraph-import-file-help"
@@ -488,7 +489,7 @@ function SettingsImporter() {
                                 Import from url
                             </FormHelperText>
                         </FormControl>
-                    </div>
+                    </Box>
                     <FormControl
                         className={needsPw ? undefined : classes.hidden}
                     >

@@ -1,6 +1,7 @@
 import { useApolloClient, useQuery } from '@apollo/client'
 import Card from '@material-ui/core/Card'
 import CardContent from '@material-ui/core/CardContent'
+import { useTheme } from '@material-ui/core/styles'
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
@@ -8,12 +9,11 @@ import * as Contexts from '../contexts'
 import * as Interfaces from '../interfaces'
 import { newClusterLabel } from '../messages'
 import { contentRetrievalQuery } from '../queries/content'
-import { useStylesAndTheme } from '../theme'
 
 type Props = {}
 
 const ViewFile = (props: Props) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { mainCtx } = React.useContext(Contexts.Main)
     const client = useApolloClient()
     const { config } = React.useContext(Contexts.Config)
@@ -55,7 +55,7 @@ const ViewFile = (props: Props) => {
 }
 
 const AddFile = (props: Props) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
 
     return (
         <React.Fragment>
@@ -67,7 +67,7 @@ const AddFile = (props: Props) => {
 }
 
 const EditFile = (props: Props) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
 
     return (
         <React.Fragment>

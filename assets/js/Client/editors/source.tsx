@@ -1,19 +1,19 @@
-import * as React from 'react'
 import { Theme } from '@material-ui/core/styles'
+import { useTheme } from '@material-ui/core/styles'
+import * as React from 'react'
 
-import { useStylesAndTheme } from '../theme'
 import { newClusterLabel } from '../messages'
 
 type Props = {}
 
 const ViewSource = (props: Props) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
 
     return <div />
 }
 
 const EditSource = (props: Props) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
 
     return <div />
 }

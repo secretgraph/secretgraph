@@ -5,6 +5,7 @@ import FormControlLabel from '@material-ui/core/FormControlLabel'
 import Grid from '@material-ui/core/Grid'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import { Theme } from '@material-ui/core/styles'
+import { useTheme } from '@material-ui/core/styles'
 import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
@@ -29,7 +30,6 @@ import {
     contentRetrievalQuery,
     getContentConfigurationQuery,
 } from '../queries/content'
-import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo } from '../utils/config'
 import { extractPrivKeys } from '../utils/config'
 import { serializeToBase64 } from '../utils/encryption'
@@ -56,7 +56,7 @@ const InnerCustom = ({
     viewOnly?: boolean
     url: string
 }) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { isSubmitting, dirty, submitForm } = useFormikContext()
     return (
         <Form>
@@ -151,7 +151,7 @@ const EditCustom = ({
     viewOnly?: boolean
     disabled?: boolean
 }) => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const client = useApolloClient()
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx } = React.useContext(Contexts.Main)
@@ -297,7 +297,7 @@ const EditCustom = ({
     )
 }
 const AddCustom = () => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const client = useApolloClient()
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { config } = React.useContext(Contexts.InitializedConfig)
@@ -388,7 +388,7 @@ const AddCustom = () => {
     )
 }
 const ViewCustom = () => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     // list all tags
     // view content if possible
     // elsewise just download

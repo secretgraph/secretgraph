@@ -9,6 +9,7 @@ import Button from '@material-ui/core/Button'
 import Grid from '@material-ui/core/Grid'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import { Theme } from '@material-ui/core/styles'
+import { useTheme } from '@material-ui/core/styles'
 import Typography from '@material-ui/core/Typography'
 import { saveAs } from 'file-saver'
 import {
@@ -36,7 +37,6 @@ import {
     keysRetrievalQuery,
 } from '../queries/content'
 import { serverConfigQuery } from '../queries/server'
-import { useStylesAndTheme } from '../theme'
 import { generateActionMapper } from '../utils/action'
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
 import {
@@ -696,7 +696,7 @@ const KeysIntern = ({
 }
 
 const ViewKeys = () => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const client = useApolloClient()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
@@ -797,7 +797,7 @@ const ViewKeys = () => {
     )
 }
 const EditKeys = () => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const client = useApolloClient()
     const { config, updateConfig } = React.useContext(
@@ -875,7 +875,7 @@ const EditKeys = () => {
 }
 
 const AddKeys = () => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)

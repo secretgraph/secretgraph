@@ -1,5 +1,5 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
-import { Grid } from '@material-ui/core'
+import { Box, Grid } from '@material-ui/core'
 import Autocomplete, {
     AutocompleteProps,
     createFilterOptions,
@@ -17,9 +17,9 @@ import InputAdornment from '@material-ui/core/InputAdornment'
 import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
-import ListItemText from '@material-ui/core/ListItemText'
 import Paper from '@material-ui/core/Paper'
 import Popover from '@material-ui/core/Popover'
+import { useTheme } from '@material-ui/core/styles'
 import TextField from '@material-ui/core/TextField'
 import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
@@ -34,12 +34,11 @@ import * as React from 'react'
 import { mapHashNames } from '../../constants'
 import * as Contexts from '../../contexts'
 import { serverConfigQuery } from '../../queries/server'
-import { useStylesAndTheme } from '../../theme'
 import { extractAuthInfo } from '../../utils/config'
 import { deleteNodes, resetDeletionNodes } from '../../utils/operations'
 
 function CloseButton() {
-    const { theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { setOpen } = React.useContext(Contexts.OpenSidebar)
     const matches = useMediaQuery(theme.breakpoints.up('lg'))
     return (
@@ -98,7 +97,7 @@ function TagsSelect({
 }
 function HeaderPopover() {
     const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
-    const { theme } = useStylesAndTheme()
+    const theme = useTheme()
     return (
         <Paper style={{ padding: theme.spacing(2) }}>
             <Grid container spacing={2}>
@@ -149,7 +148,7 @@ function HeaderPopover() {
 
 function MainSearchField() {
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null)
@@ -166,7 +165,7 @@ function MainSearchField() {
                 <HeaderPopover />
             </Popover>
             <Autocomplete
-                className={classes.sideBarHeaderSelect}
+                sx={theme.classes.sideBarHeaderSelect}
                 freeSolo
                 value={activeUrl}
                 options={Object.keys(config ? config.hosts : {})}
@@ -286,7 +285,7 @@ function MainSearchField() {
 }
 
 export default function SideBarHeader() {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { selected } = React.useContext(Contexts.SidebarItemsSelected)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { config } = React.useContext(Contexts.Config)
@@ -304,11 +303,11 @@ export default function SideBarHeader() {
     }, [config, activeUrl])
     return (
         <>
-            <div className={classes.sideBarHeader}>
+            <Box sx={theme.classes.sideBarHeader}>
                 {theme.direction === 'rtl' ? <CloseButton /> : null}
                 <MainSearchField />
                 {theme.direction === 'ltr' ? <CloseButton /> : null}
-            </div>
+            </Box>
             <div>
                 <Button
                     disabled={!selected.length}

@@ -9,6 +9,7 @@ import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
+import { useTheme } from '@material-ui/core/styles'
 import TextField from '@material-ui/core/TextField'
 import Tooltip from '@material-ui/core/Tooltip'
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft'
@@ -23,7 +24,6 @@ import * as React from 'react'
 import { mapHashNames } from '../../constants'
 import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
-import { useStylesAndTheme } from '../../theme'
 import { extractAuthInfo } from '../../utils/config'
 import * as SetOps from '../../utils/set'
 import { CapturingSuspense } from '../misc'
@@ -36,7 +36,7 @@ import SideBarHeader from './header'
 import SideBarNotifications from './notifications'
 
 const SideBarItems = () => {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
@@ -87,7 +87,7 @@ const SideBarItems = () => {
         <>
             {authinfo && (
                 <SideBarClusters
-                    classes={{ label: classes.treeItemHeading }}
+                    sys={{ label: theme.classes.treeItemHeading }}
                     key="SideBarClusters"
                     nodeId="clusters"
                     label="Clusters"
@@ -140,7 +140,7 @@ const SideBarItems = () => {
 }
 
 export default React.memo(function SideBar() {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const { config } = React.useContext(Contexts.Config)
     const { open } = React.useContext(Contexts.OpenSidebar)
     const [selected, setSelected] = React.useState<string[]>([])

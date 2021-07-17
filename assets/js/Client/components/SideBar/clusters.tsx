@@ -4,6 +4,7 @@ import {
     useLazyQuery,
     useQuery,
 } from '@apollo/client'
+import { useTheme } from '@material-ui/core'
 import GroupWorkIcon from '@material-ui/icons/GroupWork'
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
 import * as React from 'react'
@@ -11,7 +12,6 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
 import { clusterFeedQuery, getClusterQuery } from '../../queries/cluster'
-import { useStylesAndTheme } from '../../theme'
 import { extractPublicInfo } from '../../utils/cluster'
 import { useFixedQuery } from '../../utils/hooks'
 import SideBarContents from './contents'
@@ -97,7 +97,7 @@ export default React.memo(function Clusters({
     activeCluster,
     ...props
 }: SideBarItemsProps & TreeItemProps) {
-    const { classes } = useStylesAndTheme()
+    const theme = useTheme()
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
@@ -190,9 +190,7 @@ export default React.memo(function Clusters({
                     goTo={goTo}
                     onClick={(ev) => ev.preventDefault()}
                     cluster={activeCluster}
-                    classes={{
-                        content: classes.treeItemMarked,
-                    }}
+                    sx={theme.classes.treeItemMarked}
                 />
             )}
             {clustersFinished}

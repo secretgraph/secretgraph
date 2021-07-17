@@ -1,11 +1,10 @@
+import { useTheme } from '@material-ui/core/styles'
 import * as React from 'react'
-
-import { useStylesAndTheme } from '../theme'
 
 type Props = {}
 
 function Help(props: Props) {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
 
     return <React.Fragment />
 }

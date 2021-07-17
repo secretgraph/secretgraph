@@ -7,6 +7,7 @@ import DialogTitle from '@material-ui/core/DialogTitle'
 import IconButton from '@material-ui/core/IconButton'
 import Link from '@material-ui/core/Link'
 import NativeSelect from '@material-ui/core/NativeSelect'
+import { useTheme } from '@material-ui/core/styles'
 import Toolbar from '@material-ui/core/Toolbar'
 import Tooltip from '@material-ui/core/Tooltip'
 import AddIcon from '@material-ui/icons/Add'
@@ -20,7 +21,6 @@ import * as React from 'react'
 
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
-import { useStylesAndTheme } from '../theme'
 import { extractAuthInfo } from '../utils/config'
 import { deleteNodes, resetDeletionNodes } from '../utils/operations'
 import * as SetOps from '../utils/set'
@@ -29,7 +29,7 @@ import MapSelect from './MapSelect'
 type Props = {}
 
 function ActionBar(props: Props) {
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const [shareOpen, setShareOpen] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.Config)
@@ -74,7 +74,13 @@ function ActionBar(props: Props) {
     }, [mainCtx.tokens, mainCtx.tokenPermissions])
 
     return (
-        <nav className={classes.actionToolBarOuter}>
+        <nav
+            style={{
+                display: 'flex' as const,
+                alignItems: 'center' as const,
+                justifyContent: 'flex-end' as const,
+            }}
+        >
             <Dialog
                 open={shareOpen}
                 onClose={() => setShareOpen(false)}
@@ -110,11 +116,11 @@ function ActionBar(props: Props) {
                 </DialogActions>
             </Dialog>
             <div style={{ flexGrow: 1 }} />
-            <Toolbar className={classes.actionToolBarInner}>
+            <Toolbar sx={theme.classes.actionToolBarInner}>
                 <Tooltip
                     title={mainCtx.action === 'view' ? 'Edit' : 'View'}
                     arrow
-                    className={mainCtx.item ? undefined : classes.hidden}
+                    sx={mainCtx.item ? undefined : theme.classes.hidden}
                 >
                     <span>
                         <IconButton
@@ -157,7 +163,7 @@ function ActionBar(props: Props) {
                             : 'Delete'
                     }
                     arrow
-                    className={!mainCtx.item ? classes.hidden : undefined}
+                    sx={!mainCtx.item ? theme.classes.hidden : undefined}
                 >
                     <span>
                         <IconButton
@@ -214,9 +220,7 @@ function ActionBar(props: Props) {
                 <Tooltip title="Add Element" arrow>
                     <span>
                         <MapSelect
-                            classes={{
-                                root: classes.newItemSelect,
-                            }}
+                            sx={theme.classes.newItemSelect}
                             disabled={!createTokens.length}
                             onChange={(event: any) => {
                                 updateMainCtx({
@@ -238,9 +242,9 @@ function ActionBar(props: Props) {
                             }}
                         />
                         <IconButton
-                            className={
+                            sx={
                                 mainCtx.action == 'add'
-                                    ? classes.hidden
+                                    ? theme.classes.hidden
                                     : undefined
                             }
                             color="inherit"
@@ -266,7 +270,7 @@ function ActionBar(props: Props) {
                 <Tooltip
                     title="Share "
                     arrow
-                    className={mainCtx.shareUrl ? undefined : classes.hidden}
+                    sx={mainCtx.shareUrl ? undefined : theme.classes.hidden}
                 >
                     <span>
                         <IconButton

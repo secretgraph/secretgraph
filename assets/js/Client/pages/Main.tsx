@@ -1,6 +1,8 @@
 import { ApolloProvider } from '@apollo/client'
+import { Box } from '@material-ui/core'
 import Paper from '@material-ui/core/Paper'
 import Snackbar from '@material-ui/core/Snackbar'
+import { useTheme } from '@material-ui/core/styles'
 import Alert from '@material-ui/lab/Alert'
 import * as React from 'react'
 
@@ -11,7 +13,6 @@ import SideBar from '../components/SideBar'
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import * as Interfaces from '../interfaces'
-import { useStylesAndTheme } from '../theme'
 import { createClient } from '../utils/graphql'
 
 // const SideBar = React.lazy(() => import('../components/SideBar'));
@@ -19,7 +20,7 @@ const SettingsImporter = React.lazy(() => import('./SettingsImporter'))
 const Help = React.lazy(() => import('./Help'))
 
 function MainPage() {
-    const { classes } = useStylesAndTheme()
+    const theme = useTheme()
     const { config } = React.useContext(Contexts.Config)
     const { mainCtx } = React.useContext(Contexts.Main)
     const { message, sendMessage } = React.useContext(Contexts.Snackbar)
@@ -39,8 +40,9 @@ function MainPage() {
                         'undefined'
                     ) as Interfaces.ElementEntryInterface
                 }
-                const FrameElementType = (FrameElementWrapper as Interfaces.ElementEntryInterface)
-                    .component
+                const FrameElementType = (
+                    FrameElementWrapper as Interfaces.ElementEntryInterface
+                ).component
                 frameElement = (
                     <CapturingSuspense>
                         <FrameElementType />
@@ -67,9 +69,11 @@ function MainPage() {
         return frameElement
     }, [mainCtx.action, mainCtx.url, mainCtx.type])
     return (
-        <div
-            className={
-                config && openSidebar ? classes.rootShifted : classes.root
+        <Box
+            sx={
+                config && openSidebar
+                    ? theme.classes.rootShifted
+                    : theme.classes.root
             }
         >
             <Snackbar
@@ -90,15 +94,15 @@ function MainPage() {
                 <SideBar />
             </ApolloProvider>
             <HeaderBar />
-            <div className={classes.content}>
+            <Box sx={theme.classes.content}>
                 <ApolloProvider client={itemClient}>
                     <ActionBar />
-                    <Paper component="main" className={classes.mainSection}>
+                    <Paper component="main" sx={theme.classes.mainSection}>
                         {frameElement}
                     </Paper>
                 </ApolloProvider>
-            </div>
-        </div>
+            </Box>
+        </Box>
     )
 }
 

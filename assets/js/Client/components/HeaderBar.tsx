@@ -11,6 +11,7 @@ import IconButton from '@material-ui/core/IconButton'
 import Link from '@material-ui/core/Link'
 import Menu from '@material-ui/core/Menu'
 import MenuItem from '@material-ui/core/MenuItem'
+import { useTheme } from '@material-ui/core/styles'
 import TextField from '@material-ui/core/TextField'
 import Toolbar from '@material-ui/core/Toolbar'
 import Typography from '@material-ui/core/Typography'
@@ -22,14 +23,13 @@ import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import { encryptingPasswordHelp, encryptingPasswordLabel } from '../messages'
 import { serverConfigQuery } from '../queries/server'
-import { useStylesAndTheme } from '../theme'
 import { exportConfig, exportConfigAsUrl } from '../utils/config'
 
 const menuRef: React.RefObject<any> = React.createRef()
 
 export default function HeaderBar() {
     const { open, setOpen } = React.useContext(Contexts.OpenSidebar)
-    const { classes, theme } = useStylesAndTheme()
+    const theme = useTheme()
     const [menuOpen, setMenuOpen] = React.useState(false)
     const [exportOpen, setExportOpen] = React.useState(false)
     const [exportUrl, setExportUrl] = React.useState('')
@@ -160,7 +160,7 @@ export default function HeaderBar() {
         sidebarButton = (
             <IconButton
                 edge="start"
-                className={classes.sidebarButton}
+                sx={theme.classes.sidebarButton}
                 onClick={() => setOpen(true)}
                 color="inherit"
                 aria-label="menu"
@@ -175,7 +175,7 @@ export default function HeaderBar() {
     }, [documenttitle])
 
     return (
-        <AppBar position="sticky" className={classes.appBar}>
+        <AppBar position="sticky" sx={theme.classes.appBar}>
             <Dialog
                 open={exportOpen}
                 onClose={() => setExportOpen(false)}
@@ -229,18 +229,18 @@ export default function HeaderBar() {
                     </Button>
                 </DialogActions>
             </Dialog>
-            <Toolbar className={classes.appBarToolBar}>
+            <Toolbar sx={theme.classes.appBarToolBar}>
                 {sidebarButton}
                 <Typography
                     variant="h6"
                     title={mainCtx.item || undefined}
-                    className={classes.appBarTitle}
+                    sx={theme.classes.appBarTitle}
                 >
                     {title}
                 </Typography>
                 <IconButton
                     edge="start"
-                    className={classes.userButton}
+                    sx={theme.classes?.userButton}
                     color="inherit"
                     aria-label="user"
                     ref={menuRef}
@@ -263,26 +263,26 @@ export default function HeaderBar() {
                     onClose={() => setMenuOpen(false)}
                 >
                     <MenuItem
-                        className={!config ? classes.hidden : undefined}
+                        sx={!config ? theme.classes.hidden : undefined}
                         onClick={() => setMenuOpen(false)}
                     >
                         Update Settings
                     </MenuItem>
                     <MenuItem
-                        className={!config ? classes.hidden : undefined}
+                        sx={!config ? theme.classes.hidden : undefined}
                         onClick={openImporter}
                     >
                         Load Settings/Restart
                     </MenuItem>
                     <MenuItem
-                        className={!config ? classes.hidden : undefined}
+                        sx={!config ? theme.classes.hidden : undefined}
                         onClick={exportSettingsOpener}
                     >
                         Export Settings
                     </MenuItem>
                     <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
                     <MenuItem
-                        className={!config ? classes.hidden : undefined}
+                        sx={!config ? theme.classes.hidden : undefined}
                         onClick={logout}
                     >
                         Logout
