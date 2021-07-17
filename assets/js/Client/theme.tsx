@@ -5,18 +5,19 @@ import {
     makeStyles,
     responsiveFontSizes,
     useTheme,
-    withStyles,
 } from '@material-ui/core/styles'
 
 const drawerWidth = '16rem'
 
 export const theme = responsiveFontSizes(
     createTheme({
-        overrides: {
+        components: {
             MuiTreeItem: {
-                iconContainer: {
-                    width: 'auto',
-                    maxWidth: '15px',
+                styleOverrides: {
+                    iconContainer: {
+                        width: 'auto',
+                        maxWidth: '15px',
+                    },
                 },
             },
         } as any,
@@ -166,10 +167,6 @@ export function secretgraphTheme(theme: Theme) {
             padding: theme.spacing(0, 1),
         },
     }
-}
-
-export function themeComponent(component: any) {
-    return withStyles(secretgraphTheme, { withTheme: true })(component)
 }
 
 export const useStyles = makeStyles((theme: Theme) =>

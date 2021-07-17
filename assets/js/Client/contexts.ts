@@ -1,5 +1,5 @@
 import { ApolloClient } from '@apollo/client'
-import { Color } from '@material-ui/lab/Alert'
+import { AlertColor } from '@material-ui/core/Alert'
 import { Context, createContext } from 'react'
 
 import * as Interfaces from './interfaces'
@@ -99,8 +99,10 @@ export const Clients = createContext(
 )
 
 export const Snackbar = createContext<{
-    message: { severity: Color; message: string } | undefined
-    sendMessage: (arg: { severity: Color; message: string } | undefined) => void
+    message: { severity: AlertColor; message: string } | undefined
+    sendMessage: (
+        arg: { severity: AlertColor; message: string } | undefined
+    ) => void
 }>({
     message: undefined,
     sendMessage: stubFn,

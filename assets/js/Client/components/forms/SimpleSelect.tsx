@@ -107,7 +107,18 @@ export default function SimpleSelect<
         const getTagPropsDropin = ({ index }: { index: number }) => ({
             key: index,
             'data-tag-index': index,
-            tabIndex: -1,
+            tabIndex: -1 as const,
+            className: appProps?.classes?.tag ? appProps.classes.tag : '',
+            disabled: !!appProps.disabled,
+            onDelete: () => {
+                if (field.value instanceof Array) {
+                    const newValue = field.value.slice()
+                    newValue.splice(index, 1)
+                    form.setFieldValue(field.name, newValue)
+                } else {
+                    form.setFieldValue(field.name, null)
+                }
+            },
         })
         appProps.renderInput = (params: AutocompleteRenderInputParams) => {
             const InputProps: TextFieldProps['InputProps'] = {
@@ -122,7 +133,7 @@ export default function SimpleSelect<
                     FreeSolo
                 >
                 InputProps['startAdornment'] = appProps2.renderTags(
-                    appProps.options,
+                    appProps.options as T[],
                     getTagPropsDropin
                 )
             }

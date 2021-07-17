@@ -45,7 +45,7 @@ export default class DecisionFrame extends React.Component<
         }
         const Elem = this.retrieve_element()
         return (
-            <React.Suspense fallback={<Skeleton variant="rect" />}>
+            <React.Suspense fallback={<Skeleton variant="rectangular" />}>
                 <Elem />
             </React.Suspense>
         )

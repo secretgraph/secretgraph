@@ -1,5 +1,9 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
 import { Grid } from '@material-ui/core'
+import Autocomplete, {
+    AutocompleteProps,
+    createFilterOptions,
+} from '@material-ui/core/Autocomplete'
 import Button from '@material-ui/core/Button'
 import Checkbox from '@material-ui/core/Checkbox'
 import Chip from '@material-ui/core/Chip'
@@ -25,10 +29,6 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight'
 import ExpandLessIcon from '@material-ui/icons/ExpandLess'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import FilterListIcon from '@material-ui/icons/FilterList'
-import Autocomplete, {
-    AutocompleteProps,
-    createFilterOptions,
-} from '@material-ui/lab/Autocomplete'
 import * as React from 'react'
 
 import { mapHashNames } from '../../constants'

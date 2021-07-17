@@ -1,4 +1,5 @@
 import { gql, useLazyQuery, useQuery } from '@apollo/client'
+import { Value } from '@material-ui/core'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -14,7 +15,7 @@ export interface ClusterSelectProps<
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined
 > extends Omit<
-        SimpleSelectProps<Multiple, DisableClearable, FreeSolo, string>,
+        SimpleSelectProps<string, Multiple, DisableClearable, FreeSolo>,
         'options' | 'getOptionLabel' | 'loading'
     > {
     url: string
@@ -24,13 +25,13 @@ export interface ClusterSelectProps<
 export default function ClusterSelect<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
-    FreeSolo extends boolean | undefined,
-    V
+    FreeSolo extends boolean | undefined
 >({
     url,
     firstIfEmpty,
     ...props
-}: ClusterSelectProps<Multiple, DisableClearable, FreeSolo> & FieldProps<V>) {
+}: ClusterSelectProps<Multiple, DisableClearable, FreeSolo> &
+    FieldProps<Value<string, Multiple, DisableClearable, FreeSolo>>) {
     const { config } = React.useContext(InitializedConfig)
     const authinfo = React.useMemo(() => {
         if (url === undefined) {

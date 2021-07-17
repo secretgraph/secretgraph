@@ -1,3 +1,4 @@
+import { Value } from '@material-ui/core'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -12,7 +13,7 @@ export interface KeySelectProps<
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined
 > extends Omit<
-        SimpleSelectProps<Multiple, DisableClearable, FreeSolo, string>,
+        SimpleSelectProps<string, Multiple, DisableClearable, FreeSolo>,
         'options' | 'getOptionLabel' | 'loading'
     > {
     url: string
@@ -24,12 +25,12 @@ export interface KeySelectProps<
 export default function KeySelect<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
-    FreeSolo extends boolean | undefined,
-    V
+    FreeSolo extends boolean | undefined
 >({
     url,
     cluster,
     type,
     firstIfEmpty,
     ...props
-}: KeySelectProps<Multiple, DisableClearable, FreeSolo> & FieldProps<V>) {}
+}: KeySelectProps<Multiple, DisableClearable, FreeSolo> &
+    FieldProps<Value<string, Multiple, DisableClearable, FreeSolo>>) {}

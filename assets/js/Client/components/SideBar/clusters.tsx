@@ -72,7 +72,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
                     </span>
                 </span>
             }
-            onLabelClick={(ev) => {
+            onClick={(ev) => {
                 ev.preventDefault()
             }}
             onDoubleClick={(ev) => {
@@ -163,7 +163,7 @@ export default React.memo(function Clusters({
                         }
                         nodeId={nodeId}
                         key={nodeId}
-                        onLabelClick={(ev) => ev.preventDefault()}
+                        onClick={(ev) => ev.preventDefault()}
                         onDoubleClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
@@ -188,7 +188,7 @@ export default React.memo(function Clusters({
                     nodeId={`${activeUrl}-clusters::${activeCluster}`}
                     authinfo={authinfo}
                     goTo={goTo}
-                    onLabelClick={(ev) => ev.preventDefault()}
+                    onClick={(ev) => ev.preventDefault()}
                     cluster={activeCluster}
                     classes={{
                         content: classes.treeItemMarked,
@@ -203,7 +203,6 @@ export default React.memo(function Clusters({
                     <TreeItem
                         label="Load more clusters..."
                         nodeId={`${props.nodeId}-cluster-loadmore`}
-                        onLabelClick={(ev) => ev.preventDefault()}
                         onClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()

@@ -22,7 +22,7 @@ export function createOnChangeFn<
     helpers: FieldHelperProps<Value<T, Multiple, DisableClearable, FreeSolo>>
 ) {
     return function onChangeFn(
-        ...[event, value, reason]: Parameters<
+        ...[event, value, reason, details]: Parameters<
             NonNullable<
                 AutocompleteProps<
                     T,
@@ -33,38 +33,7 @@ export function createOnChangeFn<
             >
         >
     ) {
-        if (field.multiple) {
-            switch (reason) {
-                case 'blur':
-                case 'selectOption':
-                    helpers.setValue(value)
-                    break
-                case 'createOption':
-                    helpers.setValue([
-                        ...(field.value as T[]),
-                        value as T,
-                    ] as any)
-                    break
-                case 'removeOption':
-                    helpers.setValue(
-                        (field.value as T[]).filter(
-                            (val) => val != value
-                        ) as any
-                    )
-                    break
-            }
-        } else {
-            switch (reason) {
-                case 'blur':
-                case 'selectOption':
-                case 'createOption':
-                    helpers.setValue(value)
-                    break
-                case 'removeOption':
-                    helpers.setValue(null as any)
-                    break
-            }
-        }
+        helpers.setValue(value)
     }
 }
 export type FormikAutocompleteProps<

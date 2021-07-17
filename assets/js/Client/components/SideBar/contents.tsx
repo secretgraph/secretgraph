@@ -216,7 +216,7 @@ export default React.memo(function Contents({
                     }
                     nodeId={nodeId}
                     key={nodeId}
-                    onLabelClick={(ev) => ev.preventDefault()}
+                    onClick={(ev) => ev.preventDefault()}
                     onDoubleClick={(ev) => {
                         ev.preventDefault()
                         ev.stopPropagation()
@@ -240,7 +240,6 @@ export default React.memo(function Contents({
                     <TreeItem
                         label="Load more contents..."
                         nodeId={`${props.nodeId}-contents-loadmore`}
-                        onLabelClick={(ev) => ev.preventDefault()}
                         onClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
