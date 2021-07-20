@@ -165,7 +165,7 @@ function MainSearchField() {
                 <HeaderPopover />
             </Popover>
             <Autocomplete
-                sx={theme.classes.sideBarHeaderSelect}
+                className={theme.classes.sideBarHeaderSelect}
                 freeSolo
                 value={activeUrl}
                 options={Object.keys(config ? config.hosts : {})}
@@ -303,7 +303,7 @@ export default function SideBarHeader() {
     }, [config, activeUrl])
     return (
         <>
-            <Box sx={theme.classes.sideBarHeader}>
+            <Box className={theme.classes.sideBarHeader}>
                 {theme.direction === 'rtl' ? <CloseButton /> : null}
                 <MainSearchField />
                 {theme.direction === 'ltr' ? <CloseButton /> : null}

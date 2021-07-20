@@ -324,7 +324,7 @@ function SettingsImporter() {
                         {loadingStart && (
                             <CircularProgress
                                 size={24}
-                                sx={theme.classes.buttonProgress}
+                                className={theme.classes.buttonProgress}
                             />
                         )}
                     </Button>
@@ -356,7 +356,7 @@ function SettingsImporter() {
                         {loadingImport && (
                             <CircularProgress
                                 size={24}
-                                sx={theme.classes.buttonProgress}
+                                className={theme.classes.buttonProgress}
                             />
                         )}
                     </Button>
@@ -395,7 +395,7 @@ function SettingsImporter() {
                                 {loadingStart && (
                                     <CircularProgress
                                         size={24}
-                                        sx={theme.classes.buttonProgress}
+                                        className={theme.classes.buttonProgress}
                                     />
                                 )}
                             </Button>
@@ -413,8 +413,8 @@ function SettingsImporter() {
                     >
                         {importHelp}
                     </Typography>
-                    <Box sx={theme.classes.import_Wrapper}>
-                        <FormControl sx={theme.classes.import_Item}>
+                    <Box className={theme.classes.import_Wrapper}>
+                        <FormControl className={theme.classes.import_Item}>
                             <input
                                 disabled={loadingStart || loadingImport}
                                 style={{ display: 'none' }}
@@ -469,8 +469,8 @@ function SettingsImporter() {
                                 {importFileLabel}
                             </FormHelperText>
                         </FormControl>
-                        <Box sx={theme.classes.import_Item}>or</Box>
-                        <FormControl sx={theme.classes.import_Url}>
+                        <Box className={theme.classes.import_Item}>or</Box>
+                        <FormControl className={theme.classes.import_Url}>
                             <TextField
                                 disabled={loadingStart || loadingImport}
                                 onChange={(event) => {
@@ -491,7 +491,7 @@ function SettingsImporter() {
                         </FormControl>
                     </Box>
                     <FormControl
-                        sx={needsPw ? undefined : theme.classes.hidden}
+                        style={{ display: needsPw ? undefined : 'hidden' }}
                     >
                         <TextField
                             variant="outlined"
@@ -528,7 +528,7 @@ function SettingsImporter() {
                         {loadingImport && (
                             <CircularProgress
                                 size={24}
-                                sx={theme.classes.buttonProgress}
+                                className={theme.classes.buttonProgress}
                             />
                         )}
                     </Button>

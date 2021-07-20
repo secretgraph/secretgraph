@@ -190,7 +190,7 @@ export default React.memo(function Clusters({
                     goTo={goTo}
                     onClick={(ev) => ev.preventDefault()}
                     cluster={activeCluster}
-                    sx={theme.classes.treeItemMarked}
+                    className={theme.classes.treeItemMarked}
                 />
             )}
             {clustersFinished}

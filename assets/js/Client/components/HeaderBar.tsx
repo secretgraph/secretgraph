@@ -160,7 +160,7 @@ export default function HeaderBar() {
         sidebarButton = (
             <IconButton
                 edge="start"
-                sx={theme.classes.sidebarButton}
+                className={theme.classes.sidebarButton}
                 onClick={() => setOpen(true)}
                 color="inherit"
                 aria-label="menu"
@@ -175,7 +175,7 @@ export default function HeaderBar() {
     }, [documenttitle])
 
     return (
-        <AppBar position="sticky" sx={theme.classes.appBar}>
+        <AppBar position="sticky" className={theme.classes.appBar}>
             <Dialog
                 open={exportOpen}
                 onClose={() => setExportOpen(false)}
@@ -229,18 +229,18 @@ export default function HeaderBar() {
                     </Button>
                 </DialogActions>
             </Dialog>
-            <Toolbar sx={theme.classes.appBarToolBar}>
+            <Toolbar className={theme.classes.appBarToolBar}>
                 {sidebarButton}
                 <Typography
                     variant="h6"
                     title={mainCtx.item || undefined}
-                    sx={theme.classes.appBarTitle}
+                    className={theme.classes.appBarTitle}
                 >
                     {title}
                 </Typography>
                 <IconButton
                     edge="start"
-                    sx={theme.classes?.userButton}
+                    className={theme.classes?.userButton}
                     color="inherit"
                     aria-label="user"
                     ref={menuRef}
@@ -263,26 +263,26 @@ export default function HeaderBar() {
                     onClose={() => setMenuOpen(false)}
                 >
                     <MenuItem
-                        sx={!config ? theme.classes.hidden : undefined}
+                        style={{ display: !config ? 'hidden' : undefined }}
                         onClick={() => setMenuOpen(false)}
                     >
                         Update Settings
                     </MenuItem>
                     <MenuItem
-                        sx={!config ? theme.classes.hidden : undefined}
+                        style={{ display: !config ? 'hidden' : undefined }}
                         onClick={openImporter}
                     >
                         Load Settings/Restart
                     </MenuItem>
                     <MenuItem
-                        sx={!config ? theme.classes.hidden : undefined}
+                        style={{ display: !config ? 'hidden' : undefined }}
                         onClick={exportSettingsOpener}
                     >
                         Export Settings
                     </MenuItem>
                     <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
                     <MenuItem
-                        sx={!config ? theme.classes.hidden : undefined}
+                        style={{ display: !config ? 'hidden' : undefined }}
                         onClick={logout}
                     >
                         Logout

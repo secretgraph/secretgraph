@@ -33,7 +33,6 @@ module.exports = (env, options) => {
         devServer:
             options.mode === 'development'
                 ? {
-                      transportMode: 'ws',
                       // doesn't work
                       hot: false,
                       port: '8080',

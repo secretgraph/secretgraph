@@ -87,7 +87,7 @@ const SideBarItems = () => {
         <>
             {authinfo && (
                 <SideBarClusters
-                    sx={{ label: theme.classes.treeItemHeading }}
+                    classes={{ label: theme.classes.treeItemHeading }}
                     key="SideBarClusters"
                     nodeId="clusters"
                     label="Clusters"
@@ -99,7 +99,7 @@ const SideBarItems = () => {
             <TreeItem
                 nodeId="contents"
                 label="Contents"
-                sx={{ label: theme.classes.treeItemHeading }}
+                classes={{ label: theme.classes.treeItemHeading }}
             >
                 <SideBarContents
                     key="SideBarContentsPublic"
@@ -107,7 +107,7 @@ const SideBarItems = () => {
                     activeContent={mainCtx.item}
                     usePublic
                     label="Public"
-                    sx={{ label: theme.classes.treeItemHeading }}
+                    classes={{ label: theme.classes.treeItemHeading }}
                     goTo={goTo}
                 />
                 {authinfo && (
@@ -119,7 +119,7 @@ const SideBarItems = () => {
                             activeContent={mainCtx.item}
                             injectInclude={['state=draft']}
                             label="Drafts"
-                            sx={{ label: theme.classes.treeItemHeading }}
+                            classes={{ label: theme.classes.treeItemHeading }}
                             goTo={goTo}
                         />
                         <SideBarContents
@@ -129,7 +129,7 @@ const SideBarItems = () => {
                             activeContent={mainCtx.item}
                             injectInclude={['state=internal']}
                             label="Internal"
-                            sx={{ label: theme.classes.treeItemHeading }}
+                            classes={{ label: theme.classes.treeItemHeading }}
                             goTo={goTo}
                         />
                     </>
@@ -162,10 +162,11 @@ export default React.memo(function SideBar() {
                     variant="persistent"
                     anchor={theme.direction === 'ltr' ? 'left' : 'right'}
                     open={!!(open && config)}
-                    sx={{
-                        paper: !!(open && config)
-                            ? theme.classes.drawerPaper
-                            : theme.classes.hidden,
+                    classes={{
+                        paper: theme.classes.drawerPaper,
+                    }}
+                    style={{
+                        display: !(open && config) ? 'hidden' : undefined,
                     }}
                 >
                     <SideBarHeader />

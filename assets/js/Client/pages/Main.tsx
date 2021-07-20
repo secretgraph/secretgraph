@@ -70,7 +70,7 @@ function MainPage() {
     }, [mainCtx.action, mainCtx.url, mainCtx.type])
     return (
         <Box
-            sx={
+            className={
                 config && openSidebar
                     ? theme.classes.rootShifted
                     : theme.classes.root
@@ -94,10 +94,13 @@ function MainPage() {
                 <SideBar />
             </ApolloProvider>
             <HeaderBar />
-            <Box sx={theme.classes.content}>
+            <Box className={theme.classes.content}>
                 <ApolloProvider client={itemClient}>
                     <ActionBar />
-                    <Paper component="main" sx={theme.classes.mainSection}>
+                    <Paper
+                        component="main"
+                        className={theme.classes.mainSection}
+                    >
                         {frameElement}
                     </Paper>
                 </ApolloProvider>

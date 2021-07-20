@@ -189,7 +189,7 @@ export default React.memo(function Contents({
                 : `${activeUrl}-contents.${node.id}`
             return (
                 <TreeItem
-                    sx={
+                    className={
                         mainCtx.item == node.id
                             ? theme.classes.treeItemMarked
                             : undefined

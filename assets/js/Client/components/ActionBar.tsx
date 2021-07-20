@@ -116,11 +116,11 @@ function ActionBar(props: Props) {
                 </DialogActions>
             </Dialog>
             <div style={{ flexGrow: 1 }} />
-            <Toolbar sx={theme.classes.actionToolBarInner}>
+            <Toolbar className={theme.classes.actionToolBarInner}>
                 <Tooltip
                     title={mainCtx.action === 'view' ? 'Edit' : 'View'}
                     arrow
-                    sx={mainCtx.item ? undefined : theme.classes.hidden}
+                    style={{ display: mainCtx.item ? undefined : 'hidden' }}
                 >
                     <span>
                         <IconButton
@@ -163,7 +163,7 @@ function ActionBar(props: Props) {
                             : 'Delete'
                     }
                     arrow
-                    sx={!mainCtx.item ? theme.classes.hidden : undefined}
+                    style={{ display: !mainCtx.item ? 'hidden' : undefined }}
                 >
                     <span>
                         <IconButton
@@ -220,7 +220,9 @@ function ActionBar(props: Props) {
                 <Tooltip title="Add Element" arrow>
                     <span>
                         <MapSelect
-                            sx={theme.classes.newItemSelect}
+                            classes={{
+                                root: theme.classes.newItemSelect,
+                            }}
                             disabled={!createTokens.length}
                             onChange={(event: any) => {
                                 updateMainCtx({
@@ -242,11 +244,12 @@ function ActionBar(props: Props) {
                             }}
                         />
                         <IconButton
-                            sx={
-                                mainCtx.action == 'add'
-                                    ? theme.classes.hidden
-                                    : undefined
-                            }
+                            style={{
+                                display:
+                                    mainCtx.action == 'add'
+                                        ? 'hidden'
+                                        : undefined,
+                            }}
                             color="inherit"
                             aria-label="add"
                             disabled={!createTokens.length}
@@ -270,7 +273,9 @@ function ActionBar(props: Props) {
                 <Tooltip
                     title="Share "
                     arrow
-                    sx={mainCtx.shareUrl ? undefined : theme.classes.hidden}
+                    style={{
+                        display: mainCtx.shareUrl ? undefined : 'hidden',
+                    }}
                 >
                     <span>
                         <IconButton
