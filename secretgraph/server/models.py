@@ -25,27 +25,6 @@ from .. import constants
 logger = logging.getLogger(__name__)
 
 
-def get_publicInfo_file_path(instance, filename) -> str:
-    ret = getattr(settings, "SECRETGRAPH_FILE_DIR", "cluster_files")
-    # try 100 times to find free filename
-    # but should not take more than 1 try
-    for _i in range(0, 100):
-        ret_path = default_storage.generate_filename(
-            posixpath.join(
-                ret,
-                "%s.info"
-                % secrets.token_urlsafe(
-                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH", 100)
-                ),
-            )
-        )
-        if not default_storage.exists(ret_path):
-            break
-    else:
-        raise FileExistsError("Unlikely event: no free filename")
-    return ret_path
-
-
 def get_content_file_path(instance, filename) -> str:
     ret = getattr(settings, "SECRETGRAPH_FILE_DIR", "content_files")
     cluster_id = instance.cluster_id or instance.cluster.id
@@ -83,10 +62,8 @@ class FlexidModel(models.Model):
 class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
     limited = False
-    publicInfo: str = models.FileField(
-        upload_to=get_publicInfo_file_path, db_column="public_info"
-    )
-    # internal field for listing public clusters
+    text: str = models.TextField()
+    # field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
@@ -174,7 +151,7 @@ class Content(FlexidModel):
         ]
 
     def load_pubkey(self):
-        """ Works only for public keys (special Content) """
+        """Works only for public keys (special Content)"""
         try:
             return load_der_public_key(
                 self.value.open("rb").read(), default_backend()

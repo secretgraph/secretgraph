@@ -96,7 +96,9 @@ class PushContentInput(graphene.InputObjectType):
 
 
 class ClusterInput(graphene.InputObjectType):
-    publicInfo = Upload(required=False)
+    text = graphene.String(required=False)
+    public = graphene.Boolean(required=False)
+    featured = graphene.Boolean(required=False)
     actions = graphene.List(graphene.NonNull(ActionInput), required=False)
     # has no references so missing reference tag is no problem
     key = ContentKeyInput(required=False)

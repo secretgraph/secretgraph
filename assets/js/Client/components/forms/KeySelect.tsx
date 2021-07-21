@@ -2,10 +2,6 @@ import { Value } from '@material-ui/core'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
-import { InitializedConfig } from '../../contexts'
-import { clusterFeedQuery } from '../../queries/cluster'
-import { extractPublicInfo } from '../../utils/cluster'
-import { extractAuthInfo } from '../../utils/config'
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
 export interface KeySelectProps<

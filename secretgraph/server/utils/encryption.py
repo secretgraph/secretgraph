@@ -14,11 +14,9 @@ from cryptography.hazmat.primitives.serialization import load_der_private_key
 from django.conf import settings
 from django.db.models import Exists, OuterRef, Q, Subquery
 from graphql_relay import from_global_id
-from rdflib import Graph
 
 from ...constants import TransferResult
 from ..models import Content, ContentReference
-from .misc import get_secrets, hash_object
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +54,11 @@ def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
     return outfile, nonce, key
 
 
-def create_key_maps(contents, keyset=(), inject_public=True):
+def create_key_maps(contents, keyset=()):
     """
     queries transfers and create content key map
     """
-    from ..models import Cluster, ContentTag
+    from ..models import ContentTag
 
     key_map1 = {}
     for i in keyset:
@@ -77,18 +75,6 @@ def create_key_maps(contents, keyset=(), inject_public=True):
                 # is hash or flexid
                 key_map1[f"id={i[0]}"] = _key
                 key_map1[f"key_hash={i[0]}"] = _key
-    if inject_public:
-        for cluster in Cluster.objects.filter(
-            public=True, contents__in=contents
-        ):
-            g = Graph()
-            g.parse(cluster.publicInfo, "turtle")
-            key_map1.update(
-                map(
-                    lambda x: ("key_hash=%s" % hash_object(x), x),
-                    get_secrets(g),
-                )
-            )
 
     reference_query = ContentReference.objects.filter(
         Q(group="key") | Q(group="transfer"), source__in=contents
@@ -159,18 +145,14 @@ def create_key_maps(contents, keyset=(), inject_public=True):
     return content_key_map, transfer_key_map
 
 
-def iter_decrypt_contents(
-    result, decryptset, inject_public=True
-) -> Iterable[Iterable[str]]:
+def iter_decrypt_contents(result, decryptset) -> Iterable[Iterable[str]]:
     from ..actions.update import transfer_value
 
     # copy query
     content_query = result["objects"].all()
     # per default verifiers=None, so that a failed verifications cannot happen
     content_query.only_direct_fetch_action_trigger = True
-    content_map, transfer_map = create_key_maps(
-        content_query, decryptset, inject_public=inject_public
-    )
+    content_map, transfer_map = create_key_maps(content_query, decryptset)
 
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(

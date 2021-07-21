@@ -6,11 +6,8 @@ from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.base import ContentFile, File
-from rdflib import RDF, BNode, Graph
 
-from ....constants import CLUSTER
-from ...utils.misc import get_secrets, hash_object
+from ...utils.misc import hash_object
 from ...models import Cluster
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
@@ -20,53 +17,16 @@ len_default_hash = len(hash_object(b""))
 
 def _update_or_create_cluster(request, cluster, objdata, authset):
     created = not cluster.id
-    if objdata.get("publicInfo"):
-        if isinstance(objdata["publicInfo"], bytes):
-            objdata["publicInfo"] = ContentFile(
-                objdata["publicInfo"], "publicInfo"
-            )
-        elif isinstance(objdata["publicInfo"], str):
-            objdata["publicInfo"] = ContentFile(
-                objdata["publicInfo"].encode("utf8"), "publicInfo"
-            )
-        else:
-            objdata["publicInfo"] = File(objdata["publicInfo"], "publicInfo")
-        # max = 2 MB
-        if objdata["publicInfo"].size > 2000000:
-            raise ValueError("Too big >2MB")
-        g = Graph()
-        g.parse(file=objdata["publicInfo"], format="turtle")
-        cluster_main = g.value(
-            predicate=RDF.type, object=CLUSTER["Cluster"], any=False
-        )
-        if not cluster_main:
-            raise ValueError(
-                "Invalid publicInfo, not a valid cluster definition"
-            )
-        g.remove((cluster_main, CLUSTER["Cluster.contents"], None))
-        objdata["publicInfo"] = ContentFile(
-            g.serialize(format="turtle"), "publicInfo"
-        )
-        public_secret_hashes = set(map(hash_object, get_secrets(g)))
-        cluster.public = len(public_secret_hashes) > 0
-        if created:
 
-            def cluster_save_fn():
-                cluster.updateId = uuid4()
-                cluster.publicInfo.save("ignored", objdata["publicInfo"])
+    if "public" in objdata:
+        cluster.public = bool(objdata["public"])
 
-        else:
+    if "text" in objdata:
+        cluster.text = objdata["text"] or ""
 
-            def cluster_save_fn():
-                cluster.updateId = uuid4()
-                cluster.publicInfo.delete(False)
-                cluster.publicInfo.save("ignored", objdata["publicInfo"])
-
-    elif cluster.id is not None:
-        public_secret_hashes = {}
-        cluster_save_fn = cluster.save
-    else:
-        raise ValueError("no publicInfo")
+    def cluster_save_fn():
+        cluster.updateId = uuid4()
+        cluster.save()
 
     # path: actions are specified
     if objdata.get("actions"):
@@ -82,15 +42,12 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
         if created and "manage" not in action_save_fn.action_types:
             raise ValueError('Requires "manage" Action')
 
-        if m_actions.intersection(public_secret_hashes):
-            raise ValueError('"manage" action cannot be public')
-
         def save_fn():
             cluster_save_fn()
             action_save_fn()
             return cluster
 
-    elif not created and not public_secret_hashes:
+    elif not created:
         # path: actions are not specified but cluster exists and no
         # new public_secret_hashes
         def save_fn():
@@ -116,13 +73,6 @@ def create_cluster_fn(request, objdata=None, user=None, authset=None):
         objdata = {
             "actions": [{"key": action_key, "value": {"action": "manage"}}]
         }
-    if hasattr(objdata.get("publicInfo"), "read"):
-        objdata["publicInfo"] = objdata["publicInfo"].read()
-    if not objdata.get("publicInfo") or len(objdata["publicInfo"]) == 0:
-        g = Graph()
-        root = BNode()
-        g.add((root, RDF.type, CLUSTER["Cluster"]))
-        objdata["publicInfo"] = g.serialize(format="turtle")
 
     if not objdata.get("actions"):
         raise ValueError("Actions required")

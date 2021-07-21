@@ -116,53 +116,6 @@ def _update_or_create_content_or_key(
     create = not content.id
 
     inner_key = None
-    # if create checked in parent function
-    if objdata.get("value"):
-        # normalize nonce and check constraints
-        try:
-            if isinstance(objdata["nonce"], bytes):
-                checknonce = objdata["nonce"]
-                objdata["nonce"] = base64.b64encode(checknonce).decode("ascii")
-            else:
-                checknonce = base64.b64decode(objdata["nonce"])
-        except Exception:
-            # no nonce == trigger encryption
-            objdata["value"], objdata["nonce"], inner_key = encrypt_into_file(
-                objdata["value"], key=None
-            )
-            objdata["nonce"] = base64.b64encode(objdata["nonce"]).decode(
-                "ascii"
-            )
-        # is public key? then ignore nonce checks
-        if not is_key or not objdata.get("contentHash"):
-            if len(checknonce) != 13:
-                raise ValueError("invalid nonce size")
-            if checknonce.count(b"\0") == len(checknonce):
-                raise ValueError("weak nonce")
-        assert isinstance(
-            objdata["nonce"], str
-        ), "nonce should be here base64 astring, %s" % type(
-            objdata["nonce"]
-        )  # noqa E502
-        content.nonce = objdata["nonce"]
-
-        if isinstance(objdata["value"], bytes):
-            objdata["value"] = ContentFile(objdata["value"])
-        elif isinstance(objdata["value"], str):
-            objdata["value"] = ContentFile(base64.b64decode(objdata["value"]))
-        else:
-            objdata["value"] = File(objdata["value"])
-
-        def save_fn_value():
-            content.file.delete(False)
-            content.updateId = uuid4()
-            content.file.save("ignored", objdata["value"])
-
-    else:
-
-        def save_fn_value():
-            content.updateId = uuid4()
-            content.save()
 
     tags_dict = None
     content_type = None
@@ -196,6 +149,56 @@ def _update_or_create_content_or_key(
     else:
         if objdata.get("references") is not None:
             key_hashes_tags = set()
+
+    # if create checked in parent function
+    if objdata.get("value"):
+        # normalize nonce and check constraints
+        try:
+            if isinstance(objdata["nonce"], bytes):
+                checknonce = objdata["nonce"]
+                objdata["nonce"] = base64.b64encode(checknonce).decode("ascii")
+            else:
+                checknonce = base64.b64decode(objdata["nonce"])
+        except Exception:
+            # no nonce == trigger encryption
+            objdata["value"], objdata["nonce"], inner_key = encrypt_into_file(
+                objdata["value"], key=None
+            )
+            objdata["nonce"] = base64.b64encode(objdata["nonce"]).decode(
+                "ascii"
+            )
+        # is public key or public? then ignore nonce checks
+        if (not is_key and content_state != "public") or not objdata.get(
+            "contentHash"
+        ):
+            if len(checknonce) != 13:
+                raise ValueError("invalid nonce size")
+            if checknonce.count(b"\0") == len(checknonce):
+                raise ValueError("weak nonce")
+        assert isinstance(
+            objdata["nonce"], str
+        ), "nonce should be here base64 astring, %s" % type(
+            objdata["nonce"]
+        )  # noqa E502
+        content.nonce = objdata["nonce"]
+
+        if isinstance(objdata["value"], bytes):
+            objdata["value"] = ContentFile(objdata["value"])
+        elif isinstance(objdata["value"], str):
+            objdata["value"] = ContentFile(base64.b64decode(objdata["value"]))
+        else:
+            objdata["value"] = File(objdata["value"])
+
+        def save_fn_value():
+            content.file.delete(False)
+            content.updateId = uuid4()
+            content.file.save("ignored", objdata["value"])
+
+    else:
+
+        def save_fn_value():
+            content.updateId = uuid4()
+            content.save()
 
     # cannot change because of special key transformation
     chash = objdata.get("contentHash")
@@ -238,7 +241,12 @@ def _update_or_create_content_or_key(
         if isinstance(inner_key, str):
             inner_key = base64.b64decode(inner_key)
         # last resort
-        if not is_key and not key_hashes_ref and final_references is not None:
+        if (
+            not is_key
+            and content_state != "public"
+            and not key_hashes_ref
+            and final_references is not None
+        ):
             default_keys = initializeCachedResult(request, authset=authset)[
                 "Content"
             ]["objects"].filter(
@@ -295,7 +303,11 @@ def _update_or_create_content_or_key(
                     )
 
     if final_references is not None:
-        if not is_key and len(key_hashes_ref) < 1:
+        if (
+            not is_key
+            and content_state != "public"
+            and len(key_hashes_ref) < 1
+        ):
             raise ValueError(">=1 key references required for content")
     if objdata.get("actions") is not None:
         actions_save_fn = manage_actions_fn(

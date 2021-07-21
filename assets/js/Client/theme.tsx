@@ -1,12 +1,12 @@
 import '@material-ui/lab/themeAugmentation'
 
+import { css } from '@emotion/css'
 import {
     Theme,
     createStyles,
     createTheme,
     responsiveFontSizes,
 } from '@material-ui/core/styles'
-import { makeStyles } from '@material-ui/styles'
 import { SxProps } from '@material-ui/system'
 
 declare module '@material-ui/core/styles' {
@@ -52,8 +52,8 @@ export function makeSecretgraphTheme(theme: Theme) {
         appBarTitle: {
             flexGrow: 1,
             wordBreak: 'break-all' as const,
-            marginLeft: {
-                sm: '2rem',
+            [theme.breakpoints.up('sm')]: {
+                marginLeft: '2rem',
             },
         },
         treeItemHeading: {
@@ -177,4 +177,9 @@ export const theme = responsiveFontSizes(
     })
 )
 
-theme.classes = makeStyles(createStyles(makeSecretgraphTheme))
+theme.classes = Object.fromEntries(
+    Object.entries(makeSecretgraphTheme(theme)).map(([key, val]) => [
+        key,
+        css(val),
+    ])
+)
