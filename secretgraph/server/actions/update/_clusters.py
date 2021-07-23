@@ -21,8 +21,8 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
     if "public" in objdata:
         cluster.public = bool(objdata["public"])
 
-    if "text" in objdata:
-        cluster.text = objdata["text"] or ""
+    if "description" in objdata:
+        cluster.description = objdata["description"] or ""
 
     def cluster_save_fn():
         cluster.updateId = uuid4()

@@ -504,7 +504,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     updateId = graphene.UUID(required=True)
     # MAYBE: reference user directly if possible
     user = relay.GlobalID(required=False)
-    name = graphene.String(required=False)
+    description = graphene.String(required=False)
     link = graphene.String(
         required=True,
         description=_("Link to turtle document with injected Contents"),
@@ -563,7 +563,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
             return []
         return ActionMixin.resolve_availableActions(self, info)
 
-    def resolve_name(self, info):
+    def resolve_description(self, info):
         if self.limited:
             return None
         return self.name

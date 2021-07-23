@@ -19,7 +19,6 @@ import {
     deleteNodes as deleteNodeQuery,
     resetDeletionNodes as resetDeletionNodeQuery,
 } from '../queries/node'
-import { extractPublicInfo } from './cluster'
 import {
     cleanConfig,
     extractAuthInfo,

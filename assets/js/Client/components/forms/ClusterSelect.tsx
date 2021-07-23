@@ -5,7 +5,7 @@ import * as React from 'react'
 
 import { InitializedConfig } from '../../contexts'
 import { clusterFeedQuery } from '../../queries/cluster'
-import { extractPublicInfo } from '../../utils/cluster'
+import { extractNameNote } from '../../utils/cluster'
 import { extractAuthInfo } from '../../utils/config'
 import { useFixedQuery } from '../../utils/hooks'
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
@@ -70,7 +70,7 @@ export default function ClusterSelect<
             return ret
         }
         for (const { node } of data.clusters.clusters.edges) {
-            const { name, note } = extractPublicInfo(node.publicInfo)
+            const { name, note } = extractNameNote(node.description)
             ret.ids.push(node.id)
             if (name) {
                 ret.labelMap[node.id] = name

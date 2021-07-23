@@ -18,9 +18,7 @@ from django.shortcuts import resolve_url
 from django.urls import reverse
 from django.views.generic.edit import FormView
 from graphene_file_upload.django import FileUploadGraphQLView
-from rdflib import BNode, XSD, Graph, Literal
 
-from ..constants import CLUSTER
 from .actions.view import ContentFetchQueryset, fetch_contents
 from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
@@ -66,26 +64,14 @@ class ClusterView(AllowCORSMixin, FormView):
         ).first()
         if not cluster:
             raise Http404()
-        g = Graph()
-        cluster_main = BNode()
-        for content in (
+        q = (
             initializeCachedResult(request, authset=authset)["Content"][
                 "objects"
             ]
             .filter(cluster=cluster)
-            .only("flexid")
-        ):
-            g.add(
-                (
-                    cluster_main,
-                    CLUSTER["Cluster.contents"],
-                    Literal(content.link, datatype=XSD.anyURI),
-                )
-            )
-        return HttpResponse(
-            g.serialize(format="turtle"),
-            content_type="text/turtle;charset=utf-8",
+            .only("link")
         )
+        return JsonResponse({"contents": [map(lambda x: x.link, q)]})
 
 
 class ContentView(AllowCORSMixin, FormView):

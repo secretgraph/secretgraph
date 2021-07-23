@@ -121,7 +121,7 @@ export const getClusterQuery = gql`
 
 export const createClusterMutation = gql`
     mutation clusterCreateMutation(
-        $publicInfo: Upload
+        $description: string
         $actions: [ActionInput!]
         $publicKey: Upload!
         $privateKey: Upload
@@ -132,7 +132,7 @@ export const createClusterMutation = gql`
         updateOrCreateCluster(
             input: {
                 cluster: {
-                    publicInfo: $publicInfo
+                    description: $description
                     actions: $actions
                     key: {
                         publicKey: $publicKey

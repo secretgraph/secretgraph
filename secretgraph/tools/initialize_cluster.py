@@ -40,11 +40,11 @@ query serverSecretgraphConfigQuery {
 """
 
 clusterCreateMutation_mutation = """
-mutation clusterCreateMutation($name: String, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $publicTags: [String!]!, $privateTags: [String!]!, $nonce: String, $authorization: [String!]) {
+mutation clusterCreateMutation($description: String, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $publicTags: [String!]!, $privateTags: [String!]!, $nonce: String, $authorization: [String!]) {
     updateOrCreateCluster(
         input: {
             cluster: {
-                text: $text
+                description: $description
                 actions: $actions
                 key: {
                     publicKey: $publicKey

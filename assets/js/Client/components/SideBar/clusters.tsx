@@ -12,7 +12,7 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
 import { clusterFeedQuery, getClusterQuery } from '../../queries/cluster'
-import { extractPublicInfo } from '../../utils/cluster'
+import { extractNameNote } from '../../utils/cluster'
 import { useFixedQuery } from '../../utils/hooks'
 import SideBarContents from './contents'
 
@@ -38,10 +38,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
         onCompleted: (data) => {
             if (data) {
                 setData({
-                    ...extractPublicInfo(
-                        data.secretgraph.node.publicInfo,
-                        false
-                    ),
+                    ...extractNameNote(data.secretgraph.node.description),
                     node: data.secretgraph.node,
                 })
             } else {
@@ -132,7 +129,7 @@ export default React.memo(function Clusters({
         }
         return data.clusters.clusters.edges.map(({ node }: any) => {
             if (node.id !== activeCluster) {
-                const { name, note } = extractPublicInfo(node.publicInfo)
+                const { name, note } = extractNameNote(node.description)
                 const nodeId = (
                     node.availableActions as {
                         type: string

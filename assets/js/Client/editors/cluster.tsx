@@ -51,7 +51,7 @@ import {
     generateActionMapper,
     transformActions,
 } from '../utils/action'
-import { extractPublicInfo as extractPublicInfoShared } from '../utils/cluster'
+import { extractNameNote } from '../utils/cluster'
 import { extractAuthInfo, saveConfig } from '../utils/config'
 import {
     findWorkingHashAlgorithms,
@@ -68,7 +68,7 @@ import {
 import * as SetOps from '../utils/set'
 import { UnpackPromise, ValueType } from '../utils/typing'
 
-async function extractPublicInfo({
+async function extractCombinedInfo({
     config,
     node,
     url,
@@ -81,7 +81,7 @@ async function extractPublicInfo({
     tokens: string[]
     hashAlgorithms: string[]
 }) {
-    const { name, note } = extractPublicInfoShared(node.publicInfo, true)
+    const { name, note } = extractNameNote(node.description)
     const known = node && url && config.hosts[url]?.clusters[node.id]?.hashes
     const mapper = await generateActionMapper({
         nodeData: node,
@@ -91,7 +91,6 @@ async function extractPublicInfo({
         hashAlgorithm: hashAlgorithms[0],
     })
     return {
-        publicInfo: node.publicInfo,
         mapper,
         name: name || '',
         note: note || '',
@@ -468,7 +467,7 @@ const ViewCluster = () => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [data, setData] =
         React.useState<
-            | (UnpackPromise<ReturnType<typeof extractPublicInfo>> & {
+            | (UnpackPromise<ReturnType<typeof extractCombinedInfo>> & {
                   key: string
               })
             | null
@@ -497,7 +496,7 @@ const ViewCluster = () => {
             }
             updateMainCtx(updateOb)
             setData({
-                ...(await extractPublicInfo({
+                ...(await extractCombinedInfo({
                     config,
                     node: data.secretgraph.node,
                     url: mainCtx.url as string,
@@ -579,7 +578,7 @@ const EditCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] =
         React.useState<
-            | (UnpackPromise<ReturnType<typeof extractPublicInfo>> & {
+            | (UnpackPromise<ReturnType<typeof extractCombinedInfo>> & {
                   key: string
               })
             | null
@@ -622,7 +621,7 @@ const EditCluster = () => {
             }
             updateMainCtx(updateOb)
             setData({
-                ...(await extractPublicInfo({
+                ...(await extractCombinedInfo({
                     config,
                     node: dataUnfinished.secretgraph.node,
                     url: mainCtx.url as string,
