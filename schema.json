@@ -112,7 +112,7 @@
               "args": [
                 {
                   "defaultValue": null,
-                  "description": null,
+                  "description": "The ID of the object",
                   "name": "id",
                   "type": {
                     "kind": "NON_NULL",
@@ -126,7 +126,7 @@
                 }
               ],
               "deprecationReason": null,
-              "description": "The ID of the object",
+              "description": null,
               "isDeprecated": false,
               "name": "node",
               "type": {
@@ -783,7 +783,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "publicInfo",
+              "name": "description",
               "type": {
                 "kind": "SCALAR",
                 "name": "String",
@@ -1821,7 +1821,7 @@
               "args": [
                 {
                   "defaultValue": null,
-                  "description": null,
+                  "description": "The ID of the object",
                   "name": "id",
                   "type": {
                     "kind": "NON_NULL",
@@ -1835,7 +1835,7 @@
                 }
               ],
               "deprecationReason": null,
-              "description": "The ID of the object",
+              "description": null,
               "isDeprecated": false,
               "name": "node",
               "type": {
@@ -3534,10 +3534,30 @@
             {
               "defaultValue": null,
               "description": null,
-              "name": "publicInfo",
+              "name": "description",
               "type": {
                 "kind": "SCALAR",
-                "name": "Upload",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": null,
+              "name": "public",
+              "type": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": null,
+              "name": "featured",
+              "type": {
+                "kind": "SCALAR",
+                "name": "Boolean",
                 "ofType": null
               }
             },

@@ -254,7 +254,7 @@ tests = ["coverage", "pytest", "pytest-cov", "pytest-django"]
 
 [[package]]
 name = "graphene-protector"
-version = "0.3.1"
+version = "0.3.3"
 description = "Protects graphene against malicious queries"
 category = "main"
 optional = false
@@ -263,6 +263,7 @@ python-versions = ">=3.6"
 [package.dependencies]
 graphene = "*"
 graphene-django = "*"
+graphql-core = "*"
 
 [[package]]
 name = "graphql-core"
@@ -774,8 +775,8 @@ graphene-file-upload = [
     {file = "graphene_file_upload-1.3.0.tar.gz", hash = "sha256:6898480b0556826472c80971032917c01968ade5800d84054008fe598795b063"},
 ]
 graphene-protector = [
-    {file = "graphene-protector-0.3.1.tar.gz", hash = "sha256:99f7a9893b5b418b401e94fbf2c74b558ec31aa57ea9f6ff840d275d2fcdd726"},
-    {file = "graphene_protector-0.3.1-py3-none-any.whl", hash = "sha256:367aa6c173cb8ff1d240f36c51d012cf2a120d4e16eec3c30f86f185c33f71db"},
+    {file = "graphene-protector-0.3.3.tar.gz", hash = "sha256:bea405a0d7c091a92f642793af33b1741ee0256a506d3cc472937ad1958fd05f"},
+    {file = "graphene_protector-0.3.3-py3-none-any.whl", hash = "sha256:10596f654c2f2a6c7b0a0bbeaef9d53a1590fc13dc7ba0a4ac683ed45c3e896e"},
 ]
 graphql-core = [
     {file = "graphql-core-2.3.2.tar.gz", hash = "sha256:aac46a9ac524c9855910c14c48fc5d60474def7f99fd10245e76608eba7af746"},
