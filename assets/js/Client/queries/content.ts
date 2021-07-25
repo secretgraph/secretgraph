@@ -212,7 +212,6 @@ export const keysRetrievalQuery = gql`
                     tags
                     cluster {
                         id
-                        publicInfo
                     }
                     references(
                         groups: ["signature"]
@@ -297,7 +296,6 @@ export const contentRetrievalQuery = gql`
                     }
                     cluster {
                         id
-                        publicInfo
                     }
                     references(
                         groups: ["key", "signature"]

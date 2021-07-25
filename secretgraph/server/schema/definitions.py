@@ -566,7 +566,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     def resolve_description(self, info):
         if self.limited:
             return None
-        return self.name
+        return self.description
 
     def resolve_link(self, info):
         if self.limited:

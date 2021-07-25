@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                     "flexid",
                     models.UUIDField(blank=True, null=True, unique=True),
                 ),
-                ("text", models.TextField()),
+                ("description", models.TextField()),
                 ("public", models.BooleanField(blank=True, default=False)),
                 ("featured", models.BooleanField(blank=True, default=False)),
                 ("updated", models.DateTimeField(auto_now=True)),

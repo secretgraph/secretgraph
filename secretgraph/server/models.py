@@ -62,7 +62,7 @@ class FlexidModel(models.Model):
 class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
     limited = False
-    text: str = models.TextField()
+    description: str = models.TextField()
     # field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)

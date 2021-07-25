@@ -35,7 +35,7 @@ export const clusterFeedQuery = gql`
                         updateId
                         link
                         id
-                        publicInfo
+                        description
                         availableActions {
                             type
                         }
@@ -83,7 +83,7 @@ export const getClusterConfigurationQuery = gql`
     }
 `
 
-// has also publicInfo
+// has also description
 export const getClusterQuery = gql`
     query clusterGetClusterQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
@@ -105,7 +105,7 @@ export const getClusterQuery = gql`
                     deleted
                     group
                     link
-                    publicInfo
+                    description
                     updateId
                     availableActions {
                         keyHash
@@ -121,7 +121,7 @@ export const getClusterQuery = gql`
 
 export const createClusterMutation = gql`
     mutation clusterCreateMutation(
-        $description: string
+        $description: String
         $actions: [ActionInput!]
         $publicKey: Upload!
         $privateKey: Upload
@@ -149,7 +149,7 @@ export const createClusterMutation = gql`
                 id
                 group
                 link
-                publicInfo
+                description
                 updateId
                 availableActions {
                     keyHash
@@ -167,7 +167,7 @@ export const updateClusterMutation = gql`
     mutation clusterUpdateMutation(
         $id: ID!
         $updateId: ID!
-        $publicInfo: Upload
+        $description: String
         $actions: [ActionInput!]
         $authorization: [String!]
     ) {
@@ -175,7 +175,7 @@ export const updateClusterMutation = gql`
             input: {
                 id: $id
                 updateId: $updateId
-                cluster: { publicInfo: $publicInfo, actions: $actions }
+                cluster: { description: $description, actions: $actions }
                 authorization: $authorization
             }
         ) {
@@ -183,7 +183,7 @@ export const updateClusterMutation = gql`
                 id
                 group
                 link
-                publicInfo
+                description
                 updateId
                 availableActions {
                     keyHash

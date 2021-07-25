@@ -503,7 +503,7 @@ export async function createCluster(options: {
     client: ApolloClient<any>
     actions: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
-    publicInfo: string
+    description: string
     publicKey: CryptoKey
     privateKey?: CryptoKey
     privateKeyKey?: Uint8Array
@@ -541,7 +541,7 @@ export async function createCluster(options: {
         // we need a current updateId
         awaitRefetchQueries: true,
         variables: {
-            publicInfo: new Blob([utf8encoder.encode(options.publicInfo)]),
+            description: options.description,
             publicKey: await publicKeyPromise,
             privateKey: await privateKeyPromise,
             privateTags: privateTags,
@@ -557,7 +557,7 @@ export async function updateCluster(options: {
     client: ApolloClient<any>
     updateId: string
     actions?: Interfaces.ActionInterface[]
-    publicInfo?: string
+    description?: string
     authorization: string[]
 }): Promise<FetchResult<any>> {
     return await options.client.mutate({
@@ -567,7 +567,7 @@ export async function updateCluster(options: {
         variables: {
             id: options.id,
             updateId: options.updateId,
-            publicInfo: new Blob([utf8encoder.encode(options.publicInfo)]),
+            description: options.description,
             actions: options.actions,
             authorization: options.authorization,
         },
@@ -605,7 +605,7 @@ export async function initializeCluster(
     const clusterResponse = await createCluster({
         client,
         actions: [{ value: '{"action": "manage"}', key: keyb64 }],
-        publicInfo: '',
+        description: '',
         hashAlgorithm: config.hosts[config.baseUrl].hashAlgorithms[0],
         publicKey,
         privateKey,

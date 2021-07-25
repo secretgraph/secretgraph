@@ -17,21 +17,11 @@ import { useTheme } from '@material-ui/core/styles'
 import {
     ArrayHelpers,
     FastField,
-    Field,
     FieldArray,
     Form,
     Formik,
     FormikProps,
 } from 'formik'
-import {
-    BlankNode,
-    Literal,
-    NamedNode,
-    SPARQLToQuery,
-    graph,
-    parse,
-    serialize,
-} from 'rdflib'
 import * as React from 'react'
 
 import { ActionEntry } from '../components/ActionsDialog'
@@ -100,7 +90,7 @@ async function extractCombinedInfo({
 }
 
 interface ClusterInternProps {
-    readonly publicInfo?: string
+    readonly description?: string
     readonly name: string
     readonly note: string
     url: string
@@ -158,7 +148,7 @@ const ClusterIntern = ({
                                 : undefined,
                         delete: false,
                         readonly: false,
-                        locked: props.publicInfo !== undefined,
+                        locked: props.description !== undefined,
                     })
                 }
             } else {
@@ -202,42 +192,10 @@ const ClusterIntern = ({
                 note: props.note || '',
             }}
             onSubmit={async (
-                { actions: actionsNew, ...values },
+                { actions: actionsNew, name, note, ...values },
                 { setSubmitting, resetForm }
             ) => {
-                let root: BlankNode | undefined = undefined
-                const store = graph()
-                if (props.publicInfo) {
-                    parse(props.publicInfo as string, store, '_:')
-                    const results = store.querySync(
-                        SPARQLToQuery(
-                            `SELECT ?root WHERE {?root a ${CLUSTER(
-                                'Cluster'
-                            )}. }`,
-                            true,
-                            store
-                        )
-                    )
-                    if (results[0] && results[0]['?root']) {
-                        root = results[0]['?root']
-                    }
-                }
-                if (!root) {
-                    root = new BlankNode()
-                    store.add(root, RDF('type'), CLUSTER('Cluster'))
-                }
-                store.removeMany(root, SECRETGRAPH('name'))
-                store.removeMany(root, SECRETGRAPH('note'))
-                store.add(
-                    root,
-                    SECRETGRAPH('name'),
-                    new Literal(values.name || '', null, XSD('string'))
-                )
-                store.add(
-                    root,
-                    SECRETGRAPH('note'),
-                    new Literal(values.note || '', null, XSD('string'))
-                )
+                const description = [name, note].join('\u001F')
                 let clusterResponse: FetchResult<any>
                 const {
                     hashes,
@@ -256,12 +214,7 @@ const ClusterIntern = ({
                         client: itemClient,
                         updateId: mainCtx.updateId as string,
                         actions: finishedActions,
-                        publicInfo: serialize(
-                            null as any,
-                            store,
-                            '_:',
-                            'text/turtle'
-                        ),
+                        description,
                         authorization: mainCtx.tokens,
                     })
                 } else {
@@ -291,13 +244,7 @@ const ClusterIntern = ({
                     clusterResponse = await createCluster({
                         client: itemClient,
                         actions: finishedActions,
-                        publicInfo:
-                            serialize(
-                                null as any,
-                                store,
-                                '_:',
-                                'text/turtle'
-                            ) || '',
+                        description: '',
                         hashAlgorithm: hashAlgorithms[0],
                         publicKey,
                         privateKey,
@@ -341,7 +288,7 @@ const ClusterIntern = ({
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
                 updateMainCtx({
-                    title: values.name || '',
+                    title: name || '',
                     action: 'update',
                     item: clusterResponse.data.updateOrCreateCluster.cluster.id,
                     updateId:
