@@ -641,20 +641,9 @@ export function updateConfig(
                             oldval
                                 ? Object.assign({}, oldval)
                                 : {
-                                      hashAlgorithms: [],
                                       clusters: {},
                                       contents: {},
                                   }
-                        if (
-                            newval.hashAlgorithms &&
-                            SetOps.isNotEq(
-                                new Set(newState.hashAlgorithms),
-                                newval.hashAlgorithms
-                            )
-                        ) {
-                            newState.hashAlgorithms = newval.hashAlgorithms
-                            count += 1
-                        }
                         if (newval.clusters) {
                             const res = mergeDeleteObjects(
                                 newState.clusters,

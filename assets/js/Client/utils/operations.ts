@@ -86,6 +86,8 @@ export async function resetDeletionNodes({
 export async function createContent({
     client,
     cluster,
+    tags: tagsIntern,
+    value,
     ...options
 }: {
     client: ApolloClient<any>
@@ -107,19 +109,23 @@ export async function createContent({
     }
     const nonce = crypto.getRandomValues(new Uint8Array(13))
     const key = crypto.getRandomValues(new Uint8Array(32))
+    const tagsOptions = await Promise.all(tagsIntern)
+    const isPublic = tagsOptions.includes('state=public')
 
-    const encryptedContentPromise = encryptAESGCM({
-        key,
-        nonce,
-        data: options.value,
-    })
+    const encryptedContentPromise = isPublic
+        ? unserializeToArrayBuffer(value).then((data) => ({
+              data,
+          }))
+        : encryptAESGCM({
+              key,
+              nonce,
+              data: value,
+          })
     const halgo = mapHashNames[options.hashAlgorithm].operationName
 
-    const [publicKeyReferencesPromise, tagsPromise] = encryptSharedKey(
-        key,
-        options.pubkeys,
-        halgo
-    )
+    const [publicKeyReferencesPromise, tagsPromise] = isPublic
+        ? [[], []]
+        : encryptSharedKey(key, options.pubkeys, halgo)
     const signatureReferencesPromise = encryptedContentPromise.then((data) =>
         createSignatureReferences(
             data.data,
@@ -130,7 +136,7 @@ export async function createContent({
     const encrypt = new Set<string>(options.encryptTags)
     const tags = await Promise.all(
         ((await tagsPromise) as (string | PromiseLike<string>)[])
-            .concat([...options.tags])
+            .concat(tagsOptions)
             .map((data) => encryptTag({ data, key, encrypt }))
     )
     return await client.mutate({
@@ -576,17 +582,17 @@ export async function updateCluster(options: {
 
 export async function initializeCluster(
     client: ApolloClient<any>,
-    config: Interfaces.ConfigInterface
+    config: Interfaces.ConfigInterface,
+    hashAlgorithm: string
 ) {
     const key = crypto.getRandomValues(new Uint8Array(32))
-    const halgo = mapHashNames[config.hosts[config.baseUrl].hashAlgorithms[0]]
     const { publicKey, privateKey } = await crypto.subtle.generateKey(
         {
             name: 'RSA-OAEP',
             //modulusLength: 8192,
             modulusLength: 2048,
             publicExponent: new Uint8Array([1, 0, 1]),
-            hash: halgo.operationName,
+            hash: hashAlgorithm,
         },
         true,
         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
@@ -595,18 +601,18 @@ export async function initializeCluster(
         .exportKey('spki' as const, publicKey)
         .then((keydata) =>
             crypto.subtle
-                .digest(halgo.operationName, keydata)
+                .digest(hashAlgorithm, keydata)
                 .then((data) => Buffer.from(data).toString('base64'))
         )
     const digestActionKeyPromise = crypto.subtle
-        .digest(config.hosts[config.baseUrl].hashAlgorithms[0], key)
+        .digest(hashAlgorithm, key)
         .then((data) => Buffer.from(data).toString('base64'))
     const keyb64 = Buffer.from(key).toString('base64')
     const clusterResponse = await createCluster({
         client,
         actions: [{ value: '{"action": "manage"}', key: keyb64 }],
         description: '',
-        hashAlgorithm: config.hosts[config.baseUrl].hashAlgorithms[0],
+        hashAlgorithm,
         publicKey,
         privateKey,
         privateKeyKey: key,
@@ -637,10 +643,7 @@ export async function initializeCluster(
     if (!cleanConfig(config)) {
         throw Error('invalid config created')
     }
-    const digest = await sortedHash(
-        ['type=Config'],
-        config['hosts'][config['baseUrl']].hashAlgorithms[0]
-    )
+    const digest = await sortedHash(['type=Config'], hashAlgorithm)
 
     const { tokens: authorization } = extractAuthInfo({
         config: config,
@@ -658,7 +661,7 @@ export async function initializeCluster(
         privkeys: [privateKey],
         tags: ['type=Config', 'state=internal'],
         contentHash: digest,
-        hashAlgorithm: config['hosts'][config['baseUrl']].hashAlgorithms[0],
+        hashAlgorithm,
         authorization,
     }).then(({ data }) => {
         return {

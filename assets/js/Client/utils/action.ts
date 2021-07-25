@@ -58,15 +58,28 @@ export async function generateActionMapper({
 }: {
     nodeData?: any
     config: Interfaces.ConfigInterface
-    knownHashes?: { [hash: string]: string[] }[] // cluster or content hashes
+    knownHashes?: (
+        | { [hash: string]: string[] }
+        | { keyHash: string; type: string }[]
+    )[] // cluster or content hashes
     unknownTokens?: string[] // eg. tokens in url
     unknownKeyhashes?: string[] // eg tags
     hashAlgorithm: string
 }): Promise<{ [newHash: string]: ActionMapperEntry | CertificateEntry }> {
     const knownHashes: { [hash: string]: Set<string> } = {}
     for (const k of knownHashesIntern || []) {
-        for (const [hash, val] of Object.entries(k)) {
-            knownHashes[hash] = SetOps.union(knownHashes[hash] || [], val)
+        if (k instanceof Array) {
+            for (const el of k) {
+                if (!knownHashes[el.keyHash]) {
+                    knownHashes[el.keyHash] = new Set([el.type])
+                } else {
+                    knownHashes[el.keyHash].add(el.type)
+                }
+            }
+        } else {
+            for (const [hash, val] of Object.entries(k)) {
+                knownHashes[hash] = SetOps.union(knownHashes[hash] || [], val)
+            }
         }
     }
     // TODO: rework, name variables better and merge old actions of type other

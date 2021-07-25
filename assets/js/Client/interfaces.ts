@@ -64,7 +64,6 @@ export interface ConfigClusterInterface<N = never> {
 }
 
 interface BaseHostInterface<ClusterType, ContentType> {
-    hashAlgorithms: string[]
     clusters: { [flexid: string]: ClusterType }
     contents: { [flexid: string]: ContentType }
 }

@@ -81,11 +81,17 @@ def manage_actions_fn(
         nonce = os.urandom(13)
         # add contentAction
         group = action_value.pop("contentActionGroup", "") or ""
-        if action.get("existingHash"):
-            actionObjs = result["objects"].filter(
-                Q(id=action["existingHash"])
-                | Q(keyHash=action["existingHash"])
-            )
+        existing = action.get("existingHash")
+        if existing:
+            if existing.isdecimal():
+                actionObjs = result["objects"].filter(
+                    Q(id=int(action["existingHash"]))
+                    | Q(keyHash=action["existingHash"])
+                )
+            else:
+                actionObjs = result["objects"].filter(
+                    keyHash=action["existingHash"]
+                )
             if not actionObjs.exists():
                 continue
             else:

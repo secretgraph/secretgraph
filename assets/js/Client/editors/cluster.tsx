@@ -27,7 +27,6 @@ import * as React from 'react'
 import { ActionEntry } from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikTextField from '../components/formik/FormikTextField'
-import { CLUSTER, RDF, SECRETGRAPH, XSD, protectedActions } from '../constants'
 import * as Contexts from '../contexts'
 import * as Interfaces from '../interfaces'
 import {
@@ -63,13 +62,13 @@ async function extractCombinedInfo({
     node,
     url,
     tokens,
-    hashAlgorithms,
+    hashAlgorithm,
 }: {
     config: Interfaces.ConfigInterface
     node?: any
     url: string
     tokens: string[]
-    hashAlgorithms: string[]
+    hashAlgorithm: string
 }) {
     const { name, note } = extractNameNote(node.description)
     const known = node && url && config.hosts[url]?.clusters[node.id]?.hashes
@@ -78,14 +77,14 @@ async function extractCombinedInfo({
         config,
         unknownTokens: tokens,
         knownHashes: known ? [known] : undefined,
-        hashAlgorithm: hashAlgorithms[0],
+        hashAlgorithm,
     })
     return {
         mapper,
         name: name || '',
         note: note || '',
         url,
-        hashAlgorithms,
+        hashAlgorithm,
     }
 }
 
@@ -97,13 +96,13 @@ interface ClusterInternProps {
     loading?: boolean
     disabled?: boolean
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-    hashAlgorithms: string[]
+    hashAlgorithm: string
 }
 
 const ClusterIntern = ({
     mapper,
     disabled,
-    hashAlgorithms,
+    hashAlgorithm,
     loading: loadingIntern,
     url,
     ...props
@@ -204,7 +203,7 @@ const ClusterIntern = ({
                 } = await transformActions({
                     actions: actionsNew,
                     mapper,
-                    hashAlgorithm: hashAlgorithms[0],
+                    hashAlgorithm,
                 })
                 let digestCert = undefined,
                     privPromise = undefined
@@ -226,7 +225,7 @@ const ClusterIntern = ({
                                 //modulusLength: 8192,
                                 modulusLength: 2048,
                                 publicExponent: new Uint8Array([1, 0, 1]),
-                                hash: hashAlgorithms[0],
+                                hash: hashAlgorithm,
                             },
                             true,
                             ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
@@ -236,7 +235,7 @@ const ClusterIntern = ({
                         .exportKey('spki' as const, publicKey)
                         .then((keydata) =>
                             crypto.subtle
-                                .digest(hashAlgorithms[0], keydata)
+                                .digest(hashAlgorithm, keydata)
                                 .then((data) =>
                                     Buffer.from(data).toString('base64')
                                 )
@@ -245,7 +244,7 @@ const ClusterIntern = ({
                         client: itemClient,
                         actions: finishedActions,
                         description: '',
-                        hashAlgorithm: hashAlgorithms[0],
+                        hashAlgorithm,
                         publicKey,
                         privateKey,
                         privateKeyKey: key,
@@ -260,7 +259,6 @@ const ClusterIntern = ({
                 const newNode =
                     clusterResponse.data.updateOrCreateCluster.cluster
                 configUpdate.hosts[url] = {
-                    hashAlgorithms,
                     clusters: {
                         [newNode.id as string]: {
                             hashes: {
@@ -409,118 +407,7 @@ const ClusterIntern = ({
     )
 }
 
-const ViewCluster = () => {
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] =
-        React.useState<
-            | (UnpackPromise<ReturnType<typeof extractCombinedInfo>> & {
-                  key: string
-              })
-            | null
-        >(null)
-
-    const { refetch } = useFixedQuery(getClusterQuery, {
-        pollInterval: 60000,
-        variables: {
-            id: mainCtx.item as string,
-            authorization: mainCtx.tokens,
-        },
-        fetchPolicy: 'cache-and-network',
-        onError: console.error,
-        onCompleted: async (data) => {
-            const updateOb = {
-                shareUrl: data.secretgraph.node.link,
-                deleted: data.secretgraph.node.deleted || null,
-                updateId: data.secretgraph.node.updateId,
-            }
-            if (
-                data.secretgraph.node.id == config.configCluster &&
-                mainCtx.url == config.baseUrl &&
-                !updateOb.deleted
-            ) {
-                updateOb.deleted = false
-            }
-            updateMainCtx(updateOb)
-            setData({
-                ...(await extractCombinedInfo({
-                    config,
-                    node: data.secretgraph.node,
-                    url: mainCtx.url as string,
-                    tokens: mainCtx.tokens,
-                    hashAlgorithms: findWorkingHashAlgorithms(
-                        data.secretgraph.config.hashAlgorithms
-                    ),
-                })),
-                key: `view${data.secretgraph.node.updateId}`,
-            })
-        },
-    })
-    React.useEffect(() => {
-        if (data) {
-            refetch()
-        }
-    }, [config])
-    if (!data) {
-        return null
-    }
-
-    return <ClusterIntern {...data} disabled />
-}
-
-const AddCluster = () => {
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] =
-        React.useState<(ClusterInternProps & { key: string }) | null>(null)
-
-    useFixedQuery(serverConfigQuery, {
-        pollInterval: 60000,
-        variables: {},
-        onError: console.error,
-        onCompleted: async (data) => {
-            if (!data) {
-                return
-            }
-            updateMainCtx({
-                shareUrl: null,
-                deleted: false,
-                updateId: null,
-            })
-
-            const key = crypto.getRandomValues(new Uint8Array(32))
-            const keyb64 = Buffer.from(key).toString('base64')
-            const { data: hashKey, hashAlgorithms } = await hashObject(
-                key,
-                data.secretgraph.config.hashAlgorithms
-            )
-            setData({
-                name: '',
-                note: '',
-                url: mainCtx.url as string,
-                mapper: {
-                    [hashKey]: {
-                        type: 'action',
-                        data: keyb64,
-                        note: '',
-                        newHash: hashKey,
-                        oldHash: null,
-                        configActions: new Set(['manage']),
-                        foundActions: new Set(['manage']),
-                    },
-                },
-                hashAlgorithms,
-                key: 'add',
-            })
-        },
-    })
-    if (!data) {
-        return null
-    }
-
-    return <ClusterIntern {...data} />
-}
-
-const EditCluster = () => {
+const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] =
@@ -573,9 +460,9 @@ const EditCluster = () => {
                     node: dataUnfinished.secretgraph.node,
                     url: mainCtx.url as string,
                     tokens: mainCtx.tokens,
-                    hashAlgorithms: findWorkingHashAlgorithms(
+                    hashAlgorithm: findWorkingHashAlgorithms(
                         dataUnfinished.secretgraph.config.hashAlgorithms
-                    ),
+                    )[0],
                 })),
                 key: `edit${new Date().getTime()}`,
             })
@@ -587,7 +474,63 @@ const EditCluster = () => {
         return null
     }
 
-    return <ClusterIntern disabled={false} loading={loading} {...data} />
+    return <ClusterIntern disabled={viewOnly} loading={loading} {...data} />
+}
+
+const ViewCluster = () => {
+    return <EditCluster viewOnly />
+}
+
+const AddCluster = () => {
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const [data, setData] =
+        React.useState<(ClusterInternProps & { key: string }) | null>(null)
+
+    useFixedQuery(serverConfigQuery, {
+        pollInterval: 60000,
+        variables: {},
+        onError: console.error,
+        onCompleted: async (data) => {
+            if (!data) {
+                return
+            }
+            updateMainCtx({
+                shareUrl: null,
+                deleted: false,
+                updateId: null,
+            })
+
+            const key = crypto.getRandomValues(new Uint8Array(32))
+            const keyb64 = Buffer.from(key).toString('base64')
+            const { data: hashKey, hashAlgorithms } = await hashObject(
+                key,
+                data.secretgraph.config.hashAlgorithms
+            )
+            setData({
+                name: '',
+                note: '',
+                url: mainCtx.url as string,
+                mapper: {
+                    [hashKey]: {
+                        type: 'action',
+                        data: keyb64,
+                        note: '',
+                        newHash: hashKey,
+                        oldHash: null,
+                        configActions: new Set(['manage']),
+                        foundActions: new Set(['manage']),
+                    },
+                },
+                hashAlgorithm: hashAlgorithms[0],
+                key: 'add',
+            })
+        },
+    })
+    if (!data) {
+        return null
+    }
+
+    return <ClusterIntern {...data} />
 }
 
 export default function ClusterComponent() {

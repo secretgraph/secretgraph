@@ -112,11 +112,10 @@ function SettingsImporter() {
                 configCluster: '',
             }
             newConfig.hosts[newConfig.baseUrl] = {
-                hashAlgorithms: hashAlgos,
                 clusters: {},
                 contents: {},
             }
-            await initializeCluster(client, newConfig)
+            await initializeCluster(client, newConfig, hashAlgos[0])
         }
         if (!newConfig) {
             setLoadingImport(false)
@@ -175,12 +174,15 @@ function SettingsImporter() {
                 configCluster: '',
             }
             newConfig.hosts[newConfig.baseUrl] = {
-                hashAlgorithms: hashAlgos,
                 clusters: {},
                 contents: {},
             }
             const client = createClient(newConfig.baseUrl)
-            const result = await initializeCluster(client, newConfig)
+            const result = await initializeCluster(
+                client,
+                newConfig,
+                hashAlgos[0]
+            )
             // TODO: handle exceptions and try with login
             setRegisterUrl(undefined)
             saveConfig(newConfig)

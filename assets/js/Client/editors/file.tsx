@@ -43,7 +43,8 @@ import {
     decryptContentObject,
     updateContent,
 } from '../utils/operations'
-import { UnpackPromise } from '../utils/typing'
+import * as SetOps from '../utils/set'
+import { UnpackPromise, ValueType } from '../utils/typing'
 
 const decryptSet = new Set(['mime', 'ename'])
 const ViewWidget = ({
@@ -195,6 +196,8 @@ const FileIntern = ({
     tags,
     data,
     setCluster,
+    mapper,
+    hashAlgorithms,
 }: FileInternProps) => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
@@ -204,6 +207,53 @@ const FileIntern = ({
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     const client = useApolloClient()
     let name: string = mainCtx.item as string
+    const actions = React.useMemo(() => {
+        const actions: (ActionInputEntry | CertificateInputEntry)[] = []
+        Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
+            const entry = mapper[params.newHash]
+            if (entry.type == 'action') {
+                const existingActions = entry.configActions
+                for (const actionType of existingActions.size
+                    ? existingActions
+                    : ['other']) {
+                    const diffactions = SetOps.difference(entry.foundActions, [
+                        'other',
+                    ])
+                    actions.push({
+                        type: 'action',
+                        data: params.data,
+                        newHash: params.newHash,
+                        oldHash: params.oldHash || undefined,
+                        start: '',
+                        stop: '',
+                        note: entry.note || '',
+                        value: {
+                            action: actionType,
+                        },
+                        update:
+                            diffactions.size &&
+                            SetOps.isNotEq(diffactions, entry.configActions)
+                                ? false
+                                : undefined,
+                        delete: false,
+                        readonly: false,
+                    })
+                }
+            } else {
+                actions.push({
+                    type: 'certificate',
+                    data: params.data,
+                    newHash: params.newHash,
+                    oldHash: params.oldHash || undefined,
+                    note: entry.note || '',
+                    delete: false,
+                    readonly: false,
+                    locked: true,
+                })
+            }
+        })
+        return actions
+    }, [mapper])
     let encryptName = true
     if (tags) {
         if (tags['ename'] && tags['ename'].length > 0) {
@@ -233,6 +283,7 @@ const FileIntern = ({
                 cluster:
                     node?.cluster?.id ||
                     (searchCtx.cluster ? searchCtx.cluster : null),
+                actions,
             }}
             validate={(values) => {
                 const errors: Partial<
@@ -261,9 +312,19 @@ const FileIntern = ({
                 return errors
             }}
             onSubmit={async (
-                values,
+                { actions: actionsNew, ...values },
                 { setSubmitting, setValues, setFieldValue, setFieldTouched }
             ) => {
+                const hashAlgorithm = hashAlgorithms[0]
+                const {
+                    hashes,
+                    actions: finishedActions,
+                    configUpdate,
+                } = await transformActions({
+                    actions: actionsNew,
+                    mapper,
+                    hashAlgorithm,
+                })
                 let value: Blob
                 if (values.htmlInput) {
                     value = new Blob([DOMPurify.sanitize(values.htmlInput)], {
@@ -292,7 +353,6 @@ const FileIntern = ({
                         id: values.cluster,
                     },
                 })
-                const hashAlgorithm = config.hosts[activeUrl].hashAlgorithms[0]
                 //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                 const privkeys = extractPrivKeys({
                     config,
@@ -794,146 +854,7 @@ const FileIntern = ({
     )
 }
 
-const ViewFile = () => {
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] =
-        React.useState<{
-            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-            hashAlgorithms: string[]
-            node: any
-            tags: { [name: string]: string[] }
-            data: Blob | null
-            key: string
-        } | null>(null)
-
-    useFixedQuery(contentRetrievalQuery, {
-        pollInterval: 60000,
-        fetchPolicy: 'cache-and-network',
-        onError: console.error,
-        variables: {
-            id: mainCtx.item as string,
-            authorization: mainCtx.tokens,
-        },
-        onCompleted: async (data) => {
-            if (!data) {
-                return
-            }
-            const updateOb = {
-                shareUrl: data.secretgraph.node.link,
-                deleted: data.secretgraph.node.deleted || null,
-                updateId: data.secretgraph.node.updateId,
-            }
-            updateMainCtx(updateOb)
-            const mapper = generateActionMapper({
-                nodeData: data.secretgraph.node,
-                config,
-                knownHashes: [
-                    data.secretgraph.node.cluster.availableActions,
-                    data.secretgraph.node.availableActions,
-                ],
-                hashAlgorithm: findWorkingHashAlgorithms(
-                    data.secretgraph.config.hashAlgorithms
-                )[0],
-            })
-            const obj = await decryptContentObject({
-                config,
-                nodeData: data.secretgraph.node,
-                blobOrTokens: mainCtx.tokens,
-                decrypt: decryptSet,
-            })
-            if (!obj) {
-                console.error('failed decoding')
-                return
-            }
-            setData({
-                hashAlgorithms: data.secretgraph.config.hashAlgorithms,
-                tags: obj.tags,
-                node: data.secretgraph.node,
-                mapper: await mapper,
-                data: new Blob([obj.data]),
-                key: `${new Date().getTime()}`,
-            })
-        },
-    })
-    if (!data) {
-        return null
-    }
-    return <FileIntern disabled {...data} setCluster={() => {}} />
-}
-
-const AddFile = () => {
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
-    const { searchCtx } = React.useContext(Contexts.Search)
-    const { config } = React.useContext(Contexts.InitializedConfig)
-    const [open, setOpen] = React.useState(false)
-    const [data, setData] =
-        React.useState<{
-            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-            hashAlgorithms: string[]
-            data?: Blob | null
-            key: string | number
-        } | null>(null)
-    // const [PSelections, setPSelections] = React.useState<string[]>([])
-    const client = useApolloClient()
-    const [cluster, setCluster] = React.useState(
-        searchCtx.cluster || config.configCluster
-    )
-    const { data: dataUnfinished, refetch } = useQuery(
-        getContentConfigurationQuery,
-        {
-            fetchPolicy: 'cache-and-network',
-            variables: {
-                id: cluster as string,
-                authorization: mainCtx.tokens,
-            },
-            onError: console.error,
-        }
-    )
-
-    React.useEffect(() => {
-        if (dataUnfinished) {
-            refetch()
-        }
-    }, [cluster])
-
-    React.useEffect(() => {
-        const f = async () => {
-            if (!dataUnfinished) {
-                return
-            }
-            const updateOb = {
-                shareUrl: dataUnfinished.secretgraph.node.link,
-                deleted: dataUnfinished.secretgraph.node.deleted || null,
-                updateId: dataUnfinished.secretgraph.node.updateId,
-            }
-            updateMainCtx(updateOb)
-            const mapper = generateActionMapper({
-                nodeData: dataUnfinished.secretgraph.node,
-                config,
-                knownHashes: [dataUnfinished.secretgraph.node.availableActions],
-                hashAlgorithm: findWorkingHashAlgorithms(
-                    dataUnfinished.secretgraph.config.hashAlgorithms
-                )[0],
-            })
-            setData({
-                hashAlgorithms:
-                    dataUnfinished.secretgraph.config.hashAlgorithms,
-                mapper: await mapper,
-                key: `${new Date().getTime()}`,
-            })
-        }
-        f()
-    }, [config, dataUnfinished])
-    if (!data) {
-        return null
-    }
-
-    return <FileIntern setCluster={setCluster} {...data} />
-}
-
-const EditFile = () => {
+const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
@@ -1026,7 +947,88 @@ const EditFile = () => {
     if (!data) {
         return null
     }
-    return <FileIntern {...data} setCluster={setCluster} disabled={loading} />
+    return (
+        <FileIntern
+            {...data}
+            setCluster={setCluster}
+            disabled={loading || viewOnly}
+        />
+    )
+}
+
+const ViewFile = () => {
+    return <EditFile viewOnly />
+}
+
+const AddFile = () => {
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const { config } = React.useContext(Contexts.InitializedConfig)
+    const [open, setOpen] = React.useState(false)
+    const [data, setData] =
+        React.useState<{
+            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+            hashAlgorithms: string[]
+            data?: Blob | null
+            key: string | number
+        } | null>(null)
+    // const [PSelections, setPSelections] = React.useState<string[]>([])
+    const client = useApolloClient()
+    const [cluster, setCluster] = React.useState(
+        searchCtx.cluster || config.configCluster
+    )
+    const { data: dataUnfinished, refetch } = useQuery(
+        getContentConfigurationQuery,
+        {
+            fetchPolicy: 'cache-and-network',
+            variables: {
+                id: cluster as string,
+                authorization: mainCtx.tokens,
+            },
+            onError: console.error,
+        }
+    )
+
+    React.useEffect(() => {
+        if (dataUnfinished) {
+            refetch()
+        }
+    }, [cluster])
+
+    React.useEffect(() => {
+        const f = async () => {
+            if (!dataUnfinished) {
+                return
+            }
+            const updateOb = {
+                shareUrl: dataUnfinished.secretgraph.node.link,
+                deleted: dataUnfinished.secretgraph.node.deleted || null,
+                updateId: dataUnfinished.secretgraph.node.updateId,
+            }
+            updateMainCtx(updateOb)
+            const mapper = generateActionMapper({
+                nodeData: dataUnfinished.secretgraph.node,
+                config,
+                knownHashes: [dataUnfinished.secretgraph.node.availableActions],
+                hashAlgorithm: findWorkingHashAlgorithms(
+                    dataUnfinished.secretgraph.config.hashAlgorithms
+                )[0],
+            })
+            setData({
+                hashAlgorithms:
+                    dataUnfinished.secretgraph.config.hashAlgorithms,
+                mapper: await mapper,
+                key: `${new Date().getTime()}`,
+            })
+        }
+        f()
+    }, [config, dataUnfinished])
+    if (!data) {
+        return null
+    }
+
+    return <FileIntern setCluster={setCluster} {...data} />
 }
 
 export default function FileComponent() {

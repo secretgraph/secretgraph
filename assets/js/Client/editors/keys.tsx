@@ -51,7 +51,6 @@ import {
     extractPubKeysCluster,
     extractPubKeysReferences,
 } from '../utils/graphql'
-import { useFixedQuery } from '../utils/hooks'
 import {
     createKeys,
     decryptContentObject,
@@ -509,9 +508,7 @@ const KeysIntern = ({
                     privateKeys = extractPrivKeys({
                         config,
                         url: mainCtx.url as string,
-                        hashAlgorithm:
-                            config.hosts[mainCtx.url as string]
-                                .hashAlgorithms[0],
+                        hashAlgorithm: hashAlgorithms[0],
                     })
                     publicKeys = extractPubKeysCluster({
                         node: pubkeysResult.data.secretgraph.node,

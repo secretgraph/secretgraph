@@ -49,98 +49,180 @@ const InnerCustom = ({
     disabled,
     viewOnly,
     url,
+    hashAlgorithm,
 }: {
     encryptedTags: string[]
     setEncryptedTags: (arg: string[]) => void
     disabled?: boolean
     viewOnly?: boolean
     url: string
+    hashAlgorithm: string
 }) => {
     const theme = useTheme()
     const { isSubmitting, dirty, submitForm } = useFormikContext()
+
+    const initialValues = {
+        tags: [] as string[],
+        content: data.text,
+        cluster: data.nodeData.cluster.id,
+    }
+    for (const [prefix, vals] of Object.entries(data.tags)) {
+        if (vals.length) {
+            for (const tag of vals) {
+                initialValues.tags.push(`${prefix}=${tag}`)
+            }
+        } else {
+            initialValues.tags.push(prefix)
+        }
+    }
     return (
-        <Form>
-            <Grid container spacing={2}>
-                <Grid item xs={12}>
-                    <Typography>Active Url</Typography>
-                    <Typography>{url}</Typography>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <FastField
-                        component={SimpleSelect}
-                        name="tags"
-                        disabled={disabled || isSubmitting}
-                        options={[]}
-                        label="Tags"
-                        freeSolo
-                        multiple
-                    />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <FastField
-                        component={ClusterSelect}
-                        url={url}
-                        name="cluster"
-                        disabled={disabled || isSubmitting}
-                        label="Cluster"
-                        firstIfEmpty
-                        validate={(val: string) => {
-                            if (!val) {
-                                return 'empty'
-                            }
-                            return null
-                        }}
-                    />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <Autocomplete
-                        multiple
-                        options={encryptedTags}
-                        renderInput={(params) => {
-                            return (
-                                <TextField
-                                    {...params}
-                                    label="Encrypted Tagprefixes"
-                                    fullWidth
-                                    disabled={disabled || isSubmitting}
-                                    variant="outlined"
-                                    helperText="Prefixes of the tags which should be encrypted (e.g. ename=, mime=)"
-                                />
-                            )
-                        }}
-                        onChange={(ev, val) => {
-                            setEncryptedTags(val)
-                        }}
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <FastField
-                        component={FormikTextField}
-                        name="content"
-                        disabled={disabled || isSubmitting}
-                        label="Content"
-                        multiline
-                        fullWidth
-                        variant="outlined"
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    {isSubmitting && <LinearProgress />}
-                </Grid>
-                {!viewOnly && (
-                    <Grid item xs={12}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            disabled={disabled || isSubmitting || !dirty}
-                            onClick={submitForm}
-                        >
-                            Submit
-                        </Button>
+        <Formik
+            initialValues={initialValues}
+            onSubmit={async (values) => {
+                const value: Blob = new Blob([values.content])
+                const authinfo = extractAuthInfo({
+                    config,
+                    clusters: new Set([
+                        values.cluster,
+                        data.nodeData.cluster.id,
+                    ]),
+                    url: mainCtx.url as string,
+                    require: new Set(['update']),
+                })
+                const pubkeysResult = await client.query({
+                    fetchPolicy: 'network-only',
+                    query: getContentConfigurationQuery,
+                    variables: {
+                        authorization: authinfo.tokens,
+                        id: mainCtx.item,
+                    },
+                })
+                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
+                const privkeys = extractPrivKeys({
+                    config,
+                    url: mainCtx.url as string,
+                    hashAlgorithm,
+                })
+                const pubkeys = extractPubKeysCluster({
+                    node: pubkeysResult.data.secretgraph.node.cluster,
+                    authorization: authinfo.tokens,
+                    params: {
+                        name: 'RSA-OAEP',
+                        hash: hashAlgorithm,
+                    },
+                })
+                const result = await updateContent({
+                    id: mainCtx.item as string,
+                    updateId: data.nodeData.updateId,
+                    client,
+                    config,
+                    cluster: values.cluster, // can be null for keeping cluster
+                    value,
+                    tags: values.tags,
+                    encryptTags: new Set(encryptedTags),
+                    privkeys: await Promise.all(Object.values(privkeys)),
+                    pubkeys: Object.values(pubkeys),
+                    hashAlgorithm,
+                    authorization: authinfo.tokens,
+                })
+                if (result.errors) {
+                    console.error(result.errors)
+                } else if (!result.data.updateOrCreateContent.writeok) {
+                    console.log(
+                        'Write failed because of update, load new version',
+                        result
+                    )
+                }
+                refetch()
+            }}
+        >
+            {() => (
+                <Form>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <Typography>Active Url</Typography>
+                            <Typography>{url}</Typography>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <FastField
+                                component={SimpleSelect}
+                                name="tags"
+                                disabled={disabled || isSubmitting}
+                                options={[]}
+                                label="Tags"
+                                freeSolo
+                                multiple
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <FastField
+                                component={ClusterSelect}
+                                url={url}
+                                name="cluster"
+                                disabled={disabled || isSubmitting}
+                                label="Cluster"
+                                firstIfEmpty
+                                validate={(val: string) => {
+                                    if (!val) {
+                                        return 'empty'
+                                    }
+                                    return null
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <Autocomplete
+                                multiple
+                                options={encryptedTags}
+                                renderInput={(params) => {
+                                    return (
+                                        <TextField
+                                            {...params}
+                                            label="Encrypted Tagprefixes"
+                                            fullWidth
+                                            disabled={disabled || isSubmitting}
+                                            variant="outlined"
+                                            helperText="Prefixes of the tags which should be encrypted (e.g. ename=, mime=)"
+                                        />
+                                    )
+                                }}
+                                onChange={(ev, val) => {
+                                    setEncryptedTags(val)
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FastField
+                                component={FormikTextField}
+                                name="content"
+                                disabled={disabled || isSubmitting}
+                                label="Content"
+                                multiline
+                                fullWidth
+                                variant="outlined"
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            {isSubmitting && <LinearProgress />}
+                        </Grid>
+                        {!viewOnly && (
+                            <Grid item xs={12}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    disabled={
+                                        disabled || isSubmitting || !dirty
+                                    }
+                                    onClick={submitForm}
+                                >
+                                    Submit
+                                </Button>
+                            </Grid>
+                        )}
                     </Grid>
-                )}
-            </Grid>
-        </Form>
+                </Form>
+            )}
+        </Formik>
     )
 }
 
@@ -207,94 +289,7 @@ const EditCustom = ({
     if (!data) {
         return null
     }
-    const initialValues = {
-        tags: [] as string[],
-        content: data.text,
-        cluster: data.nodeData.cluster.id,
-    }
-    for (const [prefix, vals] of Object.entries(data.tags)) {
-        if (vals.length) {
-            for (const tag of vals) {
-                initialValues.tags.push(`${prefix}=${tag}`)
-            }
-        } else {
-            initialValues.tags.push(prefix)
-        }
-    }
-    return (
-        <Formik
-            initialValues={initialValues}
-            onSubmit={async (values) => {
-                const value: Blob = new Blob([values.content])
-                const authinfo = extractAuthInfo({
-                    config,
-                    clusters: new Set([
-                        values.cluster,
-                        data.nodeData.cluster.id,
-                    ]),
-                    url: mainCtx.url as string,
-                    require: new Set(['update']),
-                })
-                const pubkeysResult = await client.query({
-                    fetchPolicy: 'network-only',
-                    query: getContentConfigurationQuery,
-                    variables: {
-                        authorization: authinfo.tokens,
-                        id: mainCtx.item,
-                    },
-                })
-                const hashAlgorithm =
-                    config.hosts[mainCtx.url as string].hashAlgorithms[0]
-                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
-                const privkeys = extractPrivKeys({
-                    config,
-                    url: mainCtx.url as string,
-                    hashAlgorithm,
-                })
-                const pubkeys = extractPubKeysCluster({
-                    node: pubkeysResult.data.secretgraph.node.cluster,
-                    authorization: authinfo.tokens,
-                    params: {
-                        name: 'RSA-OAEP',
-                        hash: hashAlgorithm,
-                    },
-                })
-                const result = await updateContent({
-                    id: mainCtx.item as string,
-                    updateId: data.nodeData.updateId,
-                    client,
-                    config,
-                    cluster: values.cluster, // can be null for keeping cluster
-                    value,
-                    tags: values.tags,
-                    encryptTags: new Set(encryptedTags),
-                    privkeys: await Promise.all(Object.values(privkeys)),
-                    pubkeys: Object.values(pubkeys),
-                    hashAlgorithm,
-                    authorization: authinfo.tokens,
-                })
-                if (result.errors) {
-                    console.error(result.errors)
-                } else if (!result.data.updateOrCreateContent.writeok) {
-                    console.log(
-                        'Write failed because of update, load new version',
-                        result
-                    )
-                }
-                refetch()
-            }}
-        >
-            {() => (
-                <InnerCustom
-                    url={mainCtx.url as string}
-                    encryptedTags={encryptedTags}
-                    setEncryptedTags={setEncryptedTags}
-                    viewOnly={viewOnly}
-                    disabled={disabled}
-                />
-            )}
-        </Formik>
-    )
+    return <InnerCustom />
 }
 const AddCustom = () => {
     const theme = useTheme()

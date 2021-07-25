@@ -131,6 +131,7 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # TODO
 
+-   replace hashalgorithms in config by state
 -   replace json-editor by ActionDialog equivalent
 -   move public tokens to content itself (tag) or allow unencrypted uploads
 -   sanitize hashAlgorithms

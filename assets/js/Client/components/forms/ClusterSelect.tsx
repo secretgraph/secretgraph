@@ -48,15 +48,6 @@ export default function ClusterSelect<
         variables: {
             authorization: authinfo.tokens,
         },
-        onCompleted: (data) => {
-            if (data.clusters.clusters.pageInfo.hasNextPage) {
-                ;(fetchMore as NonNullable<typeof fetchMore>)({
-                    variables: {
-                        cursor: data.clusters.clusters.pageInfo.endCursor,
-                    },
-                })
-            }
-        },
     })
     const { ids, labelMap } = React.useMemo(() => {
         const ret: {
