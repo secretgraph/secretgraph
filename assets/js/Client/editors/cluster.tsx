@@ -97,6 +97,7 @@ interface ClusterInternProps {
     disabled?: boolean
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     hashAlgorithm: string
+    viewOnly?: boolean
 }
 
 const ClusterIntern = ({
@@ -105,8 +106,10 @@ const ClusterIntern = ({
     hashAlgorithm,
     loading: loadingIntern,
     url,
+    viewOnly,
     ...props
 }: ClusterInternProps) => {
+    disabled = disabled || viewOnly
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
@@ -387,8 +390,8 @@ const ClusterIntern = ({
                             <Grid item xs={12}>
                                 {loading && <LinearProgress />}
                             </Grid>
-                            <Grid item xs={12}>
-                                {disabled ? null : (
+                            {viewOnly ? null : (
+                                <Grid item xs={12}>
                                     <Button
                                         variant="contained"
                                         color="primary"
@@ -397,8 +400,8 @@ const ClusterIntern = ({
                                     >
                                         Submit
                                     </Button>
-                                )}
-                            </Grid>
+                                </Grid>
+                            )}
                         </Grid>
                     </Form>
                 )
@@ -474,7 +477,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         return null
     }
 
-    return <ClusterIntern disabled={viewOnly} loading={loading} {...data} />
+    return <ClusterIntern viewOnly={viewOnly} loading={loading} {...data} />
 }
 
 const ViewCluster = () => {

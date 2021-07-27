@@ -887,7 +887,7 @@ const AddKeys = () => {
         fetchPolicy: 'cache-and-network',
         variables: {
             variables: {
-                id: cluster as string,
+                id: cluster || '',
                 authorization: mainCtx.tokens,
             },
         },

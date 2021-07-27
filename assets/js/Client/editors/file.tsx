@@ -184,7 +184,7 @@ interface FileInternProps {
     disabled?: boolean
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     hashAlgorithms: string[]
-    node?: any
+    nodeData?: any
     tags?: { [name: string]: string[] }
     data?: Blob | null
     setCluster: (arg: string) => void
@@ -192,7 +192,7 @@ interface FileInternProps {
 
 const FileIntern = ({
     disabled,
-    node,
+    nodeData,
     tags,
     data,
     setCluster,
@@ -281,7 +281,7 @@ const FileIntern = ({
                 encryptName,
                 keywords: tags?.keywords || [],
                 cluster:
-                    node?.cluster?.id ||
+                    nodeData?.cluster?.id ||
                     (searchCtx.cluster ? searchCtx.cluster : null),
                 actions,
             }}
@@ -866,7 +866,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         React.useState<{
             mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
             hashAlgorithms: string[]
-            node: any
+            nodeData: any
             tags: { [name: string]: string[] }
             data: Blob | null
             key: string | number
@@ -890,7 +890,17 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             loading = true
             refetch()
         }
-    }, [mainCtx.updateId, cluster])
+    }, [mainCtx.updateId])
+
+    React.useEffect(() => {
+        if (
+            dataUnfinished &&
+            dataUnfinished.secretgraph.node.cluster.id != cluster
+        ) {
+            loading = true
+            refetch()
+        }
+    }, [cluster])
     React.useEffect(() => {
         if (!dataUnfinished) {
             return
@@ -931,10 +941,9 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 return
             }
             setData({
+                ...obj,
                 hashAlgorithms:
                     dataUnfinished.secretgraph.config.hashAlgorithms,
-                tags: obj.tags,
-                node: dataUnfinished.secretgraph.node,
                 mapper: await mapper,
                 data: new Blob([obj.data]),
                 key: `${new Date().getTime()}`,
@@ -974,7 +983,6 @@ const AddFile = () => {
             key: string | number
         } | null>(null)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
-    const client = useApolloClient()
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster
     )
@@ -983,7 +991,7 @@ const AddFile = () => {
         {
             fetchPolicy: 'cache-and-network',
             variables: {
-                id: cluster as string,
+                id: cluster || '',
                 authorization: mainCtx.tokens,
             },
             onError: console.error,
