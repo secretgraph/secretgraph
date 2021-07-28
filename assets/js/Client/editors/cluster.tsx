@@ -48,7 +48,6 @@ import {
     serializeToBase64,
     unserializeToArrayBuffer,
 } from '../utils/encryption'
-import { useFixedQuery } from '../utils/hooks'
 import {
     createCluster,
     updateCluster,
@@ -486,15 +485,29 @@ const ViewCluster = () => {
 
 const AddCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const [data, setData] =
-        React.useState<(ClusterInternProps & { key: string }) | null>(null)
+        React.useState<
+            | (Omit<ClusterInternProps, 'disabled' | 'url'> & { key: string })
+            | null
+        >(null)
 
-    useFixedQuery(serverConfigQuery, {
+    let { data: dataUnfinished, loading } = useQuery(serverConfigQuery, {
         pollInterval: 60000,
-        variables: {},
         onError: console.error,
-        onCompleted: async (data) => {
-            if (!data) {
+    })
+    const { key, keyb64 } = React.useMemo(() => {
+        const key = crypto.getRandomValues(new Uint8Array(32))
+        const keyb64 = Buffer.from(key).toString('base64')
+        return {
+            key,
+            keyb64,
+        }
+    }, [])
+
+    React.useEffect(() => {
+        const f = async () => {
+            if (!dataUnfinished) {
                 return
             }
             updateMainCtx({
@@ -502,17 +515,14 @@ const AddCluster = () => {
                 deleted: false,
                 updateId: null,
             })
+            const hashAlgorithm = findWorkingHashAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms
+            )[0]
 
-            const key = crypto.getRandomValues(new Uint8Array(32))
-            const keyb64 = Buffer.from(key).toString('base64')
-            const { data: hashKey, hashAlgorithms } = await hashObject(
-                key,
-                data.secretgraph.config.hashAlgorithms
-            )
+            const hashKey = await hashObject(key, hashAlgorithm)
             setData({
                 name: '',
                 note: '',
-                url: mainCtx.url as string,
                 mapper: {
                     [hashKey]: {
                         type: 'action',
@@ -524,16 +534,18 @@ const AddCluster = () => {
                         foundActions: new Set(['manage']),
                     },
                 },
-                hashAlgorithm: hashAlgorithms[0],
+                hashAlgorithm,
                 key: 'add',
             })
-        },
-    })
+        }
+        f()
+    }, [activeUrl])
+
     if (!data) {
         return null
     }
 
-    return <ClusterIntern {...data} />
+    return <ClusterIntern {...data} disabled={loading} url={activeUrl} />
 }
 
 export default function ClusterComponent() {

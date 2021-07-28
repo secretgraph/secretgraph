@@ -16,21 +16,11 @@ export function findWorkingHashAlgorithms(hashAlgorithms: string[]) {
 
 export async function hashObject(
     obj: Parameters<typeof unserializeToArrayBuffer>[0],
-    hashAlgorithms: string[]
+    hashAlgorithm: string
 ) {
-    const hashAlgos = findWorkingHashAlgorithms(hashAlgorithms)
-    if (!hashAlgos.length) {
-        throw Error('no working hashalgorithm found ' + hashAlgorithms)
-    }
-    return {
-        data: await serializeToBase64(
-            crypto.subtle.digest(
-                hashAlgos[0],
-                await unserializeToArrayBuffer(obj)
-            )
-        ),
-        hashAlgorithms: hashAlgos,
-    }
+    return await serializeToBase64(
+        crypto.subtle.digest(hashAlgorithm, await unserializeToArrayBuffer(obj))
+    )
 }
 
 export async function toPBKDF2key(

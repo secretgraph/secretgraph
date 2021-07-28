@@ -37,7 +37,6 @@ import {
 import { extractAuthInfo, extractPrivKeys } from '../utils/config'
 import { findWorkingHashAlgorithms } from '../utils/encryption'
 import { extractPubKeysCluster } from '../utils/graphql'
-import { useFixedQuery } from '../utils/hooks'
 import {
     createContent,
     decryptContentObject,
@@ -187,6 +186,7 @@ interface FileInternProps {
     nodeData?: any
     tags?: { [name: string]: string[] }
     data?: Blob | null
+    url: string
     setCluster: (arg: string) => void
 }
 
@@ -197,6 +197,7 @@ const FileIntern = ({
     data,
     setCluster,
     mapper,
+    url,
     hashAlgorithms,
 }: FileInternProps) => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
@@ -341,8 +342,8 @@ const FileIntern = ({
                 }
                 const authinfo = extractAuthInfo({
                     config,
-                    clusters: new Set([values.cluster as string]),
-                    url: activeUrl,
+                    clusters: new Set([values.cluster, nodeData.cluster.id]),
+                    url,
                     require: new Set(['update']),
                 })
                 const pubkeysResult = await client.query({
@@ -356,7 +357,7 @@ const FileIntern = ({
                 //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                 const privkeys = extractPrivKeys({
                     config,
-                    url: activeUrl,
+                    url,
                     hashAlgorithm,
                 })
                 const pubkeys = extractPubKeysCluster({
@@ -959,6 +960,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     return (
         <FileIntern
             {...data}
+            url={mainCtx.url as string}
             setCluster={setCluster}
             disabled={loading || viewOnly}
         />
@@ -992,7 +994,18 @@ const AddFile = () => {
             fetchPolicy: 'cache-and-network',
             variables: {
                 id: cluster || '',
-                authorization: mainCtx.tokens,
+                authorization: [
+                    ...new Set([
+                        ...mainCtx.tokens,
+                        ...(cluster
+                            ? extractAuthInfo({
+                                  config,
+                                  url: activeUrl,
+                                  clusters: new Set([cluster]),
+                              }).tokens
+                            : []),
+                    ]),
+                ],
             },
             onError: console.error,
         }
@@ -1002,7 +1015,7 @@ const AddFile = () => {
         if (dataUnfinished) {
             refetch()
         }
-    }, [cluster])
+    }, [cluster, activeUrl])
 
     React.useEffect(() => {
         const f = async () => {
@@ -1036,7 +1049,7 @@ const AddFile = () => {
         return null
     }
 
-    return <FileIntern setCluster={setCluster} {...data} />
+    return <FileIntern url={activeUrl} setCluster={setCluster} {...data} />
 }
 
 export default function FileComponent() {

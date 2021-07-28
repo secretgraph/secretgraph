@@ -693,8 +693,6 @@ const KeysIntern = ({
 }
 
 const ViewKeys = () => {
-    const theme = useTheme()
-    const client = useApolloClient()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [data, setData] =
@@ -794,13 +792,10 @@ const ViewKeys = () => {
     )
 }
 const EditKeys = () => {
-    const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const client = useApolloClient()
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
-    const { baseClient } = React.useContext(Contexts.Clients)
     const [cluster, setCluster] = React.useState<string | null>(null)
     const [data, setData] =
         React.useState<
@@ -888,7 +883,18 @@ const AddKeys = () => {
         variables: {
             variables: {
                 id: cluster || '',
-                authorization: mainCtx.tokens,
+                authorization: [
+                    ...new Set([
+                        ...mainCtx.tokens,
+                        ...(cluster
+                            ? extractAuthInfo({
+                                  config,
+                                  url: activeUrl,
+                                  clusters: new Set([cluster]),
+                              }).tokens
+                            : []),
+                    ]),
+                ],
             },
         },
         onError: console.error,
