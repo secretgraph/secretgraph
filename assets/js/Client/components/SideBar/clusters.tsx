@@ -27,24 +27,22 @@ const ActiveCluster = React.memo(function ActiveCluster({
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const [data, setData] = React.useState<any>(undefined)
     const { mainCtx } = React.useContext(Contexts.Main)
-    const { refetch, previousData } = useQuery(getClusterQuery, {
+    const { refetch, data: dataUnfinished } = useQuery(getClusterQuery, {
         //pollInterval: ,
         variables: {
             id: cluster,
             authorization: authinfo?.tokens,
         },
         onError: console.error,
-        onCompleted: (data) => {
-            if (data) {
-                setData({
-                    ...extractNameNote(data.secretgraph.node.description),
-                    node: data.secretgraph.node,
-                })
-            } else {
-                console.log('onCompleted prevented')
-            }
-        },
     })
+    React.useEffect(() => {
+        if (dataUnfinished) {
+            setData({
+                ...extractNameNote(data.secretgraph.node.description),
+                node: data.secretgraph.node,
+            })
+        }
+    }, [dataUnfinished])
 
     React.useEffect(() => {
         if (data && mainCtx.type == 'Cluster') {

@@ -56,14 +56,6 @@ module.exports = (env, options) => {
         },
         entry: {
             main: './assets/js/Client/index.tsx',
-            'editor-cluster': {
-                dependOn: 'main',
-                import: './assets/js/Client/editors/cluster.tsx',
-            },
-            'editor-file': {
-                dependOn: 'main',
-                import: './assets/js/Client/editors/file.tsx',
-            },
         },
         module: {
             rules: [

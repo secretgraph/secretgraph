@@ -539,7 +539,7 @@ const AddCluster = () => {
             })
         }
         f()
-    }, [activeUrl])
+    }, [activeUrl, dataUnfinished])
 
     if (!data) {
         return null
