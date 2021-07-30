@@ -201,7 +201,6 @@ const FileIntern = ({
     hashAlgorithms,
 }: FileInternProps) => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [open, setOpen] = React.useState(false)
@@ -400,7 +399,7 @@ const FileIntern = ({
                         item: result.data.updateOrCreateContent.content.id,
                         updateId:
                             result.data.updateOrCreateContent.content.updateId,
-                        url: activeUrl,
+                        url,
                         action: 'update',
                     })
                 } catch (exc) {
@@ -522,7 +521,7 @@ const FileIntern = ({
                             <Grid item xs={12} md={4}>
                                 <FastField
                                     component={ClusterSelect}
-                                    url={activeUrl as string}
+                                    url={url}
                                     name="cluster"
                                     disabled={isSubmitting}
                                     label="Cluster"

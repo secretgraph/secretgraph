@@ -535,7 +535,7 @@ const AddCluster = () => {
                     },
                 },
                 hashAlgorithm,
-                key: 'add',
+                key: `${new Date().getTime()}`,
             })
         }
         f()
@@ -544,8 +544,7 @@ const AddCluster = () => {
     if (!data) {
         return null
     }
-
-    return <ClusterIntern {...data} disabled={loading} url={activeUrl} />
+    return <ClusterIntern {...data} loading={loading} url={activeUrl} />
 }
 
 export default function ClusterComponent() {

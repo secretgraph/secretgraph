@@ -224,7 +224,7 @@ function ActionBar(props: Props) {
                                 root: theme.classes.newItemSelect,
                             }}
                             disabled={!createTokens.length}
-                            onChange={(event: any) => {
+                            onChange={(event) => {
                                 updateMainCtx({
                                     action: 'add',
                                     title: '',
@@ -232,7 +232,7 @@ function ActionBar(props: Props) {
                                     url: mainCtx.url || activeUrl,
                                     shareUrl: null,
                                     deleted: null,
-                                    type: event.target.value,
+                                    type: event.currentTarget.value,
                                     tokens: createTokens,
                                 })
                             }}

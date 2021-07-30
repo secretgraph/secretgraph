@@ -13,7 +13,6 @@ import * as Contexts from '../../contexts'
 import * as Interfaces from '../../interfaces'
 import { clusterFeedQuery, getClusterQuery } from '../../queries/cluster'
 import { extractNameNote } from '../../utils/cluster'
-import { useFixedQuery } from '../../utils/hooks'
 import SideBarContents from './contents'
 
 const ActiveCluster = React.memo(function ActiveCluster({
@@ -28,7 +27,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const [data, setData] = React.useState<any>(undefined)
     const { mainCtx } = React.useContext(Contexts.Main)
-    const { refetch, previousData } = useFixedQuery(getClusterQuery, {
+    const { refetch, previousData } = useQuery(getClusterQuery, {
         //pollInterval: ,
         variables: {
             id: cluster,
