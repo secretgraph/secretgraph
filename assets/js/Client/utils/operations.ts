@@ -261,6 +261,7 @@ export async function createKeys({
     })
 }
 
+// TODO: fix public/private. Don't encrypt if public
 export async function updateContent({
     id,
     updateId,
