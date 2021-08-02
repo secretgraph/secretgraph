@@ -1,22 +1,31 @@
 {
+  "extends": "./tsconfig-base.json",
   "compilerOptions": {
     "outDir": "./webpack_bundles/",
-    "sourceMap": true,
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "strictNullChecks": true,
-    "downlevelIteration": true,
-    "jsx": "react",
-    "lib": [
-      "ESNext",
-      "dom"
+  },
+  "files": [
+    "assets/js/index.tsx"
+  ],
+  "references": [
+    {
+      "path": "./js-packages/client/tsconfig.json"
+    },
+    {
+      "path": "./js-packages/misc/tsconfig.json"
+    },
+    {
+      "path": "./js-packages/rdf/tsconfig.json"
+    }
+  ],
+  "paths": {
+    "@secretgraph/client": [
+      "./js-packages/client/src/*"
     ],
-    "plugins": [
-      {
-        "name": "ts-graphql-plugin",
-        "schema": "schema.json",
-        "tag": "gql"
-      }
+    "@secretgraph/misc": [
+      "./js-packages/misc/src/*"
+    ],
+    "@secretgraph/rdf": [
+      "./js-packages/rdf/src/*"
     ]
   },
   "exclude": [
@@ -24,4 +33,5 @@
     "webpack.config.*.js",
     "**/*.spec.ts"
   ]
+  
 }

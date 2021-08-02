@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "./src",
+    "composite": true,
+    "lib": [
+      "ESNext",
+      "dom"
+    ],
+  },
+  "plugins": [
+    {
+      "name": "ts-graphql-plugin",
+      "schema": "schema.json",
+      "tag": "gql"
+    }
+  ],
+  "include": [
+    "src/**/*.ts*"
+  ]
+}

@@ -64,6 +64,7 @@ module.exports = (env, options) => {
                     loader: 'ts-loader',
                     exclude: /node_modules/,
                     options: {
+                        projectReferences: true,
                         getCustomTransformers: () => ({
                             before: [
                                 tsgqlPlugin.getTransformer({

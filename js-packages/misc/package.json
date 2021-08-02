@@ -1,0 +1,17 @@
+{
+  "name": "@secretgraph/misc",
+  "version": "0.1.0",
+  "description": "",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@apollo/client": "*",
+    "apollo-upload-client": "*",
+    "graphql": "*",
+    "ts-graphql-plugin": "*"
+  },
+  "devDependencies": {
+    "typescript": "*",
+    "@types/apollo-upload-client": "*"
+  }
+}
