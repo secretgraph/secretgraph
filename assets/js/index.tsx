@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom'
 document.addEventListener(
     'DOMContentLoaded',
     function () {
-        const MainPage = require('./pages/index').default
+        const MainPage = require('@secretgraph/secretgraph/pages/index').default
         let wrapper = document.getElementById('content-main')
         const defaultPath: string | undefined = wrapper
             ? wrapper.dataset.graphqlPath
@@ -12,7 +12,7 @@ document.addEventListener(
 
         ReactDOM.render(<MainPage defaultPath={defaultPath} />, wrapper)
         // doesn't work
-        if (module.hot) {
+        /**if (module.hot) {
             module.hot.accept(
                 ['./pages/index', './editors/file', './editors/cluster'],
                 () => {
@@ -23,7 +23,7 @@ document.addEventListener(
                     )
                 }
             )
-        }
+        }*/
     },
     false
 )

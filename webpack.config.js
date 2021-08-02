@@ -55,7 +55,7 @@ module.exports = (env, options) => {
             ignored: /node_modules/,
         },
         entry: {
-            main: './assets/js/Client/index.tsx',
+            main: './assets/js/index.tsx',
         },
         module: {
             rules: [

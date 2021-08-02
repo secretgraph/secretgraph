@@ -1,0 +1,21 @@
+{
+  "name": "@secretgraph/rdf",
+  "version": "0.1.0",
+  "description": "Rdf definitions and further editors for @secretgraph/secretgraph",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "rdflib": "*"
+  },
+  "devDependencies": {
+    "typescript": "*"
+  },
+  "peerDependencies": {
+    "@secretgraph/client": "*"
+  },
+  "peerDependenciesMeta": {
+    "@secretgraph/client": {
+      "optional": true
+    }
+  }
+}

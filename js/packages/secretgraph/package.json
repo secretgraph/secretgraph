@@ -1,0 +1,14 @@
+{
+  "name": "@secretgraph/secretgraph",
+  "version": "0.1.0",
+  "description": "secretgraph with all dependencies included",
+  "author": "",
+  "license": "MIT",
+  "depencencies": {
+    "@secretgraph/client": "*",
+    "@secretgraph/rdf": "*"
+  },
+  "devDependencies": {
+    "typescript": "*"
+  }
+}

@@ -9,13 +9,17 @@ import {
 } from '@material-ui/core/styles'
 import { SxProps } from '@material-ui/system'
 
+declare var gettext: any
+
 declare module '@material-ui/core/styles' {
     interface Theme {
         classes: Record<string, string>
+        contentStates: Map<string, { label: string }>
     }
     // allow configuration using `createTheme`
     interface ThemeOptions {
         classes: Record<string, string>
+        contentStates: Map<string, { label: string }>
     }
 }
 
@@ -174,6 +178,11 @@ export const theme = responsiveFontSizes(
             },
         },
         classes: {},
+        contentStates: new Map([
+            ['draft', { label: gettext('Draft') }],
+            ['internal', { label: gettext('Internal') }],
+            ['public', { label: gettext('Public') }],
+        ]),
     })
 )
 
