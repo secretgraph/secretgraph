@@ -1,16 +1,28 @@
 {
     "compilerOptions": {
-        "outDir": "lib",
         "sourceMap": true,
         "noImplicitAny": true,
         "noImplicitThis": true,
         "strictNullChecks": true,
         "downlevelIteration": true,
         "forceConsistentCasingInFileNames": true,
-        "baseUrl": "./src/",
+        "esModuleInterop": true,
+        "moduleResolution": "node",
         "lib": [
             "ESNext",
             "dom"
-        ]
+        ],
+        "skipLibCheck": true,
+        "paths": {
+            "@secretgraph/client": [
+                "./js-packages/client/src/*"
+            ],
+            "@secretgraph/misc": [
+                "./js-packages/misc/src/*"
+            ],
+            "@secretgraph/rdf": [
+                "./js-packages/rdf/src/*"
+            ]
+        },
     },
 }

@@ -12,6 +12,29 @@ import Typography from '@material-ui/core/Typography'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
 import Autocomplete from '@material-ui/lab/Autocomplete'
 import {
+    contentRetrievalQuery,
+    getContentConfigurationQuery,
+} from '@secretgraph/misc/lib/queries/content'
+import { UnpackPromise } from '@secretgraph/misc/lib/typing'
+import {
+    ActionInputEntry,
+    CertificateInputEntry,
+    generateActionMapper,
+    transformActions,
+} from '@secretgraph/misc/lib/utils/action'
+import { extractAuthInfo } from '@secretgraph/misc/lib/utils/config'
+import { extractPrivKeys } from '@secretgraph/misc/lib/utils/config'
+import {
+    findWorkingHashAlgorithms,
+    serializeToBase64,
+} from '@secretgraph/misc/lib/utils/encryption'
+import { extractPubKeysCluster } from '@secretgraph/misc/lib/utils/graphql'
+import {
+    createContent,
+    decryptContentObject,
+    updateContent,
+} from '@secretgraph/misc/lib/utils/operations'
+import {
     FastField,
     Field,
     FieldProps,
@@ -21,34 +44,11 @@ import {
 } from 'formik'
 import * as React from 'react'
 
-import {
-    contentRetrievalQuery,
-    getContentConfigurationQuery,
-} from '../../../utils/queries/content'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import * as Contexts from '../contexts'
 import { newClusterLabel } from '../messages'
-import {
-    ActionInputEntry,
-    CertificateInputEntry,
-    generateActionMapper,
-    transformActions,
-} from '../utils/action'
-import { extractAuthInfo } from '../utils/config'
-import { extractPrivKeys } from '../utils/config'
-import {
-    findWorkingHashAlgorithms,
-    serializeToBase64,
-} from '../utils/encryption'
-import { extractPubKeysCluster } from '../utils/graphql'
-import {
-    createContent,
-    decryptContentObject,
-    updateContent,
-} from '../utils/operations'
-import { UnpackPromise } from '../utils/typing'
 
 interface CustomInternProps {
     disabled?: boolean

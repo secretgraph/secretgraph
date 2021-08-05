@@ -16,10 +16,18 @@ import TextField from '@material-ui/core/TextField'
 import Typography from '@material-ui/core/Typography'
 import CheckIcon from '@material-ui/icons/Check'
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import { serverConfigQuery } from '@secretgraph/misc/lib/queries/server'
+import {
+    checkConfigObject,
+    loadConfig,
+    saveConfig,
+} from '@secretgraph/misc/lib/utils/config'
+import { findWorkingHashAlgorithms } from '@secretgraph/misc/lib/utils/encryption'
+import { createClient } from '@secretgraph/misc/lib/utils/graphql'
+import { initializeCluster } from '@secretgraph/misc/lib/utils/operations'
 import * as React from 'react'
 
-import * as Interfaces from '../../../utils/interfaces'
-import { serverConfigQuery } from '../../../utils/queries/server'
 import * as Constants from '../constants'
 import * as Contexts from '../contexts'
 import {
@@ -31,10 +39,6 @@ import {
     startHelp,
     startLabel,
 } from '../messages'
-import { checkConfigObject, loadConfig, saveConfig } from '../utils/config'
-import { findWorkingHashAlgorithms } from '../utils/encryption'
-import { createClient } from '../utils/graphql'
-import { initializeCluster } from '../utils/operations'
 
 // TODO: use formik
 function checkInputs(needsPw: boolean, hasPw: boolean) {

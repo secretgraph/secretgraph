@@ -1,7 +1,3 @@
-import { SPARQLToQuery, graph, parse } from 'rdflib'
-
-import { CLUSTER, SECRETGRAPH } from '../constants'
-
 export function extractNameNote(description: string): {
     name: string
     note: string | null

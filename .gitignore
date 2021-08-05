@@ -1,6 +1,7 @@
 db.sqlite3
 celery.sqlite3
 .vscode
+tsconfig.tsbuildinfo
 
 cgihandler.cgi
 cgihandler.fcgi

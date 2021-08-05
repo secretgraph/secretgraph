@@ -2,14 +2,18 @@
   "extends": "../../tsconfig-base.json",
   "compilerOptions": {
     "outDir": "lib",
-    "rootDir": "./src",
     "composite": true,
     "lib": [
       "ESNext",
       "dom"
     ],
   },
+  "references": [
+    {
+      "path": "../misc/tsconfig.json"
+    }
+  ],
   "include": [
-    "src/**/*.ts*"
+    "src/**/*.ts"
   ]
 }

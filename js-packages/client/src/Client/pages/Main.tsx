@@ -4,16 +4,16 @@ import Paper from '@material-ui/core/Paper'
 import Snackbar from '@material-ui/core/Snackbar'
 import { useTheme } from '@material-ui/core/styles'
 import Alert from '@material-ui/lab/Alert'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import { createClient } from '@secretgraph/misc/lib/utils/graphql'
 import * as React from 'react'
 
-import * as Interfaces from '../../../utils/interfaces'
 import ActionBar from '../components/ActionBar'
 import HeaderBar from '../components/HeaderBar'
 import { CapturingSuspense } from '../components/misc'
 import SideBar from '../components/SideBar'
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
-import { createClient } from '../utils/graphql'
 
 // const SideBar = React.lazy(() => import('../components/SideBar'));
 const SettingsImporter = React.lazy(() => import('./SettingsImporter'))

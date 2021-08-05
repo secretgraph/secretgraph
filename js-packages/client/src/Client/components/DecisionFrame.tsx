@@ -1,8 +1,7 @@
 import Typography from '@material-ui/core/Typography'
 import Skeleton from '@material-ui/lab/Skeleton'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
 import * as React from 'react'
-
-import * as Interfaces from '../../../utils/interfaces'
 
 interface DecisionFrameProps {
     mainCtx: Interfaces.MainContextInterface

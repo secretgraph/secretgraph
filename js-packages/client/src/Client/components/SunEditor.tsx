@@ -37,8 +37,8 @@ export function SunEditorWrapper({
                     if (ref.current && onChange) {
                         onChange({
                             type: 'change',
-                            target:
-                                ref.current.core.context.element.originElement,
+                            target: ref.current.core.context.element
+                                .originElement,
                             currentTarget:
                                 ref.current.core.context.element.originElement,
                         } as any)
@@ -48,8 +48,8 @@ export function SunEditorWrapper({
                     if (ref.current && onBlur) {
                         onBlur({
                             type: 'blur',
-                            target:
-                                ref.current.core.context.element.originElement,
+                            target: ref.current.core.context.element
+                                .originElement,
                             currentTarget:
                                 ref.current.core.context.element.originElement,
                         } as any)

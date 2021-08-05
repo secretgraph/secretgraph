@@ -1,0 +1,27 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "outDir": "lib",
+    "rootDir": "src",
+    "jsx": "react",
+    "composite": true,
+    "lib": [
+      "ESNext",
+      "dom"
+    ],
+  },
+  "include": [
+    "src/**/*.ts*"
+  ],
+  "references": [
+    {
+      "path": "../misc/tsconfig.json"
+    },
+    {
+      "path": "../rdf/tsconfig.json"
+    },
+    {
+      "path": "../client/tsconfig.json"
+    }
+  ],
+}

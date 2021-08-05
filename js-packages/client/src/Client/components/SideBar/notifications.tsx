@@ -3,9 +3,8 @@ import ListItem from '@material-ui/core/ListItem'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ListItemText from '@material-ui/core/ListItemText'
 import ListSubheader from '@material-ui/core/ListSubheader'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
 import * as React from 'react'
-
-import * as Interfaces from '../../../../utils/interfaces'
 
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface

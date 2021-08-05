@@ -1,0 +1,9 @@
+export declare const createContentMutation: import("@apollo/client").DocumentNode;
+export declare const createKeysMutation: import("@apollo/client").DocumentNode;
+export declare const updateKeyMutation: import("@apollo/client").DocumentNode;
+export declare const updateContentMutation: import("@apollo/client").DocumentNode;
+export declare const findPublicKeyQuery: import("@apollo/client").DocumentNode;
+export declare const keysRetrievalQuery: import("@apollo/client").DocumentNode;
+export declare const contentRetrievalQuery: import("@apollo/client").DocumentNode;
+export declare const findConfigQuery: import("@apollo/client").DocumentNode;
+export declare const getContentConfigurationQuery: import("@apollo/client").DocumentNode;

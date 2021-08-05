@@ -7,12 +7,15 @@ import {
 import { useTheme } from '@material-ui/core'
 import GroupWorkIcon from '@material-ui/icons/GroupWork'
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import {
+    clusterFeedQuery,
+    getClusterQuery,
+} from '@secretgraph/misc/lib/queries/cluster'
+import { extractNameNote } from '@secretgraph/misc/lib/utils/cluster'
 import * as React from 'react'
 
-import { clusterFeedQuery, getClusterQuery } from '../../../../queries/cluster'
-import * as Interfaces from '../../../../utils/interfaces'
 import * as Contexts from '../../contexts'
-import { extractNameNote } from '../../utils/cluster'
 import SideBarContents from './contents'
 
 const ActiveCluster = React.memo(function ActiveCluster({

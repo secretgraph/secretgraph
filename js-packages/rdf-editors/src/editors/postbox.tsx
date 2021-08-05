@@ -1,12 +1,9 @@
 import { useApolloClient, useQuery } from '@apollo/client'
 import { useTheme } from '@material-ui/core/styles'
+import DecisionFrame from '@secretgraph/client/lib/Client/components/DecisionFrame'
+import * as Contexts from '@secretgraph/client/lib/Client/contexts'
 import { saveAs } from 'file-saver'
 import * as React from 'react'
-
-import DecisionFrame from '../components/DecisionFrame'
-import * as Contexts from '../contexts'
-import { newClusterLabel } from '../messages'
-import { contentRetrievalQuery } from '../queries/content'
 
 type Props = {}
 

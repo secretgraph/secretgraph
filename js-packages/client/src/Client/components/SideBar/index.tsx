@@ -19,13 +19,13 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import Autocomplete from '@material-ui/lab/Autocomplete'
 import TreeItem from '@material-ui/lab/TreeItem'
 import TreeView from '@material-ui/lab/TreeView'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import { extractAuthInfo } from '@secretgraph/misc/lib/utils/config'
+import * as SetOps from '@secretgraph/misc/lib/utils/set'
 import * as React from 'react'
 
-import * as Interfaces from '../../../../utils/interfaces'
 import { mapHashNames } from '../../constants'
 import * as Contexts from '../../contexts'
-import { extractAuthInfo } from '../../utils/config'
-import * as SetOps from '../../utils/set'
 import { CapturingSuspense } from '../misc'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))

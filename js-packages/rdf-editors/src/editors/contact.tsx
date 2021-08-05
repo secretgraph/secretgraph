@@ -2,13 +2,9 @@ import { useApolloClient, useQuery } from '@apollo/client'
 import Card from '@material-ui/core/Card'
 import CardContent from '@material-ui/core/CardContent'
 import { useTheme } from '@material-ui/core/styles'
+import * as Contexts from '@secretgraph/client/lib/Client/contexts'
 import * as React from 'react'
 import { useAsync } from 'react-async'
-
-import * as Contexts from '../contexts'
-import * as Interfaces from '../interfaces'
-import { newClusterLabel } from '../messages'
-import { contentRetrievalQuery } from '../queries/content'
 
 type Props = {}
 

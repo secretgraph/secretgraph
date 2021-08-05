@@ -2,11 +2,14 @@ import { ApolloProvider } from '@apollo/client'
 import CssBaseline from '@material-ui/core/CssBaseline'
 import { ThemeProvider } from '@material-ui/core/styles'
 import useMediaQuery from '@material-ui/core/useMediaQuery'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import {
+    loadConfigSync,
+    updateConfigReducer,
+} from '@secretgraph/misc/lib/utils/config'
+import { createClient } from '@secretgraph/misc/lib/utils/graphql'
 import * as React from 'react'
 
-import * as Interfaces from '../../utils/interfaces'
-import { loadConfigSync, updateConfigReducer } from '../utils/config'
-import { createClient } from '../utils/graphql'
 import * as Contexts from './contexts'
 import { elements } from './editors'
 import Main from './pages/Main'

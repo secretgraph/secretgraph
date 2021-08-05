@@ -9,14 +9,33 @@ import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import { contentRetrievalQuery } from '@secretgraph/misc/lib/queries/content'
+import { getContentConfigurationQuery } from '@secretgraph/misc/lib/queries/content'
+import { UnpackPromise, ValueType } from '@secretgraph/misc/lib/typing'
+import {
+    ActionInputEntry,
+    CertificateInputEntry,
+    generateActionMapper,
+    transformActions,
+} from '@secretgraph/misc/lib/utils/action'
+import {
+    extractAuthInfo,
+    extractPrivKeys,
+} from '@secretgraph/misc/lib/utils/config'
+import { findWorkingHashAlgorithms } from '@secretgraph/misc/lib/utils/encryption'
+import { extractPubKeysCluster } from '@secretgraph/misc/lib/utils/graphql'
+import {
+    createContent,
+    decryptContentObject,
+    updateContent,
+} from '@secretgraph/misc/lib/utils/operations'
+import * as SetOps from '@secretgraph/misc/lib/utils/set'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
-import * as Interfaces from '../../../utils/interfaces'
-import { contentRetrievalQuery } from '../../../utils/queries/content'
-import { getContentConfigurationQuery } from '../../../utils/queries/content'
 import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
@@ -28,22 +47,6 @@ import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import * as Constants from '../constants'
 import * as Contexts from '../contexts'
-import {
-    ActionInputEntry,
-    CertificateInputEntry,
-    generateActionMapper,
-    transformActions,
-} from '../utils/action'
-import { extractAuthInfo, extractPrivKeys } from '../utils/config'
-import { findWorkingHashAlgorithms } from '../utils/encryption'
-import { extractPubKeysCluster } from '../utils/graphql'
-import {
-    createContent,
-    decryptContentObject,
-    updateContent,
-} from '../utils/operations'
-import * as SetOps from '../utils/set'
-import { UnpackPromise, ValueType } from '../utils/typing'
 
 const decryptSet = new Set(['mime', 'ename'])
 const ViewWidget = ({

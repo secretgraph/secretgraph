@@ -4,7 +4,7 @@ import { saveAs } from 'file-saver'
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { findConfigQuery } from '../queries/content'
-import { RequireAttributes, UnpackPromise, ValueType } from '../typing'
+import { RequireAttributes, UnpackPromise } from '../typing'
 import {
     serializeToBase64,
     unserializeToArrayBuffer,

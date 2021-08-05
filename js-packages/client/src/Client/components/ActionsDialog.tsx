@@ -25,6 +25,16 @@ import AddIcon from '@material-ui/icons/Add'
 import DeleteIcon from '@material-ui/icons/Delete'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
 import {
+    ActionInputEntry,
+    CertificateInputEntry,
+} from '@secretgraph/misc/lib/utils/action'
+import {
+    serializeToBase64,
+    unserializeToArrayBuffer,
+} from '@secretgraph/misc/lib/utils/encryption'
+import { deepEqual } from '@secretgraph/misc/lib/utils/misc'
+import * as SetOps from '@secretgraph/misc/lib/utils/set'
+import {
     FastField,
     Field,
     FieldArray,
@@ -38,13 +48,6 @@ import {
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
-import { ActionInputEntry, CertificateInputEntry } from '../utils/action'
-import {
-    serializeToBase64,
-    unserializeToArrayBuffer,
-} from '../utils/encryption'
-import { deepEqual } from '../utils/misc'
-import * as SetOps from '../utils/set'
 import FormikCheckBox from './formik/FormikCheckbox'
 import FormikTextField from './formik/FormikTextField'
 import SimpleSelect from './forms/SimpleSelect'

@@ -1,17 +1,9 @@
 declare var gettext: any
 
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
 import * as React from 'react'
 
-import * as Interfaces from '../../../utils/interfaces'
-
-export const elements = new Map([
-    [
-        'Source',
-        {
-            label: gettext('Source'),
-            component: React.lazy(() => import('./source')),
-        },
-    ],
+export const elements = new Map<string, Interfaces.ElementEntryInterface>([
     [
         'Cluster',
         {
@@ -34,17 +26,35 @@ export const elements = new Map([
         },
     ],
     [
-        'Contact',
-        {
-            label: gettext('Contact'),
-            component: React.lazy(() => import('./contact')),
-        },
-    ],
-    [
         'PublicKey',
         {
             label: gettext('Keys'),
             component: React.lazy(() => import('./keys')),
+        },
+    ],
+    [
+        'undefined',
+        {
+            label: gettext('Custom'),
+            component: React.lazy(() => import('./custom')),
+        },
+    ],
+])
+
+/**
+ * 
+    [
+        'Source',
+        {
+            label: gettext('Source'),
+            component: React.lazy(() => import('./source')),
+        },
+    ],
+    [
+        'Contact',
+        {
+            label: gettext('Contact'),
+            component: React.lazy(() => import('./contact')),
         },
     ],
     [
@@ -61,11 +71,4 @@ export const elements = new Map([
             component: React.lazy(() => import('./source')),
         },
     ],
-    [
-        'undefined',
-        {
-            label: gettext('Custom'),
-            component: React.lazy(() => import('./custom')),
-        },
-    ],
-] as [string, Interfaces.ElementEntryInterface][])
+ */

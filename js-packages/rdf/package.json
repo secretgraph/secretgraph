@@ -9,13 +9,5 @@
   },
   "devDependencies": {
     "typescript": "*"
-  },
-  "peerDependencies": {
-    "@secretgraph/client": "*"
-  },
-  "peerDependenciesMeta": {
-    "@secretgraph/client": {
-      "optional": true
-    }
   }
 }

@@ -6,7 +6,7 @@
   "license": "MIT",
   "depencencies": {
     "@secretgraph/client": "*",
-    "@secretgraph/rdf": "*"
+    "@secretgraph/rdf-editors": "*"
   },
   "devDependencies": {
     "typescript": "*"

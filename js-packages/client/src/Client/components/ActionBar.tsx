@@ -17,13 +17,16 @@ import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined'
 import RestoreFromTrashIcon from '@material-ui/icons/RestoreFromTrash'
 import ShareIcon from '@material-ui/icons/Share'
 import VisibilityIcon from '@material-ui/icons/Visibility'
+import { extractAuthInfo } from '@secretgraph/misc/lib/utils/config'
+import {
+    deleteNodes,
+    resetDeletionNodes,
+} from '@secretgraph/misc/lib/utils/operations'
+import * as SetOps from '@secretgraph/misc/lib/utils/set'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
-import { extractAuthInfo } from '../utils/config'
-import { deleteNodes, resetDeletionNodes } from '../utils/operations'
-import * as SetOps from '../utils/set'
 import MapSelect from './MapSelect'
 
 type Props = {}

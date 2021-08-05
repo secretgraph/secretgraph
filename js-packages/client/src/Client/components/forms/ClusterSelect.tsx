@@ -1,12 +1,12 @@
 import { gql, useLazyQuery, useQuery } from '@apollo/client'
 import { Value } from '@material-ui/core'
+import { clusterFeedQuery } from '@secretgraph/misc/lib/queries/cluster'
+import { extractNameNote } from '@secretgraph/misc/lib/utils/cluster'
+import { extractAuthInfo } from '@secretgraph/misc/lib/utils/config'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
-import { clusterFeedQuery } from '../../../../queries/cluster'
 import { InitializedConfig } from '../../contexts'
-import { extractNameNote } from '../../utils/cluster'
-import { extractAuthInfo } from '../../utils/config'
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
 export interface ClusterSelectProps<

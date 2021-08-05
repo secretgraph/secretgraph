@@ -1,6 +1,6 @@
 import { ApolloClient } from '@apollo/client'
 import { AlertColor } from '@material-ui/core/Alert'
-import * as Interfaces from '@secretgraph/utils/interfaces'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
 import { Context, createContext } from 'react'
 
 function stubFn() {}

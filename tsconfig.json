@@ -2,6 +2,14 @@
   "extends": "./tsconfig-base.json",
   "compilerOptions": {
     "outDir": "./webpack_bundles/",
+    "jsx": "react",
+    "plugins": [
+      {
+        "name": "ts-graphql-plugin",
+        "schema": "schema.json",
+        "tag": "gql"
+      }
+    ],
   },
   "files": [
     "assets/js/index.tsx"
@@ -17,17 +25,6 @@
       "path": "./js-packages/rdf/tsconfig.json"
     }
   ],
-  "paths": {
-    "@secretgraph/client": [
-      "./js-packages/client/src/*"
-    ],
-    "@secretgraph/misc": [
-      "./js-packages/misc/src/*"
-    ],
-    "@secretgraph/rdf": [
-      "./js-packages/rdf/src/*"
-    ]
-  },
   "exclude": [
     "node_modules",
     "webpack.config.*.js",

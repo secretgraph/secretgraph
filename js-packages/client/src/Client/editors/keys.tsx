@@ -11,6 +11,42 @@ import LinearProgress from '@material-ui/core/LinearProgress'
 import { Theme } from '@material-ui/core/styles'
 import { useTheme } from '@material-ui/core/styles'
 import Typography from '@material-ui/core/Typography'
+import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import {
+    findPublicKeyQuery,
+    getContentConfigurationQuery,
+    keysRetrievalQuery,
+} from '@secretgraph/misc/lib/queries/content'
+import { serverConfigQuery } from '@secretgraph/misc/lib/queries/server'
+import {
+    RequireAttributes,
+    UnpackPromise,
+    ValueType,
+} from '@secretgraph/misc/lib/typing'
+import { generateActionMapper } from '@secretgraph/misc/lib/utils/action'
+import {
+    extractAuthInfo,
+    extractPrivKeys,
+} from '@secretgraph/misc/lib/utils/config'
+import {
+    extractTags,
+    extractUnencryptedTags,
+    findWorkingHashAlgorithms,
+    serializeToBase64,
+    unserializeToArrayBuffer,
+    unserializeToCryptoKey,
+} from '@secretgraph/misc/lib/utils/encryption'
+import {
+    extractPubKeysCluster,
+    extractPubKeysReferences,
+} from '@secretgraph/misc/lib/utils/graphql'
+import {
+    createKeys,
+    decryptContentObject,
+    deleteNodes,
+    updateConfigRemoteReducer,
+    updateKey,
+} from '@secretgraph/misc/lib/utils/operations'
 import { saveAs } from 'file-saver'
 import {
     FastField,
@@ -24,41 +60,12 @@ import {
 import * as React from 'react'
 import { useAsync } from 'react-async'
 
-import * as Interfaces from '../../../utils/interfaces'
-import {
-    findPublicKeyQuery,
-    getContentConfigurationQuery,
-    keysRetrievalQuery,
-} from '../../../utils/queries/content'
-import { serverConfigQuery } from '../../../utils/queries/server'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import * as Constants from '../constants'
 import * as Contexts from '../contexts'
 import { newClusterLabel } from '../messages'
-import { generateActionMapper } from '../utils/action'
-import { extractAuthInfo, extractPrivKeys } from '../utils/config'
-import {
-    extractTags,
-    extractUnencryptedTags,
-    findWorkingHashAlgorithms,
-    serializeToBase64,
-    unserializeToArrayBuffer,
-    unserializeToCryptoKey,
-} from '../utils/encryption'
-import {
-    extractPubKeysCluster,
-    extractPubKeysReferences,
-} from '../utils/graphql'
-import {
-    createKeys,
-    decryptContentObject,
-    deleteNodes,
-    updateConfigRemoteReducer,
-    updateKey,
-} from '../utils/operations'
-import { RequireAttributes, UnpackPromise, ValueType } from '../utils/typing'
 
 async function loadKeys({
     data,

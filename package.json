@@ -1,6 +1,6 @@
 {
   "private": true,
-  "workspaces": ["./js-packages/*"],
+  "workspaces": ["js-packages/*"],
   "devDependencies": {
     "@secretgraph/secretgraph": "*",
     "buffer": "*",

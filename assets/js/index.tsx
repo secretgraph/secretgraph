@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom'
 document.addEventListener(
     'DOMContentLoaded',
     function () {
-        const MainPage = require('@secretgraph/client/Client/index').default
+        const MainPage = require('@secretgraph/client/lib/Client/index').default
         let wrapper = document.getElementById('content-main')
         const defaultPath: string | undefined = wrapper
             ? wrapper.dataset.graphqlPath
