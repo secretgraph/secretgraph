@@ -19,6 +19,9 @@
       ],
       "@secretgraph/client/*": [
         "../../client/src/*"
+      ],
+      "@secretgraph/rdf-editors/*": [
+        "./*"
       ]
     }
   },

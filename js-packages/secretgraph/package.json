@@ -7,8 +7,5 @@
   "depencencies": {
     "@secretgraph/client": "*",
     "@secretgraph/rdf-editors": "*"
-  },
-  "devDependencies": {
-    "typescript": "*"
   }
 }

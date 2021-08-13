@@ -34,6 +34,9 @@
   "optionalDependencies": {
     "@secretgraph/rdf": "*"
   },
+  "exports":{
+    "./": "./lib/"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/secretgraph/secretgraph.git",

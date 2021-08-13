@@ -209,7 +209,7 @@ const FileIntern = ({
     const [open, setOpen] = React.useState(false)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     const client = useApolloClient()
-    let name: string = mainCtx.item as string
+    let name: string = mainCtx.item || ''
     const actions = React.useMemo(() => {
         const actions: (ActionInputEntry | CertificateInputEntry)[] = []
         Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
@@ -272,19 +272,6 @@ const FileIntern = ({
         Constants.contentStates.has(tags.state[0])
             ? tags.state[0]
             : 'internal'
-    console.log({
-        plainInput: '',
-        htmlInput: '',
-        fileInput: data ? data : null,
-        state,
-        name,
-        encryptName,
-        keywords: tags?.keywords || [],
-        cluster:
-            nodeData?.cluster?.id ||
-            (searchCtx.cluster ? searchCtx.cluster : null),
-        actions,
-    })
     return (
         <Formik
             initialValues={{

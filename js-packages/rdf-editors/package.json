@@ -13,10 +13,8 @@
   "peerDependencies": {
     "@secretgraph/client": "*"
   },
-  "peerDependenciesMeta": {
-    "@secretgraph/client": {
-      "optional": true
-    }
+  "exports":{
+    "./": "./lib/"
   },
   "repository": {
     "type": "git",
