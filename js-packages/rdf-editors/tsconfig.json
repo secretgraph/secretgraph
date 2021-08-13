@@ -3,12 +3,24 @@
   "compilerOptions": {
     "outDir": "lib",
     "rootDir": "src",
+    "baseUrl": "src",
     "jsx": "react",
     "composite": true,
     "lib": [
       "ESNext",
       "dom"
     ],
+    "paths": {
+      "@secretgraph/misc/*": [
+        "../../misc/src/*"
+      ],
+      "@secretgraph/rdf/*": [
+        "../../rdf/src/*"
+      ],
+      "@secretgraph/client/*": [
+        "../../client/src/*"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts*"

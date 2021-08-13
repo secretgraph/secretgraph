@@ -9,5 +9,10 @@
   },
   "devDependencies": {
     "typescript": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/secretgraph/secretgraph.git",
+    "directory": "js-packages/rdf"
   }
 }

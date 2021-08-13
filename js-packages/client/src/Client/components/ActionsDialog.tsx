@@ -27,13 +27,13 @@ import MoreVertIcon from '@material-ui/icons/MoreVert'
 import {
     ActionInputEntry,
     CertificateInputEntry,
-} from '@secretgraph/misc/lib/utils/action'
+} from '@secretgraph/misc/utils/action'
 import {
     serializeToBase64,
     unserializeToArrayBuffer,
-} from '@secretgraph/misc/lib/utils/encryption'
-import { deepEqual } from '@secretgraph/misc/lib/utils/misc'
-import * as SetOps from '@secretgraph/misc/lib/utils/set'
+} from '@secretgraph/misc/utils/encryption'
+import { deepEqual } from '@secretgraph/misc/utils/misc'
+import * as SetOps from '@secretgraph/misc/utils/set'
 import {
     FastField,
     Field,
@@ -414,6 +414,7 @@ export default function ActionsDialog({
                         return (
                             <ActionEntry
                                 index={index}
+                                key={index}
                                 disabled={disabled}
                                 action={val}
                                 tokens={tokens}

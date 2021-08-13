@@ -1,6 +1,6 @@
 import Typography from '@material-ui/core/Typography'
 import Skeleton from '@material-ui/lab/Skeleton'
-import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
 interface DecisionFrameProps {

@@ -12,33 +12,33 @@ import IconButton from '@material-ui/core/IconButton'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import List from '@material-ui/core/List'
 import { useTheme } from '@material-ui/core/styles'
-import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     getClusterConfigurationQuery,
     getClusterQuery,
-} from '@secretgraph/misc/lib/queries/cluster'
-import { serverConfigQuery } from '@secretgraph/misc/lib/queries/server'
-import { UnpackPromise, ValueType } from '@secretgraph/misc/lib/typing'
+} from '@secretgraph/misc/queries/cluster'
+import { serverConfigQuery } from '@secretgraph/misc/queries/server'
+import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
 import {
     ActionInputEntry,
     CertificateInputEntry,
     generateActionMapper,
     transformActions,
-} from '@secretgraph/misc/lib/utils/action'
-import { extractNameNote } from '@secretgraph/misc/lib/utils/cluster'
-import { extractAuthInfo, saveConfig } from '@secretgraph/misc/lib/utils/config'
+} from '@secretgraph/misc/utils/action'
+import { extractNameNote } from '@secretgraph/misc/utils/cluster'
+import { extractAuthInfo, saveConfig } from '@secretgraph/misc/utils/config'
 import {
     findWorkingHashAlgorithms,
     hashObject,
     serializeToBase64,
     unserializeToArrayBuffer,
-} from '@secretgraph/misc/lib/utils/encryption'
+} from '@secretgraph/misc/utils/encryption'
 import {
     createCluster,
     updateCluster,
     updateConfigRemoteReducer,
-} from '@secretgraph/misc/lib/utils/operations'
-import * as SetOps from '@secretgraph/misc/lib/utils/set'
+} from '@secretgraph/misc/utils/operations'
+import * as SetOps from '@secretgraph/misc/utils/set'
 import {
     ArrayHelpers,
     FastField,

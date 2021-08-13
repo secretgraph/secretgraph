@@ -2,6 +2,7 @@ const path = require('path')
 const { SourceMapDevToolPlugin, ProvidePlugin } = require('webpack')
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin')
 const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
+const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin')
 
 module.exports = (env, options) => {
     const tsgqlPlugin = new TsGraphQLPlugin({
@@ -93,6 +94,7 @@ module.exports = (env, options) => {
             fallback: {
                 buffer: false,
             },
+            plugins: [new TsconfigPathsPlugin()],
         },
         plugins,
         optimization: {

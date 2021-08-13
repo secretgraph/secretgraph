@@ -2,11 +2,18 @@
   "extends": "../../tsconfig-base.json",
   "compilerOptions": {
     "outDir": "lib",
+    "rootDir": "src",
+    "baseUrl": "src",
     "composite": true,
     "lib": [
       "ESNext",
       "dom"
     ],
+    "paths": {
+      "@secretgraph/misc/*": [
+        "../../misc/src/*"
+      ]
+    }
   },
   "references": [
     {
@@ -14,6 +21,6 @@
     }
   ],
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts*"
   ]
 }

@@ -91,9 +91,9 @@ export async function checkConfigObject(
     return true
 }
 
-export const loadConfigSync = (
+export function loadConfigSync(
     obj: Storage = window.localStorage
-): Interfaces.ConfigInterface | null => {
+): Interfaces.ConfigInterface | null {
     let result = obj.getItem('secretgraphConfig')
     if (!result) {
         return null

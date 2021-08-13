@@ -12,7 +12,6 @@
     "formik": "*",
     "react": "*",
     "react-async": "*",
-    "react-dom": "*",
     "suneditor": "*",
     "suneditor-react": "*",
     "@emotion/css": "*",
@@ -35,7 +34,6 @@
   "optionalDependencies": {
     "@secretgraph/rdf": "*"
   },
-  "main": "src/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/secretgraph/secretgraph.git",

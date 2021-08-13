@@ -7,7 +7,7 @@ import DraftsIcon from '@material-ui/icons/Drafts'
 import MailIcon from '@material-ui/icons/Mail'
 import MovieIcon from '@material-ui/icons/Movie'
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
-import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'

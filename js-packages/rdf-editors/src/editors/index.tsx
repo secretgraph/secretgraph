@@ -1,6 +1,6 @@
 declare var gettext: any
 
-import { elements } from '@secretgraph/client/lib/Client/editors'
+import { elements } from '@secretgraph/client/Client/editors'
 import * as React from 'react'
 
 elements.set('Source', {

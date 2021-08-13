@@ -1,6 +1,3 @@
-import { ApolloClient } from '@apollo/client'
-import { saveAs } from 'file-saver'
-
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { findConfigQuery } from '../queries/content'

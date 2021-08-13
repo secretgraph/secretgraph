@@ -1,7 +1,7 @@
+import { contentStates } from '@secretgraph/misc/constants'
 import { FieldProps } from 'formik'
 import * as React from 'react'
 
-import { contentStates } from '../../constants'
 import FormikTextField from '../formik/FormikTextField'
 import { MapSelectProps, createOptionsIterator } from '../MapSelect'
 

@@ -16,19 +16,19 @@ import TextField from '@material-ui/core/TextField'
 import Typography from '@material-ui/core/Typography'
 import CheckIcon from '@material-ui/icons/Check'
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt'
-import * as Interfaces from '@secretgraph/misc/lib/interfaces'
-import { serverConfigQuery } from '@secretgraph/misc/lib/queries/server'
+import * as Constants from '@secretgraph/misc/constants'
+import * as Interfaces from '@secretgraph/misc/interfaces'
+import { serverConfigQuery } from '@secretgraph/misc/queries/server'
 import {
     checkConfigObject,
     loadConfig,
     saveConfig,
-} from '@secretgraph/misc/lib/utils/config'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/lib/utils/encryption'
-import { createClient } from '@secretgraph/misc/lib/utils/graphql'
-import { initializeCluster } from '@secretgraph/misc/lib/utils/operations'
+} from '@secretgraph/misc/utils/config'
+import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/encryption'
+import { createClient } from '@secretgraph/misc/utils/graphql'
+import { initializeCluster } from '@secretgraph/misc/utils/operations'
 import * as React from 'react'
 
-import * as Constants from '../constants'
 import * as Contexts from '../contexts'
 import {
     decryptingPasswordHelp,

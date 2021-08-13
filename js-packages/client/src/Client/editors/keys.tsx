@@ -11,23 +11,24 @@ import LinearProgress from '@material-ui/core/LinearProgress'
 import { Theme } from '@material-ui/core/styles'
 import { useTheme } from '@material-ui/core/styles'
 import Typography from '@material-ui/core/Typography'
-import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import * as Constants from '@secretgraph/misc/constants'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     findPublicKeyQuery,
     getContentConfigurationQuery,
     keysRetrievalQuery,
-} from '@secretgraph/misc/lib/queries/content'
-import { serverConfigQuery } from '@secretgraph/misc/lib/queries/server'
+} from '@secretgraph/misc/queries/content'
+import { serverConfigQuery } from '@secretgraph/misc/queries/server'
 import {
     RequireAttributes,
     UnpackPromise,
     ValueType,
-} from '@secretgraph/misc/lib/typing'
-import { generateActionMapper } from '@secretgraph/misc/lib/utils/action'
+} from '@secretgraph/misc/typing'
+import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import {
     extractAuthInfo,
     extractPrivKeys,
-} from '@secretgraph/misc/lib/utils/config'
+} from '@secretgraph/misc/utils/config'
 import {
     extractTags,
     extractUnencryptedTags,
@@ -35,18 +36,18 @@ import {
     serializeToBase64,
     unserializeToArrayBuffer,
     unserializeToCryptoKey,
-} from '@secretgraph/misc/lib/utils/encryption'
+} from '@secretgraph/misc/utils/encryption'
 import {
     extractPubKeysCluster,
     extractPubKeysReferences,
-} from '@secretgraph/misc/lib/utils/graphql'
+} from '@secretgraph/misc/utils/graphql'
 import {
     createKeys,
     decryptContentObject,
     deleteNodes,
     updateConfigRemoteReducer,
     updateKey,
-} from '@secretgraph/misc/lib/utils/operations'
+} from '@secretgraph/misc/utils/operations'
 import { saveAs } from 'file-saver'
 import {
     FastField,
@@ -63,7 +64,6 @@ import { useAsync } from 'react-async'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
-import * as Constants from '../constants'
 import * as Contexts from '../contexts'
 import { newClusterLabel } from '../messages'
 
@@ -878,30 +878,35 @@ const AddKeys = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const client = useApolloClient()
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster
     )
+
+    const tokens = React.useMemo(
+        () =>
+            cluster
+                ? extractAuthInfo({
+                      config,
+                      url: activeUrl,
+                      clusters: new Set([cluster]),
+                  }).tokens
+                : [],
+        [config, cluster, activeUrl]
+    )
+    const authorization = React.useMemo(
+        () => [...new Set([...mainCtx.tokens, ...tokens])],
+        [tokens, mainCtx.tokens]
+    )
+
     const { data, loading, refetch } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
             variables: {
                 id: cluster || '',
-                authorization: [
-                    ...new Set([
-                        ...mainCtx.tokens,
-                        ...(cluster
-                            ? extractAuthInfo({
-                                  config,
-                                  url: activeUrl,
-                                  clusters: new Set([cluster]),
-                              }).tokens
-                            : []),
-                    ]),
-                ],
+                authorization,
             },
         },
         onError: console.error,

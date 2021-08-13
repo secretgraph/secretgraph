@@ -1,8 +1,8 @@
 {
   "extends": "./tsconfig-base.json",
   "compilerOptions": {
-    "outDir": "./webpack_bundles/",
     "jsx": "react",
+    "baseUrl": "./",
     "plugins": [
       {
         "name": "ts-graphql-plugin",
@@ -10,8 +10,20 @@
         "tag": "gql"
       }
     ],
+    "paths": {
+      "@secretgraph/misc/*": ["./js-packages/misc/src/*"],
+      "@secretgraph/client/*": [
+        "./js-packages/client/src/*"
+      ],
+      "@secretgraph/rdf/*": [
+        "./js-packages/rdf/src/*"
+      ],
+      "@secretgraph/rdf-editors/*": [
+        "./js-packages/rdf-editors/src/*"
+      ]
+    }
   },
-  "files": [
+  "includes": [
     "assets/js/index.tsx"
   ],
   "references": [
@@ -23,6 +35,9 @@
     },
     {
       "path": "./js-packages/rdf/tsconfig.json"
+    },
+    {
+      "path": "./js-packages/rdf-editors/tsconfig.json"
     }
   ],
   "exclude": [

@@ -9,28 +9,29 @@ import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
-import * as Interfaces from '@secretgraph/misc/lib/interfaces'
-import { contentRetrievalQuery } from '@secretgraph/misc/lib/queries/content'
-import { getContentConfigurationQuery } from '@secretgraph/misc/lib/queries/content'
-import { UnpackPromise, ValueType } from '@secretgraph/misc/lib/typing'
+import * as Constants from '@secretgraph/misc/constants'
+import * as Interfaces from '@secretgraph/misc/interfaces'
+import { contentRetrievalQuery } from '@secretgraph/misc/queries/content'
+import { getContentConfigurationQuery } from '@secretgraph/misc/queries/content'
+import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
 import {
     ActionInputEntry,
     CertificateInputEntry,
     generateActionMapper,
     transformActions,
-} from '@secretgraph/misc/lib/utils/action'
+} from '@secretgraph/misc/utils/action'
 import {
     extractAuthInfo,
     extractPrivKeys,
-} from '@secretgraph/misc/lib/utils/config'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/lib/utils/encryption'
-import { extractPubKeysCluster } from '@secretgraph/misc/lib/utils/graphql'
+} from '@secretgraph/misc/utils/config'
+import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/encryption'
+import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
 import {
     createContent,
     decryptContentObject,
     updateContent,
-} from '@secretgraph/misc/lib/utils/operations'
-import * as SetOps from '@secretgraph/misc/lib/utils/set'
+} from '@secretgraph/misc/utils/operations'
+import * as SetOps from '@secretgraph/misc/utils/set'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
@@ -45,7 +46,6 @@ import SimpleSelect from '../components/forms/SimpleSelect'
 import StateSelect from '../components/forms/StateSelect'
 import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
-import * as Constants from '../constants'
 import * as Contexts from '../contexts'
 
 const decryptSet = new Set(['mime', 'ename'])
@@ -272,7 +272,19 @@ const FileIntern = ({
         Constants.contentStates.has(tags.state[0])
             ? tags.state[0]
             : 'internal'
-
+    console.log({
+        plainInput: '',
+        htmlInput: '',
+        fileInput: data ? data : null,
+        state,
+        name,
+        encryptName,
+        keywords: tags?.keywords || [],
+        cluster:
+            nodeData?.cluster?.id ||
+            (searchCtx.cluster ? searchCtx.cluster : null),
+        actions,
+    })
     return (
         <Formik
             initialValues={{
@@ -990,24 +1002,28 @@ const AddFile = () => {
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster
     )
+    const tokens = React.useMemo(
+        () =>
+            cluster
+                ? extractAuthInfo({
+                      config,
+                      url: activeUrl,
+                      clusters: new Set([cluster]),
+                  }).tokens
+                : [],
+        [config, cluster, activeUrl]
+    )
+    const authorization = React.useMemo(
+        () => [...new Set([...mainCtx.tokens, ...tokens])],
+        [tokens, mainCtx.tokens]
+    )
     const { data: dataUnfinished, refetch } = useQuery(
         getContentConfigurationQuery,
         {
             fetchPolicy: 'cache-and-network',
             variables: {
                 id: cluster || '',
-                authorization: [
-                    ...new Set([
-                        ...mainCtx.tokens,
-                        ...(cluster
-                            ? extractAuthInfo({
-                                  config,
-                                  url: activeUrl,
-                                  clusters: new Set([cluster]),
-                              }).tokens
-                            : []),
-                    ]),
-                ],
+                authorization,
             },
             onError: console.error,
         }
@@ -1025,15 +1041,17 @@ const AddFile = () => {
                 return
             }
             const updateOb = {
-                shareUrl: dataUnfinished.secretgraph.node.link,
-                deleted: dataUnfinished.secretgraph.node.deleted || null,
-                updateId: dataUnfinished.secretgraph.node.updateId,
+                shareUrl: null,
+                deleted: null,
+                updateId: null,
             }
             updateMainCtx(updateOb)
             const mapper = generateActionMapper({
                 nodeData: dataUnfinished.secretgraph.node,
                 config,
-                knownHashes: [dataUnfinished.secretgraph.node.availableActions],
+                knownHashes: dataUnfinished.secretgraph.node
+                    ? [dataUnfinished.secretgraph.node.availableActions]
+                    : [],
                 hashAlgorithm: findWorkingHashAlgorithms(
                     dataUnfinished.secretgraph.config.hashAlgorithms
                 )[0],

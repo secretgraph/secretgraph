@@ -1,6 +1,6 @@
 declare var gettext: any
 
-import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
 export const elements = new Map<string, Interfaces.ElementEntryInterface>([
@@ -40,35 +40,3 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
 ])
-
-/**
- * 
-    [
-        'Source',
-        {
-            label: gettext('Source'),
-            component: React.lazy(() => import('./source')),
-        },
-    ],
-    [
-        'Contact',
-        {
-            label: gettext('Contact'),
-            component: React.lazy(() => import('./contact')),
-        },
-    ],
-    [
-        'Postbox',
-        {
-            label: gettext('Postbox'),
-            component: React.lazy(() => import('./postbox')),
-        },
-    ],
-    [
-        'Message',
-        {
-            label: gettext('Message'),
-            component: React.lazy(() => import('./source')),
-        },
-    ],
- */

@@ -29,15 +29,14 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight'
 import ExpandLessIcon from '@material-ui/icons/ExpandLess'
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
 import FilterListIcon from '@material-ui/icons/FilterList'
-import { serverConfigQuery } from '@secretgraph/misc/lib/queries/server'
-import { extractAuthInfo } from '@secretgraph/misc/lib/utils/config'
+import { serverConfigQuery } from '@secretgraph/misc/queries/server'
+import { extractAuthInfo } from '@secretgraph/misc/utils/config'
 import {
     deleteNodes,
     resetDeletionNodes,
-} from '@secretgraph/misc/lib/utils/operations'
+} from '@secretgraph/misc/utils/operations'
 import * as React from 'react'
 
-import { mapHashNames } from '../../constants'
 import * as Contexts from '../../contexts'
 
 function CloseButton() {

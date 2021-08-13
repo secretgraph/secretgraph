@@ -15,7 +15,6 @@
     "typescript": "*",
     "@types/apollo-upload-client": "*"
   },
-  "files": ["lib"],
   "repository": {
     "type": "git",
     "url": "https://github.com/secretgraph/secretgraph.git",

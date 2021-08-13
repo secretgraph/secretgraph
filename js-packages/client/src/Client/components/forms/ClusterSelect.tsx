@@ -1,8 +1,8 @@
 import { gql, useLazyQuery, useQuery } from '@apollo/client'
 import { Value } from '@material-ui/core'
-import { clusterFeedQuery } from '@secretgraph/misc/lib/queries/cluster'
-import { extractNameNote } from '@secretgraph/misc/lib/utils/cluster'
-import { extractAuthInfo } from '@secretgraph/misc/lib/utils/config'
+import { clusterFeedQuery } from '@secretgraph/misc/queries/cluster'
+import { extractNameNote } from '@secretgraph/misc/utils/cluster'
+import { extractAuthInfo } from '@secretgraph/misc/utils/config'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -41,7 +41,7 @@ export default function ClusterSelect<
             url,
             require: new Set(['update', 'manage']),
         })
-    }, [config, url])
+    }, [url, config])
 
     const { fetchMore, data, loading } = useQuery(clusterFeedQuery, {
         variables: {
@@ -51,7 +51,7 @@ export default function ClusterSelect<
     const { ids, labelMap } = React.useMemo(() => {
         const ret: {
             ids: string[]
-            labelMap: { [key: string]: string }
+            labelMap: { [key: string]: { name: string; note: string } }
         } = {
             ids: [],
             labelMap: {},
@@ -63,7 +63,7 @@ export default function ClusterSelect<
             const { name, note } = extractNameNote(node.description)
             ret.ids.push(node.id)
             if (name) {
-                ret.labelMap[node.id] = name
+                ret.labelMap[node.id] = { name, note: note || '' }
             }
         }
         return ret
@@ -77,13 +77,13 @@ export default function ClusterSelect<
             return
         }
         props.form.setFieldValue(props.field.name, ids[0])
-    }, [ids])
+    }, [ids.length ? ids[0] : ' '])
     return (
         <SimpleSelect
             {...props}
             loading={loading}
             getOptionLabel={(option) => {
-                return labelMap[option] || option
+                return labelMap[option]?.name || option
             }}
             options={ids}
         />

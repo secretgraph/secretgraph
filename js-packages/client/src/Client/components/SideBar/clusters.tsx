@@ -7,12 +7,12 @@ import {
 import { useTheme } from '@material-ui/core'
 import GroupWorkIcon from '@material-ui/icons/GroupWork'
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
-import * as Interfaces from '@secretgraph/misc/lib/interfaces'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     clusterFeedQuery,
     getClusterQuery,
-} from '@secretgraph/misc/lib/queries/cluster'
-import { extractNameNote } from '@secretgraph/misc/lib/utils/cluster'
+} from '@secretgraph/misc/queries/cluster'
+import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
@@ -41,8 +41,8 @@ const ActiveCluster = React.memo(function ActiveCluster({
     React.useEffect(() => {
         if (dataUnfinished) {
             setData({
-                ...extractNameNote(data.secretgraph.node.description),
-                node: data.secretgraph.node,
+                ...extractNameNote(dataUnfinished.secretgraph.node.description),
+                node: dataUnfinished.secretgraph.node,
             })
         }
     }, [dataUnfinished])
@@ -75,7 +75,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
             onDoubleClick={(ev) => {
                 ev.preventDefault()
                 ev.stopPropagation()
-                data?.node && goTo({ ...data.node, title: data?.name })
+                data?.node && goTo({ ...data?.node, title: data?.name })
             }}
             cluster={cluster}
             {...props}

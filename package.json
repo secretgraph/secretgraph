@@ -1,13 +1,20 @@
 {
   "private": true,
-  "workspaces": ["js-packages/*"],
+  "workspaces": [
+    "./js-packages/*"
+  ],
   "devDependencies": {
-    "@secretgraph/secretgraph": "*",
+    "@secretgraph/client": "*",
+    "@types/react": "*",
+    "@types/react-dom": "*",
     "buffer": "*",
     "css-loader": "*",
+    "react": "*",
+    "react-dom": "*",
     "style-loader": "*",
     "ts-graphql-plugin": "*",
     "ts-loader": "*",
+    "tsconfig-paths-webpack-plugin": "^3.5.1",
     "typescript": "*",
     "webpack": ">=5.0",
     "webpack-cli": "*",

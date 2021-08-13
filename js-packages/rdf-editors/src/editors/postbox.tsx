@@ -1,7 +1,6 @@
 import { useApolloClient, useQuery } from '@apollo/client'
 import { useTheme } from '@material-ui/core/styles'
-import DecisionFrame from '@secretgraph/client/lib/Client/components/DecisionFrame'
-import * as Contexts from '@secretgraph/client/lib/Client/contexts'
+import * as Contexts from '@secretgraph/client/Client/contexts'
 import { saveAs } from 'file-saver'
 import * as React from 'react'
 

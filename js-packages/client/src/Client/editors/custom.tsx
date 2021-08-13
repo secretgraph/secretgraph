@@ -14,26 +14,26 @@ import Autocomplete from '@material-ui/lab/Autocomplete'
 import {
     contentRetrievalQuery,
     getContentConfigurationQuery,
-} from '@secretgraph/misc/lib/queries/content'
-import { UnpackPromise } from '@secretgraph/misc/lib/typing'
+} from '@secretgraph/misc/queries/content'
+import { UnpackPromise } from '@secretgraph/misc/typing'
 import {
     ActionInputEntry,
     CertificateInputEntry,
     generateActionMapper,
     transformActions,
-} from '@secretgraph/misc/lib/utils/action'
-import { extractAuthInfo } from '@secretgraph/misc/lib/utils/config'
-import { extractPrivKeys } from '@secretgraph/misc/lib/utils/config'
+} from '@secretgraph/misc/utils/action'
+import { extractAuthInfo } from '@secretgraph/misc/utils/config'
+import { extractPrivKeys } from '@secretgraph/misc/utils/config'
 import {
     findWorkingHashAlgorithms,
     serializeToBase64,
-} from '@secretgraph/misc/lib/utils/encryption'
-import { extractPubKeysCluster } from '@secretgraph/misc/lib/utils/graphql'
+} from '@secretgraph/misc/utils/encryption'
+import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
 import {
     createContent,
     decryptContentObject,
     updateContent,
-} from '@secretgraph/misc/lib/utils/operations'
+} from '@secretgraph/misc/utils/operations'
 import {
     FastField,
     Field,
@@ -409,6 +409,22 @@ const AddCustom = () => {
             url: string
             mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
         } | null>(null)
+    const tokens = React.useMemo(
+        () =>
+            cluster
+                ? extractAuthInfo({
+                      config,
+                      url: activeUrl,
+                      clusters: new Set([cluster]),
+                  }).tokens
+                : [],
+        [config, cluster, activeUrl]
+    )
+
+    const authorization = React.useMemo(
+        () => [...new Set([...mainCtx.tokens, ...tokens])],
+        [tokens, mainCtx.tokens]
+    )
 
     let {
         data: dataUnfinished,
@@ -418,18 +434,7 @@ const AddCustom = () => {
         fetchPolicy: 'cache-and-network',
         variables: {
             id: cluster || '',
-            authorization: [
-                ...new Set([
-                    ...mainCtx.tokens,
-                    ...(cluster
-                        ? extractAuthInfo({
-                              config,
-                              url: activeUrl,
-                              clusters: new Set([cluster]),
-                          }).tokens
-                        : []),
-                ]),
-            ],
+            authorization,
         },
         onError: console.error,
     })

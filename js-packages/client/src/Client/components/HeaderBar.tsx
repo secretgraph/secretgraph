@@ -17,11 +17,8 @@ import Toolbar from '@material-ui/core/Toolbar'
 import Typography from '@material-ui/core/Typography'
 import AccountCircle from '@material-ui/icons/AccountCircle'
 import MenuIcon from '@material-ui/icons/Menu'
-import { serverConfigQuery } from '@secretgraph/misc/lib/queries/server'
-import {
-    exportConfig,
-    exportConfigAsUrl,
-} from '@secretgraph/misc/lib/utils/config'
+import { serverConfigQuery } from '@secretgraph/misc/queries/server'
+import { exportConfig, exportConfigAsUrl } from '@secretgraph/misc/utils/config'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
