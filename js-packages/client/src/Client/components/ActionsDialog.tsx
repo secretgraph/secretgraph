@@ -144,17 +144,20 @@ function ActionEntryIntern({
                         creation. Use note field to document them
                     </Grid>
                     <Grid item xs={4}>
-                        <FastField
-                            name={
-                                !submitFn
-                                    ? `actions.${index}.value.action`
-                                    : 'value.action'
-                            }
-                            component={SimpleSelect}
-                            options={['view', 'update', 'manage']}
-                            disabled={disabled || locked}
-                            label="Action"
-                        />
+                        {action?.type == 'certificate' ||
+                        action?.value?.action == 'other' ? null : (
+                            <FastField
+                                name={
+                                    !submitFn
+                                        ? `actions.${index}.value.action`
+                                        : 'value.action'
+                                }
+                                component={SimpleSelect}
+                                options={['view', 'update', 'manage']}
+                                disabled={disabled || locked}
+                                label="Action"
+                            />
+                        )}
                     </Grid>
                     <Grid item xs={4}>
                         <FastField

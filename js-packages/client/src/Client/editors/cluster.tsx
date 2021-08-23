@@ -42,6 +42,7 @@ import * as SetOps from '@secretgraph/misc/utils/set'
 import {
     ArrayHelpers,
     FastField,
+    Field,
     FieldArray,
     Form,
     Formik,
@@ -273,7 +274,7 @@ const ClusterIntern = ({
                         configUpdate.hosts as Interfaces.ConfigInterface['hosts']
                     )[url].clusters[newNode.id as string].hashes[digestCert] =
                         []
-                    configUpdate.tokens[digestCert] = {
+                    configUpdate.certificates[digestCert] = {
                         data: await privPromise,
                         note: 'initial certificate',
                     }
@@ -283,6 +284,15 @@ const ClusterIntern = ({
                     update: configUpdate,
                     client: baseClient,
                 })
+                console.log(configUpdate)
+                const nTokens = extractAuthInfo({
+                    config: newConfig as Interfaces.ConfigInterface,
+                    url,
+                    clusters: new Set([
+                        clusterResponse.data.updateOrCreateCluster.cluster.id,
+                    ]),
+                    require: new Set(['update', 'manage']),
+                }).tokens
                 saveConfig(newConfig as Interfaces.ConfigInterface)
                 updateConfig(newConfig, true)
                 updateMainCtx({
@@ -292,6 +302,7 @@ const ClusterIntern = ({
                     updateId:
                         clusterResponse.data.updateOrCreateCluster.cluster
                             .updateId,
+                    tokens: [...mainCtx.tokens, ...nTokens],
                 })
                 updateSearchCtx({
                     cluster:
@@ -305,7 +316,7 @@ const ClusterIntern = ({
                     <Form>
                         <Grid container spacing={2}>
                             <Grid item xs={12}>
-                                <FastField
+                                <Field
                                     component={FormikTextField}
                                     name="name"
                                     type="text"
@@ -316,7 +327,7 @@ const ClusterIntern = ({
                             </Grid>
 
                             <Grid item xs={12}>
-                                <FastField
+                                <Field
                                     component={FormikTextField}
                                     name="note"
                                     type="text"
@@ -438,7 +449,11 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     }, [mainCtx.updateId])
     React.useEffect(() => {
         const f = async () => {
-            if (!dataUnfinished) {
+            if (!dataUnfinished || !dataUnfinished.secretgraph.node) {
+                if (dataUnfinished) {
+                    console.debug(dataUnfinished.secretgraph.node)
+                    refetch()
+                }
                 return
             }
             const updateOb = {
@@ -468,7 +483,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             })
         }
         f()
-    }, [dataUnfinished, config])
+    }, [dataUnfinished, config, loading])
 
     if (!data) {
         return null

@@ -188,6 +188,7 @@ interface FileInternProps {
     hashAlgorithms: string[]
     nodeData?: any
     tags?: { [name: string]: string[] }
+    tokens: string[]
     data?: Blob | null
     url: string
     setCluster: (arg: string) => void
@@ -202,6 +203,7 @@ const FileIntern = ({
     mapper,
     url,
     hashAlgorithms,
+    tokens,
 }: FileInternProps) => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
@@ -341,17 +343,11 @@ const FileIntern = ({
                 } else {
                     throw Error('no input found')
                 }
-                const authinfo = extractAuthInfo({
-                    config,
-                    clusters: new Set([values.cluster, nodeData.cluster.id]),
-                    url,
-                    require: new Set(['update']),
-                })
                 const pubkeysResult = await client.query({
                     fetchPolicy: 'network-only',
                     query: getContentConfigurationQuery,
                     variables: {
-                        authorization: authinfo.tokens,
+                        authorization: tokens,
                         id: values.cluster,
                     },
                 })
@@ -363,7 +359,7 @@ const FileIntern = ({
                 })
                 const pubkeys = extractPubKeysCluster({
                     node: pubkeysResult.data.secretgraph.node,
-                    authorization: authinfo.tokens,
+                    authorization: tokens,
                     params: {
                         name: 'RSA-OAEP',
                         hash: hashAlgorithm,
@@ -395,7 +391,7 @@ const FileIntern = ({
                         privkeys: await Promise.all(Object.values(privkeys)),
                         pubkeys: Object.values(pubkeys),
                         hashAlgorithm,
-                        authorization: authinfo.tokens,
+                        authorization: tokens,
                     })
                     updateMainCtx({
                         item: result.data.updateOrCreateContent.content.id,
@@ -421,7 +417,7 @@ const FileIntern = ({
                 setFieldValue,
             }) => {
                 React.useEffect(() => {
-                    setCluster(values.cluster)
+                    values.cluster && setCluster(values.cluster)
                 }, [values.cluster])
                 let preview = null
                 if (values.plainInput) {
@@ -528,6 +524,7 @@ const FileIntern = ({
                                     disabled={isSubmitting}
                                     label="Cluster"
                                     firstIfEmpty
+                                    tokens={tokens}
                                     validate={(val: string) => {
                                         if (!val) {
                                             return 'empty'
@@ -873,6 +870,19 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             data: Blob | null
             key: string | number
         } | null>(null)
+
+    const authorization = React.useMemo(() => {
+        const authinfo = extractAuthInfo({
+            config,
+            url: mainCtx.url as string,
+            clusters: new Set([
+                ...(cluster ? [cluster] : []),
+                ...(data?.nodeData?.cluster ? [data?.nodeData?.cluster] : []),
+            ]),
+            require: viewOnly ? undefined : new Set(['update', 'manage']),
+        })
+        return [...new Set([...mainCtx.tokens, ...authinfo.tokens])]
+    }, [mainCtx.url, config, mainCtx.tokens])
     let {
         data: dataUnfinished,
         refetch,
@@ -882,7 +892,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         nextFetchPolicy: 'network-only',
         variables: {
             id: mainCtx.item as string,
-            authorization: mainCtx.tokens,
+            authorization,
         },
         onError: console.error,
     })
@@ -961,6 +971,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     return (
         <FileIntern
             {...data}
+            tokens={authorization}
             url={mainCtx.url as string}
             setCluster={setCluster}
             disabled={loading || viewOnly}
@@ -996,6 +1007,7 @@ const AddFile = () => {
                       config,
                       url: activeUrl,
                       clusters: new Set([cluster]),
+                      require: new Set(['create', 'manage']),
                   }).tokens
                 : [],
         [config, cluster, activeUrl]
@@ -1056,7 +1068,14 @@ const AddFile = () => {
         return null
     }
 
-    return <FileIntern url={activeUrl} setCluster={setCluster} {...data} />
+    return (
+        <FileIntern
+            url={activeUrl}
+            setCluster={setCluster}
+            tokens={authorization}
+            {...data}
+        />
+    )
 }
 
 export default function FileComponent() {

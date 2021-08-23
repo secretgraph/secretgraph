@@ -58,6 +58,7 @@ interface CustomInternProps {
     tags?: { [name: string]: string[] }
     data?: ArrayBuffer | null
     text?: string
+    tokens: string[]
     setCluster: (arg: string) => void
     url: string
     encryptedTags: string[]
@@ -72,6 +73,7 @@ const InnerCustom = ({
     nodeData,
     tags,
     data,
+    tokens,
     text,
     disabled,
     hashAlgorithm,
@@ -167,7 +169,7 @@ const InnerCustom = ({
         >
             {({ values }) => {
                 React.useEffect(() => {
-                    setCluster(values.cluster)
+                    values.cluster && setCluster(values.cluster)
                 }, [values.cluster])
                 return (
                     <Form>
@@ -194,6 +196,7 @@ const InnerCustom = ({
                                     name="cluster"
                                     disabled={disabled || isSubmitting}
                                     label="Cluster"
+                                    tokens={tokens}
                                     firstIfEmpty
                                     validate={(val: string) => {
                                         if (!val) {
@@ -287,14 +290,19 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         'mime',
     ])
 
-    const authinfo = React.useMemo(
-        () =>
-            extractAuthInfo({
-                config,
-                url: mainCtx.url as string,
-            }),
-        [mainCtx.url, config]
-    )
+    const authorization = React.useMemo(() => {
+        const authinfo = extractAuthInfo({
+            config,
+            url: mainCtx.url as string,
+            clusters: new Set([
+                ...(cluster ? [cluster] : []),
+                ...(data?.nodeData?.cluster ? [data?.nodeData?.cluster] : []),
+            ]),
+            require: viewOnly ? undefined : new Set(['update', 'manage']),
+        })
+        return [...new Set([...mainCtx.tokens, ...authinfo.tokens])]
+    }, [mainCtx.url, config, mainCtx.tokens])
+
     let {
         data: dataUnfinished,
         loading,
@@ -305,7 +313,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         variables: {
             variables: {
                 id: mainCtx.item as string,
-                authorization: authinfo.tokens,
+                authorization,
             },
         },
     })
@@ -355,7 +363,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
             const res = await decryptContentObject({
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
-                blobOrTokens: authinfo.tokens,
+                blobOrTokens: authorization,
                 decrypt: new Set(encryptedTags),
             })
             if (res) {
@@ -384,6 +392,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
             setEncryptedTags={setEncryptedTags}
             disabled={loading}
             viewOnly={viewOnly}
+            tokens={authorization}
         />
     )
 }
@@ -416,6 +425,7 @@ const AddCustom = () => {
                       config,
                       url: activeUrl,
                       clusters: new Set([cluster]),
+                      require: new Set(['create', 'manage']),
                   }).tokens
                 : [],
         [config, cluster, activeUrl]
@@ -503,6 +513,7 @@ const AddCustom = () => {
             encryptedTags={encryptedTags}
             setEncryptedTags={setEncryptedTags}
             disabled={loading}
+            tokens={authorization}
         />
     )
 }

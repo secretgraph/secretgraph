@@ -441,43 +441,54 @@ export function extractAuthInfo({
         throw Error(`no url: ${url}`)
     }
     const host = config.hosts[new URL(url, window.location.href).href]
-    if (host && (!props.content || props.clusters)) {
-        for (const id in host.clusters) {
-            if (props.clusters && !props.clusters.has(id)) {
-                continue
-            }
-            const clusterconf = host.clusters[id]
-            for (const hash in clusterconf.hashes) {
-                if (
-                    config.tokens[hash] &&
-                    SetOps.hasIntersection(require, clusterconf.hashes[hash])
-                ) {
-                    hashes.add(hash)
-                    keys.add(`${id}:${config.tokens[hash]?.data}`)
+    if (host) {
+        if (!props.content || props.clusters) {
+            for (const id in host.clusters) {
+                if (props.clusters && !props.clusters.has(id)) {
+                    continue
                 }
+                const clusterconf = host.clusters[id]
+                for (const hash in clusterconf.hashes) {
+                    if (
+                        config.tokens[hash] &&
+                        SetOps.hasIntersection(
+                            require,
+                            clusterconf.hashes[hash]
+                        )
+                    ) {
+                        hashes.add(hash)
+                        keys.add(`${id}:${config.tokens[hash]?.data}`)
+                    }
+                    if (config.certificates[hash]) {
+                        certificateHashes.add(hash)
+                    }
+                }
+            }
+        }
+        if (props.content) {
+            const contentconf = host.contents[props.content]
+            for (const hash in contentconf.hashes) {
                 if (config.certificates[hash]) {
                     certificateHashes.add(hash)
+                } else if (
+                    config.tokens[hash] &&
+                    SetOps.hasIntersection(require, contentconf.hashes[hash])
+                ) {
+                    if (!config.tokens[hash] || !hash) {
+                        console.warn('token not found for:', hash)
+                    }
+                    hashes.add(hash)
+                    keys.add(
+                        `${contentconf.cluster}:${config.tokens[hash]?.data}`
+                    )
                 }
             }
         }
     }
-    if (host && props.content) {
-        const contentconf = host.contents[props.content]
-        for (const hash in contentconf.hashes) {
-            if (config.certificates[hash]) {
-                certificateHashes.add(hash)
-            } else if (
-                config.tokens[hash] &&
-                SetOps.hasIntersection(require, contentconf.hashes[hash])
-            ) {
-                if (!config.tokens[hash] || !hash) {
-                    console.warn('token not found for:', hash)
-                }
-                hashes.add(hash)
-                keys.add(`${contentconf.cluster}:${config.tokens[hash]?.data}`)
-            }
-        }
+    if (!hashes.size) {
+        console.log(config.tokens, host, props)
     }
+
     // sorted is better for cache
     return {
         certificateHashes: [...certificateHashes].sort(),

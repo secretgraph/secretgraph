@@ -327,7 +327,7 @@ export async function transformActions({
                         note: val.note,
                     }
                 }
-                if (val.locked) {
+                if (val.locked || val.value.action == 'other') {
                     return
                 }
                 if (!hashes[activeHash]) {

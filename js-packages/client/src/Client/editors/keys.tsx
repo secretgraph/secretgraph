@@ -892,6 +892,7 @@ const AddKeys = () => {
                       config,
                       url: activeUrl,
                       clusters: new Set([cluster]),
+                      require: new Set(['create', 'manage']),
                   }).tokens
                 : [],
         [config, cluster, activeUrl]

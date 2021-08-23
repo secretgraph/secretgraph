@@ -19,6 +19,7 @@ export interface ClusterSelectProps<
     > {
     url: string
     firstIfEmpty?: boolean
+    tokens: string[]
 }
 
 export default function ClusterSelect<
@@ -28,24 +29,13 @@ export default function ClusterSelect<
 >({
     url,
     firstIfEmpty,
+    tokens,
     ...props
 }: ClusterSelectProps<Multiple, DisableClearable, FreeSolo> &
     FieldProps<Value<string, Multiple, DisableClearable, FreeSolo>>) {
-    const { config } = React.useContext(InitializedConfig)
-    const authinfo = React.useMemo(() => {
-        if (url === undefined) {
-            throw Error(`no url: ${url}`)
-        }
-        return extractAuthInfo({
-            config,
-            url,
-            require: new Set(['update', 'manage']),
-        })
-    }, [url, config])
-
     const { fetchMore, data, loading } = useQuery(clusterFeedQuery, {
         variables: {
-            authorization: authinfo.tokens,
+            authorization: tokens,
         },
     })
     const { ids, labelMap } = React.useMemo(() => {
@@ -60,10 +50,14 @@ export default function ClusterSelect<
             return ret
         }
         for (const { node } of data.clusters.clusters.edges) {
-            const { name, note } = extractNameNote(node.description)
-            ret.ids.push(node.id)
-            if (name) {
-                ret.labelMap[node.id] = { name, note: note || '' }
+            if (!node.id) {
+                console.debug('invalid node', node)
+            } else {
+                const { name, note } = extractNameNote(node.description)
+                ret.ids.push(node.id)
+                if (name) {
+                    ret.labelMap[node.id] = { name, note: note || '' }
+                }
             }
         }
         return ret
@@ -72,6 +66,7 @@ export default function ClusterSelect<
         if (
             !firstIfEmpty ||
             ids.length == 0 ||
+            !ids[0] ||
             props.form.values[props.field.name]
         ) {
             return
