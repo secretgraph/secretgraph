@@ -485,9 +485,6 @@ export function extractAuthInfo({
             }
         }
     }
-    if (!hashes.size) {
-        console.log(config.tokens, host, props)
-    }
 
     // sorted is better for cache
     return {

@@ -244,7 +244,7 @@ const ClusterIntern = ({
                     clusterResponse = await createCluster({
                         client: itemClient,
                         actions: finishedActions,
-                        description: '',
+                        description,
                         hashAlgorithm,
                         publicKey,
                         privateKey,
@@ -284,7 +284,6 @@ const ClusterIntern = ({
                     update: configUpdate,
                     client: baseClient,
                 })
-                console.log(configUpdate)
                 const nTokens = extractAuthInfo({
                     config: newConfig as Interfaces.ConfigInterface,
                     url,

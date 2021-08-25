@@ -19,12 +19,12 @@ import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 
 const ActiveCluster = React.memo(function ActiveCluster({
-    authinfo,
+    tokens,
     cluster,
     goTo,
     ...props
 }: {
-    authinfo?: Interfaces.AuthInfoInterface
+    tokens: string[]
     cluster: string
     goTo: (node: any) => void
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
@@ -34,7 +34,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
         //pollInterval: ,
         variables: {
             id: cluster,
-            authorization: authinfo?.tokens,
+            authorization: tokens,
         },
         onError: console.error,
     })
@@ -97,12 +97,16 @@ export default React.memo(function Clusters({
     const theme = useTheme()
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
+    const { mainCtx } = React.useContext(Contexts.Main)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
+    const tokens = React.useMemo(() => {
+        return [...(authinfo?.tokens || []), ...(mainCtx.tokens || [])]
+    }, [authinfo, mainCtx.tokens])
     let [loadQuery, { data, fetchMore, error, loading }] = useLazyQuery(
         clusterFeedQuery,
         {
             variables: {
-                authorization: authinfo && authinfo.tokens,
+                authorization: tokens,
                 deleted: searchCtx.deleted,
                 include: searchCtx.include,
                 exclude: searchCtx.cluster
@@ -183,7 +187,7 @@ export default React.memo(function Clusters({
             {activeCluster && (
                 <ActiveCluster
                     nodeId={`${activeUrl}-clusters::${activeCluster}`}
-                    authinfo={authinfo}
+                    tokens={tokens}
                     goTo={goTo}
                     onClick={(ev) => ev.preventDefault()}
                     cluster={activeCluster}

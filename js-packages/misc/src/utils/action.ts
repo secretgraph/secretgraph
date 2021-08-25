@@ -1,13 +1,7 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
-import { findConfigQuery } from '../queries/content'
 import { RequireAttributes, UnpackPromise } from '../typing'
-import {
-    serializeToBase64,
-    unserializeToArrayBuffer,
-    unserializeToCryptoKey,
-} from './encryption'
-import { b64toarr, mergeDeleteObjects, utf8encoder } from './misc'
+import { serializeToBase64, unserializeToArrayBuffer } from './encryption'
 import * as SetOps from './set'
 
 const actionMatcher = /:(.*)/
@@ -122,6 +116,7 @@ export async function generateActionMapper({
                         data: config.tokens[hash].data,
                         configActions,
                         foundActions: newSet,
+                        update: false,
                     }
                 })
             )
@@ -165,6 +160,7 @@ export async function generateActionMapper({
                         oldHash: null,
                         configActions: new Set<string>(),
                         foundActions: inNodeFoundActions[val] || new Set(),
+                        update: false,
                     }
                 })
             )
@@ -272,7 +268,12 @@ export async function transformActions({
                     existingHash: val.oldHash,
                     value: '"delete"',
                 })
-                configUpdate.tokens[val.oldHash] = null
+                // tokens can be shared!!! check that first or better use cleaner function to remove orphan tokens
+                /*if (val.type == 'action') {
+                    configUpdate.tokens[val.oldHash] = null
+                } else {
+                    console.warn('tried to delete certificate')
+                }*/
                 console.debug('hash of deleted object:', val.oldHash)
                 return
             }
@@ -311,6 +312,7 @@ export async function transformActions({
                     }
                 } else {
                     hashes[newHash] = []
+                    // move certificate
                     if (mapperval.oldHash && val.newHash != mapperval.oldHash) {
                         hashes[mapperval.oldHash] = null
                         configUpdate.certificates[mapperval.oldHash] = null
@@ -321,7 +323,13 @@ export async function transformActions({
             }
             if (val.type == 'action') {
                 // update note or create new entry
-                if (!mapperval || val.update || mapperval.note != val.note) {
+                if (
+                    !mapperval ||
+                    val.update ||
+                    // is created
+                    !mapperval.oldHash ||
+                    mapperval.note != val.note
+                ) {
                     configUpdate.tokens[activeHash] = {
                         data: val.data,
                         note: val.note,
