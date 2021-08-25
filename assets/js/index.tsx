@@ -3,8 +3,17 @@ import * as ReactDOM from 'react-dom'
 
 document.addEventListener(
     'DOMContentLoaded',
-    function () {
-        const MainPage = require('@secretgraph/client/Client').default
+    async function () {
+        const MainPage = (
+            await import(
+                /* webpackMode: "lazy" */
+                '@secretgraph/client/Client'
+            )
+        ).default
+        await import(
+            /* webpackMode: "lazy" */
+            '@secretgraph/rdf-editors/editors'
+        )
         let wrapper = document.getElementById('content-main')
         const defaultPath: string | undefined = wrapper
             ? wrapper.dataset.graphqlPath
