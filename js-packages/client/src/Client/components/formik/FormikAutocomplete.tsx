@@ -1,5 +1,5 @@
 import Autocomplete, { AutocompleteProps } from '@material-ui/core/Autocomplete'
-import { Value } from '@material-ui/core/useAutocomplete'
+import { AutocompleteValue } from '@material-ui/core/useAutocomplete'
 import {
     FieldHelperProps,
     FieldInputProps,
@@ -16,10 +16,14 @@ export function createOnChangeFn<
     FreeSolo extends boolean | undefined
 >(
     field: Pick<
-        FieldInputProps<Value<T, Multiple, DisableClearable, FreeSolo>>,
+        FieldInputProps<
+            AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>
+        >,
         'multiple' | 'value'
     >,
-    helpers: FieldHelperProps<Value<T, Multiple, DisableClearable, FreeSolo>>
+    helpers: FieldHelperProps<
+        AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>
+    >
 ) {
     return function onChangeFn(
         ...[event, value, reason, details]: Parameters<
@@ -46,13 +50,16 @@ export type FormikAutocompleteProps<
     AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
     Exclude<
         keyof FieldProps<
-            Value<T, Multiple, DisableClearable, FreeSolo>,
+            AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
             FormValues
         >,
         'onChange'
     >
 > &
-    FieldProps<Value<T, Multiple, DisableClearable, FreeSolo>, FormValues>
+    FieldProps<
+        AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
+        FormValues
+    >
 
 export default function FormikAutocomplete<
     T,

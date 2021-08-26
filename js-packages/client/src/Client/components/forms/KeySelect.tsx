@@ -1,4 +1,4 @@
-import { Value } from '@material-ui/core'
+import { AutocompleteValue } from '@material-ui/core'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -29,4 +29,6 @@ export default function KeySelect<
     firstIfEmpty,
     ...props
 }: KeySelectProps<Multiple, DisableClearable, FreeSolo> &
-    FieldProps<Value<string, Multiple, DisableClearable, FreeSolo>>) {}
+    FieldProps<
+        AutocompleteValue<string, Multiple, DisableClearable, FreeSolo>
+    >) {}

@@ -71,10 +71,9 @@ async function extractCombinedInfo({
     const { name, note } = extractNameNote(node.description)
     const known = node && url && config.hosts[url]?.clusters[node.id]?.hashes
     const mapper = await generateActionMapper({
-        nodeData: node,
         config,
         unknownTokens: tokens,
-        knownHashes: known ? [known] : undefined,
+        knownHashes: known ? [known, node.actionFOo] : node.actionFOo,
         hashAlgorithm,
     })
     return {
@@ -123,13 +122,7 @@ const ClusterIntern = ({
         Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
             const entry = mapper[params.newHash]
             if (entry.type == 'action') {
-                const existingActions = entry.configActions
-                for (const actionType of existingActions.size
-                    ? existingActions
-                    : ['other']) {
-                    const diffactions = SetOps.difference(entry.foundActions, [
-                        'other',
-                    ])
+                for (const actionType of entry.actions) {
                     actions.push({
                         type: 'action',
                         data: params.data,
@@ -137,15 +130,11 @@ const ClusterIntern = ({
                         oldHash: params.oldHash || undefined,
                         start: '',
                         stop: '',
-                        note: entry.note || '',
+                        note: entry.note,
                         value: {
                             action: actionType,
                         },
-                        update:
-                            diffactions.size &&
-                            SetOps.isNotEq(diffactions, entry.configActions)
-                                ? false
-                                : undefined,
+                        update: entry.hasUpdate,
                         delete: false,
                         readonly: false,
                         locked: props.description !== undefined,
@@ -157,7 +146,8 @@ const ClusterIntern = ({
                     data: params.data,
                     newHash: params.newHash,
                     oldHash: params.oldHash || undefined,
-                    note: entry.note || '',
+                    note: entry.note,
+                    update: entry.hasUpdate,
                     delete: false,
                     readonly: false,
                     locked: true,
@@ -542,8 +532,8 @@ const AddCluster = () => {
                         note: '',
                         newHash: hashKey,
                         oldHash: null,
-                        configActions: new Set(['manage']),
-                        foundActions: new Set(['manage']),
+                        actions: new Set(['manage']),
+                        hasUpdate: true,
                     },
                 },
                 hashAlgorithm,

@@ -12,11 +12,11 @@ export interface CertificateEntry {
     oldHash: null | string
     note: string
     data: string
+    hasUpdate: boolean
 }
 export interface ActionMapperEntry extends Omit<CertificateEntry, 'type'> {
     type: 'action'
-    configActions: Set<string>
-    foundActions: Set<string>
+    actions: Set<string>
 }
 export interface CertificateInputEntry {
     type: 'certificate'
@@ -40,181 +40,204 @@ export interface ActionInputEntry
 }
 
 export async function generateActionMapper({
-    nodeData,
     config,
     knownHashes: knownHashesIntern,
     unknownTokens,
     unknownKeyhashes,
     hashAlgorithm,
 }: {
-    nodeData?: any
     config: Interfaces.ConfigInterface
-    knownHashes?: (
-        | { [hash: string]: string[] }
-        | { keyHash: string; type: string }[]
-    )[] // cluster or content hashes
+    knownHashes?:
+        | ({ [hash: string]: string[] } | { keyHash: string; type: string }[])[]
+        | ({ [hash: string]: string[] } | { keyHash: string; type: string }[]) // cluster or content hashes
     unknownTokens?: string[] // eg. tokens in url
     unknownKeyhashes?: string[] // eg tags
     hashAlgorithm: string
 }): Promise<{ [newHash: string]: ActionMapperEntry | CertificateEntry }> {
+    const hashalgo = Constants.mapHashNames[hashAlgorithm].operationName
+    const tokenToHash: Record<string, string> = {}
+    const upgradeHash: Record<string, string> = {}
+
+    const foundHashes = new Set<string>(
+        unknownKeyhashes ? unknownKeyhashes : []
+    )
+
+    // merge knownHashes and initialize foundHashes
     const knownHashes: { [hash: string]: Set<string> } = {}
-    for (const k of knownHashesIntern || []) {
-        if (k instanceof Array) {
-            for (const el of k) {
+    if (!(knownHashesIntern instanceof Array)) {
+        knownHashesIntern = knownHashesIntern ? [knownHashesIntern] : []
+    }
+    for (const entry of knownHashesIntern) {
+        if (entry instanceof Array) {
+            // typeof node actions
+            for (const el of entry) {
                 if (!knownHashes[el.keyHash]) {
+                    foundHashes.add(el.keyHash)
                     knownHashes[el.keyHash] = new Set([el.type])
                 } else {
                     knownHashes[el.keyHash].add(el.type)
                 }
             }
         } else {
-            for (const [hash, val] of Object.entries(k)) {
+            for (const [hash, val] of Object.entries(entry)) {
+                foundHashes.add(hash)
                 knownHashes[hash] = SetOps.union(knownHashes[hash] || [], val)
             }
         }
     }
-    // TODO: rework, name variables better and merge old actions of type other
-    const prepareActionsAndCerts: PromiseLike<
-        ActionMapperEntry | CertificateEntry | null
-    >[] = []
-    const inNodeFoundActions: {
-        [hash: string]: Set<string>
-    } = {}
-    for (const entry of nodeData?.availableActions || []) {
-        if (!inNodeFoundActions[entry.keyHash]) {
-            inNodeFoundActions[entry.keyHash] = new Set()
+    for (const val of Object.values(knownHashes)) {
+        if (val.has('other') && val.size > 1) {
+            val.delete('other')
         }
-        inNodeFoundActions[entry.keyHash].add(entry.type)
     }
-    const hashalgo = Constants.mapHashNames[hashAlgorithm].operationName
-    for (const [hash, configActions] of Object.entries(knownHashes)) {
+    const updateHashes = []
+    for (const t of unknownTokens || []) {
+        updateHashes.push(
+            serializeToBase64(
+                unserializeToArrayBuffer(t).then((val) =>
+                    crypto.subtle.digest(hashalgo, val)
+                )
+            ).then((data) => (tokenToHash[data] = t))
+        )
+    }
+
+    for (const hash of foundHashes) {
+        let found = false
         if (config.tokens[hash]) {
-            prepareActionsAndCerts.push(
+            found = true
+            updateHashes.push(
                 serializeToBase64(
                     unserializeToArrayBuffer(config.tokens[hash].data).then(
                         (val) => crypto.subtle.digest(hashalgo, val)
                     )
-                ).then((val) => {
-                    let newSet = inNodeFoundActions[val]
-                        ? new Set(inNodeFoundActions[val])
-                        : new Set<string>()
-                    if (newSet.has('other')) {
-                        newSet.delete('other')
-                        newSet = SetOps.union(
-                            newSet,
-                            SetOps.difference(
-                                configActions,
-                                Constants.protectedActions
-                            )
-                        )
-                    }
-                    return {
-                        type: 'action',
-                        newHash: val,
-                        oldHash: hash,
-                        note: config.tokens[hash].note,
-                        data: config.tokens[hash].data,
-                        configActions,
-                        foundActions: newSet,
-                        update: false,
-                    }
-                })
+                ).then((data) => (upgradeHash[hash] = data))
             )
         }
-    }
-    if (unknownTokens) {
-        for (const token of unknownTokens) {
-            const match = (token.match(actionMatcher) as RegExpMatchArray)[1]
-            if (!match) {
-                continue
-            }
-            const prom = serializeToBase64(
-                unserializeToArrayBuffer(match).then((val) =>
-                    crypto.subtle.digest(hashalgo, val)
-                )
-            )
-            prepareActionsAndCerts.push(
-                prom.then((val) => {
-                    if (config.certificates[val]) {
-                        return {
-                            type: 'certificate',
-                            newHash: val,
-                            oldHash: val,
-                            note: config.certificates[val].note,
-                            data: config.certificates[val].data,
-                        }
-                    }
-                    return null
-                })
-            )
-            prepareActionsAndCerts.push(
-                prom.then((val) => {
-                    if (knownHashes && knownHashes[val]) {
-                        return null
-                    }
-                    return {
-                        type: 'action',
-                        data: token,
-                        note: '',
-                        newHash: val,
-                        oldHash: null,
-                        configActions: new Set<string>(),
-                        foundActions: inNodeFoundActions[val] || new Set(),
-                        update: false,
-                    }
-                })
+        if (config.certificates[hash]) {
+            found = true
+            updateHashes.push(
+                serializeToBase64(
+                    unserializeToArrayBuffer(
+                        config.certificates[hash].data
+                    ).then((val) => crypto.subtle.digest(hashalgo, val))
+                ).then((data) => (upgradeHash[hash] = data))
             )
         }
-    }
-    if (unknownKeyhashes) {
-        for (const hash of unknownKeyhashes) {
-            if (config.tokens[hash]) {
-                prepareActionsAndCerts.push(
-                    serializeToBase64(
-                        unserializeToArrayBuffer(config.tokens[hash].data).then(
-                            (val) => crypto.subtle.digest(hashalgo, val)
-                        )
-                    ).then((val) => {
-                        return {
-                            type: 'action',
-                            newHash: val,
-                            oldHash: hash,
-                            note: config.tokens[hash].note,
-                            data: config.tokens[hash].data,
-                            configActions: new Set(),
-                            foundActions: inNodeFoundActions[val] || new Set(),
-                        }
-                    })
-                )
-            }
-            if (config.certificates[hash]) {
-                prepareActionsAndCerts.push(
-                    serializeToBase64(
-                        unserializeToArrayBuffer(
-                            config.certificates[hash].data
-                        ).then((val) => crypto.subtle.digest(hashalgo, val))
-                    ).then((val) => {
-                        const cert = config.certificates[hash]
-                        return {
-                            type: 'certificate',
-                            newHash: val,
-                            oldHash: hash,
-                            note: cert.note,
-                            data: cert.data,
-                        }
-                    })
-                )
-            }
+        if (!found) {
+            upgradeHash[hash] = hash
         }
     }
+    await Promise.all(updateHashes)
+
     const actions: { [newHash: string]: ActionMapperEntry | CertificateEntry } =
         {}
-    for (const entry of await Promise.all(prepareActionsAndCerts)) {
-        if (!entry) {
+    for (const [hash, actionsRaw] of Object.entries(knownHashes)) {
+        if (
+            !actions[upgradeHash[hash]] ||
+            actions[upgradeHash[hash]].oldHash ==
+                actions[upgradeHash[hash]].newHash
+        ) {
+            let hasActionUpdate = false
+            if (actionsRaw.has('other') && actionsRaw.size > 1) {
+                actionsRaw.delete('other')
+                hasActionUpdate = true
+            }
+            let hasUpdate =
+                actions[upgradeHash[hash]] &&
+                actions[upgradeHash[hash]].oldHash !=
+                    actions[upgradeHash[hash]].newHash
+            if (config.tokens[upgradeHash[hash]]) {
+                const data = config.tokens[upgradeHash[hash]]
+                actions[upgradeHash[hash]] = {
+                    type: 'action',
+                    newHash: upgradeHash[hash],
+                    oldHash: hash,
+                    note: data.note,
+                    data: data.data,
+                    actions: actionsRaw,
+                    hasUpdate: hasActionUpdate || hasUpdate,
+                }
+            } else if (config.tokens[hash]) {
+                const data = config.tokens[hash]
+                actions[upgradeHash[hash]] = {
+                    type: 'action',
+                    newHash: upgradeHash[hash],
+                    oldHash: hash,
+                    note: data.note,
+                    data: data.data,
+                    actions: actionsRaw,
+                    hasUpdate: hasActionUpdate || hasUpdate,
+                }
+            }
+            if (config.certificates[upgradeHash[hash]]) {
+                const data = config.certificates[upgradeHash[hash]]
+                actions[upgradeHash[hash]] = {
+                    type: 'certificate',
+                    newHash: upgradeHash[hash],
+                    oldHash: hash,
+                    note: data.note,
+                    data: data.data,
+                    hasUpdate,
+                }
+            } else if (config.certificates[hash]) {
+                const data = config.certificates[hash]
+                actions[upgradeHash[hash]] = {
+                    type: 'certificate',
+                    newHash: upgradeHash[hash],
+                    oldHash: hash,
+                    note: data.note,
+                    data: data.data,
+                    hasUpdate,
+                }
+            }
+        }
+    }
+
+    // always action
+    for (const [token, hash] of Object.entries(tokenToHash)) {
+        // ignore known tokens
+        if (actions[hash]) {
             continue
         }
-        if (!actions[entry.newHash]) {
-            actions[entry.newHash] = entry
+        if (!actions[upgradeHash[hash]]) {
+            if (config.tokens[upgradeHash[hash]]) {
+                const data = config.tokens[upgradeHash[hash]]
+                actions[upgradeHash[hash]] = {
+                    type: 'action',
+                    newHash: upgradeHash[hash],
+                    oldHash: hash,
+                    note: data.note || '',
+                    data: data.data || token,
+                    actions: new Set(['other']),
+                    hasUpdate: !data.data,
+                }
+            } else if (config.tokens[hash]) {
+                const data = config.tokens[hash]
+                actions[upgradeHash[hash]] = {
+                    type: 'action',
+                    newHash: upgradeHash[hash],
+                    oldHash: hash,
+                    note: data.note || '',
+                    data: data.data || token,
+                    actions: new Set(['other']),
+                    hasUpdate: !data.data,
+                }
+            } else {
+                actions[upgradeHash[hash]] = {
+                    type: 'action',
+                    newHash: upgradeHash[hash],
+                    oldHash: hash,
+                    note: '',
+                    data: token,
+                    actions: new Set(['other']),
+                    hasUpdate: true,
+                }
+            }
+        } else if (
+            actions[upgradeHash[hash]].oldHash ==
+            actions[upgradeHash[hash]].newHash
+        ) {
+            actions[upgradeHash[hash]].hasUpdate = true
         }
     }
     return actions
@@ -284,28 +307,7 @@ export async function transformActions({
                     throw Error('requires mapper')
                 }
                 if (mapperval.type == 'action') {
-                    const newHashValues = new Set<string>()
-                    for (const v of mapperval.configActions) {
-                        if (!Constants.protectedActions.has(v)) {
-                            if (mapperval.foundActions.has(v)) {
-                                newHashValues.add(v)
-                            }
-                        } else {
-                            if (mapperval.foundActions.has('other')) {
-                                newHashValues.add(v)
-                            }
-                        }
-                    }
-                    for (const v of mapperval.configActions) {
-                        if (v == 'other') {
-                            if (!newHashValues.size) {
-                                newHashValues.add(v)
-                            }
-                        } else {
-                            newHashValues.add(v)
-                        }
-                    }
-                    hashes[newHash] = [...newHashValues]
+                    hashes[newHash] = [...mapperval.actions]
                     if (mapperval.oldHash && val.newHash != mapperval.oldHash) {
                         hashes[mapperval.oldHash] = null
                         configUpdate.tokens[mapperval.oldHash] = null
