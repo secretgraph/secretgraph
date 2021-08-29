@@ -176,7 +176,7 @@ export const theme = responsiveFontSizes(
                     variant: 'outlined',
                 },
             },
-        },
+        } as any,
         classes: {},
         contentStates: new Map([
             ['draft', { label: gettext('Draft') }],

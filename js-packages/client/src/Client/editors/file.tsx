@@ -217,13 +217,7 @@ const FileIntern = ({
         Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
             const entry = mapper[params.newHash]
             if (entry.type == 'action') {
-                const existingActions = entry.configActions
-                for (const actionType of existingActions.size
-                    ? existingActions
-                    : ['other']) {
-                    const diffactions = SetOps.difference(entry.foundActions, [
-                        'other',
-                    ])
+                for (const actionType of entry.actions) {
                     actions.push({
                         type: 'action',
                         data: params.data,
@@ -235,11 +229,7 @@ const FileIntern = ({
                         value: {
                             action: actionType,
                         },
-                        update:
-                            diffactions.size &&
-                            SetOps.isNotEq(diffactions, entry.configActions)
-                                ? false
-                                : undefined,
+                        update: entry.hasUpdate,
                         delete: false,
                         readonly: false,
                     })
@@ -251,6 +241,7 @@ const FileIntern = ({
                     newHash: params.newHash,
                     oldHash: params.oldHash || undefined,
                     note: entry.note || '',
+                    update: entry.hasUpdate,
                     delete: false,
                     readonly: false,
                     locked: true,
@@ -931,12 +922,17 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 updateId: dataUnfinished.secretgraph.node.updateId,
             }
             updateMainCtx(updateOb)
+            const host = mainCtx.url ? config.hosts[mainCtx.url] : null
+            const contentstuff =
+                host && host.contents[dataUnfinished.secretgraph.node.id]
             const mapper = generateActionMapper({
-                nodeData: dataUnfinished.secretgraph.node,
                 config,
                 knownHashes: [
-                    dataUnfinished.secretgraph.node.cluster.availableActions,
+                    dataUnfinished.secretgraph.node.cluster?.availableActions,
                     dataUnfinished.secretgraph.node.availableActions,
+                    contentstuff &&
+                        host?.clusters[contentstuff.cluster]?.hashes,
+                    contentstuff?.hashes,
                 ],
                 hashAlgorithm: findWorkingHashAlgorithms(
                     dataUnfinished.secretgraph.config.hashAlgorithms
@@ -1045,11 +1041,15 @@ const AddFile = () => {
                 updateId: null,
             }
             updateMainCtx(updateOb)
+            const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const mapper = generateActionMapper({
-                nodeData: dataUnfinished.secretgraph.node,
                 config,
                 knownHashes: dataUnfinished.secretgraph.node
-                    ? [dataUnfinished.secretgraph.node.availableActions]
+                    ? [
+                          dataUnfinished.secretgraph.node.availableActions,
+                          host?.clusters[dataUnfinished.secretgraph.node.id]
+                              ?.hashes,
+                      ]
                     : [],
                 hashAlgorithm: findWorkingHashAlgorithms(
                     dataUnfinished.secretgraph.config.hashAlgorithms

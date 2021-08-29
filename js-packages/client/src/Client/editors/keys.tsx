@@ -109,6 +109,9 @@ async function loadKeys({
             },
         })
             .then(async (val) => {
+                const host = config.hosts[baseUrl]
+                const contentstuff =
+                    host && host.contents[data.secretgraph.node.id]
                 results['publicKey'] = {
                     tags: await extractUnencryptedTags({
                         tags: data.secretgraph.node.tags,
@@ -116,7 +119,13 @@ async function loadKeys({
                     data: await val.arrayBuffer(),
                     nodeData: data.secretgraph.node,
                     mapper: await generateActionMapper({
-                        nodeData: data.secretgraph.node,
+                        knownHashes: [
+                            data.secretgraph.node.availableActions,
+                            data.secretgraph.node?.cluster?.availableActions,
+                            contentstuff &&
+                                host.clusters[contentstuff.cluster]?.hashes,
+                            contentstuff?.hashes,
+                        ],
                         hashAlgorithm: findWorkingHashAlgorithms(
                             results.hashAlgorithms
                         )[0],
@@ -145,6 +154,8 @@ async function loadKeys({
                     if (!val) {
                         return
                     }
+                    const host = config.hosts[baseUrl]
+                    const contentstuff = host && host.contents[nodeData.id]
                     await unserializeToCryptoKey(
                         val.data,
                         keyParams,
@@ -155,7 +166,13 @@ async function loadKeys({
                         tags: val.tags,
                         nodeData: val.nodeData,
                         mapper: await generateActionMapper({
-                            nodeData: val.nodeData,
+                            knownHashes: [
+                                nodeData.availableActions,
+                                nodeData?.cluster?.availableActions,
+                                contentstuff &&
+                                    host.clusters[contentstuff.cluster]?.hashes,
+                                contentstuff?.hashes,
+                            ],
                             hashAlgorithm: findWorkingHashAlgorithms(
                                 results.hashAlgorithms
                             )[0],

@@ -1,5 +1,5 @@
 import { gql, useLazyQuery, useQuery } from '@apollo/client'
-import { Value } from '@material-ui/core'
+import { AutocompleteValue } from '@material-ui/core'
 import { clusterFeedQuery } from '@secretgraph/misc/queries/cluster'
 import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import { extractAuthInfo } from '@secretgraph/misc/utils/config'
@@ -32,7 +32,9 @@ export default function ClusterSelect<
     tokens,
     ...props
 }: ClusterSelectProps<Multiple, DisableClearable, FreeSolo> &
-    FieldProps<Value<string, Multiple, DisableClearable, FreeSolo>>) {
+    FieldProps<
+        AutocompleteValue<string, Multiple, DisableClearable, FreeSolo>
+    >) {
     const { fetchMore, data, loading } = useQuery(clusterFeedQuery, {
         variables: {
             authorization: tokens,

@@ -44,7 +44,7 @@ django-fast-ratelimit = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
-graphene-protector = "*"
+graphene-protector = ">=0.4.0beta0"
 graphene-django = '*'
 graphene-file-upload = "*"
 django-extensions = '*'

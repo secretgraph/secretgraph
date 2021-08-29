@@ -351,14 +351,21 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                 dataUnfinished.secretgraph.config.hashAlgorithms
             )[0]
 
+            const host = mainCtx.url ? config.hosts[mainCtx.url] : null
+            const contentstuff =
+                host && host.contents[dataUnfinished.secretgraph.node.id]
             const mapper = generateActionMapper({
-                nodeData: dataUnfinished.secretgraph.node,
                 config,
                 knownHashes: [
-                    dataUnfinished.secretgraph.node.cluster.availableActions,
+                    dataUnfinished.secretgraph.node.cluster?.availableActions,
                     dataUnfinished.secretgraph.node.availableActions,
+                    contentstuff &&
+                        host?.clusters[contentstuff.cluster]?.hashes,
+                    contentstuff?.hashes,
                 ],
-                hashAlgorithm,
+                hashAlgorithm: findWorkingHashAlgorithms(
+                    dataUnfinished.secretgraph.config.hashAlgorithms
+                )[0],
             })
             const res = await decryptContentObject({
                 config,
@@ -473,13 +480,17 @@ const AddCustom = () => {
                 dataUnfinished.secretgraph.config.hashAlgorithms
             )[0]
 
+            const host = mainCtx.url ? config.hosts[mainCtx.url] : null
+
             const mapper = generateActionMapper({
-                nodeData: dataUnfinished.secretgraph.node,
                 config,
-                knownHashes: [
-                    dataUnfinished.secretgraph.node.cluster.availableActions,
-                    dataUnfinished.secretgraph.node.availableActions,
-                ],
+                knownHashes: dataUnfinished.secretgraph.node
+                    ? [
+                          dataUnfinished.secretgraph.node.availableActions,
+                          host?.clusters[dataUnfinished.secretgraph.node.id]
+                              ?.hashes,
+                      ]
+                    : [],
                 hashAlgorithm,
             })
             const res = await decryptContentObject({

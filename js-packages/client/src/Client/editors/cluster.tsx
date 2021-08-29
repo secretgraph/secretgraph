@@ -73,7 +73,9 @@ async function extractCombinedInfo({
     const mapper = await generateActionMapper({
         config,
         unknownTokens: tokens,
-        knownHashes: known ? [known, node.actionFOo] : node.actionFOo,
+        knownHashes: known
+            ? [known, node.availableActions]
+            : node?.availableActions,
         hashAlgorithm,
     })
     return {

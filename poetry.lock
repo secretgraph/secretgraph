@@ -254,7 +254,7 @@ tests = ["coverage", "pytest", "pytest-cov", "pytest-django"]
 
 [[package]]
 name = "graphene-protector"
-version = "0.3.3"
+version = "0.4.0b0"
 description = "Protects graphene against malicious queries"
 category = "main"
 optional = false
@@ -534,7 +534,7 @@ python-versions = "*"
 
 [[package]]
 name = "typing-extensions"
-version = "3.10.0.0"
+version = "3.10.0.1"
 description = "Backported and Experimental Type Hints for Python 3.5+"
 category = "main"
 optional = false
@@ -618,14 +618,13 @@ python-versions = "*"
 
 [[package]]
 name = "wsgiproxy2"
-version = "0.5.0"
+version = "0.5.1"
 description = "A WSGI Proxy with various http client backends"
 category = "main"
 optional = true
 python-versions = "*"
 
 [package.dependencies]
-six = "*"
 webob = "*"
 
 [extras]
@@ -638,7 +637,7 @@ test = ["django-webtest", "WSGIProxy2", "graphene-django", "graphene-file-upload
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6"
-content-hash = "62573b264f138f721fca4a7ac2c61f58b351b9fd459ed3f24a1325a081241328"
+content-hash = "09849d6a210118827fcaeb590235f0c8b84f106d324f7d98fe93babcbb405ccb"
 
 [metadata.files]
 aniso8601 = [
@@ -780,8 +779,8 @@ graphene-file-upload = [
     {file = "graphene_file_upload-1.3.0.tar.gz", hash = "sha256:6898480b0556826472c80971032917c01968ade5800d84054008fe598795b063"},
 ]
 graphene-protector = [
-    {file = "graphene-protector-0.3.3.tar.gz", hash = "sha256:bea405a0d7c091a92f642793af33b1741ee0256a506d3cc472937ad1958fd05f"},
-    {file = "graphene_protector-0.3.3-py3-none-any.whl", hash = "sha256:10596f654c2f2a6c7b0a0bbeaef9d53a1590fc13dc7ba0a4ac683ed45c3e896e"},
+    {file = "graphene-protector-0.4.0b0.tar.gz", hash = "sha256:72699d4e51087396e7f34a347753b91c9fb87ad91a895c04687cfdf3f65ca532"},
+    {file = "graphene_protector-0.4.0b0-py3-none-any.whl", hash = "sha256:c1160b8701f3f75b468525736cbe0a9eab3ddf31769d2f957ee3f114f4dad534"},
 ]
 graphql-core = [
     {file = "graphql-core-2.3.2.tar.gz", hash = "sha256:aac46a9ac524c9855910c14c48fc5d60474def7f99fd10245e76608eba7af746"},
@@ -939,9 +938,9 @@ typed-ast = [
     {file = "typed_ast-1.4.3.tar.gz", hash = "sha256:fb1bbeac803adea29cedd70781399c99138358c26d05fcbd23c13016b7f5ec65"},
 ]
 typing-extensions = [
-    {file = "typing_extensions-3.10.0.0-py2-none-any.whl", hash = "sha256:0ac0f89795dd19de6b97debb0c6af1c70987fd80a2d62d1958f7e56fcc31b497"},
-    {file = "typing_extensions-3.10.0.0-py3-none-any.whl", hash = "sha256:779383f6086d90c99ae41cf0ff39aac8a7937a9283ce0a414e5dd782f4c94a84"},
-    {file = "typing_extensions-3.10.0.0.tar.gz", hash = "sha256:50b6f157849174217d0656f99dc82fe932884fb250826c18350e159ec6cdf342"},
+    {file = "typing_extensions-3.10.0.1-py2-none-any.whl", hash = "sha256:8bbffbd37fbeb9747a0241fdfde5ae99d4531ad1d1a41ccaea62100e15a5814c"},
+    {file = "typing_extensions-3.10.0.1-py3-none-any.whl", hash = "sha256:045dd532231acfa03628df5e0c66dba64e2cc8fc8b844538d4ad6d5dd6cb82dc"},
+    {file = "typing_extensions-3.10.0.1.tar.gz", hash = "sha256:83af6730a045fda60f46510f7f1f094776d90321caa4d97d20ef38871bef4bd3"},
 ]
 urllib3 = [
     {file = "urllib3-1.22-py2.py3-none-any.whl", hash = "sha256:06330f386d6e4b195fbfc736b297f58c5a892e4440e54d294d7004e3a9bbea1b"},
@@ -967,6 +966,6 @@ wrapt = [
     {file = "wrapt-1.12.1.tar.gz", hash = "sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7"},
 ]
 wsgiproxy2 = [
-    {file = "WSGIProxy2-0.5.0-py3-none-any.whl", hash = "sha256:9bac760e60583905e5bd938903491f3a1a6fca95c810e0032bf7d94afb29f525"},
-    {file = "WSGIProxy2-0.5.0.tar.gz", hash = "sha256:aa6c2e9c470f5045c900bc965c097ca2ef0e76a16e361e2149340b2030c29d37"},
+    {file = "WSGIProxy2-0.5.1-py3-none-any.whl", hash = "sha256:37ab414dc568aba8c1fb0660885d05ab7ddde0a3460af90fea415afcdd7dfca8"},
+    {file = "WSGIProxy2-0.5.1.tar.gz", hash = "sha256:0d9ecb141de720e2fd4f7a275a4a83a961ffeb6717483d940021ffa1c46f665c"},
 ]

@@ -48,8 +48,18 @@ export async function generateActionMapper({
 }: {
     config: Interfaces.ConfigInterface
     knownHashes?:
-        | ({ [hash: string]: string[] } | { keyHash: string; type: string }[])[]
-        | ({ [hash: string]: string[] } | { keyHash: string; type: string }[]) // cluster or content hashes
+        | (
+              | { [hash: string]: string[] }
+              | { keyHash: string; type: string }[]
+              | null
+              | undefined
+          )[]
+        | (
+              | { [hash: string]: string[] }
+              | { keyHash: string; type: string }[]
+              | null
+              | undefined
+          ) // cluster or content hashes
     unknownTokens?: string[] // eg. tokens in url
     unknownKeyhashes?: string[] // eg tags
     hashAlgorithm: string
@@ -78,7 +88,7 @@ export async function generateActionMapper({
                     knownHashes[el.keyHash].add(el.type)
                 }
             }
-        } else {
+        } else if (entry) {
             for (const [hash, val] of Object.entries(entry)) {
                 foundHashes.add(hash)
                 knownHashes[hash] = SetOps.union(knownHashes[hash] || [], val)
