@@ -16,8 +16,15 @@ import * as Contexts from '../contexts'
 import { elements } from '../editors'
 
 // const SideBar = React.lazy(() => import('../components/SideBar'));
-const SettingsImporter = React.lazy(() => import('./SettingsImporter'))
-const Help = React.lazy(() => import('./Help'))
+const SettingsImporter = React.lazy(
+    () =>
+        import(
+            /*webpackChunkName: "main-SettingsImporter" */ './SettingsImporter'
+        )
+)
+const Help = React.lazy(
+    () => import(/*webpackChunkName: "main-help" */ './Help')
+)
 
 function MainPage() {
     const theme = useTheme()

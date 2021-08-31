@@ -9,7 +9,7 @@ export function init() {
         component: React.lazy(
             () =>
                 import(
-                    /* webpackMode: "lazy" */ '@secretgraph/rdf-editors/editors/source'
+                    /* webpackChunkName: 'rdf-source-editor' */ '@secretgraph/rdf-editors/editors/source'
                 )
         ),
     })
@@ -19,7 +19,7 @@ export function init() {
         component: React.lazy(
             () =>
                 import(
-                    /* webpackMode: "lazy" */ '@secretgraph/rdf-editors/editors/contact'
+                    /* webpackChunkName: 'rdf-contact-editor' */ '@secretgraph/rdf-editors/editors/contact'
                 )
         ),
     })
@@ -29,7 +29,7 @@ export function init() {
         component: React.lazy(
             () =>
                 import(
-                    /* webpackMode: "lazy" */ '@secretgraph/rdf-editors/editors/postbox'
+                    /* webpackChunkName: 'rdf-postbox-editor' */ '@secretgraph/rdf-editors/editors/postbox'
                 )
         ),
     })
@@ -39,7 +39,7 @@ export function init() {
         component: React.lazy(
             () =>
                 import(
-                    /* webpackMode: "lazy" */ '@secretgraph/rdf-editors/editors/source'
+                    /* webpackChunkName: 'rdf-message-editor' */ '@secretgraph/rdf-editors/editors/source'
                 )
         ),
     })

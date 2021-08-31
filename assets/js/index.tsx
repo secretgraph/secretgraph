@@ -6,12 +6,12 @@ document.addEventListener(
     async function () {
         const MainPage = (
             await import(
-                /* webpackMode: "lazy" */
+                /* webpackChunkName: "main-client" */
                 '@secretgraph/client/Client'
             )
         ).default
         await import(
-            /* webpackMode: "lazy" */
+            /* webpackChunkName: "plugin-rdf-editors" */
             '@secretgraph/rdf-editors/editors'
         )
         let wrapper = document.getElementById('content-main')

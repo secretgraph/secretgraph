@@ -49,6 +49,8 @@ module.exports = (env, options) => {
                 : undefined,
         output: {
             publicPath: 'auto',
+            filename: 'js/[name].[fullhash].js',
+            chunkFilename: 'js/[name].[fullhash].js',
             path: path.resolve(__dirname, './webpack_bundles/'),
             clean: true,
         },
@@ -101,6 +103,34 @@ module.exports = (env, options) => {
             runtimeChunk: 'single',
             splitChunks: {
                 chunks: 'all',
+                maxAsyncRequests: 100,
+                cacheGroups: {
+                    vendors: {
+                        test: /[\\/]node_modules[\\/]/,
+                        priority: -10,
+                        reuseExistingChunk: true,
+                        name(module) {
+                            const packageName = module.context.match(
+                                /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+                            )[1]
+
+                            return `vendor.${packageName}`
+                        },
+                    },
+                    default: {
+                        minChunks: 4,
+                        priority: -20,
+                        reuseExistingChunk: true,
+
+                        name(module) {
+                            const moduleFileName = module
+                                .identifier()
+                                .split('/')
+                                .reduceRight((item) => item)
+                            return `default.${moduleFileName}`
+                        },
+                    },
+                },
             },
         },
     }

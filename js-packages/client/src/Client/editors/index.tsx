@@ -9,7 +9,8 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('Cluster'),
             component: React.lazy(
-                () => import(/* webpackMode: "lazy" */ './cluster')
+                () =>
+                    import(/* webpackChunkName: 'cluster-editor' */ './cluster')
             ),
         },
     ],
@@ -18,7 +19,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('File'),
             component: React.lazy(
-                () => import(/* webpackMode: "lazy" */ './file')
+                () => import(/* webpackChunkName: 'file-editor' */ './file')
             ),
         },
     ],
@@ -27,7 +28,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('Text'),
             component: React.lazy(
-                () => import(/* webpackMode: "lazy" */ './file')
+                () => import(/* webpackChunkName: 'file-editor' */ './file')
             ),
         },
     ],
@@ -36,7 +37,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('Keys'),
             component: React.lazy(
-                () => import(/* webpackMode: "lazy" */ './keys')
+                () => import(/* webpackChunkName: 'keys-editor' */ './keys')
             ),
         },
     ],
@@ -45,7 +46,8 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('Custom'),
             component: React.lazy(
-                () => import(/* webpackMode: "lazy" */ './custom')
+                () =>
+                    import(/*  webpackChunkName: 'custom-editor' */ './custom')
             ),
         },
     ],
