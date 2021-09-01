@@ -58,7 +58,7 @@ module.exports = (env, options) => {
             ignored: /node_modules/,
         },
         entry: {
-            main: './assets/js/index.tsx',
+            loader: './assets/js/loader.tsx',
         },
         module: {
             rules: [
@@ -91,6 +91,7 @@ module.exports = (env, options) => {
                 '.js',
                 '.wasm',
                 '.mjs',
+                '.css',
                 '.json',
             ],
             fallback: {
@@ -114,7 +115,7 @@ module.exports = (env, options) => {
                                 /[\\/]node_modules[\\/](.*?)([\\/]|$)/
                             )[1]
 
-                            return `vendor.${packageName}`
+                            return `vendors.${packageName}`
                         },
                     },
                     default: {

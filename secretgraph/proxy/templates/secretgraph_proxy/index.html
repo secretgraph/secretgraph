@@ -4,7 +4,10 @@
 {% manifest_match '*.css' '<link rel="stylesheet" href="{match}"/>' %}
 {% endblock %}
 {% block head_scripts %}
-{% manifest_match '*.js' '<script defer src="{match}"></script>' %}
+{% manifest_match 'runtime.js' '<script defer src="{match}"></script>' %}
+{% manifest_match '*vendors*.js' '<script defer src="{match}"></script>' %}
+{% manifest_match '*default*.js' '<script defer src="{match}"></script>' %}
+{% manifest_match 'loader.js' '<script defer src="{match}"></script>' %}
 {% endblock %}
 
 {% block layout %}

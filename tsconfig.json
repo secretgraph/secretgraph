@@ -24,7 +24,7 @@
     }
   },
   "includes": [
-    "assets/js/index.tsx"
+    "assets/js/loader.tsx"
   ],
   "references": [
     {
