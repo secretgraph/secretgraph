@@ -2,6 +2,7 @@
 {% load manifest %}
 {% block styles %}
 {% manifest_match '*.css' '<link rel="stylesheet" href="{match}"/>' %}
+{% manifest_match 'suneditorstyle.js' '<script src="{match}"></script>' %}
 {% endblock %}
 {% block head_scripts %}
 {% manifest_match 'runtime.js' '<script defer src="{match}"></script>' %}

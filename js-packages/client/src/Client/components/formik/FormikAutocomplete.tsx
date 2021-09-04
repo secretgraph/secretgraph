@@ -1,5 +1,5 @@
 import Autocomplete, { AutocompleteProps } from '@material-ui/core/Autocomplete'
-import { AutocompleteValue } from '@material-ui/core/useAutocomplete'
+import { Value as AutocompleteValue } from '@material-ui/core/useAutocomplete'
 import {
     FieldHelperProps,
     FieldInputProps,

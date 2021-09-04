@@ -538,7 +538,7 @@ const FileIntern = ({
                             {!data ? (
                                 <>
                                     {mainCtx.type != 'Text' ? (
-                                        <Grid item xs={12} sm={6}>
+                                        <Grid item xs={12} md={6}>
                                             <Field
                                                 component={FormikTextField}
                                                 name="plainInput"
@@ -559,7 +559,7 @@ const FileIntern = ({
                                     <Grid
                                         item
                                         xs={12}
-                                        sm={
+                                        md={
                                             mainCtx.type != 'Text'
                                                 ? 6
                                                 : undefined

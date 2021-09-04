@@ -1,5 +1,5 @@
 import { gql, useLazyQuery, useQuery } from '@apollo/client'
-import { AutocompleteValue } from '@material-ui/core'
+import { Value as AutocompleteValue } from '@material-ui/core/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/misc/queries/cluster'
 import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import { extractAuthInfo } from '@secretgraph/misc/utils/config'

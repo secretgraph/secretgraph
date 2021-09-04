@@ -59,6 +59,8 @@ module.exports = (env, options) => {
         },
         entry: {
             loader: './assets/js/loader.tsx',
+            suneditorstyle:
+                './node_modules/suneditor/dist/css/suneditor.min.css',
         },
         module: {
             rules: [
@@ -79,7 +81,12 @@ module.exports = (env, options) => {
                 },
                 {
                     test: /\.css$/i,
-                    use: ['style-loader', 'css-loader'],
+                    use: [
+                        {
+                            loader: 'style-loader',
+                        },
+                        'css-loader',
+                    ],
                 },
             ],
         },
@@ -91,7 +98,6 @@ module.exports = (env, options) => {
                 '.js',
                 '.wasm',
                 '.mjs',
-                '.css',
                 '.json',
             ],
             fallback: {

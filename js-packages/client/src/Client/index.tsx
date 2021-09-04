@@ -1,7 +1,5 @@
-import { ApolloProvider } from '@apollo/client'
 import CssBaseline from '@material-ui/core/CssBaseline'
 import { ThemeProvider } from '@material-ui/core/styles'
-import useMediaQuery from '@material-ui/core/useMediaQuery'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     loadConfigSync,

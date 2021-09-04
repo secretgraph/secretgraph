@@ -282,18 +282,30 @@ export async function unserializeToCryptoKey(
                 throw exc
             }
             if (type == 'publicKey') {
-                // serialize publicKey
-                _result = await crypto.subtle.importKey(
-                    'spki' as const,
-                    _data,
-                    params,
-                    true,
-                    Constants.mapEncryptionAlgorithms[`${params.name}public`]
-                        .usages
-                )
+                try {
+                    // serialize publicKey
+                    _result = await crypto.subtle.importKey(
+                        'spki' as const,
+                        _data,
+                        params,
+                        true,
+                        Constants.mapEncryptionAlgorithms[
+                            `${params.name}public`
+                        ].usages
+                    )
+                } catch (exception) {
+                    console.debug(
+                        'error importing, parameters: ',
+                        params,
+                        Constants.mapEncryptionAlgorithms[
+                            `${params.name}public`
+                        ].usages
+                    )
+                    throw exception
+                }
             } else {
                 console.debug(
-                    'error, parameters: ',
+                    'error invalid, parameters: ',
                     _data,
                     params,
                     Constants.mapEncryptionAlgorithms[`${params.name}public`]
@@ -596,11 +608,19 @@ export async function encryptTag(
 
     if (options.encrypt && options.encrypt.has(tag)) {
         const nonce = crypto.getRandomValues(new Uint8Array(13))
-        const { data: encrypted } = await encryptAESGCM({
-            ...options,
-            data,
-            nonce,
-        })
+        let encrypted
+        try {
+            encrypted = (
+                await encryptAESGCM({
+                    ...options,
+                    data,
+                    nonce,
+                })
+            )['data']
+        } catch (e) {
+            console.debug('error encrypting tag', data, nonce)
+            throw e
+        }
         const tmp = new Uint8Array(nonce.byteLength + encrypted.byteLength)
         tmp.set(new Uint8Array(nonce), 0)
         tmp.set(new Uint8Array(encrypted), nonce.byteLength)
