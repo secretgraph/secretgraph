@@ -196,15 +196,22 @@ function ActionEntryIntern({
                             fullWidth
                             freeSolo
                             options={tokens}
-                            renderOption={(val: string) => {
+                            renderOption={(
+                                props: React.HTMLAttributes<HTMLLIElement>,
+                                val: string
+                            ) => {
                                 if (val == 'new') {
                                     return (
-                                        <Typography style={{ color: 'green' }}>
-                                            {val}
-                                        </Typography>
+                                        <li {...props}>
+                                            <Typography
+                                                style={{ color: 'green' }}
+                                            >
+                                                {val}
+                                            </Typography>
+                                        </li>
                                     )
                                 }
-                                return val
+                                return <li {...props}>{val}</li>
                             }}
                             disabled={disabled || locked}
                             label="Token"
