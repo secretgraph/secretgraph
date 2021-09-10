@@ -363,9 +363,8 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                         host?.clusters[contentstuff.cluster]?.hashes,
                     contentstuff?.hashes,
                 ],
-                hashAlgorithm: findWorkingHashAlgorithms(
-                    dataUnfinished.secretgraph.config.hashAlgorithms
-                )[0],
+                hashAlgorithms:
+                    dataUnfinished.secretgraph.config.hashAlgorithms,
             })
             const res = await decryptContentObject({
                 config,
@@ -476,9 +475,9 @@ const AddCustom = () => {
                 }
                 setCluster(dataUnfinished.secretgraph.node.cluster.id)
             }
-            const hashAlgorithm = findWorkingHashAlgorithms(
+            const hashAlgorithms = findWorkingHashAlgorithms(
                 dataUnfinished.secretgraph.config.hashAlgorithms
-            )[0]
+            )
 
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
 
@@ -491,7 +490,7 @@ const AddCustom = () => {
                               ?.hashes,
                       ]
                     : [],
-                hashAlgorithm,
+                hashAlgorithms,
             })
             const res = await decryptContentObject({
                 config,
@@ -504,9 +503,7 @@ const AddCustom = () => {
                     ...res,
                     text: await new Blob([res.data]).text(),
                     key: `${new Date().getTime()}`,
-                    hashAlgorithm: findWorkingHashAlgorithms(
-                        dataUnfinished.secretgraph.config.hashAlgorithms
-                    )[0],
+                    hashAlgorithm: hashAlgorithms[0],
                     url: activeUrl,
                     mapper: await mapper,
                 })

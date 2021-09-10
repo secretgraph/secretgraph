@@ -126,9 +126,7 @@ async function loadKeys({
                                 host.clusters[contentstuff.cluster]?.hashes,
                             contentstuff?.hashes,
                         ],
-                        hashAlgorithm: findWorkingHashAlgorithms(
-                            results.hashAlgorithms
-                        )[0],
+                        hashAlgorithms: results.hashAlgorithms,
                         config,
                     }),
                 }
@@ -173,9 +171,7 @@ async function loadKeys({
                                     host.clusters[contentstuff.cluster]?.hashes,
                                 contentstuff?.hashes,
                             ],
-                            hashAlgorithm: findWorkingHashAlgorithms(
-                                results.hashAlgorithms
-                            )[0],
+                            hashAlgorithms: results.hashAlgorithms,
                             config,
                         }),
                     }

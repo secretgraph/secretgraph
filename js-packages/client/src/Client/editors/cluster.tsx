@@ -60,13 +60,13 @@ async function extractCombinedInfo({
     node,
     url,
     tokens,
-    hashAlgorithm,
+    hashAlgorithms,
 }: {
     config: Interfaces.ConfigInterface
     node?: any
     url: string
     tokens: string[]
-    hashAlgorithm: string
+    hashAlgorithms: string[]
 }) {
     const { name, note } = extractNameNote(node.description)
     const known = node && url && config.hosts[url]?.clusters[node.id]?.hashes
@@ -76,14 +76,14 @@ async function extractCombinedInfo({
         knownHashes: known
             ? [known, node.availableActions]
             : node?.availableActions,
-        hashAlgorithm,
+        hashAlgorithms,
     })
     return {
         mapper,
         name: name || '',
         note: note || '',
         url,
-        hashAlgorithm,
+        hashAlgorithm: hashAlgorithms[0],
     }
 }
 
@@ -466,9 +466,8 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                     node: dataUnfinished.secretgraph.node,
                     url: mainCtx.url as string,
                     tokens: mainCtx.tokens,
-                    hashAlgorithm: findWorkingHashAlgorithms(
-                        dataUnfinished.secretgraph.config.hashAlgorithms
-                    )[0],
+                    hashAlgorithms:
+                        dataUnfinished.secretgraph.config.hashAlgorithms,
                 })),
                 key: `edit${new Date().getTime()}`,
             })

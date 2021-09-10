@@ -1,7 +1,11 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { RequireAttributes, UnpackPromise } from '../typing'
-import { serializeToBase64, unserializeToArrayBuffer } from './encryption'
+import {
+    findWorkingHashAlgorithms,
+    serializeToBase64,
+    unserializeToArrayBuffer,
+} from './encryption'
 import * as SetOps from './set'
 
 const actionMatcher = /:(.*)/
@@ -44,7 +48,7 @@ export async function generateActionMapper({
     knownHashes: knownHashesIntern,
     unknownTokens,
     unknownKeyhashes,
-    hashAlgorithm,
+    hashAlgorithms,
 }: {
     config: Interfaces.ConfigInterface
     knownHashes?:
@@ -62,9 +66,9 @@ export async function generateActionMapper({
           ) // cluster or content hashes
     unknownTokens?: string[] // eg. tokens in url
     unknownKeyhashes?: string[] // eg tags
-    hashAlgorithm: string
+    hashAlgorithms: string[]
 }): Promise<{ [newHash: string]: ActionMapperEntry | CertificateEntry }> {
-    const hashalgo = Constants.mapHashNames[hashAlgorithm].operationName
+    const hashalgos = findWorkingHashAlgorithms(hashAlgorithms)
     const tokenToHash: Record<string, string> = {}
     const upgradeHash: Record<string, string> = {}
 
@@ -81,6 +85,15 @@ export async function generateActionMapper({
         if (entry instanceof Array) {
             // typeof node actions
             for (const el of entry) {
+                if (!el) {
+                    console.debug(
+                        'known hashes contains invalid entry',
+                        el,
+                        'context',
+                        entry
+                    )
+                    continue
+                }
                 if (!knownHashes[el.keyHash]) {
                     foundHashes.add(el.keyHash)
                     knownHashes[el.keyHash] = new Set([el.type])
@@ -89,6 +102,10 @@ export async function generateActionMapper({
                 }
             }
         } else if (entry) {
+            if (!entry) {
+                console.debug('known hashes contains invalid entry', entry)
+                continue
+            }
             for (const [hash, val] of Object.entries(entry)) {
                 foundHashes.add(hash)
                 knownHashes[hash] = SetOps.union(knownHashes[hash] || [], val)
@@ -102,13 +119,26 @@ export async function generateActionMapper({
     }
     const updateHashes = []
     for (const t of unknownTokens || []) {
-        updateHashes.push(
-            serializeToBase64(
-                unserializeToArrayBuffer(t).then((val) =>
-                    crypto.subtle.digest(hashalgo, val)
-                )
-            ).then((data) => (tokenToHash[data] = t))
-        )
+        if (!t) {
+            console.debug('unknown tokens contains invalid entry', t)
+            continue
+        }
+        let firstHash: string | undefined = undefined
+        for (const halgo of hashalgos) {
+            updateHashes.push(
+                serializeToBase64(
+                    unserializeToArrayBuffer(t).then((val) =>
+                        crypto.subtle.digest(halgo, val)
+                    )
+                ).then((data) => {
+                    if (!firstHash) {
+                        firstHash = data
+                        tokenToHash[t] = data
+                    }
+                    upgradeHash[data] = firstHash
+                })
+            )
+        }
     }
 
     for (const hash of foundHashes) {
@@ -118,9 +148,11 @@ export async function generateActionMapper({
             updateHashes.push(
                 serializeToBase64(
                     unserializeToArrayBuffer(config.tokens[hash].data).then(
-                        (val) => crypto.subtle.digest(hashalgo, val)
+                        (val) => crypto.subtle.digest(hashalgos[0], val)
                     )
-                ).then((data) => (upgradeHash[hash] = data))
+                ).then((data) => {
+                    upgradeHash[hash] = data
+                })
             )
         }
         if (config.certificates[hash]) {
@@ -129,8 +161,10 @@ export async function generateActionMapper({
                 serializeToBase64(
                     unserializeToArrayBuffer(
                         config.certificates[hash].data
-                    ).then((val) => crypto.subtle.digest(hashalgo, val))
-                ).then((data) => (upgradeHash[hash] = data))
+                    ).then((val) => crypto.subtle.digest(hashalgos[0], val))
+                ).then((data) => {
+                    upgradeHash[hash] = data
+                })
             )
         }
         if (!found) {
@@ -209,6 +243,20 @@ export async function generateActionMapper({
         if (actions[hash]) {
             continue
         }
+        if (!hash) {
+            console.error('invalid hash', token, hash)
+            continue
+        }
+        if (!upgradeHash[hash]) {
+            console.error(
+                'invalid upgrade hash',
+                token,
+                hash,
+                upgradeHash[hash]
+            )
+            continue
+        }
+        // hash is always newest
         if (!actions[upgradeHash[hash]]) {
             if (config.tokens[upgradeHash[hash]]) {
                 const data = config.tokens[upgradeHash[hash]]

@@ -934,9 +934,8 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                         host?.clusters[contentstuff.cluster]?.hashes,
                     contentstuff?.hashes,
                 ],
-                hashAlgorithm: findWorkingHashAlgorithms(
-                    dataUnfinished.secretgraph.config.hashAlgorithms
-                )[0],
+                hashAlgorithms:
+                    dataUnfinished.secretgraph.config.hashAlgorithms,
             })
             const obj = await decryptContentObject({
                 config,
@@ -1051,9 +1050,8 @@ const AddFile = () => {
                               ?.hashes,
                       ]
                     : [],
-                hashAlgorithm: findWorkingHashAlgorithms(
-                    dataUnfinished.secretgraph.config.hashAlgorithms
-                )[0],
+                hashAlgorithms:
+                    dataUnfinished.secretgraph.config.hashAlgorithms,
             })
             setData({
                 hashAlgorithms:

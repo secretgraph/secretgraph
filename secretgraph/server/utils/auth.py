@@ -352,7 +352,7 @@ def ids_to_results(
     else:
         for klass in klasses:
             klasses_d[klass.__name__] = klass
-    if not isinstance(ids, tuple):
+    if not isinstance(ids, (tuple, list)):
         ids = (ids,)
     flexid_d = {}
     for id in ids:
@@ -367,8 +367,8 @@ def ids_to_results(
             type_name = type(id).__name__
         else:
             raise ValueError(
-                "Only for {}".format(
-                    ",".join(map(lambda x: x.__name__, klasses))
+                "Only for {}. Provided: {}".format(
+                    ",".join(map(lambda x: x.__name__, klasses)), id
                 )
             )
 

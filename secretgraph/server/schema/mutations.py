@@ -94,29 +94,33 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
             "delete",
             authset=authorization,
         )
-        results["Content"].objects.filter(
+        results["Content"]["objects"].filter(
             Q(markForDestruction__isnull=True)
             | Q(markForDestruction__gt=now_plus_x)
         ).update(markForDestruction=now_plus_x)
         Content.objects.filter(
             Q(markForDestruction__isnull=True)
             | Q(markForDestruction__gt=now_plus_x),
-            cluster_id__in=results["Cluster"].objects.values_list(
+            cluster_id__in=results["Cluster"]["objects"].values_list(
                 "id", flat=True
             ),
         ).update(markForDestruction=now_plus_x)
-        results["Cluster"].objects.filter(
+        results["Cluster"]["objects"].filter(
             Q(markForDestruction__isnull=True) | Q(markForDestruction__gt=now)
         ).update(markForDestruction=now)
         calc_last = Content.objects.filter(
-            Q(id__in=results["Content"].objects.values_list("id", flat=True))
+            Q(
+                id__in=results["Content"]["objects"].values_list(
+                    "id", flat=True
+                )
+            )
             | Q(
-                cluster_id__in=results["Cluster"].objects.values_list(
+                cluster_id__in=results["Cluster"]["objects"].values_list(
                     "id", flat=True
                 )
             ),
             markForDestruction__isnull=False,
-        ).latest("markForDestruction__gt")
+        ).latest("markForDestruction")
 
         return cls(
             latestDeletion=calc_last.markForDestruction if calc_last else now
@@ -145,13 +149,17 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
             authset=authorization,
         )
         contents = Content.objects.filter(
-            Q(cluster_id__in=Subquery(results["Cluster"].objects.values("id")))
-            | Q(id__in=Subquery(results["Content"].objects.values("id"))),
+            Q(
+                cluster_id__in=Subquery(
+                    results["Cluster"]["objects"].values("id")
+                )
+            )
+            | Q(id__in=Subquery(results["Content"]["objects"].values("id"))),
             markForDestruction__isnull=False,
         )
         contents.update(markForDestruction=None)
         clusters = Cluster.objects.filter(
-            Q(id__in=Subquery(results["Cluster"].objects.values("id")))
+            Q(id__in=Subquery(results["Cluster"]["objects"].values("id")))
             | Q(id__in=Subquery(contents.values("cluster_id"))),
             markForDestruction__isnull=False,
         )
@@ -160,10 +168,10 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
             restored=map(
                 lambda x: to_global_id("Content", x),
                 chain(
-                    results["Content"].objects.filter(
+                    results["Content"]["objects"].filter(
                         id__in=Subquery(contents.values("id"))
                     ),
-                    results["Cluster"].objects.filter(
+                    results["Cluster"]["objects"].filter(
                         id__in=Subquery(clusters.values("id"))
                     ),
                 ),
