@@ -6,6 +6,7 @@ import DescriptionIcon from '@material-ui/icons/Description'
 import DraftsIcon from '@material-ui/icons/Drafts'
 import MailIcon from '@material-ui/icons/Mail'
 import MovieIcon from '@material-ui/icons/Movie'
+import ReplayIcon from '@material-ui/icons/Replay'
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
@@ -114,9 +115,8 @@ export default React.memo(function Contents({
         incl.push(...authinfo.hashes.map((value) => `hash=${value}`))
     }
     //console.log(incl, excl)
-    const [loadQuery, { data, error, fetchMore, loading }] = useLazyQuery(
-        contentFeedQuery,
-        {
+    const [loadQuery, { data, error, fetchMore, loading, refetch }] =
+        useLazyQuery(contentFeedQuery, {
             variables: {
                 authorization: authinfo ? authinfo.tokens : null,
                 includeTags: ['state=', 'type=', 'name='],
@@ -128,8 +128,7 @@ export default React.memo(function Contents({
                 count: 30,
                 cursor: null,
             },
-        }
-    )
+        })
     React.useEffect(() => {
         expanded.includes(props.nodeId) && loadQuery()
     }, [expanded.includes(props.nodeId)])
@@ -142,7 +141,7 @@ export default React.memo(function Contents({
             }).then((result: any) => {})
     }
 
-    const contentsFinished: JSX.Element[] = React.useMemo(() => {
+    const contentsHalfFinished: JSX.Element[] = React.useMemo(() => {
         if (!data) {
             return [null]
         }
@@ -228,24 +227,44 @@ export default React.memo(function Contents({
             render_item(edge.node)
         )
     }, [data])
-
+    const contentsFinished = [...contentsHalfFinished]
+    if (
+        !loading &&
+        !error &&
+        data &&
+        data.contents.contents.pageInfo.hasNextPage
+    ) {
+        contentsFinished.push(
+            <TreeItem
+                label="Load more contents..."
+                nodeId={`${props.nodeId}-contents-loadmore`}
+                key={`${props.nodeId}-contents-loadmore`}
+                onClick={(ev) => {
+                    ev.preventDefault()
+                    ev.stopPropagation()
+                    _loadMore()
+                }}
+            />
+        )
+    }
     return (
-        <TreeItem {...props}>
-            {contentsFinished}
-            {!loading &&
-                !error &&
-                data &&
-                data.contents.contents.pageInfo.hasNextPage && (
-                    <TreeItem
-                        label="Load more contents..."
-                        nodeId={`${props.nodeId}-contents-loadmore`}
+        <TreeItem
+            {...props}
+            endIcon={
+                loading ? null : (
+                    <span
                         onClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
-                            _loadMore()
+                            refetch && refetch()
                         }}
-                    />
-                )}
+                    >
+                        <ReplayIcon />
+                    </span>
+                )
+            }
+        >
+            {...contentsFinished}
         </TreeItem>
     )
 })

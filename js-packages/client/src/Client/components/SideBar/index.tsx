@@ -142,6 +142,11 @@ export default React.memo(function SideBar() {
     const theme = useTheme()
     const { config } = React.useContext(Contexts.Config)
     const { open } = React.useContext(Contexts.OpenSidebar)
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const [itemsToggle, notifyItems] = React.useReducer(
+        (state) => !state,
+        false
+    )
     const [selected, setSelected] = React.useState<string[]>([])
     const [expanded, setExpanded] = React.useState<string[]>([])
     /**let activeElements: any = null
@@ -168,7 +173,7 @@ export default React.memo(function SideBar() {
                         display: !(open && config) ? 'hidden' : undefined,
                     }}
                 >
-                    <SideBarHeader />
+                    <SideBarHeader notifyItems={notifyItems} />
                     <Divider />
                     <CapturingSuspense>
                         <TreeView
@@ -180,11 +185,17 @@ export default React.memo(function SideBar() {
                             }}
                             onNodeSelect={(ev, items) => {
                                 setSelected(
-                                    items.filter((val) => val.includes('::'))
+                                    items.filter(
+                                        (val) =>
+                                            val.includes('::') ||
+                                            (config &&
+                                                val == config.configCluster)
+                                    )
                                 )
                             }}
                             defaultCollapseIcon={<ExpandMoreIcon />}
                             defaultExpandIcon={<ChevronRightIcon />}
+                            key={`${searchCtx.deleted}-${itemsToggle}`}
                         >
                             <SideBarItems />
                         </TreeView>

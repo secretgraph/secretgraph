@@ -6,6 +6,7 @@ import {
 } from '@apollo/client'
 import { useTheme } from '@material-ui/core'
 import GroupWorkIcon from '@material-ui/icons/GroupWork'
+import ReplayIcon from '@material-ui/icons/Replay'
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
@@ -30,7 +31,11 @@ const ActiveCluster = React.memo(function ActiveCluster({
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const [data, setData] = React.useState<any>(undefined)
     const { mainCtx } = React.useContext(Contexts.Main)
-    const { refetch, data: dataUnfinished } = useQuery(getClusterQuery, {
+    const {
+        refetch,
+        data: dataUnfinished,
+        loading,
+    } = useQuery(getClusterQuery, {
         //pollInterval: ,
         variables: {
             id: cluster,
@@ -102,9 +107,8 @@ export default React.memo(function Clusters({
     const tokens = React.useMemo(() => {
         return [...(authinfo?.tokens || []), ...(mainCtx.tokens || [])]
     }, [authinfo, mainCtx.tokens])
-    let [loadQuery, { data, fetchMore, error, loading }] = useLazyQuery(
-        clusterFeedQuery,
-        {
+    let [loadQuery, { data, fetchMore, error, loading, refetch }] =
+        useLazyQuery(clusterFeedQuery, {
             variables: {
                 authorization: tokens,
                 deleted: searchCtx.deleted,
@@ -113,8 +117,7 @@ export default React.memo(function Clusters({
                     ? [`id=${activeCluster}`, ...searchCtx.exclude]
                     : searchCtx.exclude,
             },
-        }
-    )
+        })
     React.useEffect(() => {
         expanded.includes(props.nodeId) && loadQuery()
     }, [expanded.includes(props.nodeId)])
@@ -127,7 +130,7 @@ export default React.memo(function Clusters({
                 },
             })
     }
-    const clustersFinished: JSX.Element[] = React.useMemo(() => {
+    const clustersHalfFinished: JSX.Element[] = React.useMemo(() => {
         if (!data) {
             return [null]
         }
@@ -181,34 +184,59 @@ export default React.memo(function Clusters({
                     !!error ||
                     !data.clusters.clusters.pageInfo.hasNextPage
                 }*/
+    const clustersFinished = [...clustersHalfFinished]
+
+    if (activeCluster) {
+        clustersFinished.unshift(
+            <ActiveCluster
+                key={`${activeUrl}-clusters::${activeCluster}`}
+                nodeId={`${activeUrl}-clusters::${activeCluster}`}
+                tokens={tokens}
+                goTo={goTo}
+                onClick={(ev) => ev.preventDefault()}
+                cluster={activeCluster}
+                className={theme.classes.treeItemMarked}
+            />
+        )
+    }
+    if (
+        !loading &&
+        !error &&
+        data &&
+        data.clusters.clusters.pageInfo.hasNextPage
+    ) {
+        clustersFinished.push(
+            <TreeItem
+                label="Load more clusters..."
+                key={`${props.nodeId}-cluster-loadmore`}
+                nodeId={`${props.nodeId}-cluster-loadmore`}
+                onClick={(ev) => {
+                    ev.preventDefault()
+                    ev.stopPropagation()
+                    _loadMore()
+                }}
+            />
+        )
+    }
 
     return (
-        <TreeItem {...props}>
-            {activeCluster && (
-                <ActiveCluster
-                    nodeId={`${activeUrl}-clusters::${activeCluster}`}
-                    tokens={tokens}
-                    goTo={goTo}
-                    onClick={(ev) => ev.preventDefault()}
-                    cluster={activeCluster}
-                    className={theme.classes.treeItemMarked}
-                />
-            )}
-            {clustersFinished}
-            {!loading &&
-                !error &&
-                data &&
-                data.clusters.clusters.pageInfo.hasNextPage && (
-                    <TreeItem
-                        label="Load more clusters..."
-                        nodeId={`${props.nodeId}-cluster-loadmore`}
+        <TreeItem
+            {...props}
+            endIcon={
+                loading ? null : (
+                    <span
                         onClick={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
-                            _loadMore()
+                            refetch && refetch()
                         }}
-                    />
-                )}
+                    >
+                        <ReplayIcon />
+                    </span>
+                )
+            }
+        >
+            {...clustersFinished}
         </TreeItem>
     )
 })

@@ -91,7 +91,6 @@ function TagsSelect({
                     variant="outlined"
                     size="small"
                     margin="dense"
-                    multiline
                 />
             )}
         />
@@ -286,10 +285,15 @@ function MainSearchField() {
     )
 }
 
-export default function SideBarHeader() {
+export default function SideBarHeader({
+    notifyItems,
+}: {
+    notifyItems: () => void
+}) {
     const theme = useTheme()
     const { selected } = React.useContext(Contexts.SidebarItemsSelected)
     const { searchCtx } = React.useContext(Contexts.Search)
+    const { updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const client = useApolloClient()
@@ -336,6 +340,7 @@ export default function SideBarHeader() {
                                 ids,
                             })
                         }
+                        notifyItems()
                     }}
                 >
                     {searchCtx.deleted ? 'Restore selected' : 'Delete selected'}

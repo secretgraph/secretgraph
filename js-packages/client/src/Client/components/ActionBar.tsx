@@ -71,10 +71,10 @@ function ActionBar(props: Props) {
         }
         return extractAuthInfo({
             config,
-            url: mainCtx.url || activeUrl,
+            url: activeUrl,
             require: new Set(['create', 'manage']),
         }).tokens
-    }, [mainCtx.tokens, mainCtx.tokenPermissions])
+    }, [mainCtx.tokens, mainCtx.tokenPermissions, activeUrl, config])
 
     return (
         <nav

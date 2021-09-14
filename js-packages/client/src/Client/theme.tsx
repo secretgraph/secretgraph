@@ -160,7 +160,7 @@ export function makeSecretgraphTheme(theme: Theme) {
     }
 }
 
-export const theme = responsiveFontSizes(
+const internTheme = responsiveFontSizes(
     createTheme({
         components: {
             MuiTreeItem: {
@@ -186,9 +186,10 @@ export const theme = responsiveFontSizes(
     })
 )
 
-theme.classes = Object.fromEntries(
-    Object.entries(makeSecretgraphTheme(theme)).map(([key, val]) => [
+internTheme.classes = Object.fromEntries(
+    Object.entries(makeSecretgraphTheme(internTheme)).map(([key, val]) => [
         key,
         css(val),
     ])
 )
+export const theme = internTheme
