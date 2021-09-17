@@ -21,7 +21,7 @@
 
 ### id tag
 
-exclude, include id= for cluster also matches cluster id not only content id
+exclude, include id= for cluster also matches cluster id not only content id (clusters call)
 
 ## Permissions
 
