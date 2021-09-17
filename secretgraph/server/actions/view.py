@@ -25,6 +25,9 @@ def fetch_clusters(
     if includeTags or excludeTags or contentHashes:
         incl_filters = Q()
         for i in includeTags or []:
+            # special handle id tag
+            if i.startswith("id="):
+                incl_filters |= Q(id=i[3:])
             incl_filters |= Q(contents__tags__tag__startswith=i)
 
         hash_filters = Q()
@@ -33,6 +36,10 @@ def fetch_clusters(
 
         excl_filters = Q()
         for i in excludeTags or []:
+            # special handle id tag
+            if i.startswith("id="):
+                excl_filters |= Q(id=i[3:])
+
             excl_filters |= Q(contents__tags__tag__startswith=i)
 
         query = query.filter(~excl_filters & incl_filters & hash_filters)

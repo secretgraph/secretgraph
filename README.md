@@ -17,6 +17,12 @@
 
 # Special
 
+## tags
+
+### id tag
+
+exclude, include id= for cluster also matches cluster id not only content id
+
 ## Permissions
 
 -   manage: can change and create clusters, full access like admin

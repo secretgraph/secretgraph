@@ -44,6 +44,10 @@ const SideBarItems = () => {
         () => (config ? extractAuthInfo({ config, url: activeUrl }) : null),
         [config, activeUrl]
     )
+
+    const tokens = React.useMemo(() => {
+        return [...(authinfo?.tokens || []), ...(mainCtx.tokens || [])]
+    }, [authinfo, mainCtx.tokens])
     const activeUrlAsURL = new URL(activeUrl, window.location.href)
     const goTo = (node: any) => {
         let type =
@@ -63,6 +67,7 @@ const SideBarItems = () => {
                   url: activeUrl,
               }).tokens
             : []
+
         updateMainCtx({
             item: node.id,
             updateId: node.updateId,
@@ -84,27 +89,43 @@ const SideBarItems = () => {
 
     return (
         <>
-            {authinfo && (
+            <TreeItem
+                nodeId="clusters"
+                label="Clusters"
+                classes={{ label: theme.classes.treeItemHeading }}
+                style={{ color: searchCtx.deleted ? 'red' : undefined }}
+            >
+                {authinfo && (
+                    <SideBarClusters
+                        classes={{ label: theme.classes.treeItemHeading }}
+                        nodeId="clusters-owned"
+                        label="Owned"
+                        tokens={tokens}
+                        deleted={searchCtx.deleted}
+                        activeCluster={searchCtx.cluster}
+                        goTo={goTo}
+                    />
+                )}
                 <SideBarClusters
                     classes={{ label: theme.classes.treeItemHeading }}
-                    key="SideBarClusters"
-                    nodeId="clusters"
-                    label="Clusters"
-                    authinfo={authinfo}
-                    activeCluster={searchCtx.cluster}
+                    nodeId="clusters-public"
+                    label="Public"
+                    deleted={searchCtx.deleted}
                     goTo={goTo}
                 />
-            )}
+            </TreeItem>
             <TreeItem
                 nodeId="contents"
                 label="Contents"
                 classes={{ label: theme.classes.treeItemHeading }}
+                style={{ color: searchCtx.deleted ? 'red' : undefined }}
             >
                 <SideBarContents
                     key="SideBarContentsPublic"
                     nodeId="contents-public"
                     activeContent={mainCtx.item}
                     usePublic
+                    deleted={searchCtx.deleted}
                     label="Public"
                     classes={{ label: theme.classes.treeItemHeading }}
                     goTo={goTo}
@@ -115,6 +136,7 @@ const SideBarItems = () => {
                             key="SideBarContentsDraft"
                             nodeId="contents-drafts"
                             authinfo={authinfo}
+                            deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
                             injectInclude={['state=draft']}
                             label="Drafts"
@@ -125,6 +147,7 @@ const SideBarItems = () => {
                             key="SideBarContentsInternal"
                             nodeId="contents-internal"
                             authinfo={authinfo}
+                            deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
                             injectInclude={['state=internal']}
                             label="Internal"

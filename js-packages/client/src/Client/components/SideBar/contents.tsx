@@ -90,6 +90,8 @@ type SideBarItemsProps = {
     usePublic?: boolean
     injectInclude?: string[]
     injectExclude?: string[]
+    title?: string
+    deleted?: boolean
 }
 
 // ["type=", "state=", ...
@@ -101,6 +103,8 @@ export default React.memo(function Contents({
     usePublic,
     injectInclude = [],
     injectExclude = [],
+    title,
+    deleted,
     ...props
 }: SideBarItemsProps & TreeItemProps) {
     const theme = useTheme()
@@ -115,7 +119,7 @@ export default React.memo(function Contents({
         incl.push(...authinfo.hashes.map((value) => `hash=${value}`))
     }
     //console.log(incl, excl)
-    const [loadQuery, { data, error, fetchMore, loading, refetch }] =
+    const [loadQuery, { data, error, fetchMore, loading, refetch, called }] =
         useLazyQuery(contentFeedQuery, {
             variables: {
                 authorization: authinfo ? authinfo.tokens : null,
@@ -141,7 +145,7 @@ export default React.memo(function Contents({
             }).then((result: any) => {})
     }
 
-    const contentsHalfFinished: JSX.Element[] = React.useMemo(() => {
+    const contentsHalfFinished: (JSX.Element | null)[] = React.useMemo(() => {
         if (!data) {
             return [null]
         }
@@ -194,14 +198,21 @@ export default React.memo(function Contents({
                             : undefined
                     }
                     label={
-                        <span
-                            style={{ color: node.deleted ? 'red' : undefined }}
+                        <div
+                            className={theme.classes.sidebarTreeItemLabel}
+                            style={{
+                                color: node.deleted ? 'red' : undefined,
+                            }}
                         >
                             <Icon
                                 fontSize="small"
                                 style={{ marginRight: '4px' }}
                             />
-                            <span style={{ wordBreak: 'break-all' }}>
+                            <div
+                                className={
+                                    theme.classes.sidebarTreeItemLabelInner
+                                }
+                            >
                                 {`${
                                     elements.get(type)
                                         ? elements.get(type)?.label
@@ -209,8 +220,8 @@ export default React.memo(function Contents({
                                 }: ${
                                     name ? name : `...${node.id.substr(-48)}`
                                 }`}
-                            </span>
-                        </span>
+                            </div>
+                        </div>
                     }
                     nodeId={nodeId}
                     key={nodeId}
@@ -250,18 +261,30 @@ export default React.memo(function Contents({
     return (
         <TreeItem
             {...props}
-            endIcon={
-                loading ? null : (
-                    <span
-                        onClick={(ev) => {
-                            ev.preventDefault()
-                            ev.stopPropagation()
-                            refetch && refetch()
-                        }}
-                    >
-                        <ReplayIcon />
-                    </span>
-                )
+            label={
+                <div
+                    className={theme.classes.sidebarTreeItemLabel}
+                    title={title}
+                    style={{
+                        color: deleted ? 'red' : undefined,
+                    }}
+                >
+                    {props.label}
+                    {loading || !called ? null : (
+                        <div
+                            onClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                                refetch && refetch()
+                            }}
+                        >
+                            <ReplayIcon
+                                fontSize="small"
+                                style={{ marginLeft: '4px' }}
+                            />
+                        </div>
+                    )}
+                </div>
             }
         >
             {...contentsFinished}

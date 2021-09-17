@@ -19,7 +19,7 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 
-const ActiveCluster = React.memo(function ActiveCluster({
+export const ActiveCluster = React.memo(function ActiveCluster({
     tokens,
     cluster,
     goTo,
@@ -30,6 +30,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
     goTo: (node: any) => void
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
     const [data, setData] = React.useState<any>(undefined)
+    const theme = useTheme()
     const { mainCtx } = React.useContext(Contexts.Main)
     const {
         refetch,
@@ -44,7 +45,7 @@ const ActiveCluster = React.memo(function ActiveCluster({
         onError: console.error,
     })
     React.useEffect(() => {
-        if (dataUnfinished) {
+        if (dataUnfinished && dataUnfinished.secretgraph.node) {
             setData({
                 ...extractNameNote(dataUnfinished.secretgraph.node.description),
                 node: dataUnfinished.secretgraph.node,
@@ -60,19 +61,17 @@ const ActiveCluster = React.memo(function ActiveCluster({
     return (
         <SideBarContents
             goTo={goTo}
+            deleted={data?.node?.deleted}
             label={
-                <span
-                    title={data?.note || undefined}
-                    style={{ color: data?.node?.deleted ? 'red' : undefined }}
-                >
+                <>
                     <GroupWorkIcon
                         fontSize="small"
                         style={{ marginRight: '4px' }}
                     />
-                    <span style={{ wordBreak: 'break-all' }}>
+                    <div className={theme.classes.sidebarTreeItemLabelInner}>
                         {data?.name ? data?.name : `...${cluster.substr(-48)}`}
-                    </span>
-                </span>
+                    </div>
+                </>
             }
             onClick={(ev) => {
                 ev.preventDefault()
@@ -87,37 +86,48 @@ const ActiveCluster = React.memo(function ActiveCluster({
         />
     )
 })
-type SideBarItemsProps = {
-    authinfo?: Interfaces.AuthInfoInterface
-    goTo: (node: any) => void
-    activeCluster?: string | null
-}
+type SideBarItemsProps =
+    | {
+          tokens: string[]
+          goTo: (node: any) => void
+          activeCluster?: string | null
+          title?: string
+          deleted?: boolean
+      }
+    | {
+          tokens?: string[]
+          goTo: (node: any) => void
+          activeCluster?: null | undefined
+          title?: string
+          deleted?: boolean
+      }
 
 export default React.memo(function Clusters({
-    authinfo,
+    tokens,
     goTo,
     activeCluster,
+    title,
+    deleted,
     ...props
 }: SideBarItemsProps & TreeItemProps) {
     const theme = useTheme()
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { mainCtx } = React.useContext(Contexts.Main)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
-    const tokens = React.useMemo(() => {
-        return [...(authinfo?.tokens || []), ...(mainCtx.tokens || [])]
-    }, [authinfo, mainCtx.tokens])
-    let [loadQuery, { data, fetchMore, error, loading, refetch }] =
-        useLazyQuery(clusterFeedQuery, {
-            variables: {
-                authorization: tokens,
-                deleted: searchCtx.deleted,
-                include: searchCtx.include,
-                exclude: searchCtx.cluster
-                    ? [`id=${activeCluster}`, ...searchCtx.exclude]
-                    : searchCtx.exclude,
-            },
-        })
+    let [
+        loadQuery,
+        { data, fetchMore, error, loading, refetch, called, variables },
+    ] = useLazyQuery(clusterFeedQuery, {
+        variables: {
+            authorization: tokens,
+            public: !tokens,
+            deleted: searchCtx.deleted,
+            include: searchCtx.include,
+            exclude: activeCluster
+                ? [`id=${activeCluster}`, ...searchCtx.exclude]
+                : searchCtx.exclude,
+        },
+    })
     React.useEffect(() => {
         expanded.includes(props.nodeId) && loadQuery()
     }, [expanded.includes(props.nodeId)])
@@ -130,11 +140,12 @@ export default React.memo(function Clusters({
                 },
             })
     }
-    const clustersHalfFinished: JSX.Element[] = React.useMemo(() => {
+    const clustersHalfFinished: (JSX.Element | null)[] = React.useMemo(() => {
         if (!data) {
             return [null]
         }
-        return data.clusters.clusters.edges.map(({ node }: any) => {
+        const ret: JSX.Element[] = []
+        for (const { node } of data.clusters.clusters.edges) {
             if (node.id !== activeCluster) {
                 const { name, note } = extractNameNote(node.description)
                 const nodeId = (
@@ -144,26 +155,31 @@ export default React.memo(function Clusters({
                 ).some((val) => val.type == 'delete' || val.type == 'manage')
                     ? `${activeUrl}-clusters::${node.id}`
                     : `${activeUrl}-clusters.${node.id}`
-                return (
+                ret.push(
                     <SideBarContents
                         goTo={goTo}
                         cluster={node.id}
+                        title={note || undefined}
+                        deleted={node.deleted}
                         label={
-                            <span
-                                title={note || undefined}
-                                style={{
-                                    whiteSpace: 'nowrap',
-                                    color: node.deleted ? 'red' : undefined,
-                                }}
-                            >
+                            <>
                                 <GroupWorkIcon
                                     fontSize="small"
-                                    style={{ marginRight: '4px' }}
+                                    style={{
+                                        marginRight: '4px',
+                                    }}
                                 />
-                                <span style={{ wordBreak: 'break-all' }}>
+                                <div
+                                    className={
+                                        theme.classes.sidebarTreeItemLabelInner
+                                    }
+                                    style={{
+                                        color: node.deleted ? 'red' : undefined,
+                                    }}
+                                >
                                     {name ? name : `...${node.id.substr(-48)}`}
-                                </span>
-                            </span>
+                                </div>
+                            </>
                         }
                         nodeId={nodeId}
                         key={nodeId}
@@ -175,8 +191,11 @@ export default React.memo(function Clusters({
                         }}
                     />
                 )
+            } else {
+                console.warn('current node in result list', variables)
             }
-        })
+        }
+        return ret
     }, [data])
     /*
                 disabled={
@@ -186,19 +205,6 @@ export default React.memo(function Clusters({
                 }*/
     const clustersFinished = [...clustersHalfFinished]
 
-    if (activeCluster) {
-        clustersFinished.unshift(
-            <ActiveCluster
-                key={`${activeUrl}-clusters::${activeCluster}`}
-                nodeId={`${activeUrl}-clusters::${activeCluster}`}
-                tokens={tokens}
-                goTo={goTo}
-                onClick={(ev) => ev.preventDefault()}
-                cluster={activeCluster}
-                className={theme.classes.treeItemMarked}
-            />
-        )
-    }
     if (
         !loading &&
         !error &&
@@ -220,23 +226,47 @@ export default React.memo(function Clusters({
     }
 
     return (
-        <TreeItem
-            {...props}
-            endIcon={
-                loading ? null : (
-                    <span
-                        onClick={(ev) => {
-                            ev.preventDefault()
-                            ev.stopPropagation()
-                            refetch && refetch()
+        <>
+            {activeCluster ? (
+                <ActiveCluster
+                    nodeId={`${activeUrl}-clusters::${activeCluster}`}
+                    tokens={tokens as string[]}
+                    goTo={goTo}
+                    onClick={(ev) => ev.preventDefault()}
+                    cluster={activeCluster}
+                    className={theme.classes.treeItemMarked}
+                />
+            ) : null}
+            <TreeItem
+                {...props}
+                label={
+                    <div
+                        className={theme.classes.sidebarTreeItemLabel}
+                        title={title}
+                        style={{
+                            color: deleted ? 'red' : undefined,
                         }}
                     >
-                        <ReplayIcon />
-                    </span>
-                )
-            }
-        >
-            {...clustersFinished}
-        </TreeItem>
+                        {props.label}
+                        {loading || !called ? null : (
+                            <span
+                                onClick={(ev) => {
+                                    ev.preventDefault()
+                                    ev.stopPropagation()
+                                    refetch && refetch()
+                                }}
+                            >
+                                <ReplayIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            </span>
+                        )}
+                    </div>
+                }
+            >
+                {...clustersFinished}
+            </TreeItem>
+        </>
     )
 })

@@ -67,6 +67,18 @@ export function makeSecretgraphTheme(theme: Theme) {
         treeItemMarked: {
             bgcolor: 'green',
         },
+        sidebarTreeItemLabel: {
+            display: 'flex' as const,
+            flexWrap: 'nowrap' as const,
+            flexDirection: 'row' as const,
+            maxWidth: `calc(${drawerWidth} - 20px)`,
+            alignItems: 'center',
+        },
+        sidebarTreeItemLabelInner: {
+            wordBreak: 'break-all' as const,
+            maxWidth: '200px',
+            flexGrow: 1,
+        },
         sidebarButton: {},
         userButton: {},
         hidden: {
@@ -176,7 +188,7 @@ const internTheme = responsiveFontSizes(
                     variant: 'outlined',
                 },
             },
-        } as any,
+        },
         classes: {},
         contentStates: new Map([
             ['draft', { label: gettext('Draft') }],
