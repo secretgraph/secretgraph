@@ -1861,6 +1861,20 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "ids",
+                  "type": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "ID",
+                      "ofType": null
+                    }
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "includeTags",
                   "type": {
                     "kind": "LIST",

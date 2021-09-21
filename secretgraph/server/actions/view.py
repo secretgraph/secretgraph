@@ -12,22 +12,20 @@ logger = logging.getLogger(__name__)
 
 def fetch_clusters(
     query,
-    id=None,
+    ids=None,
+    limit_ids=1,
     includeTags=None,
     excludeTags=None,
     contentHashes=None,
     minUpdated=None,
     maxUpdated=None,
 ) -> QuerySet:
-    if id:
-        query = fetch_by_id(query, id)
+    if ids:
+        query = fetch_by_id(query, ids, limit_ids=limit_ids)
 
     if includeTags or excludeTags or contentHashes:
         incl_filters = Q()
         for i in includeTags or []:
-            # special handle id tag
-            if i.startswith("id="):
-                incl_filters |= Q(id=i[3:])
             incl_filters |= Q(contents__tags__tag__startswith=i)
 
         hash_filters = Q()
@@ -36,10 +34,6 @@ def fetch_clusters(
 
         excl_filters = Q()
         for i in excludeTags or []:
-            # special handle id tag
-            if i.startswith("id="):
-                excl_filters |= Q(id=i[3:])
-
             excl_filters |= Q(contents__tags__tag__startswith=i)
 
         query = query.filter(~excl_filters & incl_filters & hash_filters)

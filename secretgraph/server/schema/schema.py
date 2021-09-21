@@ -4,44 +4,40 @@ from django.utils.translation import gettext_lazy as _
 from .arguments import AuthList
 from ..utils.auth import initializeCachedResult
 from .definitions import (
-    ClusterConnectionField, ContentConnectionField, SecretgraphConfig
+    ClusterConnectionField,
+    ContentConnectionField,
+    SecretgraphConfig,
 )
 from .mutations import (
-    ClusterMutation, ContentMutation, DeleteContentOrClusterMutation,
-    MetadataUpdateMutation, PushContentMutation, RegenerateFlexidMutation,
-    ResetDeletionContentOrClusterMutation
+    ClusterMutation,
+    ContentMutation,
+    DeleteContentOrClusterMutation,
+    MetadataUpdateMutation,
+    PushContentMutation,
+    RegenerateFlexidMutation,
+    ResetDeletionContentOrClusterMutation,
 )
 
 
 class SecretgraphObject(ObjectType):
     node = relay.Node.Field()
     config = Field(SecretgraphConfig)
-    clusters = ClusterConnectionField()
-    contents = ContentConnectionField(
-        clusters=List(
-            ID, required=False
-        )
-    )
+    clusters = ClusterConnectionField(ids=List(ID, required=False))
+    contents = ContentConnectionField(clusters=List(ID, required=False))
 
     def resolve_config(self, info, **kwargs):
         return SecretgraphConfig()
 
 
-class Query():
-    secretgraph = Field(
-        SecretgraphObject, authorization=AuthList()
-    )
+class Query:
+    secretgraph = Field(SecretgraphObject, authorization=AuthList())
 
-    def resolve_secretgraph(
-        self, info, authorization=None, **kwargs
-    ):
-        initializeCachedResult(
-            info.context, authset=authorization
-        )
+    def resolve_secretgraph(self, info, authorization=None, **kwargs):
+        initializeCachedResult(info.context, authset=authorization)
         return SecretgraphObject()
 
 
-class Mutation():
+class Mutation:
     updateOrCreateContent = ContentMutation.Field(
         description=_(
             "Supports creation or update of:\n"
@@ -58,5 +54,6 @@ class Mutation():
     pushContent = PushContentMutation.Field()
     regenerateFlexid = RegenerateFlexidMutation.Field()
     deleteContentOrCluster = DeleteContentOrClusterMutation.Field()
-    resetDeletionContentOrCluster = \
+    resetDeletionContentOrCluster = (
         ResetDeletionContentOrClusterMutation.Field()
+    )

@@ -299,7 +299,8 @@ export async function unserializeToCryptoKey(
                         params,
                         Constants.mapEncryptionAlgorithms[
                             `${params.name}public`
-                        ].usages
+                        ].usages,
+                        _data
                     )
                     throw exception
                 }

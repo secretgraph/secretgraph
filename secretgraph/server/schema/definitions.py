@@ -588,6 +588,9 @@ class ClusterConnectionField(DjangoConnectionField):
             "contentHashes",
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
+        kwargs.setdefault(
+            "ids", graphene.List(graphene.NonNull(graphene.ID), required=False)
+        )
         kwargs.setdefault("user", graphene.ID(required=False))
         kwargs.setdefault("public", graphene.Boolean(required=False))
         kwargs.setdefault("featured", graphene.Boolean(required=False))
@@ -602,6 +605,7 @@ class ClusterConnectionField(DjangoConnectionField):
         featured = args.get("featured", False)
         user = args.get("user")
         deleted = args.get("deleted")
+        ids = args.get("ids")
         if featured and public is None:
             public = True
         if user:
@@ -634,6 +638,8 @@ class ClusterConnectionField(DjangoConnectionField):
             initializeCachedResult(
                 info.context, authset=args.get("authorization")
             )["Cluster"]["objects"],
+            ids=ids,
+            limit_ids=settings.Graphene.RELAY_CONNECTION_MAX_LIMIT,
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
             minUpdated=args.get("minUpdated"),

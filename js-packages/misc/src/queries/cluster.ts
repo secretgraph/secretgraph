@@ -106,6 +106,8 @@ export const getClusterQuery = gql`
                     group
                     link
                     description
+                    public
+                    featured
                     updateId
                     availableActions {
                         keyHash
@@ -122,6 +124,8 @@ export const getClusterQuery = gql`
 export const createClusterMutation = gql`
     mutation clusterCreateMutation(
         $description: String
+        $public: Boolean
+        $featured: Boolean
         $actions: [ActionInput!]
         $publicKey: Upload!
         $privateKey: Upload
@@ -134,6 +138,8 @@ export const createClusterMutation = gql`
                 cluster: {
                     description: $description
                     actions: $actions
+                    featured: $featured
+                    public: $public
                     key: {
                         publicKey: $publicKey
                         publicTags: ["state=public"]
@@ -150,6 +156,8 @@ export const createClusterMutation = gql`
                 group
                 link
                 description
+                public
+                featured
                 updateId
                 availableActions {
                     keyHash
@@ -168,6 +176,8 @@ export const updateClusterMutation = gql`
         $id: ID!
         $updateId: ID!
         $description: String
+        $public: Boolean
+        $featured: Boolean
         $actions: [ActionInput!]
         $authorization: [String!]
     ) {
@@ -175,6 +185,8 @@ export const updateClusterMutation = gql`
             input: {
                 id: $id
                 updateId: $updateId
+                featured: $featured
+                public: $public
                 cluster: { description: $description, actions: $actions }
                 authorization: $authorization
             }
@@ -185,6 +197,8 @@ export const updateClusterMutation = gql`
                 link
                 description
                 updateId
+                public
+                featured
                 availableActions {
                     keyHash
                     type

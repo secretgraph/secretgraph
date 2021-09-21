@@ -123,9 +123,7 @@ export default React.memo(function Clusters({
             public: !tokens,
             deleted: searchCtx.deleted,
             include: searchCtx.include,
-            exclude: activeCluster
-                ? [`id=${activeCluster}`, ...searchCtx.exclude]
-                : searchCtx.exclude,
+            exclude: searchCtx.exclude,
         },
     })
     React.useEffect(() => {
@@ -146,6 +144,7 @@ export default React.memo(function Clusters({
         }
         const ret: JSX.Element[] = []
         for (const { node } of data.clusters.clusters.edges) {
+            // activeCluster cannot be filtered, so do it manually
             if (node.id !== activeCluster) {
                 const { name, note } = extractNameNote(node.description)
                 const nodeId = (

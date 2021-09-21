@@ -113,11 +113,17 @@ export default React.memo(function Contents({
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     const _usePublic = usePublic === undefined ? null : usePublic
-    const incl = searchCtx.include.concat(injectInclude)
-    const excl = searchCtx.exclude.concat(injectExclude)
-    if (authinfo) {
-        incl.push(...authinfo.hashes.map((value) => `hash=${value}`))
-    }
+    const incl = React.useMemo(() => {
+        const ret = searchCtx.include.concat(injectInclude)
+        if (authinfo) {
+            ret.push(...authinfo.hashes.map((value) => `hash=${value}`))
+        }
+        return ret
+    }, [searchCtx.include, injectInclude, authinfo?.hashes])
+    const excl = React.useMemo(
+        () => searchCtx.exclude.concat(injectExclude),
+        [searchCtx.exclude, injectExclude]
+    )
     //console.log(incl, excl)
     const [loadQuery, { data, error, fetchMore, loading, refetch, called }] =
         useLazyQuery(contentFeedQuery, {

@@ -17,12 +17,6 @@
 
 # Special
 
-## tags
-
-### id tag
-
-exclude, include id= for cluster also matches cluster id not only content id (clusters call)
-
 ## Permissions
 
 -   manage: can change and create clusters, full access like admin
@@ -56,6 +50,7 @@ key refs are assigned to privatekey, the rest to the public key
 -   key: special, required tag for PrivateKey. Contains encrypted shared secret
 -   type: Content type
 -   state: Content state, one of public, internal, draft
+-   id: fully qualified (including type information (Content))
 
 ## Actions
 
