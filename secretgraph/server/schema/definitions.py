@@ -458,6 +458,7 @@ class ContentConnectionField(DjangoConnectionField):
         clusters = args.get("clusters")
         deleted = args.get("deleted")
         if clusters:
+            # allow 10 clusters to be specified
             queryset = fetch_by_id(
                 queryset,
                 clusters,
@@ -516,7 +517,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
             initializeCachedResult(info.context, authset=authorization)[
                 "Cluster"
             ]["objects"],
-            str(id),
+            ids=str(id),
         ).first()
 
     def resolve_contents(self, info, **kwargs):
@@ -625,6 +626,7 @@ class ClusterConnectionField(DjangoConnectionField):
         if public in {True, False}:
             queryset = queryset.filter(public=public)
 
+        # allow 10 clusters to be specified
         return fetch_clusters(
             # DECIDE: still required?
             # or better explicit way instead of doing so in cached query?
@@ -639,7 +641,7 @@ class ClusterConnectionField(DjangoConnectionField):
                 info.context, authset=args.get("authorization")
             )["Cluster"]["objects"],
             ids=ids,
-            limit_ids=settings.Graphene.RELAY_CONNECTION_MAX_LIMIT,
+            limit_ids=10,
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
             minUpdated=args.get("minUpdated"),
