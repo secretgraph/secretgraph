@@ -120,7 +120,7 @@ export default React.memo(function Clusters({
     ] = useLazyQuery(clusterFeedQuery, {
         variables: {
             authorization: tokens,
-            public: !tokens,
+            public: !tokens || !tokens.length,
             deleted: searchCtx.deleted,
             include: searchCtx.include,
             exclude: searchCtx.exclude,
@@ -190,8 +190,6 @@ export default React.memo(function Clusters({
                         }}
                     />
                 )
-            } else {
-                console.warn('current node in result list', variables)
             }
         }
         return ret

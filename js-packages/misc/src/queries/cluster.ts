@@ -185,9 +185,12 @@ export const updateClusterMutation = gql`
             input: {
                 id: $id
                 updateId: $updateId
-                featured: $featured
-                public: $public
-                cluster: { description: $description, actions: $actions }
+                cluster: {
+                    description: $description
+                    actions: $actions
+                    featured: $featured
+                    public: $public
+                }
                 authorization: $authorization
             }
         ) {

@@ -497,7 +497,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Cluster
         name = "Cluster"
         interfaces = (relay.Node,)
-        fields = ["group"]
+        fields = ["group", "public", "featured"]
 
     contents = ContentConnectionField(required=True)
     deleted = graphene.DateTime(required=False)

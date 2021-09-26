@@ -20,6 +20,8 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
 
     if "public" in objdata:
         cluster.public = bool(objdata["public"])
+    if "featured" in objdata:
+        cluster.featured = bool(objdata["featured"])
 
     if "description" in objdata:
         cluster.description = objdata["description"] or ""

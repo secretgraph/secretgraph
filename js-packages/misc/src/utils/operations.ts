@@ -511,6 +511,8 @@ export async function createCluster(options: {
     actions: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
     description: string
+    public?: boolean
+    featured?: boolean
     publicKey: CryptoKey
     privateKey?: CryptoKey
     privateKeyKey?: Uint8Array
@@ -555,6 +557,8 @@ export async function createCluster(options: {
             nonce: nonce ? await serializeToBase64(nonce) : null,
             actions: options.actions,
             authorization: options.authorization,
+            public: options.public,
+            featured: options.featured,
         },
     })
 }
@@ -564,6 +568,8 @@ export async function updateCluster(options: {
     client: ApolloClient<any>
     updateId: string
     actions?: Interfaces.ActionInterface[]
+    public?: boolean
+    featured?: boolean
     description?: string
     authorization: string[]
 }): Promise<FetchResult<any>> {
@@ -577,15 +583,24 @@ export async function updateCluster(options: {
             description: options.description,
             actions: options.actions,
             authorization: options.authorization,
+            public: options.public,
+            featured: options.featured,
         },
     })
 }
 
-export async function initializeCluster(
-    client: ApolloClient<any>,
-    config: Interfaces.ConfigInterface,
+export async function initializeCluster({
+    hashAlgorithm,
+    client,
+    config,
+    ...options
+}: {
+    client: ApolloClient<any>
+    config: Interfaces.ConfigInterface
+    public?: boolean
+    featured?: boolean
     hashAlgorithm: string
-) {
+}) {
     const key = crypto.getRandomValues(new Uint8Array(32))
     const { publicKey, privateKey } = await crypto.subtle.generateKey(
         {
@@ -617,6 +632,7 @@ export async function initializeCluster(
         publicKey,
         privateKey,
         privateKeyKey: key,
+        ...options,
     })
     const clusterResult = clusterResponse.data.updateOrCreateCluster
     const [digestActionKey, digestCertificate] = await Promise.all([

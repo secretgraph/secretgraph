@@ -52,6 +52,7 @@ import * as React from 'react'
 
 import { ActionEntry } from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
+import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
 import * as Contexts from '../contexts'
 
@@ -82,6 +83,8 @@ async function extractCombinedInfo({
         mapper,
         name: name || '',
         note: note || '',
+        public: node.public,
+        featured: node.featured,
         url,
         hashAlgorithm: hashAlgorithms[0],
     }
@@ -91,6 +94,8 @@ interface ClusterInternProps {
     readonly description?: string
     readonly name: string
     readonly note: string
+    readonly featured?: boolean
+    readonly public?: boolean
     url: string
     loading?: boolean
     disabled?: boolean
@@ -182,6 +187,8 @@ const ClusterIntern = ({
                 actions,
                 name: props.name || '',
                 note: props.note || '',
+                featured: !!props.featured,
+                public: !!props.public,
             }}
             onSubmit={async (
                 { actions: actionsNew, name, note, ...values },
@@ -208,6 +215,8 @@ const ClusterIntern = ({
                         actions: finishedActions,
                         description,
                         authorization: mainCtx.tokens,
+                        public: values.public,
+                        featured: values.featured,
                     })
                 } else {
                     const key = crypto.getRandomValues(new Uint8Array(32))
@@ -241,6 +250,8 @@ const ClusterIntern = ({
                         publicKey,
                         privateKey,
                         privateKeyKey: key,
+                        public: values.public,
+                        featured: values.featured,
                     })
                 }
                 if (clusterResponse.errors || !clusterResponse.data) {
@@ -328,6 +339,26 @@ const ClusterIntern = ({
                                     disabled={disabled || loading}
                                 />
                             </Grid>
+
+                            <Grid item xs={6}>
+                                <Field
+                                    component={FormikCheckboxWithLabel}
+                                    name="public"
+                                    type="checkbox"
+                                    Label={{ label: 'Public' }}
+                                    disabled={disabled || loading}
+                                />
+                            </Grid>
+
+                            <Grid item xs={6}>
+                                <Field
+                                    component={FormikCheckboxWithLabel}
+                                    name="featured"
+                                    type="checkbox"
+                                    Label={{ label: 'Featured' }}
+                                    disabled={disabled || loading}
+                                />
+                            </Grid>
                             <Grid item xs={12}>
                                 <List>
                                     <ListSubheader disableSticky>
@@ -412,13 +443,12 @@ const ClusterIntern = ({
 const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] =
-        React.useState<
-            | (UnpackPromise<ReturnType<typeof extractCombinedInfo>> & {
-                  key: string
-              })
-            | null
-        >(null)
+    const [data, setData] = React.useState<
+        | (UnpackPromise<ReturnType<typeof extractCombinedInfo>> & {
+              key: string
+          })
+        | null
+    >(null)
     const {
         data: dataUnfinished,
         refetch,
@@ -489,11 +519,9 @@ const ViewCluster = () => {
 const AddCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
-    const [data, setData] =
-        React.useState<
-            | (Omit<ClusterInternProps, 'disabled' | 'url'> & { key: string })
-            | null
-        >(null)
+    const [data, setData] = React.useState<
+        (Omit<ClusterInternProps, 'disabled' | 'url'> & { key: string }) | null
+    >(null)
 
     let { data: dataUnfinished, loading } = useQuery(serverConfigQuery, {
         pollInterval: 60000,
@@ -526,6 +554,8 @@ const AddCluster = () => {
             setData({
                 name: '',
                 note: '',
+                featured: false,
+                public: false,
                 mapper: {
                     [hashKey]: {
                         type: 'action',

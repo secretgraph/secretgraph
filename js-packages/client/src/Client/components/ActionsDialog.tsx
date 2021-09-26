@@ -190,32 +190,45 @@ function ActionEntryIntern({
                         />
                     </Grid>
                     <Grid item xs={12}>
-                        <FastField
-                            name={!submitFn ? `actions.${index}.data` : 'data'}
-                            component={SimpleSelect}
-                            fullWidth
-                            freeSolo
-                            options={tokens}
-                            renderOption={(
-                                props: React.HTMLAttributes<HTMLLIElement>,
-                                val: string
-                            ) => {
-                                if (val == 'new') {
-                                    return (
-                                        <li {...props}>
-                                            <Typography
-                                                style={{ color: 'green' }}
-                                            >
-                                                {val}
-                                            </Typography>
-                                        </li>
-                                    )
+                        {action?.type == 'certificate' ? (
+                            <>
+                                <Typography variant="h4">
+                                    Certificate:
+                                </Typography>
+                                <div style={{ wordBreak: 'break-all' }}>
+                                    {action.data}
+                                </div>
+                            </>
+                        ) : (
+                            <FastField
+                                name={
+                                    !submitFn ? `actions.${index}.data` : 'data'
                                 }
-                                return <li {...props}>{val}</li>
-                            }}
-                            disabled={disabled || locked}
-                            label="Token"
-                        />
+                                component={SimpleSelect}
+                                fullWidth
+                                freeSolo
+                                options={tokens}
+                                renderOption={(
+                                    props: React.HTMLAttributes<HTMLLIElement>,
+                                    val: string
+                                ) => {
+                                    if (val == 'new') {
+                                        return (
+                                            <li {...props}>
+                                                <Typography
+                                                    style={{ color: 'green' }}
+                                                >
+                                                    {val}
+                                                </Typography>
+                                            </li>
+                                        )
+                                    }
+                                    return <li {...props}>{val}</li>
+                                }}
+                                disabled={disabled || locked}
+                                label="Token"
+                            />
+                        )}
                     </Grid>
                     <Grid item xs={12}>
                         <FastField
@@ -381,7 +394,9 @@ export function ActionEntry({
                     index={index}
                     disabled={disabled}
                     tokens={tokens}
-                    deleteFn={deleteFn}
+                    deleteFn={
+                        action?.type != 'certificate' ? deleteFn : undefined
+                    }
                 />
             </ListItem>
         )
