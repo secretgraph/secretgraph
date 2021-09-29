@@ -15,7 +15,7 @@
     "ts-graphql-plugin": "*",
     "ts-loader": "*",
     "tsconfig-paths-webpack-plugin": "*",
-    "typescript": "<4.4.0",
+    "typescript": "*",
     "webpack": ">=5.0",
     "webpack-cli": "*",
     "webpack-dev-server": ">=4.0.0-beta.3",
