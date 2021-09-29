@@ -3,12 +3,14 @@ import Button from '@material-ui/core/Button'
 import Checkbox from '@material-ui/core/Checkbox'
 import FormControlLabel from '@material-ui/core/FormControlLabel'
 import Grid from '@material-ui/core/Grid'
+import IconButton from '@material-ui/core/IconButton'
 import LinearProgress from '@material-ui/core/LinearProgress'
 import { useTheme } from '@material-ui/core/styles'
 import TextField, { TextFieldProps } from '@material-ui/core/TextField'
 import Tooltip from '@material-ui/core/Tooltip'
 import Typography from '@material-ui/core/Typography'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
+import Security from '@material-ui/icons/Security'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { contentRetrievalQuery } from '@secretgraph/misc/queries/content'
@@ -446,11 +448,12 @@ const FileIntern = ({
                 return (
                     <Form>
                         <FieldArray name="actions">
-                            {({ remove, replace, form }) => {
+                            {({ remove, replace, push, form }) => {
                                 return (
                                     <ActionsDialog
                                         remove={remove}
                                         replace={replace}
+                                        push={push}
                                         form={form}
                                         disabled={isSubmitting}
                                         handleClose={() => setOpen(false)}
@@ -462,7 +465,7 @@ const FileIntern = ({
 
                         <Grid container spacing={2}>
                             {preview}
-                            <Grid item xs={12} sm={10}>
+                            <Grid item xs={12} sm={9}>
                                 <FastField
                                     component={FormikTextField}
                                     name="name"
@@ -477,7 +480,7 @@ const FileIntern = ({
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={2}>
+                            <Grid item xs={11} sm={2}>
                                 <Tooltip title="Encrypt name">
                                     <span>
                                         <FastField
@@ -489,6 +492,17 @@ const FileIntern = ({
                                             disabled={isSubmitting}
                                             type="checkbox"
                                         />
+                                    </span>
+                                </Tooltip>
+                            </Grid>
+                            <Grid item xs={1}>
+                                <Tooltip title="Actions">
+                                    <span>
+                                        <IconButton
+                                            onClick={() => setOpen(!open)}
+                                        >
+                                            <Security />
+                                        </IconButton>
                                     </span>
                                 </Tooltip>
                             </Grid>
@@ -852,15 +866,14 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const client = useApolloClient()
     const { searchCtx } = React.useContext(Contexts.Search)
     const [cluster, setCluster] = React.useState<string | null>(null)
-    const [data, setData] =
-        React.useState<{
-            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-            hashAlgorithms: string[]
-            nodeData: any
-            tags: { [name: string]: string[] }
-            data: Blob | null
-            key: string | number
-        } | null>(null)
+    const [data, setData] = React.useState<{
+        mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+        hashAlgorithms: string[]
+        nodeData: any
+        tags: { [name: string]: string[] }
+        data: Blob | null
+        key: string | number
+    } | null>(null)
 
     const authorization = React.useMemo(() => {
         const authinfo = extractAuthInfo({
@@ -983,14 +996,12 @@ const AddFile = () => {
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [open, setOpen] = React.useState(false)
-    const [data, setData] =
-        React.useState<{
-            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-            hashAlgorithms: string[]
-            data?: Blob | null
-            key: string | number
-        } | null>(null)
+    const [data, setData] = React.useState<{
+        mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+        hashAlgorithms: string[]
+        data?: Blob | null
+        key: string | number
+    } | null>(null)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster

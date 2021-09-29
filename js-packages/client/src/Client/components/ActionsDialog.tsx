@@ -28,12 +28,7 @@ import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
-import {
-    serializeToBase64,
-    unserializeToArrayBuffer,
-} from '@secretgraph/misc/utils/encryption'
 import { deepEqual } from '@secretgraph/misc/utils/misc'
-import * as SetOps from '@secretgraph/misc/utils/set'
 import {
     FastField,
     Field,
@@ -46,7 +41,6 @@ import {
     useFormikContext,
 } from 'formik'
 import * as React from 'react'
-import { useAsync } from 'react-async'
 
 import FormikCheckBox from './formik/FormikCheckbox'
 import FormikTextField from './formik/FormikTextField'
@@ -99,7 +93,7 @@ const ActionFields = React.memo(function ActionFields({
             return (
                 <Grid item xs={12}>
                     <Typography color="error">
-                        Unsupported Actiontype
+                        Unsupported Actiontype: {`${action}`}
                     </Typography>
                 </Grid>
             )
@@ -241,7 +235,7 @@ function ActionEntryIntern({
                             variant="outlined"
                         />
                     </Grid>
-                    {!locked && action?.type != 'certificate' && (
+                    {!locked && (
                         <Grid item xs={12}>
                             <Grid container spacing={2}>
                                 <ActionFields
@@ -404,7 +398,7 @@ export function ActionEntry({
 }
 
 interface ActionsDialogProps
-    extends Pick<FieldArrayRenderProps, 'remove' | 'replace'>,
+    extends Pick<FieldArrayRenderProps, 'remove' | 'replace' | 'push'>,
         Omit<DialogProps, 'children' | 'onClose'> {
     disabled?: boolean
     handleClose: () => void
@@ -419,6 +413,7 @@ export default function ActionsDialog({
     form,
     remove,
     replace,
+    push,
     ...dialogProps
 }: ActionsDialogProps) {
     const tokens = React.useMemo(() => {
@@ -451,7 +446,11 @@ export default function ActionsDialog({
                             />
                         )
                     })}
-                    <ActionEntry tokens={tokens} />
+                    <ActionEntry
+                        disabled={disabled}
+                        tokens={tokens}
+                        addFn={push}
+                    />
                 </List>
             </DialogContent>
             <DialogActions>
@@ -474,7 +473,7 @@ export default function ActionsDialog({
                 >
                     Accept all updates of actions
                 </Button>
-                <Button
+                {/**<Button
                     variant="contained"
                     disabled={
                         disabled ||
@@ -495,8 +494,8 @@ export default function ActionsDialog({
                         }
                     }}
                 >
-                    Save (only Tokens)
-                </Button>
+                    Save (only Actions)
+                </Button>**/}
                 <Button
                     variant="contained"
                     disabled={disabled}
@@ -511,7 +510,7 @@ export default function ActionsDialog({
                     Reset Tokens
                 </Button>
                 <Button disabled={disabled} onClick={(ev) => handleClose()}>
-                    Close
+                    Back
                 </Button>
             </DialogActions>
         </Dialog>

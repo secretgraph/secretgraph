@@ -602,7 +602,7 @@ export async function initializeCluster({
     hashAlgorithm: string
 }) {
     const key = crypto.getRandomValues(new Uint8Array(32))
-    const { publicKey, privateKey } = await crypto.subtle.generateKey(
+    const { publicKey, privateKey } = (await crypto.subtle.generateKey(
         {
             name: 'RSA-OAEP',
             //modulusLength: 8192,
@@ -612,7 +612,7 @@ export async function initializeCluster({
         },
         true,
         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-    )
+    )) as Required<CryptoKeyPair>
     const digestCertificatePromise = crypto.subtle
         .exportKey('spki' as const, publicKey)
         .then((keydata) =>
