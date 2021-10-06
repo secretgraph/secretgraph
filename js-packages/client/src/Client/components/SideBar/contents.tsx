@@ -229,7 +229,7 @@ export default React.memo(function Contents({
                             </div>
                         </div>
                     }
-                    nodeId={nodeId}
+                    nodeId={`${props.nodeId}-${nodeId}`}
                     key={nodeId}
                     onClick={(ev) => ev.preventDefault()}
                     onDoubleClick={(ev) => {

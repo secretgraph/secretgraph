@@ -25,12 +25,14 @@ import {
 import {
     extractAuthInfo,
     extractPrivKeys,
+    saveConfig,
 } from '@secretgraph/misc/utils/config'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/encryption'
 import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
 import {
     createContent,
     decryptContentObject,
+    updateConfigRemoteReducer,
     updateContent,
 } from '@secretgraph/misc/utils/operations'
 import * as SetOps from '@secretgraph/misc/utils/set'
@@ -207,12 +209,14 @@ const FileIntern = ({
     hashAlgorithms,
     tokens,
 }: FileInternProps) => {
+    const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { config } = React.useContext(Contexts.InitializedConfig)
+    const { config, updateConfig } = React.useContext(
+        Contexts.InitializedConfig
+    )
     const [open, setOpen] = React.useState(false)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
-    const client = useApolloClient()
     let name: string = mainCtx.item || ''
     const actions = React.useMemo(() => {
         const actions: (ActionInputEntry | CertificateInputEntry)[] = []
@@ -267,6 +271,9 @@ const FileIntern = ({
         Constants.contentStates.has(tags.state[0])
             ? tags.state[0]
             : 'internal'
+    if (state == 'public') {
+        encryptName = false
+    }
     return (
         <Formik
             initialValues={{
@@ -336,7 +343,7 @@ const FileIntern = ({
                 } else {
                     throw Error('no input found')
                 }
-                const pubkeysResult = await client.query({
+                const pubkeysResult = await itemClient.query({
                     fetchPolicy: 'network-only',
                     query: getContentConfigurationQuery,
                     variables: {
@@ -358,11 +365,12 @@ const FileIntern = ({
                         hash: hashAlgorithm,
                     },
                 })
+
                 try {
-                    const result = await createContent({
-                        client,
+                    const options = {
+                        client: itemClient,
                         config,
-                        cluster: values.cluster as string,
+                        cluster: values.cluster,
                         value,
                         tags: [
                             values.encryptName
@@ -384,14 +392,51 @@ const FileIntern = ({
                         privkeys: await Promise.all(Object.values(privkeys)),
                         pubkeys: Object.values(pubkeys),
                         hashAlgorithm,
+                        actions: finishedActions,
                         authorization: tokens,
+                    }
+                    const result = await (nodeData
+                        ? updateContent({
+                              ...options,
+                              id: nodeData.id,
+                              updateId: nodeData.updateId,
+                          })
+                        : createContent(options))
+                    /**
+                     * TODO: only hashes which are not on cluster
+                     * configUpdate.hosts[url] = {
+                        contents: {
+                            [nodeData.id]: {
+                                hashes: {
+                                    ...hashes,
+                                },
+                                cluster: values.cluster,
+                            },
+                        },
+                        clusters: {},
+                    }*/
+
+                    const newConfig = await updateConfigRemoteReducer(config, {
+                        update: configUpdate,
+                        client: baseClient,
                     })
+                    const nTokens = extractAuthInfo({
+                        config: newConfig as Interfaces.ConfigInterface,
+                        url,
+                        clusters: new Set([
+                            result.data.updateOrCreateCluster.cluster.id,
+                        ]),
+                        require: new Set(['update', 'manage']),
+                    }).tokens
+                    saveConfig(newConfig as Interfaces.ConfigInterface)
+                    updateConfig(newConfig, true)
                     updateMainCtx({
                         item: result.data.updateOrCreateContent.content.id,
                         updateId:
                             result.data.updateOrCreateContent.content.updateId,
                         url,
                         action: 'update',
+                        tokens: [...mainCtx.tokens, ...nTokens],
                     })
                 } catch (exc) {
                     console.error(exc)
@@ -412,6 +457,9 @@ const FileIntern = ({
                 React.useEffect(() => {
                     values.cluster && setCluster(values.cluster)
                 }, [values.cluster])
+                React.useEffect(() => {
+                    state == 'public' && setFieldValue('encryptName', false)
+                }, [state])
                 let preview = null
                 if (values.plainInput) {
                     preview = (
@@ -489,7 +537,10 @@ const FileIntern = ({
                                             Label={{
                                                 label: 'Encrypt',
                                             }}
-                                            disabled={isSubmitting}
+                                            disabled={
+                                                isSubmitting ||
+                                                state == 'public'
+                                            }
                                             type="checkbox"
                                         />
                                     </span>
@@ -950,6 +1001,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 hashAlgorithms:
                     dataUnfinished.secretgraph.config.hashAlgorithms,
             })
+
             const obj = await decryptContentObject({
                 config,
                 nodeData: dataUnfinished.secretgraph.node,

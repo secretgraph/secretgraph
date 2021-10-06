@@ -120,6 +120,9 @@ export async function createContent({
               key,
               nonce,
               data: value,
+          }).catch((reason) => {
+              console.error('encrypting content failed', key, nonce, reason)
+              return Promise.reject(reason)
           })
     const halgo = mapHashNames[options.hashAlgorithm].operationName
 
@@ -735,7 +738,11 @@ export async function decryptContentObject({
         ).then((result) => result.arrayBuffer())
     }
     // skip decryption as always unencrypted
-    if (_node.tags.includes('type=PublicKey')) {
+    if (
+        _node.tags.some((val: string) =>
+            ['type=PublicKey', 'state=public'].includes(val)
+        )
+    ) {
         return {
             data: await arrPromise,
             tags: nodeData.tags,
@@ -790,17 +797,23 @@ export async function updateConfigRemoteReducer(
         update,
         authInfo,
         client,
+        nullonnoupdate,
     }: {
         update: Interfaces.ConfigInputInterface | null
         client: ApolloClient<any>
         authInfo?: Interfaces.AuthInfoInterface
+        nullonnoupdate?: boolean
     }
 ): Promise<Interfaces.ConfigInterface | null> {
     if (update === null) {
         // protect config update against null
         return null
     }
-    const config = state || updateConfigReducer(null, { update })
+    const resconf = updateConfig(state, update)
+    if (nullonnoupdate && resconf[1] == 0) {
+        return null
+    }
+    const config = state || resconf[0]
     if (!authInfo) {
         authInfo = extractAuthInfo({
             config,

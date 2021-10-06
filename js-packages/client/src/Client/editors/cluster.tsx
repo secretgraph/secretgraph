@@ -205,8 +205,8 @@ const ClusterIntern = ({
                     mapper,
                     hashAlgorithm,
                 })
-                let digestCert = undefined,
-                    privPromise = undefined
+                let digestCert: undefined | string = undefined,
+                    privPromise: undefined | Promise<string> = undefined
                 if (mainCtx.item) {
                     clusterResponse = await updateCluster({
                         id: mainCtx.item as string,
@@ -231,7 +231,7 @@ const ClusterIntern = ({
                             },
                             true,
                             ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-                        )) as CryptoKeyPair
+                        )) as Required<CryptoKeyPair>
                     privPromise = serializeToBase64(privateKey)
                     digestCert = await crypto.subtle
                         .exportKey('spki' as const, publicKey)
@@ -286,21 +286,28 @@ const ClusterIntern = ({
                 const newConfig = await updateConfigRemoteReducer(config, {
                     update: configUpdate,
                     client: baseClient,
+                    nullonnoupdate: true,
                 })
-                const nTokens = extractAuthInfo({
-                    config: newConfig as Interfaces.ConfigInterface,
-                    url,
-                    clusters: new Set([
-                        clusterResponse.data.updateOrCreateCluster.cluster.id,
-                    ]),
-                    require: new Set(['update', 'manage']),
-                }).tokens
-                saveConfig(newConfig as Interfaces.ConfigInterface)
-                updateConfig(newConfig, true)
+                const nTokens = newConfig
+                    ? extractAuthInfo({
+                          config: newConfig,
+                          url,
+                          clusters: new Set([
+                              clusterResponse.data.updateOrCreateCluster.cluster
+                                  .id,
+                          ]),
+                          require: new Set(['update', 'manage']),
+                      }).tokens
+                    : []
+                if (newConfig) {
+                    saveConfig(newConfig as Interfaces.ConfigInterface)
+                    updateConfig(newConfig, true)
+                }
                 updateMainCtx({
                     title: name || '',
                     action: 'update',
                     item: clusterResponse.data.updateOrCreateCluster.cluster.id,
+                    url,
                     updateId:
                         clusterResponse.data.updateOrCreateCluster.cluster
                             .updateId,

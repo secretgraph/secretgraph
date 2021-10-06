@@ -209,7 +209,7 @@ export function encryptSharedKey(
     )[],
     hashalgo?: string
 ): [Promise<Interfaces.ReferenceInterface[]>, Promise<string[]>] {
-    const references: PromiseLike<Interfaces.ReferenceInterface>[] = []
+    const references: PromiseLike<Interfaces.ReferenceInterface | void>[] = []
     const tags: PromiseLike<string>[] = []
     const hashValue = mapHashNames['' + hashalgo]
     if (!hashValue) {
@@ -218,18 +218,28 @@ export function encryptSharedKey(
     for (const pubkey of pubkeys) {
         const temp = encryptSharedKey_helper(pubkey, hashalgo, sharedkey)
         references.push(
-            temp.then(({ encrypted, hash }): Interfaces.ReferenceInterface => {
-                return {
-                    target: hash,
-                    group: 'key',
-                    extra: `${hashValue.serializedName}:${encrypted}`,
-                    deleteRecursive: 'NO_GROUP',
+            temp.then(
+                ({ encrypted, hash }): Interfaces.ReferenceInterface => {
+                    return {
+                        target: hash,
+                        group: 'key',
+                        extra: `${hashValue.serializedName}:${encrypted}`,
+                        deleteRecursive: 'NO_GROUP',
+                    }
+                },
+                async (reason) => {
+                    console.error('failed PublicKey', (await temp).hash, reason)
                 }
-            })
+            )
         )
         tags.push(temp.then(({ hash }): string => `key_hash=${hash}`))
     }
-    return [Promise.all(references), Promise.all(tags)]
+    return [
+        Promise.all(references).then((val) =>
+            val.filter((vl) => vl)
+        ) as Promise<Interfaces.ReferenceInterface[]>,
+        Promise.all(tags),
+    ]
 }
 
 // onlyPubkeys skips checks which can fail in case of missing tag inclusion

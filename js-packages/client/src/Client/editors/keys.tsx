@@ -403,7 +403,7 @@ function InnerKeys({
                                             'encrypt',
                                             'decrypt',
                                         ]
-                                    )) as CryptoKeyPair
+                                    )) as Required<CryptoKeyPair>
                                 setValues(
                                     {
                                         ...values,
@@ -715,13 +715,12 @@ const KeysIntern = ({
 const ViewKeys = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] =
-        React.useState<
-            | (UnpackPromise<ReturnType<typeof loadKeys>> & {
-                  key: string
-              })
-            | null
-        >(null)
+    const [data, setData] = React.useState<
+        | (UnpackPromise<ReturnType<typeof loadKeys>> & {
+              key: string
+          })
+        | null
+    >(null)
     const { data: dataUnfinished, refetch } = useQuery(keysRetrievalQuery, {
         pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
@@ -817,13 +816,12 @@ const EditKeys = () => {
         Contexts.InitializedConfig
     )
     const [cluster, setCluster] = React.useState<string | null>(null)
-    const [data, setData] =
-        React.useState<
-            | (UnpackPromise<ReturnType<typeof loadKeys>> & {
-                  key: string
-              })
-            | null
-        >(null)
+    const [data, setData] = React.useState<
+        | (UnpackPromise<ReturnType<typeof loadKeys>> & {
+              key: string
+          })
+        | null
+    >(null)
     let {
         refetch,
         data: dataUnfinished,

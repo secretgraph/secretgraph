@@ -73,7 +73,7 @@ export async function toPublicKey(
         (_inp as CryptoKeyPair).privateKey &&
         (_inp as CryptoKeyPair).publicKey
     ) {
-        _key = (_inp as CryptoKeyPair).privateKey
+        _key = (_inp as Required<CryptoKeyPair>).privateKey
     } else if (params.name.startsWith('AES-')) {
         // symmetric
         if (!Constants.mapEncryptionAlgorithms[params.name]) {
@@ -235,7 +235,7 @@ export async function unserializeToCryptoKey(
         (temp1 as CryptoKeyPair).privateKey &&
         (temp1 as CryptoKeyPair).publicKey
     ) {
-        let temp2 = (temp1 as CryptoKeyPair)[type]
+        let temp2 = (temp1 as Required<CryptoKeyPair>)[type]
         if (compareObjects(temp2.algorithm, params)) {
             return temp2
         }

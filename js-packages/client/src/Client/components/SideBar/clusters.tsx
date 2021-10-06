@@ -180,7 +180,7 @@ export default React.memo(function Clusters({
                                 </div>
                             </>
                         }
-                        nodeId={nodeId}
+                        nodeId={`${props.nodeId}-${nodeId}`}
                         key={nodeId}
                         onClick={(ev) => ev.preventDefault()}
                         onDoubleClick={(ev) => {

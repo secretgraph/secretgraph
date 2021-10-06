@@ -628,18 +628,14 @@ class ClusterConnectionField(DjangoConnectionField):
 
         # allow 10 clusters to be specified
         return fetch_clusters(
-            # DECIDE: still required?
-            # or better explicit way instead of doing so in cached query?
-            # queryset.filter(
-            #    id__in=Subquery(
-            #        initializeCachedResult(
-            #            info.context, authset=args.get("authorization")
-            #        )["Cluster"]["objects"].values("id")
-            #    )
-            # ),
-            initializeCachedResult(
-                info.context, authset=args.get("authorization")
-            )["Cluster"]["objects"],
+            #  required for enforcing permissions
+            queryset.filter(
+                id__in=Subquery(
+                    initializeCachedResult(
+                        info.context, authset=args.get("authorization")
+                    )["Cluster"]["objects"].values("id")
+                )
+            ),
             ids=ids,
             limit_ids=10,
             includeTags=args.get("includeTags"),
