@@ -218,11 +218,26 @@ const FileIntern = ({
     const [open, setOpen] = React.useState(false)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     let name: string = mainCtx.item || ''
+    const content_hashes = React.useMemo(() => {
+        const host = config.hosts[url]
+
+        return new Set<string>(
+            (nodeData &&
+                host?.contents[nodeData.id]?.hashes &&
+                Object.keys(host.contents[nodeData.id].hashes)) ||
+                []
+        )
+    }, [url, config])
+
     const actions = React.useMemo(() => {
         const actions: (ActionInputEntry | CertificateInputEntry)[] = []
         Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
             const entry = mapper[params.newHash]
             if (entry.type == 'action') {
+                const readonly = !(
+                    content_hashes.has(params.newHash) ||
+                    (params.oldHash && content_hashes.has(params.oldHash))
+                )
                 for (const actionType of entry.actions) {
                     actions.push({
                         type: 'action',
@@ -237,7 +252,7 @@ const FileIntern = ({
                         },
                         update: entry.hasUpdate,
                         delete: false,
-                        readonly: false,
+                        readonly: readonly,
                     })
                 }
             } else {
@@ -249,7 +264,7 @@ const FileIntern = ({
                     note: entry.note || '',
                     update: entry.hasUpdate,
                     delete: false,
-                    readonly: false,
+                    readonly: true,
                     locked: true,
                 })
             }
@@ -402,19 +417,29 @@ const FileIntern = ({
                               updateId: nodeData.updateId,
                           })
                         : createContent(options))
-                    /**
-                     * TODO: only hashes which are not on cluster
-                     * configUpdate.hosts[url] = {
+
+                    const host = config.hosts[url]
+                    const cluster_hashes = new Set(
+                        Object.keys(host?.clusters[values.cluster] || [])
+                    )
+                    const hashesNew: any = {}
+                    for (const entry of Object.entries(hashes)) {
+                        if (
+                            content_hashes.has(entry[0]) ||
+                            !cluster_hashes.has(entry[0])
+                        ) {
+                            hashesNew[entry[0]] = entry[1]
+                        }
+                    }
+                    configUpdate.hosts[url] = {
                         contents: {
                             [nodeData.id]: {
-                                hashes: {
-                                    ...hashes,
-                                },
+                                hashes: hashesNew,
                                 cluster: values.cluster,
                             },
                         },
                         clusters: {},
-                    }*/
+                    }
 
                     const newConfig = await updateConfigRemoteReducer(config, {
                         update: configUpdate,
