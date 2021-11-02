@@ -1,9 +1,14 @@
-import '@mui/lab/themeAugmentation'
+//import '@mui/lab/themeAugmentation'
 
 import { css } from '@emotion/css'
 import { Theme, createTheme, responsiveFontSizes } from '@mui/material/styles'
 
 declare var gettext: any
+/**
+declare module '@mui/styles/defaultTheme' {
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface DefaultTheme extends Theme {}
+} */
 
 declare module '@mui/material/styles' {
     interface Theme {
@@ -182,7 +187,7 @@ const internTheme = responsiveFontSizes(
                     variant: 'outlined',
                 },
             },
-        },
+        } as any,
         classes: {},
         contentStates: new Map([
             ['draft', { label: gettext('Draft') }],

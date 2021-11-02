@@ -4,7 +4,7 @@ import {
 } from '@mui/material/Autocomplete'
 import Chip from '@mui/material/Chip'
 import { TextFieldProps } from '@mui/material/TextField'
-import { Value as AutocompleteValue } from '@mui/material/useAutocomplete'
+import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { Field, FieldInputProps, FieldMetaProps, FieldProps } from 'formik'
 import * as React from 'react'
 
