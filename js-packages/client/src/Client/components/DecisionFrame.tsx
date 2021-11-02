@@ -1,5 +1,5 @@
-import Typography from '@material-ui/core/Typography'
-import Skeleton from '@material-ui/lab/Skeleton'
+import Typography from '@mui/material/Typography'
+import Skeleton from '@mui/material/Skeleton'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 

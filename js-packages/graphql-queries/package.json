@@ -1,15 +1,18 @@
 {
-  "name": "@secretgraph/misc",
+  "name": "@secretgraph/graphql-queries",
   "version": "0.1.0",
   "description": "",
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "@apollo/client": "*",
+    "apollo-upload-client": "*",
+    "graphql": "*"
+  },
   "sideEffects": false,
   "devDependencies": {
-    "typescript": "*"
-  },
-  "optionalDependencies": {
-    "@secretgraph/graphql-queries": "*"
+    "typescript": "*",
+    "@types/apollo-upload-client": "*"
   },
   "exports":{
     "./": "./lib/"
@@ -17,6 +20,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/secretgraph/secretgraph.git",
-    "directory": "js-packages/misc"
+    "directory": "js-packages/queries"
   }
 }

@@ -11,10 +11,16 @@
       "dom"
     ],
     "paths": {
-      "@secretgraph/misc/*": ["../../misc/src/*"]
+      "@secretgraph/misc/*": ["../../misc/src/*"],
+      "@secretgraph/graphql-queries/*": [
+        "../../graphql-queries/src/*"
+      ]
     }
   },
   "references": [
+    {
+      "path": "../graphql-queries/tsconfig.json"
+    },
     {
       "path": "../misc/tsconfig.json"
     }

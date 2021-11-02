@@ -1,9 +1,9 @@
 import { ApolloClient } from '@apollo/client'
+import { findConfigQuery } from '@secretgraph/graphql-queries/content'
 import { saveAs } from 'file-saver'
 
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
-import { findConfigQuery } from '../queries/content'
 import {
     decryptAESGCM,
     decryptFirstPreKey,

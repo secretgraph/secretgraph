@@ -1,10 +1,10 @@
 import {
     AutocompleteProps,
     AutocompleteRenderInputParams,
-} from '@material-ui/core/Autocomplete'
-import Chip from '@material-ui/core/Chip'
-import { TextFieldProps } from '@material-ui/core/TextField'
-import { Value as AutocompleteValue } from '@material-ui/core/useAutocomplete'
+} from '@mui/material/Autocomplete'
+import Chip from '@mui/material/Chip'
+import { TextFieldProps } from '@mui/material/TextField'
+import { Value as AutocompleteValue } from '@mui/material/useAutocomplete'
 import { Field, FieldInputProps, FieldMetaProps, FieldProps } from 'formik'
 import * as React from 'react'
 

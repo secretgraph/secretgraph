@@ -5,20 +5,20 @@ import {
     useApolloClient,
     useQuery,
 } from '@apollo/client'
-import Button from '@material-ui/core/Button'
-import Grid from '@material-ui/core/Grid'
-import LinearProgress from '@material-ui/core/LinearProgress'
-import { Theme } from '@material-ui/core/styles'
-import { useTheme } from '@material-ui/core/styles'
-import Typography from '@material-ui/core/Typography'
-import * as Constants from '@secretgraph/misc/constants'
-import * as Interfaces from '@secretgraph/misc/interfaces'
+import Button from '@mui/material/Button'
+import Grid from '@mui/material/Grid'
+import LinearProgress from '@mui/material/LinearProgress'
+import { Theme } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
+import Typography from '@mui/material/Typography'
 import {
     findPublicKeyQuery,
     getContentConfigurationQuery,
     keysRetrievalQuery,
-} from '@secretgraph/misc/queries/content'
-import { serverConfigQuery } from '@secretgraph/misc/queries/server'
+} from '@secretgraph/graphql-queries/content'
+import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
+import * as Constants from '@secretgraph/misc/constants'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     RequireAttributes,
     UnpackPromise,
@@ -482,9 +482,9 @@ const KeysIntern = ({
         <Formik
             initialValues={initialValues}
             validate={(values) => {
-                const errors: Partial<
-                    { [key in keyof typeof values]: string }
-                > = {}
+                const errors: Partial<{
+                    [key in keyof typeof values]: string
+                }> = {}
                 if (!values.publicKey) {
                     errors['publicKey'] = 'empty'
                 }

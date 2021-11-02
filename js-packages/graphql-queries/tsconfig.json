@@ -9,18 +9,8 @@
       "ESNext",
       "dom"
     ],
-    "paths": {
-      "@secretgraph/graphql-queries/*": [
-        "../../graphql-queries/src/*"
-      ]
-    },
   },
-  "references": [
-    {
-      "path": "../graphql-queries/tsconfig.json"
-    }
-  ],
   "include": [
-    "src/**/*.ts"
+    "src/*.ts",
   ]
 }

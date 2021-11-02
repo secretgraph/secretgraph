@@ -1,4 +1,4 @@
-import { Value as AutocompleteValue } from '@material-ui/core/useAutocomplete'
+import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 

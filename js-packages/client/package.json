@@ -6,8 +6,10 @@
   "license": "MIT",
   "dependencies": {
     "@secretgraph/misc": "*",
+    "@secretgraph/graphql-queries": "*",
+    "@apollo/client": "*",
+    "graphql": "*",
     "dompurify": "*",
-
     "file-saver": "*",
     "formik": "*",
     "react": "*",
@@ -15,18 +17,17 @@
     "suneditor": "*",
     "suneditor-react": "*",
     "@emotion/css": "*",
-    "@emotion/react": "*",
     "@emotion/styled": "*",
-    "@material-ui/core": ">=5.0.0-beta.1",
-    "@material-ui/icons": ">=5.0.0-beta.1",
-    "@material-ui/lab": ">=5.0.0-alpha.1",
-    "@material-ui/system": ">=5.0.0-beta.1"
+    "@emotion/react": "*",
+    "@mui/material": "*",
+    "@mui/icons-material": "*",
+    "@mui/lab": "*",
+    "@mui/system": "*"
   },
   "devDependencies": {
     "typescript": "*",
     "@types/dompurify": "*",
     "@types/file-saver": "*",
-    "@types/material-ui": "*",
     "@types/react": "*",
     "@types/react-dom": "*",
     "@types/webpack-env": "*"

@@ -1,20 +1,20 @@
 const path = require('path')
 const { SourceMapDevToolPlugin, ProvidePlugin } = require('webpack')
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin')
-const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
+//const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin')
 
 module.exports = (env, options) => {
-    const tsgqlPlugin = new TsGraphQLPlugin({
-        /* plugin options */
+    /*const tsgqlPlugin = new TsGraphQLPlugin({
     })
+    */
 
     const plugins = [
         new WebpackManifestPlugin({
             writeToFileEmit: true,
             publicPath: 'webpack_bundles/',
         }),
-        tsgqlPlugin,
+        //tsgqlPlugin,
         new ProvidePlugin({
             Buffer: ['buffer', 'Buffer'],
         }),
@@ -29,6 +29,9 @@ module.exports = (env, options) => {
         )
     }
     return {
+        stats: {
+            errorDetails: true,
+        },
         context: __dirname,
         devtool: options.mode === 'development' ? 'inline-source-map' : false,
         devServer:
@@ -70,13 +73,12 @@ module.exports = (env, options) => {
                     exclude: /node_modules/,
                     options: {
                         projectReferences: true,
-                        getCustomTransformers: () => ({
+                        /*getCustomTransformers: () => ({
                             before: [
                                 tsgqlPlugin.getTransformer({
-                                    /* transformer options */
                                 }),
                             ],
-                        }),
+                        }),*/
                     },
                 },
                 {

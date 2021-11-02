@@ -4,15 +4,15 @@ import {
     useLazyQuery,
     useQuery,
 } from '@apollo/client'
-import { useTheme } from '@material-ui/core'
-import GroupWorkIcon from '@material-ui/icons/GroupWork'
-import ReplayIcon from '@material-ui/icons/Replay'
-import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem'
-import * as Interfaces from '@secretgraph/misc/interfaces'
+import GroupWorkIcon from '@mui/icons-material/GroupWork'
+import ReplayIcon from '@mui/icons-material/Replay'
+import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
+import { useTheme } from '@mui/material'
 import {
     clusterFeedQuery,
     getClusterQuery,
-} from '@secretgraph/misc/queries/cluster'
+} from '@secretgraph/graphql-queries/cluster'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import * as React from 'react'
 

@@ -1,22 +1,22 @@
 import { useApolloClient } from '@apollo/client'
-import Button from '@material-ui/core/Button'
-import Dialog from '@material-ui/core/Dialog'
-import DialogActions from '@material-ui/core/DialogActions'
-import DialogContent from '@material-ui/core/DialogContent'
-import DialogTitle from '@material-ui/core/DialogTitle'
-import IconButton from '@material-ui/core/IconButton'
-import Link from '@material-ui/core/Link'
-import NativeSelect from '@material-ui/core/NativeSelect'
-import { useTheme } from '@material-ui/core/styles'
-import Toolbar from '@material-ui/core/Toolbar'
-import Tooltip from '@material-ui/core/Tooltip'
-import AddIcon from '@material-ui/icons/Add'
-import DeleteIcon from '@material-ui/icons/Delete'
-import EditIcon from '@material-ui/icons/Edit'
-import HelpOutlineOutlinedIcon from '@material-ui/icons/HelpOutlineOutlined'
-import RestoreFromTrashIcon from '@material-ui/icons/RestoreFromTrash'
-import ShareIcon from '@material-ui/icons/Share'
-import VisibilityIcon from '@material-ui/icons/Visibility'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
+import NativeSelect from '@mui/material/NativeSelect'
+import { useTheme } from '@mui/material/styles'
+import Toolbar from '@mui/material/Toolbar'
+import Tooltip from '@mui/material/Tooltip'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
+import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash'
+import ShareIcon from '@mui/icons-material/Share'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 import { extractAuthInfo } from '@secretgraph/misc/utils/config'
 import {
     deleteNodes,
@@ -148,7 +148,7 @@ function ActionBar(props: Props) {
                                             : mainCtx.tokens,
                                 })
                             }
-                        >
+                            size="large">
                             {mainCtx.action === 'view' ? (
                                 <EditIcon />
                             ) : (
@@ -211,7 +211,7 @@ function ActionBar(props: Props) {
                                     })
                                 }
                             }}
-                        >
+                            size="large">
                             {mainCtx.deleted ? (
                                 <RestoreFromTrashIcon />
                             ) : (
@@ -269,7 +269,7 @@ function ActionBar(props: Props) {
                                     tokens: createTokens,
                                 })
                             }}
-                        >
+                            size="large">
                             <AddIcon />
                         </IconButton>
                     </span>
@@ -286,21 +286,21 @@ function ActionBar(props: Props) {
                             color="inherit"
                             aria-label="share"
                             onClick={() => setShareOpen(true)}
-                        >
+                            size="large">
                             <ShareIcon />
                         </IconButton>
                     </span>
                 </Tooltip>
                 <Tooltip title="Help" arrow>
                     <span>
-                        <IconButton color="inherit" aria-label="help">
+                        <IconButton color="inherit" aria-label="help" size="large">
                             <HelpOutlineOutlinedIcon />
                         </IconButton>
                     </span>
                 </Tooltip>
             </Toolbar>
         </nav>
-    )
+    );
 }
 
 export default ActionBar

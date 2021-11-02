@@ -1,5 +1,5 @@
-import { Theme } from '@material-ui/core/styles'
-import { useTheme } from '@material-ui/core/styles'
+import { Theme } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
 import * as React from 'react'
 
 type Props = {}

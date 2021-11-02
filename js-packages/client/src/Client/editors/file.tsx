@@ -1,20 +1,22 @@
 import { useApolloClient, useQuery } from '@apollo/client'
-import Button from '@material-ui/core/Button'
-import Checkbox from '@material-ui/core/Checkbox'
-import FormControlLabel from '@material-ui/core/FormControlLabel'
-import Grid from '@material-ui/core/Grid'
-import IconButton from '@material-ui/core/IconButton'
-import LinearProgress from '@material-ui/core/LinearProgress'
-import { useTheme } from '@material-ui/core/styles'
-import TextField, { TextFieldProps } from '@material-ui/core/TextField'
-import Tooltip from '@material-ui/core/Tooltip'
-import Typography from '@material-ui/core/Typography'
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
-import Security from '@material-ui/icons/Security'
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
+import Security from '@mui/icons-material/Security'
+import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Grid from '@mui/material/Grid'
+import IconButton from '@mui/material/IconButton'
+import LinearProgress from '@mui/material/LinearProgress'
+import { useTheme } from '@mui/material/styles'
+import TextField, { TextFieldProps } from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
+import Typography from '@mui/material/Typography'
+import {
+    contentRetrievalQuery,
+    getContentConfigurationQuery,
+} from '@secretgraph/graphql-queries/content'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { contentRetrievalQuery } from '@secretgraph/misc/queries/content'
-import { getContentConfigurationQuery } from '@secretgraph/misc/queries/content'
 import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
 import {
     ActionInputEntry,
@@ -305,9 +307,9 @@ const FileIntern = ({
                 actions,
             }}
             validate={(values) => {
-                const errors: Partial<
-                    { [key in keyof typeof values]: string }
-                > = {}
+                const errors: Partial<{
+                    [key in keyof typeof values]: string
+                }> = {}
                 if (
                     (values.plainInput && values.htmlInput) ||
                     (values.plainInput && values.fileInput) ||
@@ -576,6 +578,7 @@ const FileIntern = ({
                                     <span>
                                         <IconButton
                                             onClick={() => setOpen(!open)}
+                                            size="large"
                                         >
                                             <Security />
                                         </IconButton>

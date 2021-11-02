@@ -1,17 +1,11 @@
-import '@material-ui/lab/themeAugmentation'
+import '@mui/lab/themeAugmentation'
 
 import { css } from '@emotion/css'
-import {
-    Theme,
-    createStyles,
-    createTheme,
-    responsiveFontSizes,
-} from '@material-ui/core/styles'
-import { SxProps } from '@material-ui/system'
+import { Theme, createTheme, responsiveFontSizes } from '@mui/material/styles'
 
 declare var gettext: any
 
-declare module '@material-ui/core/styles' {
+declare module '@mui/material/styles' {
     interface Theme {
         classes: Record<string, string>
         contentStates: Map<string, { label: string }>

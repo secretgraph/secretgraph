@@ -1,8 +1,8 @@
 import {
     default as CircularProgress,
     CircularProgressProps,
-} from '@material-ui/core/CircularProgress'
-import Typography from '@material-ui/core/Typography'
+} from '@mui/material/CircularProgress'
+import Typography from '@mui/material/Typography'
 import * as React from 'react'
 
 export const CenteredSpinner = React.forwardRef(

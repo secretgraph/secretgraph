@@ -1,35 +1,35 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
-import { Box, Grid } from '@material-ui/core'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import FilterListIcon from '@mui/icons-material/FilterList'
+import { Box, Grid } from '@mui/material'
 import Autocomplete, {
     AutocompleteProps,
     createFilterOptions,
-} from '@material-ui/core/Autocomplete'
-import Button from '@material-ui/core/Button'
-import Checkbox from '@material-ui/core/Checkbox'
-import Chip from '@material-ui/core/Chip'
-import Divider from '@material-ui/core/Divider'
-import Drawer from '@material-ui/core/Drawer'
-import FormControlLabel from '@material-ui/core/FormControlLabel'
-import FormGroup from '@material-ui/core/FormGroup'
-import Hidden from '@material-ui/core/Hidden'
-import IconButton from '@material-ui/core/IconButton'
-import InputAdornment from '@material-ui/core/InputAdornment'
-import List from '@material-ui/core/List'
-import ListItem from '@material-ui/core/ListItem'
-import ListItemIcon from '@material-ui/core/ListItemIcon'
-import Paper from '@material-ui/core/Paper'
-import Popover from '@material-ui/core/Popover'
-import { useTheme } from '@material-ui/core/styles'
-import TextField from '@material-ui/core/TextField'
-import Tooltip from '@material-ui/core/Tooltip'
-import Typography from '@material-ui/core/Typography'
-import useMediaQuery from '@material-ui/core/useMediaQuery'
-import ChevronLeftIcon from '@material-ui/icons/ChevronLeft'
-import ChevronRightIcon from '@material-ui/icons/ChevronRight'
-import ExpandLessIcon from '@material-ui/icons/ExpandLess'
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
-import FilterListIcon from '@material-ui/icons/FilterList'
-import { serverConfigQuery } from '@secretgraph/misc/queries/server'
+} from '@mui/material/Autocomplete'
+import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
+import Chip from '@mui/material/Chip'
+import Divider from '@mui/material/Divider'
+import Drawer from '@mui/material/Drawer'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import FormGroup from '@mui/material/FormGroup'
+import Hidden from '@mui/material/Hidden'
+import IconButton from '@mui/material/IconButton'
+import InputAdornment from '@mui/material/InputAdornment'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import Paper from '@mui/material/Paper'
+import Popover from '@mui/material/Popover'
+import { useTheme } from '@mui/material/styles'
+import TextField from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
+import Typography from '@mui/material/Typography'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 import { extractAuthInfo } from '@secretgraph/misc/utils/config'
 import {
     deleteNodes,
@@ -47,6 +47,7 @@ function CloseButton() {
         <IconButton
             style={{ display: matches ? 'none' : undefined }}
             onClick={() => setOpen(false)}
+            size="large"
         >
             {theme.direction === 'ltr' ? (
                 <ChevronLeftIcon />
@@ -176,43 +177,43 @@ function MainSearchField() {
                     switch (reason) {
                         case 'create-option':
                             /*if (config && !config.hosts[value]) {
-                                const hashAlgos = []
-                                try {
-                                    const result = await client.query({
-                                        query: serverConfigQuery,
-                                    })
-                                    for (const algo of result.data.secretgraph
-                                        .config.hashAlgorithms) {
-                                        const mappedName =
-                                            mapHashNames[algo].operationName
-                                        if (mappedName) {
-                                            hashAlgos.push(mappedName)
-                                        }
+                            const hashAlgos = []
+                            try {
+                                const result = await client.query({
+                                    query: serverConfigQuery,
+                                })
+                                for (const algo of result.data.secretgraph
+                                    .config.hashAlgorithms) {
+                                    const mappedName =
+                                        mapHashNames[algo].operationName
+                                    if (mappedName) {
+                                        hashAlgos.push(mappedName)
                                     }
-                                } catch (exc) {
-                                    console.warn('Cannot add host', exc)
-                                    return
                                 }
-                                if (!hashAlgos) {
-                                    console.warn(
-                                        'Cannot add host, no fitting hash algos found'
-                                    )
-                                    return
-                                }
-                                const newConfig = {
-                                    ...config,
-                                    hosts: {
-                                        ...config.hosts,
-                                    },
-                                }
-                                hashAlgos
-                                newConfig.hosts[value] = {
-                                    hashAlgorithms: hashAlgos,
-                                    clusters: {},
-                                    contents: {},
-                                }
-                                updateConfig(newConfig)
-                            }*/
+                            } catch (exc) {
+                                console.warn('Cannot add host', exc)
+                                return
+                            }
+                            if (!hashAlgos) {
+                                console.warn(
+                                    'Cannot add host, no fitting hash algos found'
+                                )
+                                return
+                            }
+                            const newConfig = {
+                                ...config,
+                                hosts: {
+                                    ...config.hosts,
+                                },
+                            }
+                            hashAlgos
+                            newConfig.hosts[value] = {
+                                hashAlgorithms: hashAlgos,
+                                clusters: {},
+                                contents: {},
+                            }
+                            updateConfig(newConfig)
+                        }*/
                             setActiveUrl(value)
                             break
                         case 'select-option':
@@ -222,19 +223,19 @@ function MainSearchField() {
                         case 'remove-option':
                             config && setActiveUrl(config?.baseUrl)
                             /*if (
-                                config &&
-                                config.hosts[value] &&
-                                Object.keys(config.hosts[value]).length === 0
-                            ) {
-                                const newConfig = {
-                                    ...config,
-                                    clusters: {
-                                        ...config.hosts,
-                                    },
-                                }
-                                delete newConfig.hosts[value]
-                                updateConfig(newConfig)
-                            }*/
+                            config &&
+                            config.hosts[value] &&
+                            Object.keys(config.hosts[value]).length === 0
+                        ) {
+                            const newConfig = {
+                                ...config,
+                                clusters: {
+                                    ...config.hosts,
+                                },
+                            }
+                            delete newConfig.hosts[value]
+                            updateConfig(newConfig)
+                        }*/
                             break
                     }
                 }}
@@ -261,6 +262,7 @@ function MainSearchField() {
                                                     ? 'red'
                                                     : undefined,
                                         }}
+                                        size="large"
                                     >
                                         <FilterListIcon />
                                     </IconButton>

@@ -1,23 +1,23 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
-import AppBar from '@material-ui/core/AppBar'
-import Button from '@material-ui/core/Button'
-import Dialog from '@material-ui/core/Dialog'
-import DialogActions from '@material-ui/core/DialogActions'
-import DialogContent from '@material-ui/core/DialogContent'
-import DialogTitle from '@material-ui/core/DialogTitle'
-import FormControl from '@material-ui/core/FormControl'
-import FormHelperText from '@material-ui/core/FormHelperText'
-import IconButton from '@material-ui/core/IconButton'
-import Link from '@material-ui/core/Link'
-import Menu from '@material-ui/core/Menu'
-import MenuItem from '@material-ui/core/MenuItem'
-import { useTheme } from '@material-ui/core/styles'
-import TextField from '@material-ui/core/TextField'
-import Toolbar from '@material-ui/core/Toolbar'
-import Typography from '@material-ui/core/Typography'
-import AccountCircle from '@material-ui/icons/AccountCircle'
-import MenuIcon from '@material-ui/icons/Menu'
-import { serverConfigQuery } from '@secretgraph/misc/queries/server'
+import AccountCircle from '@mui/icons-material/AccountCircle'
+import MenuIcon from '@mui/icons-material/Menu'
+import AppBar from '@mui/material/AppBar'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import FormControl from '@mui/material/FormControl'
+import FormHelperText from '@mui/material/FormHelperText'
+import IconButton from '@mui/material/IconButton'
+import Link from '@mui/material/Link'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
+import { useTheme } from '@mui/material/styles'
+import TextField from '@mui/material/TextField'
+import Toolbar from '@mui/material/Toolbar'
+import Typography from '@mui/material/Typography'
+import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 import { exportConfig, exportConfigAsUrl } from '@secretgraph/misc/utils/config'
 import * as React from 'react'
 
@@ -164,6 +164,7 @@ export default function HeaderBar() {
                 onClick={() => setOpen(true)}
                 color="inherit"
                 aria-label="menu"
+                size="large"
             >
                 <MenuIcon />
             </IconButton>
@@ -245,6 +246,7 @@ export default function HeaderBar() {
                     aria-label="user"
                     ref={menuRef}
                     onClick={() => setMenuOpen(true)}
+                    size="large"
                 >
                     <AccountCircle />
                 </IconButton>

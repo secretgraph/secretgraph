@@ -15,10 +15,11 @@
     "ts-graphql-plugin": "*",
     "ts-loader": "*",
     "tsconfig-paths-webpack-plugin": "*",
+    "graphql": "*",
     "typescript": "*",
     "webpack": ">=5.0",
     "webpack-cli": "*",
-    "webpack-dev-server": ">=4.0.0-beta.3",
+    "webpack-dev-server": ">=4.0",
     "webpack-manifest-plugin": "*"
   },
   "scripts": {

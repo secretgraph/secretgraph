@@ -1,5 +1,5 @@
-import CssBaseline from '@material-ui/core/CssBaseline'
-import { ThemeProvider } from '@material-ui/core/styles'
+import CssBaseline from '@mui/material/CssBaseline'
+import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material/styles';
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     loadConfigSync,
@@ -12,6 +12,21 @@ import * as Contexts from './contexts'
 import { elements } from './editors'
 import Main from './pages/Main'
 import { theme as themeDefinition } from './theme'
+
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
 
 type Props = {
     defaultPath?: string
@@ -89,42 +104,44 @@ function Definitions(props: Props) {
     }, [config ? config.baseUrl : ''])
 
     return (
-        <ThemeProvider theme={themeDefinition}>
-            <Contexts.OpenSidebar.Provider
-                value={{
-                    open: openSidebar,
-                    setOpen: setOpenSidebar,
-                }}
-            >
-                <Contexts.Clients.Provider
-                    value={{ navClient, itemClient, baseClient: configClient }}
+        <StyledEngineProvider injectFirst>
+            <ThemeProvider theme={themeDefinition}>
+                <Contexts.OpenSidebar.Provider
+                    value={{
+                        open: openSidebar,
+                        setOpen: setOpenSidebar,
+                    }}
                 >
-                    <Contexts.ActiveUrl.Provider
-                        value={{ activeUrl, setActiveUrl }}
+                    <Contexts.Clients.Provider
+                        value={{ navClient, itemClient, baseClient: configClient }}
                     >
-                        <Contexts.Main.Provider
-                            value={{ mainCtx, updateMainCtx }}
+                        <Contexts.ActiveUrl.Provider
+                            value={{ activeUrl, setActiveUrl }}
                         >
-                            <Contexts.Search.Provider
-                                value={{ searchCtx, updateSearchCtx }}
+                            <Contexts.Main.Provider
+                                value={{ mainCtx, updateMainCtx }}
                             >
-                                <Contexts.Config.Provider
-                                    value={{ config, updateConfig }}
+                                <Contexts.Search.Provider
+                                    value={{ searchCtx, updateSearchCtx }}
                                 >
-                                    <Contexts.Snackbar.Provider
-                                        value={{ message, sendMessage }}
+                                    <Contexts.Config.Provider
+                                        value={{ config, updateConfig }}
                                     >
-                                        <CssBaseline />
-                                        <Main />
-                                    </Contexts.Snackbar.Provider>
-                                </Contexts.Config.Provider>
-                            </Contexts.Search.Provider>
-                        </Contexts.Main.Provider>
-                    </Contexts.ActiveUrl.Provider>
-                </Contexts.Clients.Provider>
-            </Contexts.OpenSidebar.Provider>
-        </ThemeProvider>
-    )
+                                        <Contexts.Snackbar.Provider
+                                            value={{ message, sendMessage }}
+                                        >
+                                            <CssBaseline />
+                                            <Main />
+                                        </Contexts.Snackbar.Provider>
+                                    </Contexts.Config.Provider>
+                                </Contexts.Search.Provider>
+                            </Contexts.Main.Provider>
+                        </Contexts.ActiveUrl.Provider>
+                    </Contexts.Clients.Provider>
+                </Contexts.OpenSidebar.Provider>
+            </ThemeProvider>
+        </StyledEngineProvider>
+    );
 }
 
 export default React.memo(Definitions)

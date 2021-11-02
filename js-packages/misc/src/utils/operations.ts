@@ -1,12 +1,9 @@
 import { ApolloClient, FetchResult } from '@apollo/client'
-
-import { mapHashNames } from '../constants'
-import * as Interfaces from '../interfaces'
 import {
     createClusterMutation,
     getClusterQuery,
     updateClusterMutation,
-} from '../queries/cluster'
+} from '@secretgraph/graphql-queries/cluster'
 import {
     contentRetrievalQuery,
     createContentMutation,
@@ -14,11 +11,14 @@ import {
     findConfigQuery,
     updateContentMutation,
     updateKeyMutation,
-} from '../queries/content'
+} from '@secretgraph/graphql-queries/content'
 import {
     deleteNodes as deleteNodeQuery,
     resetDeletionNodes as resetDeletionNodeQuery,
-} from '../queries/node'
+} from '@secretgraph/graphql-queries/node'
+
+import { mapHashNames } from '../constants'
+import * as Interfaces from '../interfaces'
 import {
     cleanConfig,
     extractAuthInfo,

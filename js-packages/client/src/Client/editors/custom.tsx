@@ -1,20 +1,20 @@
 import { useApolloClient, useQuery } from '@apollo/client'
-import Button from '@material-ui/core/Button'
-import Checkbox from '@material-ui/core/Checkbox'
-import FormControlLabel from '@material-ui/core/FormControlLabel'
-import Grid from '@material-ui/core/Grid'
-import LinearProgress from '@material-ui/core/LinearProgress'
-import { Theme } from '@material-ui/core/styles'
-import { useTheme } from '@material-ui/core/styles'
-import TextField, { TextFieldProps } from '@material-ui/core/TextField'
-import Tooltip from '@material-ui/core/Tooltip'
-import Typography from '@material-ui/core/Typography'
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
-import Autocomplete from '@material-ui/lab/Autocomplete'
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
+import Autocomplete from '@mui/material/Autocomplete'
+import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Grid from '@mui/material/Grid'
+import LinearProgress from '@mui/material/LinearProgress'
+import { Theme } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
+import TextField, { TextFieldProps } from '@mui/material/TextField'
+import Tooltip from '@mui/material/Tooltip'
+import Typography from '@mui/material/Typography'
 import {
     contentRetrievalQuery,
     getContentConfigurationQuery,
-} from '@secretgraph/misc/queries/content'
+} from '@secretgraph/graphql-queries/content'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import {
     ActionInputEntry,
@@ -271,20 +271,19 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx } = React.useContext(Contexts.Main)
     const [cluster, setCluster] = React.useState<string | null>(null)
-    const [data, setData] =
-        React.useState<
-            | (Exclude<
-                  UnpackPromise<ReturnType<typeof decryptContentObject>>,
-                  null
-              > & {
-                  text: string
-                  key: string
-                  hashAlgorithm: string
-                  url: string
-                  mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-              })
-            | null
-        >(null)
+    const [data, setData] = React.useState<
+        | (Exclude<
+              UnpackPromise<ReturnType<typeof decryptContentObject>>,
+              null
+          > & {
+              text: string
+              key: string
+              hashAlgorithm: string
+              url: string
+              mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+          })
+        | null
+    >(null)
     const [encryptedTags, setEncryptedTags] = React.useState<string[]>([
         'ename',
         'mime',
@@ -416,14 +415,13 @@ const AddCustom = () => {
         'ename',
         'mime',
     ])
-    const [data, setData] =
-        React.useState<{
-            text: string
-            key: string
-            hashAlgorithm: string
-            url: string
-            mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-        } | null>(null)
+    const [data, setData] = React.useState<{
+        text: string
+        key: string
+        hashAlgorithm: string
+        url: string
+        mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
+    } | null>(null)
     const tokens = React.useMemo(
         () =>
             cluster

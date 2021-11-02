@@ -1,4 +1,4 @@
-import Checkbox, { CheckboxProps } from '@material-ui/core/Checkbox'
+import Checkbox, { CheckboxProps } from '@mui/material/Checkbox'
 import { FieldProps, useField } from 'formik'
 import * as React from 'react'
 

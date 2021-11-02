@@ -4,20 +4,19 @@ import {
     useLazyQuery,
     useQuery,
 } from '@apollo/client'
-import { ListSubheader } from '@material-ui/core'
-import Button from '@material-ui/core/Button'
-import Collapse from '@material-ui/core/Collapse'
-import Grid from '@material-ui/core/Grid'
-import IconButton from '@material-ui/core/IconButton'
-import LinearProgress from '@material-ui/core/LinearProgress'
-import List from '@material-ui/core/List'
-import { useTheme } from '@material-ui/core/styles'
-import * as Interfaces from '@secretgraph/misc/interfaces'
+import { ListSubheader } from '@mui/material'
+import Button from '@mui/material/Button'
+import Collapse from '@mui/material/Collapse'
+import Grid from '@mui/material/Grid'
+import IconButton from '@mui/material/IconButton'
+import LinearProgress from '@mui/material/LinearProgress'
+import List from '@mui/material/List'
 import {
     getClusterConfigurationQuery,
     getClusterQuery,
-} from '@secretgraph/misc/queries/cluster'
-import { serverConfigQuery } from '@secretgraph/misc/queries/server'
+} from '@secretgraph/graphql-queries/cluster'
+import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
 import {
     ActionInputEntry,

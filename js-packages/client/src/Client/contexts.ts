@@ -1,5 +1,5 @@
 import { ApolloClient } from '@apollo/client'
-import { AlertColor } from '@material-ui/core/Alert'
+import { AlertColor } from '@mui/material/Alert'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { Context, createContext } from 'react'
 

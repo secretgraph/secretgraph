@@ -11,6 +11,9 @@
       }
     ],
     "paths": {
+      "@secretgraph/graphql-queries/*": [
+        "@secretgraph/graphql-queries/*"
+      ],
       "@secretgraph/misc/*": ["./js-packages/misc/src/*"],
       "@secretgraph/client/*": [
         "./js-packages/client/src/*"
@@ -28,10 +31,13 @@
   ],
   "references": [
     {
-      "path": "./js-packages/client/tsconfig.json"
+      "path": "./js-packages/graphql-queries/tsconfig.json"
     },
     {
       "path": "./js-packages/misc/tsconfig.json"
+    },
+    {
+      "path": "./js-packages/client/tsconfig.json"
     },
     {
       "path": "./js-packages/rdf/tsconfig.json"

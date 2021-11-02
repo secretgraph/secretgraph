@@ -1,6 +1,6 @@
 import 'suneditor/dist/css/suneditor.min.css'
 
-import TextField, { TextFieldProps } from '@material-ui/core/TextField'
+import TextField, { TextFieldProps } from '@mui/material/TextField'
 import * as React from 'react'
 import SunEditor from 'suneditor-react'
 import SunEditorCore from 'suneditor/src/lib/core'

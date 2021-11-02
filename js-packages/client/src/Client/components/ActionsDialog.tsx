@@ -7,23 +7,23 @@ import {
     Menu,
     MenuItem,
     Portal,
-} from '@material-ui/core'
-import { Divider } from '@material-ui/core'
-import Button from '@material-ui/core/Button'
-import Dialog, { DialogProps } from '@material-ui/core/Dialog'
-import DialogTitle from '@material-ui/core/DialogTitle'
-import Grid from '@material-ui/core/Grid'
-import IconButton from '@material-ui/core/IconButton'
-import LinearProgress from '@material-ui/core/LinearProgress'
-import List from '@material-ui/core/List'
-import ListItem, { ListItemProps } from '@material-ui/core/ListItem'
-import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction'
-import ListItemText from '@material-ui/core/ListItemText'
-import Tooltip from '@material-ui/core/Tooltip'
-import Typography from '@material-ui/core/Typography'
-import AddIcon from '@material-ui/icons/Add'
-import DeleteIcon from '@material-ui/icons/Delete'
-import MoreVertIcon from '@material-ui/icons/MoreVert'
+} from '@mui/material'
+import { Divider } from '@mui/material'
+import Button from '@mui/material/Button'
+import Dialog, { DialogProps } from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import Grid from '@mui/material/Grid'
+import IconButton from '@mui/material/IconButton'
+import LinearProgress from '@mui/material/LinearProgress'
+import List from '@mui/material/List'
+import ListItem, { ListItemProps } from '@mui/material/ListItem'
+import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
+import ListItemText from '@mui/material/ListItemText'
+import Tooltip from '@mui/material/Tooltip'
+import Typography from '@mui/material/Typography'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
     ActionInputEntry,
     CertificateInputEntry,
@@ -281,10 +281,7 @@ function ActionEntryIntern({
                                         type="checkbox"
                                     />
                                 ) : (
-                                    <IconButton
-                                        onClick={deleteFn}
-                                        disabled={disabled || action?.readonly}
-                                    >
+                                    <IconButton onClick={deleteFn} disabled={disabled || action?.readonly} size="large">
                                         <DeleteIcon />
                                     </IconButton>
                                 )}
@@ -317,7 +314,7 @@ function ActionEntryIntern({
                 </Grid>,
             ]}
         </Grid>
-    )
+    );
 }
 
 export function ActionEntry({
