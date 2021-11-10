@@ -1,7 +1,6 @@
 import '@secretgraph/rdf-editors/editors'
 
 import MainPage from '@secretgraph/client/Client'
-import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 
 let wrapper = document.getElementById('content-main')

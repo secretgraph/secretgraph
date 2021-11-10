@@ -73,6 +73,12 @@ module.exports = (env, options) => {
                     exclude: /node_modules/,
                     options: {
                         projectReferences: true,
+                        compilerOptions: {
+                            jsx:
+                                options.mode == 'development'
+                                    ? 'react-jsx'
+                                    : 'react-jsxdev',
+                        },
                         /*getCustomTransformers: () => ({
                             before: [
                                 tsgqlPlugin.getTransformer({

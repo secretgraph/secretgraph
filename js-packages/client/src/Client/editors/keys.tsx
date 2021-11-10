@@ -59,7 +59,6 @@ import {
     useFormikContext,
 } from 'formik'
 import * as React from 'react'
-import { useAsync } from 'react-async'
 
 import DecisionFrame from '../components/DecisionFrame'
 import FormikTextField from '../components/formik/FormikTextField'
@@ -953,7 +952,7 @@ async function findOrReturn({
     config: Interfaces.ConfigInterface
     id: string | null
     url: string | null
-}) {
+}): Promise<string | null | true> {
     if (!id || !url) {
         return true
     }
@@ -986,28 +985,40 @@ export default function KeyComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
-    const { data, isLoading } = useAsync({
-        promiseFn: findOrReturn,
-        onReject: console.error,
-        onResolve: (data) => {
-            if (data === true) {
-            } else if (data) {
-                updateMainCtx({ item: data, type: 'PublicKey' })
-            } else {
-                updateMainCtx({ item: null, type: 'PublicKey', action: 'add' })
+    const [barrier, setBarrier] = React.useState(true)
+    React.useEffect(() => {
+        let active = true
+        const f = async () => {
+            const result = await findOrReturn({
+                client,
+                id:
+                    mainCtx.action === 'add'
+                        ? null
+                        : (mainCtx.item as string | null),
+                config,
+                url: mainCtx.url,
+            })
+            if (active) {
+                if (result === true) {
+                    setBarrier(false)
+                } else if (result) {
+                    updateMainCtx({ item: result, type: 'PublicKey' })
+                } else {
+                    updateMainCtx({
+                        item: null,
+                        type: 'PublicKey',
+                        action: 'add',
+                    })
+                }
             }
-        },
-        suspense: true,
-        client,
-        id: mainCtx.action === 'add' ? null : (mainCtx.item as string | null),
-        config,
-        url: mainCtx.url,
-        watch: mainCtx.url + '' + mainCtx.item,
-    })
-    if (isLoading) {
-        return null
-    }
-    if (data !== true) {
+        }
+        f()
+        return () => {
+            active = false
+            setBarrier(true)
+        }
+    }, [mainCtx.url, mainCtx.item])
+    if (barrier) {
         return null
     }
     return (

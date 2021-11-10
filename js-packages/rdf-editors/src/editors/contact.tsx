@@ -4,7 +4,6 @@ import CardContent from '@mui/material/CardContent'
 import { useTheme } from '@mui/material/styles'
 import * as Contexts from '@secretgraph/client/Client/contexts'
 import * as React from 'react'
-import { useAsync } from 'react-async'
 
 type Props = {}
 

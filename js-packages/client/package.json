@@ -13,7 +13,6 @@
     "file-saver": "*",
     "formik": "*",
     "react": "*",
-    "react-async": "*",
     "suneditor": "*",
     "suneditor-react": "*",
     "@emotion/css": "*",

@@ -41,7 +41,6 @@ import * as SetOps from '@secretgraph/misc/utils/set'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
-import { useAsync } from 'react-async'
 
 import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
@@ -64,57 +63,68 @@ const ViewWidget = ({
     mime: string
     name: string
 }) => {
-    const [blobUrl, setBlobUrl] = React.useState<string | undefined>(undefined)
-    const { data: arrBuff } = useAsync({
-        promise: arrayBuffer,
-        onReject: console.error,
-    })
+    const [blobUrlOrText, setBlobUrlOrText] = React.useState<
+        string | undefined
+    >(undefined)
     React.useEffect(() => {
-        if (!arrBuff) {
-            return
+        let _blobUrl: string | undefined = undefined
+        let active = true
+        const f = async () => {
+            const _arrBuff = await arrayBuffer
+            if (!_arrBuff || !active) {
+                return
+            }
+            if (mime.split('/', 1)[0] == 'text') {
+                try {
+                    setBlobUrlOrText(new TextDecoder().decode(_arrBuff))
+                    // sanitize and render
+                } catch (exc) {
+                    console.error('Could not parse', exc)
+                    setBlobUrlOrText(`${_arrBuff}`)
+                }
+            } else {
+                _blobUrl = URL.createObjectURL(
+                    new Blob([_arrBuff], { type: mime })
+                )
+                setBlobUrlOrText(_blobUrl)
+            }
         }
-        const _blobUrl = URL.createObjectURL(
-            new Blob([arrBuff], { type: mime })
-        )
-        setBlobUrl(_blobUrl)
+        f()
         return () => {
-            setBlobUrl(undefined)
-            URL.revokeObjectURL(_blobUrl)
+            active = false
+            setBlobUrlOrText(undefined)
+            _blobUrl && URL.revokeObjectURL(_blobUrl)
         }
-    }, [arrBuff])
-    if (!blobUrl) {
+    }, [arrayBuffer])
+    if (blobUrlOrText === undefined) {
         return null
     }
     let inner: null | JSX.Element = null
     switch (mime.split('/', 1)[0]) {
         case 'text':
-            let text
-            try {
-                text = new TextDecoder().decode(arrBuff)
-                // sanitize and render
-            } catch (exc) {
-                console.error('Could not parse', exc)
-                text = `${arrayBuffer}`
-            }
             if (mime == 'text/html') {
-                const sanitized = DOMPurify.sanitize(text)
+                const sanitized = DOMPurify.sanitize(blobUrlOrText)
                 inner = <div dangerouslySetInnerHTML={{ __html: sanitized }} />
             } else {
-                inner = <pre>{text}</pre>
+                inner = <pre>{blobUrlOrText}</pre>
             }
             break
         case 'audio':
         case 'video':
             inner = (
                 <video controls>
-                    <source src={blobUrl} style={{ width: '100%' }} />
+                    <source src={blobUrlOrText} style={{ width: '100%' }} />
                 </video>
             )
             break
         case 'image':
             inner = (
-                <a href={blobUrl}>
-                    <img src={blobUrl} alt={name} style={{ width: '100%' }} />
+                <a href={blobUrlOrText}>
+                    <img
+                        src={blobUrlOrText}
+                        alt={name}
+                        style={{ width: '100%' }}
+                    />
                 </a>
             )
             break
@@ -126,7 +136,7 @@ const ViewWidget = ({
                 {inner}
             </Grid>
             <Grid item xs={12}>
-                <a href={blobUrl} type={mime} target="_blank">
+                <a href={blobUrlOrText} type={mime} target="_blank">
                     <CloudDownloadIcon />
                 </a>
             </Grid>
