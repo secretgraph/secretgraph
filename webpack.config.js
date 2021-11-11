@@ -75,7 +75,6 @@ module.exports = (env, options) => {
             loader: './assets/js/loader.tsx',
             suneditorstyle: {
                 import: './node_modules/suneditor/dist/css/suneditor.min.css',
-                runtime: false,
             },
         },
         module: {
