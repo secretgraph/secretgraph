@@ -56,7 +56,7 @@ import * as Contexts from '../contexts'
 const decryptSet = new Set(['mime', 'ename'])
 const ViewWidget = ({
     arrayBuffer,
-    mime,
+    mime: mimeNew,
     name,
 }: {
     arrayBuffer: Promise<ArrayBuffer>
@@ -66,34 +66,40 @@ const ViewWidget = ({
     const [blobUrlOrText, setBlobUrlOrText] = React.useState<
         string | undefined
     >(undefined)
+    const [mime, setMime] = React.useState<string>(mimeNew)
     React.useEffect(() => {
-        let _blobUrl: string | undefined = undefined
         let active = true
         const f = async () => {
             const _arrBuff = await arrayBuffer
             if (!_arrBuff || !active) {
                 return
             }
-            if (mime.split('/', 1)[0] == 'text') {
+            const oldBlobUrl = mime.startsWith('text/')
+                ? undefined
+                : blobUrlOrText
+            if (mimeNew.startsWith('text/')) {
                 try {
+                    setMime(mimeNew)
                     setBlobUrlOrText(new TextDecoder().decode(_arrBuff))
                     // sanitize and render
                 } catch (exc) {
                     console.error('Could not parse', exc)
                     setBlobUrlOrText(`${_arrBuff}`)
+                    setMime(mimeNew)
                 }
             } else {
-                _blobUrl = URL.createObjectURL(
-                    new Blob([_arrBuff], { type: mime })
+                setBlobUrlOrText(
+                    URL.createObjectURL(new Blob([_arrBuff], { type: mime }))
                 )
-                setBlobUrlOrText(_blobUrl)
+                setMime(mimeNew)
+            }
+            if (oldBlobUrl) {
+                URL.revokeObjectURL(oldBlobUrl)
             }
         }
         f()
         return () => {
             active = false
-            setBlobUrlOrText(undefined)
-            _blobUrl && URL.revokeObjectURL(_blobUrl)
         }
     }, [arrayBuffer])
     if (blobUrlOrText === undefined) {

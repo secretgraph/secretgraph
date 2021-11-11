@@ -985,7 +985,9 @@ export default function KeyComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
-    const [barrier, setBarrier] = React.useState(true)
+    const [barrier, setBarrier] = React.useState<Promise<any> | undefined>(
+        Promise.resolve()
+    )
     React.useEffect(() => {
         let active = true
         const f = async () => {
@@ -1000,7 +1002,7 @@ export default function KeyComponent() {
             })
             if (active) {
                 if (result === true) {
-                    setBarrier(false)
+                    setBarrier(undefined)
                 } else if (result) {
                     updateMainCtx({ item: result, type: 'PublicKey' })
                 } else {
@@ -1012,14 +1014,14 @@ export default function KeyComponent() {
                 }
             }
         }
-        f()
+        setBarrier(f())
         return () => {
             active = false
-            setBarrier(true)
+            setBarrier(Promise.resolve())
         }
     }, [mainCtx.url, mainCtx.item])
     if (barrier) {
-        return null
+        throw barrier
     }
     return (
         <DecisionFrame

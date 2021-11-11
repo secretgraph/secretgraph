@@ -475,6 +475,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         }
     }, [mainCtx.updateId])
     React.useEffect(() => {
+        let active = true
         const f = async () => {
             if (!dataUnfinished || !dataUnfinished.secretgraph.node) {
                 if (dataUnfinished) {
@@ -495,20 +496,26 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             ) {
                 updateOb.deleted = false
             }
-            updateMainCtx(updateOb)
-            setData({
-                ...(await extractCombinedInfo({
-                    config,
-                    node: dataUnfinished.secretgraph.node,
-                    url: mainCtx.url as string,
-                    tokens: mainCtx.tokens,
-                    hashAlgorithms:
-                        dataUnfinished.secretgraph.config.hashAlgorithms,
-                })),
-                key: `edit${new Date().getTime()}`,
+            const newData = await extractCombinedInfo({
+                config,
+                node: dataUnfinished.secretgraph.node,
+                url: mainCtx.url as string,
+                tokens: mainCtx.tokens,
+                hashAlgorithms:
+                    dataUnfinished.secretgraph.config.hashAlgorithms,
             })
+            if (active) {
+                updateMainCtx(updateOb)
+                setData({
+                    ...newData,
+                    key: `edit${new Date().getTime()}`,
+                })
+            }
         }
         f()
+        return () => {
+            active = false
+        }
     }, [dataUnfinished, config, loading])
 
     if (!data) {
@@ -543,6 +550,7 @@ const AddCluster = () => {
     }, [])
 
     React.useEffect(() => {
+        let active = true
         const f = async () => {
             if (!dataUnfinished) {
                 return
@@ -557,27 +565,32 @@ const AddCluster = () => {
             )[0]
 
             const hashKey = await hashObject(key, hashAlgorithm)
-            setData({
-                name: '',
-                note: '',
-                featured: false,
-                public: false,
-                mapper: {
-                    [hashKey]: {
-                        type: 'action',
-                        data: keyb64,
-                        note: '',
-                        newHash: hashKey,
-                        oldHash: null,
-                        actions: new Set(['manage']),
-                        hasUpdate: true,
+            if (active) {
+                setData({
+                    name: '',
+                    note: '',
+                    featured: false,
+                    public: false,
+                    mapper: {
+                        [hashKey]: {
+                            type: 'action',
+                            data: keyb64,
+                            note: '',
+                            newHash: hashKey,
+                            oldHash: null,
+                            actions: new Set(['manage']),
+                            hasUpdate: true,
+                        },
                     },
-                },
-                hashAlgorithm,
-                key: `${new Date().getTime()}`,
-            })
+                    hashAlgorithm,
+                    key: `${new Date().getTime()}`,
+                })
+            }
         }
         f()
+        return () => {
+            active = false
+        }
     }, [activeUrl, dataUnfinished])
 
     if (!data) {
