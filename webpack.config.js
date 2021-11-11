@@ -1,8 +1,8 @@
 const path = require('path')
+const fs = require('fs')
 const { SourceMapDevToolPlugin, ProvidePlugin } = require('webpack')
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin')
 //const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
-const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin')
 
 module.exports = (env, options) => {
     /*const tsgqlPlugin = new TsGraphQLPlugin({
@@ -28,6 +28,17 @@ module.exports = (env, options) => {
             })
         )
     }
+    const alias = {}
+    fs.readdirSync(path.resolve(__dirname, './js-packages')).forEach(
+        (package) => {
+            alias[`@secretgraph/${package}`] = path.resolve(
+                __dirname,
+                'js-packages',
+                package,
+                'src'
+            )
+        }
+    )
     return {
         stats: {
             errorDetails: true,
@@ -62,8 +73,10 @@ module.exports = (env, options) => {
         },
         entry: {
             loader: './assets/js/loader.tsx',
-            suneditorstyle:
-                './node_modules/suneditor/dist/css/suneditor.min.css',
+            suneditorstyle: {
+                import: './node_modules/suneditor/dist/css/suneditor.min.css',
+                runtime: false,
+            },
         },
         module: {
             rules: [
@@ -88,12 +101,18 @@ module.exports = (env, options) => {
                     },
                 },
                 {
-                    test: /\.css$/i,
+                    test: /\.min\.css$/i,
+                    type: 'asset/resource',
+                },
+                {
+                    test: /(?<!\.min)\.css$/i,
                     use: [
                         {
                             loader: 'style-loader',
                         },
-                        'css-loader',
+                        {
+                            loader: 'css-loader',
+                        },
                     ],
                 },
             ],
@@ -111,7 +130,8 @@ module.exports = (env, options) => {
             fallback: {
                 buffer: false,
             },
-            plugins: [new TsconfigPathsPlugin()],
+            alias,
+            plugins: [],
         },
         plugins,
         optimization: {
