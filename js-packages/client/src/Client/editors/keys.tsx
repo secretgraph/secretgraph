@@ -843,6 +843,7 @@ const EditKeys = () => {
     }, [mainCtx.updateId, cluster])
 
     React.useEffect(() => {
+        let active = true
         if (!dataUnfinished) {
             return
         }
@@ -864,17 +865,23 @@ const EditKeys = () => {
                 }
             }
             updateMainCtx(updateOb)
-            setData({
-                ...(await loadKeys({
-                    baseUrl: mainCtx.url as string,
-                    data: dataUnfinished,
-                    config,
-                    authorization: mainCtx.tokens,
-                })),
-                key: `${new Date().getTime()}`,
+            const reskeys = await loadKeys({
+                baseUrl: mainCtx.url as string,
+                data: dataUnfinished,
+                config,
+                authorization: mainCtx.tokens,
             })
+            if (active) {
+                setData({
+                    ...reskeys,
+                    key: `${new Date().getTime()}`,
+                })
+            }
         }
         f()
+        return () => {
+            active = false
+        }
     }, [dataUnfinished, config])
     if (!data) {
         return null
@@ -927,12 +934,6 @@ const AddKeys = () => {
             refetch()
         }
     }, [cluster])
-    const initialValues = {
-        cluster,
-        publicKey: '',
-        privateKey: '',
-    }
-
     return (
         <KeysIntern
             hashAlgorithms={data?.secretgraph?.config?.hashAlgorithms || []}
