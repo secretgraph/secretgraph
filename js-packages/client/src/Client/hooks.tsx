@@ -6,8 +6,8 @@ export function suspendPromiseFn<T>(
     hardSwitch?: boolean
 ) {
     const [result, setResult] = useState<T | undefined>(undefined)
-    let [barrier, setBarrier] = useState<Promise<any> | undefined | false>(
-        Promise.resolve
+    let [barrier, setBarrier] = useState<Promise<any> | undefined | false>(() =>
+        Promise.resolve()
     )
     useEffect(() => {
         let active = true
@@ -33,7 +33,8 @@ export function suspendPromiseFn<T>(
         }
     }, watch)
     if (barrier && (result === undefined || hardSwitch)) {
-        throw barrier
+        //throw barrier
+        return null
     }
     if (barrier === false) {
         throw result

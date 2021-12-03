@@ -985,7 +985,7 @@ export default function KeyComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
-    const [barrier, setBarrier] = React.useState<Promise<any> | undefined>(
+    const [barrier, setBarrier] = React.useState<Promise<any> | undefined>(() =>
         Promise.resolve()
     )
     React.useEffect(() => {
@@ -1021,7 +1021,8 @@ export default function KeyComponent() {
         }
     }, [mainCtx.url, mainCtx.item])
     if (barrier) {
-        throw barrier
+        return null
+        //throw barrier
     }
     return (
         <DecisionFrame
