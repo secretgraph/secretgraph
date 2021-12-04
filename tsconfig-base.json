@@ -6,9 +6,7 @@
         "strictNullChecks": true,
         "downlevelIteration": true,
         "forceConsistentCasingInFileNames": true,
-        "esModuleInterop": true,
         "module": "esnext",
-        "importHelpers": true,
         "moduleResolution": "node",
         "lib": [
             "ESNext",
