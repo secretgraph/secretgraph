@@ -21,7 +21,8 @@
     "@mui/material": "*",
     "@mui/icons-material": "*",
     "@mui/lab": "*",
-    "@mui/system": "*"
+    "@mui/system": "*",
+    "date-fns": "*"
   },
   "devDependencies": {
     "typescript": "*",

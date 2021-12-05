@@ -1,11 +1,10 @@
 import { ApolloProvider } from '@apollo/client'
 import { Box } from '@mui/material'
+import Alert from '@mui/material/Alert'
 import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
 import { useTheme } from '@mui/material/styles'
-import Alert from '@mui/material/Alert'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { createClient } from '@secretgraph/misc/utils/graphql'
 import * as React from 'react'
 
 import ActionBar from '../components/ActionBar'
