@@ -8,7 +8,10 @@ export type FormikDateTimePickerProps<
     V extends string | string[] = string,
     FormValues = any
 > = OptionalAttributes<
-    Omit<DateTimePickerProps, keyof FieldProps<V, FormValues> | 'defaultValue'>,
+    Omit<
+        DateTimePickerProps<string>,
+        keyof FieldProps<V, FormValues> | 'defaultValue' | 'onChange'
+    >,
     'renderInput'
 > &
     FieldProps<V, FormValues>
@@ -30,6 +33,10 @@ export default function FormikDateTimePicker<
             }
             {...field}
             {...params}
+            onChange={(val) => {
+                form.setFieldValue(field.name, val)
+                form.setFieldTouched(field.name, true)
+            }}
         />
     )
 }

@@ -1,3 +1,6 @@
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
     Checkbox,
     DialogActions,
@@ -21,9 +24,6 @@ import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
 import ListItemText from '@mui/material/ListItemText'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
-import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
     ActionInputEntry,
     CertificateInputEntry,
@@ -43,6 +43,7 @@ import {
 import * as React from 'react'
 
 import FormikCheckBox from './formik/FormikCheckbox'
+import FormikDateTimePicker from './formik/FormikDateTimePicker'
 import FormikTextField from './formik/FormikTextField'
 import SimpleSelect from './forms/SimpleSelect'
 
@@ -158,27 +159,35 @@ function ActionEntryIntern({
                             name={
                                 !submitFn ? `actions.${index}.start` : 'start'
                             }
-                            component={FormikTextField}
+                            component={FormikDateTimePicker}
                             fullWidth
-                            type="datetime-local"
+                            maxDateTime={
+                                values[
+                                    !submitFn ? `actions.${index}.stop` : 'stop'
+                                ]
+                            }
                             disabled={disabled || locked}
-                            inputProps={{
-                                pattern:
-                                    '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
-                            }}
+                            clearable
+                            showTodayButton
+                            inputFormat="yyyy-MM-dd'T'HH:mm"
                             label="Start"
                         />
                     </Grid>
                     <Grid item xs={4}>
                         <FastField
                             name={!submitFn ? `actions.${index}.stop` : 'stop'}
-                            component={FormikTextField}
+                            component={FormikDateTimePicker}
                             fullWidth
-                            type="datetime-local"
-                            inputProps={{
-                                pattern:
-                                    '[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}',
-                            }}
+                            minDateTime={
+                                values[
+                                    !submitFn
+                                        ? `actions.${index}.start`
+                                        : 'start'
+                                ]
+                            }
+                            clearable
+                            showTodayButton
+                            inputFormat="yyyy-MM-dd'T'HH:mm"
                             disabled={disabled || locked}
                             label="Stop"
                         />
@@ -281,7 +290,11 @@ function ActionEntryIntern({
                                         type="checkbox"
                                     />
                                 ) : (
-                                    <IconButton onClick={deleteFn} disabled={disabled || action?.readonly} size="large">
+                                    <IconButton
+                                        onClick={deleteFn}
+                                        disabled={disabled || action?.readonly}
+                                        size="large"
+                                    >
                                         <DeleteIcon />
                                     </IconButton>
                                 )}
@@ -314,7 +327,7 @@ function ActionEntryIntern({
                 </Grid>,
             ]}
         </Grid>
-    );
+    )
 }
 
 export function ActionEntry({
