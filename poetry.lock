@@ -641,7 +641,7 @@ test = ["django-webtest", "WSGIProxy2", "graphene-django", "graphene-file-upload
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8, <4"
-content-hash = "1ac72f59eabaff37eeed1db0764985ee07dadff38d300e7cf3d55286af0f50fe"
+content-hash = "8d2d8360f18d159e06c7e0ff734ea7565825374aaeb90eb0402cbf48186196a8"
 
 [metadata.files]
 aniso8601 = [
