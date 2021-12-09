@@ -168,6 +168,7 @@ function ActionEntryIntern({
                             }
                             disabled={disabled || locked}
                             clearable
+                            ampm={false}
                             showTodayButton
                             inputFormat="yyyy-MM-dd'T'HH:mm"
                             label="Start"
@@ -185,6 +186,7 @@ function ActionEntryIntern({
                                         : 'start'
                                 ]
                             }
+                            ampm={false}
                             clearable
                             showTodayButton
                             inputFormat="yyyy-MM-dd'T'HH:mm"
