@@ -24,6 +24,7 @@ export default function FormikDateTimePicker<
     form,
     meta: metaIntern,
     renderInput,
+    ampm,
     ...params
 }: FormikDateTimePickerProps<V, FormValues>) {
     return (
@@ -31,6 +32,8 @@ export default function FormikDateTimePicker<
             renderInput={
                 renderInput ? renderInput : (props) => <TextField {...props} />
             }
+            // TODO: use until code is fixed
+            ampm={ampm !== undefined ? ampm : false}
             {...field}
             {...params}
             onChange={(val) => {
