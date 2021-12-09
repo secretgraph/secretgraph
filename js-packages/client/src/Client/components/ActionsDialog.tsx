@@ -138,7 +138,7 @@ function ActionEntryIntern({
                         For security reasons action options are not shown after
                         creation. Use note field to document them
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={12} md={4}>
                         {action?.type == 'certificate' ||
                         action?.value?.action == 'other' ? null : (
                             <FastField
@@ -154,7 +154,7 @@ function ActionEntryIntern({
                             />
                         )}
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={12} sm={6} md={4}>
                         <FastField
                             name={
                                 !submitFn ? `actions.${index}.start` : 'start'
@@ -169,11 +169,10 @@ function ActionEntryIntern({
                             disabled={disabled || locked}
                             clearable
                             showTodayButton
-                            inputFormat="yyyy-MM-dd'T'HH:mm"
                             label="Start"
                         />
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid item xs={12} sm={6} md={4}>
                         <FastField
                             name={!submitFn ? `actions.${index}.stop` : 'stop'}
                             component={FormikDateTimePicker}
@@ -187,7 +186,6 @@ function ActionEntryIntern({
                             }
                             clearable
                             showTodayButton
-                            inputFormat="yyyy-MM-dd'T'HH:mm"
                             disabled={disabled || locked}
                             label="Stop"
                         />
