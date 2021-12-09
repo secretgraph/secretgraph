@@ -25,7 +25,7 @@ keywords = [
 
 [tool.poetry.dependencies]
 python = ">=3.8, <4"
-django = '>=4.0'
+django = '>=3.0,<4'
 cryptography = "*"
 rdflib = '*'
 requests = "*"
