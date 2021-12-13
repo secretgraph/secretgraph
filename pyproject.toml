@@ -25,13 +25,13 @@ keywords = [
 
 [tool.poetry.dependencies]
 python = ">=3.8, <4"
-django = '>=3.0,<4'
+django = '>=4.0'
 cryptography = "*"
 rdflib = '*'
 requests = "*"
 certifi = "*"
 graphene-protector = {version="*", optional = true}
-graphene-django = {version="*", optional = true}
+graphene-django = {version=">=3.0b1", optional = true}
 graphene-file-upload = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
