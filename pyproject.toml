@@ -30,8 +30,8 @@ cryptography = "*"
 rdflib = '*'
 requests = "*"
 certifi = "*"
-graphene-protector = {version="*", optional = true}
-graphene-django = {version=">=3.0b1", optional = true}
+graphene-protector = {version=">=0.5.0", optional = true}
+graphene-django = {version=">=3.0b7", optional = true}
 graphene-file-upload = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
@@ -44,8 +44,8 @@ django-fast-ratelimit = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
-graphene-protector = ">=0.4.0beta0"
-graphene-django = '*'
+graphene-protector = ">=0.5.0"
+graphene-django = '>=3.0b7'
 graphene-file-upload = "*"
 django-extensions = '*'
 Werkzeug = '*'

@@ -281,7 +281,7 @@ function ActionEntryIntern({
                         <Tooltip title="Delete" arrow>
                             <span>
                                 {action?.oldHash ? (
-                                    <Field
+                                    <FastField
                                         name={`actions.${index}.delete`}
                                         disabled={disabled || action?.readonly}
                                         component={FormikCheckBox}
