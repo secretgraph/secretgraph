@@ -128,8 +128,12 @@ _deleteRecursive_set = set(
 
 def clean_deleteRecursive(group, val):
     if val:
+        # handle enum values
+        if hasattr(val, "value"):
+            val = val.value
         assert val in _deleteRecursive_set, "Invalid value for deleteRecursive"
         return val
+    # set defaults
     if group == "signature":
         return DeleteRecursive.FALSE.value
     elif group in {"key", "transfer"}:
