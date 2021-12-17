@@ -1,13 +1,19 @@
 import '@secretgraph/rdf-editors/editors'
 
 import MainPage from '@secretgraph/client/Client'
+import { StrictMode } from 'react'
 import * as ReactDOM from 'react-dom'
 
 let wrapper = document.getElementById('content-main')
 const defaultPath: string | undefined = wrapper
     ? wrapper.dataset.graphqlPath
     : undefined
-ReactDOM.render(<MainPage defaultPath={defaultPath} />, wrapper)
+ReactDOM.render(
+    <StrictMode>
+        <MainPage defaultPath={defaultPath} />
+    </StrictMode>,
+    wrapper
+)
 // doesn't work
 /**if (module.hot) {
     module.hot.accept(
