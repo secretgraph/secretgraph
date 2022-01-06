@@ -55,17 +55,23 @@ export async function createContent({
     if (options.pubkeys.length == 0) {
         throw Error('No public keys provided')
     }
-    const nonce = crypto.getRandomValues(new Uint8Array(13))
-    const key = crypto.getRandomValues(new Uint8Array(32))
     const tagsOptions = await Promise.all(tagsIntern)
     const isPublic = tagsOptions.includes('state=public')
+    let nonce: Uint8Array | undefined, key: Uint8Array | undefined
+    if (isPublic) {
+        nonce = undefined
+        key = undefined
+    } else {
+        nonce = crypto.getRandomValues(new Uint8Array(13))
+        key = crypto.getRandomValues(new Uint8Array(32))
+    }
 
     const encryptedContentPromise = isPublic
         ? unserializeToArrayBuffer(value).then((data) => ({
               data,
           }))
         : encryptAESGCM({
-              key,
+              key: key as NonNullable<typeof key>,
               nonce,
               data: value,
           }).catch((reason) => {
@@ -76,7 +82,11 @@ export async function createContent({
 
     const [publicKeyReferencesPromise, tagsPromise] = isPublic
         ? [[], []]
-        : encryptSharedKey(key, options.pubkeys, halgo)
+        : encryptSharedKey(
+              key as NonNullable<typeof key>,
+              options.pubkeys,
+              halgo
+          )
     const signatureReferencesPromise = encryptedContentPromise.then((data) =>
         createSignatureReferences(
             data.data,
@@ -84,12 +94,27 @@ export async function createContent({
             halgo
         )
     )
-    const encrypt = new Set<string>(options.encryptTags)
-    const tags = await Promise.all(
-        ((await tagsPromise) as (string | PromiseLike<string>)[])
-            .concat(tagsOptions)
-            .map((data) => encryptTag({ data, key, encrypt }))
-    )
+    let tags: string[]
+    if (isPublic) {
+        tags = await Promise.all(
+            ((await tagsPromise) as (string | PromiseLike<string>)[]).concat(
+                tagsOptions
+            )
+        )
+    } else {
+        const encrypt = new Set<string>(options.encryptTags)
+        tags = await Promise.all(
+            ((await tagsPromise) as (string | PromiseLike<string>)[])
+                .concat(tagsOptions)
+                .map((data) =>
+                    encryptTag({
+                        data,
+                        key: key as NonNullable<typeof key>,
+                        encrypt,
+                    })
+                )
+        )
+    }
     return await client.mutate({
         mutation: createContentMutation,
         // we need a current updateId
@@ -102,7 +127,7 @@ export async function createContent({
                 options.references ? [...options.references] : []
             ),
             tags,
-            nonce: await serializeToBase64(nonce),
+            nonce: nonce ? await serializeToBase64(nonce) : undefined,
             value: await encryptedContentPromise.then(
                 (data) => new Blob([data.data])
             ),
@@ -113,7 +138,6 @@ export async function createContent({
     })
 }
 
-// TODO: fix public/private. Don't encrypt if public
 export async function updateContent({
     id,
     updateId,
@@ -138,12 +162,14 @@ export async function updateContent({
     // only for tag only updates if encryptTags is used
     oldKey?: Interfaces.RawInput
 }): Promise<FetchResult<any>> {
-    let references
-    const tags = options.tags
+    const tagsOptions = options.tags
         ? await Promise.all(options.tags)
         : options.value
         ? []
         : null
+    const isPublic = tagsOptions
+        ? tagsOptions.includes('state=public')
+        : undefined
     const encrypt: Set<string> | undefined = options.encryptTags
         ? new Set(options.encryptTags)
         : undefined
@@ -151,7 +177,7 @@ export async function updateContent({
     let sharedKey: ArrayBuffer | undefined
     if (options.value) {
         sharedKey = crypto.getRandomValues(new Uint8Array(32))
-    } else if (options.tags && encrypt && encrypt.size > 0) {
+    } else if (tagsOptions && encrypt && encrypt.size > 0) {
         if (!options.oldKey) {
             throw Error('Tag only update without oldKey')
         }
@@ -159,40 +185,71 @@ export async function updateContent({
     } else {
         sharedKey = undefined
     }
+    const references: Interfaces.ReferenceInterface[] = []
+    let tags: (PromiseLike<string> | string)[] | null = null
+    if (sharedKey && tagsOptions) {
+        tags = tagsOptions.map((tag: string) => {
+            return encryptTag({
+                key: sharedKey as ArrayBuffer,
+                data: tag,
+                encrypt,
+            })
+        })
+    }
     let encryptedContent = null
     let nonce = undefined
     if (options.value) {
-        nonce = crypto.getRandomValues(new Uint8Array(13))
-        if (!options.hashAlgorithm) {
-            throw Error('hashAlgorithm required for value updates')
-        }
-        if (options.pubkeys.length == 0) {
-            throw Error('No public keys provided')
-        }
-        encryptedContent = await encryptAESGCM({
-            key: sharedKey as ArrayBuffer,
-            nonce,
-            data: options.value,
-        })
+        if (isPublic) {
+            encryptedContent = await unserializeToArrayBuffer(options.value)
 
-        const [publicKeyReferencesPromise, tagsPromise2] = encryptSharedKey(
-            sharedKey as ArrayBuffer,
-            options.pubkeys,
-            options.hashAlgorithm
-        )
-        const signatureReferencesPromise = createSignatureReferences(
-            encryptedContent.data,
-            options.privkeys ? options.privkeys : [],
-            options.hashAlgorithm
-        )
-        references = ([] as Interfaces.ReferenceInterface[]).concat(
-            await publicKeyReferencesPromise,
-            await signatureReferencesPromise,
-            options.references ? [...options.references] : []
-        )
-        ;(tags as string[]).push(...(await tagsPromise2))
-    } else {
-        references = options.references ? options.references : null
+            if (
+                options.privkeys &&
+                options.privkeys.length &&
+                !options.hashAlgorithm
+            ) {
+                throw Error('hashAlgorithm required for value signature')
+            }
+        } else {
+            if (tags === null) {
+                throw Error('tags required for value update')
+            }
+            if (!options.hashAlgorithm) {
+                throw Error('hashAlgorithm required for value updates')
+            }
+            if (options.pubkeys.length == 0) {
+                throw Error('No public keys provided')
+            }
+            nonce = crypto.getRandomValues(new Uint8Array(13))
+
+            encryptedContent = (
+                await encryptAESGCM({
+                    key: sharedKey as ArrayBuffer,
+                    nonce,
+                    data: options.value,
+                })
+            ).data
+            const [publicKeyReferencesPromise, tagsPromise2] = encryptSharedKey(
+                sharedKey as ArrayBuffer,
+                options.pubkeys,
+                options.hashAlgorithm
+            )
+            references.push(...(await publicKeyReferencesPromise))
+            tags.push(...(await tagsPromise2))
+        }
+        if (options.privkeys && options.privkeys.length) {
+            references.push(
+                ...(await createSignatureReferences(
+                    encryptedContent,
+                    options.privkeys,
+                    options.hashAlgorithm as NonNullable<
+                        typeof options.hashAlgorithm
+                    >
+                ))
+            )
+        }
+    }
+    if (options.references) {
+        references.push(...options.references)
     }
     return await client.mutate({
         mutation: updateContentMutation,
@@ -203,21 +260,9 @@ export async function updateContent({
             updateId,
             cluster: options.cluster ? options.cluster : null,
             references,
-            tags: tags
-                ? await Promise.all(
-                      tags.map(
-                          async (tagPromise: string | PromiseLike<string>) => {
-                              return await encryptTag({
-                                  key: sharedKey as ArrayBuffer,
-                                  data: tagPromise,
-                                  encrypt,
-                              })
-                          }
-                      )
-                  )
-                : null,
-            nonce: nonce ? await serializeToBase64(nonce) : undefined,
-            value: encryptedContent ? new Blob([encryptedContent.data]) : null,
+            tags: tags ? await Promise.all(tags) : null,
+            nonce: nonce ? await serializeToBase64(nonce) : null,
+            value: encryptedContent ? new Blob([encryptedContent]) : null,
             actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],
