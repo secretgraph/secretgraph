@@ -312,6 +312,7 @@ const FileIntern = ({
             initialValues={{
                 plainInput: '',
                 htmlInput: '',
+                // when viewing existing data: fileInput is used
                 fileInput: data ? data : null,
                 state,
                 name,
@@ -376,28 +377,33 @@ const FileIntern = ({
                 } else {
                     throw Error('no input found')
                 }
-                const pubkeysResult = await itemClient.query({
-                    fetchPolicy: 'network-only',
-                    query: getContentConfigurationQuery,
-                    variables: {
-                        authorization: tokens,
-                        id: values.cluster,
-                    },
-                })
-                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                 const privkeys = extractPrivKeys({
                     config,
                     url,
                     hashAlgorithm,
+                    clusters: values.cluster
+                        ? new Set([values.cluster])
+                        : undefined,
                 })
-                const pubkeys = extractPubKeysCluster({
-                    node: pubkeysResult.data.secretgraph.node,
-                    authorization: tokens,
-                    params: {
-                        name: 'RSA-OAEP',
-                        hash: hashAlgorithm,
-                    },
-                })
+                let pubkeys: { [hash: string]: Promise<CryptoKey> } = {}
+                if (values.state != 'public') {
+                    const pubkeysResult = await itemClient.query({
+                        fetchPolicy: 'network-only',
+                        query: getContentConfigurationQuery,
+                        variables: {
+                            authorization: tokens,
+                            id: values.cluster,
+                        },
+                    })
+                    pubkeys = extractPubKeysCluster({
+                        node: pubkeysResult.data.secretgraph.node,
+                        authorization: tokens,
+                        params: {
+                            name: 'RSA-OAEP',
+                            hash: hashAlgorithm,
+                        },
+                    })
+                }
 
                 try {
                     const options = {
@@ -406,7 +412,7 @@ const FileIntern = ({
                         cluster: values.cluster,
                         value,
                         tags: [
-                            values.encryptName
+                            values.encryptName || values.state != 'public'
                                 ? `ename=${Buffer.from(values.name).toString(
                                       'base64'
                                   )}`

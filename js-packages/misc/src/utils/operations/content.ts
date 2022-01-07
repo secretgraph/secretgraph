@@ -53,9 +53,6 @@ export async function createContent({
     authorization: Iterable<string>
     encryptTags?: Iterable<string>
 }): Promise<FetchResult<any>> {
-    if (options.pubkeys.length == 0) {
-        throw Error('No public keys provided')
-    }
     const tagsOptions = await Promise.all(tagsIntern)
     const isPublic = tagsOptions.includes('state=public')
     let nonce: Uint8Array | undefined, key: Uint8Array | undefined
@@ -65,6 +62,9 @@ export async function createContent({
     } else {
         nonce = crypto.getRandomValues(new Uint8Array(13))
         key = crypto.getRandomValues(new Uint8Array(32))
+    }
+    if (!isPublic && options.pubkeys.length == 0) {
+        throw Error('No public keys provided')
     }
 
     const encryptedContentPromise = isPublic

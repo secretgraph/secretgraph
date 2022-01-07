@@ -260,7 +260,7 @@ export async function unserializeToCryptoKey(
             !Constants.mapEncryptionAlgorithms[`${params.name}private`] ||
             !Constants.mapEncryptionAlgorithms[`${params.name}public`]
         ) {
-            throw Error('Algorithm not supported: ' + params.name)
+            throw Error(`Algorithm not supported: ${params.name}`)
         }
         try {
             _result = await crypto.subtle.importKey(
@@ -293,23 +293,25 @@ export async function unserializeToCryptoKey(
                             `${params.name}public`
                         ].usages
                     )
-                } catch (exception) {
+                } catch (exc_inner) {
                     console.debug(
                         'error importing, parameters: ',
                         params,
+                        _data,
                         Constants.mapEncryptionAlgorithms[
                             `${params.name}public`
                         ].usages,
-                        _data
+                        exc_inner.stack
                     )
-                    throw exception
+                    throw exc_inner
                 }
             } else {
                 console.debug(
                     'error invalid, parameters: ',
-                    _data,
                     params,
-                    Constants.mapEncryptionAlgorithms[`${params.name}public`]
+                    _data,
+                    Constants.mapEncryptionAlgorithms[`${params.name}public`],
+                    exc.stack
                 )
                 throw Error('Not a PrivateKey')
             }

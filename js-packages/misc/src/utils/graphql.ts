@@ -75,7 +75,6 @@ async function createSignatureReferences_helper(
     let signkey: Interfaces.KeyInput, hash: string | Promise<string>
     const hashalgo2 = mapHashNames[hashalgo].operationName
     const hashalgo2_len = mapHashNames[hashalgo].length
-    // TODO: here things crash
     if ((_x as any)['hash']) {
         signkey = (_x as Interfaces.CryptoHashPair).key
         hash = (_x as Interfaces.CryptoHashPair).hash
@@ -122,7 +121,7 @@ async function createSignatureReferences_helper(
     }
 }
 
-export function createSignatureReferences(
+export async function createSignatureReferences(
     content: Parameters<typeof unserializeToArrayBuffer>[0],
     privkeys: (
         | Interfaces.KeyInput
@@ -153,7 +152,7 @@ export function createSignatureReferences(
         )
     }
 
-    return Promise.all(references)
+    return await Promise.all(references)
 }
 
 async function encryptSharedKey_helper(
@@ -266,13 +265,22 @@ export function extractPubKeysCluster(props: {
                 headers: {
                     Authorization: props.authorization.join(','),
                 },
-            }).then((result) =>
-                unserializeToCryptoKey(
-                    result.arrayBuffer(),
-                    props.params,
-                    'publicKey'
-                )
-            )
+            }).then(async (result) => {
+                const buf = await result.arrayBuffer()
+                try {
+                    return await unserializeToCryptoKey(
+                        buf,
+                        props.params,
+                        'publicKey'
+                    )
+                } catch (exc) {
+                    console.log(
+                        'failed exctracting public key from cluster',
+                        buf
+                    )
+                    throw exc
+                }
+            })
         }
     }
     return pubkeys
@@ -297,13 +305,22 @@ export function extractPubKeysReferences(props: {
                 headers: {
                     Authorization: props.authorization.join(','),
                 },
-            }).then((result) =>
-                unserializeToCryptoKey(
-                    result.arrayBuffer(),
-                    props.params,
-                    'publicKey'
-                )
-            )
+            }).then(async (result) => {
+                const buf = await result.arrayBuffer()
+                try {
+                    return await unserializeToCryptoKey(
+                        buf,
+                        props.params,
+                        'publicKey'
+                    )
+                } catch (exc) {
+                    console.log(
+                        'failed exctracting public key from reference',
+                        buf
+                    )
+                    throw exc
+                }
+            })
         }
     }
     return pubkeys
