@@ -17,6 +17,7 @@ import {
 import {
     decryptAESGCM,
     decryptRSAOEAP,
+    deparseTag,
     encryptAESGCM,
     encryptTag,
     extractTags,
@@ -67,17 +68,20 @@ export async function createContent({
     }
 
     const encryptedContentPromise = isPublic
-        ? unserializeToArrayBuffer(value).then((data) => ({
-              data,
-          }))
+        ? unserializeToArrayBuffer(value)
         : encryptAESGCM({
               key: key as NonNullable<typeof key>,
               nonce,
               data: value,
-          }).catch((reason) => {
-              console.error('encrypting content failed', key, nonce, reason)
-              return Promise.reject(reason)
-          })
+          }).then(
+              (data) => {
+                  return data.data
+              },
+              (reason) => {
+                  console.error('encrypting content failed', key, nonce, reason)
+                  throw reason
+              }
+          )
     const halgo = mapHashNames[options.hashAlgorithm].operationName
 
     const [publicKeyReferencesPromise, tagsPromise] = isPublic
@@ -89,12 +93,13 @@ export async function createContent({
           )
     const signatureReferencesPromise = encryptedContentPromise.then((data) =>
         createSignatureReferences(
-            data.data,
+            data,
             options.privkeys ? options.privkeys : [],
             halgo
         )
     )
     let tags: string[]
+    const encryptTagsSet = new Set<string>(options.encryptTags)
     if (isPublic) {
         tags = await Promise.all(
             ((await tagsPromise) as (string | PromiseLike<string>)[]).concat(
@@ -102,7 +107,6 @@ export async function createContent({
             )
         )
     } else {
-        const encrypt = new Set<string>(options.encryptTags)
         tags = await Promise.all(
             ((await tagsPromise) as (string | PromiseLike<string>)[])
                 .concat(tagsOptions)
@@ -110,7 +114,7 @@ export async function createContent({
                     encryptTag({
                         data,
                         key: key as NonNullable<typeof key>,
-                        encrypt,
+                        encrypt: encryptTagsSet,
                     })
                 )
         )
@@ -129,7 +133,7 @@ export async function createContent({
             tags,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
             value: await encryptedContentPromise.then(
-                (data) => new Blob([data.data])
+                (data) => new Blob([data])
             ),
             actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,

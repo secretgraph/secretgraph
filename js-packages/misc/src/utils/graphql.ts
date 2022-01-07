@@ -75,11 +75,13 @@ async function createSignatureReferences_helper(
     let signkey: Interfaces.KeyInput, hash: string | Promise<string>
     const hashalgo2 = mapHashNames[hashalgo].operationName
     const hashalgo2_len = mapHashNames[hashalgo].length
+    // TODO: here things crash
     if ((_x as any)['hash']) {
         signkey = (_x as Interfaces.CryptoHashPair).key
         hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
         signkey = key as Interfaces.KeyInput
+        // serialize to spki for consistent hash
         hash = serializeToBase64(
             crypto.subtle.digest(
                 hashalgo2,

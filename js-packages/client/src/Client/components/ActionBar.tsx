@@ -1,4 +1,11 @@
 import { useApolloClient } from '@apollo/client'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
+import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash'
+import ShareIcon from '@mui/icons-material/Share'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -10,13 +17,6 @@ import NativeSelect from '@mui/material/NativeSelect'
 import { useTheme } from '@mui/material/styles'
 import Toolbar from '@mui/material/Toolbar'
 import Tooltip from '@mui/material/Tooltip'
-import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
-import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash'
-import ShareIcon from '@mui/icons-material/Share'
-import VisibilityIcon from '@mui/icons-material/Visibility'
 import { extractAuthInfo } from '@secretgraph/misc/utils/config'
 import {
     deleteNodes,
@@ -148,7 +148,8 @@ function ActionBar(props: Props) {
                                             : mainCtx.tokens,
                                 })
                             }
-                            size="large">
+                            size="large"
+                        >
                             {mainCtx.action === 'view' ? (
                                 <EditIcon />
                             ) : (
@@ -198,6 +199,7 @@ function ActionBar(props: Props) {
                                         deleted:
                                             data.resetDeletionContentOrCluster
                                                 .deleted,
+                                        updateId: null,
                                     })
                                 } else {
                                     const { data } = await deleteNodes({
@@ -208,10 +210,12 @@ function ActionBar(props: Props) {
                                     updateMainCtx({
                                         deleted:
                                             data.deleteContentOrCluster.deleted,
+                                        updateId: null,
                                     })
                                 }
                             }}
-                            size="large">
+                            size="large"
+                        >
                             {mainCtx.deleted ? (
                                 <RestoreFromTrashIcon />
                             ) : (
@@ -269,7 +273,8 @@ function ActionBar(props: Props) {
                                     tokens: createTokens,
                                 })
                             }}
-                            size="large">
+                            size="large"
+                        >
                             <AddIcon />
                         </IconButton>
                     </span>
@@ -286,21 +291,26 @@ function ActionBar(props: Props) {
                             color="inherit"
                             aria-label="share"
                             onClick={() => setShareOpen(true)}
-                            size="large">
+                            size="large"
+                        >
                             <ShareIcon />
                         </IconButton>
                     </span>
                 </Tooltip>
                 <Tooltip title="Help" arrow>
                     <span>
-                        <IconButton color="inherit" aria-label="help" size="large">
+                        <IconButton
+                            color="inherit"
+                            aria-label="help"
+                            size="large"
+                        >
                             <HelpOutlineOutlinedIcon />
                         </IconButton>
                     </span>
                 </Tooltip>
             </Toolbar>
         </nav>
-    );
+    )
 }
 
 export default ActionBar

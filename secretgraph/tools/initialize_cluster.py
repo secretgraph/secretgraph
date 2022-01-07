@@ -23,6 +23,7 @@ serverConfigQuery_query = """
 query serverSecretgraphConfigQuery {
     secretgraph{
         config {
+            id
             hashAlgorithms
             injectedClusters {
                 group

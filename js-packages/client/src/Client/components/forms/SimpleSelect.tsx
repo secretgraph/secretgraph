@@ -3,7 +3,7 @@ import {
     AutocompleteRenderInputParams,
 } from '@mui/material/Autocomplete'
 import Chip from '@mui/material/Chip'
-import { TextFieldProps } from '@mui/material/TextField'
+import TextField, { TextFieldProps } from '@mui/material/TextField'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { Field, FieldInputProps, FieldMetaProps, FieldProps } from 'formik'
 import * as React from 'react'
@@ -21,6 +21,7 @@ export interface SimpleSelectProps<
         'renderTags' | 'renderInput'
     > {
     label?: TextFieldProps['label']
+    helperText?: TextFieldProps['helperText']
     InputProps?: TextFieldProps['InputProps']
     renderInput?: AutocompleteProps<
         T,
@@ -138,11 +139,14 @@ export default function SimpleSelect<
                 )
             }
             return (
-                <FormikTextField
+                <TextField
                     {...params}
-                    field={field as FieldInputProps<string>}
-                    form={form}
-                    meta={meta as FieldMetaProps<string>}
+                    error={!!meta?.error && meta?.touched}
+                    helperText={
+                        meta?.error && meta?.touched
+                            ? meta.error
+                            : appProps.helperText
+                    }
                     InputProps={InputProps}
                     label={label}
                     fullWidth

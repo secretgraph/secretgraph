@@ -411,9 +411,11 @@ const FileIntern = ({
                                       'base64'
                                   )}`
                                 : `name=${values.name}`,
-                            `mime=${Buffer.from(value.type).toString(
-                                'base64'
-                            )}`,
+                            values.state == 'public'
+                                ? `mime=${value.type}`
+                                : `mime=${Buffer.from(value.type).toString(
+                                      'base64'
+                                  )}`,
                             `state=${values.state}`,
                             `type=${
                                 value.type.startsWith('text/') ? 'Text' : 'File'
@@ -435,7 +437,6 @@ const FileIntern = ({
                               updateId: nodeData.updateId,
                           })
                         : createContent(options))
-
                     const host = config.hosts[url]
                     const cluster_hashes = new Set(
                         Object.keys(host?.clusters[values.cluster] || [])
@@ -451,14 +452,13 @@ const FileIntern = ({
                     }
                     configUpdate.hosts[url] = {
                         contents: {
-                            [nodeData.id]: {
+                            [result.data.updateOrCreateContent.content.id]: {
                                 hashes: hashesNew,
                                 cluster: values.cluster,
                             },
                         },
                         clusters: {},
                     }
-
                     const newConfig = await updateConfigRemoteReducer(config, {
                         update: configUpdate,
                         client: baseClient,
@@ -466,9 +466,9 @@ const FileIntern = ({
                     const nTokens = extractAuthInfo({
                         config: newConfig as Interfaces.ConfigInterface,
                         url,
-                        clusters: new Set([
-                            result.data.updateOrCreateCluster.cluster.id,
-                        ]),
+                        clusters: values.cluster
+                            ? new Set([values.cluster])
+                            : undefined,
                         require: new Set(['update', 'manage']),
                     }).tokens
                     saveConfig(newConfig as Interfaces.ConfigInterface)
@@ -501,8 +501,9 @@ const FileIntern = ({
                     values.cluster && setCluster(values.cluster)
                 }, [values.cluster])
                 React.useEffect(() => {
-                    state == 'public' && setFieldValue('encryptName', false)
-                }, [state])
+                    values.state == 'public' &&
+                        setFieldValue('encryptName', false)
+                }, [values.state])
                 let preview = null
                 if (values.plainInput) {
                     preview = (
@@ -574,7 +575,7 @@ const FileIntern = ({
                             <Grid item xs={11} sm={2}>
                                 <Tooltip title="Encrypt name">
                                     <span>
-                                        <FastField
+                                        <Field
                                             name="encryptName"
                                             component={FormikCheckboxWithLabel}
                                             Label={{
@@ -582,7 +583,7 @@ const FileIntern = ({
                                             }}
                                             disabled={
                                                 isSubmitting ||
-                                                state == 'public'
+                                                values.state == 'public'
                                             }
                                             type="checkbox"
                                         />

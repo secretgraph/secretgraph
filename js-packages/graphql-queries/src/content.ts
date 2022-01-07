@@ -277,6 +277,7 @@ export const contentRetrievalQuery = gql`
     ) {
         secretgraph(authorization: $authorization) {
             config {
+                id
                 hashAlgorithms
             }
             node(id: $id) {
@@ -325,6 +326,7 @@ export const findConfigQuery = gql`
     ) {
         secretgraph(authorization: $authorization) {
             config {
+                id
                 hashAlgorithms
             }
             contents(
@@ -382,6 +384,7 @@ export const getContentConfigurationQuery = gql`
     query contentGetConfigurationQuery($id: ID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
+                id
                 hashAlgorithms
                 injectedClusters {
                     group

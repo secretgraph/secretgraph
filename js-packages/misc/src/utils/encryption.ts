@@ -648,15 +648,58 @@ export async function encryptTag(
     return `${tag}=${data as string}`
 }
 
+export async function deparseTag(options: {
+    readonly data: Interfaces.RawInput | PromiseLike<Interfaces.RawInput>
+    readonly tag?: string | PromiseLike<string>
+    readonly encrypt?: Set<string>
+}): Promise<string> {
+    let tag: string | undefined,
+        data: Exclude<Interfaces.CryptoGCMInInterface['data'], 'PromiseLike'>
+    if (options.tag !== undefined) {
+        tag = await options.tag
+        data = await options.data
+    } else {
+        const splitted = ((await options.data) as string).match(
+            /^([^=]+)=(.*)/
+        ) as string[]
+        tag = splitted[1]
+        data = splitted[2]
+    }
+    if (!data) {
+        throw Error('missing data')
+    }
+
+    if (options.encrypt && options.encrypt.has(tag)) {
+        try {
+            tag = String.fromCharCode(
+                ...new Uint8Array(await unserializeToArrayBuffer(data))
+            )
+        } catch (e) {
+            console.debug('error deparsing tag', data)
+        }
+    }
+    if (!tag) {
+        // for flags
+        return data as string
+    }
+    return `${tag}=${data as string}`
+}
+
 export async function decryptTagRaw(options: Interfaces.CryptoGCMInInterface) {
     const data = await unserializeToArrayBuffer(options.data)
     const nonce = new Uint8Array(data.slice(0, 13))
     const realdata = data.slice(13)
-    return await decryptAESGCM({
-        ...options,
-        data: realdata,
-        nonce,
-    })
+    try {
+        return (
+            await decryptAESGCM({
+                ...options,
+                data: realdata,
+                nonce,
+            })
+        ).data
+    } catch (error) {
+        return await unserializeToArrayBuffer(data)
+    }
 }
 
 export async function decryptTag(
@@ -668,7 +711,7 @@ export async function decryptTag(
         /^([^=]+?)=(.*)/
     ) as string[]
     return {
-        ...(await decryptTagRaw({ ...options, data: b64data })),
+        data: await decryptTagRaw({ ...options, data: b64data }),
         tag,
     }
 }
@@ -714,12 +757,10 @@ export async function extractTags(
                 tags[tag].push(
                     String.fromCharCode(
                         ...new Uint8Array(
-                            (
-                                await decryptTagRaw({
-                                    key: options.key,
-                                    data,
-                                })
-                            ).data
+                            await decryptTagRaw({
+                                key: options.key,
+                                data,
+                            })
                         )
                     )
                 )

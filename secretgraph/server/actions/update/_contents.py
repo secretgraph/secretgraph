@@ -164,9 +164,8 @@ def _update_or_create_content_or_key(
             objdata["value"], objdata["nonce"], inner_key = encrypt_into_file(
                 objdata["value"], key=None
             )
-            objdata["nonce"] = base64.b64encode(objdata["nonce"]).decode(
-                "ascii"
-            )
+            checknonce = objdata["nonce"]
+            objdata["nonce"] = base64.b64encode(checknonce).decode("ascii")
         # is public key or public? then ignore nonce checks
         if (not is_key and content_state != "public") or not objdata.get(
             "contentHash"
@@ -177,8 +176,13 @@ def _update_or_create_content_or_key(
                 raise ValueError("weak nonce")
         assert isinstance(
             objdata["nonce"], str
-        ), "nonce should be here base64 astring, %s" % type(
+        ), "nonce should be here a base64 string, %s" % type(
             objdata["nonce"]
+        )  # noqa E502
+        assert isinstance(
+            checknonce, bytes
+        ), "checknonce should be bytes, %s" % type(
+            checknonce
         )  # noqa E502
         content.nonce = objdata["nonce"]
 
