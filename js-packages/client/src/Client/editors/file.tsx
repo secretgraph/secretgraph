@@ -964,8 +964,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [open, setOpen] = React.useState(false)
-    const client = useApolloClient()
     const { searchCtx } = React.useContext(Contexts.Search)
     const [cluster, setCluster] = React.useState<string | null>(null)
     const [data, setData] = React.useState<{
@@ -1031,12 +1029,11 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         }
         loading = true
         const f = async () => {
-            const updateOb = {
+            const updateOb: Partial<Interfaces.MainContextInterface> = {
                 shareUrl: dataUnfinished.secretgraph.node.link,
                 deleted: dataUnfinished.secretgraph.node.deleted || null,
                 updateId: dataUnfinished.secretgraph.node.updateId,
             }
-            updateMainCtx(updateOb)
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =
                 host && host.contents[dataUnfinished.secretgraph.node.id]
@@ -1063,6 +1060,17 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 console.error('failed decoding')
                 return
             }
+
+            let name: string = mainCtx.item || ''
+
+            if (obj.tags['ename'] && obj.tags['ename'].length > 0) {
+                name = obj.tags['ename'][0]
+            } else if (obj.tags.name && obj.tags.name.length > 0) {
+                name = obj.tags.name[0]
+            }
+            updateOb['title'] = name
+
+            updateMainCtx(updateOb)
             setData({
                 ...obj,
                 hashAlgorithms:

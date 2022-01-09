@@ -21,6 +21,7 @@ import {
     encryptAESGCM,
     encryptTag,
     extractTags,
+    extractUnencryptedTags,
     findWorkingHashAlgorithms,
     serializeToBase64,
     unserializeToArrayBuffer,
@@ -326,7 +327,9 @@ export async function decryptContentObject({
     ) {
         return {
             data: await arrPromise,
-            tags: nodeData.tags,
+            tags: await extractUnencryptedTags({
+                tags: nodeData.tags,
+            }),
             updateId: nodeData.updateId,
             nodeData,
         }

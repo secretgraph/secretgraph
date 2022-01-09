@@ -725,14 +725,20 @@ export async function extractUnencryptedTags(options: {
 }): Promise<{ [tag: string]: string[] }> {
     const tags: { [tag: string]: string[] } = {}
     await Promise.all(
-        IterableOps.map(await options.tags, async (tag_val) => {
-            const [_, tag, data] = (await tag_val).match(
-                /(^[^=]+?)=(.*)/
-            ) as string[]
-            if (!tags[tag]) {
-                tags[tag] = []
+        IterableOps.map(await options.tags, async (_tag_val) => {
+            const tag_val = await _tag_val
+            const res = tag_val.match(/(^[^=]+?)=(.*)/)
+            if (res) {
+                const [_, tag, data] = res
+                if (!tags[tag]) {
+                    tags[tag] = []
+                }
+                tags[tag].push(data)
+            } else {
+                if (!tags[tag_val]) {
+                    tags[tag_val] = []
+                }
             }
-            tags[tag].push(data)
         })
     )
     return tags
@@ -748,26 +754,32 @@ export async function extractTags(
 ): Promise<{ [tag: string]: string[] }> {
     const tags: { [tag: string]: string[] } = {}
     await Promise.all(
-        IterableOps.map(await options.tags, async (tag_val) => {
-            const [_, tag, data] = (await tag_val).match(
-                /(^[^=]+?)=(.*)/
-            ) as string[]
-            if (!tags[tag]) {
-                tags[tag] = []
-            }
-            if (options.decrypt.has(tag)) {
-                tags[tag].push(
-                    String.fromCharCode(
-                        ...new Uint8Array(
-                            await decryptTagRaw({
-                                key: options.key,
-                                data,
-                            })
+        IterableOps.map(await options.tags, async (_tag_val) => {
+            const tag_val = await _tag_val
+            const res = tag_val.match(/(^[^=]+?)=(.*)/)
+            if (res) {
+                const [_, tag, data] = res
+                if (!tags[tag]) {
+                    tags[tag] = []
+                }
+                if (options.decrypt.has(tag)) {
+                    tags[tag].push(
+                        String.fromCharCode(
+                            ...new Uint8Array(
+                                await decryptTagRaw({
+                                    key: options.key,
+                                    data,
+                                })
+                            )
                         )
                     )
-                )
+                } else {
+                    tags[tag].push(data)
+                }
             } else {
-                tags[tag].push(data)
+                if (!tags[tag_val]) {
+                    tags[tag_val] = []
+                }
             }
         })
     )

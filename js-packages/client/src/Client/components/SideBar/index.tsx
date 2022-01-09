@@ -1,4 +1,11 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import TreeItem from '@mui/lab/TreeItem'
+import TreeView from '@mui/lab/TreeView'
+import Autocomplete from '@mui/material/Autocomplete'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import Collapse from '@mui/material/Collapse'
@@ -12,13 +19,6 @@ import ListItemText from '@mui/material/ListItemText'
 import { useTheme } from '@mui/material/styles'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import Autocomplete from '@mui/material/Autocomplete'
-import TreeItem from '@mui/lab/TreeItem'
-import TreeView from '@mui/lab/TreeView'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { extractAuthInfo } from '@secretgraph/misc/utils/config'
 import * as SetOps from '@secretgraph/misc/utils/set'
@@ -76,7 +76,7 @@ const SideBarItems = () => {
             action: 'view',
             url: activeUrl,
             shareUrl: `${activeUrlAsURL.origin}${node.link}`,
-            title: node.title || '',
+            title: mainCtx.updateId == node.updateId ? undefined : '',
             tokens,
             tokenPermissions: new Set(['view']),
         })
