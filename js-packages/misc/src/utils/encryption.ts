@@ -892,3 +892,30 @@ export async function decryptFirstPreKey(options: {
     }
     return await Promise.any(decryptprocesses)
 }
+
+export async function authInfoFromTokens({
+    tokens,
+    hashAlgorithms,
+    certificateHashes,
+}: {
+    tokens: string[]
+    hashAlgorithms: Set<string> | string
+    certificateHashes: string[]
+}): Promise<Interfaces.AuthInfoInterface> {
+    if (typeof hashAlgorithms == 'string') {
+        hashAlgorithms = new Set(hashAlgorithms)
+    }
+    const hashes = []
+    // sorted is better for cache
+
+    for (const hashAlgorithm of hashAlgorithms) {
+        for (const token of tokens) {
+            hashes.push(hashObject(token, hashAlgorithm))
+        }
+    }
+    return {
+        certificateHashes,
+        hashes: (await Promise.all(hashes)).sort(),
+        tokens: [...tokens].sort(),
+    }
+}

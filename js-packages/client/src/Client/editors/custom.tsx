@@ -22,7 +22,7 @@ import {
     generateActionMapper,
     transformActions,
 } from '@secretgraph/misc/utils/action'
-import { extractAuthInfo } from '@secretgraph/misc/utils/config'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { extractPrivKeys } from '@secretgraph/misc/utils/config'
 import {
     findWorkingHashAlgorithms,
@@ -107,7 +107,7 @@ const InnerCustom = ({
                 const value: Blob | undefined = values.content
                     ? new Blob([values.content])
                     : undefined
-                const authinfo = extractAuthInfo({
+                const authinfo = authInfoFromConfig({
                     config,
                     clusters: new Set([values.cluster, nodeData.cluster.id]),
                     url,
@@ -290,7 +290,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     ])
 
     const authorization = React.useMemo(() => {
-        const authinfo = extractAuthInfo({
+        const authinfo = authInfoFromConfig({
             config,
             url: mainCtx.url as string,
             clusters: new Set([
@@ -425,7 +425,7 @@ const AddCustom = () => {
     const tokens = React.useMemo(
         () =>
             cluster
-                ? extractAuthInfo({
+                ? authInfoFromConfig({
                       config,
                       url: activeUrl,
                       clusters: new Set([cluster]),

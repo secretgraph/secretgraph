@@ -8,8 +8,8 @@ import {
 import { mapHashNames } from '../../constants'
 import * as Interfaces from '../../interfaces'
 import {
+    authInfoFromConfig,
     cleanConfig,
-    extractAuthInfo,
     extractPrivKeys,
     findCertCandidatesForRefs,
     updateConfig,
@@ -399,7 +399,7 @@ export async function updateConfigRemoteReducer(
     }
     const config = state || resconf[0]
     if (!authInfo) {
-        authInfo = extractAuthInfo({
+        authInfo = authInfoFromConfig({
             config,
             url: config.baseUrl,
             clusters: new Set([config.configCluster]),

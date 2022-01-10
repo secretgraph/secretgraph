@@ -20,7 +20,7 @@ import { useTheme } from '@mui/material/styles'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { extractAuthInfo } from '@secretgraph/misc/utils/config'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as SetOps from '@secretgraph/misc/utils/set'
 import * as React from 'react'
 
@@ -41,13 +41,10 @@ const SideBarItems = () => {
     const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const authinfo = React.useMemo(
-        () => (config ? extractAuthInfo({ config, url: activeUrl }) : null),
+        () => (config ? authInfoFromConfig({ config, url: activeUrl }) : null),
         [config, activeUrl]
     )
 
-    const tokens = React.useMemo(() => {
-        return [...(authinfo?.tokens || []), ...(mainCtx.tokens || [])]
-    }, [authinfo, mainCtx.tokens])
     const activeUrlAsURL = new URL(activeUrl, window.location.href)
     const goTo = (node: any) => {
         let type =
@@ -62,7 +59,7 @@ const SideBarItems = () => {
             type = 'PublicKey'
         }
         const tokens = config
-            ? extractAuthInfo({
+            ? authInfoFromConfig({
                   config,
                   url: activeUrl,
               }).tokens
@@ -98,9 +95,9 @@ const SideBarItems = () => {
                 {authinfo && (
                     <SideBarClusters
                         classes={{ label: theme.classes.treeItemHeading }}
-                        nodeId="clusters-owned"
+                        nodeId={`${activeUrl}-clusters-owned`}
                         label="Owned"
-                        tokens={tokens}
+                        authinfo={authinfo}
                         deleted={searchCtx.deleted}
                         activeCluster={searchCtx.cluster}
                         goTo={goTo}
@@ -108,7 +105,7 @@ const SideBarItems = () => {
                 )}
                 <SideBarClusters
                     classes={{ label: theme.classes.treeItemHeading }}
-                    nodeId="clusters-public"
+                    nodeId={`${activeUrl}-clusters-public`}
                     label="Public"
                     deleted={searchCtx.deleted}
                     goTo={goTo}
@@ -122,7 +119,7 @@ const SideBarItems = () => {
             >
                 <SideBarContents
                     key="SideBarContentsPublic"
-                    nodeId="contents-public"
+                    nodeId={`${activeUrl}-contents-public`}
                     activeContent={mainCtx.item}
                     usePublic
                     deleted={searchCtx.deleted}
@@ -134,7 +131,7 @@ const SideBarItems = () => {
                     <>
                         <SideBarContents
                             key="SideBarContentsDraft"
-                            nodeId="contents-drafts"
+                            nodeId={`${activeUrl}-contents-drafts`}
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
@@ -145,7 +142,7 @@ const SideBarItems = () => {
                         />
                         <SideBarContents
                             key="SideBarContentsInternal"
-                            nodeId="contents-internal"
+                            nodeId={`${activeUrl}-contents-internal`}
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}

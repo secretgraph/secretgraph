@@ -129,17 +129,27 @@ class ActionMixin(object):
         name = self.__class__.__name__
         result = getattr(info.context, "secretgraphResult", {}).get(name, {})
         resultval = []
-        # only show some actions
+        # only show some actions if not set
         has_manage = False
-        mapper = result.get("required_keys_%ss" % name.lower(), {}).get(
-            self.id, {}
-        )
+        if isinstance(self, Content):
+            # if content: check cluster and content keys
+            mappers = [
+                result.get("required_keys_contents", {}).get(self.id, {}),
+                result.get("required_keys_clusters", {}).get(
+                    self.cluster_id, {}
+                ),
+            ]
+        else:
+            mappers = [
+                result.get("required_keys_clusters", {}).get(self.id, {})
+            ]
         ids = set()
-        for key_val in mapper.items():
-            if key_val[0][0] not in constants.Action.protected_values:
-                ids.add(key_val[1]["id"])
-            if key_val[0][0] == "manage":
-                has_manage = True
+        for mapper in mappers:
+            for key_val in mapper.items():
+                if key_val[0][0] not in constants.Action.protected_values:
+                    ids.add(key_val[1]["id"])
+                if key_val[0][0] == "manage":
+                    has_manage = True
         resultval = map(
             lambda key_val: ActionEntry(
                 id=None if not has_manage else key_val[1]["id"],

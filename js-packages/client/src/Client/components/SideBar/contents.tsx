@@ -1,13 +1,13 @@
 import { gql, useLazyQuery } from '@apollo/client'
-import Divider from '@mui/material/Divider'
-import List, { ListProps } from '@mui/material/List'
-import { useTheme } from '@mui/material/styles'
 import DescriptionIcon from '@mui/icons-material/Description'
 import DraftsIcon from '@mui/icons-material/Drafts'
 import MailIcon from '@mui/icons-material/Mail'
 import MovieIcon from '@mui/icons-material/Movie'
 import ReplayIcon from '@mui/icons-material/Replay'
 import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
+import Divider from '@mui/material/Divider'
+import List, { ListProps } from '@mui/material/List'
+import { useTheme } from '@mui/material/styles'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
@@ -110,7 +110,6 @@ export default React.memo(function Contents({
     const theme = useTheme()
     const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     const _usePublic = usePublic === undefined ? null : usePublic
     const incl = React.useMemo(() => {
@@ -191,11 +190,18 @@ export default React.memo(function Contents({
             if (state == 'draft') {
                 Icon = DraftsIcon
             }
-            const nodeId = (node.availableActions as { type: string }[]).some(
-                (val) => val.type == 'delete' || val.type == 'manage'
-            )
-                ? `${activeUrl}-contents::${node.id}`
-                : `${activeUrl}-contents.${node.id}`
+
+            // TODO: check availability of extra content permissions. Merge authInfos
+
+            const deleteable = (
+                node.availableActions as {
+                    type: string
+                }[]
+            ).some((val) => val.type == 'delete' || val.type == 'manage')
+            console.debug('available actions', node.availableActions)
+            const nodeId = deleteable
+                ? `contents::${node.id}`
+                : `contents.${node.id}`
             return (
                 <TreeItem
                     className={

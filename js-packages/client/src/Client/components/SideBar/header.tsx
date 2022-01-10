@@ -30,7 +30,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
-import { extractAuthInfo } from '@secretgraph/misc/utils/config'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import {
     deleteNodes,
     resetDeletionNodes,
@@ -295,20 +295,40 @@ export default function SideBarHeader({
     const theme = useTheme()
     const { selected } = React.useContext(Contexts.SidebarItemsSelected)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const client = useApolloClient()
-    const authorization = React.useMemo(() => {
+    const { authorization, deleteableItems } = React.useMemo(() => {
         if (!config) {
-            return []
+            return { authorization: [], deleteableItems: [] }
         }
-        return extractAuthInfo({
-            config,
-            url: activeUrl,
-            require: new Set(['delete', 'manage']),
-        }).tokens
+        const deleteableItems: string[] = []
+        const clusters = new Set<string>()
+        const contents = new Set<string>()
+        selected.forEach((val) => {
+            const m = val.match(/.*(contents|clusters)::([a-zA-Z0-9=]+?)$/)
+            if (!m) {
+                return
+            }
+            deleteableItems.push(m[2])
+            if (m[1] == 'contents') {
+                contents.add(m[2])
+            } else {
+                clusters.add(m[2])
+            }
+        })
+        return {
+            authorization: authInfoFromConfig({
+                config,
+                url: activeUrl,
+                require: new Set(['delete', 'manage']),
+                clusters,
+                contents,
+            }).tokens,
+            deleteableItems,
+        }
     }, [config, activeUrl])
+
     return (
         <>
             <Box className={theme.classes.sideBarHeader}>
@@ -318,28 +338,19 @@ export default function SideBarHeader({
             </Box>
             <div>
                 <Button
-                    disabled={!selected.length}
+                    disabled={!deleteableItems.length}
                     onClick={async () => {
-                        const ids = selected
-                            .map((val) => {
-                                const m = val.match(/.*::(.+?)$/)
-                                if (!m) {
-                                    return null
-                                }
-                                return m[1]
-                            })
-                            .filter((val) => val) as string[]
                         if (searchCtx.deleted) {
                             await resetDeletionNodes({
                                 client,
                                 authorization,
-                                ids,
+                                ids: deleteableItems,
                             })
                         } else {
                             await deleteNodes({
                                 client,
                                 authorization,
-                                ids,
+                                ids: deleteableItems,
                             })
                         }
                         notifyItems()

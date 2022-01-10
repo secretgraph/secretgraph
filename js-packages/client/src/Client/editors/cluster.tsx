@@ -25,7 +25,7 @@ import {
     transformActions,
 } from '@secretgraph/misc/utils/action'
 import { extractNameNote } from '@secretgraph/misc/utils/cluster'
-import { extractAuthInfo, saveConfig } from '@secretgraph/misc/utils/config'
+import { authInfoFromConfig, saveConfig } from '@secretgraph/misc/utils/config'
 import {
     findWorkingHashAlgorithms,
     hashObject,
@@ -288,7 +288,7 @@ const ClusterIntern = ({
                     nullonnoupdate: true,
                 })
                 const nTokens = newConfig
-                    ? extractAuthInfo({
+                    ? authInfoFromConfig({
                           config: newConfig,
                           url,
                           clusters: new Set([

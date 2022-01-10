@@ -20,12 +20,12 @@ import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 
 export const ActiveCluster = React.memo(function ActiveCluster({
-    tokens,
+    authinfo,
     cluster,
     goTo,
     ...props
 }: {
-    tokens: string[]
+    authinfo?: Interfaces.AuthInfoInterface
     cluster: string
     goTo: (node: any) => void
 } & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
@@ -40,7 +40,7 @@ export const ActiveCluster = React.memo(function ActiveCluster({
         //pollInterval: ,
         variables: {
             id: cluster,
-            authorization: tokens,
+            authorization: authinfo?.tokens,
         },
         onError: console.error,
     })
@@ -61,6 +61,7 @@ export const ActiveCluster = React.memo(function ActiveCluster({
     return (
         <SideBarContents
             goTo={goTo}
+            authinfo={authinfo}
             deleted={data?.node?.deleted}
             label={
                 <>
@@ -88,14 +89,14 @@ export const ActiveCluster = React.memo(function ActiveCluster({
 })
 type SideBarItemsProps =
     | {
-          tokens: string[]
+          authinfo: Interfaces.AuthInfoInterface
           goTo: (node: any) => void
-          activeCluster?: string | null
+          activeCluster: string
           title?: string
           deleted?: boolean
       }
     | {
-          tokens?: string[]
+          authinfo?: Interfaces.AuthInfoInterface
           goTo: (node: any) => void
           activeCluster?: null | undefined
           title?: string
@@ -103,7 +104,7 @@ type SideBarItemsProps =
       }
 
 export default React.memo(function Clusters({
-    tokens,
+    authinfo,
     goTo,
     activeCluster,
     title,
@@ -111,7 +112,6 @@ export default React.memo(function Clusters({
     ...props
 }: SideBarItemsProps & TreeItemProps) {
     const theme = useTheme()
-    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     let [
@@ -119,8 +119,8 @@ export default React.memo(function Clusters({
         { data, fetchMore, error, loading, refetch, called, variables },
     ] = useLazyQuery(clusterFeedQuery, {
         variables: {
-            authorization: tokens,
-            public: !tokens || !tokens.length,
+            authorization: authinfo?.tokens,
+            public: !authinfo?.tokens || !authinfo.tokens.length,
             deleted: searchCtx.deleted,
             include: searchCtx.include,
             exclude: searchCtx.exclude,
@@ -147,17 +147,20 @@ export default React.memo(function Clusters({
             // activeCluster cannot be filtered, so do it manually
             if (node.id !== activeCluster) {
                 const { name, note } = extractNameNote(node.description)
-                const nodeId = (
+                // TODO: check availability of extra cluster permissions. Merge authInfos
+                const deleteable = (
                     node.availableActions as {
                         type: string
                     }[]
                 ).some((val) => val.type == 'delete' || val.type == 'manage')
-                    ? `${activeUrl}-clusters::${node.id}`
-                    : `${activeUrl}-clusters.${node.id}`
+                const nodeId = deleteable
+                    ? `clusters::${node.id}`
+                    : `clusters.${node.id}`
                 ret.push(
                     <SideBarContents
                         goTo={goTo}
                         cluster={node.id}
+                        authinfo={authinfo}
                         title={note || undefined}
                         deleted={node.deleted}
                         label={
@@ -226,8 +229,8 @@ export default React.memo(function Clusters({
         <>
             {activeCluster ? (
                 <ActiveCluster
-                    nodeId={`${activeUrl}-clusters::${activeCluster}`}
-                    tokens={tokens as string[]}
+                    nodeId={`${props.nodeId}-clusters::${activeCluster}`}
+                    authinfo={authinfo}
                     goTo={goTo}
                     onClick={(ev) => ev.preventDefault()}
                     cluster={activeCluster}

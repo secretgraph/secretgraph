@@ -327,7 +327,7 @@ export async function exportConfigAsUrl({
     iterations: number
     pw?: string
 }) {
-    const authInfo = extractAuthInfo({
+    const authInfo = authInfoFromConfig({
         config,
         url: config.baseUrl,
         clusters: new Set([config.configCluster]),
@@ -422,7 +422,7 @@ export async function exportConfigAsUrl({
     throw Error('no config content found')
 }
 
-export function extractAuthInfo({
+export function authInfoFromConfig({
     config,
     url,
     require = new Set(['view', 'update', 'manage']),
@@ -431,10 +431,10 @@ export function extractAuthInfo({
     readonly config: Interfaces.ConfigInterface
     readonly url: string
     readonly clusters?: Set<string>
-    readonly content?: string
+    readonly contents?: Set<string>
     readonly require?: Set<string>
 }): Interfaces.AuthInfoInterface {
-    const keys = new Set<string>()
+    const tokens = new Set<string>()
     const hashes = new Set<string>()
     const certificateHashes = new Set<string>()
     if (url === undefined || url === null) {
@@ -442,7 +442,7 @@ export function extractAuthInfo({
     }
     const host = config.hosts[new URL(url, window.location.href).href]
     if (host) {
-        if (!props.content || props.clusters) {
+        if (!props.contents || props.clusters) {
             for (const id in host.clusters) {
                 if (props.clusters && !props.clusters.has(id)) {
                     continue
@@ -457,7 +457,7 @@ export function extractAuthInfo({
                         )
                     ) {
                         hashes.add(hash)
-                        keys.add(`${id}:${config.tokens[hash]?.data}`)
+                        tokens.add(`${id}:${config.tokens[hash]?.data}`)
                     }
                     if (config.certificates[hash]) {
                         certificateHashes.add(hash)
@@ -465,22 +465,27 @@ export function extractAuthInfo({
                 }
             }
         }
-        if (props.content) {
-            const contentconf = host.contents[props.content]
-            for (const hash in contentconf.hashes) {
-                if (config.certificates[hash]) {
-                    certificateHashes.add(hash)
-                } else if (
-                    config.tokens[hash] &&
-                    SetOps.hasIntersection(require, contentconf.hashes[hash])
-                ) {
-                    if (!config.tokens[hash] || !hash) {
-                        console.warn('token not found for:', hash)
+        if (props.contents) {
+            for (const content of props.contents) {
+                const contentconf = host.contents[content]
+                for (const hash in contentconf.hashes) {
+                    if (config.certificates[hash]) {
+                        certificateHashes.add(hash)
+                    } else if (
+                        config.tokens[hash] &&
+                        SetOps.hasIntersection(
+                            require,
+                            contentconf.hashes[hash]
+                        )
+                    ) {
+                        if (!config.tokens[hash] || !hash) {
+                            console.warn('token not found for:', hash)
+                        }
+                        hashes.add(hash)
+                        tokens.add(
+                            `${contentconf.cluster}:${config.tokens[hash]?.data}`
+                        )
                     }
-                    hashes.add(hash)
-                    keys.add(
-                        `${contentconf.cluster}:${config.tokens[hash]?.data}`
-                    )
                 }
             }
         }
@@ -490,7 +495,7 @@ export function extractAuthInfo({
     return {
         certificateHashes: [...certificateHashes].sort(),
         hashes: [...hashes].sort(),
-        tokens: [...keys].sort(),
+        tokens: [...tokens].sort(),
     }
 }
 

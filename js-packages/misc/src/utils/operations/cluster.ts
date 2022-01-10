@@ -6,7 +6,7 @@ import {
 
 import { mapHashNames } from '../../constants'
 import * as Interfaces from '../../interfaces'
-import { cleanConfig, extractAuthInfo } from '../config'
+import { authInfoFromConfig, cleanConfig } from '../config'
 import {
     encryptAESGCM,
     encryptRSAOEAP,
@@ -172,7 +172,7 @@ export async function initializeCluster({
     }
     const digest = await sortedHash(['type=Config'], hashAlgorithm)
 
-    const { tokens: authorization } = extractAuthInfo({
+    const { tokens: authorization } = authInfoFromConfig({
         config: config,
         clusters: new Set([clusterResult.cluster['id']]),
         require: new Set(['manage']),

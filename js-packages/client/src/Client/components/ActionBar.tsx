@@ -17,7 +17,7 @@ import NativeSelect from '@mui/material/NativeSelect'
 import { useTheme } from '@mui/material/styles'
 import Toolbar from '@mui/material/Toolbar'
 import Tooltip from '@mui/material/Tooltip'
-import { extractAuthInfo } from '@secretgraph/misc/utils/config'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import {
     deleteNodes,
     resetDeletionNodes,
@@ -50,7 +50,7 @@ function ActionBar(props: Props) {
         if (!config) {
             return []
         }
-        return extractAuthInfo({
+        return authInfoFromConfig({
             config,
             url: mainCtx.url || activeUrl,
             require: new Set(['update', 'manage']),
@@ -69,7 +69,7 @@ function ActionBar(props: Props) {
         if (!config) {
             return []
         }
-        return extractAuthInfo({
+        return authInfoFromConfig({
             config,
             url: activeUrl,
             require: new Set(['create', 'manage']),
@@ -184,7 +184,7 @@ function ActionBar(props: Props) {
                                 if (!config) {
                                     return []
                                 }
-                                const authtokens = extractAuthInfo({
+                                const authtokens = authInfoFromConfig({
                                     config,
                                     url: mainCtx.url as string,
                                     require: new Set(['delete', 'manage']),

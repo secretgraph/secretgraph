@@ -26,7 +26,7 @@ import {
 } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import {
-    extractAuthInfo,
+    authInfoFromConfig,
     extractPrivKeys,
 } from '@secretgraph/misc/utils/config'
 import {
@@ -499,7 +499,7 @@ const KeysIntern = ({
                 let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
                 let authinfo
                 if (publicKey) {
-                    authinfo = extractAuthInfo({
+                    authinfo = authInfoFromConfig({
                         config,
                         clusters: new Set([
                             values.cluster,
@@ -535,7 +535,7 @@ const KeysIntern = ({
                         params: keyParams,
                     })
                 } else {
-                    authinfo = extractAuthInfo({
+                    authinfo = authInfoFromConfig({
                         config,
                         clusters: new Set([values.cluster]),
                         url: mainCtx.url as string,
@@ -905,7 +905,7 @@ const AddKeys = () => {
     const tokens = React.useMemo(
         () =>
             cluster
-                ? extractAuthInfo({
+                ? authInfoFromConfig({
                       config,
                       url: activeUrl,
                       clusters: new Set([cluster]),
@@ -957,7 +957,7 @@ async function findOrReturn({
     if (!id || !url) {
         return true
     }
-    const { tokens: authorization } = extractAuthInfo({
+    const { tokens: authorization } = authInfoFromConfig({
         config,
         url,
     })

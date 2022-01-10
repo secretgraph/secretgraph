@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import { extractNameNote } from '@secretgraph/misc/utils/cluster'
-import { extractAuthInfo } from '@secretgraph/misc/utils/config'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 

@@ -25,7 +25,7 @@ import {
     transformActions,
 } from '@secretgraph/misc/utils/action'
 import {
-    extractAuthInfo,
+    authInfoFromConfig,
     extractPrivKeys,
     saveConfig,
 } from '@secretgraph/misc/utils/config'
@@ -469,7 +469,7 @@ const FileIntern = ({
                         update: configUpdate,
                         client: baseClient,
                     })
-                    const nTokens = extractAuthInfo({
+                    const nTokens = authInfoFromConfig({
                         config: newConfig as Interfaces.ConfigInterface,
                         url,
                         clusters: values.cluster
@@ -976,7 +976,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     } | null>(null)
 
     const authorization = React.useMemo(() => {
-        const authinfo = extractAuthInfo({
+        const authinfo = authInfoFromConfig({
             config,
             url: mainCtx.url as string,
             clusters: new Set([
@@ -1120,7 +1120,7 @@ const AddFile = () => {
     const tokens = React.useMemo(
         () =>
             cluster
-                ? extractAuthInfo({
+                ? authInfoFromConfig({
                       config,
                       url: activeUrl,
                       clusters: new Set([cluster]),
