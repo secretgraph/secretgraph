@@ -57,7 +57,7 @@ function Definitions(props: Props) {
         shareUrl: null,
         deleted: null,
         tokens: [],
-        tokenPermissions: new Set(),
+        tokensPermissions: new Set(),
     })
     const [searchCtx, updateSearchCtx] = React.useReducer<
         updateStateType<Interfaces.SearchContextInterface>
@@ -76,7 +76,7 @@ function Definitions(props: Props) {
         )
     const navClient = React.useMemo(() => {
         return createClient(activeUrl)
-    }, [activeUrl])
+    }, [activeUrl, !config])
     const configClient = React.useMemo(() => {
         if (config && config.baseUrl != activeUrl) {
             return createClient(config.baseUrl)

@@ -60,7 +60,7 @@ class SecretgraphConfig(ObjectType):
     loginUrl = graphene.String(required=False)
 
     def resolve_id(self, info):
-        return getattr(settings, "LAST_CONFIG_RELOAD", None) or ""
+        return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
 
     def resolve_hashAlgorithms(self, info):
         return settings.SECRETGRAPH_HASH_ALGORITHMS
@@ -123,7 +123,9 @@ class ActionEntry(graphene.ObjectType):
 
 
 class ActionMixin(object):
-    availableActions = graphene.List(graphene.NonNull(ActionEntry))
+    availableActions = graphene.List(
+        graphene.NonNull(ActionEntry), required=True
+    )
 
     def resolve_availableActions(self, info):
         name = self.__class__.__name__
@@ -168,22 +170,24 @@ class ActionMixin(object):
             if isinstance(self, Content):
                 resultval = chain(
                     resultval,
-                    getattr(info.context, "secretgraphResult", {})
-                    .get("Action", {"objects": Action.objects.none()})
-                    .filter(
-                        Q(contentAction__isnull=True)
-                        | Q(contentAction__content_id=self.id),
-                        cluster_id=self.cluster_id,
-                    )
-                    .exclude(id__in=ids)
-                    .map(
+                    map(
                         lambda x: ActionEntry(
                             id=x.id,
                             keyHash=x.keyHash,
                             type="other",
                             requiredKeys=[],
                             allowedTags=None,
+                        ),
+                        getattr(info.context, "secretgraphResult", {})
+                        .get("Action", {"objects": Action.objects.none()})[
+                            "objects"
+                        ]
+                        .filter(
+                            Q(contentAction__isnull=True)
+                            | Q(contentAction__content_id=self.id),
+                            cluster_id=self.cluster_id,
                         )
+                        .exclude(id__in=ids),
                     ),
                 )
             else:

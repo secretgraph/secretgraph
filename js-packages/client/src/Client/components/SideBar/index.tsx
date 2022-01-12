@@ -75,7 +75,7 @@ const SideBarItems = () => {
             shareUrl: `${activeUrlAsURL.origin}${node.link}`,
             title: mainCtx.updateId == node.updateId ? undefined : '',
             tokens,
-            tokenPermissions: new Set(['view']),
+            tokensPermissions: new Set(),
         })
         if (type == 'Cluster') {
             updateSearchCtx({

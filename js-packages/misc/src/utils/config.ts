@@ -436,31 +436,36 @@ export function authInfoFromConfig({
 }): Interfaces.AuthInfoInterface {
     const tokens = new Set<string>()
     const hashes = new Set<string>()
+    const types = new Set<string>()
     const certificateHashes = new Set<string>()
+    // TODO: remove other tokens if manage was found for exactly this content or cluster
     if (url === undefined || url === null) {
         throw Error(`no url: ${url}`)
     }
     const host = config.hosts[new URL(url, window.location.href).href]
     if (host) {
         if (!props.contents || props.clusters) {
-            for (const id in host.clusters) {
-                if (props.clusters && !props.clusters.has(id)) {
-                    continue
-                }
+            const clusters = props.clusters
+                ? props.clusters
+                : Object.keys(host.clusters)
+            for (const id of clusters) {
                 const clusterconf = host.clusters[id]
-                for (const hash in clusterconf.hashes) {
-                    if (
-                        config.tokens[hash] &&
-                        SetOps.hasIntersection(
-                            require,
-                            clusterconf.hashes[hash]
-                        )
-                    ) {
-                        hashes.add(hash)
-                        tokens.add(`${id}:${config.tokens[hash]?.data}`)
-                    }
-                    if (config.certificates[hash]) {
-                        certificateHashes.add(hash)
+                if (clusterconf) {
+                    for (const hash in clusterconf.hashes) {
+                        const perms = clusterconf.hashes[hash]
+                        if (
+                            config.tokens[hash] &&
+                            SetOps.hasIntersection(require, perms)
+                        ) {
+                            hashes.add(hash)
+                            tokens.add(`${id}:${config.tokens[hash]?.data}`)
+                            for (const permission of perms) {
+                                types.add(permission)
+                            }
+                        }
+                        if (config.certificates[hash]) {
+                            certificateHashes.add(hash)
+                        }
                     }
                 }
             }
@@ -468,23 +473,27 @@ export function authInfoFromConfig({
         if (props.contents) {
             for (const content of props.contents) {
                 const contentconf = host.contents[content]
-                for (const hash in contentconf.hashes) {
-                    if (config.certificates[hash]) {
-                        certificateHashes.add(hash)
-                    } else if (
-                        config.tokens[hash] &&
-                        SetOps.hasIntersection(
-                            require,
-                            contentconf.hashes[hash]
-                        )
-                    ) {
-                        if (!config.tokens[hash] || !hash) {
-                            console.warn('token not found for:', hash)
+                if (contentconf) {
+                    for (const hash in contentconf.hashes) {
+                        const perms = contentconf.hashes[hash]
+                        if (config.certificates[hash]) {
+                            certificateHashes.add(hash)
+                        } else if (
+                            config.tokens[hash] &&
+                            SetOps.hasIntersection(require, perms)
+                        ) {
+                            hashes.add(hash)
+                            if (!config.tokens[hash] || !hash) {
+                                console.warn('token not found for:', hash)
+                            } else {
+                                tokens.add(
+                                    `${contentconf.cluster}:${config.tokens[hash]?.data}`
+                                )
+                                for (const permission of perms) {
+                                    types.add(permission)
+                                }
+                            }
                         }
-                        hashes.add(hash)
-                        tokens.add(
-                            `${contentconf.cluster}:${config.tokens[hash]?.data}`
-                        )
                     }
                 }
             }
@@ -496,6 +505,7 @@ export function authInfoFromConfig({
         certificateHashes: [...certificateHashes].sort(),
         hashes: [...hashes].sort(),
         tokens: [...tokens].sort(),
+        types,
     }
 }
 

@@ -40,7 +40,7 @@ function ActionBar(props: Props) {
     const client = useApolloClient()
     const updateTokens = React.useMemo(() => {
         if (
-            SetOps.hasIntersection(mainCtx.tokenPermissions, [
+            SetOps.hasIntersection(mainCtx.tokensPermissions, [
                 'update',
                 'manage',
             ])
@@ -55,11 +55,11 @@ function ActionBar(props: Props) {
             url: mainCtx.url || activeUrl,
             require: new Set(['update', 'manage']),
         }).tokens
-    }, [mainCtx.tokens, mainCtx.tokenPermissions])
+    }, [mainCtx.tokens, mainCtx.tokensPermissions])
 
     const createTokens = React.useMemo(() => {
         if (
-            SetOps.hasIntersection(mainCtx.tokenPermissions, [
+            SetOps.hasIntersection(mainCtx.tokensPermissions, [
                 'create',
                 'manage',
             ])
@@ -74,7 +74,7 @@ function ActionBar(props: Props) {
             url: activeUrl,
             require: new Set(['create', 'manage']),
         }).tokens
-    }, [mainCtx.tokens, mainCtx.tokenPermissions, activeUrl, config])
+    }, [mainCtx.tokens, mainCtx.tokensPermissions, activeUrl, config])
 
     return (
         <nav

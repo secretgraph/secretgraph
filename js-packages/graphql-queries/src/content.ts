@@ -210,6 +210,13 @@ export const keysRetrievalQuery = gql`
                     link
                     updateId
                     tags
+                    availableActions {
+                        id
+                        keyHash
+                        type
+                        requiredKeys
+                        allowedTags
+                    }
                     cluster {
                         id
                     }

@@ -917,5 +917,6 @@ export async function authInfoFromTokens({
         certificateHashes,
         hashes: (await Promise.all(hashes)).sort(),
         tokens: [...tokens].sort(),
+        types: new Set(),
     }
 }

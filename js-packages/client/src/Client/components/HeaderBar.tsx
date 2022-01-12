@@ -149,7 +149,7 @@ export default function HeaderBar() {
             shareUrl: null,
             deleted: null,
             tokens: [],
-            tokenPermissions: new Set(),
+            tokensPermissions: new Set(),
         })
         sessionStorage.clear()
         localStorage.removeItem('secretgraphConfig')

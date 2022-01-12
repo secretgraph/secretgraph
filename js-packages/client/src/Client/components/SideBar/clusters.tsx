@@ -83,6 +83,8 @@ export const ActiveCluster = React.memo(function ActiveCluster({
                 data?.node && goTo({ ...data?.node, title: data?.name })
             }}
             cluster={cluster}
+            // state public needs no key_hash
+            injectInclude={['state=public']}
             {...props}
         />
     )
@@ -148,11 +150,17 @@ export default React.memo(function Clusters({
             if (node.id !== activeCluster) {
                 const { name, note } = extractNameNote(node.description)
                 // TODO: check availability of extra cluster permissions. Merge authInfos
-                const deleteable = (
-                    node.availableActions as {
-                        type: string
-                    }[]
-                ).some((val) => val.type == 'delete' || val.type == 'manage')
+                // for now assume yes if manage type was not specified
+                const deleteable =
+                    !authinfo ||
+                    !authinfo.types.has('manage') ||
+                    (
+                        node.availableActions as {
+                            type: string
+                        }[]
+                    ).some(
+                        (val) => val.type == 'delete' || val.type == 'manage'
+                    )
                 const nodeId = deleteable
                     ? `clusters::${node.id}`
                     : `clusters.${node.id}`
@@ -163,6 +171,8 @@ export default React.memo(function Clusters({
                         authinfo={authinfo}
                         title={note || undefined}
                         deleted={node.deleted}
+                        // state public needs no key_hash
+                        injectInclude={['state=public']}
                         label={
                             <>
                                 <GroupWorkIcon

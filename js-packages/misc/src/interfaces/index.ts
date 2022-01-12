@@ -113,7 +113,7 @@ export interface MainContextInterface {
     shareUrl: null | string
     deleted: Date | null | false
     tokens: string[]
-    tokenPermissions: Set<string>
+    tokensPermissions: Set<string>
 }
 
 export interface SearchContextInterface {
@@ -128,6 +128,7 @@ export interface AuthInfoInterface {
     tokens: string[]
     hashes: string[]
     certificateHashes: string[]
+    types: Set<string>
 }
 
 export interface ElementEntryInterface {

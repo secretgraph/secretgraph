@@ -239,11 +239,13 @@ function InnerKeys({
     disabled,
     hashAlgorithms,
     generateButton,
+    canSelectCluster,
 }: {
     url: string
     disabled?: boolean
     hashAlgorithms: string[]
     generateButton?: boolean
+    canSelectCluster: boolean
 }) {
     const {
         submitForm,
@@ -277,14 +279,16 @@ function InnerKeys({
                     </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                    <Field
-                        component={ClusterSelect}
-                        url={url}
-                        name="cluster"
-                        disabled={isSubmitting || disabled}
-                        label="Cluster"
-                        firstIfEmpty
-                    />
+                    {canSelectCluster ? (
+                        <Field
+                            component={ClusterSelect}
+                            url={url}
+                            name="cluster"
+                            disabled={isSubmitting || disabled}
+                            label="Cluster"
+                            firstIfEmpty
+                        />
+                    ) : null}
                 </Grid>
                 <Grid item xs={12}>
                     <Field
@@ -446,7 +450,8 @@ interface KeysInternProps {
         nodeData: any
         mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     }
-    setCluster: (arg: string) => void
+    setCluster?: (arg: string) => void
+    tokens: string[]
 }
 
 const KeysIntern = ({
@@ -454,6 +459,7 @@ const KeysIntern = ({
     publicKey,
     privateKey,
     setCluster,
+    tokens,
 }: KeysInternProps) => {
     const client = useApolloClient()
     const { baseClient } = React.useContext(Contexts.Clients)
@@ -497,28 +503,24 @@ const KeysIntern = ({
                 }
                 let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
                 let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
-                let authinfo
+                let tokensTarget = tokens
                 if (publicKey) {
-                    authinfo = authInfoFromConfig({
-                        config,
-                        clusters: new Set([
-                            values.cluster,
-                            publicKey.nodeData.cluster.id,
-                        ]),
-                        url: mainCtx.url as string,
-                        require: new Set([
-                            'update',
-                            'create',
-                            'delete',
-                            'manage',
-                        ]),
-                    })
+                    if (values.cluster != publicKey.nodeData.cluster.id) {
+                        tokensTarget = tokens.concat(
+                            authInfoFromConfig({
+                                config,
+                                clusters: new Set([values.cluster]),
+                                url: mainCtx.url as string,
+                                require: new Set(['create', 'manage']),
+                            }).tokens
+                        )
+                    }
 
                     // steps: sign with all other keys, if private key specified: create cryptotag
                     const pubkeysResult = await client.query({
                         query: getContentConfigurationQuery,
                         variables: {
-                            authorization: authinfo.tokens,
+                            authorization: tokensTarget,
                             id: mainCtx.item,
                         },
                     })
@@ -531,20 +533,8 @@ const KeysIntern = ({
                     })
                     publicKeys = extractPubKeysCluster({
                         node: pubkeysResult.data.secretgraph.node,
-                        authorization: authinfo.tokens,
+                        authorization: tokensTarget,
                         params: keyParams,
-                    })
-                } else {
-                    authinfo = authInfoFromConfig({
-                        config,
-                        clusters: new Set([values.cluster]),
-                        url: mainCtx.url as string,
-                        require: new Set([
-                            'update',
-                            'create',
-                            'delete',
-                            'manage',
-                        ]),
                     })
                 }
                 let privKey = null
@@ -566,7 +556,7 @@ const KeysIntern = ({
                     await deleteNodes({
                         client,
                         ids: [privateKey.nodeData.id],
-                        authorization: authinfo.tokens,
+                        authorization: tokens,
                     })
                 }
 
@@ -595,14 +585,14 @@ const KeysIntern = ({
                         await deleteNodes({
                             client,
                             ids: [publicKey.nodeData.id],
-                            authorization: authinfo.tokens,
+                            authorization: tokens,
                         })
                         // recursively deletes private key but it would still be visible, so do it here
                         if (privateKey && privKey) {
                             await deleteNodes({
                                 client,
                                 ids: [privateKey.nodeData.id],
-                                authorization: authinfo.tokens,
+                                authorization: tokens,
                             })
                         }
                     }
@@ -615,7 +605,7 @@ const KeysIntern = ({
                         privkeys: Object.values(privateKeys),
                         pubkeys: Object.values(publicKeys),
                         hashAlgorithm: halgo,
-                        authorization: authinfo.tokens,
+                        authorization: tokensTarget,
                     })
                     updateMainCtx({
                         item: newData.updateOrCreateContent.content.id,
@@ -631,7 +621,7 @@ const KeysIntern = ({
                         privkeys: await Promise.all(Object.values(privateKeys)),
                         pubkeys: Object.values(publicKeys),
                         hashAlgorithm: halgo,
-                        authorization: authinfo.tokens,
+                        authorization: tokens,
                     })
                     if (privateKey && privKey) {
                         await updateKey({
@@ -645,7 +635,7 @@ const KeysIntern = ({
                             ),
                             pubkeys: Object.values(publicKeys),
                             hashAlgorithm: halgo,
-                            authorization: authinfo.tokens,
+                            authorization: tokens,
                         })
                     } else if (privKey) {
                         await createKeys({
@@ -657,7 +647,7 @@ const KeysIntern = ({
                             privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
                             hashAlgorithm: halgo,
-                            authorization: authinfo.tokens,
+                            authorization: tokens,
                         })
                     }
 
@@ -698,12 +688,16 @@ const KeysIntern = ({
                 }
             }}
         >
-            {(formikProps) => {
+            {({ values }) => {
+                React.useEffect(() => {
+                    values.cluster && setCluster && setCluster(values.cluster)
+                }, [values.cluster, setCluster])
                 return (
                     <InnerKeys
                         hashAlgorithms={hashAlgorithms}
                         url={mainCtx.url as string}
                         generateButton={!publicKey}
+                        canSelectCluster={!!setCluster}
                     />
                 )
             }}
@@ -821,6 +815,22 @@ const EditKeys = () => {
           })
         | null
     >(null)
+
+    const { tokens, types: localPermissions } = React.useMemo(() => {
+        if (cluster) {
+            return authInfoFromConfig({
+                config,
+                url: mainCtx.url as string,
+                clusters: new Set([cluster]),
+                require: new Set(['update', 'create', 'manage']),
+            })
+        }
+        return { tokens: [], types: new Set() }
+    }, [config, cluster, mainCtx.url])
+    const authorization = React.useMemo(
+        () => [...new Set([...mainCtx.tokens, ...tokens])],
+        [...tokens, ...mainCtx.tokens]
+    )
     let {
         refetch,
         data: dataUnfinished,
@@ -831,7 +841,7 @@ const EditKeys = () => {
         nextFetchPolicy: 'network-only',
         variables: {
             id: mainCtx.item as string,
-            authorization: mainCtx.tokens,
+            authorization: authorization,
         },
         onError: console.error,
     })
@@ -857,6 +867,12 @@ const EditKeys = () => {
             const updateOb: Partial<Interfaces.MainContextInterface> = {
                 deleted: dataUnfinished.secretgraph.node.deleted,
                 updateId: dataUnfinished.secretgraph.node.updateId,
+                tokensPermissions: new Set([
+                    ...localPermissions,
+                    ...dataUnfinished.secretgraph.node.availableActions.map(
+                        (val: { keyHash: string; type: string }) => val.type
+                    ),
+                ]),
             }
             for (const tag of dataUnfinished.secretgraph.node.tags) {
                 if (tag.startsWith('key_hash=')) {
@@ -864,14 +880,14 @@ const EditKeys = () => {
                     break
                 }
             }
-            updateMainCtx(updateOb)
             const reskeys = await loadKeys({
                 baseUrl: mainCtx.url as string,
                 data: dataUnfinished,
                 config,
-                authorization: mainCtx.tokens,
+                authorization,
             })
             if (active) {
+                updateMainCtx(updateOb)
                 setData({
                     ...reskeys,
                     key: `${new Date().getTime()}`,
@@ -887,7 +903,19 @@ const EditKeys = () => {
         return null
     }
 
-    return <KeysIntern {...data} disabled={loading} setCluster={setCluster} />
+    return (
+        <KeysIntern
+            tokens={authorization}
+            {...data}
+            disabled={loading}
+            setCluster={
+                mainCtx.tokensPermissions.has('manage') ||
+                mainCtx.tokensPermissions.has('delete')
+                    ? setCluster
+                    : undefined
+            }
+        />
+    )
 }
 
 const AddKeys = () => {
@@ -901,23 +929,21 @@ const AddKeys = () => {
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster
     )
+    const { tokens } = React.useMemo(() => {
+        if (cluster) {
+            return authInfoFromConfig({
+                config,
+                url: activeUrl,
+                clusters: new Set([cluster]),
+                require: new Set(['create', 'manage']),
+            })
+        }
+        return { tokens: [] }
+    }, [config, cluster, activeUrl])
 
-    const tokens = React.useMemo(
-        () =>
-            cluster
-                ? authInfoFromConfig({
-                      config,
-                      url: activeUrl,
-                      clusters: new Set([cluster]),
-                      require: new Set(['create', 'manage']),
-                  }).tokens
-                : [],
-        [config, cluster, activeUrl]
-    )
-    const authorization = React.useMemo(
-        () => [...new Set([...mainCtx.tokens, ...tokens])],
-        [tokens, mainCtx.tokens]
-    )
+    const authorization = React.useMemo(() => {
+        return [...new Set([...mainCtx.tokens, ...tokens])]
+    }, [tokens, mainCtx.tokens])
 
     const { data, loading, refetch } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
@@ -936,6 +962,7 @@ const AddKeys = () => {
     }, [cluster])
     return (
         <KeysIntern
+            tokens={authorization}
             hashAlgorithms={data?.secretgraph?.config?.hashAlgorithms || []}
             setCluster={setCluster}
             disabled={loading}

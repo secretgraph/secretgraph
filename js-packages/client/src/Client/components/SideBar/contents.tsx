@@ -115,7 +115,7 @@ export default React.memo(function Contents({
     const incl = React.useMemo(() => {
         const ret = searchCtx.include.concat(injectInclude)
         if (authinfo) {
-            ret.push(...authinfo.hashes.map((value) => `hash=${value}`))
+            ret.push(...authinfo.hashes.map((value) => `key_hash=${value}`))
         }
         return ret
     }, [searchCtx.include, injectInclude, authinfo?.hashes])
@@ -145,7 +145,7 @@ export default React.memo(function Contents({
         fetchMore &&
             fetchMore({
                 variables: {
-                    cursor: data.contents.pageInfo.endCursor,
+                    cursor: data.contents.contents.pageInfo.endCursor,
                 },
             }).then((result: any) => {})
     }
@@ -192,13 +192,17 @@ export default React.memo(function Contents({
             }
 
             // TODO: check availability of extra content permissions. Merge authInfos
+            // for now assume yes if manage type was not specified
 
-            const deleteable = (
-                node.availableActions as {
-                    type: string
-                }[]
-            ).some((val) => val.type == 'delete' || val.type == 'manage')
-            console.debug('available actions', node.availableActions)
+            //console.debug('available actions', node.availableActions)
+            const deleteable =
+                !authinfo ||
+                !authinfo.types.has('manage') ||
+                (
+                    node.availableActions as {
+                        type: string
+                    }[]
+                ).some((val) => val.type == 'delete' || val.type == 'manage')
             const nodeId = deleteable
                 ? `contents::${node.id}`
                 : `contents.${node.id}`

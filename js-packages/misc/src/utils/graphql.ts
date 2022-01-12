@@ -13,6 +13,7 @@ import {
 
 export const createClient = (url: string) => {
     return new ApolloClient({
+        connectToDevTools: __DEV__ ?? false,
         cache: new InMemoryCache({
             typePolicies: {
                 ActionEntry: {
@@ -21,11 +22,7 @@ export const createClient = (url: string) => {
                 SecretgraphObject: {
                     queryType: true,
                     fields: {
-                        // is dangerous
-                        // all filters must be specified, otherwise errors
-                        /**
-                         * problem: logout
-                         * clusters: relayStylePagination([
+                        clusters: relayStylePagination([
                             'includeTags',
                             'excludeTags',
                             'contentHashes',
@@ -44,7 +41,7 @@ export const createClient = (url: string) => {
                             'deleted',
                             'minUpdated',
                             'maxUpdated',
-                        ]),*/
+                        ]),
                     },
                 },
             },
@@ -54,7 +51,7 @@ export const createClient = (url: string) => {
         }),
         name: 'secretgraph',
         version: '0.1',
-        queryDeduplication: false,
+        queryDeduplication: !(__DEV__ ?? false),
         defaultOptions: {
             watchQuery: {
                 fetchPolicy: 'cache-and-network',

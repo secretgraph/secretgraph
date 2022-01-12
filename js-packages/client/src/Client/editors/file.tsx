@@ -961,10 +961,8 @@ const FileIntern = ({
 }
 
 const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
-    const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const { searchCtx } = React.useContext(Contexts.Search)
     const [cluster, setCluster] = React.useState<string | null>(null)
     const [data, setData] = React.useState<{
         mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
@@ -975,18 +973,20 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         key: string | number
     } | null>(null)
 
+    const { tokens, types: localPermissions } = React.useMemo(() => {
+        if (cluster) {
+            return authInfoFromConfig({
+                config,
+                url: mainCtx.url as string,
+                clusters: new Set([cluster]),
+                require: new Set(['create', 'manage']),
+            })
+        }
+        return { tokens: [], types: new Set() }
+    }, [config, cluster, mainCtx.url])
     const authorization = React.useMemo(() => {
-        const authinfo = authInfoFromConfig({
-            config,
-            url: mainCtx.url as string,
-            clusters: new Set([
-                ...(cluster ? [cluster] : []),
-                ...(data?.nodeData?.cluster ? [data?.nodeData?.cluster] : []),
-            ]),
-            require: viewOnly ? undefined : new Set(['update', 'manage']),
-        })
-        return [...new Set([...mainCtx.tokens, ...authinfo.tokens])]
-    }, [mainCtx.url, config, mainCtx.tokens])
+        return [...new Set([...mainCtx.tokens, ...tokens])]
+    }, [tokens, mainCtx.tokens])
     let {
         data: dataUnfinished,
         refetch,
@@ -1028,11 +1028,18 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             setCluster(dataUnfinished.secretgraph.node.cluster.id)
         }
         loading = true
+        let active = true
         const f = async () => {
             const updateOb: Partial<Interfaces.MainContextInterface> = {
                 shareUrl: dataUnfinished.secretgraph.node.link,
                 deleted: dataUnfinished.secretgraph.node.deleted || null,
                 updateId: dataUnfinished.secretgraph.node.updateId,
+                tokensPermissions: new Set([
+                    ...localPermissions,
+                    ...dataUnfinished.secretgraph.node.availableActions.map(
+                        (val: { keyHash: string; type: string }) => val.type
+                    ),
+                ]),
             }
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =
@@ -1069,19 +1076,23 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 name = obj.tags.name[0]
             }
             updateOb['title'] = name
-
-            updateMainCtx(updateOb)
-            setData({
-                ...obj,
-                hashAlgorithms:
-                    dataUnfinished.secretgraph.config.hashAlgorithms,
-                mapper: await mapper,
-                data: new Blob([obj.data]),
-                key: `${new Date().getTime()}`,
-            })
+            if (active) {
+                updateMainCtx(updateOb)
+                setData({
+                    ...obj,
+                    hashAlgorithms:
+                        dataUnfinished.secretgraph.config.hashAlgorithms,
+                    mapper: await mapper,
+                    data: new Blob([obj.data]),
+                    key: `${new Date().getTime()}`,
+                })
+            }
             loading = false
         }
         f()
+        return () => {
+            active = false
+        }
     }, [dataUnfinished, config])
 
     if (!data) {
@@ -1117,21 +1128,20 @@ const AddFile = () => {
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster
     )
-    const tokens = React.useMemo(
-        () =>
-            cluster
-                ? authInfoFromConfig({
-                      config,
-                      url: activeUrl,
-                      clusters: new Set([cluster]),
-                      require: new Set(['create', 'manage']),
-                  }).tokens
-                : [],
-        [config, cluster, activeUrl]
-    )
+    const { tokens } = React.useMemo(() => {
+        if (cluster) {
+            return authInfoFromConfig({
+                config,
+                url: activeUrl,
+                clusters: new Set([cluster]),
+                require: new Set(['create', 'manage']),
+            })
+        }
+        return { tokens: [] }
+    }, [config, cluster, activeUrl])
     const authorization = React.useMemo(
         () => [...new Set([...mainCtx.tokens, ...tokens])],
-        [tokens, mainCtx.tokens]
+        [...tokens, ...mainCtx.tokens]
     )
     const { data: dataUnfinished, refetch } = useQuery(
         getContentConfigurationQuery,
@@ -1152,6 +1162,7 @@ const AddFile = () => {
     }, [cluster, activeUrl])
 
     React.useEffect(() => {
+        let active = true
         const f = async () => {
             if (!dataUnfinished) {
                 return
@@ -1161,7 +1172,6 @@ const AddFile = () => {
                 deleted: null,
                 updateId: null,
             }
-            updateMainCtx(updateOb)
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const mapper = generateActionMapper({
                 config,
@@ -1175,14 +1185,20 @@ const AddFile = () => {
                 hashAlgorithms:
                     dataUnfinished.secretgraph.config.hashAlgorithms,
             })
-            setData({
-                hashAlgorithms:
-                    dataUnfinished.secretgraph.config.hashAlgorithms,
-                mapper: await mapper,
-                key: `${new Date().getTime()}`,
-            })
+            if (active) {
+                updateMainCtx(updateOb)
+                setData({
+                    hashAlgorithms:
+                        dataUnfinished.secretgraph.config.hashAlgorithms,
+                    mapper: await mapper,
+                    key: `${new Date().getTime()}`,
+                })
+            }
         }
         f()
+        return () => {
+            active = false
+        }
     }, [config, dataUnfinished])
     if (!data) {
         return null

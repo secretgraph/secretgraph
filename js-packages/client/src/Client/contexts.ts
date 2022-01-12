@@ -24,8 +24,9 @@ export const Main = createContext<{
         type: '',
         shareUrl: null,
         deleted: null,
+        // TODO: use tokens for managing tokens =key, and permissions to cache permissions found especially if manage was used
         tokens: [],
-        tokenPermissions: new Set(),
+        tokensPermissions: new Set(),
     },
     updateMainCtx: stubFn,
 })
