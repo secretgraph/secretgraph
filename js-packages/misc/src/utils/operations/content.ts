@@ -134,7 +134,7 @@ export async function createContent({
             tags,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
             value: await encryptedContentPromise.then(
-                (data) => new Blob([data])
+                (data) => new Blob([data], { type: 'application/octet-stream' })
             ),
             actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,
@@ -204,6 +204,9 @@ export async function updateContent({
     let encryptedContent = null
     let nonce = undefined
     if (options.value) {
+        if (!tagsOptions || !tagsOptions.length) {
+            throw Error('No tags provided')
+        }
         if (isPublic) {
             encryptedContent = await unserializeToArrayBuffer(options.value)
 
@@ -267,7 +270,11 @@ export async function updateContent({
             references,
             tags: tags ? await Promise.all(tags) : null,
             nonce: nonce ? await serializeToBase64(nonce) : null,
-            value: encryptedContent ? new Blob([encryptedContent]) : null,
+            value: encryptedContent
+                ? new Blob([encryptedContent], {
+                      type: 'application/octet-stream',
+                  })
+                : null,
             actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: [...options.authorization],

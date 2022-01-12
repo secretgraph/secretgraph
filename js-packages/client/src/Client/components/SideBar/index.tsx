@@ -205,12 +205,7 @@ export default React.memo(function SideBar() {
                             }}
                             onNodeSelect={(ev, items) => {
                                 setSelected(
-                                    items.filter(
-                                        (val) =>
-                                            val.includes('::') ||
-                                            (config &&
-                                                val == config.configCluster)
-                                    )
+                                    items.filter((val) => val.includes('::'))
                                 )
                             }}
                             defaultCollapseIcon={<ExpandMoreIcon />}

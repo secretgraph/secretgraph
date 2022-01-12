@@ -327,7 +327,7 @@ export default function SideBarHeader({
             }).tokens,
             deleteableItems,
         }
-    }, [config, activeUrl])
+    }, [config, activeUrl, selected])
 
     return (
         <>

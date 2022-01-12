@@ -351,7 +351,7 @@ const FileIntern = ({
             }}
             onSubmit={async (
                 { actions: actionsNew, ...values },
-                { setSubmitting, setValues, setFieldValue, setFieldTouched }
+                { setSubmitting }
             ) => {
                 const hashAlgorithm = hashAlgorithms[0]
                 const {
@@ -511,6 +511,7 @@ const FileIntern = ({
                         setFieldValue('encryptName', false)
                 }, [values.state])
                 let preview = null
+                console.log(values.fileInput)
                 if (values.plainInput) {
                     preview = (
                         <ViewWidget
@@ -1083,7 +1084,9 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                     hashAlgorithms:
                         dataUnfinished.secretgraph.config.hashAlgorithms,
                     mapper: await mapper,
-                    data: new Blob([obj.data]),
+                    data: new Blob([obj.data], {
+                        type: obj.tags.mime[0] ?? 'application/octet-stream',
+                    }),
                     key: `${new Date().getTime()}`,
                 })
             }

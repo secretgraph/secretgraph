@@ -19,6 +19,20 @@ export const createClient = (url: string) => {
                 ActionEntry: {
                     merge: false,
                 },
+                Content: {
+                    fields: {
+                        availableActions: {
+                            merge: false,
+                        },
+                    },
+                },
+                Cluster: {
+                    fields: {
+                        availableActions: {
+                            merge: false,
+                        },
+                    },
+                },
                 SecretgraphObject: {
                     queryType: true,
                     fields: {
