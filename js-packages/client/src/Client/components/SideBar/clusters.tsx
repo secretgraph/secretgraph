@@ -239,7 +239,7 @@ export default React.memo(function Clusters({
         <>
             {activeCluster ? (
                 <ActiveCluster
-                    nodeId={`${props.nodeId}-clusters::${activeCluster}`}
+                    nodeId={`${props.nodeId}-active-clusters::${activeCluster}`}
                     authinfo={authinfo}
                     goTo={goTo}
                     onClick={(ev) => ev.preventDefault()}
