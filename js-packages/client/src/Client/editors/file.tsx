@@ -1048,7 +1048,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             const hashAlgorithms = findWorkingHashAlgorithms(
                 dataUnfinished.secretgraph.config.hashAlgorithms
             )
-            const mapper = generateActionMapper({
+            const mapper = await generateActionMapper({
                 config,
                 knownHashes: [
                     dataUnfinished.secretgraph.node.cluster?.availableActions,
@@ -1059,6 +1059,9 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 ],
                 hashAlgorithms,
             })
+            if (!active) {
+                return
+            }
 
             const obj = await decryptContentObject({
                 config,
@@ -1070,6 +1073,9 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 console.error('failed decoding')
                 return
             }
+            if (!active) {
+                return
+            }
 
             let name: string = mainCtx.item || ''
 
@@ -1079,18 +1085,16 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 name = obj.tags.name[0]
             }
             updateOb['title'] = name
-            if (active) {
-                updateMainCtx(updateOb)
-                setData({
-                    ...obj,
-                    hashAlgorithms,
-                    mapper: await mapper,
-                    data: new Blob([obj.data], {
-                        type: obj.tags.mime[0] ?? 'application/octet-stream',
-                    }),
-                    key: `${new Date().getTime()}`,
-                })
-            }
+            updateMainCtx(updateOb)
+            setData({
+                ...obj,
+                hashAlgorithms,
+                mapper,
+                data: new Blob([obj.data], {
+                    type: obj.tags.mime[0] ?? 'application/octet-stream',
+                }),
+                key: `${new Date().getTime()}`,
+            })
             loading = false
         }
         f()
@@ -1180,7 +1184,7 @@ const AddFile = () => {
                 updateId: null,
             }
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
-            const mapper = generateActionMapper({
+            const mapper = await generateActionMapper({
                 config,
                 knownHashes: dataUnfinished.secretgraph.node
                     ? [
@@ -1195,7 +1199,7 @@ const AddFile = () => {
                 updateMainCtx(updateOb)
                 setData({
                     hashAlgorithms,
-                    mapper: await mapper,
+                    mapper,
                     key: `${new Date().getTime()}`,
                 })
             }

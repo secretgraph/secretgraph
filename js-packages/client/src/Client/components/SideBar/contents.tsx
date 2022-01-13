@@ -115,7 +115,11 @@ export default React.memo(function Contents({
     const incl = React.useMemo(() => {
         const ret = searchCtx.include.concat(injectInclude)
         if (authinfo) {
-            ret.push(...authinfo.hashes.map((value) => `key_hash=${value}`))
+            ret.push(
+                ...authinfo.certificateHashes.map(
+                    (value) => `key_hash=${value}`
+                )
+            )
         }
         return ret
     }, [searchCtx.include, injectInclude, authinfo?.hashes])

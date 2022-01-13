@@ -505,7 +505,7 @@ class ContentConnectionField(DjangoConnectionField):
         )
 
         return fetch_contents(
-            queryset,
+            queryset.distinct(),
             result["actions"],
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
@@ -658,7 +658,7 @@ class ClusterConnectionField(DjangoConnectionField):
                         info.context, authset=args.get("authorization")
                     )["Cluster"]["objects"].values("id")
                 )
-            ),
+            ).distinct(),
             ids=ids,
             limit_ids=10,
             includeTags=args.get("includeTags"),
