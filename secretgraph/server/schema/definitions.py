@@ -469,8 +469,11 @@ class ContentConnectionField(DjangoConnectionField):
     @classmethod
     def resolve_queryset(cls, connection, queryset, info, args):
         public = args.get("public")
-        clusters = args.get("clusters")
         deleted = args.get("deleted")
+        if isinstance(cls, Cluster):
+            clusters = [cls.flexid]
+        else:
+            clusters = args.get("clusters")
         if clusters:
             # allow 10 clusters to be specified
             queryset = fetch_by_id(
@@ -481,7 +484,13 @@ class ContentConnectionField(DjangoConnectionField):
                 limit_ids=10,
             )
         if public in {True, False}:
-            if public:
+            # root query:
+            #   should only include public contents with public cluster
+            if public and not cls:
+                queryset = queryset.filter(
+                    tags__tag="state=public", cluster__public=True
+                )
+            elif public:
                 queryset = queryset.filter(tags__tag="state=public")
             else:
                 queryset = queryset.exclude(tags__tag="state=public")
