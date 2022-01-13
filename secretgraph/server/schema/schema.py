@@ -23,7 +23,7 @@ class SecretgraphObject(ObjectType):
     node = relay.Node.Field()
     config = Field(SecretgraphConfig)
     clusters = ClusterConnectionField(ids=List(ID, required=False))
-    contents = ContentConnectionField(clusters=List(ID, required=False))
+    contents = ContentConnectionField()
 
     def resolve_config(self, info, **kwargs):
         return SecretgraphConfig()

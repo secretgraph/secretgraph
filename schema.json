@@ -701,16 +701,6 @@
                 {
                   "defaultValue": "null",
                   "description": null,
-                  "name": "public",
-                  "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
-                    "ofType": null
-                  }
-                },
-                {
-                  "defaultValue": "null",
-                  "description": null,
                   "name": "deleted",
                   "type": {
                     "kind": "SCALAR",
@@ -869,22 +859,6 @@
                 "kind": "SCALAR",
                 "name": "String",
                 "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "Link to turtle document with injected Contents",
-              "isDeprecated": false,
-              "name": "link",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                }
               }
             }
           ],
@@ -2137,20 +2111,6 @@
                 {
                   "defaultValue": "null",
                   "description": null,
-                  "name": "clusters",
-                  "type": {
-                    "kind": "LIST",
-                    "name": null,
-                    "ofType": {
-                      "kind": "SCALAR",
-                      "name": "ID",
-                      "ofType": null
-                    }
-                  }
-                },
-                {
-                  "defaultValue": "null",
-                  "description": null,
                   "name": "includeTags",
                   "type": {
                     "kind": "LIST",
@@ -2199,6 +2159,20 @@
                         "name": "String",
                         "ofType": null
                       }
+                    }
+                  }
+                },
+                {
+                  "defaultValue": "null",
+                  "description": null,
+                  "name": "clusters",
+                  "type": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "ID",
+                      "ofType": null
                     }
                   }
                 },

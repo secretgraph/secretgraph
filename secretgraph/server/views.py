@@ -45,35 +45,6 @@ class AllowCORSMixin(object):
         return response
 
 
-class ClusterView(AllowCORSMixin, FormView):
-    def get(self, request, *args, **kwargs):
-        authset = set(
-            request.headers.get("Authorization", "")
-            .replace(" ", "")
-            .split(",")
-        )
-        authset.update(request.GET.getlist("token"))
-        # authset can contain: ""
-        # why not ids_to_results => uses flexid directly
-        cluster = fetch_by_id(
-            initializeCachedResult(request, authset=authset)["Cluster"][
-                "objects"
-            ],
-            kwargs["id"],
-            type_name="Cluster",
-        ).first()
-        if not cluster:
-            raise Http404()
-        q = (
-            initializeCachedResult(request, authset=authset)["Content"][
-                "objects"
-            ]
-            .filter(cluster=cluster)
-            .only("link")
-        )
-        return JsonResponse({"contents": [map(lambda x: x.link, q)]})
-
-
 class ContentView(AllowCORSMixin, FormView):
     template_name = "secretgraph/content_form.html"
     action = "view"

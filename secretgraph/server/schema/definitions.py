@@ -7,7 +7,6 @@ from graphene import ObjectType, relay
 from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
 from graphql_relay import from_global_id
-from django.utils.translation import gettext_lazy as _
 
 from ... import constants
 from ..utils.auth import initializeCachedResult, fetch_by_id
@@ -447,7 +446,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
 
 class ContentConnectionField(DjangoConnectionField):
-    def __init__(self, type=ContentNode, *args, **kwargs):
+    def __init__(self, type=ContentNode, *args, subfield=False, **kwargs):
         kwargs.setdefault(
             "includeTags",
             graphene.List(graphene.NonNull(graphene.String), required=False),
@@ -460,7 +459,11 @@ class ContentConnectionField(DjangoConnectionField):
             "contentHashes",
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
-        kwargs.setdefault("public", graphene.Boolean(required=False))
+        if not subfield:
+            kwargs.setdefault(
+                "clusters", graphene.List(graphene.ID, required=False)
+            )
+            kwargs.setdefault("public", graphene.Boolean(required=False))
         kwargs.setdefault("deleted", graphene.Boolean(required=False))
         kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
         kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
@@ -522,17 +525,13 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         interfaces = (relay.Node,)
         fields = ["group", "public", "featured"]
 
-    contents = ContentConnectionField(required=True)
+    contents = ContentConnectionField(required=True, subfield=True)
     deleted = graphene.DateTime(required=False)
     updated = graphene.DateTime(required=True)
     updateId = graphene.UUID(required=True)
     # MAYBE: reference user directly if possible
     user = relay.GlobalID(required=False)
     description = graphene.String(required=False)
-    link = graphene.String(
-        required=True,
-        description=_("Link to turtle document with injected Contents"),
-    )
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
@@ -591,11 +590,6 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         if self.limited:
             return None
         return self.description
-
-    def resolve_link(self, info):
-        if self.limited:
-            return None
-        return self.link
 
 
 class ClusterConnectionField(DjangoConnectionField):
