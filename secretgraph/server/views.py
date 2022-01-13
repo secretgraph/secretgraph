@@ -202,11 +202,12 @@ class ContentView(AllowCORSMixin, FormView):
             raise Http404()
 
         def gen():
-            seperator = b""
+            seperator = None
             for document in iter_decrypt_contents(
                 result, self.result["authset"]
             ):
-                yield seperator
+                if seperator is not None:
+                    yield seperator
                 if kwargs.get("id"):
                     # don't alter document
                     for chunk in document:
