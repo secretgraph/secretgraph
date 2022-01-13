@@ -484,6 +484,11 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 }
                 return
             }
+
+            const hashAlgorithms = findWorkingHashAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms
+            )
+
             const updateOb = {
                 shareUrl: dataUnfinished.secretgraph.node.link,
                 deleted: dataUnfinished.secretgraph.node.deleted || null,
@@ -501,8 +506,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 node: dataUnfinished.secretgraph.node,
                 url: mainCtx.url as string,
                 tokens: mainCtx.tokens,
-                hashAlgorithms:
-                    dataUnfinished.secretgraph.config.hashAlgorithms,
+                hashAlgorithms,
             })
             if (active) {
                 updateMainCtx(updateOb)
@@ -560,11 +564,11 @@ const AddCluster = () => {
                 deleted: false,
                 updateId: null,
             })
-            const hashAlgorithm = findWorkingHashAlgorithms(
+            const hashAlgorithms = findWorkingHashAlgorithms(
                 dataUnfinished.secretgraph.config.hashAlgorithms
-            )[0]
+            )
 
-            const hashKey = await hashObject(key, hashAlgorithm)
+            const hashKey = await hashObject(key, hashAlgorithms[0])
             if (active) {
                 setData({
                     name: '',
@@ -582,7 +586,7 @@ const AddCluster = () => {
                             hasUpdate: true,
                         },
                     },
-                    hashAlgorithm,
+                    hashAlgorithm: hashAlgorithms[0],
                     key: `${new Date().getTime()}`,
                 })
             }

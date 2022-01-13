@@ -1044,6 +1044,10 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =
                 host && host.contents[dataUnfinished.secretgraph.node.id]
+
+            const hashAlgorithms = findWorkingHashAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms
+            )
             const mapper = generateActionMapper({
                 config,
                 knownHashes: [
@@ -1053,8 +1057,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                         host?.clusters[contentstuff.cluster]?.hashes,
                     contentstuff?.hashes,
                 ],
-                hashAlgorithms:
-                    dataUnfinished.secretgraph.config.hashAlgorithms,
+                hashAlgorithms,
             })
 
             const obj = await decryptContentObject({
@@ -1080,8 +1083,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 updateMainCtx(updateOb)
                 setData({
                     ...obj,
-                    hashAlgorithms:
-                        dataUnfinished.secretgraph.config.hashAlgorithms,
+                    hashAlgorithms,
                     mapper: await mapper,
                     data: new Blob([obj.data], {
                         type: obj.tags.mime[0] ?? 'application/octet-stream',
@@ -1169,6 +1171,9 @@ const AddFile = () => {
             if (!dataUnfinished) {
                 return
             }
+            const hashAlgorithms = findWorkingHashAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms
+            )
             const updateOb = {
                 shareUrl: null,
                 deleted: null,
@@ -1184,14 +1189,12 @@ const AddFile = () => {
                               ?.hashes,
                       ]
                     : [],
-                hashAlgorithms:
-                    dataUnfinished.secretgraph.config.hashAlgorithms,
+                hashAlgorithms,
             })
             if (active) {
                 updateMainCtx(updateOb)
                 setData({
-                    hashAlgorithms:
-                        dataUnfinished.secretgraph.config.hashAlgorithms,
+                    hashAlgorithms,
                     mapper: await mapper,
                     key: `${new Date().getTime()}`,
                 })

@@ -12,12 +12,11 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import Q
 from graphql_relay import to_global_id
 
 from .... import constants
 from ...utils.auth import ids_to_results, initializeCachedResult
-from ...utils.encryption import default_padding
 from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag
 from ._actions import manage_actions_fn
@@ -114,8 +113,6 @@ def _update_or_create_content_or_key(
         raise ValueError("No cluster specified")
 
     create = not content.id
-
-    inner_key = None
 
     tags_dict = None
     content_type = None
@@ -238,46 +235,6 @@ def _update_or_create_content_or_key(
     elif create:
         final_references = []
 
-    if inner_key:
-        if isinstance(inner_key, str):
-            inner_key = base64.b64decode(inner_key)
-        # last resort
-        if (
-            not is_key
-            and content_state != "public"
-            and not key_hashes_ref
-            and final_references is not None
-        ):
-            default_keys = initializeCachedResult(request, authset=authset)[
-                "Content"
-            ]["objects"].filter(
-                cluster=content.cluster, tags__tag="type=PublicKey"
-            )
-
-            if required_keys:
-                _refs = Subquery(
-                    ContentTag.objects.filter(
-                        # for correct chaining
-                        tag="type=PublicKey",
-                        content_id=OuterRef("pk"),
-                        content__tags__tag__in=map(
-                            lambda x: f"key_hash={x}", required_keys
-                        ),
-                    ).values("pk")
-                )
-                default_keys |= Content.objects.filter(tags__in=_refs)
-
-            for keyob in default_keys.distinct():
-                refob = ContentReference(
-                    target=keyob,
-                    group="key",
-                    deleteRecursive=constants.DeleteRecursive.NO_GROUP.value,
-                    extra=keyob.encrypt(inner_key, default_padding),
-                )
-                final_references.append(refob)
-                key_hashes_tags.add(keyob.contentHash)
-                tags_dict.setdefault("key_hash", set()).add(keyob.contentHash)
-
     final_tags = None
     if tags_dict is not None:
         if content_type == "PrivateKey" and len(key_hashes_tags) < 1:
@@ -350,14 +307,7 @@ def _update_or_create_content_or_key(
                 refresh_fields(final_references, "source", "target")
             )
         actions_save_fn()
-        return {
-            "content": content,
-            "contentKey": (
-                base64.b64encode(inner_key).decode("ascii")
-                if inner_key
-                else None
-            ),
-        }
+        return content
 
     setattr(save_fn, "content", content)
     return save_fn
@@ -452,7 +402,7 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
                 context = context()
             with context:
                 return {
-                    **_save_fn()["public"],
+                    "content": _save_fn()["public"],
                     "writeok": True,
                 }
 
@@ -473,7 +423,7 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
             if callable(context):
                 context = context()
             with context:
-                return {**_save_fn(), "writeok": True}
+                return {"content": _save_fn(), "writeok": True}
 
     return save_fn
 
@@ -547,9 +497,8 @@ def update_content_fn(
             except ObjectDoesNotExist:
                 return {
                     "content": Content.objects.filter(id=content.id).first(),
-                    "contentKey": None,
                     "writeok": False,
                 }
-            return {**func(), "writeok": True}
+            return {"content": func(), "writeok": True}
 
     return save_fn

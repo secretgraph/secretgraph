@@ -79,9 +79,10 @@ async function loadKeys({
 }) {
     const requests = []
     const results = {
-        hashAlgorithms: data.secretgraph.config.hashAlgorithms,
+        hashAlgorithmsRaw: data.secretgraph.config.hashAlgorithms,
     } as {
-        hashAlgorithms: string[]
+        hashAlgorithmsRaw: string[]
+        hashAlgorithmsWorking: string[]
         publicKey: {
             tags: { [key: string]: string[] }
             data: ArrayBuffer
@@ -95,10 +96,13 @@ async function loadKeys({
             mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
         }
     }
+    results['hashAlgorithmsWorking'] = findWorkingHashAlgorithms(
+        results['hashAlgorithmsRaw']
+    )
 
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames[results['hashAlgorithms'][0]]
+        hash: Constants.mapHashNames[results['hashAlgorithmsWorking'][0]]
             .operationName,
     }
     requests.push(
@@ -125,7 +129,7 @@ async function loadKeys({
                                 host.clusters[contentstuff.cluster]?.hashes,
                             contentstuff?.hashes,
                         ],
-                        hashAlgorithms: results.hashAlgorithms,
+                        hashAlgorithms: results['hashAlgorithmsWorking'],
                         config,
                     }),
                 }
@@ -170,7 +174,7 @@ async function loadKeys({
                                     host.clusters[contentstuff.cluster]?.hashes,
                                 contentstuff?.hashes,
                             ],
-                            hashAlgorithms: results.hashAlgorithms,
+                            hashAlgorithms: results['hashAlgorithmsWorking'],
                             config,
                         }),
                     }
@@ -186,10 +190,10 @@ async function loadKeys({
     return results
 }
 
-async function calcPublicKey(key: string, hashAlgorithms: string[]) {
+async function calcPublicKey(key: string, hashAlgorithm: string) {
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames[hashAlgorithms[0]].operationName,
+        hash: Constants.mapHashNames[hashAlgorithm].operationName,
     }
     // can fail, fail wanted
     const matchedPrivKey = (
@@ -237,13 +241,15 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
 function InnerKeys({
     url,
     disabled,
-    hashAlgorithms,
+    hashAlgorithmsWorking,
+    hashAlgorithmsRaw,
     generateButton,
     canSelectCluster,
 }: {
     url: string
     disabled?: boolean
-    hashAlgorithms: string[]
+    hashAlgorithmsWorking: string[]
+    hashAlgorithmsRaw: string[]
     generateButton?: boolean
     canSelectCluster: boolean
 }) {
@@ -259,7 +265,7 @@ function InnerKeys({
     } = useFormikContext<any>()
     const [joinedHashes, setJoinedHashes] = React.useState('loading')
     React.useEffect(() => {
-        calcHashes(values.publicKey, hashAlgorithms).then(
+        calcHashes(values.publicKey, hashAlgorithmsWorking).then(
             (data) => {
                 setJoinedHashes(data.join(', '))
             },
@@ -300,7 +306,10 @@ function InnerKeys({
                                 setJoinedHashes('')
                                 return 'empty'
                             }
-                            return await calcHashes(val, hashAlgorithms).then(
+                            return await calcHashes(
+                                val,
+                                hashAlgorithmsWorking
+                            ).then(
                                 (data) => {
                                     setJoinedHashes(data.join(', '))
                                     return null
@@ -324,12 +333,15 @@ function InnerKeys({
                         name="privateKey"
                         validate={(val: string) => {
                             if (val) {
-                                calcPublicKey(val, hashAlgorithms).then(
+                                calcPublicKey(
+                                    val,
+                                    hashAlgorithmsWorking[0]
+                                ).then(
                                     async (data) => {
                                         setFieldValue('publicKey', data, true)
                                         await calcHashes(
                                             data,
-                                            hashAlgorithms
+                                            hashAlgorithmsWorking
                                         ).then((data) => {
                                             setJoinedHashes(data.join(', '))
                                         })
@@ -387,8 +399,9 @@ function InnerKeys({
                             disabled={isSubmitting}
                             onClick={async () => {
                                 const operationName =
-                                    Constants.mapHashNames[hashAlgorithms[0]]
-                                        .operationName
+                                    Constants.mapHashNames[
+                                        hashAlgorithmsWorking[0]
+                                    ].operationName
                                 const { publicKey, privateKey } =
                                     (await crypto.subtle.generateKey(
                                         {
@@ -437,7 +450,8 @@ function InnerKeys({
 
 interface KeysInternProps {
     disabled?: boolean
-    hashAlgorithms: string[]
+    hashAlgorithmsRaw: string[]
+    hashAlgorithmsWorking: string[]
     publicKey?: {
         tags: { [key: string]: string[] }
         data: ArrayBuffer
@@ -455,7 +469,8 @@ interface KeysInternProps {
 }
 
 const KeysIntern = ({
-    hashAlgorithms,
+    hashAlgorithmsWorking,
+    hashAlgorithmsRaw,
     publicKey,
     privateKey,
     setCluster,
@@ -496,10 +511,9 @@ const KeysIntern = ({
                 return errors
             }}
             onSubmit={async (values, { setSubmitting, setValues }) => {
-                const halgo = findWorkingHashAlgorithms(hashAlgorithms)[0]
                 const keyParams = {
                     name: 'RSA-OAEP',
-                    hash: halgo,
+                    hash: hashAlgorithmsWorking[0],
                 }
                 let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
                 let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
@@ -529,7 +543,7 @@ const KeysIntern = ({
                     privateKeys = extractPrivKeys({
                         config,
                         url: mainCtx.url as string,
-                        hashAlgorithm: hashAlgorithms[0],
+                        hashAlgorithm: hashAlgorithmsWorking[0],
                     })
                     publicKeys = extractPubKeysCluster({
                         node: pubkeysResult.data.secretgraph.node,
@@ -604,7 +618,7 @@ const KeysIntern = ({
                         privateKey: privKey || undefined,
                         privkeys: Object.values(privateKeys),
                         pubkeys: Object.values(publicKeys),
-                        hashAlgorithm: halgo,
+                        hashAlgorithm: hashAlgorithmsWorking[0],
                         authorization: tokensTarget,
                     })
                     updateMainCtx({
@@ -620,7 +634,7 @@ const KeysIntern = ({
                         config,
                         privkeys: await Promise.all(Object.values(privateKeys)),
                         pubkeys: Object.values(publicKeys),
-                        hashAlgorithm: halgo,
+                        hashAlgorithm: hashAlgorithmsWorking[0],
                         authorization: tokens,
                     })
                     if (privateKey && privKey) {
@@ -634,7 +648,7 @@ const KeysIntern = ({
                                 Object.values(privateKeys)
                             ),
                             pubkeys: Object.values(publicKeys),
-                            hashAlgorithm: halgo,
+                            hashAlgorithm: hashAlgorithmsWorking[0],
                             authorization: tokens,
                         })
                     } else if (privKey) {
@@ -646,7 +660,7 @@ const KeysIntern = ({
                             privateKey: privKey,
                             privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
-                            hashAlgorithm: halgo,
+                            hashAlgorithm: hashAlgorithmsWorking[0],
                             authorization: tokens,
                         })
                     }
@@ -659,7 +673,7 @@ const KeysIntern = ({
                                     certificates: {
                                         [await serializeToBase64(
                                             crypto.subtle.digest(
-                                                halgo,
+                                                hashAlgorithmsWorking[0],
                                                 await crypto.subtle.exportKey(
                                                     'spki' as const,
                                                     pubKey
@@ -694,7 +708,8 @@ const KeysIntern = ({
                 }, [values.cluster, setCluster])
                 return (
                     <InnerKeys
-                        hashAlgorithms={hashAlgorithms}
+                        hashAlgorithmsRaw={hashAlgorithmsRaw}
+                        hashAlgorithmsWorking={hashAlgorithmsWorking}
                         url={mainCtx.url as string}
                         generateButton={!publicKey}
                         canSelectCluster={!!setCluster}
@@ -960,12 +975,20 @@ const AddKeys = () => {
             refetch()
         }
     }, [cluster])
+    const algos = React.useMemo(() => {
+        const hashAlgorithmsRaw =
+            data?.secretgraph?.config?.hashAlgorithms || []
+        return {
+            hashAlgorithmsRaw,
+            hashAlgorithmsWorking: findWorkingHashAlgorithms(hashAlgorithmsRaw),
+        }
+    }, [data?.secretgraph?.config?.hashAlgorithms])
     return (
         <KeysIntern
             tokens={authorization}
-            hashAlgorithms={data?.secretgraph?.config?.hashAlgorithms || []}
             setCluster={setCluster}
             disabled={loading}
+            {...algos}
         />
     )
 }

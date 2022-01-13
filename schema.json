@@ -3009,18 +3009,6 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "contentKey",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
               "name": "writeok",
               "type": {
                 "kind": "SCALAR",
@@ -3847,18 +3835,6 @@
               "type": {
                 "kind": "OBJECT",
                 "name": "Content",
-                "ofType": null
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": null,
-              "isDeprecated": false,
-              "name": "contentKey",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
                 "ofType": null
               }
             },

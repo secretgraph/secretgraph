@@ -133,14 +133,12 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 # TODO
 
 -   initialize in addFoo cluster with authinfo instead of mainCtx keys
-
+-   remove move functionality of create or fix it, why: it can connect clusters/and potentially corrupt logic
 -   replace json-editor by ActionDialog equivalent
--   move public tokens to content itself (tag) or allow unencrypted uploads
 -   sanitize hashAlgorithms
 -   deleted contents only visible with delete permission, needs Constant instead of boolean (ShowDeleted)
 -   implement hidden attribute, for administrative hidding of contents, combine with deleted?
 -   harmonize naming of add /create
--   Switch to mainCtx tokens
 -   subscribe to config, watch changes
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters
@@ -148,11 +146,9 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 -   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
 -   test permissions
 -   disable editing/prompt for keys if keys are missing
--   cleanup serverside encryption
-    -   remove many "key" arguments
-    -   document when it is possible to push unencrypted content
+-   edge-serverside encryption
 -   document permissions, specialize
--   cleanup js structure, harmonize naming, modulize more
+-   cleanup js structure, harmonize naming
 -   updateId in form
 -   prekey implement form
 -   simplify config url export (no private key anymore)

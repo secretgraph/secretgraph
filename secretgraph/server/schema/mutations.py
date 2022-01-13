@@ -262,7 +262,6 @@ class ContentMutation(relay.ClientIDMutation):
         authorization = AuthList()
 
     content = graphene.Field(ContentNode)
-    contentKey = graphene.String(required=False)
     writeok = graphene.Boolean()
 
     @classmethod
@@ -411,7 +410,6 @@ class PushContentMutation(relay.ClientIDMutation):
         authorization = AuthList()
 
     content = graphene.Field(ContentNode)
-    contentKey = graphene.String(required=False)
     actionKey = graphene.String(required=False)
 
     @classmethod
