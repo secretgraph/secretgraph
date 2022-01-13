@@ -33,7 +33,6 @@ export const clusterFeedQuery = gql`
                     node {
                         deleted
                         updateId
-                        link
                         id
                         description
                         availableActions {
@@ -70,7 +69,6 @@ export const getClusterConfigurationQuery = gql`
                 ... on Cluster {
                     id
                     group
-                    link
                     availableActions {
                         keyHash
                         type
@@ -104,7 +102,6 @@ export const getClusterQuery = gql`
                     id
                     deleted
                     group
-                    link
                     description
                     public
                     featured
@@ -154,7 +151,6 @@ export const createClusterMutation = gql`
             cluster {
                 id
                 group
-                link
                 description
                 public
                 featured
@@ -197,7 +193,6 @@ export const updateClusterMutation = gql`
             cluster {
                 id
                 group
-                link
                 description
                 updateId
                 public

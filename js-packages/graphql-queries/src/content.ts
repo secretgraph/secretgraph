@@ -405,7 +405,6 @@ export const getContentConfigurationQuery = gql`
                 ... on Cluster {
                     id
                     group
-                    link
                     availableActions {
                         keyHash
                         type

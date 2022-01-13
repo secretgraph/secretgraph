@@ -179,6 +179,23 @@ class ContentView(AllowCORSMixin, FormView):
         return response
 
     def handle_decrypt(self, request, *args, **kwargs):
+        """
+        space efficient join of one or more documents, decrypted
+        In case of multiple documents the \\0 is escaped and the documents with
+        \\0 joined
+
+        Args:
+            request ([type]): [description]
+
+        Raises:
+            Http404: [description]
+
+        Returns:
+            [type]: [description]
+
+        Yields:
+            chunks
+        """
         # shallow copy initialization of result
         result = self.result.copy()
         clusters = request.GET.getlist("cluster")

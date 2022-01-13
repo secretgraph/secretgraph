@@ -850,12 +850,10 @@ const FileIntern = ({
                                             value={values.fileInput as Blob}
                                             onChange={(blob) => {
                                                 setFieldValue('fileInput', blob)
-                                                if (!touched.fileInput) {
-                                                    setFieldTouched(
-                                                        'fileInput',
-                                                        true
-                                                    )
-                                                }
+                                                setFieldTouched(
+                                                    'fileInput',
+                                                    true
+                                                )
                                             }}
                                             mime={
                                                 (values.fileInput as Blob).type
@@ -883,12 +881,6 @@ const FileIntern = ({
                                                                 ) {
                                                                     setFieldValue(
                                                                         'fileInput',
-                                                                        ev
-                                                                            .target
-                                                                            .files[0]
-                                                                    )
-                                                                    setFieldValue(
-                                                                        'textFInput',
                                                                         ev
                                                                             .target
                                                                             .files[0]
