@@ -154,8 +154,8 @@ def _update_or_create_content_or_key(
     if objdata.get("value"):
         # normalize nonce and check constraints
         if content_state == "public":
-            objdata["nonce"] = "public"
-            checknonce = b"public"
+            objdata["nonce"] = ""
+            checknonce = b""
         elif isinstance(objdata["nonce"], bytes):
             checknonce = objdata["nonce"]
             objdata["nonce"] = base64.b64encode(checknonce).decode("ascii")
