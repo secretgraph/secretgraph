@@ -17,7 +17,7 @@ from graphql_relay import to_global_id
 
 from .... import constants
 from ...utils.auth import ids_to_results, initializeCachedResult
-from ...utils.encryption import default_padding, encrypt_into_file
+from ...utils.encryption import default_padding
 from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag
 from ._actions import manage_actions_fn
@@ -153,30 +153,27 @@ def _update_or_create_content_or_key(
     # if create checked in parent function
     if objdata.get("value"):
         # normalize nonce and check constraints
-        try:
-            if isinstance(objdata["nonce"], bytes):
-                checknonce = objdata["nonce"]
-                objdata["nonce"] = base64.b64encode(checknonce).decode("ascii")
-            else:
-                checknonce = base64.b64decode(objdata["nonce"])
-        except Exception:
-            # no nonce == trigger encryption
-            objdata["value"], objdata["nonce"], inner_key = encrypt_into_file(
-                objdata["value"], key=None
-            )
+        if content_state == "public":
+            objdata["nonce"] = "public"
+            checknonce = b"public"
+        elif isinstance(objdata["nonce"], bytes):
             checknonce = objdata["nonce"]
             objdata["nonce"] = base64.b64encode(checknonce).decode("ascii")
+        else:
+            checknonce = base64.b64decode(objdata["nonce"])
         # is public key or public? then ignore nonce checks
-        if (not is_key and content_state != "public") or not objdata.get(
-            "contentHash"
-        ):
+        if not is_key and content_state != "public":
+            if not checknonce:
+                raise ValueError(
+                    "Content must be encrypted and nonce specified"
+                )
             if len(checknonce) != 13:
                 raise ValueError("invalid nonce size")
             if checknonce.count(b"\0") == len(checknonce):
                 raise ValueError("weak nonce")
         assert isinstance(
             objdata["nonce"], str
-        ), "nonce should be here a base64 string, %s" % type(
+        ), "nonce should be here a base64 string or public, %s" % type(
             objdata["nonce"]
         )  # noqa E502
         assert isinstance(

@@ -511,7 +511,6 @@ const FileIntern = ({
                         setFieldValue('encryptName', false)
                 }, [values.state])
                 let preview = null
-                console.log(values.fileInput)
                 if (values.plainInput) {
                     preview = (
                         <ViewWidget

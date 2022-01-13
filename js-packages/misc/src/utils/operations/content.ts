@@ -191,8 +191,8 @@ export async function updateContent({
         sharedKey = undefined
     }
     const references: Interfaces.ReferenceInterface[] = []
-    let tags: (PromiseLike<string> | string)[] | null = null
-    if (sharedKey && tagsOptions) {
+    let tags: (PromiseLike<string> | string)[] | null = tagsOptions
+    if (sharedKey && tagsOptions && !isPublic) {
         tags = tagsOptions.map((tag: string) => {
             return encryptTag({
                 key: sharedKey as ArrayBuffer,
