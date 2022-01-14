@@ -13,6 +13,7 @@ import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import { elements } from '../../editors'
+import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 
 const contentFeedQuery = gql`
     query SideBarContentFeedQuery(
@@ -92,6 +93,9 @@ type SideBarItemsProps = {
     injectExclude?: string[]
     title?: string
     deleted?: boolean
+    heading?: boolean
+    marked?: boolean
+    icon?: React.ReactNode
 }
 
 // ["type=", "state=", ...
@@ -105,6 +109,9 @@ export default React.memo(function Contents({
     injectExclude = [],
     title,
     deleted,
+    marked,
+    icon,
+    heading,
     ...props
 }: SideBarItemsProps & TreeItemProps) {
     const theme = useTheme()
@@ -212,36 +219,18 @@ export default React.memo(function Contents({
                 : `contents.${node.id}`
             return (
                 <TreeItem
-                    className={
-                        mainCtx.item == node.id
-                            ? theme.classes.treeItemMarked
-                            : undefined
-                    }
                     label={
-                        <div
-                            className={theme.classes.sidebarTreeItemLabel}
-                            style={{
-                                color: node.deleted ? 'red' : undefined,
-                            }}
+                        <SidebarTreeItemLabel
+                            deleted={node.deleted}
+                            marked={mainCtx.item == node.id}
+                            icon={<Icon fontSize="small" />}
                         >
-                            <Icon
-                                fontSize="small"
-                                style={{ marginRight: '4px' }}
-                            />
-                            <div
-                                className={
-                                    theme.classes.sidebarTreeItemLabelInner
-                                }
-                            >
-                                {`${
-                                    elements.get(type)
-                                        ? elements.get(type)?.label
-                                        : type
-                                }: ${
-                                    name ? name : `...${node.id.substr(-48)}`
-                                }`}
-                            </div>
-                        </div>
+                            {`${
+                                elements.get(type)
+                                    ? elements.get(type)?.label
+                                    : type
+                            }: ${name ? name : `...${node.id.substr(-48)}`}`}
+                        </SidebarTreeItemLabel>
                     }
                     nodeId={`${props.nodeId}-${nodeId}`}
                     key={nodeId}
@@ -282,12 +271,12 @@ export default React.memo(function Contents({
         <TreeItem
             {...props}
             label={
-                <div
-                    className={theme.classes.sidebarTreeItemLabel}
+                <SidebarTreeItemLabel
+                    icon={icon}
                     title={title}
-                    style={{
-                        color: deleted ? 'red' : undefined,
-                    }}
+                    heading={heading}
+                    deleted={deleted}
+                    marked={marked}
                 >
                     {props.label}
                     {loading || !called ? null : (
@@ -304,7 +293,7 @@ export default React.memo(function Contents({
                             />
                         </div>
                     )}
-                </div>
+                </SidebarTreeItemLabel>
             }
         >
             {...contentsFinished}

@@ -301,7 +301,7 @@ const FileIntern = ({
     const state =
         tags?.state &&
         tags.state.length > 0 &&
-        Constants.contentStates.has(tags.state[0])
+        Constants.contentStates.includes(tags.state[0])
             ? tags.state[0]
             : 'internal'
     if (state == 'public') {

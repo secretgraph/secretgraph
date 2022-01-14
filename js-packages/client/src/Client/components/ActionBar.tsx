@@ -119,184 +119,230 @@ function ActionBar(props: Props) {
                 </DialogActions>
             </Dialog>
             <div style={{ flexGrow: 1 }} />
-            <Toolbar className={theme.classes.actionToolBarInner}>
-                <Tooltip
-                    title={mainCtx.action === 'view' ? 'Edit' : 'View'}
-                    arrow
-                    style={{ display: mainCtx.item ? undefined : 'hidden' }}
-                >
-                    <span>
-                        <IconButton
-                            color="inherit"
-                            aria-label={
-                                mainCtx.action === 'view' ? 'Edit' : 'View'
-                            }
-                            disabled={
-                                mainCtx.action == 'update'
-                                    ? !updateTokens.length
-                                    : !mainCtx.tokens.length
-                            }
-                            onClick={() =>
-                                updateMainCtx({
-                                    action:
-                                        mainCtx.action === 'view'
-                                            ? 'update'
-                                            : 'view',
-                                    tokens:
-                                        mainCtx.action == 'update'
-                                            ? updateTokens
-                                            : mainCtx.tokens,
-                                })
-                            }
-                            size="large"
+            <Toolbar
+                sx={{
+                    backgroundColor: 'blue',
+                    color: 'white',
+                    padding: 0,
+                    borderRadius: '15px 15px 0 0',
+                    border: '1px solid black',
+                    margin: theme.spacing(0, 1, 0, 0),
+                    '& *': {
+                        color: 'white',
+                    },
+                }}
+            >
+                {config ? (
+                    <>
+                        <Tooltip
+                            title={mainCtx.action === 'view' ? 'Edit' : 'View'}
+                            arrow
+                            style={{
+                                display: mainCtx.item ? undefined : 'hidden',
+                            }}
                         >
-                            {mainCtx.action === 'view' ? (
-                                <EditIcon />
-                            ) : (
-                                <VisibilityIcon />
-                            )}
-                        </IconButton>
-                    </span>
-                </Tooltip>
-                <Tooltip
-                    title={
-                        mainCtx.deleted
-                            ? 'Restore'
-                            : mainCtx.deleted === false
-                            ? 'Deletion blocked'
-                            : 'Delete'
-                    }
-                    arrow
-                    style={{ display: !mainCtx.item ? 'hidden' : undefined }}
-                >
-                    <span>
-                        <IconButton
-                            disabled={mainCtx.deleted === false || !config}
-                            color="inherit"
-                            aria-label={
+                            <span>
+                                <IconButton
+                                    color="inherit"
+                                    aria-label={
+                                        mainCtx.action === 'view'
+                                            ? 'Edit'
+                                            : 'View'
+                                    }
+                                    disabled={
+                                        mainCtx.action == 'update'
+                                            ? !updateTokens.length
+                                            : !mainCtx.tokens.length
+                                    }
+                                    onClick={() =>
+                                        updateMainCtx({
+                                            action:
+                                                mainCtx.action === 'view'
+                                                    ? 'update'
+                                                    : 'view',
+                                            tokens:
+                                                mainCtx.action == 'update'
+                                                    ? updateTokens
+                                                    : mainCtx.tokens,
+                                        })
+                                    }
+                                    size="large"
+                                >
+                                    {mainCtx.action === 'view' ? (
+                                        <EditIcon />
+                                    ) : (
+                                        <VisibilityIcon />
+                                    )}
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip
+                            title={
                                 mainCtx.deleted
                                     ? 'Restore'
                                     : mainCtx.deleted === false
                                     ? 'Deletion blocked'
                                     : 'Delete'
                             }
-                            onClick={async () => {
-                                if (!config) {
-                                    return []
-                                }
-                                const authtokens = authInfoFromConfig({
-                                    config,
-                                    url: mainCtx.url as string,
-                                    require: new Set(['delete', 'manage']),
-                                }).tokens
-                                if (mainCtx.deleted) {
-                                    const { data } = await resetDeletionNodes({
-                                        client,
-                                        ids: [mainCtx.item as string],
-                                        authorization: authtokens,
-                                    })
-                                    updateMainCtx({
-                                        deleted:
-                                            data.resetDeletionContentOrCluster
-                                                .deleted,
-                                        updateId: null,
-                                    })
-                                } else {
-                                    const { data } = await deleteNodes({
-                                        client,
-                                        ids: [mainCtx.item as string],
-                                        authorization: authtokens,
-                                    })
-                                    updateMainCtx({
-                                        deleted:
-                                            data.deleteContentOrCluster.deleted,
-                                        updateId: null,
-                                    })
-                                }
-                            }}
-                            size="large"
-                        >
-                            {mainCtx.deleted ? (
-                                <RestoreFromTrashIcon />
-                            ) : (
-                                <DeleteIcon />
-                            )}
-                        </IconButton>
-                    </span>
-                </Tooltip>
-                <Tooltip title="Add Element" arrow>
-                    <span>
-                        <MapSelect
-                            classes={{
-                                root: theme.classes.newItemSelect,
-                            }}
-                            disabled={!createTokens.length}
-                            onChange={(event) => {
-                                updateMainCtx({
-                                    action: 'add',
-                                    title: '',
-                                    item: null,
-                                    url: activeUrl,
-                                    shareUrl: null,
-                                    deleted: null,
-                                    type: event.currentTarget.value,
-                                    tokens: createTokens,
-                                })
-                            }}
-                            value={mainCtx.type || undefined}
-                            options={elements}
-                            variant="standard"
-                            InputProps={{
-                                disableUnderline: true,
-                            }}
-                        />
-                        <IconButton
+                            arrow
                             style={{
-                                display:
-                                    mainCtx.action == 'add'
-                                        ? 'hidden'
-                                        : undefined,
+                                display: !mainCtx.item ? 'hidden' : undefined,
                             }}
-                            color="inherit"
-                            aria-label="add"
-                            disabled={!createTokens.length}
-                            onClick={(event) => {
-                                updateMainCtx({
-                                    action: 'add',
-                                    title: '',
-                                    item: null,
-                                    url: activeUrl,
-                                    updateId: null,
-                                    shareUrl: null,
-                                    deleted: null,
-                                    type: mainCtx.type,
-                                    tokens: createTokens,
-                                })
+                        >
+                            <span>
+                                <IconButton
+                                    disabled={
+                                        mainCtx.deleted === false || !config
+                                    }
+                                    color="inherit"
+                                    aria-label={
+                                        mainCtx.deleted
+                                            ? 'Restore'
+                                            : mainCtx.deleted === false
+                                            ? 'Deletion blocked'
+                                            : 'Delete'
+                                    }
+                                    onClick={async () => {
+                                        if (!config) {
+                                            return []
+                                        }
+                                        const authtokens = authInfoFromConfig({
+                                            config,
+                                            url: mainCtx.url as string,
+                                            require: new Set([
+                                                'delete',
+                                                'manage',
+                                            ]),
+                                        }).tokens
+                                        if (mainCtx.deleted) {
+                                            const { data } =
+                                                await resetDeletionNodes({
+                                                    client,
+                                                    ids: [
+                                                        mainCtx.item as string,
+                                                    ],
+                                                    authorization: authtokens,
+                                                })
+                                            updateMainCtx({
+                                                deleted:
+                                                    data
+                                                        .resetDeletionContentOrCluster
+                                                        .deleted,
+                                                updateId: null,
+                                            })
+                                        } else {
+                                            const { data } = await deleteNodes({
+                                                client,
+                                                ids: [mainCtx.item as string],
+                                                authorization: authtokens,
+                                            })
+                                            updateMainCtx({
+                                                deleted:
+                                                    data.deleteContentOrCluster
+                                                        .deleted,
+                                                updateId: null,
+                                            })
+                                        }
+                                    }}
+                                    size="large"
+                                >
+                                    {mainCtx.deleted ? (
+                                        <RestoreFromTrashIcon />
+                                    ) : (
+                                        <DeleteIcon />
+                                    )}
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Add Element" arrow>
+                            <span>
+                                <MapSelect
+                                    sx={{
+                                        color: 'white',
+                                        direction: 'rtl' as const,
+                                        verticalAlign: 'middle !important',
+                                        '& .MuiInputBase-root': {
+                                            color: 'white !important',
+                                            fontSize: '120% !important',
+                                            '& .Mui-disabled': {
+                                                WebkitTextFillColor:
+                                                    'white !important',
+                                                color: 'white !important',
+                                            },
+                                        },
+                                    }}
+                                    disabled={!createTokens.length}
+                                    onChange={(event) => {
+                                        updateMainCtx({
+                                            action: 'add',
+                                            title: '',
+                                            item: null,
+                                            url: activeUrl,
+                                            shareUrl: null,
+                                            deleted: null,
+                                            type: event.currentTarget.value,
+                                            tokens: createTokens,
+                                        })
+                                    }}
+                                    value={mainCtx.type || undefined}
+                                    options={elements}
+                                    variant="standard"
+                                    InputProps={{
+                                        disableUnderline: true,
+                                    }}
+                                />
+                                <IconButton
+                                    style={{
+                                        display:
+                                            mainCtx.action == 'add'
+                                                ? 'hidden'
+                                                : undefined,
+                                    }}
+                                    color="inherit"
+                                    aria-label="add"
+                                    disabled={!createTokens.length}
+                                    onClick={(event) => {
+                                        updateMainCtx({
+                                            action: 'add',
+                                            title: '',
+                                            item: null,
+                                            url: activeUrl,
+                                            updateId: null,
+                                            shareUrl: null,
+                                            deleted: null,
+                                            type: mainCtx.type,
+                                            tokens: createTokens,
+                                        })
+                                    }}
+                                    size="large"
+                                >
+                                    <AddIcon />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+
+                        <Tooltip
+                            title="Share "
+                            arrow
+                            style={{
+                                display: mainCtx.shareUrl
+                                    ? undefined
+                                    : 'hidden',
                             }}
-                            size="large"
                         >
-                            <AddIcon />
-                        </IconButton>
-                    </span>
-                </Tooltip>
-                <Tooltip
-                    title="Share "
-                    arrow
-                    style={{
-                        display: mainCtx.shareUrl ? undefined : 'hidden',
-                    }}
-                >
-                    <span>
-                        <IconButton
-                            color="inherit"
-                            aria-label="share"
-                            onClick={() => setShareOpen(true)}
-                            size="large"
-                        >
-                            <ShareIcon />
-                        </IconButton>
-                    </span>
-                </Tooltip>
+                            <span>
+                                <IconButton
+                                    color="inherit"
+                                    aria-label="share"
+                                    onClick={() => setShareOpen(true)}
+                                    size="large"
+                                >
+                                    <ShareIcon />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    </>
+                ) : null}
                 <Tooltip title="Help" arrow>
                     <span>
                         <IconButton

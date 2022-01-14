@@ -13,6 +13,7 @@ import { CapturingSuspense } from '../components/misc'
 import SideBar from '../components/SideBar'
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
+import { drawerWidth } from '../theme'
 
 // const SideBar = React.lazy(() => import('../components/SideBar'));
 const SettingsImporter = React.lazy(
@@ -76,11 +77,15 @@ function MainPage() {
     }, [mainCtx.action, mainCtx.url, mainCtx.type])
     return (
         <Box
-            className={
-                config && openSidebar
-                    ? theme.classes.rootShifted
-                    : theme.classes.root
-            }
+            sx={{
+                height: '100vh',
+                display: 'grid',
+                grid: `
+                    'sidebar header' min-content
+                    'sidebar content' 1fr
+                    / ${config && openSidebar ? drawerWidth : 0} 1fr
+                    `,
+            }}
         >
             <Snackbar
                 open={message ? true : false}
@@ -100,12 +105,29 @@ function MainPage() {
                 <SideBar />
             </ApolloProvider>
             <HeaderBar />
-            <Box className={theme.classes.content}>
+            <Box
+                sx={{
+                    gridArea: 'content',
+                    display: 'flex' as const,
+                    flexDirection: 'column' as const,
+                    padding: theme.spacing(1),
+                    transition: theme.transitions.create(['margin', 'width'], {
+                        easing: theme.transitions.easing.sharp,
+                        duration: theme.transitions.duration.leavingScreen,
+                    }),
+                    overflowY: 'auto' as const,
+                }}
+            >
                 <ApolloProvider client={itemClient}>
                     <ActionBar />
                     <Paper
                         component="main"
-                        className={theme.classes.mainSection}
+                        sx={{
+                            minHeight: '200px' as const,
+                            flexGrow: 1,
+                            padding: theme.spacing(1),
+                            overflowY: 'auto' as const,
+                        }}
                     >
                         {frameElement}
                     </Paper>

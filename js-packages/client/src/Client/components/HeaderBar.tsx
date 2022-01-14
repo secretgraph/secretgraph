@@ -160,7 +160,6 @@ export default function HeaderBar() {
         sidebarButton = (
             <IconButton
                 edge="start"
-                className={theme.classes.sidebarButton}
                 onClick={() => setOpen(true)}
                 color="inherit"
                 aria-label="menu"
@@ -176,7 +175,16 @@ export default function HeaderBar() {
     }, [documenttitle])
 
     return (
-        <AppBar position="sticky" className={theme.classes.appBar}>
+        <AppBar
+            position="sticky"
+            sx={{
+                gridArea: 'header',
+                transition: theme.transitions.create(['margin', 'width'], {
+                    easing: theme.transitions.easing.sharp,
+                    duration: theme.transitions.duration.leavingScreen,
+                }),
+            }}
+        >
             <Dialog
                 open={exportOpen}
                 onClose={() => setExportOpen(false)}
@@ -230,18 +238,23 @@ export default function HeaderBar() {
                     </Button>
                 </DialogActions>
             </Dialog>
-            <Toolbar className={theme.classes.appBarToolBar}>
+            <Toolbar>
                 {sidebarButton}
                 <Typography
                     variant="h6"
                     title={mainCtx.item || undefined}
-                    className={theme.classes.appBarTitle}
+                    sx={{
+                        flexGrow: 1,
+                        wordBreak: 'break-all' as const,
+                        [theme.breakpoints.up('sm')]: {
+                            marginLeft: '2rem',
+                        },
+                    }}
                 >
                     {title}
                 </Typography>
                 <IconButton
                     edge="start"
-                    className={theme.classes?.userButton}
                     color="inherit"
                     aria-label="user"
                     ref={menuRef}

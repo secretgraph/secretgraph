@@ -1,3 +1,4 @@
+import { useTheme } from '@mui/material/styles'
 import { contentStates } from '@secretgraph/misc/constants'
 import { FieldProps } from 'formik'
 import * as React from 'react'
@@ -8,6 +9,7 @@ import { MapSelectProps, createOptionsIterator } from '../MapSelect'
 export default function StateSelect<V extends string | string[] = string>(
     props: Omit<MapSelectProps, 'options'> & FieldProps<V>
 ) {
+    const theme = useTheme()
     return (
         <FormikTextField
             select
@@ -16,7 +18,7 @@ export default function StateSelect<V extends string | string[] = string>(
             }}
             {...props}
         >
-            {createOptionsIterator(contentStates)}
+            {createOptionsIterator(theme.contentStates)}
         </FormikTextField>
     )
 }

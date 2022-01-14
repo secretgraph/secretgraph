@@ -15,7 +15,6 @@
     "react": "*",
     "suneditor": "*",
     "suneditor-react": "*",
-    "@emotion/css": "*",
     "@emotion/styled": "*",
     "@emotion/react": "*",
     "@mui/material": "*",

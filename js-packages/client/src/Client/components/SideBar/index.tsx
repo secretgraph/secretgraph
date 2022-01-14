@@ -25,6 +25,7 @@ import * as SetOps from '@secretgraph/misc/utils/set'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
+import { drawerWidth } from '../../theme'
 import { CapturingSuspense } from '../misc'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))
@@ -33,6 +34,7 @@ import SideBarClusters from './clusters'
 import SideBarContents from './contents'
 import SideBarHeader from './header'
 import SideBarNotifications from './notifications'
+import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 
 const SideBarItems = () => {
     const theme = useTheme()
@@ -88,13 +90,15 @@ const SideBarItems = () => {
         <>
             <TreeItem
                 nodeId="clusters"
-                label="Clusters"
-                classes={{ label: theme.classes.treeItemHeading }}
-                style={{ color: searchCtx.deleted ? 'red' : undefined }}
+                label={
+                    <SidebarTreeItemLabel heading deleted={searchCtx.deleted}>
+                        Clusters
+                    </SidebarTreeItemLabel>
+                }
             >
                 {authinfo && (
                     <SideBarClusters
-                        classes={{ label: theme.classes.treeItemHeading }}
+                        heading
                         nodeId={`${activeUrl}-clusters-owned`}
                         label="Owned"
                         authinfo={authinfo}
@@ -104,7 +108,7 @@ const SideBarItems = () => {
                     />
                 )}
                 <SideBarClusters
-                    classes={{ label: theme.classes.treeItemHeading }}
+                    heading
                     nodeId={`${activeUrl}-clusters-public`}
                     label="Public"
                     deleted={searchCtx.deleted}
@@ -113,9 +117,11 @@ const SideBarItems = () => {
             </TreeItem>
             <TreeItem
                 nodeId="contents"
-                label="Contents"
-                classes={{ label: theme.classes.treeItemHeading }}
-                style={{ color: searchCtx.deleted ? 'red' : undefined }}
+                label={
+                    <SidebarTreeItemLabel heading deleted={searchCtx.deleted}>
+                        Contents
+                    </SidebarTreeItemLabel>
+                }
             >
                 <SideBarContents
                     key="SideBarContentsPublic"
@@ -124,7 +130,7 @@ const SideBarItems = () => {
                     usePublic
                     deleted={searchCtx.deleted}
                     label="Public"
-                    classes={{ label: theme.classes.treeItemHeading }}
+                    heading
                     goTo={goTo}
                 />
                 {authinfo && (
@@ -137,7 +143,7 @@ const SideBarItems = () => {
                             activeContent={mainCtx.item}
                             injectInclude={['state=draft']}
                             label="Drafts"
-                            classes={{ label: theme.classes.treeItemHeading }}
+                            heading
                             goTo={goTo}
                         />
                         <SideBarContents
@@ -148,7 +154,7 @@ const SideBarItems = () => {
                             activeContent={mainCtx.item}
                             injectInclude={['state=internal']}
                             label="Internal"
-                            classes={{ label: theme.classes.treeItemHeading }}
+                            heading
                             goTo={goTo}
                         />
                     </>
@@ -186,11 +192,12 @@ export default React.memo(function SideBar() {
                     variant="persistent"
                     anchor={theme.direction === 'ltr' ? 'left' : 'right'}
                     open={!!(open && config)}
-                    classes={{
-                        paper: theme.classes.drawerPaper,
-                    }}
-                    style={{
+                    sx={{
                         display: !(open && config) ? 'hidden' : undefined,
+                        '& .MuiDrawer-paper': {
+                            width: drawerWidth,
+                            overflowY: 'auto' as const,
+                        },
                     }}
                 >
                     <SideBarHeader notifyItems={notifyItems} />

@@ -18,6 +18,7 @@ import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
+import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 
 export const ActiveCluster = React.memo(function ActiveCluster({
     authinfo,
@@ -63,17 +64,10 @@ export const ActiveCluster = React.memo(function ActiveCluster({
             goTo={goTo}
             authinfo={authinfo}
             deleted={data?.node?.deleted}
-            label={
-                <>
-                    <GroupWorkIcon
-                        fontSize="small"
-                        style={{ marginRight: '4px' }}
-                    />
-                    <div className={theme.classes.sidebarTreeItemLabelInner}>
-                        {data?.name ? data?.name : `...${cluster.substr(-48)}`}
-                    </div>
-                </>
-            }
+            marked
+            title={data?.note}
+            icon={<GroupWorkIcon fontSize="small" />}
+            label={data?.name ? data?.name : `...${cluster.substr(-48)}`}
             onClick={(ev) => {
                 ev.preventDefault()
             }}
@@ -96,6 +90,8 @@ type SideBarItemsProps =
           activeCluster: string
           title?: string
           deleted?: boolean
+          heading?: boolean
+          icon?: React.ReactNode
       }
     | {
           authinfo?: Interfaces.AuthInfoInterface
@@ -103,6 +99,8 @@ type SideBarItemsProps =
           activeCluster?: null | undefined
           title?: string
           deleted?: boolean
+          heading?: boolean
+          icon?: React.ReactNode
       }
 
 export default React.memo(function Clusters({
@@ -110,10 +108,12 @@ export default React.memo(function Clusters({
     goTo,
     activeCluster,
     title,
+    heading,
     deleted,
+    icon,
     ...props
 }: SideBarItemsProps & TreeItemProps) {
-    const theme = useTheme()
+    const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     let [
@@ -171,28 +171,11 @@ export default React.memo(function Clusters({
                         authinfo={authinfo}
                         title={note || undefined}
                         deleted={node.deleted}
+                        marked={mainCtx.item == node.id}
                         // state public needs no key_hash
                         injectInclude={['state=public']}
-                        label={
-                            <>
-                                <GroupWorkIcon
-                                    fontSize="small"
-                                    style={{
-                                        marginRight: '4px',
-                                    }}
-                                />
-                                <div
-                                    className={
-                                        theme.classes.sidebarTreeItemLabelInner
-                                    }
-                                    style={{
-                                        color: node.deleted ? 'red' : undefined,
-                                    }}
-                                >
-                                    {name ? name : `...${node.id.substr(-48)}`}
-                                </div>
-                            </>
-                        }
+                        icon={<GroupWorkIcon fontSize="small" />}
+                        label={name ? name : `...${node.id.substr(-48)}`}
                         nodeId={`${props.nodeId}-${nodeId}`}
                         key={nodeId}
                         onClick={(ev) => ev.preventDefault()}
@@ -236,7 +219,33 @@ export default React.memo(function Clusters({
     }
 
     return (
-        <>
+        <TreeItem
+            {...props}
+            label={
+                <SidebarTreeItemLabel
+                    title={title}
+                    deleted={deleted}
+                    heading={heading}
+                    icon={icon}
+                >
+                    {props.label}
+                    {loading || !called ? null : (
+                        <span
+                            onClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                                refetch && refetch()
+                            }}
+                        >
+                            <ReplayIcon
+                                fontSize="small"
+                                style={{ marginLeft: '4px' }}
+                            />
+                        </span>
+                    )}
+                </SidebarTreeItemLabel>
+            }
+        >
             {activeCluster ? (
                 <ActiveCluster
                     nodeId={`${props.nodeId}-active-clusters::${activeCluster}`}
@@ -244,39 +253,9 @@ export default React.memo(function Clusters({
                     goTo={goTo}
                     onClick={(ev) => ev.preventDefault()}
                     cluster={activeCluster}
-                    className={theme.classes.treeItemMarked}
                 />
             ) : null}
-            <TreeItem
-                {...props}
-                label={
-                    <div
-                        className={theme.classes.sidebarTreeItemLabel}
-                        title={title}
-                        style={{
-                            color: deleted ? 'red' : undefined,
-                        }}
-                    >
-                        {props.label}
-                        {loading || !called ? null : (
-                            <span
-                                onClick={(ev) => {
-                                    ev.preventDefault()
-                                    ev.stopPropagation()
-                                    refetch && refetch()
-                                }}
-                            >
-                                <ReplayIcon
-                                    fontSize="small"
-                                    style={{ marginLeft: '4px' }}
-                                />
-                            </span>
-                        )}
-                    </div>
-                }
-            >
-                {...clustersFinished}
-            </TreeItem>
-        </>
+            {...clustersFinished}
+        </TreeItem>
     )
 })

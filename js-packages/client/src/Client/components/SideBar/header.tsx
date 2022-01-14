@@ -167,7 +167,10 @@ function MainSearchField() {
                 <HeaderPopover />
             </Popover>
             <Autocomplete
-                className={theme.classes.sideBarHeaderSelect}
+                sx={{
+                    width: '100%' as const,
+                    marginTop: '3px' as const,
+                }}
                 freeSolo
                 value={activeUrl}
                 options={Object.keys(config ? config.hosts : {})}
@@ -331,7 +334,16 @@ export default function SideBarHeader({
 
     return (
         <>
-            <Box className={theme.classes.sideBarHeader}>
+            <Box
+                sx={{
+                    // necessary for content to be below app bar
+                    minHeight: theme.mixins.toolbar.minHeight,
+                    display: 'flex' as const,
+                    alignItems: 'center' as const,
+                    padding: theme.spacing(0, 1),
+                    justifyContent: 'flex-end' as const,
+                }}
+            >
                 {theme.direction === 'rtl' ? <CloseButton /> : null}
                 <MainSearchField />
                 {theme.direction === 'ltr' ? <CloseButton /> : null}

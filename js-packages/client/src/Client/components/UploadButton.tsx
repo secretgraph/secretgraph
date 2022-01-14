@@ -3,10 +3,10 @@ import * as React from 'react'
 export interface UploadButtonProps {
     name?: string
     accept?: string
+    multiple?: boolean
     onChange?: (ev: React.ChangeEvent<HTMLInputElement>) => void
     onClick?: (ev: React.MouseEvent<HTMLInputElement>) => void
     children: JSX.Element | JSX.Element[]
-    className?: string
 }
 
 export default function UploadButton({
@@ -14,11 +14,11 @@ export default function UploadButton({
     accept,
     onChange,
     onClick,
-    className,
     children,
+    multiple,
 }: UploadButtonProps) {
     return (
-        <label className={className}>
+        <label>
             <input
                 style={{ display: 'none' }}
                 name={name}
@@ -26,6 +26,7 @@ export default function UploadButton({
                 type="file"
                 onChange={onChange}
                 onClick={onClick}
+                multiple={multiple}
             />
             {children}
         </label>

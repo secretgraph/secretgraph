@@ -1,5 +1,6 @@
 import CheckIcon from '@mui/icons-material/Check'
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt'
+import LoadingButton from '@mui/lab/LoadingButton'
 import { Box } from '@mui/material'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -325,19 +326,14 @@ function SettingsImporter() {
                     >
                         Close
                     </Button>
-                    <Button
+                    <LoadingButton
                         onClick={handleStart}
                         color="primary"
                         disabled={loadingStart || loadingImport}
+                        loading={loadingStart}
                     >
                         Retry
-                        {loadingStart && (
-                            <CircularProgress
-                                size={24}
-                                className={theme.classes.buttonProgress}
-                            />
-                        )}
-                    </Button>
+                    </LoadingButton>
                 </DialogActions>
             </Dialog>
             <Dialog
@@ -357,19 +353,14 @@ function SettingsImporter() {
                     >
                         Close
                     </Button>
-                    <Button
+                    <LoadingButton
                         onClick={handleImport}
                         color="primary"
                         disabled={loadingStart || loadingImport}
+                        loading={loadingImport}
                     >
                         Retry
-                        {loadingImport && (
-                            <CircularProgress
-                                size={24}
-                                className={theme.classes.buttonProgress}
-                            />
-                        )}
-                    </Button>
+                    </LoadingButton>
                 </DialogActions>
             </Dialog>
             <Card>
@@ -394,21 +385,16 @@ function SettingsImporter() {
                             />
                         </CardContent>
                         <CardActions>
-                            <Button
+                            <LoadingButton
                                 size="small"
                                 variant="contained"
                                 color="secondary"
                                 onClick={handleStart}
                                 disabled={loadingStart || loadingImport}
+                                loading={loadingStart}
                             >
                                 {startLabel}
-                                {loadingStart && (
-                                    <CircularProgress
-                                        size={24}
-                                        className={theme.classes.buttonProgress}
-                                    />
-                                )}
-                            </Button>
+                            </LoadingButton>
                         </CardActions>
                     </Card>
                 </CardContent>
@@ -423,8 +409,19 @@ function SettingsImporter() {
                     >
                         {importHelp}
                     </Typography>
-                    <Box className={theme.classes.import_Wrapper}>
-                        <FormControl className={theme.classes.import_Item}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'row' as const,
+                            alignItems: 'stretch',
+                        }}
+                    >
+                        <FormControl
+                            sx={{
+                                padding: theme.spacing(0, 1),
+                                textAlign: 'center' as const,
+                            }}
+                        >
                             <input
                                 disabled={loadingStart || loadingImport}
                                 style={{ display: 'none' }}
@@ -479,8 +476,20 @@ function SettingsImporter() {
                                 {importFileLabel}
                             </FormHelperText>
                         </FormControl>
-                        <Box className={theme.classes.import_Item}>or</Box>
-                        <FormControl className={theme.classes.import_Url}>
+                        <Box
+                            sx={{
+                                padding: theme.spacing(0, 1),
+                                textAlign: 'center',
+                            }}
+                        >
+                            or
+                        </Box>
+                        <FormControl
+                            sx={{
+                                flexGrow: 1,
+                                padding: theme.spacing(0, 1),
+                            }}
+                        >
                             <TextField
                                 disabled={loadingStart || loadingImport}
                                 onChange={(event) => {
@@ -523,10 +532,11 @@ function SettingsImporter() {
                     </FormControl>
                 </CardContent>
                 <CardActions>
-                    <Button
+                    <LoadingButton
                         size="small"
                         variant="contained"
                         color="primary"
+                        loading={loadingImport}
                         disabled={
                             loadingStart ||
                             loadingImport ||
@@ -535,13 +545,7 @@ function SettingsImporter() {
                         onClick={handleImport}
                     >
                         {importStartLabel}
-                        {loadingImport && (
-                            <CircularProgress
-                                size={24}
-                                className={theme.classes.buttonProgress}
-                            />
-                        )}
-                    </Button>
+                    </LoadingButton>
                 </CardActions>
             </Card>
         </React.Fragment>

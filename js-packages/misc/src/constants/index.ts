@@ -2,11 +2,7 @@ declare var gettext: any
 
 export const protectedActions = new Set(['storedUpdate'])
 
-export const contentStates = new Map([
-    ['draft', { label: gettext('Draft') }],
-    ['internal', { label: gettext('Internal') }],
-    ['public', { label: gettext('Public') }],
-])
+export const contentStates = ['draft', 'internal', 'public']
 
 export const mapHashNames: {
     [algo: string]: {
