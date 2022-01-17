@@ -260,7 +260,7 @@ function ActionEntryIntern({
                 </Grid>
                 {action && action.update !== undefined && !submitFn && (
                     <Grid item>
-                        <Tooltip title="Update Action" arrow>
+                        <Tooltip title="Update" arrow>
                             <span>
                                 <FastField
                                     name={`actions.${index}.update`}

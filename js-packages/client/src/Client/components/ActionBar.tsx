@@ -138,7 +138,7 @@ function ActionBar(props: Props) {
                             title={mainCtx.action === 'view' ? 'Edit' : 'View'}
                             arrow
                             style={{
-                                display: mainCtx.item ? undefined : 'hidden',
+                                display: mainCtx.item ? undefined : 'none',
                             }}
                         >
                             <span>
@@ -186,7 +186,7 @@ function ActionBar(props: Props) {
                             }
                             arrow
                             style={{
-                                display: !mainCtx.item ? 'hidden' : undefined,
+                                display: !mainCtx.item ? 'none' : undefined,
                             }}
                         >
                             <span>
@@ -291,11 +291,15 @@ function ActionBar(props: Props) {
                                         disableUnderline: true,
                                     }}
                                 />
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Add element from same type">
+                            <span>
                                 <IconButton
                                     style={{
                                         display:
                                             mainCtx.action == 'add'
-                                                ? 'hidden'
+                                                ? 'none'
                                                 : undefined,
                                     }}
                                     color="inherit"
@@ -325,9 +329,7 @@ function ActionBar(props: Props) {
                             title="Share "
                             arrow
                             style={{
-                                display: mainCtx.shareUrl
-                                    ? undefined
-                                    : 'hidden',
+                                display: mainCtx.shareUrl ? undefined : 'none',
                             }}
                         >
                             <span>

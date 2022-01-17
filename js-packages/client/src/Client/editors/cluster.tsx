@@ -1,20 +1,11 @@
-import {
-    ApolloClient,
-    FetchResult,
-    useLazyQuery,
-    useQuery,
-} from '@apollo/client'
-import { ListSubheader } from '@mui/material'
+import { FetchResult, useQuery } from '@apollo/client'
+import Security from '@mui/icons-material/Security'
 import Button from '@mui/material/Button'
-import Collapse from '@mui/material/Collapse'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
-import List from '@mui/material/List'
-import {
-    getClusterConfigurationQuery,
-    getClusterQuery,
-} from '@secretgraph/graphql-queries/cluster'
+import Tooltip from '@mui/material/Tooltip'
+import { getClusterQuery } from '@secretgraph/graphql-queries/cluster'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
@@ -30,26 +21,16 @@ import {
     findWorkingHashAlgorithms,
     hashObject,
     serializeToBase64,
-    unserializeToArrayBuffer,
 } from '@secretgraph/misc/utils/encryption'
 import {
     createCluster,
     updateCluster,
     updateConfigRemoteReducer,
 } from '@secretgraph/misc/utils/operations'
-import * as SetOps from '@secretgraph/misc/utils/set'
-import {
-    ArrayHelpers,
-    FastField,
-    Field,
-    FieldArray,
-    Form,
-    Formik,
-    FormikProps,
-} from 'formik'
+import { FastField, FieldArray, Form, Formik } from 'formik'
 import * as React from 'react'
 
-import { ActionEntry } from '../components/ActionsDialog'
+import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
@@ -113,6 +94,8 @@ const ClusterIntern = ({
     ...props
 }: ClusterInternProps) => {
     disabled = disabled || viewOnly
+
+    const [open, setOpen] = React.useState(false)
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
@@ -162,15 +145,6 @@ const ClusterIntern = ({
         })
         return actions
     }, [mapper])
-    const actionTokens = React.useMemo(
-        () =>
-            mapper
-                ? actions
-                      .filter((val) => val.type == 'action')
-                      .map((val) => val.data)
-                : mainCtx.tokens,
-        [actions, mapper]
-    )
     /**
     keyHash: string | null
     start: Date | null
@@ -322,8 +296,23 @@ const ClusterIntern = ({
                 const loading = !!(isSubmitting || loadingIntern)
                 return (
                     <Form>
+                        <FieldArray name="actions">
+                            {({ remove, replace, push, form }) => {
+                                return (
+                                    <ActionsDialog
+                                        remove={remove}
+                                        replace={replace}
+                                        push={push}
+                                        form={form}
+                                        disabled={isSubmitting}
+                                        handleClose={() => setOpen(false)}
+                                        open={open}
+                                    />
+                                )
+                            }}
+                        </FieldArray>
                         <Grid container spacing={2}>
-                            <Grid item xs={12}>
+                            <Grid item xs={11}>
                                 <FastField
                                     component={FormikTextField}
                                     name="name"
@@ -332,6 +321,19 @@ const ClusterIntern = ({
                                     fullWidth
                                     disabled={disabled || loading}
                                 />
+                            </Grid>
+
+                            <Grid item xs={1}>
+                                <Tooltip title="Actions">
+                                    <span>
+                                        <IconButton
+                                            onClick={() => setOpen(!open)}
+                                            size="large"
+                                        >
+                                            <Security />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
                             </Grid>
 
                             <Grid item xs={12}>
@@ -364,64 +366,6 @@ const ClusterIntern = ({
                                     Label={{ label: 'Featured' }}
                                     disabled={disabled || loading}
                                 />
-                            </Grid>
-                            <Grid item xs={12}>
-                                <List>
-                                    <ListSubheader disableSticky>
-                                        Tokens
-                                    </ListSubheader>
-                                    <FieldArray name="actions">
-                                        {({
-                                            push,
-                                            remove,
-                                            form,
-                                        }: {
-                                            form: FormikProps<
-                                                typeof initialValues
-                                            >
-                                        } & ArrayHelpers) => {
-                                            const items =
-                                                form.values.actions.map(
-                                                    (val, index) => {
-                                                        return (
-                                                            <ActionEntry
-                                                                index={index}
-                                                                key={`${index}`}
-                                                                disabled={
-                                                                    disabled ||
-                                                                    loading
-                                                                }
-                                                                action={val}
-                                                                tokens={
-                                                                    actionTokens
-                                                                }
-                                                                deleteFn={
-                                                                    disabled
-                                                                        ? undefined
-                                                                        : () =>
-                                                                              remove(
-                                                                                  index
-                                                                              )
-                                                                }
-                                                                divider
-                                                            />
-                                                        )
-                                                    }
-                                                )
-                                            if (!disabled) {
-                                                items.push(
-                                                    <ActionEntry
-                                                        key="new"
-                                                        disabled={loading}
-                                                        tokens={actionTokens}
-                                                        addFn={push}
-                                                    />
-                                                )
-                                            }
-                                            return items
-                                        }}
-                                    </FieldArray>
-                                </List>
                             </Grid>
                             <Grid item xs={12}>
                                 {loading && <LinearProgress />}

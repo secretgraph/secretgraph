@@ -143,10 +143,7 @@ class ActionHandler:
 
     @staticmethod
     def clean_delete(action_dict, request, content, authset):
-        result = {
-            "action": "delete",
-            "contentActionGroup": "delete"
-        }
+        result = {"action": "delete", "contentActionGroup": "delete"}
         if content:
             # ignore tags if specified for a content
             result["excludeTags"] = []
@@ -329,6 +326,55 @@ class ActionHandler:
                     "deleteRecursive": deleteRecursive,
                 }
             )
+        if action_dict.get("requiredKeys"):
+            result["form"]["requiredKeys"] = list(
+                _only_owned_helper(
+                    Content,
+                    action_dict["requiredKeys"],
+                    request,
+                    fields=("id",),
+                    check_field="contentHash",
+                    scope="view",
+                    authset=authset,
+                )
+            )
+
+        return result
+
+    @staticmethod
+    def do_create(action_dict, scope, sender, accesslevel, **kwargs):
+        if scope == "create" and issubclass(sender, (Content, Cluster)):
+            return {
+                "filters": Q(),
+                "form": action_dict["form"],
+                "accesslevel": 3,
+            }
+        return None
+
+    @staticmethod
+    def clean_create(action_dict, request, content, authset):
+        if content:
+            raise ValueError("Can only be specified for a cluster")
+
+        result = {
+            "action": "create",
+            "form": {
+                "requiredKeys": [],
+                "injectedTags": [],
+                "allowedTags": None,
+            },
+        }
+        if action_dict.get("injectedTags"):
+            for i in action_dict["injectedTags"]:
+                if i in {"type=PublicKey", "type=PrivateKey"}:
+                    raise ValueError(
+                        "use allowedTags instead, "
+                        "in case types should be restricted"
+                    )
+            result["form"]["injectedTags"].extend(action_dict["injectedTags"])
+        if action_dict.get("allowedTags"):
+            result["form"]["allowedTags"] = list(action_dict["allowedTags"])
+
         if action_dict.get("requiredKeys"):
             result["form"]["requiredKeys"] = list(
                 _only_owned_helper(

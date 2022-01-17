@@ -264,6 +264,7 @@ function InnerKeys({
         dirty,
     } = useFormikContext<any>()
     const [joinedHashes, setJoinedHashes] = React.useState('loading')
+    const { config } = React.useContext(Contexts.InitializedConfig)
     React.useEffect(() => {
         calcHashes(values.publicKey, hashAlgorithmsWorking).then(
             (data) => {
@@ -272,6 +273,14 @@ function InnerKeys({
             (reason) => {}
         )
     }, [])
+
+    const clusterSelectTokens = React.useMemo(() => {
+        return authInfoFromConfig({
+            config,
+            url: url as string,
+            require: new Set(['create', 'manage']),
+        }).tokens
+    }, [config])
     return (
         <Form>
             <Grid container spacing={2}>
@@ -293,6 +302,7 @@ function InnerKeys({
                             disabled={isSubmitting || disabled}
                             label="Cluster"
                             firstIfEmpty
+                            tokens={clusterSelectTokens}
                         />
                     ) : null}
                 </Grid>
@@ -465,7 +475,7 @@ interface KeysInternProps {
         mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     }
     setCluster?: (arg: string) => void
-    tokens: string[]
+    url: string
 }
 
 const KeysIntern = ({
@@ -474,7 +484,7 @@ const KeysIntern = ({
     publicKey,
     privateKey,
     setCluster,
-    tokens,
+    url,
 }: KeysInternProps) => {
     const client = useApolloClient()
     const { baseClient } = React.useContext(Contexts.Clients)
@@ -517,10 +527,10 @@ const KeysIntern = ({
                 }
                 let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
                 let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
-                let tokensTarget = tokens
+                let tokensTarget = mainCtx.tokens
                 if (publicKey) {
                     if (values.cluster != publicKey.nodeData.cluster.id) {
-                        tokensTarget = tokens.concat(
+                        tokensTarget = mainCtx.tokens.concat(
                             authInfoFromConfig({
                                 config,
                                 clusters: new Set([values.cluster]),
@@ -570,7 +580,7 @@ const KeysIntern = ({
                     await deleteNodes({
                         client,
                         ids: [privateKey.nodeData.id],
-                        authorization: tokens,
+                        authorization: mainCtx.tokens,
                     })
                 }
 
@@ -599,14 +609,14 @@ const KeysIntern = ({
                         await deleteNodes({
                             client,
                             ids: [publicKey.nodeData.id],
-                            authorization: tokens,
+                            authorization: mainCtx.tokens,
                         })
                         // recursively deletes private key but it would still be visible, so do it here
                         if (privateKey && privKey) {
                             await deleteNodes({
                                 client,
                                 ids: [privateKey.nodeData.id],
-                                authorization: tokens,
+                                authorization: mainCtx.tokens,
                             })
                         }
                     }
@@ -635,7 +645,7 @@ const KeysIntern = ({
                         privkeys: await Promise.all(Object.values(privateKeys)),
                         pubkeys: Object.values(publicKeys),
                         hashAlgorithm: hashAlgorithmsWorking[0],
-                        authorization: tokens,
+                        authorization: mainCtx.tokens,
                     })
                     if (privateKey && privKey) {
                         await updateKey({
@@ -649,7 +659,7 @@ const KeysIntern = ({
                             ),
                             pubkeys: Object.values(publicKeys),
                             hashAlgorithm: hashAlgorithmsWorking[0],
-                            authorization: tokens,
+                            authorization: mainCtx.tokens,
                         })
                     } else if (privKey) {
                         await createKeys({
@@ -661,7 +671,7 @@ const KeysIntern = ({
                             privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
                             hashAlgorithm: hashAlgorithmsWorking[0],
-                            authorization: tokens,
+                            authorization: mainCtx.tokens,
                         })
                     }
 
@@ -831,21 +841,6 @@ const EditKeys = () => {
         | null
     >(null)
 
-    const { tokens, types: localPermissions } = React.useMemo(() => {
-        if (cluster) {
-            return authInfoFromConfig({
-                config,
-                url: mainCtx.url as string,
-                clusters: new Set([cluster]),
-                require: new Set(['update', 'create', 'manage']),
-            })
-        }
-        return { tokens: [], types: new Set() }
-    }, [config, cluster, mainCtx.url])
-    const authorization = React.useMemo(
-        () => [...new Set([...mainCtx.tokens, ...tokens])],
-        [...tokens, ...mainCtx.tokens]
-    )
     let {
         refetch,
         data: dataUnfinished,
@@ -856,7 +851,7 @@ const EditKeys = () => {
         nextFetchPolicy: 'network-only',
         variables: {
             id: mainCtx.item as string,
-            authorization: authorization,
+            authorization: mainCtx.tokens,
         },
         onError: console.error,
     })
@@ -883,7 +878,7 @@ const EditKeys = () => {
                 deleted: dataUnfinished.secretgraph.node.deleted,
                 updateId: dataUnfinished.secretgraph.node.updateId,
                 tokensPermissions: new Set([
-                    ...localPermissions,
+                    ...mainCtx.tokensPermissions,
                     ...dataUnfinished.secretgraph.node.availableActions.map(
                         (val: { keyHash: string; type: string }) => val.type
                     ),
@@ -899,7 +894,7 @@ const EditKeys = () => {
                 baseUrl: mainCtx.url as string,
                 data: dataUnfinished,
                 config,
-                authorization,
+                authorization: mainCtx.tokens,
             })
             if (active) {
                 updateMainCtx(updateOb)
@@ -920,8 +915,8 @@ const EditKeys = () => {
 
     return (
         <KeysIntern
-            tokens={authorization}
             {...data}
+            url={mainCtx.url as string}
             disabled={loading}
             setCluster={
                 mainCtx.tokensPermissions.has('manage') ||
@@ -985,7 +980,7 @@ const AddKeys = () => {
     }, [data?.secretgraph?.config?.hashAlgorithms])
     return (
         <KeysIntern
-            tokens={authorization}
+            url={activeUrl}
             setCluster={setCluster}
             disabled={loading}
             {...algos}

@@ -1,13 +1,10 @@
-import { useApolloClient, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 import Security from '@mui/icons-material/Security'
 import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
-import { useTheme } from '@mui/material/styles'
 import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -37,7 +34,6 @@ import {
     updateConfigRemoteReducer,
     updateContent,
 } from '@secretgraph/misc/utils/operations'
-import * as SetOps from '@secretgraph/misc/utils/set'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
@@ -210,7 +206,6 @@ interface FileInternProps {
     hashAlgorithms: string[]
     nodeData?: any
     tags?: { [name: string]: string[] }
-    tokens: string[]
     data?: Blob | null
     url: string
     setCluster: (arg: string) => void
@@ -225,7 +220,6 @@ const FileIntern = ({
     mapper,
     url,
     hashAlgorithms,
-    tokens,
 }: FileInternProps) => {
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
@@ -234,6 +228,13 @@ const FileIntern = ({
         Contexts.InitializedConfig
     )
     const [open, setOpen] = React.useState(false)
+    const clusterSelectTokens = React.useMemo(() => {
+        return authInfoFromConfig({
+            config,
+            url,
+            require: new Set(['create', 'manage']),
+        })
+    }, [config])
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     let name: string = mainCtx.item || ''
     const content_hashes = React.useMemo(() => {
@@ -391,13 +392,13 @@ const FileIntern = ({
                         fetchPolicy: 'network-only',
                         query: getContentConfigurationQuery,
                         variables: {
-                            authorization: tokens,
+                            authorization: mainCtx.tokens,
                             id: values.cluster,
                         },
                     })
                     pubkeys = extractPubKeysCluster({
                         node: pubkeysResult.data.secretgraph.node,
-                        authorization: tokens,
+                        authorization: mainCtx.tokens,
                         params: {
                             name: 'RSA-OAEP',
                             hash: hashAlgorithm,
@@ -434,7 +435,7 @@ const FileIntern = ({
                         pubkeys: Object.values(pubkeys),
                         hashAlgorithm,
                         actions: finishedActions,
-                        authorization: tokens,
+                        authorization: mainCtx.tokens,
                     }
                     const result = await (nodeData
                         ? updateContent({
@@ -631,7 +632,7 @@ const FileIntern = ({
                                     disabled={isSubmitting}
                                     label="Cluster"
                                     firstIfEmpty
-                                    tokens={tokens}
+                                    tokens={clusterSelectTokens}
                                     validate={(val: string) => {
                                         if (!val) {
                                             return 'empty'
@@ -965,20 +966,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         key: string | number
     } | null>(null)
 
-    const { tokens, types: localPermissions } = React.useMemo(() => {
-        if (cluster) {
-            return authInfoFromConfig({
-                config,
-                url: mainCtx.url as string,
-                clusters: new Set([cluster]),
-                require: new Set(['create', 'manage']),
-            })
-        }
-        return { tokens: [], types: new Set() }
-    }, [config, cluster, mainCtx.url])
-    const authorization = React.useMemo(() => {
-        return [...new Set([...mainCtx.tokens, ...tokens])]
-    }, [tokens, mainCtx.tokens])
     let {
         data: dataUnfinished,
         refetch,
@@ -988,7 +975,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         nextFetchPolicy: 'network-only',
         variables: {
             id: mainCtx.item as string,
-            authorization,
+            authorization: mainCtx.tokens,
         },
         onError: console.error,
     })
@@ -1027,7 +1014,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 deleted: dataUnfinished.secretgraph.node.deleted || null,
                 updateId: dataUnfinished.secretgraph.node.updateId,
                 tokensPermissions: new Set([
-                    ...localPermissions,
+                    ...mainCtx.tokensPermissions,
                     ...dataUnfinished.secretgraph.node.availableActions.map(
                         (val: { keyHash: string; type: string }) => val.type
                     ),
@@ -1101,7 +1088,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     return (
         <FileIntern
             {...data}
-            tokens={authorization}
             url={mainCtx.url as string}
             setCluster={setCluster}
             disabled={loading || viewOnly}
@@ -1128,28 +1114,13 @@ const AddFile = () => {
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster
     )
-    const { tokens } = React.useMemo(() => {
-        if (cluster) {
-            return authInfoFromConfig({
-                config,
-                url: activeUrl,
-                clusters: new Set([cluster]),
-                require: new Set(['create', 'manage']),
-            })
-        }
-        return { tokens: [] }
-    }, [config, cluster, activeUrl])
-    const authorization = React.useMemo(
-        () => [...new Set([...mainCtx.tokens, ...tokens])],
-        [...tokens, ...mainCtx.tokens]
-    )
     const { data: dataUnfinished, refetch } = useQuery(
         getContentConfigurationQuery,
         {
             fetchPolicy: 'cache-and-network',
             variables: {
                 id: cluster || '',
-                authorization,
+                authorization: mainCtx.tokens,
             },
             onError: console.error,
         }
@@ -1205,14 +1176,7 @@ const AddFile = () => {
         return null
     }
 
-    return (
-        <FileIntern
-            url={activeUrl}
-            setCluster={setCluster}
-            tokens={authorization}
-            {...data}
-        />
-    )
+    return <FileIntern url={activeUrl} setCluster={setCluster} {...data} />
 }
 
 export default function FileComponent() {

@@ -278,26 +278,26 @@ export default function HeaderBar() {
                     onClose={() => setMenuOpen(false)}
                 >
                     <MenuItem
-                        style={{ display: !config ? 'hidden' : undefined }}
+                        style={{ display: !config ? 'none' : undefined }}
                         onClick={() => setMenuOpen(false)}
                     >
                         Update Settings
                     </MenuItem>
                     <MenuItem
-                        style={{ display: !config ? 'hidden' : undefined }}
+                        style={{ display: !config ? 'none' : undefined }}
                         onClick={openImporter}
                     >
                         Load Settings/Restart
                     </MenuItem>
                     <MenuItem
-                        style={{ display: !config ? 'hidden' : undefined }}
+                        style={{ display: !config ? 'none' : undefined }}
                         onClick={exportSettingsOpener}
                     >
                         Export Settings
                     </MenuItem>
                     <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
                     <MenuItem
-                        style={{ display: !config ? 'hidden' : undefined }}
+                        style={{ display: !config ? 'none' : undefined }}
                         onClick={logout}
                     >
                         Logout

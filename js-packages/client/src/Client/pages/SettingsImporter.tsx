@@ -510,7 +510,7 @@ function SettingsImporter() {
                         </FormControl>
                     </Box>
                     <FormControl
-                        style={{ display: needsPw ? undefined : 'hidden' }}
+                        style={{ display: needsPw ? undefined : 'none' }}
                     >
                         <TextField
                             variant="outlined"

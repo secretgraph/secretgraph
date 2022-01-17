@@ -11,15 +11,11 @@ import Chip from '@mui/material/Chip'
 import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
 import Drawer from '@mui/material/Drawer'
-import IconButton from '@mui/material/IconButton'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import ListItemText from '@mui/material/ListItemText'
 import { useTheme } from '@mui/material/styles'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import * as Interfaces from '@secretgraph/misc/interfaces'
+import { Writeable } from '@secretgraph/misc/typing'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as SetOps from '@secretgraph/misc/utils/set'
 import * as React from 'react'
@@ -60,12 +56,27 @@ const SideBarItems = () => {
         if (type == 'PrivateKey') {
             type = 'PublicKey'
         }
-        const tokens = config
-            ? authInfoFromConfig({
-                  config,
-                  url: activeUrl,
-              }).tokens
-            : []
+        let tokens: string[] = []
+        let tokensPermissions: Set<string> = new Set()
+        if (config) {
+            const retrieveOptions: Writeable<
+                Parameters<typeof authInfoFromConfig>[0]
+            > = {
+                config,
+                url: activeUrl,
+            }
+            if (type == 'Cluster') {
+                if (node?.id) {
+                    retrieveOptions['clusters'] = new Set([node.id])
+                }
+            } else if (node?.cluster?.id) {
+                retrieveOptions['clusters'] = new Set([node.cluster.id])
+                retrieveOptions['contents'] = new Set([node.id])
+            }
+            const res = authInfoFromConfig(retrieveOptions)
+            tokens = res.tokens
+            tokensPermissions = res.types
+        }
 
         updateMainCtx({
             item: node.id,
@@ -77,7 +88,7 @@ const SideBarItems = () => {
             shareUrl: `${activeUrlAsURL.origin}${node.link}`,
             title: mainCtx.updateId == node.updateId ? undefined : '',
             tokens,
-            tokensPermissions: new Set(),
+            tokensPermissions,
         })
         if (type == 'Cluster') {
             updateSearchCtx({
@@ -193,7 +204,7 @@ export default React.memo(function SideBar() {
                     anchor={theme.direction === 'ltr' ? 'left' : 'right'}
                     open={!!(open && config)}
                     sx={{
-                        display: !(open && config) ? 'hidden' : undefined,
+                        display: !(open && config) ? 'none' : undefined,
                         '& .MuiDrawer-paper': {
                             width: drawerWidth,
                             overflowY: 'auto' as const,

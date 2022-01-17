@@ -73,6 +73,13 @@ key refs are assigned to privatekey, the rest to the public key
     -   requiredKeys: require keys within array for encryption
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
+-   create (Cluster, partly implemented):
+    -   requiredKeys: require keys within array for encryption
+    -   injectedTags: force inject tags
+    -   allowedTags: allow only tags specified here (if set)
+    -   not implemented yet (view and)
+        -   includeTags: like param, include only contents with tag
+        -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
 -   push (Content):
     -   freeze: cannot update after be viewed
     -   updateable: can update newly created content
@@ -98,13 +105,13 @@ key refs are assigned to privatekey, the rest to the public key
         -   Content: map id updated fields
         -   Action: map keyHash updated fields
 
-## Operations
+## Operations (Mutations)
 
 idea: unique operation names. It would be nice to have namespaces like for queries
 
 -   updateOrCreateContent: what it says
 -   updateOrCreateCluster: what it says, can create keys
--   updateMetadata: of content
+-   updateMetadata: update metadata of content
 -   pushContent: special operation for pushing encrypted or unencrypted content into system
 -   regenerateFlexid: shuffles (flex)id of content or cluster. Useful if somethings should be hidden.
 -   deleteContentOrCluster: mark cluster or content for deletion (in case of cluster also to children)
