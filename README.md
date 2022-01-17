@@ -139,7 +139,6 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # TODO
 
--   initialize in addFoo cluster with authinfo instead of mainCtx keys
 -   replace json-editor by ActionDialog equivalent
 -   sanitize hashAlgorithms
 -   deleted contents only visible with delete permission, needs Constant instead of boolean (ShowDeleted)
