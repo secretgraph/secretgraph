@@ -131,7 +131,6 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 -   via json variant of "delete" actions can be deleted
 -   actions are identified either by their hash or id
-    Other types are:
 
 # JS
 
@@ -160,4 +159,3 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 -   implement form with send for Message
 -   if type=Message switch strings to Inbox, Send
 -   find way how Messages sent can be differed from messages received
--   contents handler for bigger list of contents
