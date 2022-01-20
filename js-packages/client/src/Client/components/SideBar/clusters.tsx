@@ -7,7 +7,6 @@ import {
 import GroupWorkIcon from '@mui/icons-material/GroupWork'
 import ReplayIcon from '@mui/icons-material/Replay'
 import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
-import { useTheme } from '@mui/material'
 import {
     clusterFeedQuery,
     getClusterQuery,
@@ -20,74 +19,11 @@ import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 
-export const ActiveCluster = React.memo(function ActiveCluster({
-    authinfo,
-    cluster,
-    goTo,
-    ...props
-}: {
-    authinfo?: Interfaces.AuthInfoInterface
-    cluster: string
-    goTo: (node: any) => void
-} & Omit<TreeItemProps, 'label' | 'onDoubleClick'>) {
-    const [data, setData] = React.useState<any>(undefined)
-    const theme = useTheme()
-    const { mainCtx } = React.useContext(Contexts.Main)
-    const {
-        refetch,
-        data: dataUnfinished,
-        loading,
-    } = useQuery(getClusterQuery, {
-        //pollInterval: ,
-        variables: {
-            id: cluster,
-            authorization: authinfo?.tokens,
-        },
-        onError: console.error,
-    })
-    React.useEffect(() => {
-        if (dataUnfinished && dataUnfinished.secretgraph.node) {
-            setData({
-                ...extractNameNote(dataUnfinished.secretgraph.node.description),
-                node: dataUnfinished.secretgraph.node,
-            })
-        }
-    }, [dataUnfinished])
-
-    React.useEffect(() => {
-        if (data && mainCtx.type == 'Cluster') {
-            refetch()
-        }
-    }, [mainCtx.updateId])
-    return (
-        <SideBarContents
-            goTo={goTo}
-            authinfo={authinfo}
-            deleted={data?.node?.deleted}
-            marked
-            title={data?.note}
-            icon={<GroupWorkIcon fontSize="small" />}
-            label={data?.name ? data?.name : `...${cluster.substr(-48)}`}
-            onClick={(ev) => {
-                ev.preventDefault()
-            }}
-            onDoubleClick={(ev) => {
-                ev.preventDefault()
-                ev.stopPropagation()
-                data?.node && goTo({ ...data?.node, title: data?.name })
-            }}
-            cluster={cluster}
-            // state public needs no key_hash
-            injectInclude={['state=public']}
-            {...props}
-        />
-    )
-})
 type SideBarItemsProps =
     | {
           authinfo: Interfaces.AuthInfoInterface
           goTo: (node: any) => void
-          activeCluster: string
+          excludeIds: string[]
           title?: string
           deleted?: boolean
           heading?: boolean
@@ -96,7 +32,7 @@ type SideBarItemsProps =
     | {
           authinfo?: Interfaces.AuthInfoInterface
           goTo: (node: any) => void
-          activeCluster?: null | undefined
+          excludeIds?: string[]
           title?: string
           deleted?: boolean
           heading?: boolean
@@ -106,7 +42,7 @@ type SideBarItemsProps =
 export default React.memo(function Clusters({
     authinfo,
     goTo,
-    activeCluster,
+    excludeIds,
     title,
     heading,
     deleted,
@@ -126,6 +62,7 @@ export default React.memo(function Clusters({
             deleted: searchCtx.deleted,
             include: searchCtx.include,
             exclude: searchCtx.exclude,
+            excludeIds: excludeIds ? [excludeIds] : undefined,
         },
     })
     React.useEffect(() => {
@@ -146,47 +83,42 @@ export default React.memo(function Clusters({
         }
         const ret: JSX.Element[] = []
         for (const { node } of data.clusters.clusters.edges) {
-            // activeCluster cannot be filtered, so do it manually
-            if (node.id !== activeCluster) {
-                const { name, note } = extractNameNote(node.description)
-                // TODO: check availability of extra cluster permissions. Merge authInfos
-                // for now assume yes if manage type was not specified
-                const deleteable =
-                    !authinfo ||
-                    !authinfo.types.has('manage') ||
-                    (
-                        node.availableActions as {
-                            type: string
-                        }[]
-                    ).some(
-                        (val) => val.type == 'delete' || val.type == 'manage'
-                    )
-                const nodeId = deleteable
-                    ? `clusters::${node.id}`
-                    : `clusters.${node.id}`
-                ret.push(
-                    <SideBarContents
-                        goTo={goTo}
-                        cluster={node.id}
-                        authinfo={authinfo}
-                        title={note || undefined}
-                        deleted={node.deleted}
-                        marked={mainCtx.item == node.id}
-                        // state public needs no key_hash
-                        injectInclude={['state=public']}
-                        icon={<GroupWorkIcon fontSize="small" />}
-                        label={name ? name : `...${node.id.substr(-48)}`}
-                        nodeId={`${props.nodeId}-${nodeId}`}
-                        key={nodeId}
-                        onClick={(ev) => ev.preventDefault()}
-                        onDoubleClick={(ev) => {
-                            ev.preventDefault()
-                            ev.stopPropagation()
-                            goTo({ ...node, title: name })
-                        }}
-                    />
-                )
-            }
+            const { name, note } = extractNameNote(node.description)
+            // TODO: check availability of extra cluster permissions. Merge authInfos
+            // for now assume yes if manage type was not specified
+            const deleteable =
+                !authinfo ||
+                !authinfo.types.has('manage') ||
+                (
+                    node.availableActions as {
+                        type: string
+                    }[]
+                ).some((val) => val.type == 'delete' || val.type == 'manage')
+            const nodeId = deleteable
+                ? `clusters::${node.id}`
+                : `clusters.${node.id}`
+            ret.push(
+                <SideBarContents
+                    goTo={goTo}
+                    cluster={node.id}
+                    authinfo={authinfo}
+                    title={note || undefined}
+                    deleted={node.deleted}
+                    marked={mainCtx.item == node.id}
+                    // state public needs no key_hash
+                    injectInclude={['state=public']}
+                    icon={<GroupWorkIcon fontSize="small" />}
+                    label={name ? name : `...${node.id.substr(-48)}`}
+                    nodeId={`${props.nodeId}-${nodeId}`}
+                    key={nodeId}
+                    onClick={(ev) => ev.preventDefault()}
+                    onDoubleClick={(ev) => {
+                        ev.preventDefault()
+                        ev.stopPropagation()
+                        goTo({ ...node, title: name })
+                    }}
+                />
+            )
         }
         return ret
     }, [data])
@@ -246,15 +178,6 @@ export default React.memo(function Clusters({
                 </SidebarTreeItemLabel>
             }
         >
-            {activeCluster ? (
-                <ActiveCluster
-                    nodeId={`${props.nodeId}-active-clusters::${activeCluster}`}
-                    authinfo={authinfo}
-                    goTo={goTo}
-                    onClick={(ev) => ev.preventDefault()}
-                    cluster={activeCluster}
-                />
-            ) : null}
             {...clustersFinished}
         </TreeItem>
     )

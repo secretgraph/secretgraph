@@ -23,6 +23,7 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import { drawerWidth } from '../../theme'
 import { CapturingSuspense } from '../misc'
+import ActiveCluster from './ActiveCluster'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))
 const SideBarNotifications = React.lazy(() => import('./notifications')) */
@@ -33,14 +34,35 @@ import SideBarNotifications from './notifications'
 import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 
 const SideBarItems = () => {
-    const theme = useTheme()
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const authinfoCluster = React.useMemo(
+        () =>
+            config
+                ? authInfoFromConfig({
+                      config,
+                      url: activeUrl,
+                      clusters: searchCtx.cluster
+                          ? new Set([searchCtx.cluster])
+                          : undefined,
+                  })
+                : undefined,
+        [config, activeUrl, searchCtx.cluster]
+    )
     const authinfo = React.useMemo(
-        () => (config ? authInfoFromConfig({ config, url: activeUrl }) : null),
-        [config, activeUrl]
+        () =>
+            config
+                ? authInfoFromConfig({
+                      config,
+                      url: activeUrl,
+                      excludeClusters: searchCtx.cluster
+                          ? new Set([searchCtx.cluster])
+                          : undefined,
+                  })
+                : undefined,
+        [config, activeUrl, searchCtx.cluster]
     )
 
     const activeUrlAsURL = new URL(activeUrl, window.location.href)
@@ -107,6 +129,15 @@ const SideBarItems = () => {
                     </SidebarTreeItemLabel>
                 }
             >
+                {searchCtx.cluster ? (
+                    <ActiveCluster
+                        nodeId={`${activeUrl}-active-clusters::${searchCtx.cluster}`}
+                        authinfo={authinfoCluster}
+                        goTo={goTo}
+                        onClick={(ev) => ev.preventDefault()}
+                        cluster={searchCtx.cluster}
+                    />
+                ) : null}
                 {authinfo && (
                     <SideBarClusters
                         heading
@@ -114,7 +145,9 @@ const SideBarItems = () => {
                         label="Owned"
                         authinfo={authinfo}
                         deleted={searchCtx.deleted}
-                        activeCluster={searchCtx.cluster}
+                        excludeIds={
+                            searchCtx.cluster ? [searchCtx.cluster] : undefined
+                        }
                         goTo={goTo}
                     />
                 )}
@@ -123,6 +156,9 @@ const SideBarItems = () => {
                     nodeId={`${activeUrl}-clusters-public`}
                     label="Public"
                     deleted={searchCtx.deleted}
+                    excludeIds={
+                        searchCtx.cluster ? [searchCtx.cluster] : undefined
+                    }
                     goTo={goTo}
                 />
             </TreeItem>

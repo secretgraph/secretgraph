@@ -75,18 +75,15 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
     class Input:
         ids = graphene.List(graphene.NonNull(graphene.ID), required=True)
         authorization = AuthList()
+        when = graphene.DateTime()
 
     latestDeletion = graphene.DateTime()
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, ids, authorization=None):
+    def mutate_and_get_payload(
+        cls, root, info, ids, when=None, authorization=None
+    ):
         now = timezone.now()
-        now_plus_x = now + td(minutes=20)
-        # TODO: admin permission
-        # if not info.context.user.has_perm("TODO"):
-        #    components = retrieve_allowed_objects(
-        #        info, "manage", components
-        #    )
         results = ids_to_results(
             info.context,
             ids,
@@ -94,20 +91,37 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
             "delete",
             authset=authorization,
         )
-        results["Content"]["objects"].filter(
-            Q(markForDestruction__isnull=True)
-            | Q(markForDestruction__gt=now_plus_x)
-        ).update(markForDestruction=now_plus_x)
-        Content.objects.filter(
-            Q(markForDestruction__isnull=True)
-            | Q(markForDestruction__gt=now_plus_x),
-            cluster_id__in=results["Cluster"]["objects"].values_list(
-                "id", flat=True
-            ),
-        ).update(markForDestruction=now_plus_x)
-        results["Cluster"]["objects"].filter(
-            Q(markForDestruction__isnull=True) | Q(markForDestruction__gt=now)
-        ).update(markForDestruction=now)
+        if when:
+            when_x = max(now + td(minutes=20), when)
+            results["Content"]["objects"].update(markForDestruction=when_x)
+            Content.objects.filter(
+                cluster_id__in=results["Cluster"]["objects"].values_list(
+                    "id", flat=True
+                ),
+            ).update(markForDestruction=when_x)
+            results["Cluster"]["objects"].update(markForDestruction=when)
+        else:
+            now_plus_x = now + td(minutes=20)
+            # TODO: admin permission
+            # if not info.context.user.has_perm("TODO"):
+            #    components = retrieve_allowed_objects(
+            #        info, "manage", components
+            #    )
+            results["Content"]["objects"].filter(
+                Q(markForDestruction__isnull=True)
+                | Q(markForDestruction__gt=now_plus_x)
+            ).update(markForDestruction=now_plus_x)
+            Content.objects.filter(
+                Q(markForDestruction__isnull=True)
+                | Q(markForDestruction__gt=now_plus_x),
+                cluster_id__in=results["Cluster"]["objects"].values_list(
+                    "id", flat=True
+                ),
+            ).update(markForDestruction=now_plus_x)
+            results["Cluster"]["objects"].filter(
+                Q(markForDestruction__isnull=True)
+                | Q(markForDestruction__gt=now)
+            ).update(markForDestruction=now)
         calc_last = Content.objects.filter(
             Q(
                 id__in=results["Content"]["objects"].values_list(

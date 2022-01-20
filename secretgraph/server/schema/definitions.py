@@ -453,7 +453,11 @@ class ContentConnectionField(DjangoConnectionField):
         )
         kwargs.setdefault(
             "excludeTags",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
+            graphene.List(
+                graphene.NonNull(graphene.String),
+                required=False,
+                description="Use id=xy for excluding content ids",
+            ),
         )
         kwargs.setdefault(
             "contentHashes",
@@ -600,7 +604,21 @@ class ClusterConnectionField(DjangoConnectionField):
         )
         kwargs.setdefault(
             "excludeTags",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
+            graphene.List(
+                graphene.NonNull(graphene.String),
+                required=False,
+                description=(
+                    "Use id=xy for excluding clusters with content ids"
+                ),
+            ),
+        )
+        kwargs.setdefault(
+            "excludeIds",
+            graphene.List(
+                graphene.NonNull(graphene.String),
+                required=False,
+                description="For excluding clusters with ids",
+            ),
         )
         kwargs.setdefault(
             "contentHashes",
@@ -623,6 +641,7 @@ class ClusterConnectionField(DjangoConnectionField):
         featured = args.get("featured", False)
         user = args.get("user")
         deleted = args.get("deleted")
+        excludeIds = args.get("excludeIds")
         ids = args.get("ids")
         if featured and public is None:
             public = True
@@ -640,6 +659,8 @@ class ClusterConnectionField(DjangoConnectionField):
                 queryset = queryset.filter(user__pk=user)
         if deleted is not None:
             queryset = queryset.filter(markForDestruction__isnull=not deleted)
+        if excludeIds is not None:
+            queryset = queryset.exclude(id__in=excludeIds)
         if public in {True, False}:
             queryset = queryset.filter(public=public)
 

@@ -86,6 +86,7 @@ const contentFeedQuery = gql`
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
     goTo: (node: any) => void
+    refetchNotify?: () => void
     activeContent?: string | null
     cluster?: string | null
     usePublic?: boolean
@@ -112,6 +113,7 @@ export default React.memo(function Contents({
     marked,
     icon,
     heading,
+    refetchNotify,
     ...props
 }: SideBarItemsProps & TreeItemProps) {
     const theme = useTheme()
@@ -285,6 +287,7 @@ export default React.memo(function Contents({
                                 ev.preventDefault()
                                 ev.stopPropagation()
                                 refetch && refetch()
+                                refetchNotify && refetchNotify()
                             }}
                         >
                             <ReplayIcon

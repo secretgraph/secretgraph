@@ -426,11 +426,13 @@ export function authInfoFromConfig({
     config,
     url,
     require = new Set(['view', 'update', 'manage']),
+    excludeClusters = new Set(),
     ...props
 }: {
     readonly config: Interfaces.ConfigInterface
     readonly url: string
     readonly clusters?: Set<string>
+    readonly excludeClusters?: Set<string>
     readonly contents?: Set<string>
     readonly require?: Set<string>
 }): Interfaces.AuthInfoInterface {
@@ -449,6 +451,9 @@ export function authInfoFromConfig({
                 ? props.clusters
                 : Object.keys(host.clusters)
             for (const id of clusters) {
+                if (id in excludeClusters) {
+                    continue
+                }
                 const clusterconf = host.clusters[id]
                 if (clusterconf) {
                     for (const hash in clusterconf.hashes) {

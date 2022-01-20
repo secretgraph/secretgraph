@@ -54,12 +54,8 @@ export default function HeaderBar() {
             title = `Help: ${mainCtx.type}`
             documenttitle = `Secretgraph: ${title}`
             break
-        case 'start':
-            title = 'Secretgraph - Start'
-            documenttitle = title
-            break
-        case 'import':
-            title = 'Secretgraph - Import'
+        case 'initialize':
+            title = 'Secretgraph - Init'
             documenttitle = title
             break
         case 'view':
@@ -129,19 +125,13 @@ export default function HeaderBar() {
         //const qr = qrcode(typeNumber, errorCorrectionLevel);
     }
 
-    const openImporter = () => {
-        setMenuOpen(false)
-        updateMainCtx({
-            action: 'import',
-        })
-    }
     const logout = () => {
         setMenuOpen(false)
 
         updateConfig(null, true)
         // type is kept
         updateMainCtx({
-            action: 'start',
+            action: 'initialize',
             title: '',
             item: null,
             updateId: null,
@@ -281,13 +271,7 @@ export default function HeaderBar() {
                         style={{ display: !config ? 'none' : undefined }}
                         onClick={() => setMenuOpen(false)}
                     >
-                        Update Settings
-                    </MenuItem>
-                    <MenuItem
-                        style={{ display: !config ? 'none' : undefined }}
-                        onClick={openImporter}
-                    >
-                        Load Settings/Restart
+                        Settings
                     </MenuItem>
                     <MenuItem
                         style={{ display: !config ? 'none' : undefined }}

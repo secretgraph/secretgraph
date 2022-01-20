@@ -5,6 +5,7 @@ export const clusterFeedQuery = gql`
         $authorization: [String!]
         $include: [String!]
         $exclude: [String!]
+        $excludeIds: [String!]
         $deleted: Boolean
         $public: Boolean
         $count: Int
@@ -14,6 +15,7 @@ export const clusterFeedQuery = gql`
             clusters(
                 includeTags: $include
                 excludeTags: $exclude
+                excludeIds: $excludeIds
                 deleted: $deleted
                 public: $public
                 first: $count
@@ -25,6 +27,7 @@ export const clusterFeedQuery = gql`
                         "authorization"
                         "includeTags"
                         "excludeTags"
+                        "excludeIds"
                         "public"
                         "deleted"
                     ]

@@ -664,7 +664,7 @@
                 },
                 {
                   "defaultValue": "null",
-                  "description": null,
+                  "description": "Use id=xy for excluding content ids",
                   "name": "excludeTags",
                   "type": {
                     "kind": "LIST",
@@ -1951,8 +1951,26 @@
                 },
                 {
                   "defaultValue": "null",
-                  "description": null,
+                  "description": "Use id=xy for excluding clusters with content ids",
                   "name": "excludeTags",
+                  "type": {
+                    "kind": "LIST",
+                    "name": null,
+                    "ofType": {
+                      "kind": "NON_NULL",
+                      "name": null,
+                      "ofType": {
+                        "kind": "SCALAR",
+                        "name": "String",
+                        "ofType": null
+                      }
+                    }
+                  }
+                },
+                {
+                  "defaultValue": "null",
+                  "description": "For excluding clusters with ids",
+                  "name": "excludeIds",
                   "type": {
                     "kind": "LIST",
                     "name": null,
@@ -2128,7 +2146,7 @@
                 },
                 {
                   "defaultValue": "null",
-                  "description": null,
+                  "description": "Use id=xy for excluding content ids",
                   "name": "excludeTags",
                   "type": {
                     "kind": "LIST",
@@ -4135,6 +4153,16 @@
                     "ofType": null
                   }
                 }
+              }
+            },
+            {
+              "defaultValue": null,
+              "description": null,
+              "name": "when",
+              "type": {
+                "kind": "SCALAR",
+                "name": "DateTime",
+                "ofType": null
               }
             },
             {
