@@ -2,6 +2,7 @@ import { useApolloClient } from '@apollo/client'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import FileCopyIcon from '@mui/icons-material/FileCopy'
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
 import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash'
 import ShareIcon from '@mui/icons-material/Share'
@@ -293,7 +294,7 @@ function ActionBar(props: Props) {
                                 />
                             </span>
                         </Tooltip>
-                        <Tooltip title="Add element from same type">
+                        <Tooltip title="Clone type">
                             <span>
                                 <IconButton
                                     style={{
@@ -320,7 +321,7 @@ function ActionBar(props: Props) {
                                     }}
                                     size="large"
                                 >
-                                    <AddIcon />
+                                    <FileCopyIcon />
                                 </IconButton>
                             </span>
                         </Tooltip>

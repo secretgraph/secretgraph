@@ -112,11 +112,6 @@ const SideBarItems = () => {
             tokens,
             tokensPermissions,
         })
-        if (type == 'Cluster') {
-            updateSearchCtx({
-                cluster: node.id,
-            })
-        }
     }
 
     return (
@@ -129,15 +124,6 @@ const SideBarItems = () => {
                     </SidebarTreeItemLabel>
                 }
             >
-                {searchCtx.cluster ? (
-                    <ActiveCluster
-                        nodeId={`${activeUrl}-active-clusters::${searchCtx.cluster}`}
-                        authinfo={authinfoCluster}
-                        goTo={goTo}
-                        onClick={(ev) => ev.preventDefault()}
-                        cluster={searchCtx.cluster}
-                    />
-                ) : null}
                 {authinfo && (
                     <SideBarClusters
                         heading
@@ -145,9 +131,6 @@ const SideBarItems = () => {
                         label="Owned"
                         authinfo={authinfo}
                         deleted={searchCtx.deleted}
-                        excludeIds={
-                            searchCtx.cluster ? [searchCtx.cluster] : undefined
-                        }
                         goTo={goTo}
                     />
                 )}
@@ -156,9 +139,6 @@ const SideBarItems = () => {
                     nodeId={`${activeUrl}-clusters-public`}
                     label="Public"
                     deleted={searchCtx.deleted}
-                    excludeIds={
-                        searchCtx.cluster ? [searchCtx.cluster] : undefined
-                    }
                     goTo={goTo}
                 />
             </TreeItem>

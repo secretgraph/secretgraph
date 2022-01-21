@@ -1,4 +1,71 @@
 import { gql } from '@apollo/client'
+export const contentFeedQuery = gql`
+    query SideBarContentFeedQuery(
+        $clusters: [ID!]
+        $authorization: [String!]
+        $include: [String!]
+        $exclude: [String!]
+        $deleted: Boolean
+        $public: Boolean
+        $includeTags: [String!]
+        $count: Int
+        $cursor: String
+    ) {
+        contents: secretgraph(authorization: $authorization) {
+            contents(
+                clusters: $clusters
+                includeTags: $include
+                excludeTags: $exclude
+                deleted: $deleted
+                public: $public
+                first: $count
+                after: $cursor
+            )
+                @connection(
+                    key: "feedContents"
+                    filter: [
+                        "authorization"
+                        "clusters"
+                        "includeTags"
+                        "excludeTags"
+                        "deleted"
+                        "public"
+                    ]
+                ) {
+                edges {
+                    node {
+                        id
+                        nonce
+                        link
+                        updateId
+                        deleted
+                        tags(includeTags: $includeTags)
+                        references(
+                            groups: ["key", "signature"]
+                            includeTags: $include
+                        ) {
+                            edges {
+                                node {
+                                    extra
+                                    target {
+                                        tags(includeTags: ["key_hash="])
+                                    }
+                                }
+                            }
+                        }
+                        availableActions {
+                            type
+                        }
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }
+    }
+`
 
 export const createContentMutation = gql`
     mutation contentCreateEncryptedMutation(

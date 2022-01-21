@@ -1,10 +1,12 @@
 import Box from '@mui/material/Box'
+import Tooltip from '@mui/material/Tooltip'
 import * as React from 'react'
 
 import { drawerWidth } from '../../theme'
 
 export type SidebarTreeItemLabelProps = {
-    icon?: React.ReactNode
+    leftIcon?: React.ReactNode
+    rightIcon?: React.ReactNode
     title?: string
     marked?: boolean
     deleted?: boolean
@@ -13,16 +15,16 @@ export type SidebarTreeItemLabelProps = {
 }
 
 export default React.memo(function SidebarTreeItemLabel({
-    icon,
+    leftIcon,
     children,
     deleted,
     heading,
     marked,
     title,
+    rightIcon,
 }: SidebarTreeItemLabelProps) {
-    return (
+    let item = (
         <Box
-            title={title}
             sx={{
                 display: 'flex' as const,
                 flexWrap: 'nowrap' as const,
@@ -34,17 +36,22 @@ export default React.memo(function SidebarTreeItemLabel({
                 backgroundColor: marked ? 'gray' : undefined,
             }}
         >
-            {icon}
+            {leftIcon}
             <Box
                 sx={{
-                    marginLeft: icon ? '4px' : undefined,
+                    marginLeft: leftIcon ? '4px' : undefined,
+                    marginRight: rightIcon ? '4px' : undefined,
                     wordBreak: 'break-all' as const,
                     maxWidth: '200px',
-                    flexGrow: 1,
                 }}
             >
                 {children}
             </Box>
+            {rightIcon}
         </Box>
     )
+    if (title) {
+        return <Tooltip title={title}>{item}</Tooltip>
+    }
+    return item
 })

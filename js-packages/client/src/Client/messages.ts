@@ -1,9 +1,9 @@
 declare var gettext: any
 
-export const startHelp = gettext(
+export const initializeHelp = gettext(
     'Thanks for using secretgraph. To start select a provider and press start. You may have to register a user account'
 )
-export const startLabel = gettext('Start')
+export const initializeLabel = gettext('Start')
 export const importFileLabel = gettext('Settings file to import')
 export const importUrlLabel = gettext('Settings url to import')
 export const importHelp = gettext('Import settings to restore old state')

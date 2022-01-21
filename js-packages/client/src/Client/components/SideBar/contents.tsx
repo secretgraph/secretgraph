@@ -8,80 +8,13 @@ import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
 import Divider from '@mui/material/Divider'
 import List, { ListProps } from '@mui/material/List'
 import { useTheme } from '@mui/material/styles'
+import { contentFeedQuery } from '@secretgraph/graphql-queries/content'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import { elements } from '../../editors'
 import SidebarTreeItemLabel from './SidebarTreeItemLabel'
-
-const contentFeedQuery = gql`
-    query SideBarContentFeedQuery(
-        $clusters: [ID!]
-        $authorization: [String!]
-        $include: [String!]
-        $exclude: [String!]
-        $deleted: Boolean
-        $public: Boolean
-        $includeTags: [String!]
-        $count: Int
-        $cursor: String
-    ) {
-        contents: secretgraph(authorization: $authorization) {
-            contents(
-                clusters: $clusters
-                includeTags: $include
-                excludeTags: $exclude
-                deleted: $deleted
-                public: $public
-                first: $count
-                after: $cursor
-            )
-                @connection(
-                    key: "feedContents"
-                    filter: [
-                        "authorization"
-                        "clusters"
-                        "includeTags"
-                        "excludeTags"
-                        "deleted"
-                        "public"
-                    ]
-                ) {
-                edges {
-                    node {
-                        id
-                        nonce
-                        link
-                        updateId
-                        deleted
-                        tags(includeTags: $includeTags)
-                        references(
-                            groups: ["key", "signature"]
-                            includeTags: $include
-                        ) {
-                            edges {
-                                node {
-                                    extra
-                                    target {
-                                        tags(includeTags: ["key_hash="])
-                                    }
-                                }
-                            }
-                        }
-                        availableActions {
-                            type
-                        }
-                    }
-                }
-                pageInfo {
-                    hasNextPage
-                    endCursor
-                }
-            }
-        }
-    }
-`
 
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
@@ -116,7 +49,6 @@ export default React.memo(function Contents({
     refetchNotify,
     ...props
 }: SideBarItemsProps & TreeItemProps) {
-    const theme = useTheme()
     const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
@@ -225,7 +157,7 @@ export default React.memo(function Contents({
                         <SidebarTreeItemLabel
                             deleted={node.deleted}
                             marked={mainCtx.item == node.id}
-                            icon={<Icon fontSize="small" />}
+                            leftIcon={<Icon fontSize="small" />}
                         >
                             {`${
                                 elements.get(type)
@@ -274,28 +206,30 @@ export default React.memo(function Contents({
             {...props}
             label={
                 <SidebarTreeItemLabel
-                    icon={icon}
+                    leftIcon={icon}
+                    rightIcon={
+                        loading || !called ? null : (
+                            <div
+                                onClick={(ev) => {
+                                    ev.preventDefault()
+                                    ev.stopPropagation()
+                                    refetch && refetch()
+                                    refetchNotify && refetchNotify()
+                                }}
+                            >
+                                <ReplayIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            </div>
+                        )
+                    }
                     title={title}
                     heading={heading}
                     deleted={deleted}
                     marked={marked}
                 >
                     {props.label}
-                    {loading || !called ? null : (
-                        <div
-                            onClick={(ev) => {
-                                ev.preventDefault()
-                                ev.stopPropagation()
-                                refetch && refetch()
-                                refetchNotify && refetchNotify()
-                            }}
-                        >
-                            <ReplayIcon
-                                fontSize="small"
-                                style={{ marginLeft: '4px' }}
-                            />
-                        </div>
-                    )}
                 </SidebarTreeItemLabel>
             }
         >

@@ -7,10 +7,7 @@ import {
 import GroupWorkIcon from '@mui/icons-material/GroupWork'
 import ReplayIcon from '@mui/icons-material/Replay'
 import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
-import {
-    clusterFeedQuery,
-    getClusterQuery,
-} from '@secretgraph/graphql-queries/cluster'
+import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import * as React from 'react'
@@ -62,7 +59,7 @@ export default React.memo(function Clusters({
             deleted: searchCtx.deleted,
             include: searchCtx.include,
             exclude: searchCtx.exclude,
-            excludeIds: excludeIds ? [excludeIds] : undefined,
+            excludeIds: excludeIds,
         },
     })
     React.useEffect(() => {
@@ -158,23 +155,25 @@ export default React.memo(function Clusters({
                     title={title}
                     deleted={deleted}
                     heading={heading}
-                    icon={icon}
+                    leftIcon={icon}
+                    rightIcon={
+                        loading || !called ? null : (
+                            <span
+                                onClick={(ev) => {
+                                    ev.preventDefault()
+                                    ev.stopPropagation()
+                                    refetch && refetch()
+                                }}
+                            >
+                                <ReplayIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            </span>
+                        )
+                    }
                 >
                     {props.label}
-                    {loading || !called ? null : (
-                        <span
-                            onClick={(ev) => {
-                                ev.preventDefault()
-                                ev.stopPropagation()
-                                refetch && refetch()
-                            }}
-                        >
-                            <ReplayIcon
-                                fontSize="small"
-                                style={{ marginLeft: '4px' }}
-                            />
-                        </span>
-                    )}
                 </SidebarTreeItemLabel>
             }
         >

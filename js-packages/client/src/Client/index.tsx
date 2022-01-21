@@ -46,7 +46,7 @@ function Definitions(props: Props) {
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>
     >(updateState, {
-        action: config ? 'add' : 'start',
+        action: config ? 'add' : 'initialize',
         title: '',
         item: null,
         updateId: null,

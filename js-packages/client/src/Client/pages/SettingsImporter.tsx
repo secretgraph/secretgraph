@@ -37,8 +37,8 @@ import {
     importFileLabel,
     importHelp,
     importStartLabel,
-    startHelp,
-    startLabel,
+    initializeHelp,
+    initializeLabel,
 } from '../messages'
 
 // TODO: use formik
@@ -365,7 +365,7 @@ function SettingsImporter() {
             </Dialog>
             <Card>
                 <CardContent>
-                    <Card raised={mainCtx.action === 'start'}>
+                    <Card>
                         <CardContent>
                             <Typography
                                 variant="h5"
@@ -373,7 +373,7 @@ function SettingsImporter() {
                                 gutterBottom
                                 paragraph
                             >
-                                {startHelp}
+                                {initializeHelp}
                             </Typography>
                             <TextField
                                 disabled={loadingStart || loadingImport}
@@ -393,7 +393,7 @@ function SettingsImporter() {
                                 disabled={loadingStart || loadingImport}
                                 loading={loadingStart}
                             >
-                                {startLabel}
+                                {initializeLabel}
                             </LoadingButton>
                         </CardActions>
                     </Card>

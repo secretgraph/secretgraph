@@ -57,8 +57,7 @@ function MainPage() {
                 )
 
                 break
-            case 'start':
-            case 'import':
+            case 'initialize':
                 frameElement = (
                     <CapturingSuspense>
                         <SettingsImporter />
