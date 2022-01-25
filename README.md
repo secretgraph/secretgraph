@@ -57,10 +57,14 @@ key refs are assigned to privatekey, the rest to the public key
 -   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored
     -   for all
 -   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty:
+    -   for Content:
+        -   fetch: autodelete after viewing
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
 -   view (Content, Cluster) affects (Content, Cluster):
+    -   for Content:
+        -   fetch: autodelete after viewing
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
@@ -123,7 +127,13 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # Internal
 
-## ContentAction groups
+## ContentActions
+
+### dicts
+
+-   freeze: together with "fetch" content group of views updates will be disabled
+
+### Groups
 
 idea: seperate actions with different concerns.
 

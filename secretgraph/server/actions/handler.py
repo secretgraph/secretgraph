@@ -101,7 +101,9 @@ class ActionHandler:
     def clean_auth(action_dict, request, content, authset):
         result = {
             "action": "auth",
-            "contentActionGroup": "view",
+            "contentActionGroup": "view"
+            if not action_dict.get("fetch") or not content
+            else "fetch",
             "maxLifetime": td(hours=1),
         }
         if content:
@@ -145,7 +147,12 @@ class ActionHandler:
 
     @staticmethod
     def clean_view(action_dict, request, content, authset):
-        result = {"action": "view", "contentActionGroup": "view"}
+        result = {
+            "action": "view",
+            "contentActionGroup": "view"
+            if not action_dict.get("fetch") or not content
+            else "fetch",
+        }
         if content:
             # ignore tags if specified for a content
             result["excludeTags"] = []
