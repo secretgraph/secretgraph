@@ -56,6 +56,10 @@ key refs are assigned to privatekey, the rest to the public key
 
 -   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored
     -   for all
+-   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty:
+    -   for Cluster:
+        -   includeTags: like param, include only contents with tag
+        -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
 -   view (Content, Cluster) affects (Content, Cluster):
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
@@ -117,6 +121,16 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 -   deleteContentOrCluster: mark cluster or content for deletion (in case of cluster also to children)
 -   resetDeletionContentOrCluster: reset deletion mark
 
+# Internal
+
+## ContentAction groups
+
+idea: seperate actions with different concerns.
+
+-   "": default
+-   view: for view actions
+-   fetch: autodelete contents if all fetch contentActions are used
+
 # FAQ
 
 ## Why two languages?
@@ -138,6 +152,7 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # TODO
 
+-   update internal doc section
 -   replace json-editor by ActionDialog equivalent
 -   sanitize hashAlgorithms
 -   deleted contents only visible with delete permission, needs Constant instead of boolean (ShowDeleted)

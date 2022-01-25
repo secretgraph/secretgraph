@@ -1,6 +1,6 @@
 declare var gettext: any
 
-export const protectedActions = new Set(['storedUpdate'])
+export const protectedActions = new Set(['storedUpdate', 'auth'])
 
 export const contentStates = ['draft', 'internal', 'public']
 

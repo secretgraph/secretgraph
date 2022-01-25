@@ -72,6 +72,50 @@ class ActionHandler:
         return None
 
     @staticmethod
+    def do_auth(action_dict, scope, sender, accesslevel, action, **kwargs):
+        if scope != "auth":
+            return None
+        action.delete()
+
+        if issubclass(sender, Content):
+            excl_filters = Q()
+            for i in action_dict["excludeTags"]:
+                excl_filters |= Q(tags__tag__startswith=i)
+
+            incl_filters = Q()
+            for i in action_dict["includeTags"]:
+                incl_filters |= Q(tags__tag__startswith=i)
+
+            return {
+                "filters": ~excl_filters & incl_filters,
+                "accesslevel": 3,
+            }
+        elif issubclass(sender, Cluster):
+            return {
+                "filters": Q(),
+                "accesslevel": 3,
+            }
+        return None
+
+    @staticmethod
+    def clean_auth(action_dict, request, content, authset):
+        result = {
+            "action": "auth",
+            "contentActionGroup": "view",
+            "maxLifetime": td(hours=1),
+        }
+        if content:
+            # ignore tags if specified for a content
+            result["excludeTags"] = []
+            result["includeTags"] = []
+        else:
+            exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
+            result["excludeTags"] = list(map(str, exclude_tags))
+            include_tags = action_dict.get("includeTags", [])
+            result["includeTags"] = list(map(str, include_tags))
+        return result
+
+    @staticmethod
     def do_view(action_dict, scope, sender, accesslevel, action, **kwargs):
         if scope != "view":
             return None

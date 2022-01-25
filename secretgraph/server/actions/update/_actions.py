@@ -72,7 +72,7 @@ def manage_actions_fn(
             raise ValueError("No key specified/available")
 
         action_key_hash = hash_object(action_key)
-        action_value_result = ActionHandler.clean_action(
+        action_value = ActionHandler.clean_action(
             action_value, request, authset, content
         )
 
@@ -80,7 +80,8 @@ def manage_actions_fn(
         aesgcm = AESGCM(action_key)
         nonce = os.urandom(13)
         # add contentAction
-        group = action_value.pop("contentActionGroup", "") or ""
+        group = action_value.pop("contentActionGroup", "")
+        maxLifetime = action_value.pop("maxLifetime", None)
         existing = action.get("existingHash")
         if existing:
             if existing.isdecimal():
@@ -107,10 +108,16 @@ def manage_actions_fn(
         if content:
             actionObj.contentAction.group = group
         actionObj.value = aesgcm.encrypt(
-            nonce, json.dumps(action_value_result).encode("utf-8"), None
+            nonce, json.dumps(action_value).encode("utf-8"), None
         )
         actionObj.start = action.get("start", timezone.now())
-        actionObj.stop = action.get("start", None)
+        actionObj.stop = action.get("stop", None)
+        if maxLifetime:
+            maxStop = actionObj.start + maxLifetime
+            if actionObj.stop:
+                actionObj.stop = min(maxStop, actionObj.stop)
+            else:
+                actionObj.stop = maxStop
         actionObj.keyHash = action_key_hash
         actionObj.nonce = base64.b64encode(nonce).decode("ascii")
         actionObj.cluster = cluster

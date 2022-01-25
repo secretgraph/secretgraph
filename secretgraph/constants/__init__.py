@@ -15,7 +15,7 @@ class Action(enum.Enum):
 
 # set here because ignored names are removed and must be manually set
 # must be normal set to be extendable
-Action.protected_values = {"storedUpdate"}
+Action.protected_values = {"storedUpdate", "auth"}
 # must be normal set to be extendable
 Action.valid_values = set(map(lambda x: x.value, Action.__members__.values()))
 
