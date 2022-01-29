@@ -5,6 +5,8 @@ from rdflib import Namespace
 
 class Action(enum.Enum):
     _ignore_ = ["protected_values", "valid_values"]
+    AUTH = "auth"
+    CREATE = "create"
     VIEW = "view"
     DELETE = "delete"
     UPDATE = "update"
@@ -33,15 +35,15 @@ DeleteRecursive.valid_values = frozenset(
 
 
 # not active yet
-class ShowElements(enum.Enum):
+class UseCriteria(enum.Enum):
     _ignore_ = ["valid_values"]
-    DEFAULT = "default"
-    DELETED = "deleted"
-    HIDDEN = "hidden"
+    TRUE = "true"
+    FALSE = "false"
+    IGNORE = "ignore"
 
 
-ShowElements.valid_values = set(
-    map(lambda x: x.value, ShowElements.__members__.values())
+UseCriteria.valid_values = frozenset(
+    map(lambda x: x.value, UseCriteria.__members__.values())
 )
 
 

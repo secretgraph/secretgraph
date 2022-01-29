@@ -1,5 +1,4 @@
 import graphene
-from itertools import chain
 from django.db.models import Subquery, Q
 from django.conf import settings
 from django.shortcuts import resolve_url
@@ -12,7 +11,7 @@ from ... import constants
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Action, Cluster, Content, ContentReference
-from .shared import DeleteRecursive
+from .shared import DeleteRecursive, UseCriteria
 
 
 # why?: scalars cannot be used in Unions
@@ -108,7 +107,6 @@ class FlexidMixin:
 
 
 class ActionEntry(graphene.ObjectType):
-    id = graphene.ID(required=False)
     # of action key
     keyHash = graphene.String(required=True)
     type = graphene.String(required=True)
@@ -125,90 +123,99 @@ class ActionMixin(object):
     availableActions = graphene.List(
         graphene.NonNull(ActionEntry), required=True
     )
+    authOk = graphene.Boolean(required=True)
 
     def resolve_availableActions(self, info):
         name = self.__class__.__name__
         result = getattr(info.context, "secretgraphResult", {}).get(name, {})
-        resultval = []
         # only show some actions if not set
         has_manage = False
         if isinstance(self, Content):
             # if content: check cluster and content keys
             mappers = [
-                result.get("required_keys_contents", {}).get(self.id, {}),
-                result.get("required_keys_clusters", {}).get(
+                result.get("action_info_contents", {}).get(self.id, {}),
+                result.get("action_info_clusters", {}).get(
                     self.cluster_id, {}
                 ),
             ]
         else:
-            mappers = [
-                result.get("required_keys_clusters", {}).get(self.id, {})
-            ]
-        ids = set()
+            mappers = [result.get("action_info_clusters", {}).get(self.id, {})]
+        # auth included unprotected ids
+        seen_ids = set()
+        # don't copy
         for mapper in mappers:
             for key_val in mapper.items():
-                if key_val[0][0] not in constants.Action.protected_values:
-                    ids.add(key_val[1]["id"])
-                if key_val[0][0] == "manage":
+                if key_val[0][0] == constants.Action.MANAGE:
                     has_manage = True
-        resultval = map(
-            lambda key_val: ActionEntry(
-                id=None if not has_manage else key_val[1]["id"],
-                keyHash=key_val[0][1],
-                type=key_val[0][0],
-                requiredKeys=key_val[1]["requiredKeys"],
-                allowedTags=(
-                    key_val[1]["allowedTags"]
-                    if key_val[0][0] != "view"
-                    else None
-                ),
-            ),
-            filter(lambda key_val: key_val[1]["id"] in ids, mapper.items()),
-        )
+                if key_val[0][0] not in constants.Action.protected_values:
+                    seen_ids.add(key_val[1]["id"])
+                    yield ActionEntry(
+                        keyHash=key_val[0][1],
+                        type=key_val[0][0],
+                        requiredKeys=key_val[1]["requiredKeys"],
+                        allowedTags=(
+                            key_val[1]["allowedTags"]
+                            if key_val[0][0] not in {"view", "auth"}
+                            else None
+                        ),
+                    )
         if has_manage:
             if isinstance(self, Content):
-                resultval = chain(
-                    resultval,
-                    map(
-                        lambda x: ActionEntry(
-                            id=x.id,
-                            keyHash=x.keyHash,
-                            type="other",
-                            requiredKeys=[],
-                            allowedTags=None,
-                        ),
-                        getattr(info.context, "secretgraphResult", {})
-                        .get("Action", {"objects": Action.objects.none()})[
-                            "objects"
-                        ]
-                        .filter(
-                            Q(contentAction__isnull=True)
-                            | Q(contentAction__content_id=self.id),
-                            cluster_id=self.cluster_id,
-                        )
-                        .exclude(id__in=ids),
-                    ),
-                )
+                for action in (
+                    result.get("Action", {"objects": Action.objects.none()})[
+                        "objects"
+                    ]
+                    .filter(
+                        Q(contentAction__isnull=True)
+                        | Q(contentAction__content_id=self.id),
+                        cluster_id=self.cluster_id,
+                    )
+                    .exclude(id__in=seen_ids)
+                ):
+                    yield ActionEntry(
+                        keyHash=action.keyHash,
+                        type="other",
+                        requiredKeys=[],
+                        allowedTags=None,
+                    )
             else:
-                resultval = chain(
-                    resultval,
-                    map(
-                        lambda x: ActionEntry(
-                            id=x.id,
-                            keyHash=x.keyHash,
-                            type="other",
-                            requiredKeys=[],
-                            allowedTags=None,
-                        ),
-                        getattr(info.context, "secretgraphResult", {})
-                        .get("Action", {"objects": Action.objects.none()})[
-                            "objects"
-                        ]
-                        .filter(contentAction__isnull=True, cluster_id=self.id)
-                        .exclude(id__in=ids),
-                    ),
-                )
-        return resultval
+                for action in (
+                    result.get("Action", {"objects": Action.objects.none()})[
+                        "objects"
+                    ]
+                    .filter(contentAction__isnull=True, cluster_id=self.id)
+                    .exclude(id__in=seen_ids)
+                ):
+                    yield ActionEntry(
+                        keyHash=action.keyHash,
+                        type="other",
+                        requiredKeys=[],
+                        allowedTags=None,
+                    )
+
+    def resolve_authOk(self, info):
+        name = self.__class__.__name__
+        result = getattr(info.context, "secretgraphResult", {}).get(name, {})
+
+        authOk = False
+        if isinstance(self, Content):
+            # if content: check cluster and content keys
+            mappers = [
+                result.get("action_info_contents", {}).get(self.id, {}),
+                result.get("action_info_clusters", {}).get(
+                    self.cluster_id, {}
+                ),
+            ]
+        else:
+            mappers = [result.get("action_info_clusters", {}).get(self.id, {})]
+        for mapper in mappers:
+            for key_val in mapper.items():
+                if key_val[0][0] == constants.Action.AUTH:
+                    authOk = True
+                    break
+            if authOk:
+                break
+        return authOk
 
 
 class ContentReferenceNode(DjangoObjectType):
@@ -285,7 +292,10 @@ class ContentReferenceConnectionField(DjangoConnectionField):
             "groups",
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
-        kwargs.setdefault("deleted", graphene.Boolean(required=False))
+        kwargs.setdefault(
+            "deleted",
+            UseCriteria(required=False, default_value=UseCriteria.FALSE),
+        )
         super().__init__(of_type, *args, **kwargs)
 
 
@@ -337,17 +347,22 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.markForDestruction
 
     def resolve_references(
-        self, info, authorization=None, groups=None, deleted=None, **kwargs
+        self,
+        info,
+        authorization=None,
+        groups=None,
+        deleted=UseCriteria.FALSE,
+        **kwargs,
     ):
         if self.limited:
             return ContentReference.objects.none()
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
         ]
-        query = result["objects"]
-        if deleted is not None:
-            query = result["objects"].filter(
-                markForDestruction__isnull=not deleted
+        query = result["objects"].exclude(hidden=True)
+        if deleted != UseCriteria.IGNORE:
+            query = query.filter(
+                markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
         return ContentReference.objects.filter(
             source=self,
@@ -363,17 +378,22 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )
 
     def resolve_referencedBy(
-        self, info, authorization=None, groups=None, deleted=None, **kwargs
+        self,
+        info,
+        authorization=None,
+        groups=None,
+        deleted=UseCriteria.FALSE,
+        **kwargs,
     ):
         if self.limited:
             return ContentReference.objects.none()
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
         ]
-        query = result["objects"]
-        if deleted is not None:
-            query = result["objects"].filter(
-                markForDestruction__isnull=not deleted
+        query = result["objects"].exclude(hidden=True)
+        if deleted != UseCriteria.IGNORE:
+            query = query.filter(
+                markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
 
         return ContentReference.objects.filter(
@@ -467,16 +487,30 @@ class ContentConnectionField(DjangoConnectionField):
             kwargs.setdefault(
                 "clusters", graphene.List(graphene.ID, required=False)
             )
-            kwargs.setdefault("public", graphene.Boolean(required=False))
-        kwargs.setdefault("deleted", graphene.Boolean(required=False))
+            kwargs.setdefault(
+                "public",
+                UseCriteria(required=False, default_value=UseCriteria.IGNORE),
+            )
+            kwargs.setdefault(
+                "hidden",
+                UseCriteria(required=False, default_value=UseCriteria.FALSE),
+            )
+        kwargs.setdefault(
+            "deleted",
+            UseCriteria(required=False, default_value=UseCriteria.FALSE),
+        )
         kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
         kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
         super().__init__(type, *args, **kwargs)
 
     @classmethod
     def resolve_queryset(cls, connection, queryset, info, args):
-        public = args.get("public")
-        deleted = args.get("deleted")
+        public = args.get("public", UseCriteria.IGNORE)
+        deleted = args.get("deleted", UseCriteria.FALSE)
+        hidden = args.get("hidden", UseCriteria.FALSE)
+        # TODO: perm check for deleted and hidden
+        if True:
+            hidden = UseCriteria.FALSE
         if isinstance(cls, Cluster):
             clusters = [cls.flexid]
         else:
@@ -490,20 +524,25 @@ class ContentConnectionField(DjangoConnectionField):
                 type_name="Cluster",
                 limit_ids=10,
             )
-        if public in {True, False}:
+        if public != UseCriteria.IGNORE:
             # root query:
             #   should only include public contents with public cluster
-            if public and not cls:
-                queryset = queryset.filter(
-                    tags__tag="state=public", cluster__public=True
-                )
-            elif public:
-                queryset = queryset.filter(tags__tag="state=public")
+            if public == UseCriteria.TRUE:
+                if not cls:
+                    queryset = queryset.filter(
+                        tags__tag="state=public", cluster__public=True
+                    )
+                else:
+                    queryset = queryset.filter(tags__tag="state=public")
             else:
                 queryset = queryset.exclude(tags__tag="state=public")
 
-        if deleted is not None:
-            queryset = queryset.filter(markForDestruction__isnull=not deleted)
+        if deleted != UseCriteria.IGNORE:
+            queryset = queryset.filter(
+                markForDestruction__isnull=deleted == UseCriteria.FALSE
+            )
+        if hidden != UseCriteria.IGNORE:
+            queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
         result = initializeCachedResult(
             info.context, authset=args.get("authorization")
         )["Content"]
@@ -628,23 +667,30 @@ class ClusterConnectionField(DjangoConnectionField):
             "ids", graphene.List(graphene.NonNull(graphene.ID), required=False)
         )
         kwargs.setdefault("user", graphene.ID(required=False))
-        kwargs.setdefault("public", graphene.Boolean(required=False))
-        kwargs.setdefault("featured", graphene.Boolean(required=False))
-        kwargs.setdefault("deleted", graphene.Boolean(required=False))
+        kwargs.setdefault(
+            "public",
+            UseCriteria(required=False, default_value=UseCriteria.IGNORE),
+        )
+        kwargs.setdefault(
+            "featured",
+            UseCriteria(required=False, default_value=UseCriteria.IGNORE),
+        )
+        kwargs.setdefault(
+            "deleted",
+            UseCriteria(required=False, default_value=UseCriteria.FALSE),
+        )
         kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
         kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
         super().__init__(type, *args, **kwargs)
 
     @classmethod
     def resolve_queryset(cls, connection, queryset, info, args):
-        public = args.get("public")
-        featured = args.get("featured", False)
+        public = args.get("public", UseCriteria.IGNORE)
+        featured = args.get("featured", UseCriteria.IGNORE)
         user = args.get("user")
-        deleted = args.get("deleted")
+        deleted = args.get("deleted", UseCriteria.FALSE)
         excludeIds = args.get("excludeIds")
         ids = args.get("ids")
-        if featured and public is None:
-            public = True
         if user:
             if not getattr(settings, "AUTH_USER_MODEL", None) and not getattr(
                 settings, "SECRETGRAPH_BIND_TO_USER", False
@@ -657,12 +703,16 @@ class ClusterConnectionField(DjangoConnectionField):
                 except Exception:
                     pass
                 queryset = queryset.filter(user__pk=user)
-        if deleted is not None:
-            queryset = queryset.filter(markForDestruction__isnull=not deleted)
         if excludeIds is not None:
             queryset = queryset.exclude(id__in=excludeIds)
-        if public in {True, False}:
-            queryset = queryset.filter(public=public)
+        if deleted != UseCriteria.IGNORE:
+            queryset = queryset.filter(
+                markForDestruction__isnull=deleted == UseCriteria.FALSE
+            )
+        if public != UseCriteria.IGNORE:
+            queryset = queryset.filter(public=public == UseCriteria.TRUE)
+        if featured != UseCriteria.IGNORE:
+            queryset = queryset.filter(featured=featured == UseCriteria.TRUE)
 
         # allow 10 clusters to be specified
         return fetch_clusters(

@@ -643,6 +643,22 @@
               }
             },
             {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "authOk",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            },
+            {
               "args": [
                 {
                   "defaultValue": "null",
@@ -699,12 +715,12 @@
                   }
                 },
                 {
-                  "defaultValue": "null",
+                  "defaultValue": "FALSE",
                   "description": null,
                   "name": "deleted",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
                     "ofType": null
                   }
                 },
@@ -1168,6 +1184,22 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
+              "name": "authOk",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
               "name": "deleted",
               "type": {
                 "kind": "SCALAR",
@@ -1266,12 +1298,12 @@
                   }
                 },
                 {
-                  "defaultValue": "null",
+                  "defaultValue": "FALSE",
                   "description": null,
                   "name": "deleted",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
                     "ofType": null
                   }
                 },
@@ -1415,12 +1447,12 @@
                   }
                 },
                 {
-                  "defaultValue": "null",
+                  "defaultValue": "FALSE",
                   "description": null,
                   "name": "deleted",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
                     "ofType": null
                   }
                 },
@@ -1863,6 +1895,35 @@
           "possibleTypes": null
         },
         {
+          "description": "Specify criteria",
+          "enumValues": [
+            {
+              "deprecationReason": null,
+              "description": "true",
+              "isDeprecated": false,
+              "name": "TRUE"
+            },
+            {
+              "deprecationReason": null,
+              "description": "false",
+              "isDeprecated": false,
+              "name": "FALSE"
+            },
+            {
+              "deprecationReason": null,
+              "description": "Ignore",
+              "isDeprecated": false,
+              "name": "IGNORE"
+            }
+          ],
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "kind": "ENUM",
+          "name": "UseCriteria",
+          "possibleTypes": null
+        },
+        {
           "description": "The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.",
           "enumValues": null,
           "fields": null,
@@ -2014,32 +2075,32 @@
                   }
                 },
                 {
-                  "defaultValue": "null",
+                  "defaultValue": "IGNORE",
                   "description": null,
                   "name": "public",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
                     "ofType": null
                   }
                 },
                 {
-                  "defaultValue": "null",
+                  "defaultValue": "IGNORE",
                   "description": null,
                   "name": "featured",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
                     "ofType": null
                   }
                 },
                 {
-                  "defaultValue": "null",
+                  "defaultValue": "FALSE",
                   "description": null,
                   "name": "deleted",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
                     "ofType": null
                   }
                 },
@@ -2195,22 +2256,32 @@
                   }
                 },
                 {
-                  "defaultValue": "null",
+                  "defaultValue": "IGNORE",
                   "description": null,
                   "name": "public",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
                     "ofType": null
                   }
                 },
                 {
-                  "defaultValue": "null",
+                  "defaultValue": "FALSE",
+                  "description": null,
+                  "name": "hidden",
+                  "type": {
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": "FALSE",
                   "description": null,
                   "name": "deleted",
                   "type": {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
+                    "kind": "ENUM",
+                    "name": "UseCriteria",
                     "ofType": null
                   }
                 },

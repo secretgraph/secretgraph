@@ -16,6 +16,7 @@ from .mutations import (
     PushContentMutation,
     RegenerateFlexidMutation,
     ResetDeletionContentOrClusterMutation,
+    MarkMutation,
 )
 
 
@@ -50,10 +51,11 @@ class Mutation:
             "Create a cluster, optionally initialize with a key-(pair)"
         )
     )
-    updateMetadata = MetadataUpdateMutation.Field()
-    pushContent = PushContentMutation.Field()
-    regenerateFlexid = RegenerateFlexidMutation.Field()
     deleteContentOrCluster = DeleteContentOrClusterMutation.Field()
     resetDeletionContentOrCluster = (
         ResetDeletionContentOrClusterMutation.Field()
     )
+    regenerateFlexid = RegenerateFlexidMutation.Field()
+    updateMetadata = MetadataUpdateMutation.Field()
+    pushContent = PushContentMutation.Field()
+    updateMarks = MarkMutation.Field()

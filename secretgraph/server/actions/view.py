@@ -26,17 +26,23 @@ def fetch_clusters(
     if includeTags or excludeTags or contentHashes:
         incl_filters = Q()
         for i in includeTags or []:
-            incl_filters |= Q(contents__tags__tag__startswith=i)
+            incl_filters |= Q(tags__tag__startswith=i)
 
         hash_filters = Q()
         for i in contentHashes or []:
-            hash_filters |= Q(contents__contentHash=i)
+            hash_filters |= Q(contentHash=i)
 
         excl_filters = Q()
         for i in excludeTags or []:
-            excl_filters |= Q(contents__tags__tag__startswith=i)
+            excl_filters |= Q(tags__tag__startswith=i)
 
-        query = query.filter(~excl_filters & incl_filters & hash_filters)
+        query = query.filter(
+            id__in=Subquery(
+                Content.objects.filter(
+                    (~excl_filters) & incl_filters & hash_filters
+                ).values("cluster_id")
+            )
+        )
 
     if minUpdated and not maxUpdated:
         maxUpdated = dt.max

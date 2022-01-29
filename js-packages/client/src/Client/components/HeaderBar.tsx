@@ -36,7 +36,9 @@ export default function HeaderBar() {
     const [loadingExport, setLoadingExport] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config, updateConfig } = React.useContext(Contexts.Config)
-    const { baseClient: client } = React.useContext(Contexts.Clients)
+    const { baseClient, itemClient, navClient } = React.useContext(
+        Contexts.Clients
+    )
     let title: string, documenttitle: string
     switch (mainCtx.action) {
         case 'add':
@@ -80,7 +82,7 @@ export default function HeaderBar() {
         const encryptingPw = (
             document.getElementById('secretgraph-export-pw') as HTMLInputElement
         ).value
-        const sconfig: any = await client
+        const sconfig: any = await baseClient
             .query({
                 query: serverConfigQuery,
             })
@@ -110,7 +112,7 @@ export default function HeaderBar() {
         let _exportUrl
         try {
             _exportUrl = await exportConfigAsUrl({
-                client,
+                client: baseClient,
                 config,
                 pw: encryptingPw,
                 iterations: 100000,
@@ -142,6 +144,9 @@ export default function HeaderBar() {
             tokensPermissions: new Set(),
         })
         sessionStorage.clear()
+        baseClient.resetStore()
+        navClient.resetStore()
+        itemClient.resetStore()
         localStorage.removeItem('secretgraphConfig')
     }
 

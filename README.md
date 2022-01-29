@@ -162,11 +162,10 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   permissions for mark and delete
 -   update internal doc section
 -   replace json-editor by ActionDialog equivalent
 -   sanitize hashAlgorithms
--   deleted contents only visible with delete permission, needs Constant instead of boolean (ShowDeleted)
--   implement hidden attribute, for administrative hidding of contents, combine with deleted?
 -   harmonize naming of add /create
 -   subscribe to config, watch changes
 -   delete: limit amount?

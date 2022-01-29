@@ -98,8 +98,12 @@ class ContentManager(models.Manager):
     def injected_keys(self, queryset=None, group=""):
         if queryset is None:
             queryset = self.get_queryset()
+        tags_public = ContentTag.objects.filter(tag="state=public").values(
+            "content_id"
+        )
         return queryset.filter(
-            tags__tag="PublicKey",
+            id__in=models.Subquery(tags_public),
+            tags__tag="type=PublicKey",
             cluster__in=(
                 getattr(settings, "SECRETGRAPH_INJECT_CLUSTERS", None) or {}
             ).get(group, []),

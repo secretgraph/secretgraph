@@ -65,6 +65,12 @@ const ActionFields = React.memo(function ActionFields({
     disabled?: boolean
 }) {
     switch (action) {
+        case 'auth':
+            return (
+                <>
+                    <Grid item></Grid>
+                </>
+            )
         case 'view':
         case 'delete':
             return (

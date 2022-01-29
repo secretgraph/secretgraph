@@ -8,6 +8,7 @@ import GroupWorkIcon from '@mui/icons-material/GroupWork'
 import ReplayIcon from '@mui/icons-material/Replay'
 import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
+import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import * as React from 'react'
@@ -55,8 +56,13 @@ export default React.memo(function Clusters({
     ] = useLazyQuery(clusterFeedQuery, {
         variables: {
             authorization: authinfo?.tokens,
-            public: !authinfo?.tokens || !authinfo.tokens.length,
-            deleted: searchCtx.deleted,
+            public:
+                !authinfo?.tokens || !authinfo.tokens.length
+                    ? Constants.UseCriteria.TRUE
+                    : Constants.UseCriteria.FALSE,
+            deleted: searchCtx.deleted
+                ? Constants.UseCriteria.TRUE
+                : Constants.UseCriteria.FALSE,
             include: searchCtx.include,
             exclude: searchCtx.exclude,
             excludeIds: excludeIds,

@@ -29,7 +29,6 @@ export const getActionsQuery = gql`
             node(id: $id) {
                 ... on Cluster {
                     availableActions {
-                        id
                         keyHash
                         type
                         requiredKeys
@@ -38,7 +37,6 @@ export const getActionsQuery = gql`
                 }
                 ... on Content {
                     availableActions {
-                        id
                         keyHash
                         type
                         requiredKeys

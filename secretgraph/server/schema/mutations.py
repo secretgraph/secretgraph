@@ -180,7 +180,7 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
         clusters.update(markForDestruction=None)
         return cls(
             restored=map(
-                lambda x: to_global_id("Content", x),
+                lambda x: to_global_id(type(x).__name__, x.flexid),
                 chain(
                     results["Content"]["objects"].filter(
                         id__in=Subquery(contents.values("id"))
@@ -190,6 +190,39 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
                     ),
                 ),
             )
+        )
+
+
+# only admin/moderator
+class MarkMutation(relay.ClientIDMutation):
+    class Input:
+        ids = graphene.List(graphene.NonNull(graphene.ID), required=True)
+        authorization = AuthList()
+        hidden = graphene.Boolean()
+        featured = graphene.Boolean()
+
+    markChanged = graphene.List(graphene.NonNull(graphene.ID), required=False)
+
+    @classmethod
+    def mutate_and_get_payload(
+        cls, root, info, ids, hidden=None, featured=None, authorization=None
+    ):
+        # TODO: admin permission
+        # if not info.context.user.has_perm("TODO"):
+        #    clusters = retrieve_allowed_objects(
+        #        info, "manage", clusters
+        #    )
+        raise NotImplementedError()
+        raise ValueError("No permission")
+        contents = Content.objects.filter(
+            id__in=ids,
+        )
+        if hidden is not None:
+            contents.update(hidden=hidden)
+        if featured is not None:
+            contents.update(featured=featured)
+        return cls(
+            markChanged=map(lambda x: to_global_id("Content", x), contents)
         )
 
 

@@ -5,8 +5,8 @@ export const contentFeedQuery = gql`
         $authorization: [String!]
         $include: [String!]
         $exclude: [String!]
-        $deleted: Boolean
-        $public: Boolean
+        $deleted: UseCriteria
+        $public: UseCriteria
         $includeTags: [String!]
         $count: Int
         $cursor: String
@@ -278,7 +278,6 @@ export const keysRetrievalQuery = gql`
                     updateId
                     tags
                     availableActions {
-                        id
                         keyHash
                         type
                         requiredKeys
@@ -290,7 +289,7 @@ export const keysRetrievalQuery = gql`
                     references(
                         groups: ["signature"]
                         includeTags: $keyhashes
-                        deleted: false
+                        deleted: FALSE
                     ) {
                         edges {
                             node {
@@ -363,7 +362,6 @@ export const contentRetrievalQuery = gql`
                     updateId
                     tags(includeTags: $includeTags)
                     availableActions {
-                        id
                         keyHash
                         type
                         requiredKeys
@@ -404,8 +402,8 @@ export const findConfigQuery = gql`
                 hashAlgorithms
             }
             contents(
-                public: false
-                deleted: false
+                public: FALSE
+                deleted: FALSE
                 clusters: [$cluster]
                 includeTags: ["type=Config"]
                 contentHashes: $contentHashes
@@ -479,7 +477,7 @@ export const getContentConfigurationQuery = gql`
                         allowedTags
                     }
 
-                    contents(includeTags: ["type=PublicKey"], deleted: false) {
+                    contents(includeTags: ["type=PublicKey"], deleted: FALSE) {
                         edges {
                             node {
                                 link
@@ -505,7 +503,7 @@ export const getContentConfigurationQuery = gql`
                         group
                         contents(
                             includeTags: ["type=PublicKey"]
-                            deleted: false
+                            deleted: FALSE
                         ) {
                             edges {
                                 node {

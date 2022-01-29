@@ -9,6 +9,7 @@ import Divider from '@mui/material/Divider'
 import List, { ListProps } from '@mui/material/List'
 import { useTheme } from '@mui/material/styles'
 import { contentFeedQuery } from '@secretgraph/graphql-queries/content'
+import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
@@ -52,7 +53,12 @@ export default React.memo(function Contents({
     const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
-    const _usePublic = usePublic === undefined ? null : usePublic
+    const _usePublic =
+        usePublic === undefined
+            ? null
+            : usePublic
+            ? Constants.UseCriteria.TRUE
+            : Constants.UseCriteria.FALSE
     const incl = React.useMemo(() => {
         const ret = searchCtx.include.concat(injectInclude)
         if (authinfo) {
@@ -78,7 +84,9 @@ export default React.memo(function Contents({
                 exclude: excl,
                 clusters: cluster ? [cluster] : undefined,
                 public: _usePublic,
-                deleted: searchCtx.deleted,
+                deleted: searchCtx.deleted
+                    ? Constants.UseCriteria.TRUE
+                    : Constants.UseCriteria.FALSE,
                 count: 30,
                 cursor: null,
             },

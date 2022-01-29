@@ -109,8 +109,9 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "forms": {},
         "actions": Action.objects.none(),
         "action_key_map": {},
-        "required_keys_clusters": {},
-        "required_keys_contents": {},
+        # {id: {(action, hash): {id: action.id, requiredKeys: ..., allowedTags: ...}}}  # noqa
+        "action_info_clusters": {},
+        "action_info_contents": {},
     }
     for item in authset:
         # harden against invalid input, e.g. object view produces empty strings
@@ -179,11 +180,11 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 return returnval
             if action.contentAction:
                 required_keys_dict = returnval[
-                    "required_keys_contents"
+                    "action_info_contents"
                 ].setdefault(action.contentAction.content_id, {})
             else:
                 required_keys_dict = returnval[
-                    "required_keys_clusters"
+                    "action_info_clusters"
                 ].setdefault(action.cluster_id, {})
 
             foundaccesslevel = result["accesslevel"]
@@ -217,6 +218,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                     },
                 )
 
+            # update hash to newest algorithm
             if action.keyHash != keyhashes[0]:
                 Action.objects.filter(keyHash=action.keyHash).update(
                     keyHash=keyhashes[0]
@@ -260,7 +262,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             query.filter(
                 models.Q(
                     id__in={
-                        *returnval["required_keys_clusters"].keys(),
+                        *returnval["action_info_clusters"].keys(),
                         *all_query.values_list("id", flat=True),
                     }
                 )
@@ -276,12 +278,12 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                     & (
                         models.Q(
                             id__in=list(
-                                returnval["required_keys_contents"].keys()
+                                returnval["action_info_contents"].keys()
                             )
                         )
                         | models.Q(
                             cluster_id__in=list(
-                                returnval["required_keys_clusters"].keys()
+                                returnval["action_info_clusters"].keys()
                             )
                         )
                     )

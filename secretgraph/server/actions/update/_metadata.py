@@ -121,17 +121,13 @@ def transform_tags(tags, oldtags=None, operation=MetadataOperations.append):
     return newtags, key_hashes
 
 
-_deleteRecursive_set = set(
-    map(lambda x: x.value, DeleteRecursive.__members__.values())
-)
-
-
 def clean_deleteRecursive(group, val):
     if val:
         # handle enum values
         if hasattr(val, "value"):
             val = val.value
-        assert val in _deleteRecursive_set, "Invalid value for deleteRecursive"
+        if val not in DeleteRecursive.valid_values:
+            raise ValueError("Invalid value for deleteRecursive")
         return val
     # set defaults
     if group == "signature":
