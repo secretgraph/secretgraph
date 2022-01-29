@@ -214,13 +214,15 @@ class MarkMutation(relay.ClientIDMutation):
         #    )
         raise NotImplementedError()
         raise ValueError("No permission")
-        contents = Content.objects.filter(
-            id__in=ids,
-        )
+        contents = Content.objects.none()
+        clusters = Cluster.objects.none()
         if hidden is not None:
+            contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
+
             contents.update(hidden=hidden)
         if featured is not None:
-            contents.update(featured=featured)
+            clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
+            clusters.update(featured=featured)
         return cls(
             markChanged=map(lambda x: to_global_id("Content", x), contents)
         )

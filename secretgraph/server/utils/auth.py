@@ -314,7 +314,7 @@ def fetch_by_id(
     type_name = type_name or query.model.__name__
     if isinstance(flexids, str):
         flexids = [flexids]
-    else:
+    elif limit_ids:
         flexids = flexids[:limit_ids]
     if not flexids:
         raise ValueError("No id specified")
