@@ -22,7 +22,7 @@ export const Main = createContext<{
         updateId: null,
         url: null,
         type: '',
-        shareUrl: null,
+        shareFn: null,
         deleted: null,
         // use tokens and permissions for saving items related tokens and permissions
         tokens: [],

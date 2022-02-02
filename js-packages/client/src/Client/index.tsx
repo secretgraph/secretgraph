@@ -54,7 +54,7 @@ function Definitions(props: Props) {
         type: elements.has(query.get('type') as any)
             ? query.get('type')
             : elements.keys().next().value,
-        shareUrl: null,
+        shareFn: null,
         deleted: null,
         tokens: [],
         tokensPermissions: new Set(),

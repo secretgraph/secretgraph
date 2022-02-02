@@ -171,7 +171,7 @@ export default React.memo(function Contents({
                                 elements.get(type)
                                     ? elements.get(type)?.label
                                     : type
-                            }: ${name ? name : `...${node.id.substr(-48)}`}`}
+                            }: ${name ? name : `...${node.id.slice(-48)}`}`}
                         </SidebarTreeItemLabel>
                     }
                     nodeId={`${props.nodeId}-${nodeId}`}

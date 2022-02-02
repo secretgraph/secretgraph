@@ -11,11 +11,10 @@ import re
 from contextlib import nullcontext
 
 from django.db.models import OuterRef, Q, Subquery
-from graphql_relay import from_global_id
 
 from ....constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import initializeCachedResult
-from ...utils.misc import hash_object
+from ...utils.misc import hash_object, from_global_id_safe
 from ...models import Content, ContentReference, ContentTag
 
 logger = logging.getLogger(__name__)
@@ -157,11 +156,10 @@ def transform_references(
             if isinstance(ref["target"], Content):
                 targetob = ref["target"]
             else:
-                type_name = "Content"
-                try:
-                    type_name, ref["target"] = from_global_id(ref["target"])
-                except Exception:
-                    pass
+                # in case keyhash is specified Content type_name is used
+                type_name, ref["target"] = from_global_id_safe(
+                    ref["target"], "Content"
+                )
                 if type_name != "Content":
                     raise ValueError("No Content Id")
                 if isinstance(ref["target"], int):

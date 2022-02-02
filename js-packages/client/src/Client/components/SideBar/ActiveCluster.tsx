@@ -62,7 +62,7 @@ export default React.memo(function ActiveCluster({
             disabled={loading}
             title={data?.note}
             icon={<GroupWorkIcon fontSize="small" />}
-            label={data?.name ? data?.name : `...${cluster.substr(-48)}`}
+            label={data?.name ? data?.name : `...${cluster.slice(-48)}`}
             onClick={(ev) => {
                 ev.preventDefault()
             }}

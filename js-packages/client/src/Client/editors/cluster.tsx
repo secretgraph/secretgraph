@@ -34,6 +34,7 @@ import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
+import SimpleShareDialog from '../components/share/SimpleShareDialog'
 import * as Contexts from '../contexts'
 
 async function extractCombinedInfo({
@@ -434,7 +435,6 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             )
 
             const updateOb = {
-                shareUrl: dataUnfinished.secretgraph.node.link,
                 deleted: dataUnfinished.secretgraph.node.deleted || null,
                 updateId: dataUnfinished.secretgraph.node.updateId,
             }
@@ -504,7 +504,6 @@ const AddCluster = () => {
                 return
             }
             updateMainCtx({
-                shareUrl: null,
                 deleted: false,
                 updateId: null,
             })

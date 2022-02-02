@@ -111,7 +111,7 @@ export default React.memo(function Clusters({
                     // state public needs no key_hash
                     injectInclude={['state=public']}
                     icon={<GroupWorkIcon fontSize="small" />}
-                    label={name ? name : `...${node.id.substr(-48)}`}
+                    label={name ? name : `...${node.id.slice(-48)}`}
                     nodeId={`${props.nodeId}-${nodeId}`}
                     key={nodeId}
                     onClick={(ev) => ev.preventDefault()}

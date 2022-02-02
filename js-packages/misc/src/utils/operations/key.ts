@@ -1,7 +1,5 @@
 import { ApolloClient, FetchResult } from '@apollo/client'
 import {
-    contentRetrievalQuery,
-    createContentMutation,
     createKeysMutation,
     findConfigQuery,
     updateContentMutation,

@@ -5,9 +5,9 @@ from django.shortcuts import resolve_url
 from graphene import ObjectType, relay
 from graphene.types.generic import GenericScalar
 from graphene_django import DjangoConnectionField, DjangoObjectType
-from graphql_relay import from_global_id
 
 from ... import constants
+from ..utils.misc import from_global_id_safe
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Action, Cluster, Content, ContentReference
@@ -699,7 +699,7 @@ class ClusterConnectionField(DjangoConnectionField):
                 user = None
             else:
                 try:
-                    user = from_global_id(user)[1]
+                    user = from_global_id_safe(user)[1]
                 except Exception:
                     pass
                 queryset = queryset.filter(user__pk=user)

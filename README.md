@@ -58,13 +58,13 @@ key refs are assigned to privatekey, the rest to the public key
     -   for all
 -   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty:
     -   for Content:
-        -   fetch: autodelete after viewing
+        -   fetch: autodelete content after viewing
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
 -   view (Content, Cluster) affects (Content, Cluster):
     -   for Content:
-        -   fetch: autodelete after viewing
+        -   fetch: autodelete content after viewing
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
@@ -162,6 +162,7 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   implement shareFn and ShareDialog, COnfig has Special ShareDialog
 -   permissions for mark and delete
 -   update internal doc section
 -   replace json-editor by ActionDialog equivalent

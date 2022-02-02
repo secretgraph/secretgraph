@@ -8,11 +8,10 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.apps import apps
 from django.db import models
 from django.utils import timezone
-from graphql_relay import from_global_id
 
 from ..actions.handler import ActionHandler
 from ..models import Action, Cluster, Content
-from .misc import calculate_hashes
+from .misc import calculate_hashes, from_global_id_safe
 
 logger = logging.getLogger(__name__)
 
@@ -122,13 +121,10 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             continue
 
         flexid, action_key = spitem
-        _type = "Cluster"
-        try:
-            _type, flexid = from_global_id(flexid)
-        finally:
-            if _type not in _allowed_auth_types:
-                continue
-            _type = {_type}
+        _type, flexid = from_global_id_safe(flexid, "Cluster")
+        if _type not in _allowed_auth_types:
+            continue
+        _type = {_type}
         try:
             flexid = UUID(flexid)
             _type = {"Cluster", "Content"}
@@ -321,11 +317,7 @@ def fetch_by_id(
     flexid_set = set()
     chash_set = set()
     for f in flexids:
-        name = type_name
-        try:
-            name, f = from_global_id(f)
-        except Exception:
-            pass
+        name, f = from_global_id_safe(f, type_name)
         try:
             f = UUID(f)
             addto = flexid_set
@@ -359,7 +351,7 @@ def ids_to_results(
     flexid_d = {}
     for id in ids:
         if isinstance(id, str):
-            type_name, flexid = from_global_id(id)
+            type_name, flexid = from_global_id_safe(id)
             try:
                 flexid = UUID(flexid)
             except ValueError:

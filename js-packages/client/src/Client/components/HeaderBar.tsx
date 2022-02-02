@@ -65,7 +65,7 @@ export default function HeaderBar() {
                 title = mainCtx.title
             } else {
                 if (mainCtx.item) {
-                    title = `...${mainCtx.item.substr(-48)}`
+                    title = `...${mainCtx.item.slice(-48)}`
                 } else {
                     title = '-'
                 }
@@ -138,7 +138,7 @@ export default function HeaderBar() {
             item: null,
             updateId: null,
             url: null,
-            shareUrl: null,
+            shareFn: null,
             deleted: null,
             tokens: [],
             tokensPermissions: new Set(),

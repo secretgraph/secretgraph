@@ -110,7 +110,7 @@ export interface MainContextInterface {
     // activeUrl can be changed without changing active element, so cache it here
     url: null | string
     type: null | string
-    shareUrl: null | string
+    shareFn: null | (() => void)
     deleted: Date | null | false
     tokens: string[]
     tokensPermissions: Set<string>

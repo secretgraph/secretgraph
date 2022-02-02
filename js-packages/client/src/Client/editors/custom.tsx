@@ -310,10 +310,8 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         variables: {
-            variables: {
-                id: mainCtx.item as string,
-                authorization,
-            },
+            id: mainCtx.item as string,
+            authorization,
         },
     })
 

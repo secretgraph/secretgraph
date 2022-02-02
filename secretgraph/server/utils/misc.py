@@ -1,7 +1,7 @@
-
 import hashlib
 import base64
 
+from graphql_relay.node.node import from_global_id as _from_global_id_relay
 from django.conf import settings
 from cryptography.hazmat.primitives import serialization
 from ...constants import CLUSTER
@@ -33,15 +33,16 @@ def hash_object(inp, algo=None):
     if hasattr(inp, "public_bytes"):
         inp = inp.public_bytes(
             encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
     algo.update(inp)
     return base64.b64encode(algo.digest()).decode("ascii")
 
 
 def calculate_hashes(inp):
-    assert len(settings.SECRETGRAPH_HASH_ALGORITHMS) > 0, \
-           "no hash algorithms specified"
+    assert (
+        len(settings.SECRETGRAPH_HASH_ALGORITHMS) > 0
+    ), "no hash algorithms specified"
     if isinstance(inp, str):
         try:
             inp = base64.b64decode(inp)
@@ -52,7 +53,7 @@ def calculate_hashes(inp):
     if hasattr(inp, "public_bytes"):
         inp = inp.public_bytes(
             encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
     hashes = []
     for algo in settings.SECRETGRAPH_HASH_ALGORITHMS:
@@ -63,9 +64,7 @@ def calculate_hashes(inp):
         else:
             algo = algo.copy()
         algo.update(inp)
-        hashes.append(
-            base64.b64encode(algo.digest()).decode("ascii")
-        )
+        hashes.append(base64.b64encode(algo.digest()).decode("ascii"))
     return hashes
 
 
@@ -79,9 +78,23 @@ def get_secrets(graph):
                  cluster:PublicSecret.value ?secret .
         }
         """,
-        initNs={
-            "cluster": CLUSTER
-        }
+        initNs={"cluster": CLUSTER},
     ):
         public_secrets.append(i.secret)
     return public_secrets
+
+
+def from_global_id_safe(inp: str, default_type_name: str = ""):
+    idval = inp
+    type_name = default_type_name
+    try:
+        type_name, idval = _from_global_id_relay(inp)
+        if inp and not idval:
+            raise
+    except Exception:
+        idval = inp
+    if not type_name:
+        if not default_type_name:
+            raise ValueError("No type specified")
+        type_name = default_type_name
+    return type_name, idval

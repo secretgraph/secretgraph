@@ -1,5 +1,4 @@
 import { useApolloClient } from '@apollo/client'
-import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import FileCopyIcon from '@mui/icons-material/FileCopy'
@@ -7,14 +6,7 @@ import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined'
 import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash'
 import ShareIcon from '@mui/icons-material/Share'
 import VisibilityIcon from '@mui/icons-material/Visibility'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import IconButton from '@mui/material/IconButton'
-import Link from '@mui/material/Link'
-import NativeSelect from '@mui/material/NativeSelect'
 import { useTheme } from '@mui/material/styles'
 import Toolbar from '@mui/material/Toolbar'
 import Tooltip from '@mui/material/Tooltip'
@@ -85,40 +77,6 @@ function ActionBar(props: Props) {
                 justifyContent: 'flex-end' as const,
             }}
         >
-            <Dialog
-                open={shareOpen}
-                onClose={() => setShareOpen(false)}
-                aria-labelledby="share-dialog-title"
-            >
-                <DialogTitle id="share-dialog-title">Share</DialogTitle>
-                <DialogContent>
-                    <Link
-                        href={'' + mainCtx.shareUrl}
-                        onClick={(event: any) => {
-                            if (navigator.clipboard) {
-                                navigator.clipboard.writeText(
-                                    '' + mainCtx.shareUrl
-                                )
-                                event.preventDefault()
-                                console.log('url copied')
-                                return false
-                            } else {
-                                console.log('clipboard not supported')
-                            }
-                        }}
-                    >
-                        {mainCtx.shareUrl}
-                    </Link>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        onClick={() => setShareOpen(false)}
-                        color="secondary"
-                    >
-                        Close
-                    </Button>
-                </DialogActions>
-            </Dialog>
             <div style={{ flexGrow: 1 }} />
             <Toolbar
                 sx={{
@@ -279,7 +237,7 @@ function ActionBar(props: Props) {
                                             title: '',
                                             item: null,
                                             url: activeUrl,
-                                            shareUrl: null,
+                                            shareFn: null,
                                             deleted: null,
                                             type: event.currentTarget.value,
                                             tokens: createTokens,
@@ -313,7 +271,7 @@ function ActionBar(props: Props) {
                                             item: null,
                                             url: activeUrl,
                                             updateId: null,
-                                            shareUrl: null,
+                                            shareFn: null,
                                             deleted: null,
                                             type: mainCtx.type,
                                             tokens: createTokens,
@@ -330,7 +288,7 @@ function ActionBar(props: Props) {
                             title="Share "
                             arrow
                             style={{
-                                display: mainCtx.shareUrl ? undefined : 'none',
+                                display: mainCtx.shareFn ? undefined : 'none',
                             }}
                         >
                             <span>

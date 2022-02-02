@@ -107,7 +107,7 @@ const SideBarItems = () => {
             deleted: false,
             action: 'view',
             url: activeUrl,
-            shareUrl: `${activeUrlAsURL.origin}${node.link}`,
+            shareFn: null,
             title: mainCtx.updateId == node.updateId ? undefined : '',
             tokens,
             tokensPermissions,
