@@ -65,15 +65,12 @@ def create_key_maps(contents, keyset=()):
         keyspec = keyspec.split(":", 1)
         if len(keyspec) == 2:
             _key = base64.b64decode(keyspec[1])
-            try:
-                _type, _id = from_global_id_safe(keyspec[0])
-                if _type != "Content":
-                    continue
-                key_map1[f"id={_id}"] = _key
-            except ValueError:
-                # is hash or flexid
-                key_map1[f"id={keyspec[0]}"] = _key
-                key_map1[f"key_hash={keyspec[0]}"] = _key
+            _type, _id = from_global_id_safe(keyspec[0], "Content")
+            if _type != "Content":
+                continue
+            # is hash, flexid or global id
+            key_map1[f"id={_id}"] = _key
+            key_map1[f"key_hash={_id}"] = _key
 
     reference_query = ContentReference.objects.filter(
         Q(group="key") | Q(group="transfer"), source__in=contents
