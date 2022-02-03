@@ -1982,6 +1982,16 @@
                 },
                 {
                   "defaultValue": "null",
+                  "description": "Search description and id",
+                  "name": "search",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": "null",
                   "description": null,
                   "name": "includeTags",
                   "type": {

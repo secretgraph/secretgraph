@@ -204,7 +204,6 @@ class ContentView(AllowCORSMixin, FormView):
                 result["objects"],
                 clusters,
                 prefix="cluster__",
-                type_name="Cluster",
                 limit_ids=10,
             )
         result["objects"] = fetch_contents(

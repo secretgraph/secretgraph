@@ -291,39 +291,18 @@ def fetch_by_id(
     query,
     flexids,
     prefix="",
-    type_name=None,
     check_content_hash=False,
     limit_ids=1,
 ):
-    # without auth check! do it before
-    type_name = type_name or query.model.__name__
     if isinstance(flexids, str):
         flexids = [flexids]
     elif limit_ids:
         flexids = flexids[:limit_ids]
     if not flexids:
         raise ValueError("No id specified")
-    flexid_set = set()
-    chash_set = set()
-    # can be optimized by using flexid_cached
-    for f in flexids:
-        name, f = from_global_id_safe(f, type_name)
-        try:
-            f = UUID(f)
-            addto = flexid_set
-        except ValueError:
-            if check_content_hash:
-                addto = chash_set
-            else:
-                raise ValueError("Malformed id")
-        if type_name != name:
-            raise ValueError(
-                "No {} Id ({})".format(query.model.__name__, type_name)
-            )
-        addto.add(f)
-    filters = {f"{prefix}flexid__in": flexid_set}
-    if chash_set:
-        filters[f"{prefix}contentHash__in"] = chash_set
+    filters = {f"{prefix}flexid_cached__in": flexids}
+    if check_content_hash:
+        filters[f"{prefix}contentHash__in"] = flexids
     return query.filter(**filters)
 
 

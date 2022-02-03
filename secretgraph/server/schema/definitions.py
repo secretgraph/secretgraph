@@ -521,7 +521,6 @@ class ContentConnectionField(DjangoConnectionField):
                 queryset,
                 clusters,
                 prefix="cluster__",
-                type_name="Cluster",
                 limit_ids=10,
             )
         if public != UseCriteria.IGNORE:
