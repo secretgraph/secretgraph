@@ -14,7 +14,7 @@ from django.db.models import OuterRef, Q, Subquery
 
 from ....constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import initializeCachedResult
-from ...utils.misc import hash_object, from_global_id_safe
+from ...utils.misc import hash_object
 from ...models import Content, ContentReference, ContentTag
 
 logger = logging.getLogger(__name__)
@@ -156,15 +156,10 @@ def transform_references(
             if isinstance(ref["target"], Content):
                 targetob = ref["target"]
             else:
-                # in case keyhash is specified Content type_name is used
-                type_name, ref["target"] = from_global_id_safe(
-                    ref["target"], "Content"
-                )
-                if type_name != "Content":
-                    raise ValueError("No Content Id")
                 if isinstance(ref["target"], int):
                     q = Q(id=ref["target"])
                 else:
+                    # in case keyhash is specified Content type_name is used
                     _refs = Subquery(
                         ContentTag.objects.filter(
                             # for correct chaining
@@ -175,7 +170,11 @@ def transform_references(
                     )
                     # the direct way doesn't work
                     # subquery is necessary for chaining operations correctly
-                    q = Q(tags__tag=f"id={ref['target']}") | Q(tags__in=_refs)
+                    q = (
+                        Q(flexid=ref["target"])
+                        | Q(flexid_cached=ref["target"])
+                        | Q(tags__in=_refs)
+                    )
 
                 targetob = allowed_targets.filter(
                     q, markForDestruction=None

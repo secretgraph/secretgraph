@@ -419,11 +419,11 @@ const FileIntern = ({
                             cluster: values.cluster,
                             value,
                             tags: [
-                                values.encryptName || values.state != 'public'
-                                    ? `ename=${Buffer.from(
+                                !values.encryptName || values.state == 'public'
+                                    ? `name=${values.name}`
+                                    : `ename=${Buffer.from(
                                           values.name
-                                      ).toString('base64')}`
-                                    : `name=${values.name}`,
+                                      ).toString('base64')}`,
                                 values.state == 'public'
                                     ? `mime=${value.type}`
                                     : `mime=${Buffer.from(value.type).toString(

@@ -30,12 +30,14 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "flexid",
-                    models.UUIDField(blank=True, null=True, unique=True),
+                    models.CharField(
+                        blank=True, max_length=36, null=True, unique=True
+                    ),
                 ),
                 (
                     "flexid_cached",
                     models.CharField(
-                        blank=True, max_length=100, null=True, unique=True
+                        blank=True, max_length=80, null=True, unique=True
                     ),
                 ),
                 ("description", models.TextField()),
@@ -79,12 +81,14 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "flexid",
-                    models.UUIDField(blank=True, null=True, unique=True),
+                    models.CharField(
+                        blank=True, max_length=36, null=True, unique=True
+                    ),
                 ),
                 (
                     "flexid_cached",
                     models.CharField(
-                        blank=True, max_length=100, null=True, unique=True
+                        blank=True, max_length=80, null=True, unique=True
                     ),
                 ),
                 ("updated", models.DateTimeField(auto_now=True)),

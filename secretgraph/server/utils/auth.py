@@ -1,8 +1,9 @@
 import base64
 import json
 import logging
-from uuid import UUID
 from functools import reduce
+from itertools import islice
+from operator import or_
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.apps import apps
@@ -79,7 +80,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             .replace(" ", "")
             .split(",")
         )
-    authset = set(authset)
+    authset = set(islice(authset, 100))
     now = timezone.now()
     # cleanup expired Contents
     Content.objects.filter(markForDestruction__lte=now).delete()
@@ -237,7 +238,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
 
     # extract subqueries union them
     all_query = reduce(
-        lambda x, y: x | y,
+        or_,
         map(lambda x: x.pop("_query"), returnval["clusters"].values()),
         query.none(),
     )
@@ -300,10 +301,14 @@ def fetch_by_id(
         flexids = flexids[:limit_ids]
     if not flexids:
         raise ValueError("No id specified")
-    filters = {f"{prefix}flexid_cached__in": flexids}
+    filters = models.Q(**{f"{prefix}flexid_cached__in": flexids}) | models.Q(
+        **{
+            f"{prefix}flexid__in": flexids,  #
+        }
+    )
     if check_content_hash:
-        filters[f"{prefix}contentHash__in"] = flexids
-    return query.filter(**filters)
+        filters |= models.Q(**{f"{prefix}contentHash__in": flexids})
+    return query.filter(filters)
 
 
 def ids_to_results(
@@ -321,10 +326,6 @@ def ids_to_results(
     for id in ids:
         if isinstance(id, str):
             type_name, flexid = from_global_id_safe(id)
-            try:
-                flexid = UUID(flexid)
-            except ValueError:
-                raise ValueError("Malformed id")
         elif isinstance(id, klasses):
             flexid = id.flexid
             type_name = type(id).__name__

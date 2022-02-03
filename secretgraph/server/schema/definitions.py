@@ -516,12 +516,11 @@ class ContentConnectionField(DjangoConnectionField):
         else:
             clusters = args.get("clusters")
         if clusters:
-            # allow 10 clusters to be specified
             queryset = fetch_by_id(
                 queryset,
                 clusters,
                 prefix="cluster__",
-                limit_ids=10,
+                limit_ids=None,
             )
         if public != UseCriteria.IGNORE:
             # root query:
@@ -713,7 +712,7 @@ class ClusterConnectionField(DjangoConnectionField):
 
         if search is not None:
             queryset = queryset.filter(
-                Q(flexid_cached__icontains=search)
+                Q(flexid_cached__startswith=search)
                 | Q(description__icontains=search)
             )
 

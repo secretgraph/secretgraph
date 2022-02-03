@@ -19,7 +19,7 @@ export const clusterFeedQuery = gql`
                 excludeIds: $excludeIds
                 deleted: $deleted
                 public: $public
-                search: $searc
+                search: $search
                 first: $count
                 after: $cursor
             )

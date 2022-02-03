@@ -62,9 +62,9 @@ def generateFlexid(sender, instance, force=False, **kwargs):
         for i in range(0, 1000):
             if i >= 999:
                 raise ValueError("A possible infinite loop was detected")
-            instance.flexid = uuid.uuid4()
+            instance.flexid = str(uuid.uuid4())
             instance.flexid_cached = to_global_id(
-                str(sender), str(instance.flexid)
+                sender.__name__, instance.flexid
             )
             try:
                 with transaction.atomic():
