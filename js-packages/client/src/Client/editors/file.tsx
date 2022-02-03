@@ -234,7 +234,7 @@ const FileIntern = ({
             config,
             url,
             require: new Set(['create', 'manage']),
-        })
+        }).tokens
     }, [config])
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     let name: string = mainCtx.item || ''

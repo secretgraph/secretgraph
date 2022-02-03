@@ -120,16 +120,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         if len(spitem) != 2:
             continue
 
-        flexid, action_key = spitem
-        _type, flexid = from_global_id_safe(flexid, "Cluster")
-        if _type not in _allowed_auth_types:
-            continue
-        _type = {_type}
-        try:
-            flexid = UUID(flexid)
-            _type = {"Cluster", "Content"}
-        except ValueError:
-            continue
+        flexid_raw, action_key = spitem
         try:
             action_key = base64.b64decode(action_key)
         finally:
@@ -138,11 +129,9 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         aesgcm = AESGCM(action_key)
         keyhashes = calculate_hashes(action_key)
 
-        q = models.Q()
-        if "Content" in _type:
-            q |= models.Q(contentAction__content__flexid=flexid)
-        if "Cluster" in _type:
-            q |= models.Q(cluster__flexid=flexid)
+        q = models.Q(
+            contentAction__content__flexid_cached=flexid_raw
+        ) | models.Q(cluster__flexid_cached=flexid_raw)
         actions = pre_filtered_actions.filter(q, keyHash__in=keyhashes)
         if not actions:
             continue
@@ -316,6 +305,7 @@ def fetch_by_id(
         raise ValueError("No id specified")
     flexid_set = set()
     chash_set = set()
+    # can be optimized by using flexid_cached
     for f in flexids:
         name, f = from_global_id_safe(f, type_name)
         try:

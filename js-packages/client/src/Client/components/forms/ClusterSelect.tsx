@@ -35,9 +35,11 @@ export default function ClusterSelect<
     FieldProps<
         AutocompleteValue<string, Multiple, DisableClearable, FreeSolo>
     >) {
+    const [inputValue, setInputValue] = React.useState('')
     const { fetchMore, data, loading } = useQuery(clusterFeedQuery, {
         variables: {
             authorization: tokens,
+            search: inputValue ? inputValue : undefined,
         },
     })
     const { ids, labelMap } = React.useMemo(() => {

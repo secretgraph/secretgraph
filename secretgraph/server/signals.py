@@ -1,6 +1,7 @@
 from itertools import product, islice
 import uuid
 
+from graphql_relay import to_global_id
 from django.db import transaction, models
 from django.db.utils import IntegrityError
 
@@ -57,14 +58,17 @@ def deleteEncryptedFileCb(sender, instance, **kwargs):
 def generateFlexid(sender, instance, force=False, **kwargs):
     from .models import Cluster, Content
 
-    if not instance.flexid or force:
+    if not instance.flexid or not instance.flexid_cached or force:
         for i in range(0, 1000):
             if i >= 999:
                 raise ValueError("A possible infinite loop was detected")
             instance.flexid = uuid.uuid4()
+            instance.flexid_cached = to_global_id(
+                str(sender), str(instance.flexid)
+            )
             try:
                 with transaction.atomic():
-                    instance.save(update_fields=["flexid"])
+                    instance.save(update_fields=["flexid", "flexid_cached"])
                 break
             except IntegrityError:
                 pass

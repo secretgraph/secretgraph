@@ -162,6 +162,7 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   replace flexid with string, forget uuid
 -   implement shareFn and ShareDialog, COnfig has Special ShareDialog
 -   permissions for mark and delete
 -   update internal doc section

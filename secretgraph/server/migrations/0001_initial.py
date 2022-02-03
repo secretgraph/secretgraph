@@ -31,6 +31,12 @@ class Migration(migrations.Migration):
                     "flexid",
                     models.UUIDField(blank=True, null=True, unique=True),
                 ),
+                (
+                    "flexid_cached",
+                    models.CharField(
+                        blank=True, max_length=100, null=True, unique=True
+                    ),
+                ),
                 ("description", models.TextField()),
                 ("public", models.BooleanField(blank=True, default=False)),
                 ("featured", models.BooleanField(blank=True, default=False)),
@@ -73,6 +79,12 @@ class Migration(migrations.Migration):
                 (
                     "flexid",
                     models.UUIDField(blank=True, null=True, unique=True),
+                ),
+                (
+                    "flexid_cached",
+                    models.CharField(
+                        blank=True, max_length=100, null=True, unique=True
+                    ),
                 ),
                 ("updated", models.DateTimeField(auto_now=True)),
                 (

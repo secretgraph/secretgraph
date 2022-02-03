@@ -8,6 +8,7 @@ export const clusterFeedQuery = gql`
         $excludeIds: [String!]
         $deleted: UseCriteria
         $public: UseCriteria
+        $search: String
         $count: Int
         $cursor: String
     ) {
@@ -18,6 +19,7 @@ export const clusterFeedQuery = gql`
                 excludeIds: $excludeIds
                 deleted: $deleted
                 public: $public
+                search: $searc
                 first: $count
                 after: $cursor
             )
@@ -29,6 +31,7 @@ export const clusterFeedQuery = gql`
                         "excludeTags"
                         "excludeIds"
                         "public"
+                        "search"
                         "deleted"
                     ]
                 ) {

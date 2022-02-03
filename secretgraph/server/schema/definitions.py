@@ -99,7 +99,7 @@ class FlexidMixin:
     def resolve_id(self, info):
         if self.limited:
             return None
-        return self.flexid
+        return str(self.flexid)
 
     @classmethod
     def get_node(cls, info, id, **kwargs):
@@ -638,6 +638,13 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
 class ClusterConnectionField(DjangoConnectionField):
     def __init__(self, type=ClusterNode, *args, **kwargs):
         kwargs.setdefault(
+            "search",
+            graphene.String(
+                required=False,
+                description=("Search description and id"),
+            ),
+        )
+        kwargs.setdefault(
             "includeTags",
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
@@ -691,6 +698,7 @@ class ClusterConnectionField(DjangoConnectionField):
         deleted = args.get("deleted", UseCriteria.FALSE)
         excludeIds = args.get("excludeIds")
         ids = args.get("ids")
+        search = args.get("search")
         if user:
             if not getattr(settings, "AUTH_USER_MODEL", None) and not getattr(
                 settings, "SECRETGRAPH_BIND_TO_USER", False
@@ -703,8 +711,15 @@ class ClusterConnectionField(DjangoConnectionField):
                 except Exception:
                     pass
                 queryset = queryset.filter(user__pk=user)
+
+        if search is not None:
+            queryset = queryset.filter(
+                Q(flexid_cached__icontains=search)
+                | Q(description__icontains=search)
+            )
+
         if excludeIds is not None:
-            queryset = queryset.exclude(id__in=excludeIds)
+            queryset = queryset.exclude(flexid_cached__in=excludeIds)
         if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE

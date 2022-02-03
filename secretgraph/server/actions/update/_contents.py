@@ -13,7 +13,6 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.db.models import Q
-from graphql_relay import to_global_id
 
 from .... import constants
 from ...utils.auth import ids_to_results, initializeCachedResult
@@ -290,9 +289,7 @@ def _update_or_create_content_or_key(
 
         # create id tag after object was created or update it
         content.tags.update_or_create(
-            defaults={
-                "tag": "id=%s" % to_global_id("Content", content.flexid)
-            },
+            defaults={"tag": f"id={content.flexid_cached}"},
             tag__startswith="id=",
         )
         if final_references is not None:

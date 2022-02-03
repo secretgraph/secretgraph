@@ -54,6 +54,9 @@ def get_content_file_path(instance, filename) -> str:
 class FlexidModel(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: UUID = models.UUIDField(blank=True, null=True, unique=True)
+    flexid_cached: str = models.CharField(
+        max_length=100, blank=True, null=True, unique=True
+    )
 
     class Meta:
         abstract = True
