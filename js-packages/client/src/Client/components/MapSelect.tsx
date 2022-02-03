@@ -6,7 +6,7 @@ export function createOptionsIterator(mapObject: Map<string, any>) {
         *[Symbol.iterator]() {
             for (const [key, value] of mapObject) {
                 yield (
-                    <option value={key} key={key}>
+                    <option value={key} key={key} hidden={value.ignore}>
                         {value.label}
                     </option>
                 )

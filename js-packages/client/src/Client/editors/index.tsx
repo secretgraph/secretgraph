@@ -42,6 +42,26 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
     [
+        'PrivateKey',
+        {
+            label: gettext('Keys'),
+            ignore: true,
+            component: React.lazy(
+                () => import(/* webpackChunkName: 'keys-editor' */ './keys')
+            ),
+        },
+    ],
+    [
+        'Config',
+        {
+            label: gettext('Config'),
+            ignore: true,
+            component: React.lazy(
+                () => import(/* webpackChunkName: 'keys-editor' */ './config')
+            ),
+        },
+    ],
+    [
         'undefined',
         {
             label: gettext('Custom'),

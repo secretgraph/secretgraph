@@ -26,11 +26,11 @@ type Props = {}
 
 function ActionBar(props: Props) {
     const theme = useTheme()
-    const [shareOpen, setShareOpen] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const client = useApolloClient()
+
     const updateTokens = React.useMemo(() => {
         if (
             SetOps.hasIntersection(mainCtx.tokensPermissions, [
@@ -295,7 +295,11 @@ function ActionBar(props: Props) {
                                 <IconButton
                                     color="inherit"
                                     aria-label="share"
-                                    onClick={() => setShareOpen(true)}
+                                    onClick={
+                                        mainCtx.shareFn as NonNullable<
+                                            typeof mainCtx.shareFn
+                                        >
+                                    }
                                     size="large"
                                 >
                                     <ShareIcon />
