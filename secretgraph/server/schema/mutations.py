@@ -95,9 +95,9 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
             when_x = max(now + td(minutes=20), when)
             results["Content"]["objects"].update(markForDestruction=when_x)
             Content.objects.filter(
-                cluster_id__in=results["Cluster"]["objects"].values_list(
-                    "id", flat=True
-                ),
+                cluster_id__in=Subquery(
+                    results["Cluster"]["objects"].values("id")
+                )
             ).update(markForDestruction=when_x)
             results["Cluster"]["objects"].update(markForDestruction=when)
         else:
@@ -114,8 +114,8 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
             Content.objects.filter(
                 Q(markForDestruction__isnull=True)
                 | Q(markForDestruction__gt=now_plus_x),
-                cluster_id__in=results["Cluster"]["objects"].values_list(
-                    "id", flat=True
+                cluster_id__in=Subquery(
+                    results["Cluster"]["objects"].values("id")
                 ),
             ).update(markForDestruction=now_plus_x)
             results["Cluster"]["objects"].filter(
@@ -123,21 +123,17 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
                 | Q(markForDestruction__gt=now)
             ).update(markForDestruction=now)
         calc_last = Content.objects.filter(
-            Q(
-                id__in=results["Content"]["objects"].values_list(
-                    "id", flat=True
-                )
-            )
+            Q(id__in=Subquery(results["Content"]["objects"].values("id")))
             | Q(
-                cluster_id__in=results["Cluster"]["objects"].values_list(
-                    "id", flat=True
+                cluster_id__in=Subquery(
+                    results["Cluster"]["objects"].values("id")
                 )
             ),
             markForDestruction__isnull=False,
         ).latest("markForDestruction")
 
         return cls(
-            latestDeletion=calc_last.markForDestruction if calc_last else now
+            latestDeletion=calc_last.markForDestruction if calc_last else None
         )
 
 
