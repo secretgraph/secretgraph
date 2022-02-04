@@ -4,7 +4,7 @@ import MainPage from '@secretgraph/client/Client'
 import { StrictMode } from 'react'
 import * as ReactDOM from 'react-dom'
 
-let wrapper = document.getElementById('content-main')
+let wrapper = document.getElementById('secretgraph-webclient')
 const defaultPath: string | undefined = wrapper
     ? wrapper.dataset.graphqlPath
     : undefined

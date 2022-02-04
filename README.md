@@ -127,11 +127,16 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 
 # Internal
 
+Describe how internal plugins works
+
 ## ContentActions
 
-### dicts
+### clean returnal
 
 -   freeze: together with "fetch" content group of views updates will be disabled
+-   form: create new content
+    -   updateable
+    -   freeze
 
 ### Groups
 
@@ -139,7 +144,7 @@ idea: seperate actions with different concerns.
 
 -   "": default
 -   view: for view actions
--   fetch: autodelete contents if all fetch contentActions are used
+-   fetch: (special group) autodelete contents if all fetch contentActions are used
 
 # FAQ
 
@@ -162,7 +167,6 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   replace flexid with string, forget uuid
 -   implement shareFn and ShareDialog, COnfig has Special ShareDialog
 -   permissions for mark and delete
 -   update internal doc section

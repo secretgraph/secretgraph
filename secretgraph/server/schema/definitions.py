@@ -523,10 +523,10 @@ class ContentConnectionField(DjangoConnectionField):
                 limit_ids=None,
             )
         if public != UseCriteria.IGNORE:
-            # root query:
-            #   should only include public contents with public cluster
+            # should only include public contents with public cluster
+            # if no clusters are specified (e.g. root query)
             if public == UseCriteria.TRUE:
-                if not cls:
+                if not clusters:
                     queryset = queryset.filter(
                         tags__tag="state=public", cluster__public=True
                     )
@@ -534,6 +534,11 @@ class ContentConnectionField(DjangoConnectionField):
                     queryset = queryset.filter(tags__tag="state=public")
             else:
                 queryset = queryset.exclude(tags__tag="state=public")
+        else:
+            # only private or public with cluster public
+            queryset = queryset.filter(
+                ~Q(tags__tag="state=public") | Q(cluster__public=True)
+            )
 
         if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(
@@ -710,7 +715,7 @@ class ClusterConnectionField(DjangoConnectionField):
                     pass
                 queryset = queryset.filter(user__pk=user)
 
-        if search is not None:
+        if search:
             queryset = queryset.filter(
                 Q(flexid_cached__startswith=search)
                 | Q(description__icontains=search)
@@ -727,7 +732,6 @@ class ClusterConnectionField(DjangoConnectionField):
         if featured != UseCriteria.IGNORE:
             queryset = queryset.filter(featured=featured == UseCriteria.TRUE)
 
-        # allow 10 clusters to be specified
         return fetch_clusters(
             #  required for enforcing permissions
             queryset.filter(
@@ -738,7 +742,7 @@ class ClusterConnectionField(DjangoConnectionField):
                 )
             ).distinct(),
             ids=ids,
-            limit_ids=10,
+            limit_ids=None,
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
             minUpdated=args.get("minUpdated"),
