@@ -19,7 +19,7 @@ from django.urls import reverse
 from django.views.generic.edit import FormView
 from graphene_file_upload.django import FileUploadGraphQLView
 
-from .actions.view import ContentFetchQueryset, fetch_contents
+from .actions.view import ContentFetchQueryset
 from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
 from .utils.auth import (
@@ -76,17 +76,12 @@ class ContentView(AllowCORSMixin, FormView):
             if self.action != "view":
                 raise Http404()
             response = self.handle_decrypt(request, authset, *args, **kwargs)
-        elif kwargs.get("id"):
-            if self.action in {"push", "update"}:
-                # user interface
-                response = self.render_to_response(self.get_context_data())
-            else:
-                # raw interface
-                response = self.handle_raw_singlecontent(
-                    request, *args, **kwargs
-                )
+        if self.action in {"push", "update"}:
+            # user interface
+            response = self.render_to_response(self.get_context_data())
         else:
-            raise Http404()
+            # raw interface
+            response = self.handle_raw_singlecontent(request, *args, **kwargs)
         return response
 
     def post(self, request, *args, **kwargs):
@@ -178,7 +173,7 @@ class ContentView(AllowCORSMixin, FormView):
             response = HttpResponse(201)
         return response
 
-    def handle_decrypt(self, request, *args, **kwargs):
+    def handle_decrypt(self, request, id, *args, limit_ids=100, **kwargs):
         """
         space efficient join of one or more documents, decrypted
         In case of multiple documents the \\0 is escaped and the documents with
@@ -198,40 +193,28 @@ class ContentView(AllowCORSMixin, FormView):
         """
         # shallow copy initialization of result
         result = self.result.copy()
-        clusters = request.GET.getlist("cluster")
-        if clusters:
-            result["objects"] = fetch_by_id(
-                result["objects"],
-                clusters,
-                prefix="cluster__",
-                limit_ids=None,
-            )
-        result["objects"] = fetch_contents(
-            result["objects"],
+        result["objects"] = ContentFetchQueryset(
+            fetch_by_id(result["objects"], id, limit_ids=limit_ids)
+            .distinct()
+            .query,
             result["actions"],
-            kwargs.get("id"),
-            limit_ids=10,
-            includeTags=request.GET.getlist("inclTags"),
-            excludeTags=request.GET.getlist("exclTags"),
-            contentHashes=request.GET.getlist("contentHash"),
         )
-        if not result["objects"]:
+        count = result["objects"].count()
+        if not count:
             raise Http404()
 
         def gen():
             seperator = None
-            for document in iter_decrypt_contents(
-                result, self.result["authset"]
-            ):
+            for content in iter_decrypt_contents(result):
                 if seperator is not None:
                     yield seperator
-                if kwargs.get("id"):
+                if count == 1:
                     # don't alter document
-                    for chunk in document:
+                    for chunk in content.read_decrypt():
                         yield chunk
                 else:
                     # seperate with \0
-                    for chunk in document:
+                    for chunk in content.read_decrypt():
                         yield chunk.replace(b"\0", b"\\0")
                 seperator = b"\0"
 
@@ -291,13 +274,13 @@ class ContentView(AllowCORSMixin, FormView):
                         "link": ref.target.link,
                     }
             response = JsonResponse(response)
-            response["X-IS-VERIFIED"] = "false"
+            response["X-IS-SIGNED"] = "false"
         else:
             response = FileResponse(content.file.open("rb"))
             _type = content.tags.filter(tag__startswith="type=").first()
             response["X-TYPE"] = _type.tag.split("=", 1)[1] if _type else ""
             verifiers = content.references.filter(group="signature")
-            response["X-IS-VERIFIED"] = json.dumps(verifiers.exists())
+            response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
         return response
 

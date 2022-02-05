@@ -625,6 +625,7 @@ export async function encryptTag(
             throw e
         }
         const tmp = new Uint8Array(nonce.byteLength + encrypted.byteLength)
+        // TODO: new Uint8Array required?
         tmp.set(new Uint8Array(nonce), 0)
         tmp.set(new Uint8Array(encrypted), nonce.byteLength)
         data = await serializeToBase64(tmp)

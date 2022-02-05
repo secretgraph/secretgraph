@@ -1,18 +1,22 @@
+from urllib.parse import urlencode
+from contextvars import ContextVar
+
 from django import template
 from django.conf import settings
 from django.shortcuts import resolve_url
 from django.utils.html import escape
+from django.core.paginator import Paginator
 
 from django.db.models import Q
-
-from contextvars import ContextVar
 
 from ..models import Content
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import (
     fetch_clusters as _fetch_clusters,
     fetch_contents as _fetch_contents,
+    ContentFetchQueryset,
 )
+from ..utils.encryption import iter_decrypt_contents
 
 try:
     from bleach import sanitizer
@@ -70,6 +74,8 @@ def secretgraph_path():
 @register.simple_tag(takes_context=True)
 def fetch_clusters(
     context,
+    page=1,
+    page_size=20,
     order_by=None,
     featured=True,
     public=True,
@@ -96,80 +102,146 @@ def fetch_clusters(
         queryset = queryset.filter(featured=featured)
     if order_by:
         queryset = queryset.order_by(*order_by)
-    return _fetch_clusters(
-        queryset.distinct(), includeTags=includeTags, excludeTags=excludeTags
-    )
+    return Paginator(
+        _fetch_clusters(
+            queryset.distinct(),
+            includeTags=includeTags,
+            excludeTags=excludeTags,
+        ),
+        page_size,
+    ).get_page(page)
 
 
 @register.simple_tag(takes_context=True)
 def fetch_contents(
     context,
+    page=1,
+    page_size=20,
     order_by=None,
     public=True,
     deleted=False,
     clusters=None,
     includeTags=["type=text/plain", "type=text/html"],
+    decrypt=True,
     excludeTags=None,
     authorization=None,
 ):
-    queryset = initializeCachedResult(context.request, authset=authorization)[
+    result = initializeCachedResult(context.request, authset=authorization)[
         "Content"
-    ]["objects"]
+    ].copy()
 
     if deleted is not None:
-        queryset = queryset.filter(markForDestruction__isnull=not deleted)
+        result["objects"] = result["objects"].filter(
+            markForDestruction__isnull=not deleted
+        )
     if public is not None:
         # should only include public contents with public cluster
         # if no clusters are specified (e.g. root query)
         if public is True:
             if not clusters:
-                queryset = queryset.filter(
+                result["objects"] = result["objects"].filter(
                     tags__tag="state=public", cluster__public=True
                 )
             else:
-                queryset = queryset.filter(tags__tag="state=public")
+                result["objects"] = result["objects"].filter(
+                    tags__tag="state=public"
+                )
         else:
-            queryset = queryset.exclude(tags__tag="state=public")
+            result["objects"] = result["objects"].exclude(
+                tags__tag="state=public"
+            )
     else:
         # only private or public with cluster public
-        queryset = queryset.filter(
+        result["objects"] = result["objects"].filter(
             ~Q(tags__tag="state=public") | Q(cluster__public=True)
         )
     if clusters:
-        queryset = fetch_by_id(
-            queryset,
+        result["objects"] = fetch_by_id(
+            result["objects"],
             clusters,
             prefix="cluster__",
             limit_ids=None,
         )
     if order_by:
-        queryset = queryset.order_by(*order_by)
-    return _fetch_contents(
-        queryset.distinct(), includeTags=includeTags, excludeTags=excludeTags
+        result["objects"] = result["objects"].order_by(*order_by)
+    result["objects"] = _fetch_contents(
+        result["objects"],
+        includeTags=includeTags,
+        excludeTags=excludeTags,
     )
+    if decrypt:
+
+        def gen(queryset):
+            for content in iter_decrypt_contents(result, queryset=queryset):
+                yield content
+
+        page = Paginator(result["objects"], page_size).get_page(page)
+        page.object_list = list(gen(page.object_list))
+
+        return page
+    else:
+        return Paginator(result["objects"], page_size).get_page(page)
 
 
 @register.filter(takes_context=True, is_safe=True)
-def read_content(context, content, authset=None):
-    if not authset:
-        authset = set(
-            request.headers.get("Authorization", "")
+def read_content_sync(context, content, authorization=None):
+    if not authorization:
+        authorization = set(
+            context["request"]
+            .headers.get("Authorization", "")
             .replace(" ", "")
             .split(",")
         )
-        authset.update(context["request"].GET.getlist("token"))
+        authorization.update(context["request"].GET.getlist("token"))
+    if isinstance(content, str):
+        result = initializeCachedResult(
+            context.request, authset=authorization
+        )["Content"].copy()
+        result["objects"] = ContentFetchQueryset(
+            fetch_by_id(result["objects"], content)
+        )
+        content = next(iter_decrypt_contents(result), None)
     assert isinstance(content, Content), "Can only handle Contents"
-    assert content.tags.filter("type=Text").exists(), "Must be text"
-    assert content.tags.filter(
-        tag="state=public"
-    ).exists(), "Cannot handle encrypted contents yet"
-    mime = content.tags.filter(tag__startswith="mime=").first()
-    if not mime:
-        raise ValueError("Invalid Text")
-    mime = mime.tag.split("=", 1)[1]
-    with content.file.open("rt") as f:
-        text = f.read()
-        if mime == "text/html":
-            return clean(text)
-        else:
-            return escape(text)
+    assert hasattr(content, "read_decrypt"), (
+        "content lacks read_decrypt "
+        "(set by iter_decrypt_contents, decrypt flag)"
+    )
+    decryptqpart = urlencode({"token": authorization}, doseq=True)
+    if (
+        hasattr(content, "read_decrypt")
+        and content.tags.filter(
+            Q(tag="type=Text") | Q(tag="type=File")
+        ).exists()
+    ):
+        name = content.tags.filter(tag__startswith="name=").first()
+        if name:
+            name = name.tag.split("=")[1]
+
+        mime = getattr(content, "read_decrypt_mime", None)
+        if not mime:
+            mime = "application/octet-stream"
+        if mime.startswith("text/"):
+            text = content.read_decrypt()
+            if mime == "text/html":
+                return clean(text)
+            else:
+                return "<pre>{}</pre>".format(escape(text))
+        elif mime.startswith("audio/") or mime.startswith("video/"):
+            return f"""
+<video controls>
+    <source
+        src="{content.link}?decrypt&{decryptqpart}"
+        style="width: 100%"
+    />
+</video>"""
+        elif mime.startswith("image/"):
+            return f"""
+<a href="{content.link}?decrypt&{decryptqpart}">
+        <img
+            loading="lazy"
+            src="{content.link}?decrypt&{decryptqpart}"
+            alt="{name}"
+            style="width: 100%"
+        />
+    </a>"""
+    return f"""<a href="{content.link}?decrypt&{decryptqpart}">Download</a>"""

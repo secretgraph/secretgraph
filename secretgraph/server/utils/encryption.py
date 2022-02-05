@@ -137,11 +137,15 @@ def create_key_maps(contents, keyset=()):
     return content_key_map, transfer_key_map
 
 
-def iter_decrypt_contents(result, decryptset) -> Iterable[Iterable[str]]:
+def iter_decrypt_contents(
+    result, *, queryset=None, decryptset=None
+) -> Iterable[Iterable[str]]:
     from ..actions.update import transfer_value
 
+    if not decryptset:
+        decryptset = result["authset"]
     # copy query
-    content_query = result["objects"].all()
+    content_query = (queryset or result["objects"]).all()
     # per default verifiers=None, so that a failed verifications cannot happen
     content_query.only_direct_fetch_action_trigger = True
     content_map, transfer_map = create_key_maps(content_query, decryptset)
@@ -207,6 +211,22 @@ def iter_decrypt_contents(result, decryptset) -> Iterable[Iterable[str]]:
                     "creating decrypting context failed", exc_info=exc
                 )
                 continue
+            mime = content.tags.filter(tag__startswith="emime=").first()
+            if mime:
+                try:
+                    m = base64.b64decode(mime.tag.split("=")[1])
+                    decryptor = AESGCM(content_map[content.flexid])
+                    content.read_decrypt_mime = decryptor.decrypt(
+                        m[:13], m[13:]
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "failed decoding encrypted mime", exc_info=exc
+                    )
+            else:
+                mime = content.tags.filter(tag__startswith="mime=").first()
+                if mime:
+                    content.read_decrypt_mime = mime.tag.split("=")[1]
 
             def _generator():
                 with content.file.open() as fileob:
@@ -224,6 +244,9 @@ def iter_decrypt_contents(result, decryptset) -> Iterable[Iterable[str]]:
                 result["objects"].fetch_action_trigger(content)
 
         else:
+            mime = content.tags.filter(tag__startswith="mime=").first()
+            if mime:
+                content.read_decrypt_mime = mime.tag.split("=")[1]
 
             def _generator():
                 with content.file.open() as fileob:
@@ -233,4 +256,5 @@ def iter_decrypt_contents(result, decryptset) -> Iterable[Iterable[str]]:
                         chunk = fileob.read(512)
                 result["objects"].fetch_action_trigger(content)
 
-        yield _generator()
+        content.read_decrypt = _generator
+        yield content

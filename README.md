@@ -167,7 +167,7 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   add pagination, limit
+-   transform iter_decrypt_contents into QuerySet (maybe)
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   permissions for mark and delete
 -   update internal doc section
