@@ -4,7 +4,7 @@ description = "A secure, decentral identity graph"
 version = "0.1"
 license = "MIT"
 authors = ["Alexander Kaftan"]
-homepage = "https://spkcspider.net"
+homepage = "https://secretgraph.net"
 readme = "README.md"
 repository = "https://github.com/devkral/secretgraph"
 classifiers = [
@@ -41,6 +41,7 @@ django-webtest = {version="*", optional = true}
 WSGIProxy2 = {version="*", optional = true}
 django-manifest-loader = {version="*", optional = true}
 django-fast-ratelimit = {version="*", optional = true}
+bleach = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
@@ -53,6 +54,7 @@ pylint = "*"
 rope = "*"
 django-manifest-loader = "*"
 django-fast-ratelimit = "*"
+bleach = "*"
 
 
 [tool.poetry.extras]

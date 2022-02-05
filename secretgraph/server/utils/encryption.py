@@ -148,7 +148,9 @@ def iter_decrypt_contents(result, decryptset) -> Iterable[Iterable[str]]:
 
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(
-        Q(tags__tag="type=PublicKey") | Q(id__in=content_map.keys())
+        Q(tags__tag="type=PublicKey")
+        | Q(tags__tag="type=public")
+        | Q(id__in=content_map.keys())
     ).annotate(
         is_transfer=Exists(
             ContentReference.objects.filter(

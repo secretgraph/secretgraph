@@ -1,8 +1,11 @@
 from django import template
 from django.conf import settings
 from django.shortcuts import resolve_url
+from django.utils.html import escape
 
 from django.db.models import Q
+
+from contextvars import ContextVar
 
 from ..models import Content
 from ..utils.auth import initializeCachedResult, fetch_by_id
@@ -10,6 +13,49 @@ from ..actions.view import (
     fetch_clusters as _fetch_clusters,
     fetch_contents as _fetch_contents,
 )
+
+try:
+    from bleach import sanitizer
+
+    _default_allowed_tags = sanitizer.ALLOWED_TAGS + [
+        "img",
+        "p",
+        "br",
+        "sub",
+        "sup",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "pre",
+        "del",
+        "audio",
+        "source",
+        "video",
+    ]
+    _default_allowed_protocols = sanitizer.ALLOWED_PROTOCOLS + [
+        "data",
+        "mailto",
+    ]
+    cleaner = ContextVar("bleach_cleaner", default=None)
+
+    def clean(inp):
+        if not cleaner.get():
+            cleaner.set(
+                sanitizer.Cleaner(
+                    tags=_default_allowed_tags,
+                    attributes=lambda tag, name, value: True,
+                    styles=sanitizer.allowed_css_properties,
+                    protocols=_default_allowed_protocols,
+                )
+            )
+
+        return cleaner.get().clean(inp)
+
+except ImportError:
+
+    clean = escape
+
 
 register = template.Library()
 
@@ -27,6 +73,7 @@ def fetch_clusters(
     order_by=None,
     featured=True,
     public=True,
+    deleted=False,
     search=None,
     includeTags=["type=text/plain", "text/html"],
     excludeTags=None,
@@ -40,6 +87,8 @@ def fetch_clusters(
             Q(flexid_cached__startswith=search)
             | Q(description__icontains=search)
         )
+    if deleted is not None:
+        queryset = queryset.filter(markForDestruction__isnull=not deleted)
 
     if public is not None:
         queryset = queryset.filter(public=public)
@@ -57,6 +106,7 @@ def fetch_contents(
     context,
     order_by=None,
     public=True,
+    deleted=False,
     clusters=None,
     includeTags=["type=text/plain", "type=text/html"],
     excludeTags=None,
@@ -65,6 +115,9 @@ def fetch_contents(
     queryset = initializeCachedResult(context.request, authset=authorization)[
         "Content"
     ]["objects"]
+
+    if deleted is not None:
+        queryset = queryset.filter(markForDestruction__isnull=not deleted)
     if public is not None:
         # should only include public contents with public cluster
         # if no clusters are specified (e.g. root query)
@@ -96,12 +149,27 @@ def fetch_contents(
     )
 
 
-@register.filter()
-def read_content(content):
+@register.filter(takes_context=True, is_safe=True)
+def read_content(context, content, authset=None):
+    if not authset:
+        authset = set(
+            request.headers.get("Authorization", "")
+            .replace(" ", "")
+            .split(",")
+        )
+        authset.update(context["request"].GET.getlist("token"))
     assert isinstance(content, Content), "Can only handle Contents"
     assert content.tags.filter("type=Text").exists(), "Must be text"
     assert content.tags.filter(
-        "state=public"
-    ).exists(), "Cannot handle encrypted contents"
+        tag="state=public"
+    ).exists(), "Cannot handle encrypted contents yet"
+    mime = content.tags.filter(tag__startswith="mime=").first()
+    if not mime:
+        raise ValueError("Invalid Text")
+    mime = mime.tag.split("=", 1)[1]
     with content.file.open("rt") as f:
-        return f.read()
+        text = f.read()
+        if mime == "text/html":
+            return clean(text)
+        else:
+            return escape(text)

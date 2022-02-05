@@ -159,6 +159,7 @@ def fetch_contents(
     query,
     actions,
     id=None,
+    limit_ids=1,
     includeTags=None,
     excludeTags=None,
     contentHashes=None,
@@ -169,7 +170,9 @@ def fetch_contents(
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
     if id:
-        query = fetch_by_id(query, id, check_content_hash=True)
+        query = fetch_by_id(
+            query, id, check_content_hash=True, limit_ids=limit_ids
+        )
     if includeTags or excludeTags or contentHashes:
         incl_filters = Q()
         hash_filters = Q()

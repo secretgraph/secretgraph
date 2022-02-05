@@ -167,8 +167,8 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   purify html
--   implement shareFn and ShareDialog, COnfig has Special ShareDialog
+-   add pagination, limit
+-   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   permissions for mark and delete
 -   update internal doc section
 -   replace json-editor by ActionDialog equivalent

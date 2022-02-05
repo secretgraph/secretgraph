@@ -210,6 +210,7 @@ class ContentView(AllowCORSMixin, FormView):
             result["objects"],
             result["actions"],
             kwargs.get("id"),
+            limit_ids=10,
             includeTags=request.GET.getlist("inclTags"),
             excludeTags=request.GET.getlist("exclTags"),
             contentHashes=request.GET.getlist("contentHash"),
