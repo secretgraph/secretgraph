@@ -71,7 +71,8 @@ class ContentFetchQueryset(QuerySet):
         query=None,
         actions=None,
         only_direct_fetch_action_trigger=False,
-        **kwargs
+        ttl_hours=24,
+        **kwargs,
     ):
         if actions is None:
             actions = getattr(query, "actions", None)
@@ -80,6 +81,7 @@ class ContentFetchQueryset(QuerySet):
         self.only_direct_fetch_action_trigger = (
             only_direct_fetch_action_trigger
         )
+        self.ttl_hours = ttl_hours
         kwargs["model"] = kwargs.get("model", None) or query.model
         super().__init__(query=query, **kwargs)
 
@@ -90,6 +92,7 @@ class ContentFetchQueryset(QuerySet):
         """
         c = super()._clone()
         c.actions = self.actions
+        c.ttl_hours = self.ttl_hours
         c.only_direct_fetch_action_trigger = (
             self.only_direct_fetch_action_trigger
         )
@@ -103,7 +106,7 @@ class ContentFetchQueryset(QuerySet):
         assert self.actions is not None, "actions is None"
         if self.only_direct_fetch_action_trigger and not direct:
             return objects
-        if objects is None:
+        if objects is None or not self.ttl_hours:
             return objects
         elif isinstance(objects, (Content,)):
             used_actions = ContentAction.objects.filter(
@@ -118,7 +121,7 @@ class ContentFetchQueryset(QuerySet):
             )
         if used_actions:
             used_actions.update(used=True)
-            markForDestruction = timezone.now() + td(hours=8)
+            markForDestruction = timezone.now() + td(hours=self.ttl_hours)
             Content.objects.filter(
                 Q(markForDestruction=None)
                 | Q(markForDestruction__gt=markForDestruction),

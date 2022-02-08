@@ -8,9 +8,12 @@ let wrapper = document.getElementById('secretgraph-webclient')
 const defaultPath: string | undefined = wrapper
     ? wrapper.dataset.graphqlPath
     : undefined
+const homeUrl: string | undefined = wrapper
+    ? wrapper.dataset.homeUrl
+    : undefined
 ReactDOM.render(
     <StrictMode>
-        <MainPage defaultPath={defaultPath} />
+        <MainPage defaultPath={defaultPath} homeUrl={homeUrl} />
     </StrictMode>,
     wrapper
 )

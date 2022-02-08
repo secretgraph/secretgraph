@@ -1,7 +1,8 @@
-{% extends "secretgraph/base.html" %}
+{% extends "secretgraph_proxy/proxy_base.html" %}
 {% load manifest %}
 {% load secretgraph %}
 {% block styles %}
+{{block.super}}
 {% manifest_match '*.css' '<link rel="stylesheet" href="{match}"/>' %}
 {% endblock %}
 {% block head_scripts %}
@@ -12,5 +13,5 @@
 {% endblock %}
 
 {% block layout %}
-<div id="secretgraph-webclient" data-graphql-path="{% secretgraph_path %}"></div>
+<div id="secretgraph-webclient" home-url="{% url 'secretgraph_proxy:home' %}" data-graphql-path="{% secretgraph_path %}"></div>
 {% endblock %}

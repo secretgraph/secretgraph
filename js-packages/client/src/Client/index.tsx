@@ -17,6 +17,7 @@ import { theme as themeDefinition } from './theme'
 
 type Props = {
     defaultPath?: string
+    homeUrl?: string
 }
 
 function updateState<T>(state: T, update: Partial<T>): T {
@@ -24,9 +25,8 @@ function updateState<T>(state: T, update: Partial<T>): T {
 }
 type updateStateType<T> = (state: T, update: Partial<T>) => T
 
-function Definitions(props: Props) {
+function Definitions({ defaultPath, homeUrl }: Props) {
     const query = new URLSearchParams(document.location.search)
-    const { defaultPath } = props
     const [openSidebar, _setOpenSidebar] = React.useState(() => {
         return JSON.parse(sessionStorage.getItem('openSidebar') || 'true')
     })

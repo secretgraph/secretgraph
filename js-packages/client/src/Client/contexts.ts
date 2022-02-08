@@ -67,6 +67,8 @@ export const ActiveUrl = createContext<{
     setActiveUrl: stubFn,
 })
 
+export const HomeUrl = createContext<string>('')
+
 export const OpenSidebar = createContext<{
     open: boolean
     setOpen: (arg: boolean) => void

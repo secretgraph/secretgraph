@@ -1,5 +1,6 @@
 import { ApolloClient, useApolloClient } from '@apollo/client'
 import AccountCircle from '@mui/icons-material/AccountCircle'
+import HomeIcon from '@mui/icons-material/Home'
 import MenuIcon from '@mui/icons-material/Menu'
 import AppBar from '@mui/material/AppBar'
 import Button from '@mui/material/Button'
@@ -36,6 +37,7 @@ export default function HeaderBar() {
     const [loadingExport, setLoadingExport] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config, updateConfig } = React.useContext(Contexts.Config)
+    const homeUrl = React.useContext(Contexts.HomeUrl)
     const { baseClient, itemClient, navClient } = React.useContext(
         Contexts.Clients
     )
@@ -234,6 +236,15 @@ export default function HeaderBar() {
                 </DialogActions>
             </Dialog>
             <Toolbar>
+                <IconButton
+                    edge="start"
+                    onClick={() => window.history.pushState({ url: homeUrl })}
+                    color="inherit"
+                    aria-label="menu"
+                    size="large"
+                >
+                    <HomeIcon />
+                </IconButton>
                 {sidebarButton}
                 <Typography
                     variant="h6"

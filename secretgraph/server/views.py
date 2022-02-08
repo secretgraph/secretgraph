@@ -197,7 +197,8 @@ class ContentView(AllowCORSMixin, FormView):
             fetch_by_id(result["objects"], id, limit_ids=limit_ids)
             .distinct()
             .query,
-            result["actions"],
+            actions=result["actions"],
+            ttl_hours=2,
         )
         count = result["objects"].count()
         if not count:
@@ -228,6 +229,7 @@ class ContentView(AllowCORSMixin, FormView):
             content = ContentFetchQueryset(
                 fetch_by_id(result["objects"], kwargs["id"]).query,
                 result["actions"],
+                ttl_hours=24 if "keys" in request.GET else 2,
             ).first()
         finally:
             if not content:
