@@ -15,7 +15,6 @@ import {
     generateActionMapper,
     transformActions,
 } from '@secretgraph/misc/utils/action'
-import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import { authInfoFromConfig, saveConfig } from '@secretgraph/misc/utils/config'
 import {
     findWorkingHashAlgorithms,
@@ -50,7 +49,6 @@ async function extractCombinedInfo({
     tokens: string[]
     hashAlgorithms: string[]
 }) {
-    const { name, note } = extractNameNote(node.description)
     const known = node && url && config.hosts[url]?.clusters[node.id]?.hashes
     const mapper = await generateActionMapper({
         config,
@@ -62,8 +60,8 @@ async function extractCombinedInfo({
     })
     return {
         mapper,
-        name: name || '',
-        note: note || '',
+        name: node.name || '',
+        description: node.description || '',
         public: node.public,
         featured: node.featured,
         url,
@@ -72,9 +70,8 @@ async function extractCombinedInfo({
 }
 
 interface ClusterInternProps {
-    readonly description?: string
     readonly name: string
-    readonly note: string
+    readonly description: string
     readonly featured?: boolean
     readonly public?: boolean
     url: string
@@ -105,7 +102,7 @@ const ClusterIntern = ({
     const { updateSearchCtx } = React.useContext(Contexts.Search)
     React.useLayoutEffect(() => {
         updateMainCtx({ title: props.name || '' })
-    }, [props.name, props.note])
+    }, [props.name])
 
     const actions = React.useMemo(() => {
         const actions: (ActionInputEntry | CertificateInputEntry)[] = []
@@ -127,7 +124,7 @@ const ClusterIntern = ({
                         update: entry.hasUpdate,
                         delete: false,
                         readonly: false,
-                        locked: props.description !== undefined,
+                        locked: !!mainCtx.item,
                     })
                 }
             } else {
@@ -160,15 +157,14 @@ const ClusterIntern = ({
             initialValues={{
                 actions,
                 name: props.name || '',
-                note: props.note || '',
+                description: props.description || '',
                 featured: !!props.featured,
                 public: !!props.public,
             }}
             onSubmit={async (
-                { actions: actionsNew, name, note, ...values },
+                { actions: actionsNew, name, description, ...values },
                 { setSubmitting, resetForm }
             ) => {
-                const description = [name, note].join('\u001F')
                 let clusterResponse: FetchResult<any>
                 const {
                     hashes,
@@ -187,6 +183,7 @@ const ClusterIntern = ({
                         client: itemClient,
                         updateId: mainCtx.updateId as string,
                         actions: finishedActions,
+                        name,
                         description,
                         authorization: mainCtx.tokens,
                         public: values.public,
@@ -340,9 +337,9 @@ const ClusterIntern = ({
                             <Grid item xs={12}>
                                 <FastField
                                     component={FormikTextField}
-                                    name="note"
+                                    name="description"
                                     type="text"
-                                    label="Note"
+                                    label="Description"
                                     fullWidth
                                     multiline
                                     disabled={disabled || loading}
@@ -515,7 +512,7 @@ const AddCluster = () => {
             if (active) {
                 setData({
                     name: '',
-                    note: '',
+                    description: '',
                     featured: false,
                     public: false,
                     mapper: {

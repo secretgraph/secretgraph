@@ -1,0 +1,9 @@
+{% extends "secretgraph_proxy/proxy_base.html" %}
+{% load secretgraph %}
+
+{% block content %}
+{% fetch_contents public=True as contents %}
+{% for content in contents %}
+<a href="{{content.flexid}}">{{ content.flexid }}</a>
+{% endfor %}
+{% endblock %}

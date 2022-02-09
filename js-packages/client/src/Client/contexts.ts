@@ -67,7 +67,10 @@ export const ActiveUrl = createContext<{
     setActiveUrl: stubFn,
 })
 
-export const HomeUrl = createContext<string>('')
+export const External = createContext<{
+    defaultPath: string
+    homeUrl?: string
+}>({ defaultPath: '' })
 
 export const OpenSidebar = createContext<{
     open: boolean

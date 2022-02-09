@@ -91,47 +91,51 @@ function Definitions({ defaultPath, homeUrl }: Props) {
     }, [config ? config.baseUrl : ''])
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <ThemeProvider theme={themeDefinition}>
-                <Contexts.OpenSidebar.Provider
-                    value={{
-                        open: openSidebar,
-                        setOpen: setOpenSidebar,
-                    }}
-                >
-                    <Contexts.Clients.Provider
+        <Contexts.External.Provider
+            value={{ defaultPath: defaultPath ?? '/graphql', homeUrl }}
+        >
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <ThemeProvider theme={themeDefinition}>
+                    <Contexts.OpenSidebar.Provider
                         value={{
-                            navClient,
-                            itemClient,
-                            baseClient: configClient,
+                            open: openSidebar,
+                            setOpen: setOpenSidebar,
                         }}
                     >
-                        <Contexts.ActiveUrl.Provider
-                            value={{ activeUrl, setActiveUrl }}
+                        <Contexts.Clients.Provider
+                            value={{
+                                navClient,
+                                itemClient,
+                                baseClient: configClient,
+                            }}
                         >
-                            <Contexts.Main.Provider
-                                value={{ mainCtx, updateMainCtx }}
+                            <Contexts.ActiveUrl.Provider
+                                value={{ activeUrl, setActiveUrl }}
                             >
-                                <Contexts.Search.Provider
-                                    value={{ searchCtx, updateSearchCtx }}
+                                <Contexts.Main.Provider
+                                    value={{ mainCtx, updateMainCtx }}
                                 >
-                                    <Contexts.Config.Provider
-                                        value={{ config, updateConfig }}
+                                    <Contexts.Search.Provider
+                                        value={{ searchCtx, updateSearchCtx }}
                                     >
-                                        <Contexts.Snackbar.Provider
-                                            value={{ message, sendMessage }}
+                                        <Contexts.Config.Provider
+                                            value={{ config, updateConfig }}
                                         >
-                                            <CssBaseline />
-                                            <Main />
-                                        </Contexts.Snackbar.Provider>
-                                    </Contexts.Config.Provider>
-                                </Contexts.Search.Provider>
-                            </Contexts.Main.Provider>
-                        </Contexts.ActiveUrl.Provider>
-                    </Contexts.Clients.Provider>
-                </Contexts.OpenSidebar.Provider>
-            </ThemeProvider>
-        </LocalizationProvider>
+                                            <Contexts.Snackbar.Provider
+                                                value={{ message, sendMessage }}
+                                            >
+                                                <CssBaseline />
+                                                <Main />
+                                            </Contexts.Snackbar.Provider>
+                                        </Contexts.Config.Provider>
+                                    </Contexts.Search.Provider>
+                                </Contexts.Main.Provider>
+                            </Contexts.ActiveUrl.Provider>
+                        </Contexts.Clients.Provider>
+                    </Contexts.OpenSidebar.Provider>
+                </ThemeProvider>
+            </LocalizationProvider>
+        </Contexts.External.Provider>
     )
 }
 

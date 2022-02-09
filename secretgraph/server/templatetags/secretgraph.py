@@ -7,7 +7,7 @@ from django.shortcuts import resolve_url
 from django.utils.html import escape
 from django.core.paginator import Paginator
 
-from django.db.models import Q
+from django.db.models import Q, Subquery
 
 from ..models import Content
 from ..utils.auth import initializeCachedResult, fetch_by_id
@@ -81,7 +81,7 @@ def fetch_clusters(
     public=True,
     deleted=False,
     search=None,
-    includeTags=["type=text/plain", "text/html"],
+    includeTags=None,
     excludeTags=None,
     authorization=None,
 ):
@@ -105,8 +105,12 @@ def fetch_clusters(
     return Paginator(
         _fetch_clusters(
             queryset.distinct(),
-            includeTags=includeTags,
-            excludeTags=excludeTags,
+            includeTags=includeTags.split(",")
+            if isinstance(includeTags, str)
+            else includeTags,
+            excludeTags=excludeTags.split(",")
+            if isinstance(excludeTags, str)
+            else excludeTags,
         ),
         page_size,
     ).get_page(page)
@@ -121,9 +125,9 @@ def fetch_contents(
     public=True,
     deleted=False,
     clusters=None,
-    includeTags=["type=text/plain", "type=text/html"],
-    decrypt=True,
+    includeTags=None,
     excludeTags=None,
+    decrypt=True,
     authorization=None,
 ):
     result = initializeCachedResult(context.request, authset=authorization)[
@@ -158,7 +162,7 @@ def fetch_contents(
     if clusters:
         result["objects"] = fetch_by_id(
             result["objects"],
-            clusters,
+            clusters.split(",") if isinstance(clusters, str) else clusters,
             prefix="cluster__",
             limit_ids=None,
         )
@@ -166,8 +170,13 @@ def fetch_contents(
         result["objects"] = result["objects"].order_by(*order_by)
     result["objects"] = _fetch_contents(
         result["objects"],
-        includeTags=includeTags,
-        excludeTags=excludeTags,
+        result["actions"],
+        includeTags=includeTags.split(",")
+        if isinstance(includeTags, str)
+        else includeTags,
+        excludeTags=excludeTags.split(",")
+        if isinstance(excludeTags, str)
+        else excludeTags,
     )
     if decrypt:
 
@@ -176,7 +185,15 @@ def fetch_contents(
                 yield content
 
         page = Paginator(result["objects"], page_size).get_page(page)
-        page.object_list = list(gen(page.object_list))
+        page.object_list = list(
+            gen(
+                (
+                    result["objects"].filter(
+                        pk__in=Subquery(page.object_list.values("pk"))
+                    )
+                )
+            )
+        )
 
         return page
     else:

@@ -246,7 +246,8 @@ class ClusterMutation(relay.ClientIDMutation):
     ):
         if cluster:
             # TODO: permission management
-            cluster.pop("featured", None)
+            # cluster.pop("featured", None)
+            pass
         if id:
             if not cluster:
                 raise ValueError("no cluster update data")

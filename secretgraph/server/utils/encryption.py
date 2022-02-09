@@ -87,7 +87,7 @@ def create_key_maps(contents, keyset=()):
     for ref in reference_query.annotate(
         matching_tag=Subquery(
             ContentTag.objects.filter(
-                source_id=OuterRef("pk"), tag__in=key_map1.keys()
+                content_id=OuterRef("pk"), tag__in=key_map1.keys()
             ).values("tag")[:1]
         )
     ):
@@ -131,9 +131,9 @@ def create_key_maps(contents, keyset=()):
                     continue
         if shared_key:
             if ref.group == "key":
-                content_key_map[ref.source_id] = shared_key
+                content_key_map[ref.content_id] = shared_key
             else:
-                transfer_key_map[ref.source_id] = shared_key
+                transfer_key_map[ref.content_id] = shared_key
     return content_key_map, transfer_key_map
 
 
@@ -145,7 +145,7 @@ def iter_decrypt_contents(
     if not decryptset:
         decryptset = result["authset"]
     # copy query
-    content_query = (queryset or result["objects"]).all()
+    content_query = queryset or result["objects"]
     # per default verifiers=None, so that a failed verifications cannot happen
     content_query.only_direct_fetch_action_trigger = True
     content_map, transfer_map = create_key_maps(content_query, decryptset)

@@ -37,7 +37,7 @@ export default function HeaderBar() {
     const [loadingExport, setLoadingExport] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config, updateConfig } = React.useContext(Contexts.Config)
-    const homeUrl = React.useContext(Contexts.HomeUrl)
+    const { homeUrl } = React.useContext(Contexts.External)
     const { baseClient, itemClient, navClient } = React.useContext(
         Contexts.Clients
     )
@@ -156,7 +156,6 @@ export default function HeaderBar() {
     if (!open && config) {
         sidebarButton = (
             <IconButton
-                edge="start"
                 onClick={() => setOpen(true)}
                 color="inherit"
                 aria-label="menu"
@@ -236,15 +235,6 @@ export default function HeaderBar() {
                 </DialogActions>
             </Dialog>
             <Toolbar>
-                <IconButton
-                    edge="start"
-                    onClick={() => window.history.pushState({ url: homeUrl })}
-                    color="inherit"
-                    aria-label="menu"
-                    size="large"
-                >
-                    <HomeIcon />
-                </IconButton>
                 {sidebarButton}
                 <Typography
                     variant="h6"
@@ -301,6 +291,13 @@ export default function HeaderBar() {
                         onClick={logout}
                     >
                         Logout
+                    </MenuItem>
+
+                    <MenuItem
+                        style={{ display: !homeUrl ? 'none' : undefined }}
+                        href={homeUrl || ''}
+                    >
+                        Home
                     </MenuItem>
                 </Menu>
             </Toolbar>

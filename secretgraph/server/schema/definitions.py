@@ -577,6 +577,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     updateId = graphene.UUID(required=True)
     # MAYBE: reference user directly if possible
     user = relay.GlobalID(required=False)
+    name = graphene.String(required=False)
     description = graphene.String(required=False)
 
     @classmethod
@@ -631,6 +632,11 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         if self.limited:
             return []
         return ActionMixin.resolve_availableActions(self, info)
+
+    def resolve_name(self, info):
+        if self.limited:
+            return None
+        return self.name
 
     def resolve_description(self, info):
         if self.limited:
@@ -718,6 +724,7 @@ class ClusterConnectionField(DjangoConnectionField):
         if search:
             queryset = queryset.filter(
                 Q(flexid_cached__startswith=search)
+                | Q(name__icontains=search)
                 | Q(description__icontains=search)
             )
 

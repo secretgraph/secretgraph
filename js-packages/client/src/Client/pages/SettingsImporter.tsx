@@ -68,10 +68,7 @@ function SettingsImporter() {
     ]
     const [loginUrl, setLoginUrl] = React.useState(undefined)
     const [hasFile, setHasFile] = React.useState(false)
-    const mainElement = document.getElementById('content-main')
-    const defaultPath: string | undefined = mainElement
-        ? mainElement.dataset.graphqlPath
-        : undefined
+    const { defaultPath } = React.useContext(Contexts.External)
     const { sendMessage } = React.useContext(Contexts.Snackbar)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)

@@ -50,7 +50,7 @@ import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 
-const decryptSet = new Set(['mime', 'ename'])
+const encryptSet = new Set(['ename'])
 const ViewWidget = ({
     arrayBuffer,
     mime: mimeNew,
@@ -424,11 +424,7 @@ const FileIntern = ({
                                     : `ename=${Buffer.from(
                                           values.name
                                       ).toString('base64')}`,
-                                values.state == 'public'
-                                    ? `mime=${value.type}`
-                                    : `mime=${Buffer.from(value.type).toString(
-                                          'base64'
-                                      )}`,
+                                `mime=${value.type}`,
                                 `state=${values.state}`,
                                 `type=${
                                     value.type.startsWith('text/')
@@ -438,7 +434,7 @@ const FileIntern = ({
                             ].concat(
                                 values.keywords.map((val) => `keyword=${val}`)
                             ),
-                            encryptTags: new Set(['ename', 'mime']),
+                            encryptTags: encryptSet,
                             privkeys: await Promise.all(
                                 Object.values(privkeys)
                             ),
@@ -1085,7 +1081,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
                 blobOrTokens: mainCtx.tokens,
-                decrypt: decryptSet,
+                decrypt: encryptSet,
             })
             if (!obj) {
                 console.error('failed decoding')

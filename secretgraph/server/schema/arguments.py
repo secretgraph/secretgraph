@@ -96,6 +96,7 @@ class PushContentInput(graphene.InputObjectType):
 
 
 class ClusterInput(graphene.InputObjectType):
+    name = graphene.String(required=False)
     description = graphene.String(required=False)
     public = graphene.Boolean(required=False)
     featured = graphene.Boolean(required=False)

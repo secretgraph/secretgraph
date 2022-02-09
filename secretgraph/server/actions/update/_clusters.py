@@ -23,6 +23,9 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
     if "featured" in objdata:
         cluster.featured = bool(objdata["featured"])
 
+    if "name" in objdata:
+        cluster.name = objdata["name"] or ""
+
     if "description" in objdata:
         cluster.description = objdata["description"] or ""
 

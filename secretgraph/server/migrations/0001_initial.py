@@ -40,6 +40,12 @@ class Migration(migrations.Migration):
                         blank=True, max_length=80, null=True, unique=True
                     ),
                 ),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True, default="", max_length=255, null=False
+                    ),
+                ),
                 ("description", models.TextField()),
                 ("public", models.BooleanField(blank=True, default=False)),
                 ("featured", models.BooleanField(blank=True, default=False)),
@@ -56,7 +62,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         default="",
                         help_text="injection group: group which injected keys must be used for mutations with content/cluster",
-                        max_length=10,
+                        max_length=50,
                     ),
                 ),
                 (
@@ -166,7 +172,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         default="",
                         help_text="ContentReference group: references are clustered in groups. They are used to signal different functions of the connection",
-                        max_length=255,
+                        max_length=50,
                     ),
                 ),
                 ("extra", models.TextField(blank=True, default="")),
@@ -218,7 +224,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         default="",
                         help_text="ContentAction group: ContentActions are clustered in groups. They are used to signal different functions of the connection",
-                        max_length=255,
+                        max_length=50,
                     ),
                 ),
                 (

@@ -8,6 +8,11 @@
         background-color: #efefef;
         grid-area: main;
     }
+    .logo {
+        font-size: 30px;
+        font-weight:900;
+        padding-top: 0;
+    }
     header {
         grid-area: head;
         width: 100vw;
@@ -22,21 +27,30 @@
 
     header > nav *{
         color: #FFF;
-        font-size: large;
+        font-size: 30px;
         padding: 4px;
     }
 
     .sidebar {
         grid-area: nav;
-        border-right: solid rgb(44, 113, 202);
+        border-right: solid 2px #000;
         display: flex;
         flex-direction: column;
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+    .sidebar > * {
+        min-height: 20px;
+        border-bottom: solid 1px #000;
+        vertical-align: middle;
+        text-align: left;
+        padding: 4px;
+    }
+    .sidebar > *:hover {
+        background-color: #efefef;
+        cursor: pointer;
     }
 
-    .logo img {
-        width: 30px;
-        height: 30px;
-    }
     .frame {
         height: 100vh;
         display: grid;
@@ -56,21 +70,21 @@
 {% endblock %}
 
 {% block layout %}
+{% fetch_clusters public=True featured=True as clusters %}
 <div class="frame frame-shifted">
     <header>
         <nav>
             <a class="logo" href="{% url 'secretgraph_proxy:home' %}">
-                <img src="{% static 'secretgraph/favicon.svg' %}" />
+                ⌂
             </a>
             <div style="flex-grow: 1;"></div>
             <a href="{% url 'secretgraph_proxy:client' %}" target="secretgraph-client">Webclient</a>
         </nav>
     </header>
     <nav class="sidebar">
-        <ul>
-            <li>side link 1</li>
-            <li> side link 2 </li>
-        </ul>
+        {% for cluster in clusters %}
+            <a href="{% url "secretgraph_proxy:cluster" id=cluster.flexid %}">{{cluster.name}}</a>
+        {% endfor %}
     </nav>
     <main>
         {% block content %}

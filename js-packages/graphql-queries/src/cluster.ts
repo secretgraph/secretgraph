@@ -40,6 +40,7 @@ export const clusterFeedQuery = gql`
                         deleted
                         updateId
                         id
+                        name
                         description
                         availableActions {
                             type
@@ -108,6 +109,7 @@ export const getClusterQuery = gql`
                     id
                     deleted
                     group
+                    name
                     description
                     public
                     featured
@@ -126,6 +128,7 @@ export const getClusterQuery = gql`
 
 export const createClusterMutation = gql`
     mutation clusterCreateMutation(
+        $name: String
         $description: String
         $public: Boolean
         $featured: Boolean
@@ -139,6 +142,7 @@ export const createClusterMutation = gql`
         updateOrCreateCluster(
             input: {
                 cluster: {
+                    name: $name
                     description: $description
                     actions: $actions
                     featured: $featured
@@ -157,6 +161,7 @@ export const createClusterMutation = gql`
             cluster {
                 id
                 group
+                name
                 description
                 public
                 featured
@@ -177,6 +182,7 @@ export const updateClusterMutation = gql`
     mutation clusterUpdateMutation(
         $id: ID!
         $updateId: ID!
+        $name: String
         $description: String
         $public: Boolean
         $featured: Boolean
@@ -188,6 +194,7 @@ export const updateClusterMutation = gql`
                 id: $id
                 updateId: $updateId
                 cluster: {
+                    name: $name
                     description: $description
                     actions: $actions
                     featured: $featured
@@ -199,6 +206,7 @@ export const updateClusterMutation = gql`
             cluster {
                 id
                 group
+                name
                 description
                 updateId
                 public

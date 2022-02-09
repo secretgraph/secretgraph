@@ -9,7 +9,6 @@ import ReplayIcon from '@mui/icons-material/Replay'
 import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
 import { getClusterQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
@@ -42,7 +41,8 @@ export default React.memo(function ActiveCluster({
     React.useEffect(() => {
         if (dataUnfinished && dataUnfinished.secretgraph.node) {
             setData({
-                ...extractNameNote(dataUnfinished.secretgraph.node.description),
+                name: dataUnfinished.secretgraph.node.name,
+                description: dataUnfinished.secretgraph.node.description,
                 node: dataUnfinished.secretgraph.node,
             })
         }
@@ -60,7 +60,7 @@ export default React.memo(function ActiveCluster({
             deleted={data?.node?.deleted}
             marked
             disabled={loading}
-            title={data?.note}
+            title={data?.description}
             icon={<GroupWorkIcon fontSize="small" />}
             label={data?.name ? data?.name : `...${cluster.slice(-48)}`}
             onClick={(ev) => {

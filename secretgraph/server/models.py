@@ -67,6 +67,12 @@ class FlexidModel(models.Model):
 class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
     limited = False
+    name: str = models.CharField(
+        max_length=255,
+        default="",
+        null=False,
+        blank=True,
+    )
     description: str = models.TextField()
     # field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
@@ -78,7 +84,7 @@ class Cluster(FlexidModel):
     # injection group (which clusters should be injected)
     group: str = models.CharField(
         default="",
-        max_length=10,
+        max_length=50,
         blank=True,
         null=False,
         help_text=injection_group_help,
@@ -204,7 +210,7 @@ class ContentAction(models.Model):
     )
     used: bool = models.BooleanField(default=False, blank=True)
     group: str = models.CharField(
-        max_length=255,
+        max_length=50,
         null=False,
         default="",
         blank=True,
@@ -293,7 +299,7 @@ class ContentReference(models.Model):
         Content, related_name="referencedBy", on_delete=models.CASCADE
     )
     group: str = models.CharField(
-        max_length=255,
+        max_length=50,
         default="",
         null=False,
         blank=True,

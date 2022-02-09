@@ -10,7 +10,6 @@ import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
@@ -86,7 +85,6 @@ export default React.memo(function Clusters({
         }
         const ret: JSX.Element[] = []
         for (const { node } of data.clusters.clusters.edges) {
-            const { name, note } = extractNameNote(node.description)
             // TODO: check availability of extra cluster permissions. Merge authInfos
             // for now assume yes if manage type was not specified
             const deleteable =
@@ -105,13 +103,13 @@ export default React.memo(function Clusters({
                     goTo={goTo}
                     cluster={node.id}
                     authinfo={authinfo}
-                    title={note || undefined}
+                    title={node.description || undefined}
                     deleted={node.deleted}
                     marked={mainCtx.item == node.id}
                     // state public needs no key_hash
                     injectInclude={['state=public']}
                     icon={<GroupWorkIcon fontSize="small" />}
-                    label={name ? name : `...${node.id.slice(-48)}`}
+                    label={node.name ? node.name : `...${node.id.slice(-48)}`}
                     nodeId={`${props.nodeId}-${nodeId}`}
                     key={nodeId}
                     onClick={(ev) => ev.preventDefault()}

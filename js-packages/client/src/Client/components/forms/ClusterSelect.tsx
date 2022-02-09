@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
-import { extractNameNote } from '@secretgraph/misc/utils/cluster'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
@@ -45,7 +44,7 @@ export default function ClusterSelect<
     const { ids, labelMap } = React.useMemo(() => {
         const ret: {
             ids: string[]
-            labelMap: { [key: string]: { name: string; note: string } }
+            labelMap: { [key: string]: { name: string; description: string } }
         } = {
             ids: [],
             labelMap: {},
@@ -57,10 +56,12 @@ export default function ClusterSelect<
             if (!node.id) {
                 console.debug('invalid node', node)
             } else {
-                const { name, note } = extractNameNote(node.description)
                 ret.ids.push(node.id)
-                if (name) {
-                    ret.labelMap[node.id] = { name, note: note || '' }
+                if (node.name) {
+                    ret.labelMap[node.id] = {
+                        name: node.name,
+                        description: node.description,
+                    }
                 }
             }
         }
