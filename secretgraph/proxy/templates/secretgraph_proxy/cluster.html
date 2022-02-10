@@ -4,6 +4,6 @@
 {% block content %}
 {% fetch_contents public=True as contents %}
 {% for content in contents %}
-<a href="{{content.flexid}}">{{ content.flexid }}</a>
+    <a href="{% url "secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name }}</a>
 {% endfor %}
 {% endblock %}

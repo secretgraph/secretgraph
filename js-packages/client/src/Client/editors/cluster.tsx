@@ -216,6 +216,7 @@ const ClusterIntern = ({
                     clusterResponse = await createCluster({
                         client: itemClient,
                         actions: finishedActions,
+                        name,
                         description,
                         hashAlgorithm,
                         publicKey,

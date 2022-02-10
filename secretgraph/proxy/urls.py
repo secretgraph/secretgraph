@@ -35,6 +35,20 @@ urlpatterns = [
         name="cluster",
     ),
     path(
+        "content/<slug:id>/",
+        TemplateView.as_view(
+            template_name="secretgraph_proxy/content.html",
+            extra_context={
+                "includeTags": [
+                    "mime=text/plain",
+                    "mime=text/html",
+                    "mime=image/",
+                ]
+            },
+        ),
+        name="content",
+    ),
+    path(
         "client/",
         TemplateView.as_view(template_name="secretgraph_proxy/webclient.html"),
         name="client",

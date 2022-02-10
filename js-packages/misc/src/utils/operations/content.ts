@@ -284,6 +284,7 @@ export async function updateContent({
 interface decryptContentObjectInterface
     extends Omit<Interfaces.CryptoGCMOutInterface, 'nonce' | 'key'> {
     tags: { [tag: string]: string[] }
+    encryptedTags: Set<string>
     updateId: string
     nodeData: any
 }
@@ -337,6 +338,7 @@ export async function decryptContentObject({
             tags: await extractUnencryptedTags({
                 tags: nodeData.tags,
             }),
+            encryptedTags: new Set(),
             updateId: nodeData.updateId,
             nodeData,
         }
@@ -372,8 +374,8 @@ export async function decryptContentObject({
                 nonce: _node.nonce,
                 data: arrPromise,
             })),
+            ...(await extractTags({ key, tags: nodeData.tags, decrypt })),
             updateId: nodeData.updateId,
-            tags: await extractTags({ key, tags: nodeData.tags, decrypt }),
             nodeData,
         }
     } catch (exc) {

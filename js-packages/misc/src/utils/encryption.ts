@@ -688,20 +688,29 @@ export async function deparseTag(options: {
     return `${tag}=${data as string}`
 }
 
-export async function decryptTagRaw(options: Interfaces.CryptoGCMInInterface) {
-    const data = await unserializeToArrayBuffer(options.data)
+export async function decryptTagRaw(
+    options: Interfaces.CryptoGCMInInterface
+): Promise<{ data: ArrayBufferLike; encrypted: boolean }> {
+    let data
+    try {
+        data = await unserializeToArrayBuffer(options.data)
+    } catch (error) {
+        return {
+            data: utf8encoder.encode(options.data as string),
+            encrypted: false,
+        }
+    }
     const nonce = new Uint8Array(data.slice(0, 13))
     const realdata = data.slice(13)
-    try {
-        return (
+    return {
+        data: (
             await decryptAESGCM({
                 ...options,
                 data: realdata,
                 nonce,
             })
-        ).data
-    } catch (error) {
-        return await unserializeToArrayBuffer(data)
+        ).data,
+        encrypted: true,
     }
 }
 
@@ -714,7 +723,7 @@ export async function decryptTag(
         /^([^=]+?)=(.*)/
     ) as string[]
     return {
-        data: await decryptTagRaw({ ...options, data: b64data }),
+        ...(await decryptTagRaw({ ...options, data: b64data })),
         tag,
     }
 }
@@ -752,8 +761,9 @@ export async function extractTags(
             | Iterable<string | PromiseLike<string>>
         readonly decrypt: Set<string>
     }
-): Promise<{ [tag: string]: string[] }> {
+): Promise<{ tags: { [tag: string]: string[] }; encryptedTags: Set<string> }> {
     const tags: { [tag: string]: string[] } = {}
+    const encryptedTags = new Set<string>()
     await Promise.all(
         IterableOps.map(await options.tags, async (_tag_val) => {
             const tag_val = await _tag_val
@@ -764,16 +774,20 @@ export async function extractTags(
                     tags[tag] = []
                 }
                 if (options.decrypt.has(tag)) {
-                    tags[tag].push(
-                        String.fromCharCode(
-                            ...new Uint8Array(
-                                await decryptTagRaw({
-                                    key: options.key,
-                                    data,
-                                })
-                            )
+                    try {
+                        const val = await decryptTagRaw({
+                            key: options.key,
+                            data,
+                        })
+                        tags[tag].push(
+                            String.fromCharCode(...new Uint8Array(val.data))
                         )
-                    )
+                        if (val.encrypted) {
+                            encryptedTags.add(tag)
+                        }
+                    } catch (error) {
+                        console.info('decrypting tag failed', tag, error)
+                    }
                 } else {
                     tags[tag].push(data)
                 }
@@ -784,7 +798,7 @@ export async function extractTags(
             }
         })
     )
-    return tags
+    return { tags, encryptedTags }
 }
 
 export async function encryptPreKey({

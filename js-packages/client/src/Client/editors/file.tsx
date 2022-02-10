@@ -50,7 +50,7 @@ import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 
-const encryptSet = new Set(['ename'])
+const encryptSet = new Set(['name'])
 const ViewWidget = ({
     arrayBuffer,
     mime: mimeNew,
@@ -207,6 +207,7 @@ interface FileInternProps {
     hashAlgorithms: string[]
     nodeData?: any
     tags?: { [name: string]: string[] }
+    encryptedTags?: Set<string>
     data?: Blob | null
     url: string
     setCluster: (arg: string) => void
@@ -221,6 +222,7 @@ const FileIntern = ({
     mapper,
     url,
     hashAlgorithms,
+    encryptedTags,
 }: FileInternProps) => {
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
@@ -291,13 +293,10 @@ const FileIntern = ({
         })
         return actions
     }, [mapper])
-    let encryptName = true
+    let encryptName = encryptedTags ? encryptedTags.has('name') : true
     if (tags) {
-        if (tags['ename'] && tags['ename'].length > 0) {
-            name = tags['ename'][0]
-        } else if (tags.name && tags.name.length > 0) {
+        if (tags.name && tags.name.length > 0) {
             name = tags.name[0]
-            encryptName = false
         }
     }
     const state =
@@ -421,9 +420,9 @@ const FileIntern = ({
                             tags: [
                                 !values.encryptName || values.state == 'public'
                                     ? `name=${values.name}`
-                                    : `ename=${Buffer.from(
-                                          values.name
-                                      ).toString('base64')}`,
+                                    : `name=${Buffer.from(values.name).toString(
+                                          'base64'
+                                      )}`,
                                 `mime=${value.type}`,
                                 `state=${values.state}`,
                                 `type=${
@@ -490,6 +489,7 @@ const FileIntern = ({
                         }).tokens
                         saveConfig(newConfig as Interfaces.ConfigInterface)
                         updateConfig(newConfig, true)
+                        console.log(result.data.updateOrCreateContent)
                         updateMainCtx({
                             item: result.data.updateOrCreateContent.content.id,
                             updateId:
@@ -1093,9 +1093,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
 
             let name: string = mainCtx.item || ''
 
-            if (obj.tags['ename'] && obj.tags['ename'].length > 0) {
-                name = obj.tags['ename'][0]
-            } else if (obj.tags.name && obj.tags.name.length > 0) {
+            if (obj.tags.name && obj.tags.name.length > 0) {
                 name = obj.tags.name[0]
             }
             updateOb['title'] = name

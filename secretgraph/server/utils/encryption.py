@@ -137,6 +137,56 @@ def create_key_maps(contents, keyset=()):
     return content_key_map, transfer_key_map
 
 
+class ProxyTag:
+    _key = None
+    _query = None
+
+    def __init__(self, query, key=None):
+        self._query = query
+        self._key = key
+
+    def _persist(self):
+        if not isinstance(self._query, list):
+            self._query = list(self._query)
+
+    def __getitem__(self, index):
+        self._persist()
+        try:
+            splitted = self._query[index].tag.split("=", 1)
+        except Exception:
+            return False
+
+        if len(splitted) == 1:
+            return True
+        if not self._key:
+            return splitted[1]
+        try:
+            m = base64.b64decode(splitted[1])
+        except Exception:
+            return splitted[1]
+        try:
+            decryptor = AESGCM(self._key)
+            return decryptor.decrypt(m[:13], m[13:])
+        except Exception as exc:
+            raise IndexError(f"Cannot decrypt index: {index}") from exc
+
+    def first(self):
+        return self[0]
+
+
+class ProxyTags:
+    _key = None
+    _query = None
+
+    def __init__(self, query, key=None):
+        self._query = query
+        self._key = key
+
+    def __getattr__(self, attr):
+        q = self._query.filter(tag__startswith=attr)
+        return ProxyTag(q, self._key)
+
+
 def iter_decrypt_contents(
     result, *, queryset=None, decryptset=None
 ) -> Iterable[Iterable[str]]:
@@ -145,7 +195,7 @@ def iter_decrypt_contents(
     if not decryptset:
         decryptset = result["authset"]
     # copy query
-    content_query = queryset or result["objects"]
+    content_query = (queryset or result["objects"]).all()
     # per default verifiers=None, so that a failed verifications cannot happen
     content_query.only_direct_fetch_action_trigger = True
     content_map, transfer_map = create_key_maps(content_query, decryptset)
@@ -202,7 +252,7 @@ def iter_decrypt_contents(
         if content.id in content_map:
             try:
                 decryptor = Cipher(
-                    algorithms.AES(content_map[content.flexid]),
+                    algorithms.AES(content_map[content.id]),
                     modes.GCM(base64.b64decode(content.nonce)),
                     backend=default_backend(),
                 ).decryptor()
@@ -211,22 +261,9 @@ def iter_decrypt_contents(
                     "creating decrypting context failed", exc_info=exc
                 )
                 continue
-            mime = content.tags.filter(tag__startswith="emime=").first()
-            if mime:
-                try:
-                    m = base64.b64decode(mime.tag.split("=")[1])
-                    decryptor = AESGCM(content_map[content.flexid])
-                    content.read_decrypt_mime = decryptor.decrypt(
-                        m[:13], m[13:]
-                    )
-                except Exception as exc:
-                    logger.warning(
-                        "failed decoding encrypted mime", exc_info=exc
-                    )
-            else:
-                mime = content.tags.filter(tag__startswith="mime=").first()
-                if mime:
-                    content.read_decrypt_mime = mime.tag.split("=")[1]
+            content.tags.proxy = ProxyTags(
+                content.tags, content_map[content.id]
+            )
 
             def _generator():
                 with content.file.open() as fileob:
@@ -244,9 +281,7 @@ def iter_decrypt_contents(
                 result["objects"].fetch_action_trigger(content)
 
         else:
-            mime = content.tags.filter(tag__startswith="mime=").first()
-            if mime:
-                content.read_decrypt_mime = mime.tag.split("=")[1]
+            content.tags.proxy = ProxyTags(content.tags)
 
             def _generator():
                 with content.file.open() as fileob:
