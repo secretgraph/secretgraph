@@ -19,6 +19,7 @@ export const Main = createContext<{
         action: 'initialize',
         title: '',
         item: null,
+        cluster: null,
         updateId: null,
         url: null,
         type: '',

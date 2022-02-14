@@ -5,15 +5,12 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import TreeItem from '@mui/lab/TreeItem'
 import TreeView from '@mui/lab/TreeView'
-import Autocomplete from '@mui/material/Autocomplete'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import Collapse from '@mui/material/Collapse'
 import Divider from '@mui/material/Divider'
 import Drawer from '@mui/material/Drawer'
 import { useTheme } from '@mui/material/styles'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
+import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { Writeable } from '@secretgraph/misc/typing'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
@@ -65,7 +62,7 @@ const SideBarItems = () => {
         [config, activeUrl, searchCtx.cluster]
     )
 
-    const activeUrlAsURL = new URL(activeUrl, window.location.href)
+    const activeUrlAsURL = new URL(activeUrl, window.location.href).href
     const goTo = (node: any) => {
         let type =
             node.__typename == 'Cluster'
@@ -85,7 +82,7 @@ const SideBarItems = () => {
                 Parameters<typeof authInfoFromConfig>[0]
             > = {
                 config,
-                url: activeUrl,
+                url: activeUrlAsURL,
             }
             if (type == 'Cluster') {
                 if (node?.id) {
@@ -154,7 +151,7 @@ const SideBarItems = () => {
                     key="SideBarContentsPublic"
                     nodeId={`${activeUrl}-contents-public`}
                     activeContent={mainCtx.item}
-                    usePublic
+                    public={Constants.UseCriteriaPublic.TRUE}
                     deleted={searchCtx.deleted}
                     label="Public"
                     heading

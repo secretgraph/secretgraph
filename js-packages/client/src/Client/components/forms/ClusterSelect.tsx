@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
+import * as Constants from '@secretgraph/misc/constants'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
@@ -21,6 +22,8 @@ export interface ClusterSelectProps<
     tokens: string[]
 }
 
+const _valid_set = new Set(['manage', 'create'])
+
 export default function ClusterSelect<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
@@ -39,15 +42,18 @@ export default function ClusterSelect<
         variables: {
             authorization: tokens,
             search: inputValue ? inputValue : undefined,
+            public: Constants.UseCriteriaPublic.TOKEN,
         },
     })
-    const { ids, labelMap } = React.useMemo(() => {
+    const { ids, labelMap, disabled } = React.useMemo(() => {
         const ret: {
             ids: string[]
             labelMap: { [key: string]: { name: string; description: string } }
+            disabled: Set<string>
         } = {
             ids: [],
             labelMap: {},
+            disabled: new Set(),
         }
         if (!data) {
             return ret
@@ -56,6 +62,13 @@ export default function ClusterSelect<
             if (!node.id) {
                 console.debug('invalid node', node)
             } else {
+                if (
+                    !node.availableActions.some((val: any) =>
+                        _valid_set.has(val.type)
+                    )
+                ) {
+                    ret.disabled.add(node.id)
+                }
                 ret.ids.push(node.id)
                 if (node.name) {
                     ret.labelMap[node.id] = {
@@ -82,8 +95,14 @@ export default function ClusterSelect<
         <SimpleSelect
             {...props}
             loading={loading}
+            getOptionDisabled={(option) => {
+                return disabled.has(option)
+            }}
             getOptionLabel={(option) => {
                 return labelMap[option]?.name || option
+            }}
+            onInputChange={(event, newInputValue) => {
+                setInputValue(newInputValue)
             }}
             options={ids}
         />

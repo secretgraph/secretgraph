@@ -11,7 +11,7 @@ from ..utils.misc import from_global_id_safe
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import Action, Cluster, Content, ContentReference
-from .shared import DeleteRecursive, UseCriteria
+from .shared import DeleteRecursive, UseCriteria, UseCriteriaPublic
 
 
 # why?: scalars cannot be used in Unions
@@ -489,7 +489,9 @@ class ContentConnectionField(DjangoConnectionField):
             )
             kwargs.setdefault(
                 "public",
-                UseCriteria(required=False, default_value=UseCriteria.IGNORE),
+                UseCriteriaPublic(
+                    required=False, default_value=UseCriteriaPublic.IGNORE
+                ),
             )
             kwargs.setdefault(
                 "hidden",
@@ -505,9 +507,10 @@ class ContentConnectionField(DjangoConnectionField):
 
     @classmethod
     def resolve_queryset(cls, connection, queryset, info, args):
-        public = args.get("public", UseCriteria.IGNORE)
+        public = args.get("public", UseCriteriaPublic.IGNORE)
         deleted = args.get("deleted", UseCriteria.FALSE)
         hidden = args.get("hidden", UseCriteria.FALSE)
+        result = initializeCachedResult(info.context)["Content"]
         # TODO: perm check for deleted and hidden
         if True:
             hidden = UseCriteria.FALSE
@@ -522,10 +525,12 @@ class ContentConnectionField(DjangoConnectionField):
                 prefix="cluster__",
                 limit_ids=None,
             )
-        if public != UseCriteria.IGNORE:
+        if public != UseCriteriaPublic.TOKEN:
+            pass
+        elif public != UseCriteriaPublic.IGNORE:
             # should only include public contents with public cluster
             # if no clusters are specified (e.g. root query)
-            if public == UseCriteria.TRUE:
+            if public == UseCriteriaPublic.TRUE:
                 if not clusters:
                     queryset = queryset.filter(
                         tags__tag="state=public", cluster__public=True
@@ -546,11 +551,14 @@ class ContentConnectionField(DjangoConnectionField):
             )
         if hidden != UseCriteria.IGNORE:
             queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
-        result = initializeCachedResult(
-            info.context, authset=args.get("authorization")
-        )["Content"]
         queryset = queryset.filter(
-            id__in=Subquery(result["objects"].values("id"))
+            id__in=Subquery(
+                result[
+                    "objects_ignore_public"
+                    if public == UseCriteriaPublic.TOKEN
+                    else "objects"
+                ].values("id")
+            )
         )
 
         return fetch_contents(
@@ -685,7 +693,9 @@ class ClusterConnectionField(DjangoConnectionField):
         kwargs.setdefault("user", graphene.ID(required=False))
         kwargs.setdefault(
             "public",
-            UseCriteria(required=False, default_value=UseCriteria.IGNORE),
+            UseCriteriaPublic(
+                required=False, default_value=UseCriteriaPublic.IGNORE
+            ),
         )
         kwargs.setdefault(
             "featured",
@@ -701,7 +711,7 @@ class ClusterConnectionField(DjangoConnectionField):
 
     @classmethod
     def resolve_queryset(cls, connection, queryset, info, args):
-        public = args.get("public", UseCriteria.IGNORE)
+        public = args.get("public", UseCriteriaPublic.IGNORE)
         featured = args.get("featured", UseCriteria.IGNORE)
         user = args.get("user")
         deleted = args.get("deleted", UseCriteria.FALSE)
@@ -734,8 +744,11 @@ class ClusterConnectionField(DjangoConnectionField):
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
-        if public != UseCriteria.IGNORE:
-            queryset = queryset.filter(public=public == UseCriteria.TRUE)
+        if (
+            public != UseCriteriaPublic.IGNORE
+            and public != UseCriteriaPublic.TOKEN
+        ):
+            queryset = queryset.filter(public=public == UseCriteriaPublic.TRUE)
         if featured != UseCriteria.IGNORE:
             queryset = queryset.filter(featured=featured == UseCriteria.TRUE)
 
@@ -745,7 +758,13 @@ class ClusterConnectionField(DjangoConnectionField):
                 id__in=Subquery(
                     initializeCachedResult(
                         info.context, authset=args.get("authorization")
-                    )["Cluster"]["objects"].values("id")
+                    )["Cluster"][
+                        "objects_ignore_public"
+                        if public == UseCriteriaPublic.TOKEN
+                        else "objects"
+                    ].values(
+                        "id"
+                    )
                 )
             ).distinct(),
             ids=ids,

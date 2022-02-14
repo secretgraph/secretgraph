@@ -35,7 +35,6 @@ def fetch_clusters(
         excl_filters = Q()
         for i in excludeTags or []:
             excl_filters |= Q(tags__tag__startswith=i)
-
         query = query.filter(
             id__in=Subquery(
                 Content.objects.filter(

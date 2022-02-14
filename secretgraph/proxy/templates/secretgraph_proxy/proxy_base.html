@@ -45,6 +45,8 @@
         vertical-align: middle;
         text-align: left;
         padding: 4px;
+        word-break: break-all;
+        white-space: pre-wrap;
     }
     .sidebar > *:hover {
         background-color: #efefef;
@@ -83,7 +85,7 @@
     </header>
     <nav class="sidebar">
         {% for cluster in clusters %}
-            <a href="{% url "secretgraph_proxy:cluster" id=cluster.flexid %}">{{cluster.name}}</a>
+            <a href="{% url "secretgraph_proxy:cluster" id=cluster.flexid %}">{{cluster.name|default:cluster.flexid_cached}}</a>
         {% endfor %}
     </nav>
     <main>

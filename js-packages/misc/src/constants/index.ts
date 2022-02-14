@@ -1,9 +1,19 @@
-export const UseCriteria: { [a: string]: string } = {
-    TRUE: 'TRUE',
-    FALSE: 'FALSE',
-    IGNORE: 'IGNORE',
+export const UseCriteria = {
+    TRUE: 'TRUE' as const,
+    FALSE: 'FALSE' as const,
+    IGNORE: 'IGNORE' as const,
 }
-export const protectedActions = new Set(['storedUpdate', 'auth'])
+
+export const UseCriteriaPublic = {
+    TRUE: 'TRUE' as const,
+    FALSE: 'FALSE' as const,
+    IGNORE: 'IGNORE' as const,
+    TOKEN: 'TOKEN' as const,
+}
+export const protectedActions = new Set<'storedUpdate' | 'auth'>([
+    'storedUpdate',
+    'auth',
+])
 
 export const contentStates = ['draft', 'internal', 'public']
 

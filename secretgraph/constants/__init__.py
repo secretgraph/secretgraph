@@ -34,7 +34,6 @@ DeleteRecursive.valid_values = frozenset(
 )
 
 
-# not active yet
 class UseCriteria(enum.Enum):
     _ignore_ = ["valid_values"]
     TRUE = "true"
@@ -44,6 +43,19 @@ class UseCriteria(enum.Enum):
 
 UseCriteria.valid_values = frozenset(
     map(lambda x: x.value, UseCriteria.__members__.values())
+)
+
+
+class UseCriteriaPublic(enum.Enum):
+    _ignore_ = ["valid_values"]
+    TRUE = "true"
+    FALSE = "false"
+    IGNORE = "ignore"
+    TOKEN = "token"
+
+
+UseCriteriaPublic.valid_values = frozenset(
+    map(lambda x: x.value, UseCriteriaPublic.__members__.values())
 )
 
 

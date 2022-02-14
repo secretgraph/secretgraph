@@ -23,7 +23,7 @@ type SideBarItemsProps = {
     refetchNotify?: () => void
     activeContent?: string | null
     cluster?: string | null
-    usePublic?: boolean
+    public?: keyof typeof Constants.UseCriteriaPublic
     injectInclude?: string[]
     injectExclude?: string[]
     title?: string
@@ -39,7 +39,7 @@ export default React.memo(function Contents({
     goTo,
     activeContent,
     cluster,
-    usePublic,
+    public: publicParam = Constants.UseCriteriaPublic.IGNORE,
     injectInclude = [],
     injectExclude = [],
     title,
@@ -53,12 +53,6 @@ export default React.memo(function Contents({
     const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
-    const _usePublic =
-        usePublic === undefined
-            ? null
-            : usePublic
-            ? Constants.UseCriteria.TRUE
-            : Constants.UseCriteria.FALSE
     const incl = React.useMemo(() => {
         const ret = searchCtx.include.concat(injectInclude)
         if (authinfo) {
@@ -83,7 +77,7 @@ export default React.memo(function Contents({
                 include: incl,
                 exclude: excl,
                 clusters: cluster ? [cluster] : undefined,
-                public: _usePublic,
+                public: publicParam,
                 deleted: searchCtx.deleted
                     ? Constants.UseCriteria.TRUE
                     : Constants.UseCriteria.FALSE,

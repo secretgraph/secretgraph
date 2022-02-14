@@ -317,7 +317,12 @@ def create_key_fn(request, objdata, authset=None):
     if isinstance(objdata.get("cluster"), str):
         objdata["cluster"] = (
             ids_to_results(
-                request, objdata["cluster"], Cluster, authset=authset
+                request,
+                objdata["cluster"],
+                Cluster,
+                authset=authset,
+                # create includes move permission
+                scope="create",
             )["Cluster"]["objects"]
             .filter(markForDestruction=None)
             .first()

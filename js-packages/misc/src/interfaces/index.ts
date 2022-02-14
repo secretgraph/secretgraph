@@ -107,6 +107,7 @@ export interface MainContextInterface {
     updateId: null | string
     title: string
     item: null | string
+    cluster: null | string
     // activeUrl can be changed without changing active element, so cache it here
     url: null | string
     type: null | string

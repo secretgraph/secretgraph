@@ -278,6 +278,12 @@ class ContentTag(models.Model):
             ),
         ]
 
+    def __str__(self):
+        return self.tag
+
+    def __repr__(self):
+        return f"<ContentTag: {self}>"
+
 
 DeleteRecursive = models.TextChoices(
     "DeleteRecursive",

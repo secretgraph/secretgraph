@@ -2090,7 +2090,7 @@
                   "name": "public",
                   "type": {
                     "kind": "ENUM",
-                    "name": "UseCriteria",
+                    "name": "UseCriteriaPublic",
                     "ofType": null
                   }
                 },
@@ -2271,7 +2271,7 @@
                   "name": "public",
                   "type": {
                     "kind": "ENUM",
-                    "name": "UseCriteria",
+                    "name": "UseCriteriaPublic",
                     "ofType": null
                   }
                 },
@@ -2608,6 +2608,41 @@
           "interfaces": null,
           "kind": "SCALAR",
           "name": "RegisterUrl",
+          "possibleTypes": null
+        },
+        {
+          "description": "Specify criteria",
+          "enumValues": [
+            {
+              "deprecationReason": null,
+              "description": "true",
+              "isDeprecated": false,
+              "name": "TRUE"
+            },
+            {
+              "deprecationReason": null,
+              "description": "false",
+              "isDeprecated": false,
+              "name": "FALSE"
+            },
+            {
+              "deprecationReason": null,
+              "description": "Ignore",
+              "isDeprecated": false,
+              "name": "IGNORE"
+            },
+            {
+              "deprecationReason": null,
+              "description": "Check only Token",
+              "isDeprecated": false,
+              "name": "TOKEN"
+            }
+          ],
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "kind": "ENUM",
+          "name": "UseCriteriaPublic",
           "possibleTypes": null
         },
         {

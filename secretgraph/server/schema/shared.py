@@ -22,11 +22,22 @@ DeleteRecursive = graphene.Enum.from_enum(
 
 
 def UseCriteria_desc(v):
-    if v == constants.UseCriteria.FALSE:
+    if (
+        v == constants.UseCriteria.FALSE
+        or v == constants.UseCriteriaPublic.FALSE
+    ):
         return "false"
-    elif v == constants.UseCriteria.TRUE:
+    elif (
+        v == constants.UseCriteria.TRUE
+        or v == constants.UseCriteriaPublic.TRUE
+    ):
         return "true"
-    elif v == constants.UseCriteria.IGNORE:
+    elif v == constants.UseCriteriaPublic.TOKEN:
+        return "Check only Token"  # noqa: E501
+    elif (
+        v == constants.UseCriteria.IGNORE
+        or v == constants.UseCriteriaPublic.IGNORE
+    ):
         return "Ignore"  # noqa: E501
     elif v is None:
         return "Specify criteria"
@@ -36,4 +47,9 @@ def UseCriteria_desc(v):
 
 UseCriteria = graphene.Enum.from_enum(
     constants.UseCriteria, description=UseCriteria_desc
+)
+
+
+UseCriteriaPublic = graphene.Enum.from_enum(
+    constants.UseCriteriaPublic, description=UseCriteria_desc
 )

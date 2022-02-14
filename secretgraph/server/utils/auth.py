@@ -244,47 +244,44 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
     )
 
     if issubclass(query.model, Cluster):
+        _q = models.Q(
+            id__in={
+                *returnval["action_info_clusters"].keys(),
+                *all_query.values_list("id", flat=True),
+            }
+        )
         id_subquery = models.Subquery(
-            query.filter(
-                models.Q(
-                    id__in={
-                        *returnval["action_info_clusters"].keys(),
-                        *all_query.values_list("id", flat=True),
-                    }
-                )
-                | models.Q(public=True)
-            ).values("id")
+            query.filter(_q | models.Q(public=True)).values("id")
+        )
+        id_subquery_without_public = models.Subquery(
+            query.filter(_q).values("id")
         )
     elif issubclass(query.model, Content):
+        _q = models.Q(id__in=models.Subquery(all_query.values("id"))) & (
+            models.Q(id__in=list(returnval["action_info_contents"].keys()))
+            | models.Q(
+                cluster_id__in=list(returnval["action_info_clusters"].keys())
+            )
+        )
         id_subquery = models.Subquery(
-            query.filter(
-                models.Q(tags__tag="state=public")
-                | (
-                    models.Q(id__in=models.Subquery(all_query.values("id")))
-                    & (
-                        models.Q(
-                            id__in=list(
-                                returnval["action_info_contents"].keys()
-                            )
-                        )
-                        | models.Q(
-                            cluster_id__in=list(
-                                returnval["action_info_clusters"].keys()
-                            )
-                        )
-                    )
-                )
-            ).values("id")
+            query.filter(models.Q(tags__tag="state=public") | _q).values("id")
+        )
+        id_subquery_without_public = models.Subquery(
+            query.filter(_q).values("id")
         )
     else:
         assert issubclass(query.model, Action), "invalid type %r" % query.model
         id_subquery = models.Subquery(all_query.values("id"))
+        id_subquery_without_public = id_subquery
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
     returnval["actions"] = Action.objects.filter(
         id__in=models.Subquery(returnval["actions"].values("id"))
     ).order_by("-start", "-id")
     returnval["objects"] = query.filter(id__in=id_subquery)
+    returnval["objects_ignore_public"] = query.filter(
+        id__in=id_subquery_without_public
+    )
     return returnval
 
 

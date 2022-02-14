@@ -58,6 +58,7 @@ function Definitions({ defaultPath, homeUrl }: Props) {
         deleted: null,
         tokens: [],
         tokensPermissions: new Set(),
+        cluster: null,
     })
     const [searchCtx, updateSearchCtx] = React.useReducer<
         updateStateType<Interfaces.SearchContextInterface>

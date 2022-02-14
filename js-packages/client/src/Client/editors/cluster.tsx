@@ -7,6 +7,7 @@ import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
 import { getClusterQuery } from '@secretgraph/graphql-queries/cluster'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
+import { UseCriteria } from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
 import {

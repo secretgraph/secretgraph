@@ -22,6 +22,9 @@ import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import MapSelect from './MapSelect'
 
+const _update_set = new Set(['update', 'manage'])
+const _create_set = new Set(['create', 'manage'])
+
 type Props = {}
 
 function ActionBar(props: Props) {
@@ -32,31 +35,26 @@ function ActionBar(props: Props) {
     const client = useApolloClient()
 
     const updateTokens = React.useMemo(() => {
-        if (
-            SetOps.hasIntersection(mainCtx.tokensPermissions, [
-                'update',
-                'manage',
-            ])
-        ) {
+        if (SetOps.hasIntersection(mainCtx.tokensPermissions, _update_set)) {
             return mainCtx.tokens
         }
-        if (!config) {
+        if (!config || (!mainCtx.cluster && !mainCtx.item)) {
             return []
         }
         return authInfoFromConfig({
             config,
             url: mainCtx.url || activeUrl,
-            require: new Set(['update', 'manage']),
+            require: _update_set,
+            contents:
+                mainCtx.type != 'Cluster' && mainCtx.item
+                    ? new Set([mainCtx.item])
+                    : undefined,
+            clusters: mainCtx.cluster ? new Set([mainCtx.cluster]) : undefined,
         }).tokens
     }, [mainCtx.tokens, mainCtx.tokensPermissions])
 
     const createTokens = React.useMemo(() => {
-        if (
-            SetOps.hasIntersection(mainCtx.tokensPermissions, [
-                'create',
-                'manage',
-            ])
-        ) {
+        if (SetOps.hasIntersection(mainCtx.tokensPermissions, _create_set)) {
             return mainCtx.tokens
         }
         if (!config) {
@@ -65,7 +63,7 @@ function ActionBar(props: Props) {
         return authInfoFromConfig({
             config,
             url: activeUrl,
-            require: new Set(['create', 'manage']),
+            require: _create_set,
         }).tokens
     }, [mainCtx.tokens, mainCtx.tokensPermissions, activeUrl, config])
 

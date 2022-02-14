@@ -6,7 +6,7 @@ export const contentFeedQuery = gql`
         $include: [String!]
         $exclude: [String!]
         $deleted: UseCriteria
-        $public: UseCriteria
+        $public: UseCriteriaPublic
         $includeTags: [String!]
         $count: Int
         $cursor: String

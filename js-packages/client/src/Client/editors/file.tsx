@@ -489,7 +489,6 @@ const FileIntern = ({
                         }).tokens
                         saveConfig(newConfig as Interfaces.ConfigInterface)
                         updateConfig(newConfig, true)
-                        console.log(result.data.updateOrCreateContent)
                         updateMainCtx({
                             item: result.data.updateOrCreateContent.content.id,
                             updateId:
@@ -1033,6 +1032,10 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     }, [cluster])
     React.useEffect(() => {
         if (!dataUnfinished) {
+            return
+        }
+        if (!dataUnfinished.secretgraph.node) {
+            console.log('empty node, permissions?')
             return
         }
         if (!cluster) {
