@@ -387,15 +387,25 @@ class ClusterGroup(models.Model):
         default=False, blank=True, db_column="match_user_group"
     )
     injected_keys: models.Query[Content] = models.ManyToManyField(
-        Content, related_name="injected_for"
+        Content,
+        related_name="injected_for",
+        limit_choices_to={"tags__tag": "type=PublicKey"},
     )
 
     objects = ClusterGroupManager()
 
     def clean(self):
-        if self.hidden and self.keys.exists():
+        if self.hidden and self.injected_keys.exists():
             raise ValidationError(
-                {"hidden": "keys and hidden are mutual exclusive"}
+                {"hidden": "injected_keys and hidden are mutual exclusive"}
+            )
+        if self.injected_keys.exclude(tags__tag="type=PublicKey").exists():
+            raise ValidationError(
+                {"injected_keys": "injected_keys are not keys"}
+            )
+        if self.injected_keys.exclude(tags__tag="state=public").exists():
+            raise ValidationError(
+                {"injected_keys": "injected_keys are not public"}
             )
 
 
