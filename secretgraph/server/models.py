@@ -1,6 +1,7 @@
 import logging
 import posixpath
 import secrets
+import hashlib
 from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
@@ -8,6 +9,7 @@ from uuid import UUID, uuid4
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db import models
@@ -17,7 +19,7 @@ from django.utils import timezone
 
 from .messages import (
     contentaction_group_help,
-    injection_group_help,
+    cluster_groups_help,
     reference_group_help,
 )
 from .. import constants
@@ -26,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_content_file_path(instance, filename) -> str:
-    ret = getattr(settings, "SECRETGRAPH_FILE_DIR", "content_files")
     cluster_id = instance.cluster_id or instance.cluster.id
     if not cluster_id:
         raise Exception("no cluster id found")
@@ -36,7 +37,7 @@ def get_content_file_path(instance, filename) -> str:
     for _i in range(0, 100):
         ret_path = default_storage.generate_filename(
             posixpath.join(
-                ret,
+                "secretgraph/content_files",
                 str(cluster_id),
                 "%s.store"
                 % secrets.token_urlsafe(
@@ -64,6 +65,10 @@ class FlexidModel(models.Model):
         abstract = True
 
 
+def get_default_groups():
+    return list(getattr(settings, "SECRETGRAPH_DEFAULT_GROUPS", []))
+
+
 class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
     limited = False
@@ -73,7 +78,11 @@ class Cluster(FlexidModel):
         null=False,
         blank=True,
     )
-    description: str = models.TextField()
+    description: str = models.TextField(
+        default="",
+        null=False,
+        blank=True,
+    )
     # field for listing public clusters
     public: bool = models.BooleanField(default=False, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True)
@@ -81,13 +90,12 @@ class Cluster(FlexidModel):
     updateId: UUID = models.UUIDField(
         blank=True, default=uuid4, db_column="update_id"
     )
-    # injection group (which clusters should be injected)
-    group: str = models.CharField(
-        default="",
-        max_length=50,
-        blank=True,
+
+    groups: list[str] = models.JSONField(
         null=False,
-        help_text=injection_group_help,
+        blank=True,
+        default=get_default_groups,
+        help_text=cluster_groups_help,
     )
     markForDestruction: dt = models.DateTimeField(
         null=True, blank=True, db_column="mark_for_destruction"
@@ -106,23 +114,9 @@ class Cluster(FlexidModel):
 
 
 class ContentManager(models.Manager):
-    def injected_keys(self, queryset=None, group=""):
-        if queryset is None:
-            queryset = self.get_queryset()
-        tags_public = ContentTag.objects.filter(tag="state=public").values(
-            "content_id"
-        )
-        return queryset.filter(
-            id__in=models.Subquery(tags_public),
-            tags__tag="type=PublicKey",
-            cluster__in=(
-                getattr(settings, "SECRETGRAPH_INJECT_CLUSTERS", None) or {}
-            ).get(group, []),
-        )
-
     def get_queryset(self):
         return (
-            super().get_queryset().annotate(group=models.F("cluster__group"))
+            super().get_queryset().annotate(group=models.F("cluster__groups"))
         )
 
 
@@ -346,3 +340,88 @@ class ContentReference(models.Model):
             self.group,
             self.target,
         )
+
+
+class ClusterGroupManager(models.Manager):
+    def hidden(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        return queryset.filter(hidden=True)
+
+
+class ClusterGroup(models.Model):
+    # there are just few of them
+    id: int = models.AutoField(primary_key=True, editable=False)
+    name: str = models.CharField(max_length=50, null=False, unique=True)
+    match_user_group: bool = models.BooleanField(default=False, blank=True)
+    description: str = models.TextField()
+    # don't show in groups, mutual exclusive to keys
+    hidden: bool = models.BooleanField(default=False, blank=True)
+
+    objects = ClusterGroupManager()
+
+    def clean(self):
+        if self.hidden and self.keys.exists():
+            raise ValidationError(
+                {"hidden": "keys and hidden are mutual exclusive"}
+            )
+
+
+# e.g. auto_hide = contents are automatically hidden and manually
+class ClusterGroupProperty(models.Model):
+    # there are just few of them
+    id: int = models.AutoField(primary_key=True, editable=False)
+    group: ClusterGroup = models.ForeignKey(
+        ClusterGroup, related_name="properties", on_delete=models.CASCADE
+    )
+
+    name: str = models.CharField(max_length=50, null=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "group"], name="unique_cluster_group_prop"
+            ),
+        ]
+
+
+class ClusterGroupKeyManager(models.Manager):
+    def injected_keys(self, queryset=None, groups=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        if not groups:
+            return queryset
+        else:
+            return queryset.filter(group__name__in=groups)
+
+
+class ClusterGroupKey(models.Model):
+    # there are just few of them
+    id: int = models.AutoField(primary_key=True, editable=False)
+    group: ClusterGroup = models.ForeignKey(
+        ClusterGroup,
+        related_name="injected_keys",
+        on_delete=models.CASCADE,
+        limit_choices_to={"hidden": False},
+    )
+    key = models.FileField(upload_to="secretgraph/cluster_group_keys")
+    keyHash: str = models.CharField(max_length=255, db_column="key_hash")
+
+    objects = ClusterGroupKeyManager()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["keyHash", "group"], name="unique_cluster_group_key"
+            ),
+        ]
+
+    def clean(self):
+        self.keyHash = hashlib.new(
+            settings.SECRETGRAPH_HASH_ALGORITHMS[0], self.key.open("rb").read()
+        )
+
+    @property
+    def link(self):
+        # path to raw view
+        return reverse("secretgraph:cluster_group_key", kwargs={"id": self.id})

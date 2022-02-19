@@ -577,7 +577,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         model = Cluster
         name = "Cluster"
         interfaces = (relay.Node,)
-        fields = ["group", "public", "featured"]
+        fields = ["public", "featured"]
 
     contents = ContentConnectionField(required=True, subfield=True)
     deleted = graphene.DateTime(required=False)
@@ -585,8 +585,9 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     updateId = graphene.UUID(required=True)
     # MAYBE: reference user directly if possible
     user = relay.GlobalID(required=False)
-    name = graphene.String(required=False)
-    description = graphene.String(required=False)
+    name = graphene.String(required=True)
+    description = graphene.String(required=True)
+    groups = graphene.String(required=True)
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
@@ -650,6 +651,11 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         if self.limited:
             return None
         return self.description
+
+    def resolve_groups(self, info):
+        raise
+        # remove hidden
+        return []
 
 
 class ClusterConnectionField(DjangoConnectionField):

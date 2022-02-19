@@ -8,9 +8,8 @@ tags_tag_label = _("Metadata Tag")
 reference_label = _("Reference")
 
 
-injection_group_help = _(
-    "injection group: group which injected keys must be used for mutations "
-    "with content/cluster"
+cluster_groups_help = _(
+    "cluster groups: groups for permissions and injected keys"
 )
 
 reference_group_help = _(

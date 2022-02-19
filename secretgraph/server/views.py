@@ -14,14 +14,15 @@ from django.http import (
     JsonResponse,
     StreamingHttpResponse,
 )
-from django.shortcuts import resolve_url
+from django.shortcuts import resolve_url, get_object_or_404
 from django.urls import reverse
+from django.views.generic import View
 from django.views.generic.edit import FormView
 from graphene_file_upload.django import FileUploadGraphQLView
 
 from .actions.view import ContentFetchQueryset
 from .forms import PreKeyForm, PushForm, UpdateForm
-from .models import Content
+from .models import Content, ClusterGroupKey
 from .utils.auth import (
     fetch_by_id,
     initializeCachedResult,
@@ -285,6 +286,12 @@ class ContentView(AllowCORSMixin, FormView):
             response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
         return response
+
+
+class ClusterGroupKeyView(AllowCORSMixin, View):
+    def get(self, request, id, **kwargs):
+        obj = get_object_or_404(ClusterGroupKey, pk=id)
+        return FileResponse(obj.key.open("rb"))
 
 
 class CORSFileUploadGraphQLView(AllowCORSMixin, FileUploadGraphQLView):
