@@ -433,7 +433,9 @@ const FileIntern = ({
                             ].concat(
                                 values.keywords.map((val) => `keyword=${val}`)
                             ),
-                            encryptTags: encryptSet,
+                            encryptTags: values.encryptName
+                                ? encryptSet
+                                : undefined,
                             privkeys: await Promise.all(
                                 Object.values(privkeys)
                             ),
