@@ -20,7 +20,6 @@ from ..models import (
     Content,
     ContentReference,
     ClusterGroup,
-    InjectedKey,
 )
 from .shared import DeleteRecursive, UseCriteria, UseCriteriaPublic
 
@@ -36,12 +35,19 @@ class RegisterUrl(GenericScalar):
 
 class InjectedKeyNode(DjangoObjectType):
     class Meta:
-        model = InjectedKey
+        model = Content
         name = "InjectedKey"
         interfaces = (relay.Node,)
-        fields = ["id", "hash"]
 
+    id = graphene.ID(required=True)
+    hash = graphene.String(required=True)
     link = graphene.String(required=True)
+
+    def resolve_id(self, info):
+        return self.flexid
+
+    def resolve_hash(self, info):
+        return self.contentHash
 
     def resolve_link(self, info):
         return self.link
@@ -52,8 +58,9 @@ class ClusterGroupNode(DjangoObjectType):
         model = ClusterGroup
         name = "ClusterGroup"
         interfaces = (relay.Node,)
-        exclude = ["properties"]
+        exclude = ["properties", "injected_keys"]
 
+    injected_keys = DjangoListField(InjectedKeyNode)
     properties = graphene.List(
         graphene.NonNull(graphene.String),
         required=True,
@@ -61,6 +68,9 @@ class ClusterGroupNode(DjangoObjectType):
 
     def resolve_properties(self, info):
         return self.properties.values_list("name", flat=True)
+
+    def resolve_injected_keys(self, info):
+        return self.injected_keys.all()
 
 
 class SecretgraphConfig(ObjectType):
