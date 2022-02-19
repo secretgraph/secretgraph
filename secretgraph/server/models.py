@@ -1,7 +1,6 @@
 import logging
 import posixpath
 import secrets
-import hashlib
 from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
@@ -11,6 +10,7 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import File
+from django.core.cache import caches
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models.functions import Concat, Substr
@@ -114,6 +114,20 @@ class Cluster(FlexidModel):
 
 
 class ContentManager(models.Manager):
+    def injected_keys(self, queryset=None, groups=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        if groups:
+            if isinstance(groups, str):
+                groups = [groups]
+            return queryset.filter(
+                injected_for__name__in=groups,
+            )
+        else:
+            return queryset.filter(
+                injected_for__isnull=False,
+            )
+
     def get_queryset(self):
         return (
             super().get_queryset().annotate(group=models.F("cluster__groups"))
@@ -348,15 +362,33 @@ class ClusterGroupManager(models.Manager):
             queryset = self.get_queryset()
         return queryset.filter(hidden=True)
 
+    def _get_hidden_names(self):
+        return set(self.hidden.values_list("name", flat=True))
+
+    def get_hidden_names(self):
+        return caches["secretgraph_settings"].get_or_set(
+            "hidden_groups", self._get_hidden_names
+        )
+
+    def visible(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        return queryset.filter(hidden=False)
+
 
 class ClusterGroup(models.Model):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
     name: str = models.CharField(max_length=50, null=False, unique=True)
-    match_user_group: bool = models.BooleanField(default=False, blank=True)
     description: str = models.TextField()
     # don't show in groups, mutual exclusive to keys
     hidden: bool = models.BooleanField(default=False, blank=True)
+    matchUserGroup: bool = models.BooleanField(
+        default=False, blank=True, db_column="match_user_group"
+    )
+    injected_keys: models.Query[Content] = models.ManyToManyField(
+        Content, related_name="injected_for"
+    )
 
     objects = ClusterGroupManager()
 
@@ -383,45 +415,3 @@ class ClusterGroupProperty(models.Model):
                 fields=["name", "group"], name="unique_cluster_group_prop"
             ),
         ]
-
-
-class ClusterGroupKeyManager(models.Manager):
-    def injected_keys(self, queryset=None, groups=None):
-        if queryset is None:
-            queryset = self.get_queryset()
-        if not groups:
-            return queryset
-        else:
-            return queryset.filter(group__name__in=groups)
-
-
-class ClusterGroupKey(models.Model):
-    # there are just few of them
-    id: int = models.AutoField(primary_key=True, editable=False)
-    group: ClusterGroup = models.ForeignKey(
-        ClusterGroup,
-        related_name="injected_keys",
-        on_delete=models.CASCADE,
-        limit_choices_to={"hidden": False},
-    )
-    key = models.FileField(upload_to="secretgraph/cluster_group_keys")
-    keyHash: str = models.CharField(max_length=255, db_column="key_hash")
-
-    objects = ClusterGroupKeyManager()
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["keyHash", "group"], name="unique_cluster_group_key"
-            ),
-        ]
-
-    def clean(self):
-        self.keyHash = hashlib.new(
-            settings.SECRETGRAPH_HASH_ALGORITHMS[0], self.key.open("rb").read()
-        )
-
-    @property
-    def link(self):
-        # path to raw view
-        return reverse("secretgraph:cluster_group_key", kwargs={"id": self.id})

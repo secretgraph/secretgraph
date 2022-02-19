@@ -331,14 +331,14 @@ class ContentMutation(relay.ClientIDMutation):
                         Cluster.objects.all(), [content.cluster]
                     ).first()
                     required_keys = Content.objects.injected_keys(
-                        group=clusterObj.group if clusterObj else ""
+                        groups=clusterObj.group if clusterObj else None
                     )
                 else:
                     required_keys = Content.objects.injected_keys(
-                        group=content_obj.group
+                        groups=content_obj.group
                     )
                 required_keys = list(
-                    required_keys.values_list("contentHash", flat=True)
+                    required_keys.values_list("hash", flat=True)
                 )
 
             requiredKeys = set()
@@ -402,7 +402,7 @@ class ContentMutation(relay.ClientIDMutation):
                 required_keys = list(
                     Content.objects.injected_keys(
                         group=cluster_obj.group
-                    ).values_list("contentHash", flat=True)
+                    ).values_list("hash", flat=True)
                 )
 
             requiredKeys = set()
@@ -492,7 +492,7 @@ class PushContentMutation(relay.ClientIDMutation):
             content["references"] = form.get("injectedReferences") or []
         required_keys = list(
             Content.objects.injected_keys(group=source.group).values_list(
-                "contentHash", flat=True
+                "hash", flat=True
             )
         )
         required_keys.extend(form.get("requiredKeys", []))

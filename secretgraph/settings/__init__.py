@@ -23,6 +23,7 @@ GRAPHENE = {
     "SCHEMA_INDENT": 2,
     "MIDDLEWARE": [],
     "RELAY_CONNECTION_MAX_LIMIT": 100,
+    "DJANGO_CHOICE_FIELD_ENUM_V3_NAMING": True,
 }
 
 if DEBUG:
@@ -169,3 +170,12 @@ GRAPHENE_PROTECTOR_DEPTH_LIMIT = 20
 
 # for sites
 SITE_ID = 1
+
+
+CACHES = {
+    # should be local mem cache (default) or dummy cache (for testing)
+    "secretgraph_settings": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "secretgraph_settings",
+    }
+}

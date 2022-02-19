@@ -4,13 +4,24 @@ from django.conf import settings
 from django.shortcuts import resolve_url
 from graphene import ObjectType, relay
 from graphene.types.generic import GenericScalar
-from graphene_django import DjangoConnectionField, DjangoObjectType
+from graphene_django import (
+    DjangoConnectionField,
+    DjangoObjectType,
+    DjangoListField,
+)
 
 from ... import constants
 from ..utils.misc import from_global_id_safe
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
-from ..models import Action, Cluster, Content, ContentReference
+from ..models import (
+    Action,
+    Cluster,
+    Content,
+    ContentReference,
+    ClusterGroup,
+    InjectedKey,
+)
 from .shared import DeleteRecursive, UseCriteria, UseCriteriaPublic
 
 
@@ -23,27 +34,33 @@ class RegisterUrl(GenericScalar):
     """
 
 
-class KeyLink(graphene.ObjectType):
-    hash = graphene.String(required=True)
+class InjectedKeyNode(DjangoObjectType):
+    class Meta:
+        model = InjectedKey
+        name = "InjectedKey"
+        interfaces = (relay.Node,)
+        fields = ["id", "hash"]
+
     link = graphene.String(required=True)
 
+    def resolve_link(self, info):
+        return self.link
 
-class ClusterGroupEntry(graphene.ObjectType):
-    group = graphene.String(required=True)
-    clusters = graphene.List(graphene.NonNull(graphene.ID), required=True)
-    keys = graphene.List(
-        graphene.NonNull(KeyLink),
+
+class ClusterGroupNode(DjangoObjectType):
+    class Meta:
+        model = ClusterGroup
+        name = "ClusterGroup"
+        interfaces = (relay.Node,)
+        exclude = ["properties"]
+
+    properties = graphene.List(
+        graphene.NonNull(graphene.String),
         required=True,
-        description="Links to injected keys",
     )
 
-    def resolve_keys(self, info):
-        return map(
-            lambda x: KeyLink(link=x.link, hash=x.contentHash),
-            Content.objects.injected_keys(group=self.group).only(
-                "flexid", "contentHash"
-            ),
-        )
+    def resolve_properties(self, info):
+        return self.properties.values_list("name", flat=True)
 
 
 class SecretgraphConfig(ObjectType):
@@ -51,9 +68,7 @@ class SecretgraphConfig(ObjectType):
     hashAlgorithms = graphene.List(
         graphene.NonNull(graphene.String), required=True
     )
-    injectedClusters = graphene.List(
-        graphene.NonNull(ClusterGroupEntry), required=True
-    )
+    groups = DjangoListField(ClusterGroupNode)
     registerUrl = graphene.Field(RegisterUrl, required=False)
     loginUrl = graphene.String(required=False)
 
@@ -62,16 +77,6 @@ class SecretgraphConfig(ObjectType):
 
     def resolve_hashAlgorithms(self, info):
         return settings.SECRETGRAPH_HASH_ALGORITHMS
-
-    def resolve_injectedClusters(self, info):
-        return map(
-            lambda key_val: ClusterGroupEntry(
-                group=key_val[0], clusters=key_val[1]
-            ),
-            (
-                getattr(settings, "SECRETGRAPH_INJECT_CLUSTERS", None) or {}
-            ).items(),
-        )
 
     def resolve_registerUrl(self, info):
         if getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) is not True:
@@ -655,7 +660,8 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     def resolve_groups(self, info):
         raise
         # remove hidden
-        return []
+        hidden = ClusterGroup.objects.get_hidden_names()
+        return set(self.groups).difference(hidden)
 
 
 class ClusterConnectionField(DjangoConnectionField):

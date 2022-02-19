@@ -364,6 +364,16 @@
               "kind": "OBJECT",
               "name": "ContentReference",
               "ofType": null
+            },
+            {
+              "kind": "OBJECT",
+              "name": "ClusterGroup",
+              "ofType": null
+            },
+            {
+              "kind": "OBJECT",
+              "name": "ClusterGroupKey",
+              "ofType": null
             }
           ]
         },
@@ -582,22 +592,6 @@
                 "ofType": {
                   "kind": "SCALAR",
                   "name": "Boolean",
-                  "ofType": null
-                }
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "injection group: group which injected keys must be used for mutations with content/cluster",
-              "isDeprecated": false,
-              "name": "group",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
                   "ofType": null
                 }
               }
@@ -872,9 +866,13 @@
               "isDeprecated": false,
               "name": "name",
               "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
               }
             },
             {
@@ -884,9 +882,29 @@
               "isDeprecated": false,
               "name": "description",
               "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "groups",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
               }
             }
           ],
@@ -2432,21 +2450,17 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "injectedClusters",
+              "name": "groups",
               "type": {
-                "kind": "NON_NULL",
+                "kind": "LIST",
                 "name": null,
                 "ofType": {
-                  "kind": "LIST",
+                  "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "OBJECT",
-                      "name": "ClusterGroupEntry",
-                      "ofType": null
-                    }
+                    "kind": "OBJECT",
+                    "name": "ClusterGroup",
+                    "ofType": null
                   }
                 }
               }
@@ -2489,9 +2503,25 @@
             {
               "args": [],
               "deprecationReason": null,
+              "description": "The ID of the object",
+              "isDeprecated": false,
+              "name": "id",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "group",
+              "name": "name",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
@@ -2507,7 +2537,75 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "clusters",
+              "name": "description",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "hidden",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "matchUserGroup",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "injectedKeys",
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "ClusterGroupKey",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": null,
+              "isDeprecated": false,
+              "name": "properties",
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
@@ -2519,31 +2617,7 @@
                     "name": null,
                     "ofType": {
                       "kind": "SCALAR",
-                      "name": "ID",
-                      "ofType": null
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "args": [],
-              "deprecationReason": null,
-              "description": "Links to injected keys",
-              "isDeprecated": false,
-              "name": "keys",
-              "type": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "LIST",
-                  "name": null,
-                  "ofType": {
-                    "kind": "NON_NULL",
-                    "name": null,
-                    "ofType": {
-                      "kind": "OBJECT",
-                      "name": "KeyLink",
+                      "name": "String",
                       "ofType": null
                     }
                   }
@@ -2552,15 +2626,37 @@
             }
           ],
           "inputFields": null,
-          "interfaces": [],
+          "interfaces": [
+            {
+              "kind": "INTERFACE",
+              "name": "Node",
+              "ofType": null
+            }
+          ],
           "kind": "OBJECT",
-          "name": "ClusterGroupEntry",
+          "name": "ClusterGroup",
           "possibleTypes": null
         },
         {
           "description": null,
           "enumValues": null,
           "fields": [
+            {
+              "args": [],
+              "deprecationReason": null,
+              "description": "The ID of the object",
+              "isDeprecated": false,
+              "name": "id",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                }
+              }
+            },
             {
               "args": [],
               "deprecationReason": null,
@@ -2595,9 +2691,15 @@
             }
           ],
           "inputFields": null,
-          "interfaces": [],
+          "interfaces": [
+            {
+              "kind": "INTERFACE",
+              "name": "Node",
+              "ofType": null
+            }
+          ],
           "kind": "OBJECT",
-          "name": "KeyLink",
+          "name": "ClusterGroupKey",
           "possibleTypes": null
         },
         {

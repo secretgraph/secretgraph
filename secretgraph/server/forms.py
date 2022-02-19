@@ -84,8 +84,8 @@ class PushForm(forms.Form):
         else:
             ret["references"] = form.get("injectedReferences") or []
         required_keys = list(
-            Content.objects.injected_keys(
-                group=self.instance.group
+            Content.objects.inject_keys(
+                groups=self.instance.group
             ).values_list("contentHash", flat=True)
         )
         required_keys.extend(form.get("requiredKeys", []))
