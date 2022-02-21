@@ -117,6 +117,7 @@ class ContentManager(models.Manager):
     def injected_keys(self, queryset=None, groups=None):
         if queryset is None:
             queryset = self.get_queryset()
+        queryset.filter(cluster_id=1)
         if groups:
             if isinstance(groups, str):
                 groups = [groups]
@@ -386,10 +387,10 @@ class ClusterGroup(models.Model):
     matchUserGroup: bool = models.BooleanField(
         default=False, blank=True, db_column="match_user_group"
     )
-    injected_keys: models.Query[Content] = models.ManyToManyField(
+    injected_keys: models.QuerySet[Content] = models.ManyToManyField(
         Content,
         related_name="injected_for",
-        limit_choices_to={"tags__tag": "type=PublicKey"},
+        limit_choices_to={"tags__tag": "type=PublicKey", "cluster_id": 1},
     )
 
     objects = ClusterGroupManager()

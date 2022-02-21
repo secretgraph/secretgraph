@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
                         blank=True, default="", max_length=255, null=False
                     ),
                 ),
-                ("description", models.TextField()),
+                ("description", models.TextField(blank=True, default="")),
                 ("public", models.BooleanField(blank=True, default=False)),
                 ("featured", models.BooleanField(blank=True, default=False)),
                 ("updated", models.DateTimeField(auto_now=True)),
@@ -57,12 +57,11 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "group",
-                    models.CharField(
+                    "groups",
+                    models.JSONField(
                         blank=True,
-                        default="",
-                        help_text="injection group: group which injected keys must be used for mutations with content/cluster",
-                        max_length=50,
+                        default=secretgraph.server.models.get_default_groups,
+                        help_text="cluster groups: groups for permissions and injected keys",
                     ),
                 ),
                 (
@@ -279,6 +278,63 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
+        ),
+        migrations.CreateModel(
+            name="ClusterGroup",
+            fields=[
+                (
+                    "id",
+                    models.AutoField(
+                        editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("name", models.CharField(max_length=50, unique=True)),
+                ("description", models.TextField()),
+                ("hidden", models.BooleanField(blank=True, default=False)),
+                (
+                    "matchUserGroup",
+                    models.BooleanField(
+                        blank=True, db_column="match_user_group", default=False
+                    ),
+                ),
+                (
+                    "injected_keys",
+                    models.ManyToManyField(
+                        limit_choices_to={
+                            "cluster_id": 1,
+                            "tags__tag": "type=PublicKey",
+                        },
+                        related_name="injected_for",
+                        to="secretgraph.Content",
+                    ),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="ClusterGroupProperty",
+            fields=[
+                (
+                    "id",
+                    models.AutoField(
+                        editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("name", models.CharField(max_length=50)),
+                (
+                    "group",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="properties",
+                        to="secretgraph.clustergroup",
+                    ),
+                ),
+            ],
+        ),
+        migrations.AddConstraint(
+            model_name="clustergroupproperty",
+            constraint=models.UniqueConstraint(
+                fields=("name", "group"), name="unique_cluster_group_prop"
+            ),
         ),
         migrations.AddConstraint(
             model_name="contenttag",

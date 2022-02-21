@@ -145,7 +145,9 @@ def transform_references(
     sig_target_hashes = set()
     encrypt_target_hashes = set()
     deduplicate = set()
+    injectable_keys = Content.objects.injected_keys()
     for ref in references or []:
+        injected_ref = None
         if isinstance(ref, ContentReference):
             refob = ref
             if not allowed_targets.filter(
@@ -153,7 +155,10 @@ def transform_references(
             ).exists():
                 continue
         else:
+            injected_key = None
             if isinstance(ref["target"], Content):
+                # can be also injected key but here is no reason
+                # to add a second relation
                 targetob = ref["target"]
             else:
                 if isinstance(ref["target"], int):
@@ -179,6 +184,9 @@ def transform_references(
                 targetob = allowed_targets.filter(
                     q, markForDestruction=None
                 ).first()
+                injected_key = injectable_keys.filter(
+                    q, markForDestruction=None
+                ).first()
             if not targetob:
                 continue
             refob = ContentReference(
@@ -190,6 +198,27 @@ def transform_references(
                     ref.get("group"), ref.get("deleteRecursive")
                 ),
             )
+            if injected_key.id != targetob.id:
+                injected_ref = ContentReference(
+                    source=content,
+                    target=injected_key,
+                    group="key",
+                    extra=ref.get("extra") or "",
+                    deleteRecursive=DeleteRecursive.FALSE.value,
+                )
+        if (
+            injected_ref
+            and (injected_ref.group, injected_ref.target.id) not in deduplicate
+        ):
+            deduplicate.add((injected_ref.group, injected_ref.target.id))
+            if len(injected_ref.extra) > 8000:
+                raise ValueError("Extra tag too big")
+            # must be target
+            encrypt_target_hashes.add(injected_ref.contentHash)
+            # is not required to be in tags
+            if not no_final_refs:
+                final_references.append(injected_ref)
+
         # first extra tag in same group  with same target wins
         if (refob.group, refob.target.id) in deduplicate:
             continue

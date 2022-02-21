@@ -173,9 +173,10 @@ SITE_ID = 1
 
 
 CACHES = {
+    "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
     # should be local mem cache (default) or dummy cache (for testing)
     "secretgraph_settings": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         "LOCATION": "secretgraph_settings",
-    }
+    },
 }

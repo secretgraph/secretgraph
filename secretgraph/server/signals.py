@@ -8,6 +8,12 @@ from django.db.utils import IntegrityError
 from ..constants import DeleteRecursive
 
 
+def createFirstCluster(sender, **kwargs):
+    from .models import Cluster
+
+    Cluster.get_or_create(id=1, defaults={"id": 1, "name": "system"})
+
+
 def deleteContentCb(sender, instance, **kwargs):
     from .models import ContentReference
 
