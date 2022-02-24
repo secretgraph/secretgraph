@@ -2,6 +2,8 @@ import enum
 
 from rdflib import Namespace
 
+public_states = {"required", "trusted", "public"}
+
 
 class Action(enum.Enum):
     _ignore_ = ["protected_values", "valid_values"]

@@ -48,8 +48,6 @@ key refs are assigned to privatekey, the rest to the public key
 
 -   key_hash: 2 needed except for keys (1 needed)
 -   key: special, required tag for PrivateKey. Contains encrypted shared secret
--   type: Content type
--   state: Content state, one of public, internal, draft
 -   id: fully qualified (including type information (Content))
 
 ## Actions
@@ -167,6 +165,7 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   rename forms to decoded, add decoded values dict
 -   implement new "Permission" and trigger design
 -   transform iter_decrypt_contents into QuerySet (maybe)
 -   implement shareFn and ShareDialog, Config has Special ShareDialog

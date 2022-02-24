@@ -11,7 +11,15 @@ from ..constants import DeleteRecursive
 def createFirstCluster(sender, **kwargs):
     from .models import Cluster
 
-    Cluster.get_or_create(id=1, defaults={"id": 1, "name": "system"})
+    Cluster.objects.update_or_create(
+        id=1,
+        defaults={
+            "id": 1,
+            "name": "system",
+            "public": False,
+            "featured": False,
+        },
+    )
 
 
 def deleteContentCb(sender, instance, **kwargs):
@@ -96,7 +104,7 @@ def regenerateKeyHash(sender, force=False, **kwargs):
     from .utils.misc import hash_object, calculate_hashes
     from .models import Content, ContentTag
 
-    contents = Content.objects.filter(tags__tag="type=PublicKey")
+    contents = Content.objects.filter(type="PublicKey")
     # calculate for all old hashes
     if not force:
         contents = contents.exclude(
@@ -132,7 +140,7 @@ def regenerateKeyHash(sender, force=False, **kwargs):
             # ignore duplicate key_hash entries
             ContentTag.objects.bulk_create(batch, ignore_conflicts=True)
         Content.objects.filter(
-            contentHash__in=chashes[1:], tags__tag="type=PublicKey"
+            contentHash__in=chashes[1:], type="PublicKey"
         ).update(contentHash=chashes[0])
 
 

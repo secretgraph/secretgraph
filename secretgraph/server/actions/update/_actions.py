@@ -75,6 +75,9 @@ def manage_actions_fn(
         action_value = ActionHandler.clean_action(
             action_value, request, authset, content
         )
+        action_value["trustedKeys"] = list(
+            Content.trusted_keys(cluster).values_list("contentHash", flat=True)
+        )
 
         # create Action object
         aesgcm = AESGCM(action_key)

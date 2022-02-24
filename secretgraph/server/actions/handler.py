@@ -78,7 +78,7 @@ class ActionHandler:
         action.delete()
 
         if issubclass(sender, Content):
-            excl_filters = Q()
+            excl_filters = Q(type="PrivateKey")
             for i in action_dict["excludeTags"]:
                 excl_filters |= Q(tags__tag__startswith=i)
 
@@ -108,10 +108,13 @@ class ActionHandler:
         }
         if content:
             # ignore tags if specified for a content
+            result["types"] = []
             result["excludeTags"] = []
             result["includeTags"] = []
         else:
-            exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
+            types = action_dict.get("types", [])
+            result["types"] = list(map(str, types))
+            exclude_tags = action_dict.get("excludeTags", [])
             result["excludeTags"] = list(map(str, exclude_tags))
             include_tags = action_dict.get("includeTags", [])
             result["includeTags"] = list(map(str, include_tags))
@@ -126,13 +129,20 @@ class ActionHandler:
             return None
 
         if issubclass(sender, Content):
-            excl_filters = Q()
+            excl_filters = Q(type="PrivateKey")
             for i in action_dict["excludeTags"]:
                 excl_filters |= Q(tags__tag__startswith=i)
 
             incl_filters = Q()
             for i in action_dict["includeTags"]:
-                incl_filters |= Q(tags__tag__startswith=i)
+                if i.startswith("id="):
+                    incl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    incl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    incl_filters |= Q(tags__tag=i[1:])
+                else:
+                    incl_filters |= Q(tags__tag__startswith=i)
 
             return {
                 "filters": ~excl_filters & incl_filters,
@@ -158,7 +168,7 @@ class ActionHandler:
             result["excludeTags"] = []
             result["includeTags"] = []
         else:
-            exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
+            exclude_tags = action_dict.get("excludeTags", [])
             result["excludeTags"] = list(map(str, exclude_tags))
             include_tags = action_dict.get("includeTags", [])
             result["includeTags"] = list(map(str, include_tags))
@@ -179,7 +189,14 @@ class ActionHandler:
 
             incl_filters = Q()
             for i in action_dict["includeTags"]:
-                incl_filters |= Q(tags__tag__startswith=i)
+                if i.startswith("id="):
+                    incl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    incl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    incl_filters |= Q(tags__tag=i[1:])
+                else:
+                    incl_filters |= Q(tags__tag__startswith=i)
 
             return {
                 "filters": ~excl_filters & incl_filters,
@@ -226,7 +243,14 @@ class ActionHandler:
 
             incl_filters = Q()
             for i in action_dict["includeTags"]:
-                incl_filters |= Q(tags__tag__startswith=i)
+                if i.startswith("id="):
+                    incl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    incl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    incl_filters |= Q(tags__tag=i[1:])
+                else:
+                    incl_filters |= Q(tags__tag__startswith=i)
             if scope == "update" and action_dict.get("freeze"):
                 excl_filters = Q(
                     action__in=Subquery(group="fetch", used=True).values("id")
@@ -283,14 +307,8 @@ class ActionHandler:
                 )
             )
         if action_dict.get("injectedTags"):
-            for i in action_dict["injectedTags"]:
-                if i in {"type=PublicKey", "type=PrivateKey"}:
-                    raise ValueError()
             result["form"]["injectedTags"].extend(action_dict["injectedTags"])
         if action_dict.get("allowedTags"):
-            for i in action_dict["allowedTags"]:
-                if i in {"type=PublicKey", "type=PrivateKey", "type="}:
-                    raise ValueError()
             result["form"]["allowedTags"].extend(action_dict["allowedTags"])
         return result
 
@@ -323,8 +341,6 @@ class ActionHandler:
             "contentActionGroup": "push",
             "id": content.id,
             "form": {
-                "requiredKeys": [],
-                "injectedTags": [],
                 "allowedTags": [],
                 # create update action
                 "updateable": bool(action_dict.get("updateable")),
@@ -416,12 +432,6 @@ class ActionHandler:
             },
         }
         if action_dict.get("injectedTags"):
-            for i in action_dict["injectedTags"]:
-                if i in {"type=PublicKey", "type=PrivateKey"}:
-                    raise ValueError(
-                        "use allowedTags instead, "
-                        "in case types should be restricted"
-                    )
             result["form"]["injectedTags"].extend(action_dict["injectedTags"])
         if action_dict.get("allowedTags"):
             result["form"]["allowedTags"] = list(action_dict["allowedTags"])

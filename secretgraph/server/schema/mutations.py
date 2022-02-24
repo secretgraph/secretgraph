@@ -314,7 +314,7 @@ class ContentMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(
         cls, root, info, content, id=None, updateId=None, authorization=None
     ):
-        required_keys = []
+        required_keys = set()
         if id:
             if not updateId:
                 raise ValueError("updateId required")
@@ -330,18 +330,20 @@ class ContentMutation(relay.ClientIDMutation):
                     clusterObj = fetch_by_id(
                         Cluster.objects.all(), [content.cluster]
                     ).first()
-                    required_keys = Content.objects.injected_keys(
-                        groups=clusterObj.group if clusterObj else None
-                    )
+                    if clusterObj:
+                        required_keys = Content.objects.required_keys_full(
+                            clusterObj
+                        )
+                    else:
+                        raise ValueError("cluster not found")
                 else:
-                    required_keys = Content.objects.injected_keys(
-                        groups=content_obj.group
+                    required_keys = Content.objects.required_keys_full(
+                        clusterObj
                     )
-                required_keys = list(
+                required_keys = set(
                     required_keys.values_list("contentHash", flat=True)
                 )
 
-            requiredKeys = set()
             allowedTags = []
             injectedTags = []
             for action in result["actions"].filter(
@@ -351,7 +353,6 @@ class ContentMutation(relay.ClientIDMutation):
             ):
                 form = result["forms"].get(action.id)
                 if form:
-                    requiredKeys.update(form.get("requiredKeys") or [])
                     # None should be possible here for not updating
                     if content.get("tags") is not None:
                         allowed = form.get("allowedTags", None)
@@ -399,13 +400,12 @@ class ContentMutation(relay.ClientIDMutation):
 
             # is a key spec
             if not content.key:
-                required_keys = list(
-                    Content.objects.injected_keys(
-                        group=cluster_obj.group
+                required_keys = set(
+                    Content.objects.required_keys_full(
+                        cluster_obj
                     ).values_list("contentHash", flat=True)
                 )
 
-            requiredKeys = set()
             allowedTags = []
             injectedTags = []
             for action in result["actions"].filter(
@@ -414,7 +414,6 @@ class ContentMutation(relay.ClientIDMutation):
             ):
                 form = result["forms"].get(action.id)
                 if form:
-                    requiredKeys.update(form.get("requiredKeys") or [])
                     # None should be possible here for not updating
                     if content.get("tags") is not None:
                         allowed = form.get("allowedTags", None)
@@ -491,9 +490,9 @@ class PushContentMutation(relay.ClientIDMutation):
         else:
             content["references"] = form.get("injectedReferences") or []
         required_keys = list(
-            Content.objects.injected_keys(group=source.group).values_list(
-                "contentHash", flat=True
-            )
+            Content.objects.injected_keys(
+                group=source.group, states=["required"]
+            ).values_list("contentHash", flat=True)
         )
         required_keys.extend(form.get("requiredKeys", []))
         action_key = None
@@ -564,7 +563,7 @@ class TransferMutation(relay.ClientIDMutation):
             verifiers = None
         else:
             verifiers = Content.objects.filter(
-                id__in=requiredKeys, tags__tag="type=PublicKey"
+                id__in=requiredKeys, type="PublicKey"
             )
 
         tres = transfer_value(
@@ -585,6 +584,7 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
     class Input:
         ids = graphene.List(graphene.NonNull(graphene.ID), required=True)
         authorization = AuthList()
+        state = graphene.String(required=False)
         tags = graphene.List(graphene.NonNull(graphene.String), required=False)
         references = graphene.List(
             graphene.NonNull(ReferenceInput), required=False
@@ -599,6 +599,7 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         root,
         info,
         ids,
+        state=None,
         tags=None,
         operation=None,
         authorization=None,
@@ -613,6 +614,7 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
                 update_metadata_fn(
                     info.context,
                     content_obj,
+                    state=state,
                     tags=tags,
                     operation=operation,
                     authset=authorization,

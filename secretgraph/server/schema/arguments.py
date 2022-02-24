@@ -37,9 +37,6 @@ class ContentKeyInput(graphene.InputObjectType):
     privateKey = Upload(
         required=False, description=("Encrypted private key (requires nonce)")
     )
-    nonce = graphene.String(
-        required=False, description="Nonce for private key (base64, 13 bytes)"
-    )
     privateTags = graphene.List(
         graphene.NonNull(graphene.String),
         required=False,
@@ -57,6 +54,10 @@ class ContentKeyInput(graphene.InputObjectType):
     publicActions = graphene.List(
         graphene.NonNull(ActionInput), required=False
     )
+    nonce = graphene.String(
+        required=False, description="Nonce for private key (base64, 13 bytes)"
+    )
+    publicState = graphene.String(required=False)
 
 
 class ReferenceInput(graphene.InputObjectType):
@@ -71,6 +72,8 @@ class ReferenceInput(graphene.InputObjectType):
 
 class ContentValueInput(graphene.InputObjectType):
     value = Upload(required=False)
+    state = graphene.String(required=False)
+    type = graphene.String(required=False)
     nonce = graphene.String(required=False)
     tags = graphene.List(graphene.NonNull(graphene.String), required=False)
     actions = graphene.List(graphene.NonNull(ActionInput), required=False)

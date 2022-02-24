@@ -17,6 +17,7 @@ from ..actions.view import (
     ContentFetchQueryset,
 )
 from ..utils.encryption import iter_decrypt_contents
+from ... import constants
 
 try:
     from bleach import sanitizer
@@ -144,20 +145,20 @@ def fetch_contents(
         if public is True:
             if not clusters:
                 result["objects"] = result["objects"].filter(
-                    tags__tag="state=public", cluster__public=True
+                    state__in=constants.public_states, cluster__public=True
                 )
             else:
                 result["objects"] = result["objects"].filter(
-                    tags__tag="state=public"
+                    state__in=constants.public_states
                 )
         else:
             result["objects"] = result["objects"].exclude(
-                tags__tag="state=public"
+                state__in=constants.public_states
             )
     else:
         # only private or public with cluster public
         result["objects"] = result["objects"].filter(
-            ~Q(tags__tag="state=public") | Q(cluster__public=True)
+            ~Q(state__in=constants.public_states) | Q(cluster__public=True)
         )
     if clusters:
         result["objects"] = fetch_by_id(
@@ -224,12 +225,7 @@ def read_content_sync(context, content, authorization=None):
         "(set by iter_decrypt_contents, decrypt flag)"
     )
     decryptqpart = urlencode({"token": authorization}, doseq=True)
-    if (
-        hasattr(content, "read_decrypt")
-        and content.tags.filter(
-            Q(tag="type=Text") | Q(tag="type=File")
-        ).exists()
-    ):
+    if hasattr(content, "read_decrypt") and content.type in {"Text", "File"}:
         name = content.tags.filter(tag__startswith="name=").first()
         if name:
             name = name.tag.split("=")[1]

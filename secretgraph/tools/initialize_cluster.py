@@ -143,7 +143,8 @@ def main(argv=None):
     chosen_hash = getattr(hashes, hash_algo.name.upper())()
     prepared_cluster = {
         "publicKey": pub_key_bytes,
-        "publicTags": ["state=public"],
+        "publicTags": [],
+        "state": "public",
         "actions": [{"value": '{"action": "manage"}', "key": action_key_b64}],
     }
     if True:
@@ -160,7 +161,6 @@ def main(argv=None):
         )
         prepared_cluster["nonce"] = nonce_b64
         prepared_cluster["privateTags"] = [
-            "state=internal",
             "key={}".format(base64.b64encode(encSharedKey)),
         ]
     body, files = transform_payload(
@@ -232,13 +232,13 @@ def main(argv=None):
     config_hash = config_hash.digest()
     config_hash = base64.b64encode(config_hash).decode("ascii")
     tags = [
-        "type=Config",
-        "state=internal",
         "key_hash={}".format(action_key_hash),
         "key_hash={}".format(certhash_b64),
     ]
     prepared_content = {
         "cluster": config["configCluster"],
+        "type": "Config",
+        "state": "internal",
         "tags": tags,
         "references": [
             {

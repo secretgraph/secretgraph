@@ -250,7 +250,7 @@ class ContentView(AllowCORSMixin, FormView):
                     privkey_link=Subquery(
                         result["objects"]
                         .filter(
-                            tags__tag="type=PrivateKey",
+                            type="PrivateKey",
                             referencedBy__source__referencedBy=OuterRef("pk"),
                         )
                         .values("link")[:1]
@@ -279,8 +279,7 @@ class ContentView(AllowCORSMixin, FormView):
             response["X-IS-SIGNED"] = "false"
         else:
             response = FileResponse(content.file.open("rb"))
-            _type = content.tags.filter(tag__startswith="type=").first()
-            response["X-TYPE"] = _type.tag.split("=", 1)[1] if _type else ""
+            response["X-TYPE"] = content.type
             verifiers = content.references.filter(group="signature")
             response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce

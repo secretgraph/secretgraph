@@ -10,6 +10,7 @@ from django.apps import apps
 from django.db import models
 from django.utils import timezone
 
+from ... import constants
 from ..actions.handler import ActionHandler
 from ..models import Action, Cluster, Content
 from .misc import calculate_hashes, from_global_id_safe
@@ -106,7 +107,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "scope": scope,
         "rejecting_action": None,
         "clusters": {},
-        "forms": {},
+        "decrypted": {},
         "actions": Action.objects.none(),
         "action_key_map": {},
         # {id: {(action, hash): {id: action.id, requiredKeys: ..., allowedTags: ...}}}  # noqa
@@ -149,7 +150,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                     base64.b64decode(action.nonce), action.value, None
                 )
             )
-            result = ActionHandler.handle_action(
+            decrypted = ActionHandler.handle_action(
                 query.model,
                 action_dict,
                 scope=scope,
@@ -158,50 +159,37 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 request=request,
                 authset=authset,
             )
-            if result is None:
+            if decrypted is None:
                 continue
-            if result is False:
+            if decrypted is False:
                 returnval["rejecting_action"] = (action, action_dict)
                 returnval["objects"] = query.none()
                 return returnval
             if action.contentAction:
-                required_keys_dict = returnval[
+                action_info_dict = returnval[
                     "action_info_contents"
                 ].setdefault(action.contentAction.content_id, {})
             else:
-                required_keys_dict = returnval[
+                action_info_dict = returnval[
                     "action_info_clusters"
                 ].setdefault(action.cluster_id, {})
 
-            foundaccesslevel = result["accesslevel"]
+            foundaccesslevel = decrypted["accesslevel"]
 
             if accesslevel < foundaccesslevel:
                 accesslevel = foundaccesslevel
-                filters = result.get("filters", models.Q())
-                form = result.get("form")
-                if form:
-                    returnval["forms"] = {action.id: form}
+                filters = decrypted.get("filters", models.Q())
+                returnval["decrypted"] = {action.id: decrypted}
 
-                required_keys_dict[(action_dict["action"], action.keyHash)] = {
-                    "id": action.id,
-                    "requiredKeys": form.get("requiredKeys", [])
-                    if form
-                    else [],
-                    "allowedTags": form.get("allowedTags") if form else [],
-                }
+                action_info_dict[
+                    (action_dict["action"], action.keyHash)
+                ] = action.id
             elif accesslevel == foundaccesslevel:
-                filters &= result.get("filters", models.Q())
-                form = result.get("form")
-                if form:
-                    returnval["forms"].setdefault(action.id, form)
-                required_keys_dict.setdefault(
+                filters &= decrypted.get("filters", models.Q())
+                returnval["decrypted"].setdefault(action.id, decrypted)
+                action_info_dict.setdefault(
                     (action_dict["action"], action.keyHash),
-                    {
-                        "requiredKeys": form.get("requiredKeys", [])
-                        if form
-                        else [],
-                        "allowedTags": form.get("allowedTags") if form else [],
-                    },
+                    action.id,
                 )
 
             # update hash to newest algorithm
@@ -264,7 +252,9 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             )
         )
         id_subquery = models.Subquery(
-            query.filter(models.Q(tags__tag="state=public") | _q).values("id")
+            query.filter(
+                models.Q(state__in=constants.public_states) | _q
+            ).values("id")
         )
         id_subquery_without_public = models.Subquery(
             query.filter(_q).values("id")

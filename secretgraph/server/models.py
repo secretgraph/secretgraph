@@ -114,25 +114,47 @@ class Cluster(FlexidModel):
 
 
 class ContentManager(models.Manager):
-    def injected_keys(self, queryset=None, groups=None):
-        if queryset is None:
-            queryset = self.get_queryset()
-        queryset.filter(cluster_id=1)
+    def required_keys_full(
+        self,
+        cluster,
+    ):
+        return self.required_keys(cluster).union(
+            self.injected_keys(groups=cluster)
+        )
+
+    def trusted_keys(self, cluster, /, noannotation=False):
+        return self.get_queryset(noannotation=noannotation).filter(
+            cluster=cluster,
+            state__in=["trusted", "required"],
+            type="PublicKey",
+        )
+
+    def required_keys(self, cluster, /, noannotation=False):
+        return self.get_queryset(noannotation=noannotation).filter(
+            cluster=cluster, state="required", type="PublicKey"
+        )
+
+    def injected_keys(self, /, noannotation=False, groups=None, states=None):
+        queryset = self.get_queryset(noannotation=noannotation).filter(
+            cluster_id=1
+        )
+        if not states:
+            states = constants.public_states
+        queryset = queryset.filter(state__in=states)
+        if isinstance(groups, (Cluster, Content)):
+            groups = groups.groups
         if groups:
             if isinstance(groups, str):
                 groups = [groups]
-            return queryset.filter(
-                injected_for__name__in=groups,
-            )
+            return queryset.filter(injected_for__name__in=groups)
         else:
-            return queryset.filter(
-                injected_for__isnull=False,
-            )
+            return queryset.filter(injected_for__isnull=False)
 
-    def get_queryset(self):
-        return (
-            super().get_queryset().annotate(group=models.F("cluster__groups"))
-        )
+    def get_queryset(self, /, noannotation=False):
+        queryset = super().get_queryset()
+        if noannotation:
+            return queryset
+        return queryset.annotate(group=models.F("cluster__groups"))
 
 
 class Content(FlexidModel):
@@ -159,6 +181,9 @@ class Content(FlexidModel):
         Cluster, on_delete=models.CASCADE, related_name="contents"
     )
     # group virtual injection group attribute
+
+    type: str = models.CharField(max_length=50, null=False)
+    state: str = models.CharField(max_length=10, null=False)
 
     objects = ContentManager()
 
@@ -207,6 +232,37 @@ class Content(FlexidModel):
                 )
             ),
         )
+
+    def clean(self):
+        # TODO: use validationerrors
+        if self.type == "PrivateKey":
+            if self.state != "internal":
+                raise ValidationError(
+                    {
+                        "state": "%s is an invalid state for private key"
+                        % self.state
+                    }
+                )
+        elif self.type == "PublicKey":
+            if self.state not in {"public", "internal", "required", "trusted"}:
+                raise ValidationError(
+                    {
+                        "state": "%s is an invalid state for public key"
+                        % self.state
+                    }
+                )
+        else:
+            if self.type == "Config" and self.state != "internal":
+                raise ValidationError(
+                    {"state": "%s is an invalid state for Config" % self.state}
+                )
+            elif self.state not in {"draft", "public", "internal"}:
+                raise ValidationError(
+                    {
+                        "state": "%s is an invalid state for content"
+                        % self.state
+                    }
+                )
 
     def __repr__(self):
         return "<Content: flexid(%s)>" % self.flexid
@@ -390,7 +446,10 @@ class ClusterGroup(models.Model):
     injected_keys: models.QuerySet[Content] = models.ManyToManyField(
         Content,
         related_name="injected_for",
-        limit_choices_to={"tags__tag": "type=PublicKey", "cluster_id": 1},
+        limit_choices_to={
+            "type": "PublicKey",
+            "cluster_id": 1,
+        },
     )
 
     objects = ClusterGroupManager()
@@ -400,11 +459,11 @@ class ClusterGroup(models.Model):
             raise ValidationError(
                 {"hidden": "injected_keys and hidden are mutual exclusive"}
             )
-        if self.injected_keys.exclude(tags__tag="type=PublicKey").exists():
+        if self.injected_keys.exclude(type="PublicKey").exists():
             raise ValidationError(
                 {"injected_keys": "injected_keys are not keys"}
             )
-        if self.injected_keys.exclude(tags__tag="state=public").exists():
+        if self.injected_keys.exclude(state="public").exists():
             raise ValidationError(
                 {"injected_keys": "injected_keys are not public"}
             )

@@ -1,6 +1,4 @@
-__all__ = [
-    "retrieve_signatures", "verify_signatures"
-]
+__all__ = ["retrieve_signatures", "verify_signatures"]
 
 import base64
 import logging
@@ -19,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def retrieve_signatures(
-    url, headers, session=None, params=None, inline_domain=None,
-    keepalive=True
+    url, headers, session=None, params=None, inline_domain=None, keepalive=True
 ):
     if params is None or inline_domain is None:
         params, inline_domain = get_requests_params(url)
@@ -28,7 +25,7 @@ def retrieve_signatures(
     # signatures should be on first page
     prepared_url = "%s%skeys" % (
         prepared_url,
-        "&" if "?" in prepared_url else "?"
+        "&" if "?" in prepared_url else "?",
     )
     jsonob = None
     if inline_domain:
@@ -36,7 +33,7 @@ def retrieve_signatures(
             prepared_url,
             Connection="Keep-Alive" if keepalive else "close",
             SERVER_NAME=inline_domain,
-            **headers
+            **headers,
         )
         if response.status_code == 200:
             jsonob = response.json()
@@ -54,9 +51,9 @@ def retrieve_signatures(
                 prepared_url,
                 headers={
                     "Connection": "Keep-Alive" if keepalive else "close",
-                    **headers
+                    **headers,
                 },
-                **params
+                **params,
             )
             if response.status_code == 200:
                 jsonob = response.json()
@@ -84,29 +81,26 @@ def verify_signatures(hashobjects, signatures, contents):
         i.name: (
             getattr(i, "finalize", i.digest)(),
             getattr(hashes, i.upper()),
-            utils.Prehashed(getattr(hashes, i.upper()))
-        ) for i in hashobjects
+            utils.Prehashed(getattr(hashes, i.upper())),
+        )
+        for i in hashobjects
     }
     keys = contents.annotate(
         keyHash=Subquery(
             ContentTag.objects.filter(
-                content_id=OuterRef("pk"),
-                tag__startswith="key_hash="
-            ).annotate(
-                keyHash=Substr("tag", 10)
-            ).filter(
-                keyHash__in=signatures.keys()
-            ).values("keyHash")[:1]
+                content_id=OuterRef("pk"), tag__startswith="key_hash="
+            )
+            .annotate(keyHash=Substr("tag", 10))
+            .filter(keyHash__in=signatures.keys())
+            .values("keyHash")[:1]
         )
     ).filter(
         id__in=Subquery(
             ContentTag.objects.filter(
-                tag__in=map(
-                    lambda x: f"key_hash={x}"
-                )
+                tag__in=map(lambda x: f"key_hash={x}")
             ).values("content_id")
         ),
-        tags__tag="type=PublicKey"
+        type="PublicKey",
     )
     for key in keys:
         try:
@@ -116,13 +110,11 @@ def verify_signatures(hashobjects, signatures, contents):
                 digest_dict[algo][0],
                 padding.PSS(
                     mgf=padding.MGF1(digest_dict[algo][1]),
-                    salt_length=padding.PSS.MAX_LENGTH
+                    salt_length=padding.PSS.MAX_LENGTH,
                 ),
-                digest_dict[algo][2]
+                digest_dict[algo][2],
             ):
                 return key
         except Exception as exc:
-            logger.warning(
-                "Failed to decode signature", exc_info=exc
-            )
+            logger.warning("Failed to decode signature", exc_info=exc)
     return None

@@ -109,6 +109,14 @@ class Migration(migrations.Migration):
                         blank=True, db_column="mark_for_destruction", null=True
                     ),
                 ),
+                (
+                    "state",
+                    models.CharField(max_length=10, null=False),
+                ),
+                (
+                    "type",
+                    models.CharField(max_length=50, null=False),
+                ),
                 ("hidden", models.BooleanField(blank=True, default=False)),
                 ("nonce", models.CharField(max_length=255)),
                 (
@@ -302,7 +310,7 @@ class Migration(migrations.Migration):
                     models.ManyToManyField(
                         limit_choices_to={
                             "cluster_id": 1,
-                            "tags__tag": "type=PublicKey",
+                            "type": "PublicKey",
                         },
                         related_name="injected_for",
                         to="secretgraph.Content",

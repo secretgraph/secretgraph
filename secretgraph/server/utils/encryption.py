@@ -12,9 +12,9 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_private_key
 from django.conf import settings
-from django.db.models import Exists, OuterRef, Q, Subquery
+from django.db.models import Exists, OuterRef, Q, Subquery, F
 
-from ...constants import TransferResult
+from ...constants import TransferResult, public_states
 from ..models import Content, ContentReference
 
 logger = logging.getLogger(__name__)
@@ -60,26 +60,29 @@ def create_key_maps(contents, keyset=()):
     from ..models import ContentTag
 
     key_map1 = {}
+    key_map2 = {}
     for keyspec in keyset:
         keyspec = keyspec.split(":", 1)
         if len(keyspec) == 2:
             _key = base64.b64decode(keyspec[1])
             # is hash, flexid or global id
-            key_map1[f"id={keyspec[0]}"] = _key
             key_map1[f"key_hash={keyspec[0]}"] = _key
+            key_map2[keyspec[0]] = _key
 
     reference_query = ContentReference.objects.filter(
         Q(group="key") | Q(group="transfer"), source__in=contents
     )
 
     key_query = Content.objects.filter(
-        tags__tag="type=PrivateKey",
-        tags__tag__in=key_map1.keys(),
+        Q(tags__tag__in=key_map1.keys())
+        | Q(flexid__in=key_map2.keys())
+        | Q(flexid_cached__in=key_map2.keys()),
+        type="PrivateKey",
     ).annotate(
         matching_tag=Subquery(
-            ContentTag.objects.filter(content_id=OuterRef("pk")).values("tag")[
-                :1
-            ]
+            ContentTag.objects.filter(
+                tag__in=key_map1.keys(), content_id=OuterRef("pk")
+            ).values("tag")[:1]
         )
     )
     content_key_map = {}
@@ -87,14 +90,22 @@ def create_key_maps(contents, keyset=()):
     for ref in reference_query.annotate(
         matching_tag=Subquery(
             ContentTag.objects.filter(
-                content_id=OuterRef("pk"), tag__in=key_map1.keys()
+                content_id=OuterRef("target"), tag__in=key_map1.keys()
             ).values("tag")[:1]
-        )
+        ),
+        flexid=F("target__flexid"),
+        flexid_cached=F("target__flexid_cached"),
     ):
         esharedkey = base64.b64decode(ref.extra)
         sharedkey = None
+        matching_key = None
         if ref.matching_tag:
             matching_key = key_map1[ref.matching_tag]
+        elif ref.flexid_cached in key_map2:
+            matching_key = key_map2[ref.flexid_cached]
+        elif ref.flexid in key_map2:
+            matching_key = key_map2[ref.flexid]
+        if matching_key:
             nonce = matching_key[:13]
             matching_key = matching_key[13:]
             aesgcm = AESGCM(matching_key)
@@ -202,8 +213,8 @@ def iter_decrypt_contents(
 
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(
-        Q(tags__tag="type=PublicKey")
-        | Q(tags__tag="type=public")
+        Q(type="PublicKey")
+        | Q(state__in=public_states)
         | Q(id__in=content_map.keys())
     ).annotate(
         is_transfer=Exists(

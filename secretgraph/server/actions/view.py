@@ -14,6 +14,8 @@ def fetch_clusters(
     query,
     ids=None,
     limit_ids=1,
+    states=None,
+    types=None,
     includeTags=None,
     excludeTags=None,
     contentHashes=None,
@@ -23,22 +25,46 @@ def fetch_clusters(
     if ids:
         query = fetch_by_id(query, ids, limit_ids=limit_ids)
 
-    if includeTags or excludeTags or contentHashes:
+    if includeTags or excludeTags or contentHashes or types or states:
         incl_filters = Q()
         for i in includeTags or []:
-            incl_filters |= Q(tags__tag__startswith=i)
+            if i.startswith("id="):
+                incl_filters |= Q(flexid_cached=i[3:])
+            elif i.startswith("=id="):
+                incl_filters |= Q(flexid_cached=i[4:])
+            elif i.startswith("="):
+                incl_filters |= Q(tags__tag=i[1:])
+            else:
+                incl_filters |= Q(tags__tag__startswith=i)
 
         hash_filters = Q()
-        for i in contentHashes or []:
-            hash_filters |= Q(contentHash=i)
+        if contentHashes:
+            hash_filters = Q(contentHash__in=contentHashes)
+        state_filters = Q()
+        if states:
+            state_filters = Q(state__in=states)
+        type_filters = Q()
+        if types:
+            type_filters = Q(type__in=types)
 
         excl_filters = Q()
         for i in excludeTags or []:
-            excl_filters |= Q(tags__tag__startswith=i)
+            if i.startswith("id="):
+                excl_filters |= Q(flexid_cached=i[3:])
+            elif i.startswith("=id="):
+                excl_filters |= Q(flexid_cached=i[4:])
+            elif i.startswith("="):
+                excl_filters |= Q(tags__tag=i[1:])
+            else:
+                excl_filters |= Q(tags__tag__startswith=i)
         query = query.filter(
             id__in=Subquery(
                 Content.objects.filter(
-                    (~excl_filters) & incl_filters & hash_filters
+                    (~excl_filters)
+                    & incl_filters
+                    & hash_filters
+                    & type_filters
+                    & state_filters
                 ).values("cluster_id")
             )
         )
@@ -162,6 +188,8 @@ def fetch_contents(
     actions,
     id=None,
     limit_ids=1,
+    states=None,
+    types=None,
     includeTags=None,
     excludeTags=None,
     contentHashes=None,
@@ -177,20 +205,47 @@ def fetch_contents(
         )
     if includeTags or excludeTags or contentHashes:
         incl_filters = Q()
-        hash_filters = Q()
         excl_filters = Q()
         # only if tags are specified the filtering starts,
         # empty array does no harm
         for i in includeTags or []:
-            incl_filters |= Q(tags__tag__startswith=i)
+            if i.startswith("id="):
+                incl_filters |= Q(flexid_cached=i[3:])
+            elif i.startswith("=id="):
+                incl_filters |= Q(flexid_cached=i[4:])
+            elif i.startswith("="):
+                incl_filters |= Q(tags__tag=i[1:])
+            else:
+                incl_filters |= Q(tags__tag__startswith=i)
 
         # only if tags are specified the filtering starts,
         # empty array does no harm
         for i in excludeTags or []:
-            excl_filters |= Q(tags__tag__startswith=i)
-        for i in contentHashes or []:
-            hash_filters |= Q(contentHash=i)
-        query = query.filter((~excl_filters) & incl_filters & hash_filters)
+            if i.startswith("id="):
+                excl_filters |= Q(flexid_cached=i[3:])
+            elif i.startswith("=id="):
+                excl_filters |= Q(flexid_cached=i[4:])
+            elif i.startswith("="):
+                excl_filters |= Q(tags__tag=i[1:])
+            else:
+                excl_filters |= Q(tags__tag__startswith=i)
+        hash_filters = Q()
+        if contentHashes:
+            hash_filters = Q(contentHash__in=contentHashes)
+        state_filters = Q()
+        if states:
+            state_filters = Q(state__in=states)
+        type_filters = Q()
+        if types:
+            type_filters = Q(type__in=types)
+
+        query = query.filter(
+            (~excl_filters)
+            & incl_filters
+            & hash_filters
+            & type_filters
+            & state_filters
+        )
 
     if minUpdated and not maxUpdated:
         maxUpdated = dt.max

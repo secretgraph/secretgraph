@@ -12,7 +12,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
-from django.db.models import Q
 
 from .... import constants
 from ...utils.auth import ids_to_results, initializeCachedResult
@@ -70,18 +69,18 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
         {
             "nonce": b"",
             "value": key_obj["publicKey"],
-            "tags": chain(
-                ["type=PublicKey"], hashes_tags, key_obj["publicTags"]
-            ),
+            "type": "PublicKey",
+            "state": key_obj.get("publicState") or "public",
+            "tags": chain(hashes_tags, key_obj["publicTags"]),
             "contentHash": hashes[0],
             "actions": key_obj.get("publicActions"),
         },
         {
             "nonce": key_obj["nonce"],
             "value": key_obj["privateKey"],
-            "tags": chain(
-                ["type=PrivateKey"], hashes_tags, key_obj["privateTags"]
-            ),
+            "type": "PrivateKey",
+            "state": "internal",
+            "tags": chain(hashes_tags, key_obj["privateTags"]),
             "contentHash": None,
             "actions": key_obj.get("privateActions"),
         }
@@ -93,6 +92,8 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
 def _update_or_create_content_or_key(
     request, content, objdata, authset, is_key, required_keys
 ):
+    create = not content.id
+
     if isinstance(objdata.get("cluster"), str):
         objdata["cluster"] = (
             ids_to_results(
@@ -110,37 +111,24 @@ def _update_or_create_content_or_key(
         content.cluster = objdata["cluster"]
     if not getattr(content, "cluster", None):
         raise ValueError("No cluster specified")
-
-    create = not content.id
-
+    if create:
+        content.type = objdata["type"]
+    if not content.type:
+        raise ValueError("No type specified")
+    elif not is_key and content.type in {"PrivateKey", "PublicKey"}:
+        raise ValueError("%s is an invalid type" % content.type)
+    content_state = objdata.get("state")
+    if content_state:
+        content.state = content_state
+    if not content.state:
+        raise ValueError("No state specified")
     tags_dict = None
-    content_type = None
-    content_state = None
     key_hashes_tags = set()
     if objdata.get("tags") is not None:
-        tags_dict, key_hashes_tags = transform_tags(objdata.get("tags"))
-        content_state = next(iter(tags_dict.get("state", {None})))
-        content_type = next(iter(tags_dict.get("type", {None})))
-        # final_tags = [ContentTag(content=content, tag=i) for i in final_tags]
-        if is_key:
-            if content_state not in {"public", "internal"}:
-                raise ValueError(
-                    "%s is an invalid state for key" % content_state
-                )
-        else:
-            if content_type in {"PrivateKey", "PublicKey", None}:
-                raise ValueError(
-                    "%s is an invalid type or not set" % content_type
-                )
-            elif content_type == "Config" and content_state != "internal":
-                raise ValueError(
-                    "%s is an invalid state for Config" % content_type
-                )
-            elif content_state not in {"draft", "public", "internal"}:
-                raise ValueError(
-                    "%s is an invalid state for content" % content_state
-                )
-    elif not content.id:
+        tags_dict, key_hashes_tags = transform_tags(
+            content.type, objdata.get("tags")
+        )
+    elif create:
         raise ValueError("Content tags are missing")
     else:
         if objdata.get("references") is not None:
@@ -149,7 +137,7 @@ def _update_or_create_content_or_key(
     # if create checked in parent function
     if objdata.get("value"):
         # normalize nonce and check constraints
-        if content_state == "public":
+        if content.state == "public":
             objdata["nonce"] = ""
             checknonce = b""
         elif isinstance(objdata["nonce"], bytes):
@@ -158,7 +146,7 @@ def _update_or_create_content_or_key(
         else:
             checknonce = base64.b64decode(objdata["nonce"])
         # is public key or public? then ignore nonce checks
-        if not is_key and content_state != "public":
+        if not is_key and content.state != "public":
             if not checknonce:
                 raise ValueError(
                     "Content must be encrypted and nonce specified"
@@ -185,6 +173,7 @@ def _update_or_create_content_or_key(
             objdata["value"] = ContentFile(base64.b64decode(objdata["value"]))
         else:
             objdata["value"] = File(objdata["value"])
+        content.clean()
 
         def save_fn_value():
             content.file.delete(False)
@@ -236,10 +225,10 @@ def _update_or_create_content_or_key(
 
     final_tags = None
     if tags_dict is not None:
-        if content_type == "PrivateKey" and len(key_hashes_tags) < 1:
+        if content.type == "PrivateKey" and len(key_hashes_tags) < 1:
             raise ValueError("requires hash of decryption key as key_hash tag")
         elif (
-            content_type == "PublicKey"
+            content.type == "PublicKey"
             and content.contentHash not in key_hashes_tags
         ):
             raise ValueError(
@@ -262,7 +251,7 @@ def _update_or_create_content_or_key(
     if final_references is not None:
         if (
             not is_key
-            and content_state != "public"
+            and content.state != "public"
             and len(key_hashes_ref) < 1
         ):
             raise ValueError(">=1 key references required for content")
@@ -283,15 +272,8 @@ def _update_or_create_content_or_key(
                     refresh_fields(final_tags, "content")
                 )
             else:
-                # simply ignore id=, can only be changed in regenerateFlexid
-                content.tags.exclude(Q(tag__startswith="id=")).delete()
                 ContentTag.objects.bulk_create(final_tags)
 
-        # create id tag after object was created or update it
-        content.tags.update_or_create(
-            defaults={"tag": f"id={content.flexid_cached}"},
-            tag__startswith="id=",
-        )
         if final_references is not None:
             if not create:
                 if is_key:
@@ -335,7 +317,7 @@ def create_key_fn(request, objdata, authset=None):
     if objdata["cluster"].id:
         publickey_content = Content.objects.filter(
             cluster=objdata["cluster"],
-            tags__tag="type=PublicKey",
+            type="PublicKey",
             tags__tag__in=map(lambda x: f"key_hash={x}", hashes),
         ).first()
     publickey_content = publickey_content or Content(
@@ -439,7 +421,7 @@ def update_content_fn(
     except Exception:
         raise ValueError("updateId is not an uuid")
     is_key = False
-    if content.tags.filter(tag="type=PublicKey"):
+    if content.type == "PublicKey":
         # can only update public tags and actions, updateId
         is_key = True
         required_keys = []
@@ -453,13 +435,13 @@ def update_content_fn(
                 "publicTags": key_obj["publicTags"]
                 if key_obj.get("publicTags") is not None
                 else content.tags.exclude(
-                    tag__regex="^(key_hash|type)="
+                    tag__startswith="key_hash="
                 ).values_list("tag", flat=True),
                 "privateTags": [],
             },
             publicKeyContent=content,
         )
-    elif content.tags.filter(tag="type=PrivateKey"):
+    elif content.type == "PrivateKey":
         # can only update private tags and actions, updateId
         is_key = True
         key_obj = objdata.get("key")
@@ -473,7 +455,7 @@ def update_content_fn(
                 "privateTags": key_obj["privateTags"]
                 if key_obj.get("privateTags") is not None
                 else content.tags.exclude(
-                    tag__regex="^(key_hash|type)="
+                    tag__startswith="key_hash="
                 ).values_list("tag", flat=True),
             },
         )

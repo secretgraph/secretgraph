@@ -58,7 +58,7 @@ class ClusterGroupNode(DjangoObjectType):
         model = ClusterGroup
         name = "ClusterGroup"
         interfaces = (relay.Node,)
-        exclude = ["properties", "injected_keys"]
+        fields = "__all__"
 
     injected_keys = DjangoListField(InjectedKeyNode)
     properties = graphene.List(
@@ -126,7 +126,7 @@ class ActionEntry(graphene.ObjectType):
     keyHash = graphene.String(required=True)
     type = graphene.String(required=True)
     # of content keys
-    requiredKeys = graphene.List(
+    trustedKeys = graphene.List(
         graphene.NonNull(graphene.String), required=True
     )
     allowedTags = graphene.List(
@@ -167,9 +167,8 @@ class ActionMixin(object):
                     yield ActionEntry(
                         keyHash=key_val[0][1],
                         type=key_val[0][0],
-                        requiredKeys=key_val[1]["requiredKeys"],
                         allowedTags=(
-                            key_val[1]["allowedTags"]
+                            result["decrypted"][key_val[1]].get("allowedTags")
                             if key_val[0][0] not in {"view", "auth"}
                             else None
                         ),
@@ -190,7 +189,6 @@ class ActionMixin(object):
                     yield ActionEntry(
                         keyHash=action.keyHash,
                         type="other",
-                        requiredKeys=[],
                         allowedTags=None,
                     )
             else:
@@ -234,6 +232,8 @@ class ActionMixin(object):
 
 
 class ContentReferenceNode(DjangoObjectType):
+    safe = False
+
     class Meta:
         model = ContentReference
         name = "ContentReference"
@@ -292,6 +292,14 @@ class ContentReferenceNode(DjangoObjectType):
 class ContentReferenceConnectionField(DjangoConnectionField):
     def __init__(self, of_type=ContentReferenceNode, *args, **kwargs):
         kwargs.setdefault(
+            "states",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
+        )
+        kwargs.setdefault(
+            "types",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
+        )
+        kwargs.setdefault(
             "includeTags",
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
@@ -324,6 +332,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             "updated",
             "contentHash",
             "updateId",
+            "type",
+            "state",
         ]
 
     deleted = graphene.DateTime(required=False)
@@ -369,7 +379,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         deleted=UseCriteria.FALSE,
         **kwargs,
     ):
-        if self.limited:
+        if self.limited or self.cluster_id == 1:
             return ContentReference.objects.none()
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
@@ -384,6 +394,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             target__in=fetch_contents(
                 query,
                 result["actions"],
+                states=kwargs.get("states"),
+                types=kwargs.get("types"),
                 includeTags=kwargs.get("tagsInclude"),
                 excludeTags=kwargs.get("tagsExclude"),
                 contentHashes=kwargs.get("contentHashes"),
@@ -400,7 +412,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         deleted=UseCriteria.FALSE,
         **kwargs,
     ):
-        if self.limited:
+        if self.limited or self.cluster_id == 1:
             return ContentReference.objects.none()
         result = initializeCachedResult(info.context, authset=authorization)[
             "Content"
@@ -416,6 +428,8 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             source__in=fetch_contents(
                 query,
                 result["actions"],
+                states=kwargs.get("states"),
+                types=kwargs.get("types"),
                 includeTags=kwargs.get("tagsInclude"),
                 excludeTags=kwargs.get("tagsExclude"),
                 contentHashes=kwargs.get("contentHashes"),
@@ -453,9 +467,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )
         if self.limited:
             tags.filter(
-                Q(tag__startswith="key_hash=")
-                | Q(tag__startswith="type=")
-                | Q(tag__startswith="state=")
+                Q(tag__startswith="key_hash=") | Q(tag__startswith="name=")
             )
         return tags
 
@@ -482,6 +494,14 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
 
 class ContentConnectionField(DjangoConnectionField):
     def __init__(self, type=ContentNode, *args, subfield=False, **kwargs):
+        kwargs.setdefault(
+            "states",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
+        )
+        kwargs.setdefault(
+            "types",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
+        )
         kwargs.setdefault(
             "includeTags",
             graphene.List(graphene.NonNull(graphene.String), required=False),
@@ -548,16 +568,19 @@ class ContentConnectionField(DjangoConnectionField):
             if public == UseCriteriaPublic.TRUE:
                 if not clusters:
                     queryset = queryset.filter(
-                        tags__tag="state=public", cluster__public=True
+                        state__in=constants.public_states,
+                        cluster__public=True,
                     )
                 else:
-                    queryset = queryset.filter(tags__tag="state=public")
+                    queryset = queryset.filter(
+                        state__in=constants.public_states
+                    )
             else:
-                queryset = queryset.exclude(tags__tag="state=public")
+                queryset = queryset.exclude(state__in=constants.public_states)
         else:
             # only private or public with cluster public
             queryset = queryset.filter(
-                ~Q(tags__tag="state=public") | Q(cluster__public=True)
+                ~Q(state__in=constants.public_states) | Q(cluster__public=True)
             )
 
         if deleted != UseCriteria.IGNORE:
@@ -579,6 +602,8 @@ class ContentConnectionField(DjangoConnectionField):
         return fetch_contents(
             queryset.distinct(),
             result["actions"],
+            states=args.get("states"),
+            types=args.get("types"),
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
             minUpdated=args.get("minUpdated"),
@@ -619,12 +644,12 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         )["Content"]
         contents = result["objects"]
         if self.limited:
-            contents = contents.filter(tag__tag="type=PublicKey").annotate(
-                limited=True
-            )
+            contents = contents.annotate(limited=True)
         return fetch_contents(
             contents.filter(cluster_id=self.id),
             result["actions"],
+            states=kwargs.get("states"),
+            types=["PublicKey"] if self.limited else kwargs.get("types"),
             includeTags=kwargs.get("tagsInclude"),
             excludeTags=kwargs.get("tagsExclude"),
             contentHashes=kwargs.get("contentHashes"),
@@ -682,6 +707,14 @@ class ClusterConnectionField(DjangoConnectionField):
                 required=False,
                 description=("Search description and id"),
             ),
+        )
+        kwargs.setdefault(
+            "states",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
+        )
+        kwargs.setdefault(
+            "types",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
             "includeTags",
@@ -791,6 +824,8 @@ class ClusterConnectionField(DjangoConnectionField):
             ).distinct(),
             ids=ids,
             limit_ids=None,
+            states=args.get("states"),
+            types=args.get("types"),
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
             minUpdated=args.get("minUpdated"),
