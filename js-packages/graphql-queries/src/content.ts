@@ -3,6 +3,8 @@ export const contentFeedQuery = gql`
     query SideBarContentFeedQuery(
         $clusters: [ID!]
         $authorization: [String!]
+        $states: [String!]
+        $types: [String!]
         $include: [String!]
         $exclude: [String!]
         $deleted: UseCriteria
@@ -13,6 +15,9 @@ export const contentFeedQuery = gql`
     ) {
         contents: secretgraph(authorization: $authorization) {
             contents(
+                includeTypes: $types
+                excludeTypes: ["Config", "PrivateKey"]
+                states: $states
                 clusters: $clusters
                 includeTags: $include
                 excludeTags: $exclude
@@ -25,6 +30,8 @@ export const contentFeedQuery = gql`
                     key: "feedContents"
                     filter: [
                         "authorization"
+                        "clusters"
+                        "types"
                         "clusters"
                         "includeTags"
                         "excludeTags"
@@ -74,6 +81,8 @@ export const createContentMutation = gql`
         $references: [ReferenceInput!]
         $value: Upload!
         $nonce: String
+        $state: String!
+        $type: String!
         $contentHash: String
         $authorization: [String!]
         $actions: [ActionInput!]
@@ -83,6 +92,8 @@ export const createContentMutation = gql`
                 content: {
                     cluster: $cluster
                     value: {
+                        state: $state
+                        type: $type
                         tags: $tags
                         value: $value
                         nonce: $nonce
@@ -198,6 +209,8 @@ export const updateContentMutation = gql`
         $id: ID!
         $updateId: ID!
         $cluster: ID
+        $state: String
+        $type: String
         $tags: [String!]
         $actions: [ActionInput!]
         $references: [ReferenceInput!]
@@ -215,6 +228,8 @@ export const updateContentMutation = gql`
                         tags: $tags
                         value: $value
                         nonce: $nonce
+                        type: $type
+                        state: $state
                         actions: $actions
                     }
                     contentHash: $contentHash
@@ -241,7 +256,7 @@ export const findPublicKeyQuery = gql`
             node(id: $id) {
                 ... on Content {
                     id
-                    tags(includeTags: ["type="])
+                    type
                     references(groups: ["public_key"]) {
                         edges {
                             node {
@@ -249,6 +264,7 @@ export const findPublicKeyQuery = gql`
                                     id
                                     updateId
                                     link
+                                    type
                                 }
                             }
                         }
@@ -280,7 +296,7 @@ export const keysRetrievalQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        requiredKeys
+                        trustedKeys
                         allowedTags
                     }
                     cluster {
@@ -296,7 +312,7 @@ export const keysRetrievalQuery = gql`
                                 extra
                                 target {
                                     link
-                                    tags(includeTags: ["type=", "key_hash="])
+                                    tags(includeTags: ["key_hash="])
                                 }
                             }
                         }
@@ -321,9 +337,9 @@ export const keysRetrievalQuery = gql`
                                                 extra
                                                 target {
                                                     link
+                                                    type
                                                     tags(
                                                         includeTags: [
-                                                            "type="
                                                             "key_hash="
                                                         ]
                                                     )
@@ -364,7 +380,7 @@ export const contentRetrievalQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        requiredKeys
+                        trustedKeys
                         allowedTags
                     }
                     cluster {
@@ -379,7 +395,8 @@ export const contentRetrievalQuery = gql`
                                 extra
                                 target {
                                     link
-                                    tags(includeTags: ["type", "key_hash="])
+                                    type
+                                    tags(includeTags: ["key_hash="])
                                 }
                             }
                         }
@@ -405,7 +422,7 @@ export const findConfigQuery = gql`
                 public: FALSE
                 deleted: FALSE
                 clusters: [$cluster]
-                includeTags: ["type=Config"]
+                includeTypes: ["Config"]
                 contentHashes: $contentHashes
             ) {
                 edges {
@@ -458,9 +475,10 @@ export const getContentConfigurationQuery = gql`
             config {
                 id
                 hashAlgorithms
-                injectedClusters {
-                    group
-                    keys {
+                groups {
+                    name
+                    injected_keys {
+                        id
                         link
                         hash
                     }
@@ -473,15 +491,16 @@ export const getContentConfigurationQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        requiredKeys
+                        trustedKeys
                         allowedTags
                     }
 
-                    contents(includeTags: ["type=PublicKey"], deleted: FALSE) {
+                    contents(includeTypes: ["PublicKey"], deleted: FALSE) {
                         edges {
                             node {
                                 link
-                                tags(includeTags: ["key_hash=", "type="])
+                                type
+                                tags(includeTags: ["key_hash="])
                             }
                         }
                     }
@@ -491,24 +510,22 @@ export const getContentConfigurationQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        requiredKeys
+                        trustedKeys
                         allowedTags
                     }
                     id
                     nonce
                     link
-                    tags(includeTags: ["type="])
+                    type
                     cluster {
                         id
                         group
-                        contents(
-                            includeTags: ["type=PublicKey"]
-                            deleted: FALSE
-                        ) {
+                        contents(includeTypes: ["PublicKey"], deleted: FALSE) {
                             edges {
                                 node {
                                     link
-                                    tags(includeTags: ["key_hash=", "type="])
+                                    type
+                                    tags(includeTags: ["key_hash="])
                                 }
                             }
                         }

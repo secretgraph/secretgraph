@@ -36,7 +36,7 @@ export async function createCluster(options: {
     const publicKeyPromise = unserializeToArrayBuffer(options.publicKey).then(
         (obj) => new Blob([obj])
     )
-    const privateTags = ['state=internal']
+    const privateTags = []
     if (options.privateKey && options.privateKeyKey) {
         nonce = crypto.getRandomValues(new Uint8Array(13))
         privateKeyPromise = encryptAESGCM({
@@ -195,7 +195,9 @@ export async function initializeCluster({
         value: new Blob([JSON.stringify(config)]),
         pubkeys: [publicKey],
         privkeys: [privateKey],
-        tags: ['type=Config', 'state=internal'],
+        type: 'Config',
+        state: 'internal',
+        tags: [],
         contentHash: digest,
         hashAlgorithm,
         authorization,

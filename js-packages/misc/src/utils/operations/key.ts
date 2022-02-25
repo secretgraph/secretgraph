@@ -22,6 +22,7 @@ export async function createKeys({
     cluster,
     privateKey,
     pubkeys,
+    publicState = 'public',
     ...options
 }: {
     client: ApolloClient<any>
@@ -33,6 +34,7 @@ export async function createKeys({
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     privateTags?: Iterable<string | PromiseLike<string>>
     publicTags?: Iterable<string | PromiseLike<string>>
+    publicState?: string
     contentHash?: string | null
     privateActions?: Iterable<Interfaces.ActionInterface>
     publicActions?: Iterable<Interfaces.ActionInterface>
@@ -83,15 +85,9 @@ export async function createKeys({
     if (options.privateTags) {
         privateTags.push(...(await Promise.all(options.privateTags)))
     }
-    if (privateTags.every((val) => !val.startsWith('state='))) {
-        privateTags.push('state=internal')
-    }
     const publicTags: string[] = options.publicTags
         ? await Promise.all(options.publicTags)
         : []
-    if (publicTags.every((val) => !val.startsWith('state='))) {
-        publicTags.push('state=public')
-    }
     return await client.mutate({
         mutation: createKeysMutation,
         // we need a current updateId
@@ -101,6 +97,7 @@ export async function createKeys({
             references: references.concat(await signatureReferencesPromise),
             privateTags,
             publicTags,
+            publicState,
             nonce: await serializeToBase64(nonce),
             publicKey: new Blob([await unserializeToArrayBuffer(publicKey)]),
             privateKey: await encryptedPrivateKeyPromise,
@@ -191,10 +188,6 @@ export async function updateKey({
         references = publicKeyReferences.concat(
             options.references ? [...options.references] : []
         )
-
-        if ((tags as string[]).every((val) => !val.startsWith('state='))) {
-            ;(tags as string[]).push('state=internal')
-        }
     } else if (updatedKey && updatedKey.type == 'public') {
         if (!options.hashAlgorithm) {
             throw Error('hashAlgorithm required for key resigning')
@@ -208,16 +201,10 @@ export async function updateKey({
         references = (await signatureReferencesPromise).concat(
             options.references ? [...options.references] : []
         )
-        if (tags && tags.every((val) => !val.startsWith('state='))) {
-            tags.push('state=public')
-        }
     } else {
         references = options.references ? options.references : null
     }
 
-    if (tags && tags.every((val) => !val.startsWith('state='))) {
-        throw Error('Missing state')
-    }
     return await client.mutate({
         // we need a current updateId
         awaitRefetchQueries: true,

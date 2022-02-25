@@ -74,7 +74,7 @@ export default React.memo(function ActiveCluster({
             refetchNotify={refetch}
             cluster={cluster}
             // state public needs no key_hash
-            injectInclude={['state=public']}
+            injectStates={['public']}
             {...props}
         />
     )

@@ -64,10 +64,7 @@ const SideBarItems = () => {
 
     const activeUrlAsURL = new URL(activeUrl, window.location.href).href
     const goTo = (node: any) => {
-        let type =
-            node.__typename == 'Cluster'
-                ? 'Cluster'
-                : node.tags.find((flag: string) => flag.startsWith('type='))
+        let type = node.__typename == 'Cluster' ? 'Cluster' : node.type
         if (type && type != 'Cluster') {
             // split works different in js, so 2
             type = type.match(/=(.*)/)[1]
@@ -165,7 +162,7 @@ const SideBarItems = () => {
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
-                            injectInclude={['state=draft']}
+                            injectStates={['draft']}
                             label="Drafts"
                             heading
                             goTo={goTo}
@@ -176,7 +173,7 @@ const SideBarItems = () => {
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
-                            injectInclude={['state=internal']}
+                            injectStates={['internal']}
                             label="Internal"
                             heading
                             goTo={goTo}

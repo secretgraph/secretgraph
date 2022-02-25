@@ -59,13 +59,13 @@ key refs are assigned to privatekey, the rest to the public key
         -   fetch: autodelete content after viewing
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
-        -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
+        -   excludeTags: like param, exclude contents with tag, default: \[\]
 -   view (Content, Cluster) affects (Content, Cluster):
     -   for Content:
         -   fetch: autodelete content after viewing
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
-        -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
+        -   excludeTags: like param, exclude contents with tag, default: \[\]
 -   delete (Content, Cluster):
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
@@ -126,6 +126,10 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 # Internal
 
 Describe how internal plugins works
+
+## includeTypes and excludeTypes
+
+includeTypes is stronger than excludeTypes, it disables excludeTypes
 
 ## ContentActions
 

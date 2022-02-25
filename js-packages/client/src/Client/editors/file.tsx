@@ -417,6 +417,10 @@ const FileIntern = ({
                             config,
                             cluster: values.cluster,
                             value,
+                            state: values.state,
+                            type: value.type.startsWith('text/')
+                                ? 'Text'
+                                : 'File',
                             tags: [
                                 !values.encryptName || values.state == 'public'
                                     ? `name=${values.name}`
@@ -424,12 +428,6 @@ const FileIntern = ({
                                           'base64'
                                       )}`,
                                 `mime=${value.type}`,
-                                `state=${values.state}`,
-                                `type=${
-                                    value.type.startsWith('text/')
-                                        ? 'Text'
-                                        : 'File'
-                                }`,
                             ].concat(
                                 values.keywords.map((val) => `keyword=${val}`)
                             ),

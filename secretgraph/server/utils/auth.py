@@ -108,9 +108,10 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "rejecting_action": None,
         "clusters": {},
         "decrypted": {},
+        "active_actions": set(),
         "actions": Action.objects.none(),
         "action_key_map": {},
-        # {id: {(action, hash): {id: action.id, requiredKeys: ..., allowedTags: ...}}}  # noqa
+        # {id: {(action, hash): id}}  # noqa
         "action_info_clusters": {},
         "action_info_contents": {},
     }
@@ -173,24 +174,33 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 action_info_dict = returnval[
                     "action_info_clusters"
                 ].setdefault(action.cluster_id, {})
+            returnval["decrypted"].setdefault(action.id, decrypted)
 
-            foundaccesslevel = decrypted["accesslevel"]
+            newaccesslevel = decrypted["accesslevel"]
 
-            if accesslevel < foundaccesslevel:
-                accesslevel = foundaccesslevel
+            if accesslevel < newaccesslevel:
+                accesslevel = newaccesslevel
                 filters = decrypted.get("filters", models.Q())
-                returnval["decrypted"] = {action.id: decrypted}
 
                 action_info_dict[
                     (action_dict["action"], action.keyHash)
                 ] = action.id
-            elif accesslevel == foundaccesslevel:
+                returnval["active_actions"] = set()
+            elif accesslevel == newaccesslevel:
                 filters &= decrypted.get("filters", models.Q())
-                returnval["decrypted"].setdefault(action.id, decrypted)
                 action_info_dict.setdefault(
                     (action_dict["action"], action.keyHash),
                     action.id,
                 )
+            if accesslevel <= newaccesslevel:
+
+                if isinstance(query.model, Content):
+                    returnval["active_actions"].add(action.id)
+                elif (
+                    isinstance(query.model, Cluster)
+                    and not action.contentAction
+                ):
+                    returnval["active_actions"].add(action.id)
 
             # update hash to newest algorithm
             if action.keyHash != keyhashes[0]:

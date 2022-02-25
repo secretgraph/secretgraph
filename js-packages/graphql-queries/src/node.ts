@@ -31,7 +31,7 @@ export const getActionsQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        requiredKeys
+                        trustedKeys
                         allowedTags
                     }
                 }
@@ -39,7 +39,7 @@ export const getActionsQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        requiredKeys
+                        trustedKeys
                         allowedTags
                     }
                 }

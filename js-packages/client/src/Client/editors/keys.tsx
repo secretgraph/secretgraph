@@ -1014,7 +1014,7 @@ async function findOrReturn({
         },
     })
     const node = data.secretgraph.node
-    if (node.tags.includes('type=PublicKey')) {
+    if (node.type == 'PublicKey') {
         return true
     }
     let d = null

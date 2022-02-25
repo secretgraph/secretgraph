@@ -60,7 +60,7 @@ class ClusterGroupNode(DjangoObjectType):
         interfaces = (relay.Node,)
         fields = "__all__"
 
-    injected_keys = DjangoListField(InjectedKeyNode)
+    injected_keys = DjangoListField(InjectedKeyNode, name="injected_keys")
     properties = graphene.List(
         graphene.NonNull(graphene.String),
         required=True,
@@ -125,12 +125,11 @@ class ActionEntry(graphene.ObjectType):
     # of action key
     keyHash = graphene.String(required=True)
     type = graphene.String(required=True)
-    # of content keys
-    trustedKeys = graphene.List(
-        graphene.NonNull(graphene.String), required=True
-    )
     allowedTags = graphene.List(
         graphene.NonNull(graphene.String), required=False
+    )
+    trustedKeys = graphene.List(
+        graphene.NonNull(graphene.String), required=True
     )
 
 
@@ -163,10 +162,14 @@ class ActionMixin(object):
                 if key_val[0][0] == constants.Action.MANAGE:
                     has_manage = True
                 if key_val[0][0] not in constants.Action.protected_values:
-                    seen_ids.add(key_val[1]["id"])
+                    seen_ids.add(key_val[1])
                     yield ActionEntry(
                         keyHash=key_val[0][1],
                         type=key_val[0][0],
+                        trustedKeys=(
+                            result["decrypted"][key_val[1]].get("trustedKeys")
+                            or []
+                        ),
                         allowedTags=(
                             result["decrypted"][key_val[1]].get("allowedTags")
                             if key_val[0][0] not in {"view", "auth"}
@@ -189,6 +192,10 @@ class ActionMixin(object):
                     yield ActionEntry(
                         keyHash=action.keyHash,
                         type="other",
+                        trustedKeys=(
+                            result["decrypted"][key_val[1]].get("trustedKeys")
+                            or []
+                        ),
                         allowedTags=None,
                     )
             else:
@@ -202,7 +209,10 @@ class ActionMixin(object):
                     yield ActionEntry(
                         keyHash=action.keyHash,
                         type="other",
-                        requiredKeys=[],
+                        trustedKeys=(
+                            result["decrypted"][key_val[1]].get("trustedKeys")
+                            or []
+                        ),
                         allowedTags=None,
                     )
 
@@ -296,7 +306,11 @@ class ContentReferenceConnectionField(DjangoConnectionField):
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "types",
+            "includeTypes",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
+        )
+        kwargs.setdefault(
+            "excludeTypes",
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
@@ -396,8 +410,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
                 result["actions"],
                 states=kwargs.get("states"),
                 types=kwargs.get("types"),
-                includeTags=kwargs.get("tagsInclude"),
-                excludeTags=kwargs.get("tagsExclude"),
+                includeTypes=kwargs.get("includeTypes"),
+                excludeTypes=kwargs.get("excludeTypes"),
+                includeTags=kwargs.get("includeTags"),
+                excludeTags=kwargs.get("excludeTags"),
                 contentHashes=kwargs.get("contentHashes"),
                 noFetch=True,
             ),
@@ -429,9 +445,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
                 query,
                 result["actions"],
                 states=kwargs.get("states"),
-                types=kwargs.get("types"),
-                includeTags=kwargs.get("tagsInclude"),
-                excludeTags=kwargs.get("tagsExclude"),
+                includeTypes=kwargs.get("includeTypes"),
+                excludeTypes=kwargs.get("excludeTypes"),
+                includeTags=kwargs.get("includeTags"),
+                excludeTags=kwargs.get("excludeTags"),
                 contentHashes=kwargs.get("contentHashes"),
                 noFetch=True,
             ),
@@ -499,7 +516,11 @@ class ContentConnectionField(DjangoConnectionField):
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
-            "types",
+            "includeTypes",
+            graphene.List(graphene.NonNull(graphene.String), required=False),
+        )
+        kwargs.setdefault(
+            "excludeTypes",
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
         kwargs.setdefault(
@@ -603,7 +624,8 @@ class ContentConnectionField(DjangoConnectionField):
             queryset.distinct(),
             result["actions"],
             states=args.get("states"),
-            types=args.get("types"),
+            includeTypes=args.get("includeTypes"),
+            excludeTypes=args.get("excludeTypes"),
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
             minUpdated=args.get("minUpdated"),
@@ -712,9 +734,17 @@ class ClusterConnectionField(DjangoConnectionField):
             "states",
             graphene.List(graphene.NonNull(graphene.String), required=False),
         )
+
         kwargs.setdefault(
-            "types",
+            "includeTypes",
             graphene.List(graphene.NonNull(graphene.String), required=False),
+        )
+        kwargs.setdefault(
+            "excludeTypes",
+            graphene.List(
+                graphene.NonNull(graphene.String),
+                required=False,
+            ),
         )
         kwargs.setdefault(
             "includeTags",
@@ -825,7 +855,8 @@ class ClusterConnectionField(DjangoConnectionField):
             ids=ids,
             limit_ids=None,
             states=args.get("states"),
-            types=args.get("types"),
+            includeTypes=args.get("includeTypes"),
+            excludeTypes=args.get("excludeTypes"),
             includeTags=args.get("includeTags"),
             excludeTags=args.get("excludeTags"),
             minUpdated=args.get("minUpdated"),

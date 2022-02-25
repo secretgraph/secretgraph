@@ -107,7 +107,7 @@ export default React.memo(function Clusters({
                     deleted={node.deleted}
                     marked={mainCtx.item == node.id}
                     // state public needs no key_hash
-                    injectInclude={['state=public']}
+                    injectStates={['public']}
                     icon={<GroupWorkIcon fontSize="small" />}
                     label={node.name ? node.name : `...${node.id.slice(-48)}`}
                     nodeId={`${props.nodeId}-${nodeId}`}

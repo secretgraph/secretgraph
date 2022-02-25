@@ -268,7 +268,7 @@ export function extractPubKeysCluster(props: {
         ? props.node.cluster.contents.edges
         : props.node.contents.edges
     for (const { node: keyNode } of contents) {
-        if (!props.onlyPubkeys && !keyNode.tags.includes('type=PublicKey')) {
+        if (!props.onlyPubkeys && keyNode.type != 'PublicKey') {
             continue
         }
         if (!pubkeys[keyNode.contentHash]) {
@@ -308,7 +308,7 @@ export function extractPubKeysReferences(props: {
     for (const {
         node: { target: keyNode },
     } of props.node.references.edges) {
-        if (!props.onlyPubkeys && !keyNode.tags.includes('type=PublicKey')) {
+        if (!props.onlyPubkeys && keyNode.type == 'PublicKey') {
             continue
         }
         if (!pubkeys[keyNode.contentHash]) {

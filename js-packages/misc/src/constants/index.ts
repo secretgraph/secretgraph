@@ -1,3 +1,5 @@
+export const public_states = ['required', 'trusted', 'public']
+
 export const UseCriteria = {
     TRUE: 'TRUE' as const,
     FALSE: 'FALSE' as const,

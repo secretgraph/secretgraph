@@ -6,6 +6,7 @@ import {
 } from '@secretgraph/graphql-queries/content'
 
 import { mapHashNames } from '../../constants'
+import * as Constants from '../../constants'
 import * as Interfaces from '../../interfaces'
 import {
     authInfoFromConfig,
@@ -43,6 +44,8 @@ export async function createContent({
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
     cluster: string
+    type: string
+    state: string
     value: Interfaces.CryptoGCMInInterface['data']
     pubkeys: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
@@ -55,7 +58,7 @@ export async function createContent({
     encryptTags?: Iterable<string>
 }): Promise<FetchResult<any>> {
     const tagsOptions = await Promise.all(tagsIntern)
-    const isPublic = tagsOptions.includes('state=public')
+    const isPublic = Constants.public_states.includes(options.state)
     let nonce: Uint8Array | undefined, key: Uint8Array | undefined
     if (isPublic) {
         nonce = undefined
@@ -132,6 +135,8 @@ export async function createContent({
                 options.references ? [...options.references] : []
             ),
             tags,
+            state: options.state,
+            type: options.type,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
             value: await encryptedContentPromise.then(
                 (data) => new Blob([data], { type: 'application/octet-stream' })
@@ -147,6 +152,7 @@ export async function updateContent({
     id,
     updateId,
     client,
+    state,
     ...options
 }: {
     id: string
@@ -154,6 +160,7 @@ export async function updateContent({
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
     cluster?: string
+    state?: string
     value?: Interfaces.CryptoGCMInInterface['data']
     pubkeys: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
@@ -172,9 +179,7 @@ export async function updateContent({
         : options.value
         ? []
         : null
-    const isPublic = tagsOptions
-        ? tagsOptions.includes('state=public')
-        : undefined
+    const isPublic = state ? Constants.public_states.includes(state) : undefined
     const encrypt: Set<string> | undefined = options.encryptTags
         ? new Set(options.encryptTags)
         : undefined
@@ -328,11 +333,7 @@ export async function decryptContentObject({
         ).then((result) => result.arrayBuffer())
     }
     // skip decryption as always unencrypted
-    if (
-        _node.tags.some((val: string) =>
-            ['type=PublicKey', 'state=public'].includes(val)
-        )
-    ) {
+    if (_node.type == 'PublicKey' || _node.state == 'public') {
         return {
             data: await arrPromise,
             tags: await extractUnencryptedTags({
@@ -481,7 +482,7 @@ export async function updateConfigRemoteReducer(
             updateId: node.updateId,
             privkeys: Object.values(privkeys),
             pubkeys: Object.values(pubkeys),
-            tags: ['type=Config', 'state=internal'],
+            state: 'internal',
             config: mergedConfig,
             hashAlgorithm: algos[0],
             value: new Blob([JSON.stringify(mergedConfig)]),

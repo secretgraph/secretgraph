@@ -6,10 +6,13 @@ export const serverConfigQuery = gql`
             config {
                 id
                 hashAlgorithms
-                injectedClusters {
-                    group
-                    clusters
-                    keys {
+                groups {
+                    name
+                    hidden
+                    properties
+                    description
+                    injected_keys {
+                        id
                         link
                         hash
                     }

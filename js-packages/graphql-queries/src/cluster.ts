@@ -3,6 +3,8 @@ import { gql } from '@apollo/client'
 export const clusterFeedQuery = gql`
     query clusterFeedQuery(
         $authorization: [String!]
+        $states: [String!]
+        $types: [String!]
         $include: [String!]
         $exclude: [String!]
         $excludeIds: [String!]
@@ -14,6 +16,9 @@ export const clusterFeedQuery = gql`
     ) {
         clusters: secretgraph(authorization: $authorization) {
             clusters(
+                includeTypes: $types
+                excludeTypes: ["Config", "PrivateKey"]
+                states: $states
                 includeTags: $include
                 excludeTags: $exclude
                 excludeIds: $excludeIds
@@ -27,6 +32,8 @@ export const clusterFeedQuery = gql`
                     key: "feedClusters"
                     filter: [
                         "authorization"
+                        "states"
+                        "types"
                         "includeTags"
                         "excludeTags"
                         "excludeIds"
@@ -63,10 +70,10 @@ export const getClusterConfigurationQuery = gql`
                 id
                 hashAlgorithms
                 registerUrl
-                injectedClusters {
-                    group
-                    clusters
-                    keys {
+                groups {
+                    name
+                    injected_keys {
+                        id
                         link
                         hash
                     }
@@ -79,7 +86,7 @@ export const getClusterConfigurationQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        requiredKeys
+                        trustedKeys
                         allowedTags
                     }
                 }
@@ -95,10 +102,10 @@ export const getClusterQuery = gql`
             config {
                 id
                 hashAlgorithms
-                injectedClusters {
-                    group
-                    clusters
-                    keys {
+                groups {
+                    name
+                    injected_keys {
+                        id
                         link
                         hash
                     }
@@ -117,7 +124,7 @@ export const getClusterQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        requiredKeys
+                        trustedKeys
                         allowedTags
                     }
                 }
@@ -149,7 +156,7 @@ export const createClusterMutation = gql`
                     public: $public
                     key: {
                         publicKey: $publicKey
-                        publicTags: ["state=public"]
+                        publicState: "public"
                         privateKey: $privateKey
                         privateTags: $privateTags
                         nonce: $nonce
@@ -169,7 +176,7 @@ export const createClusterMutation = gql`
                 availableActions {
                     keyHash
                     type
-                    requiredKeys
+                    trustedKeys
                     allowedTags
                 }
             }

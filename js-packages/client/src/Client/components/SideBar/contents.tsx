@@ -26,6 +26,8 @@ type SideBarItemsProps = {
     public?: keyof typeof Constants.UseCriteriaPublic
     injectInclude?: string[]
     injectExclude?: string[]
+    injectKeys?: string[]
+    injectStates?: string[]
     title?: string
     deleted?: boolean
     heading?: boolean
@@ -33,7 +35,6 @@ type SideBarItemsProps = {
     icon?: React.ReactNode
 }
 
-// ["type=", "state=", ...
 export default React.memo(function Contents({
     authinfo,
     goTo,
@@ -42,6 +43,8 @@ export default React.memo(function Contents({
     public: publicParam = Constants.UseCriteriaPublic.IGNORE,
     injectInclude = [],
     injectExclude = [],
+    injectKeys = [],
+    injectStates = [],
     title,
     deleted,
     marked,
@@ -73,7 +76,7 @@ export default React.memo(function Contents({
         useLazyQuery(contentFeedQuery, {
             variables: {
                 authorization: authinfo ? authinfo.tokens : null,
-                includeTags: ['state=', 'type=', 'name='],
+                includeTags: ['name='],
                 include: incl,
                 exclude: excl,
                 clusters: cluster ? [cluster] : undefined,
@@ -102,29 +105,15 @@ export default React.memo(function Contents({
             return [null]
         }
         const render_item = (node: any) => {
-            let type = node.tags.find((flag: string) =>
-                flag.startsWith('type=')
-            )
-            let state = node.tags.find((flag: string) =>
-                flag.startsWith('state=')
-            )
             let name = node.tags.find((flag: string) =>
                 flag.startsWith('name=')
             )
-            if (type) {
-                // split works different in js, so match
-                type = type.match(/=(.*)/)[1]
-            }
-            if (state) {
-                // split works different in js, so match
-                state = state.match(/=(.*)/)[1]
-            }
             if (name) {
                 // split works different in js, so match
                 name = name.match(/=(.*)/)[1]
             }
             let Icon
-            switch (type) {
+            switch (node.type) {
                 case 'Message':
                     Icon = MailIcon
                     break
@@ -134,7 +123,7 @@ export default React.memo(function Contents({
                 default:
                     Icon = DescriptionIcon
             }
-            if (state == 'draft') {
+            if (node.state == 'draft') {
                 Icon = DraftsIcon
             }
 
@@ -162,9 +151,9 @@ export default React.memo(function Contents({
                             leftIcon={<Icon fontSize="small" />}
                         >
                             {`${
-                                elements.get(type)
-                                    ? elements.get(type)?.label
-                                    : type
+                                elements.get(node.type)
+                                    ? elements.get(node.type)?.label
+                                    : node.type
                             }: ${name ? name : `...${node.id.slice(-48)}`}`}
                         </SidebarTreeItemLabel>
                     }

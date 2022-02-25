@@ -25,16 +25,15 @@ query serverSecretgraphConfigQuery {
         config {
             id
             hashAlgorithms
-            injectedClusters {
-                group
-                clusters
-                keys {
+            groups {
+                name
+                injected_keys {
+                    id
                     link
                     hash
                 }
             }
             registerUrl
-            }
         }
     }
 }

@@ -361,7 +361,7 @@ export async function exportConfigAsUrl({
         authInfo.hashes.map((hash) => `key_hash=${hash}`)
     )
     for (const { node: configContent } of obj.data.contents.edges) {
-        if (!configContent.tags.includes('type=Config')) {
+        if (configContent.type != 'Config') {
             continue
         }
         for (const { node: keyref } of configContent.references.edges) {
@@ -560,7 +560,7 @@ export function findCertCandidatesForRefs(
         sharedKey: Uint8Array
     }[] = []
     // extract tag key from private key
-    if (nodeData.tags.includes('type=PrivateKey')) {
+    if (nodeData.type == 'PrivateKey') {
         const hashes = []
         for (const tag of nodeData.tags) {
             if (tag.startsWith('key_hash=')) {

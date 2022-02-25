@@ -15,7 +15,8 @@ def fetch_clusters(
     ids=None,
     limit_ids=1,
     states=None,
-    types=None,
+    includeTypes=None,
+    excludeTypes=None,
     includeTags=None,
     excludeTags=None,
     contentHashes=None,
@@ -25,7 +26,14 @@ def fetch_clusters(
     if ids:
         query = fetch_by_id(query, ids, limit_ids=limit_ids)
 
-    if includeTags or excludeTags or contentHashes or types or states:
+    if (
+        includeTags
+        or excludeTags
+        or contentHashes
+        or includeTypes
+        or excludeTypes
+        or states
+    ):
         incl_filters = Q()
         for i in includeTags or []:
             if i.startswith("id="):
@@ -43,9 +51,12 @@ def fetch_clusters(
         state_filters = Q()
         if states:
             state_filters = Q(state__in=states)
-        type_filters = Q()
-        if types:
-            type_filters = Q(type__in=types)
+        incl_type_filters = Q()
+        excl_type_filters = Q()
+        if includeTypes:
+            incl_type_filters = Q(type__in=includeTypes)
+        elif excludeTypes:
+            excl_type_filters = Q(type__in=excludeTypes)
 
         excl_filters = Q()
         for i in excludeTags or []:
@@ -63,7 +74,8 @@ def fetch_clusters(
                     (~excl_filters)
                     & incl_filters
                     & hash_filters
-                    & type_filters
+                    & incl_type_filters
+                    & (~excl_type_filters)
                     & state_filters
                 ).values("cluster_id")
             )
@@ -189,7 +201,8 @@ def fetch_contents(
     id=None,
     limit_ids=1,
     states=None,
-    types=None,
+    includeTypes=None,
+    excludeTypes=None,
     includeTags=None,
     excludeTags=None,
     contentHashes=None,
@@ -203,7 +216,14 @@ def fetch_contents(
         query = fetch_by_id(
             query, id, check_content_hash=True, limit_ids=limit_ids
         )
-    if includeTags or excludeTags or contentHashes:
+    if (
+        includeTags
+        or excludeTags
+        or contentHashes
+        or states
+        or includeTypes
+        or excludeTypes
+    ):
         incl_filters = Q()
         excl_filters = Q()
         # only if tags are specified the filtering starts,
@@ -235,15 +255,19 @@ def fetch_contents(
         state_filters = Q()
         if states:
             state_filters = Q(state__in=states)
-        type_filters = Q()
-        if types:
-            type_filters = Q(type__in=types)
+        incl_type_filters = Q()
+        excl_type_filters = Q()
+        if includeTypes:
+            incl_type_filters = Q(type__in=includeTypes)
+        elif excludeTypes:
+            excl_type_filters = Q(type__in=excludeTypes)
 
         query = query.filter(
             (~excl_filters)
             & incl_filters
             & hash_filters
-            & type_filters
+            & incl_type_filters
+            & (~excl_type_filters)
             & state_filters
         )
 
