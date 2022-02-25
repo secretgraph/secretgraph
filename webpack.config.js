@@ -2,19 +2,17 @@ const path = require('path')
 const fs = require('fs')
 const { SourceMapDevToolPlugin, ProvidePlugin } = require('webpack')
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin')
-//const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
+const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
 
 module.exports = (env, options) => {
-    /*const tsgqlPlugin = new TsGraphQLPlugin({
-    })
-    */
+    const tsgqlPlugin = new TsGraphQLPlugin({})
 
     const plugins = [
         new WebpackManifestPlugin({
             writeToFileEmit: true,
             publicPath: 'webpack_bundles/',
         }),
-        //tsgqlPlugin,
+        tsgqlPlugin,
         new ProvidePlugin({
             Buffer: ['buffer', 'Buffer'],
         }),
