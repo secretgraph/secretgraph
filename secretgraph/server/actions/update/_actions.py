@@ -76,7 +76,9 @@ def manage_actions_fn(
             action_value, request, authset, content
         )
         action_value["trustedKeys"] = list(
-            Content.trusted_keys(cluster).values_list("contentHash", flat=True)
+            Content.objects.trusted_keys(cluster).values_list(
+                "contentHash", flat=True
+            )
         )
 
         # create Action object

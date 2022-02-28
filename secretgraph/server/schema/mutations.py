@@ -22,7 +22,7 @@ from ..actions.update import (
     update_content_fn,
     update_metadata_fn,
 )
-from ..models import Cluster, Content
+from ..models import Cluster, Content, GlobalGroupProperty
 from ..signals import generateFlexid
 from ..utils.auth import (
     fetch_by_id,
@@ -228,7 +228,7 @@ class ClusterMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=False)
         updateId = graphene.ID(required=False)
-        cluster = ClusterInput(required=False)
+        cluster = ClusterInput(required=True)
         authorization = AuthList()
 
     cluster = graphene.Field(ClusterNode)
@@ -239,26 +239,49 @@ class ClusterMutation(relay.ClientIDMutation):
         cls,
         root,
         info,
+        cluster,
         id=None,
         updateId=None,
-        cluster=None,
         authorization=None,
     ):
-        if cluster:
-            # TODO: permission management
-            # cluster.pop("featured", None)
-            pass
+        if cluster.get("featured") is not None:
+            global_groups = GlobalGroupProperty.objects.get_or_create(
+                "manage_featured"
+            )[0].groups.all()
+            result = retrieve_allowed_objects(
+                info.context,
+                "manage",
+                Cluster.objects.all(),
+                authset=authorization,
+            )
+            q = Q(clusters__in=result["objects"])
+            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+                global_groups_names = global_groups.filter(
+                    matchUserGroup=True
+                ).values_list("name", flat=True)
+                if global_groups_names:
+                    q |= Q(
+                        clusters__in=Subquery(
+                            result["objects"]
+                            .filter(user__group__name__in=global_groups_names)
+                            .values("id")
+                        )
+                    )
+                    user = getattr(info.context, "user", None)
+                    if user:
+                        q |= Q(name__in=Subquery(user.groups.values("name")))
+
+            if not global_groups.filter(q):
+                del cluster["featured"]
         if id:
-            if not cluster:
-                raise ValueError("no cluster update data")
             if not updateId:
                 raise ValueError("updateId required")
             result = ids_to_results(
-                info.context, id, Cluster, "manage", authset=authorization
+                info.context, id, Cluster, "update", authset=authorization
             )["Cluster"]
             cluster_obj = result["objects"].first()
             if not cluster_obj:
-                raise ValueError()
+                raise ValueError("No cluster found")
             _cluster_res = update_cluster_fn(
                 info.context,
                 cluster_obj,
@@ -267,17 +290,16 @@ class ClusterMutation(relay.ClientIDMutation):
                 authset=authorization,
             )(transaction.atomic)
         else:
-            user = None
             manage = retrieve_allowed_objects(
                 info.context,
                 "manage",
                 Cluster.objects.all(),
                 authset=authorization,
-            )["objects"].first()
+            )["objects"]
 
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
                 if manage:
-                    user = manage.user
+                    user = manage.first().user
                 if not user:
                     user = getattr(info.context, "user", None)
                 if not user or not user.is_authenticated:

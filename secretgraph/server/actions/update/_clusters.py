@@ -32,6 +32,8 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
     def cluster_save_fn():
         cluster.updateId = uuid4()
         cluster.save()
+        if "groups" in objdata:
+            cluster.groups.set(*objdata["groups"])
 
     # path: actions are specified
     if objdata.get("actions"):

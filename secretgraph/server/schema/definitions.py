@@ -19,7 +19,7 @@ from ..models import (
     Cluster,
     Content,
     ContentReference,
-    ClusterGroup,
+    GlobalGroup,
 )
 from .shared import DeleteRecursive, UseCriteria, UseCriteriaPublic
 
@@ -53,10 +53,10 @@ class InjectedKeyNode(DjangoObjectType):
         return self.link
 
 
-class ClusterGroupNode(DjangoObjectType):
+class GlobalGroupNode(DjangoObjectType):
     class Meta:
-        model = ClusterGroup
-        name = "ClusterGroup"
+        model = GlobalGroup
+        name = "GlobalGroup"
         interfaces = (relay.Node,)
         fields = "__all__"
 
@@ -78,7 +78,7 @@ class SecretgraphConfig(ObjectType):
     hashAlgorithms = graphene.List(
         graphene.NonNull(graphene.String), required=True
     )
-    groups = DjangoListField(ClusterGroupNode)
+    groups = DjangoListField(GlobalGroupNode)
     registerUrl = graphene.Field(RegisterUrl, required=False)
     loginUrl = graphene.String(required=False)
 
@@ -717,7 +717,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     def resolve_groups(self, info):
         raise
         # remove hidden
-        hidden = ClusterGroup.objects.get_hidden_names()
+        hidden = GlobalGroup.objects.get_hidden_names()
         return set(self.groups).difference(hidden)
 
 

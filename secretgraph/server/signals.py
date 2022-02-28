@@ -8,8 +8,9 @@ from django.db.utils import IntegrityError
 from ..constants import DeleteRecursive
 
 
-def createFirstCluster(sender, **kwargs):
-    from .models import Cluster
+def initializeDb(sender, **kwargs):
+    from .models import Cluster, GlobalGroupProperty
+    from django.conf import settings
 
     Cluster.objects.update_or_create(
         id=1,
@@ -20,6 +21,19 @@ def createFirstCluster(sender, **kwargs):
             "featured": False,
         },
     )
+    for group in list(getattr(settings, "SECRETGRAPH_DEFAULT_GROUPS", [])):
+        group = dict(group)
+        properties = []
+        for prop in set(group.pop("properties")):
+            properties.append(
+                GlobalGroupProperty.objects.get_or_create(name=prop)[0]
+            )
+
+        cluster, created = Cluster.objects.get_or_create(
+            group.pop("name"), defaults=group
+        )
+        if created:
+            cluster.properties.set(*properties)
 
 
 def deleteContentCb(sender, instance, **kwargs):

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 import logging
 import posixpath
 import secrets
@@ -65,10 +68,6 @@ class FlexidModel(models.Model):
         abstract = True
 
 
-def get_default_groups():
-    return list(getattr(settings, "SECRETGRAPH_DEFAULT_GROUPS", []))
-
-
 class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
     limited = False
@@ -91,12 +90,6 @@ class Cluster(FlexidModel):
         blank=True, default=uuid4, db_column="update_id"
     )
 
-    groups: list[str] = models.JSONField(
-        null=False,
-        blank=True,
-        default=get_default_groups,
-        help_text=cluster_groups_help,
-    )
     markForDestruction: dt = models.DateTimeField(
         null=True, blank=True, db_column="mark_for_destruction"
     )
@@ -142,7 +135,7 @@ class ContentManager(models.Manager):
             states = constants.public_states
         queryset = queryset.filter(state__in=states)
         if isinstance(groups, (Cluster, Content)):
-            groups = groups.groups
+            groups = models.Subquery(groups.groups.values("name"))
         if groups:
             if isinstance(groups, str):
                 groups = [groups]
@@ -154,7 +147,7 @@ class ContentManager(models.Manager):
         queryset = super().get_queryset()
         if noannotation:
             return queryset
-        return queryset.annotate(group=models.F("cluster__groups"))
+        return queryset.annotate(groups=models.F("cluster__groups"))
 
 
 class Content(FlexidModel):
@@ -413,7 +406,7 @@ class ContentReference(models.Model):
         )
 
 
-class ClusterGroupManager(models.Manager):
+class GlobalGroupManager(models.Manager):
     def hidden(self, queryset=None):
         if queryset is None:
             queryset = self.get_queryset()
@@ -433,7 +426,31 @@ class ClusterGroupManager(models.Manager):
         return queryset.filter(hidden=False)
 
 
-class ClusterGroup(models.Model):
+# e.g. auto_hide = contents are automatically hidden and manually
+class GlobalGroupProperty(models.Model):
+    # there are just few of them
+    id: int = models.AutoField(primary_key=True, editable=False)
+    name: str = models.CharField(max_length=50, null=False, unique=True)
+
+
+class GlobalGroupCluster(models.Model):
+    id: int = models.BigAutoField(primary_key=True, editable=False)
+    cluster: Cluster = models.ForeignKey(
+        Cluster, on_delete=models.CASCADE, related_name="+"
+    )
+    group: GlobalGroup = models.ForeignKey(
+        "GlobalGroup", on_delete=models.CASCADE, related_name="+"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cluster", "group"], name="%(class)s_unique"
+            ),
+        ]
+
+
+class GlobalGroup(models.Model):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
     name: str = models.CharField(max_length=50, null=False, unique=True)
@@ -443,6 +460,12 @@ class ClusterGroup(models.Model):
     matchUserGroup: bool = models.BooleanField(
         default=False, blank=True, db_column="match_user_group"
     )
+    clusters: models.QuerySet[Cluster] = models.ManyToManyField(
+        Cluster,
+        related_name="groups",
+        through="GlobalGroupCluster",
+        help_text=cluster_groups_help,
+    )
     injected_keys: models.QuerySet[Content] = models.ManyToManyField(
         Content,
         related_name="injected_for",
@@ -451,8 +474,11 @@ class ClusterGroup(models.Model):
             "cluster_id": 1,
         },
     )
+    properties: models.QuerySet[GlobalGroupProperty] = models.ManyToManyField(
+        GlobalGroupProperty, related_name="group"
+    )
 
-    objects = ClusterGroupManager()
+    objects = GlobalGroupManager()
 
     def clean(self):
         if self.hidden and self.injected_keys.exists():
@@ -467,21 +493,3 @@ class ClusterGroup(models.Model):
             raise ValidationError(
                 {"injected_keys": "injected_keys are not public"}
             )
-
-
-# e.g. auto_hide = contents are automatically hidden and manually
-class ClusterGroupProperty(models.Model):
-    # there are just few of them
-    id: int = models.AutoField(primary_key=True, editable=False)
-    group: ClusterGroup = models.ForeignKey(
-        ClusterGroup, related_name="properties", on_delete=models.CASCADE
-    )
-
-    name: str = models.CharField(max_length=50, null=False)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["name", "group"], name="unique_cluster_group_prop"
-            ),
-        ]

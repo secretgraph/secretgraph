@@ -57,14 +57,6 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "groups",
-                    models.JSONField(
-                        blank=True,
-                        default=secretgraph.server.models.get_default_groups,
-                        help_text="cluster groups: groups for permissions and injected keys",
-                    ),
-                ),
-                (
                     "markForDestruction",
                     models.DateTimeField(
                         blank=True, db_column="mark_for_destruction", null=True
@@ -288,7 +280,19 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name="ClusterGroup",
+            name="GlobalGroupProperty",
+            fields=[
+                (
+                    "id",
+                    models.AutoField(
+                        editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("name", models.CharField(max_length=50, unique=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name="GlobalGroup",
             fields=[
                 (
                     "id",
@@ -316,32 +320,56 @@ class Migration(migrations.Migration):
                         to="secretgraph.Content",
                     ),
                 ),
+                (
+                    "properties",
+                    models.ManyToManyField(
+                        related_name="group",
+                        to="secretgraph.GlobalGroupProperty",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name="ClusterGroupProperty",
+            name="GlobalGroupCluster",
             fields=[
                 (
                     "id",
-                    models.AutoField(
+                    models.BigAutoField(
                         editable=False, primary_key=True, serialize=False
                     ),
                 ),
-                ("name", models.CharField(max_length=50)),
+                (
+                    "cluster",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="+",
+                        to="secretgraph.cluster",
+                    ),
+                ),
                 (
                     "group",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="properties",
-                        to="secretgraph.clustergroup",
+                        related_name="+",
+                        to="secretgraph.globalgroup",
                     ),
                 ),
             ],
         ),
+        migrations.AddField(
+            model_name="globalgroup",
+            name="clusters",
+            field=models.ManyToManyField(
+                help_text="cluster groups: groups for permissions and injected keys",
+                related_name="groups",
+                through="secretgraph.GlobalGroupCluster",
+                to="secretgraph.Cluster",
+            ),
+        ),
         migrations.AddConstraint(
-            model_name="clustergroupproperty",
+            model_name="globalgroupcluster",
             constraint=models.UniqueConstraint(
-                fields=("name", "group"), name="unique_cluster_group_prop"
+                fields=("cluster", "group"), name="globalgroupcluster_unique"
             ),
         ),
         migrations.AddConstraint(

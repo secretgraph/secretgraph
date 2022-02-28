@@ -82,7 +82,7 @@ export const getClusterConfigurationQuery = gql`
             node(id: $id) {
                 ... on Cluster {
                     id
-                    group
+                    groups
                     availableActions {
                         keyHash
                         type
@@ -115,7 +115,7 @@ export const getClusterQuery = gql`
                 ... on Cluster {
                     id
                     deleted
-                    group
+                    groups
                     name
                     description
                     public
@@ -167,7 +167,7 @@ export const createClusterMutation = gql`
         ) {
             cluster {
                 id
-                group
+                groups
                 name
                 description
                 public
@@ -212,7 +212,7 @@ export const updateClusterMutation = gql`
         ) {
             cluster {
                 id
-                group
+                groups
                 name
                 description
                 updateId

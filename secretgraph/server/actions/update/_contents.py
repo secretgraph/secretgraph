@@ -63,6 +63,12 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             raise ValueError("Cannot change public key")
     hashes = calculate_hashes(key_obj["publicKey"])
     hashes_tags = tuple(map(lambda x: f"key_hash={x}", hashes))
+    if not any(
+        filter(
+            lambda x: x.startswith("key="), key_obj.get("privateTags") or []
+        )
+    ):
+        raise ValueError("missing key parameter")
 
     return (
         hashes,
@@ -71,7 +77,7 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "value": key_obj["publicKey"],
             "type": "PublicKey",
             "state": key_obj.get("publicState") or "public",
-            "tags": chain(hashes_tags, key_obj["publicTags"]),
+            "tags": chain(hashes_tags, key_obj.get("publicTags", [])),
             "contentHash": hashes[0],
             "actions": key_obj.get("publicActions"),
         },

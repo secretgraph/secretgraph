@@ -120,8 +120,8 @@ export const createKeysMutation = gql`
     mutation contentCreateKeysMutation(
         $cluster: ID!
         $publicTags: [String!]!
-        $publicActions: [ActionInput!]
         $privateTags: [String!]!
+        $publicActions: [ActionInput!]
         $privateActions: [ActionInput!]
         $references: [ReferenceInput!]
         $publicKey: Upload!
@@ -165,7 +165,8 @@ export const updateKeyMutation = gql`
         $updateId: ID!
         $cluster: ID
         $actions: [ActionInput!]
-        $tags: [String!]
+        $publicTags: [String!]!
+        $privateTags: [String!]!
         $references: [ReferenceInput!]
         $key: Upload
         $nonce: String
@@ -181,9 +182,9 @@ export const updateKeyMutation = gql`
                         publicKey: $key
                         privateKey: $key
                         nonce: $nonce
-                        privateTags: $tags
+                        privateTags: $privateTags
+                        publicTags: $publicTags
                         privateActions: $actions
-                        publicTags: $tags
                         publicActions: $actions
                     }
                     contentHash: $contentHash
@@ -487,7 +488,7 @@ export const getContentConfigurationQuery = gql`
             node(id: $id) {
                 ... on Cluster {
                     id
-                    group
+                    groups
                     availableActions {
                         keyHash
                         type
@@ -519,7 +520,7 @@ export const getContentConfigurationQuery = gql`
                     type
                     cluster {
                         id
-                        group
+                        groups
                         contents(includeTypes: ["PublicKey"], deleted: FALSE) {
                             edges {
                                 node {

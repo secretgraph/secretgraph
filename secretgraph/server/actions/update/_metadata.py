@@ -55,7 +55,7 @@ def transform_tags(
         tags = filter(lambda x: not remove_filter.match(x), oldtags)
     for tag in tags:
         splitted_tag = tag.split("=", 1)
-        if splitted_tag[0] in _invalid_update_tags:
+        if _invalid_update_tags.match(splitted_tag[0]):
             logger.warning(f"{splitted_tag[0]} is a not updatable tag")
             continue
         elif splitted_tag[0] == "key_hash":
@@ -170,18 +170,20 @@ def transform_references(
                 injected_key = injectable_keys.filter(
                     q, markForDestruction=None
                 ).first()
-            if not targetob:
-                continue
-            refob = ContentReference(
-                source=content,
-                target=targetob,
-                group=ref.get("group") or "",
-                extra=ref.get("extra") or "",
-                deleteRecursive=clean_deleteRecursive(
-                    ref.get("group"), ref.get("deleteRecursive")
-                ),
-            )
-            if injected_key.id != targetob.id:
+            if targetob:
+                refob = ContentReference(
+                    source=content,
+                    target=targetob,
+                    group=ref.get("group") or "",
+                    extra=ref.get("extra") or "",
+                    deleteRecursive=clean_deleteRecursive(
+                        ref.get("group"), ref.get("deleteRecursive")
+                    ),
+                )
+            # injected_ref can only exist if no reference is used
+            if injected_key and (
+                not targetob or injected_key.id != targetob.id
+            ):
                 injected_ref = ContentReference(
                     source=content,
                     target=injected_key,
@@ -189,6 +191,7 @@ def transform_references(
                     extra=ref.get("extra") or "",
                     deleteRecursive=DeleteRecursive.FALSE.value,
                 )
+        # first extra tag in same group with same target wins
         if (
             injected_ref
             and (injected_ref.group, injected_ref.target.id) not in deduplicate
@@ -203,20 +206,19 @@ def transform_references(
                 final_references.append(injected_ref)
 
         # first extra tag in same group  with same target wins
-        if (refob.group, refob.target.id) in deduplicate:
-            continue
-        deduplicate.add((refob.group, refob.target.id))
-        if len(refob.extra) > 8000:
-            raise ValueError("Extra tag too big")
-        if refob.group == "signature":
-            sig_target_hashes.add(targetob.contentHash)
-        if refob.group in {"key", "transfer"}:
-            if refob.group == "key":
-                encrypt_target_hashes.add(targetob.contentHash)
-            if targetob.contentHash not in key_hashes_tags:
-                raise ValueError("Key hash not found in tags")
-        if not no_final_refs:
-            final_references.append(refob)
+        if refob and (refob.group, refob.target.id) not in deduplicate:
+            deduplicate.add((refob.group, refob.target.id))
+            if len(refob.extra) > 8000:
+                raise ValueError("Extra tag too big")
+            if refob.group == "signature":
+                sig_target_hashes.add(targetob.contentHash)
+            if refob.group in {"key", "transfer"}:
+                if refob.group == "key":
+                    encrypt_target_hashes.add(targetob.contentHash)
+                if targetob.contentHash not in key_hashes_tags:
+                    raise ValueError("Key hash not found in tags")
+            if not no_final_refs:
+                final_references.append(refob)
     return final_references, encrypt_target_hashes, sig_target_hashes
 
 

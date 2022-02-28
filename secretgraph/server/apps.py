@@ -14,7 +14,7 @@ from .signals import (
     generateFlexid,
     regenerateKeyHash,
     fillEmptyFlexidsCb,
-    createFirstCluster,
+    initializeDb,
 )
 
 
@@ -37,7 +37,7 @@ class SecretgraphServerConfig(AppConfig):
 
         post_save.connect(generateFlexid, sender=Content)
 
-        post_migrate.connect(createFirstCluster, sender=self)
+        post_migrate.connect(initializeDb, sender=self)
 
         post_migrate.connect(fillEmptyFlexidsCb, sender=self)
 
