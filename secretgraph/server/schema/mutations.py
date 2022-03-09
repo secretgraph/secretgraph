@@ -22,13 +22,14 @@ from ..actions.update import (
     update_content_fn,
     update_metadata_fn,
 )
-from ..models import Cluster, Content, GlobalGroupProperty
+from ..models import Cluster, Content, GlobalGroupProperty, GlobalGroup
 from ..signals import generateFlexid
 from ..utils.auth import (
     fetch_by_id,
     ids_to_results,
     initializeCachedResult,
     retrieve_allowed_objects,
+    check_permission,
 )
 from .arguments import (
     AuthList,
@@ -51,18 +52,33 @@ class RegenerateFlexidMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, ids, authorization=None):
-        results = ids_to_results(
+        manage = retrieve_allowed_objects(
             info.context,
-            ids,
-            (Content, Cluster),
-            "update",
+            "manage",
+            Cluster.objects.all(),
             authset=authorization,
         )
-        # TODO: admin permission
-        # if not info.context.user.has_perm("TODO"):
-        #    components = retrieve_allowed_objects(
-        #        info, "manage", components
-        #    )
+        if check_permission(info.context, "manage_update", manage["objects"]):
+            results = {
+                "Content": {
+                    "objects": fetch_by_id(
+                        Content.objects.all(), ids, limit_ids=None
+                    )
+                },
+                "Cluster": {
+                    "objects": fetch_by_id(
+                        Cluster.objects.all(), ids, limit_ids=None
+                    )
+                },
+            }
+        else:
+            results = ids_to_results(
+                info.context,
+                ids,
+                (Content, Cluster),
+                "update",
+                authset=authorization,
+            )
         updated = []
         for result in results.values():
             for obj in result["objects"]:
@@ -84,51 +100,53 @@ class DeleteContentOrClusterMutation(relay.ClientIDMutation):
         cls, root, info, ids, when=None, authorization=None
     ):
         now = timezone.now()
-        results = ids_to_results(
+
+        manage = retrieve_allowed_objects(
             info.context,
-            ids,
-            (Content, Cluster),
-            "delete",
+            "manage",
+            Cluster.objects.all(),
             authset=authorization,
         )
+        if check_permission(
+            info.context, "manage_deletion", manage["objects"]
+        ):
+            contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
+            clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
+        else:
+            results = ids_to_results(
+                info.context,
+                ids,
+                (Content, Cluster),
+                "delete",
+                authset=authorization,
+            )
+            contents = results["Content"]["objects"]
+            clusters = results["Cluster"]["objects"]
         if when:
             when_x = max(now + td(minutes=20), when)
-            results["Content"]["objects"].update(markForDestruction=when_x)
+            contents.update(markForDestruction=when_x)
             Content.objects.filter(
-                cluster_id__in=Subquery(
-                    results["Cluster"]["objects"].values("id")
-                )
+                cluster_id__in=Subquery(clusters.values("id"))
             ).update(markForDestruction=when_x)
-            results["Cluster"]["objects"].update(markForDestruction=when)
+            clusters.update(markForDestruction=when)
         else:
             now_plus_x = now + td(minutes=20)
-            # TODO: admin permission
-            # if not info.context.user.has_perm("TODO"):
-            #    components = retrieve_allowed_objects(
-            #        info, "manage", components
-            #    )
-            results["Content"]["objects"].filter(
+            contents.filter(
                 Q(markForDestruction__isnull=True)
                 | Q(markForDestruction__gt=now_plus_x)
             ).update(markForDestruction=now_plus_x)
             Content.objects.filter(
                 Q(markForDestruction__isnull=True)
                 | Q(markForDestruction__gt=now_plus_x),
-                cluster_id__in=Subquery(
-                    results["Cluster"]["objects"].values("id")
-                ),
+                cluster_id__in=Subquery(clusters.values("id")),
             ).update(markForDestruction=now_plus_x)
-            results["Cluster"]["objects"].filter(
+            clusters.filter(
                 Q(markForDestruction__isnull=True)
                 | Q(markForDestruction__gt=now)
             ).update(markForDestruction=now)
         calc_last = Content.objects.filter(
-            Q(id__in=Subquery(results["Content"]["objects"].values("id")))
-            | Q(
-                cluster_id__in=Subquery(
-                    results["Cluster"]["objects"].values("id")
-                )
-            ),
+            Q(id__in=Subquery(contents.values("id")))
+            | Q(cluster_id__in=Subquery(clusters.values("id"))),
             markForDestruction__isnull=False,
         ).latest("markForDestruction")
 
@@ -146,30 +164,35 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, ids, authorization=None):
-        # TODO: admin permission
-        # if not info.context.user.has_perm("TODO"):
-        #    clusters = retrieve_allowed_objects(
-        #        info, "manage", clusters
-        #    )
-        results = ids_to_results(
+        manage = retrieve_allowed_objects(
             info.context,
-            ids,
-            (Content, Cluster),
-            "delete",
+            "manage",
+            Cluster.objects.all(),
             authset=authorization,
         )
-        contents = Content.objects.filter(
-            Q(
-                cluster_id__in=Subquery(
-                    results["Cluster"]["objects"].values("id")
-                )
+        if check_permission(
+            info.context, "manage_deletion", manage["objects"]
+        ):
+            contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
+            clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
+        else:
+            results = ids_to_results(
+                info.context,
+                ids,
+                (Content, Cluster),
+                "delete",
+                authset=authorization,
             )
-            | Q(id__in=Subquery(results["Content"]["objects"].values("id"))),
+            contents = results["Content"]["objects"]
+            clusters = results["Cluster"]["objects"]
+        contents = Content.objects.filter(
+            Q(cluster_id__in=Subquery(clusters.values("id")))
+            | Q(id__in=Subquery(contents.values("id"))),
             markForDestruction__isnull=False,
         )
         contents.update(markForDestruction=None)
         clusters = Cluster.objects.filter(
-            Q(id__in=Subquery(results["Cluster"]["objects"].values("id")))
+            Q(id__in=Subquery(clusters.values("id")))
             | Q(id__in=Subquery(contents.values("cluster_id"))),
             markForDestruction__isnull=False,
         )
@@ -178,12 +201,8 @@ class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
             restored=map(
                 lambda x: to_global_id(type(x).__name__, x.flexid),
                 chain(
-                    results["Content"]["objects"].filter(
-                        id__in=Subquery(contents.values("id"))
-                    ),
-                    results["Cluster"]["objects"].filter(
-                        id__in=Subquery(clusters.values("id"))
-                    ),
+                    contents.filter(id__in=Subquery(contents.values("id"))),
+                    clusters.filter(id__in=Subquery(clusters.values("id"))),
                 ),
             )
         )
@@ -203,13 +222,22 @@ class MarkMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(
         cls, root, info, ids, hidden=None, featured=None, authorization=None
     ):
-        # TODO: admin permission
-        # if not info.context.user.has_perm("TODO"):
-        #    clusters = retrieve_allowed_objects(
-        #        info, "manage", clusters
-        #    )
-        raise NotImplementedError()
-        raise ValueError("No permission")
+        manage = retrieve_allowed_objects(
+            info.context,
+            "manage",
+            Cluster.objects.all(),
+            authset=authorization,
+        )
+        if featured is not None:
+            if not check_permission(
+                info.context, "manage_featured", manage["objects"]
+            ):
+                featured = None
+        if hidden is not None:
+            if not check_permission(
+                info.context, "manage_hidden", manage["objects"]
+            ):
+                hidden = None
         contents = Content.objects.none()
         clusters = Cluster.objects.none()
         if hidden is not None:
@@ -244,35 +272,27 @@ class ClusterMutation(relay.ClientIDMutation):
         updateId=None,
         authorization=None,
     ):
+        manage = retrieve_allowed_objects(
+            info.context,
+            "manage",
+            Cluster.objects.all(),
+            authset=authorization,
+        )
         if cluster.get("featured") is not None:
-            global_groups = GlobalGroupProperty.objects.get_or_create(
-                "manage_featured"
-            )[0].groups.all()
-            result = retrieve_allowed_objects(
-                info.context,
-                "manage",
-                Cluster.objects.all(),
-                authset=authorization,
-            )
-            q = Q(clusters__in=result["objects"])
-            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
-                global_groups_names = global_groups.filter(
-                    matchUserGroup=True
-                ).values_list("name", flat=True)
-                if global_groups_names:
-                    q |= Q(
-                        clusters__in=Subquery(
-                            result["objects"]
-                            .filter(user__group__name__in=global_groups_names)
-                            .values("id")
-                        )
-                    )
-                    user = getattr(info.context, "user", None)
-                    if user:
-                        q |= Q(name__in=Subquery(user.groups.values("name")))
-
-            if not global_groups.filter(q):
+            if not check_permission(
+                info.context, "manage_featured", manage["objects"]
+            ):
                 del cluster["featured"]
+
+        if cluster.get("groups") is not None:
+            if check_permission(
+                info.context, "manage_groups", manage["objects"]
+            ):
+                cluster["groups"] = GlobalGroup.objects.filter(
+                    name__in=cluster["groups"]
+                )
+            else:
+                del cluster["groups"]
         if id:
             if not updateId:
                 raise ValueError("updateId required")
@@ -290,13 +310,7 @@ class ClusterMutation(relay.ClientIDMutation):
                 authset=authorization,
             )(transaction.atomic)
         else:
-            manage = retrieve_allowed_objects(
-                info.context,
-                "manage",
-                Cluster.objects.all(),
-                authset=authorization,
-            )["objects"]
-
+            user = None
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
                 if manage:
                     user = manage.first().user
@@ -315,6 +329,9 @@ class ClusterMutation(relay.ClientIDMutation):
                 is not True
             ):
                 raise ValueError("Cannot register new cluster")
+            cluster["groups"] = GlobalGroupProperty.objects.get_or_create(
+                name="default", defaults={}
+            )[0].groups.all()
             _cluster_res = create_cluster_fn(
                 info.context, cluster, user=user, authset=authorization
             )(transaction.atomic)
@@ -366,14 +383,10 @@ class ContentMutation(relay.ClientIDMutation):
                     required_keys.values_list("contentHash", flat=True)
                 )
 
-            allowedTags = []
+            allowedTags = None
             injectedTags = []
-            for action in result["actions"].filter(
-                Q(contentAction__content_id=content_obj.id)
-                | Q(contentAction__isnull=True),
-                cluster_id=content_obj.cluster_id,
-            ):
-                form = result["forms"].get(action.id)
+            for action in result["active_actions"]:
+                form = result["forms"].get(action)
                 if form:
                     # None should be possible here for not updating
                     if content.get("tags") is not None:
@@ -627,9 +640,19 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         authorization=None,
         headers=None,
     ):
-        result = ids_to_results(
-            info.context, ids, Content, "update", authset=authorization
-        )["Content"]
+
+        manage = retrieve_allowed_objects(
+            info.context,
+            "manage",
+            Cluster.objects.all(),
+            authset=authorization,
+        )
+        if check_permission(info.context, "manage_update", manage["objects"]):
+            contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
+        else:
+            result = ids_to_results(
+                info.context, ids, Content, "update", authset=authorization
+            )["Content"]
         requests = []
         for content_obj in result.objects.all():
             requests.append(

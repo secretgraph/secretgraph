@@ -17,7 +17,10 @@ FIXTURE_DIRS = ["tests/fixtures/"]
 SECRET_KEY = "CHANGEME"
 
 
-INSTALLED_APPS += ["secretgraph.user", "secretgraph.server"]  # noqa F405
+INSTALLED_APPS += [  # noqa F405
+    "secretgraph.user",
+    "secretgraph.server",
+]
 
 AUTH_USER_MODEL = "secretgraph_user.QuotaUser"
 

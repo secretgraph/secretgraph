@@ -9,7 +9,10 @@ export const serverConfigQuery = gql`
                 groups {
                     name
                     hidden
-                    properties
+                    properties {
+                        name
+                        description
+                    }
                     description
                     injected_keys {
                         id

@@ -20,6 +20,7 @@ from ..models import (
     Content,
     ContentReference,
     GlobalGroup,
+    GlobalGroupProperty,
 )
 from .shared import DeleteRecursive, UseCriteria, UseCriteriaPublic
 
@@ -37,7 +38,6 @@ class InjectedKeyNode(DjangoObjectType):
     class Meta:
         model = Content
         name = "InjectedKey"
-        interfaces = (relay.Node,)
 
     id = graphene.ID(required=True)
     hash = graphene.String(required=True)
@@ -53,6 +53,18 @@ class InjectedKeyNode(DjangoObjectType):
         return self.link
 
 
+class GlobalGroupPropertyNode(DjangoObjectType):
+    class Meta:
+        model = GlobalGroupProperty
+        name = "GlobalGroupProperty"
+        fields = ["name"]
+
+    description = graphene.String(required=False)
+
+    def resolve_description(self, info):
+        return "TODO"
+
+
 class GlobalGroupNode(DjangoObjectType):
     class Meta:
         model = GlobalGroup
@@ -61,10 +73,7 @@ class GlobalGroupNode(DjangoObjectType):
         fields = "__all__"
 
     injected_keys = DjangoListField(InjectedKeyNode, name="injected_keys")
-    properties = graphene.List(
-        graphene.NonNull(graphene.String),
-        required=True,
-    )
+    properties = DjangoListField(GlobalGroupPropertyNode, name="properties")
 
     def resolve_properties(self, info):
         return self.properties.values_list("name", flat=True)
@@ -649,7 +658,7 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
     user = relay.GlobalID(required=False)
     name = graphene.String(required=True)
     description = graphene.String(required=True)
-    groups = graphene.String(required=True)
+    groups = graphene.List(graphene.NonNull(graphene.String), required=True)
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
@@ -715,10 +724,11 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         return self.description
 
     def resolve_groups(self, info):
-        raise
         # remove hidden
         hidden = GlobalGroup.objects.get_hidden_names()
-        return set(self.groups).difference(hidden)
+        return set(self.groups.values_list("name", flat=True)).difference(
+            hidden
+        )
 
 
 class ClusterConnectionField(DjangoConnectionField):

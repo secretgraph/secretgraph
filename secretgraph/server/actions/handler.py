@@ -89,11 +89,13 @@ class ActionHandler:
             return {
                 "filters": ~excl_filters & incl_filters,
                 "accesslevel": 3,
+                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         elif issubclass(sender, Cluster):
             return {
                 "filters": Q(),
                 "accesslevel": 3,
+                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         return None
 
@@ -147,11 +149,13 @@ class ActionHandler:
             return {
                 "filters": ~excl_filters & incl_filters,
                 "accesslevel": ownaccesslevel,
+                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         elif issubclass(sender, Cluster):
             return {
                 "filters": Q(),
                 "accesslevel": ownaccesslevel,
+                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         return None
 
@@ -206,6 +210,7 @@ class ActionHandler:
             return {
                 "filters": Q(),
                 "accesslevel": ownaccesslevel,
+                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         return None
 
@@ -257,14 +262,24 @@ class ActionHandler:
                 )
             return {
                 "filters": ~excl_filters & incl_filters,
-                "form": action_dict["form"],
+                "trustedKeys": action_dict.get("trustedKeys", []),
+                "injectedTags": action_dict.get("injectedTags", []),
+                "allowedTags": action_dict.get("allowedTags", None),
+                "injectedReferences": action_dict.get(
+                    "injectedReferences", []
+                ),
                 "accesslevel": ownaccesslevel,
             }
         elif issubclass(sender, Cluster):
             # disallow create new content / view cluster
             return {
                 "filters": Q(),
-                "form": action_dict["form"],
+                "trustedKeys": action_dict.get("trustedKeys", []),
+                "injectedTags": action_dict.get("injectedTags", []),
+                "allowedTags": action_dict.get("allowedTags", None),
+                "injectedReferences": action_dict.get(
+                    "injectedReferences", []
+                ),
                 "accesslevel": ownaccesslevel,
             }
         return None
@@ -276,12 +291,9 @@ class ActionHandler:
             "contentActionGroup": "update",
             "restricted": bool(action_dict.get("restricted")),
             "freeze": bool(action_dict.get("freeze")),
-            "form": {
-                "requiredKeys": [],
-                "injectedTags": [],
-                "allowedTags": [],
-                "injectedReferences": [],
-            },
+            "injectedTags": [],
+            "allowedTags": None,
+            "injectedReferences": [],
         }
 
         if content:
@@ -294,161 +306,138 @@ class ActionHandler:
             include_tags = action_dict.get("includeTags", [])
             result["includeTags"] = list(map(str, include_tags))
 
-        if action_dict.get("requiredKeys"):
-            result["form"]["requiredKeys"] = list(
-                _only_owned_helper(
-                    Content,
-                    action_dict["requiredKeys"],
-                    request,
-                    fields=("id",),
-                    check_field="contentHash",
-                    scope="view",
-                    authset=authset,
-                )
-            )
         if action_dict.get("injectedTags"):
-            result["form"]["injectedTags"].extend(action_dict["injectedTags"])
-        if action_dict.get("allowedTags"):
-            result["form"]["allowedTags"].extend(action_dict["allowedTags"])
-        return result
-
-    @staticmethod
-    def do_push(action_dict, scope, sender, accesslevel, **kwargs):
-        if scope == "push" and issubclass(sender, Content):
-            return {
-                "filters": Q(id=action_dict["id"]),
-                "form": action_dict["form"],
-                "accesslevel": 3,
-            }
-        if accesslevel < 1 and scope == "view" and issubclass(sender, Content):
-            return {
-                "filters": (
-                    Q(id=action_dict["id"])
-                    | Q(contentHash__in=action_dict["form"]["requiredKeys"])
-                ),
-                "form": action_dict["form"],
-                "accesslevel": 0,
-            }
-        return None
-
-    @staticmethod
-    def clean_push(action_dict, request, content, authset):
-        if not content:
-            raise ValueError("Can only be specified for a content")
-
-        result = {
-            "action": "push",
-            "contentActionGroup": "push",
-            "id": content.id,
-            "form": {
-                "allowedTags": [],
-                # create update action
-                "updateable": bool(action_dict.get("updateable")),
-                # freeze when fetched
-                "freeze": bool(action_dict.get("freeze")),
-                "injectedReferences": [
-                    {
-                        "group": "push",
-                        "target": content.id,
-                        "deleteRecursive": (
-                            constants.DeleteRecursive.TRUE.value,
-                        ),
-                    }
-                ],
-            },
-        }
-        if action_dict.get("injectedTags"):
-            for i in action_dict["injectedTags"]:
-                if i in {"type=PublicKey", "type=PrivateKey"}:
-                    raise ValueError()
-            result["form"]["injectedTags"].extend(action_dict["injectedTags"])
-        if action_dict.get("allowedTags"):
-            for i in action_dict["allowedTags"]:
-                if i in {"type=PublicKey", "type=PrivateKey", "type="}:
-                    raise ValueError()
-            result["form"]["allowedTags"].extend(action_dict["allowedTags"])
-        references = action_dict.get("injectedReferences") or {}
-        if isinstance(references, list):
-            references = dict(map(lambda x: (x["target"], x), references))
-        for _flexid, _id in _only_owned_helper(
-            Content,
-            references.keys(),
-            request,
-            fields=("flexid",),
-            authset=authset,
-        ):
-            deleteRecursive = references[_flexid].get(
-                "deleteRecursive", constants.DeleteRecursive.TRUE.value
-            )
-            # TODO: specify nicer
-            if deleteRecursive not in constants.DeleteRecursive.valid_values:
-                raise ValueError(
-                    "invalid deleteRecursive specification "
-                    "in injected reference"
-                )
-            result["form"]["injectedReferences"].append(
-                {
-                    "target": _id,
-                    "group": references[_flexid].get("group", ""),
-                    "deleteRecursive": deleteRecursive,
-                }
-            )
-        if action_dict.get("requiredKeys"):
-            result["form"]["requiredKeys"] = list(
-                _only_owned_helper(
-                    Content,
-                    action_dict["requiredKeys"],
-                    request,
-                    fields=("id",),
-                    check_field="contentHash",
-                    scope="view",
-                    authset=authset,
-                )
-            )
-
+            result["injectedTags"].extend(action_dict["injectedTags"])
+        if action_dict.get("allowedTags") is not None:
+            result["allowedTags"] = list(action_dict["allowedTags"])
         return result
 
     @staticmethod
     def do_create(action_dict, scope, sender, accesslevel, **kwargs):
         if scope == "create" and issubclass(sender, (Content, Cluster)):
             return {
+                "action": "create",
+                "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(),
-                "form": action_dict["form"],
                 "accesslevel": 3,
+                "injectedTags": action_dict.get("injectedTags", []),
+                "allowedTags": action_dict.get("allowedTags", None),
+                "injectedReferences": action_dict.get(
+                    "injectedReferences", []
+                ),
             }
         return None
 
     @staticmethod
-    def clean_create(action_dict, request, content, authset):
-        if content:
-            raise ValueError("Can only be specified for a cluster")
-
+    def _clean_create_or_push(action_dict, request, content, authset):
         result = {
-            "action": "create",
-            "form": {
-                "requiredKeys": [],
-                "injectedTags": [],
-                "allowedTags": None,
-            },
+            "id": content.id if content and content.id else None,
+            "injectedTags": [],
+            "injectedReferences": [],
+            "allowedTags": None,
         }
-        if action_dict.get("injectedTags"):
-            result["form"]["injectedTags"].extend(action_dict["injectedTags"])
-        if action_dict.get("allowedTags"):
-            result["form"]["allowedTags"] = list(action_dict["allowedTags"])
-
-        if action_dict.get("requiredKeys"):
-            result["form"]["requiredKeys"] = list(
-                _only_owned_helper(
-                    Content,
-                    action_dict["requiredKeys"],
-                    request,
-                    fields=("id",),
-                    check_field="contentHash",
-                    scope="view",
-                    authset=authset,
-                )
+        if content.id:
+            result["injectedReferences"].push(
+                {
+                    "group": "creator",
+                    "target": content.id,
+                    "deleteRecursive": (constants.DeleteRecursive.TRUE.value,),
+                }
             )
 
+        if action_dict.get("injectedTags"):
+            result["injectedTags"].extend(action_dict["injectedTags"])
+        if action_dict.get("allowedTags") is not None:
+            result["allowedTags"] = list(action_dict["allowedTags"])
+        references = action_dict.get("injectedReferences")
+        if references:
+            if isinstance(references, list):
+                references = dict(map(lambda x: (x["target"], x), references))
+            for _flexid, _id in _only_owned_helper(
+                Content,
+                references.keys(),
+                request,
+                fields=("flexid",),
+                authset=authset,
+            ):
+                deleteRecursive = references[_flexid].get(
+                    "deleteRecursive", constants.DeleteRecursive.TRUE.value
+                )
+                # TODO: specify nicer
+                if (
+                    deleteRecursive
+                    not in constants.DeleteRecursive.valid_values
+                ):
+                    raise ValueError(
+                        "invalid deleteRecursive specification "
+                        "in injected reference"
+                    )
+                result["injectedReferences"].append(
+                    {
+                        "target": _id,
+                        "group": references[_flexid].get("group", ""),
+                        "deleteRecursive": deleteRecursive,
+                    }
+                )
+        return result
+
+    @classmethod
+    def clean_create(cls, action_dict, request, content, authset):
+        if content:
+            raise ValueError("create invalid for content")
+        result = cls._clean_create_or_push(
+            action_dict, request, content, authset
+        )
+        result["action"] = "create"
+        return result
+
+    @staticmethod
+    def do_push(action_dict, scope, sender, accesslevel, **kwargs):
+        if scope == "push":
+            return {
+                "action": "create",
+                "trustedKeys": action_dict.get("trustedKeys", []),
+                "filters": Q(),
+                "accesslevel": 3,
+                "injectedTags": action_dict.get("injectedTags", []),
+                "allowedTags": action_dict.get("allowedTags", None),
+                "injectedReferences": action_dict.get(
+                    "injectedReferences", []
+                ),
+                "updateable": bool(action_dict.get("updateable", True)),
+                # freeze when fetched
+                "freeze": bool(action_dict.get("freeze", False)),
+            }
+        if (
+            scope == "view"
+            and accesslevel < 1
+            and issubclass(sender, Content)
+            and action_dict.get("id")
+        ):
+            return {
+                "action": "push",
+                "trustedKeys": action_dict.get("trustedKeys", []),
+                "filters": Q(id=action_dict["id"]),
+                "accesslevel": 0,
+                "injectedTags": action_dict.get("injectedTags", []),
+                "allowedTags": action_dict.get("allowedTags", None),
+                "injectedReferences": action_dict.get(
+                    "injectedReferences", []
+                ),
+                "updateable": bool(action_dict.get("updateable", True)),
+                # freeze when fetched
+                "freeze": bool(action_dict.get("freeze", False)),
+            }
+        return None
+
+    @classmethod
+    def clean_push(cls, action_dict, request, content, authset):
+        if not content:
+            raise ValueError("push invalid for content")
+        result = cls._clean_create_or_push(
+            action_dict, request, content, authset
+        )
+        result["action"] = "push"
         return result
 
     @staticmethod
@@ -462,14 +451,12 @@ class ActionHandler:
                 contentAction__content_id__in=action_dict["exclude"]["Content"]
             )
         return {
+            "trustedKeys": action_dict.get("trustedKeys", []),
             "filters": ~excl_filters,
             "accesslevel": 2,
-            "form": {
-                "requiredKeys": [],
-                "injectedTags": [],
-                "allowedTags": None,
-                "injectedReferences": [],
-            },
+            "injectedTags": [],
+            "allowedTags": None,
+            "injectedReferences": [],
         }
 
     @staticmethod

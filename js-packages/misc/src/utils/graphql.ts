@@ -11,6 +11,8 @@ import {
     unserializeToCryptoKey,
 } from './encryption'
 
+declare var __DEV__: any
+
 export const createClient = (url: string) => {
     return new ApolloClient({
         connectToDevTools: __DEV__ ?? false,

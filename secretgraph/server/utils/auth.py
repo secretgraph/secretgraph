@@ -8,11 +8,12 @@ from operator import or_
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.apps import apps
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 
 from ... import constants
 from ..actions.handler import ActionHandler
-from ..models import Action, Cluster, Content
+from ..models import Action, Cluster, Content, GlobalGroupProperty
 from .misc import calculate_hashes, from_global_id_safe
 
 logger = logging.getLogger(__name__)
@@ -362,3 +363,30 @@ def ids_to_results(
                 authset=authset,
             )
     return results
+
+
+def check_permission(request, permission, query, authorization=None):
+    assert isinstance(query.model, Cluster), "Not a cluster query"
+    global_groups = GlobalGroupProperty.objects.get_or_create(
+        name=permission, defaults={}
+    )[0].groups.all()
+    q = models.Q(clusters__in=query)
+    if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+        global_groups_names = global_groups.filter(
+            matchUserGroup=True
+        ).values_list("name", flat=True)
+        if global_groups_names:
+            q |= models.Q(
+                clusters__in=models.Subquery(
+                    query.filter(
+                        user__group__name__in=global_groups_names
+                    ).values("id")
+                )
+            )
+            user = getattr(request, "user", None)
+            if user:
+                q |= models.Q(
+                    name__in=models.Subquery(user.groups.values("name"))
+                )
+
+    return global_groups.filter(q).exists()

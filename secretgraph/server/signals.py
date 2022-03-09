@@ -26,14 +26,16 @@ def initializeDb(sender, **kwargs):
         properties = []
         for prop in set(group.pop("properties")):
             properties.append(
-                GlobalGroupProperty.objects.get_or_create(name=prop)[0]
+                GlobalGroupProperty.objects.get_or_create(
+                    name=prop, defaults={}
+                )[0]
             )
 
         cluster, created = Cluster.objects.get_or_create(
-            group.pop("name"), defaults=group
+            name=group.pop("name"), defaults=group
         )
         if created:
-            cluster.properties.set(*properties)
+            cluster.properties.set(properties)
 
 
 def deleteContentCb(sender, instance, **kwargs):

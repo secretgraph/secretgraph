@@ -413,7 +413,7 @@ class GlobalGroupManager(models.Manager):
         return queryset.filter(hidden=True)
 
     def _get_hidden_names(self):
-        return set(self.hidden.values_list("name", flat=True))
+        return set(self.hidden().values_list("name", flat=True))
 
     def get_hidden_names(self):
         return caches["secretgraph_settings"].get_or_set(
@@ -475,7 +475,7 @@ class GlobalGroup(models.Model):
         },
     )
     properties: models.QuerySet[GlobalGroupProperty] = models.ManyToManyField(
-        GlobalGroupProperty, related_name="group"
+        GlobalGroupProperty, related_name="groups"
     )
 
     objects = GlobalGroupManager()
