@@ -30,7 +30,7 @@ cryptography = "*"
 rdflib = '*'
 requests = "*"
 certifi = "*"
-graphene-protector = {version=">=0.5.0", optional = true}
+graphene-protector = {version=">=0.6.3", optional = true}
 graphene-django = {version=">=3.0b7", optional = true}
 graphene-file-upload = {version="*", optional = true}
 flipflop = {version="*", optional = true}
@@ -45,7 +45,7 @@ bleach = {version="*", optional = true}
 
 
 [tool.poetry.dev-dependencies]
-graphene-protector = ">=0.5.0"
+graphene-protector = ">=0.6.3"
 graphene-django = '>=3.0b7'
 graphene-file-upload = "*"
 django-extensions = '*'
@@ -58,7 +58,13 @@ bleach = "*"
 
 
 [tool.poetry.extras]
-server = ["graphene-django", "graphene-protector", "graphene-file-upload", "django-fast-ratelimit"]
+server = [
+    "graphene-django",
+    "graphene-protector",
+    "graphene-file-upload",
+    "django-fast-ratelimit",
+    "django-manifest-loader"
+]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
 mysql = ["mysqlclient", "django-mysql"]
@@ -66,9 +72,6 @@ mysql = ["mysqlclient", "django-mysql"]
 test = [
   "django-webtest",
   "WSGIProxy2",
-  "graphene-django",
-  "graphene-file-upload",
-  "django-fast-ratelimit"
 ]
 
 [tool.tox]
@@ -78,7 +81,7 @@ minversion = 3.4.0
 isolated_build = True
 envlist = py{36,37,38}-django{30,master}-{sqlite3,postgresql,mysql}
 extras =
-  test
+  test, server
 
 [testenv]
 whitelist_externals =

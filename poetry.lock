@@ -193,7 +193,7 @@ Django = ">=2.2"
 
 [[package]]
 name = "django-webtest"
-version = "1.9.9"
+version = "1.9.10"
 description = "Instant integration of Ian Bicking's WebTest (http://docs.pylonsproject.org/projects/webtest/) with Django's testing framework."
 category = "main"
 optional = true
@@ -266,16 +266,17 @@ tests = ["coverage", "pytest", "pytest-cov", "pytest-django"]
 
 [[package]]
 name = "graphene-protector"
-version = "0.5.1"
-description = "Protects graphene against malicious queries"
+version = "0.6.3"
+description = "Protects graphene, graphql or strawberry against malicious queries"
 category = "main"
 optional = false
-python-versions = ">=3.6,<4"
+python-versions = ">=3.7,<4"
 
 [package.dependencies]
-graphene = ">=2"
-graphene-django = "*"
 graphql-core = ">=2"
+
+[package.extras]
+optional = ["graphene (>=2)", "graphene-django", "strawberry-graphql-django", "strawberry-graphql"]
 
 [[package]]
 name = "graphql-core"
@@ -551,11 +552,11 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "waitress"
-version = "2.0.0"
+version = "2.1.0"
 description = "Waitress WSGI server"
 category = "main"
 optional = true
-python-versions = ">=3.6.0"
+python-versions = ">=3.7.0"
 
 [package.extras]
 docs = ["Sphinx (>=1.8.1)", "docutils", "pylons-sphinx-themes (>=1.0.9)"]
@@ -632,13 +633,13 @@ webob = "*"
 fastcgi = ["flipflop"]
 mysql = ["mysqlclient", "django-mysql"]
 postgresql = ["psycopg2"]
-server = ["graphene-django", "graphene-protector", "graphene-file-upload", "django-fast-ratelimit"]
-test = ["django-webtest", "WSGIProxy2", "graphene-django", "graphene-file-upload", "django-fast-ratelimit"]
+server = ["graphene-django", "graphene-protector", "graphene-file-upload", "django-fast-ratelimit", "django-manifest-loader"]
+test = ["django-webtest", "WSGIProxy2"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8, <4"
-content-hash = "f7accbb5e462d1567c21de97fca66754f563a62fd1c891cc48ea2ab2a7dd4ff6"
+content-hash = "618fed01c352f439e20f2945e39705fb71a891d9ed2ed533b236f426752b6e1a"
 
 [metadata.files]
 aniso8601 = [
@@ -786,8 +787,8 @@ django-mysql = [
     {file = "django_mysql-4.5.0-py3-none-any.whl", hash = "sha256:3656c1649bdc8a39afe6347a8ebe02ce69eeb30595ceaa994f994c0b81a42013"},
 ]
 django-webtest = [
-    {file = "django-webtest-1.9.9.tar.gz", hash = "sha256:7b6eab091ba4cb1d6c0aa1059247f181255ffce99e7b976ec391fea04a215c94"},
-    {file = "django_webtest-1.9.9-py3-none-any.whl", hash = "sha256:32daef3db0e851d832fe06dbbde70f3a878201086266281fad338eea50f5efc3"},
+    {file = "django-webtest-1.9.10.tar.gz", hash = "sha256:c8c32041791cdae468e443097c432c67cf17cad339e1ab88b01a6c4841ee4c74"},
+    {file = "django_webtest-1.9.10-py3-none-any.whl", hash = "sha256:ef075e98b38fe3836dc533c2924d3e37c6bb3483008c40567115518a0303b1af"},
 ]
 flipflop = [
     {file = "flipflop-1.0.tar.gz", hash = "sha256:32a23ed7bdb53bab03271c4c92abceae1ee3a337dd7fd5a18334fd64930ebcfd"},
@@ -805,8 +806,8 @@ graphene-file-upload = [
     {file = "graphene_file_upload-1.3.0.tar.gz", hash = "sha256:6898480b0556826472c80971032917c01968ade5800d84054008fe598795b063"},
 ]
 graphene-protector = [
-    {file = "graphene-protector-0.5.1.tar.gz", hash = "sha256:99e630c03b4a4eee0fff492d24e284be11dfc1ba254289df5243809a01cae669"},
-    {file = "graphene_protector-0.5.1-py3-none-any.whl", hash = "sha256:e21736b5d0e995e7a3ccaa8b45895a8c8a4bc5edbdd5488ba690a404ea2c5039"},
+    {file = "graphene-protector-0.6.3.tar.gz", hash = "sha256:0177ef56f8eaa1176059ded0f8eb43508d7e6c07bac27da0a65512822a2d653c"},
+    {file = "graphene_protector-0.6.3-py3-none-any.whl", hash = "sha256:089ea3c0bf0ab266a4224cfb124a4543f3083ca37d99111d64f7b446142b1186"},
 ]
 graphql-core = [
     {file = "graphql-core-3.1.7.tar.gz", hash = "sha256:62ec192150ccecd9a18cfb79e3e72eb7d1fd68fb594ef19c40099b6deec8ef0c"},
@@ -959,8 +960,8 @@ urllib3 = [
     {file = "urllib3-1.26.8.tar.gz", hash = "sha256:0e7c33d9a63e7ddfcb86780aac87befc2fbddf46c58dbb487e0855f7ceec283c"},
 ]
 waitress = [
-    {file = "waitress-2.0.0-py3-none-any.whl", hash = "sha256:29af5a53e9fb4e158f525367678b50053808ca6c21ba585754c77d790008c746"},
-    {file = "waitress-2.0.0.tar.gz", hash = "sha256:69e1f242c7f80273490d3403c3976f3ac3b26e289856936d1f620ed48f321897"},
+    {file = "waitress-2.1.0-py3-none-any.whl", hash = "sha256:58bd2fa1c2c82adf6e322ae7151f4fbd5176d2769602407a61b9c92b1606c2ef"},
+    {file = "waitress-2.1.0.tar.gz", hash = "sha256:ec8a8d9b6b15f3bb2c1a82b8f3929a029c333c35fcafb08c185a9e562d8cc9c2"},
 ]
 webencodings = [
     {file = "webencodings-0.5.1-py2.py3-none-any.whl", hash = "sha256:a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78"},
