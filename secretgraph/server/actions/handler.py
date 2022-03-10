@@ -265,6 +265,9 @@ class ActionHandler:
                 "trustedKeys": action_dict.get("trustedKeys", []),
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
+                # allowedTypes is invalid for update
+                "allowedStates": action_dict.get("allowedStates", None),
+                "allowedActions": action_dict.get("allowedActions", None),
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),
@@ -277,6 +280,9 @@ class ActionHandler:
                 "trustedKeys": action_dict.get("trustedKeys", []),
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
+                # allowedTypes is invalid for update
+                "allowedStates": action_dict.get("allowedStates", None),
+                "allowedActions": action_dict.get("allowedActions", None),
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),
@@ -293,6 +299,7 @@ class ActionHandler:
             "freeze": bool(action_dict.get("freeze")),
             "injectedTags": [],
             "allowedTags": None,
+            "allowedStates": action_dict.get("allowedStates", None),
             "injectedReferences": [],
         }
 
@@ -310,6 +317,110 @@ class ActionHandler:
             result["injectedTags"].extend(action_dict["injectedTags"])
         if action_dict.get("allowedTags") is not None:
             result["allowedTags"] = list(action_dict["allowedTags"])
+        if action_dict.get("allowedStates") is not None:
+            result["allowedStates"] = list(action_dict["allowedStates"])
+        references = action_dict.get("injectedReferences")
+        if references:
+            if isinstance(references, list):
+                references = dict(map(lambda x: (x["target"], x), references))
+            for _flexid, _id in _only_owned_helper(
+                Content,
+                references.keys(),
+                request,
+                fields=("flexid",),
+                authset=authset,
+            ):
+                deleteRecursive = references[_flexid].get(
+                    "deleteRecursive", constants.DeleteRecursive.TRUE.value
+                )
+                # TODO: specify nicer
+                if (
+                    deleteRecursive
+                    not in constants.DeleteRecursive.valid_values
+                ):
+                    raise ValueError(
+                        "invalid deleteRecursive specification "
+                        "in injected reference"
+                    )
+                result["injectedReferences"].append(
+                    {
+                        "target": _id,
+                        "group": references[_flexid].get("group", ""),
+                        "deleteRecursive": deleteRecursive,
+                    }
+                )
+        return result
+
+    @staticmethod
+    def do_inject(action_dict, scope, sender, accesslevel, **kwargs):
+        if scope in {"create", "update", "push"} and issubclass(
+            sender, (Content, Cluster)
+        ):
+            return {
+                "action": "inject",
+                "trustedKeys": action_dict.get("trustedKeys", []),
+                "filters": Q(),
+                "accesslevel": -1,
+                "injectedTags": action_dict.get("injectedTags", []),
+                "allowedTags": action_dict.get("allowedTags", None),
+                "allowedTypes": action_dict.get("allowedTypes", None),
+                "allowedStates": action_dict.get("allowedStates", None),
+                "allowedActions": action_dict.get("allowedActions", None),
+                "injectedReferences": action_dict.get(
+                    "injectedReferences", []
+                ),
+            }
+        return None
+
+    @staticmethod
+    def clean_inject(action_dict, request, content, authset):
+        result = {
+            "id": content.id if content and content.id else None,
+            "injectedTags": [],
+            "injectedReferences": [],
+            "allowedTags": None,
+            "allowedStates": None,
+            "allowedTypes": None,
+        }
+
+        if action_dict.get("injectedTags"):
+            result["injectedTags"].extend(action_dict["injectedTags"])
+        if action_dict.get("allowedTags") is not None:
+            result["allowedTags"] = list(action_dict["allowedTags"])
+        if action_dict.get("allowedStates") is not None:
+            result["allowedStates"] = list(action_dict["allowedStates"])
+        if action_dict.get("allowedTypes") is not None:
+            result["allowedTypes"] = list(action_dict["allowedTypes"])
+        references = action_dict.get("injectedReferences")
+        if references:
+            if isinstance(references, list):
+                references = dict(map(lambda x: (x["target"], x), references))
+            for _flexid, _id in _only_owned_helper(
+                Content,
+                references.keys(),
+                request,
+                fields=("flexid",),
+                authset=authset,
+            ):
+                deleteRecursive = references[_flexid].get(
+                    "deleteRecursive", constants.DeleteRecursive.TRUE.value
+                )
+                # TODO: specify nicer
+                if (
+                    deleteRecursive
+                    not in constants.DeleteRecursive.valid_values
+                ):
+                    raise ValueError(
+                        "invalid deleteRecursive specification "
+                        "in injected reference"
+                    )
+                result["injectedReferences"].append(
+                    {
+                        "target": _id,
+                        "group": references[_flexid].get("group", ""),
+                        "deleteRecursive": deleteRecursive,
+                    }
+                )
         return result
 
     @staticmethod
@@ -322,6 +433,9 @@ class ActionHandler:
                 "accesslevel": 3,
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
+                "allowedTypes": action_dict.get("allowedTypes", None),
+                "allowedStates": action_dict.get("allowedStates", None),
+                "allowedActions": action_dict.get("allowedActions", None),
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),
@@ -335,6 +449,8 @@ class ActionHandler:
             "injectedTags": [],
             "injectedReferences": [],
             "allowedTags": None,
+            "allowedStates": None,
+            "allowedTypes": None,
         }
         if content.id:
             result["injectedReferences"].push(
@@ -349,6 +465,10 @@ class ActionHandler:
             result["injectedTags"].extend(action_dict["injectedTags"])
         if action_dict.get("allowedTags") is not None:
             result["allowedTags"] = list(action_dict["allowedTags"])
+        if action_dict.get("allowedStates") is not None:
+            result["allowedStates"] = list(action_dict["allowedStates"])
+        if action_dict.get("allowedTypes") is not None:
+            result["allowedTypes"] = list(action_dict["allowedTypes"])
         references = action_dict.get("injectedReferences")
         if references:
             if isinstance(references, list):
@@ -401,6 +521,9 @@ class ActionHandler:
                 "accesslevel": 3,
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
+                "allowedTypes": action_dict.get("allowedTypes", None),
+                "allowedStates": action_dict.get("allowedStates", None),
+                "allowedActions": action_dict.get("allowedActions", None),
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),
@@ -421,6 +544,9 @@ class ActionHandler:
                 "accesslevel": 0,
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
+                "allowedTypes": action_dict.get("allowedTypes", None),
+                "allowedStates": action_dict.get("allowedStates", None),
+                "allowedActions": action_dict.get("allowedActions", None),
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),
@@ -454,9 +580,6 @@ class ActionHandler:
             "trustedKeys": action_dict.get("trustedKeys", []),
             "filters": ~excl_filters,
             "accesslevel": 2,
-            "injectedTags": [],
-            "allowedTags": None,
-            "injectedReferences": [],
         }
 
     @staticmethod
@@ -521,7 +644,7 @@ class ActionHandler:
                 updatevalues.pop("cluster", None)
                 updatevalues.pop("references", None)
                 updatevalues.pop("referencedBy", None)
-                klass.objects.filter(id=_id).update(**updatevalues)
+                klass.objects.filter(id=_id).update(updatevalues)
         return None
 
     @staticmethod

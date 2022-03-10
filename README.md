@@ -169,8 +169,7 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   rename forms to decoded, add decoded values dict
--   implement new "Permission" and trigger design
+-   harmonize incl/exclFilter and allowedTags specs (maybe)
 -   transform iter_decrypt_contents into QuerySet (maybe)
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   permissions for mark and delete

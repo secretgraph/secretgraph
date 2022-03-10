@@ -93,9 +93,6 @@ class ContentInput(graphene.InputObjectType):
 class PushContentInput(graphene.InputObjectType):
     parent = graphene.ID(required=True)
     value = ContentValueInput(required=True)
-    references = graphene.List(
-        graphene.NonNull(ReferenceInput), required=False
-    )
 
 
 class ClusterInput(graphene.InputObjectType):

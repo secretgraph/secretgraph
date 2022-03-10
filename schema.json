@@ -5423,24 +5423,6 @@
                   "ofType": null
                 }
               }
-            },
-            {
-              "defaultValue": null,
-              "description": null,
-              "name": "references",
-              "type": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "INPUT_OBJECT",
-                    "name": "ReferenceInput",
-                    "ofType": null
-                  }
-                }
-              }
             }
           ],
           "interfaces": null,

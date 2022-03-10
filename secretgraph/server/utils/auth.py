@@ -107,7 +107,6 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "authset": authset,
         "scope": scope,
         "rejecting_action": None,
-        "clusters": {},
         "decrypted": {},
         "active_actions": set(),
         "actions": Action.objects.none(),
@@ -116,6 +115,8 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         "action_info_clusters": {},
         "action_info_contents": {},
     }
+    clusters = {}
+    passive_active_actions = set()
     for item in authset:
         # harden against invalid input, e.g. object view produces empty strings
         if not item:
@@ -141,6 +142,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             continue
 
         filters = models.Q()
+        # -1 passiv
         # 0 default
         # 1 normal
         # 2 owner
@@ -178,7 +180,6 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             returnval["decrypted"].setdefault(action.id, decrypted)
 
             newaccesslevel = decrypted["accesslevel"]
-
             if accesslevel < newaccesslevel:
                 accesslevel = newaccesslevel
                 filters = decrypted.get("filters", models.Q())
@@ -202,6 +203,8 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                     and not action.contentAction
                 ):
                     returnval["active_actions"].add(action.id)
+            elif newaccesslevel < 0:
+                passive_active_actions.add(action.id)
 
             # update hash to newest algorithm
             if action.keyHash != keyhashes[0]:
@@ -219,8 +222,8 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
             _query = query.filter(
                 filters & models.Q(cluster_id=actions[0].cluster_id)
             )
-        if actions[0].cluster.flexid in returnval["clusters"]:
-            oldval = returnval["clusters"][actions[0].cluster.flexid]
+        if actions[0].cluster.flexid in clusters:
+            oldval = clusters[actions[0].cluster.flexid]
             if oldval["accesslevel"] > accesslevel:
                 continue
             elif oldval["accesslevel"] == accesslevel:
@@ -228,17 +231,18 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 oldval["actions"] |= actions
                 oldval["_query"] |= _query
                 continue
-        returnval["clusters"][actions[0].cluster.flexid] = {
+        clusters[actions[0].cluster.flexid] = {
             "filters": filters,
             "accesslevel": accesslevel,
             "actions": actions,
             "_query": _query,
         }
+    returnval["active_actions"].update(passive_active_actions)
 
     # extract subqueries union them
     all_query = reduce(
         or_,
-        map(lambda x: x.pop("_query"), returnval["clusters"].values()),
+        map(lambda x: x.pop("_query"), clusters.values()),
         query.none(),
     )
 

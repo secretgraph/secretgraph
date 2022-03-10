@@ -1,7 +1,6 @@
 import base64
 import logging
 import os
-import re
 from datetime import timedelta as td
 from itertools import chain
 
@@ -38,6 +37,7 @@ from .arguments import (
     PushContentInput,
     ReferenceInput,
 )
+from ..utils.arguments import pre_clean_content_spec
 from .definitions import ClusterNode, ContentNode
 
 logger = logging.getLogger(__name__)
@@ -382,35 +382,8 @@ class ContentMutation(relay.ClientIDMutation):
                 required_keys = set(
                     required_keys.values_list("contentHash", flat=True)
                 )
+            pre_clean_content_spec(True, content, result)
 
-            allowedTags = None
-            injectedTags = []
-            for action in result["active_actions"]:
-                form = result["forms"].get(action)
-                if form:
-                    # None should be possible here for not updating
-                    if content.get("tags") is not None:
-                        allowed = form.get("allowedTags", None)
-                        if allowed is not None:
-                            matcher = re.compile(
-                                "^(?:%s)(?:(?<==)|$)"
-                                % "|".join(map(re.escape, allowed))
-                            )
-                            allowedTags.append(matcher)
-                        injectedTags = chain(
-                            form.get("injectedTags", []), injectedTags
-                        )
-
-            def validTag(tag):
-                for i in allowedTags:
-                    if i.fullmatch(tag):
-                        return True
-                return False
-
-            if content.get("tags") is not None:
-                content["tags"] = chain(
-                    filter(validTag, content["tags"]), injectedTags
-                )
             returnval = cls(
                 **update_content_fn(
                     info.context,
@@ -440,38 +413,8 @@ class ContentMutation(relay.ClientIDMutation):
                         cluster_obj
                     ).values_list("contentHash", flat=True)
                 )
+            pre_clean_content_spec(content, content, result)
 
-            allowedTags = []
-            injectedTags = []
-            for action in result["actions"].filter(
-                Q(contentAction__isnull=True),
-                cluster_id=cluster_obj.id,
-            ):
-                form = result["forms"].get(action.id)
-                if form:
-                    # None should be possible here for not updating
-                    if content.get("tags") is not None:
-                        allowed = form.get("allowedTags", None)
-                        if allowed is not None:
-                            matcher = re.compile(
-                                "^(?:%s)(?:(?<==)|$)"
-                                % "|".join(map(re.escape, allowed))
-                            )
-                            allowedTags.append(matcher)
-                        injectedTags = chain(
-                            form.get("injectedTags", []), injectedTags
-                        )
-
-            def validTag(tag):
-                for i in allowedTags:
-                    if i.fullmatch(tag):
-                        return True
-                return False
-
-            if content.get("tags") is not None:
-                content["tags"] = chain(
-                    filter(validTag, content["tags"]), injectedTags
-                )
             returnval = cls(
                 **create_content_fn(
                     info.context,
@@ -501,46 +444,21 @@ class PushContentMutation(relay.ClientIDMutation):
         source = result["objects"].first()
         if not source:
             raise ValueError("Content not found")
-        form = result["forms"][
-            result["actions"].get(contentAction__content_id=source.id).id
-        ]
-        if content.get("tags") is not None:
-            allowed = form.get("allowedTags", None)
-            if allowed is not None:
-                matcher = re.compile(
-                    "^(?:%s)(?:(?<==)|$)" % "|".join(map(re.escape, allowed))
-                )
-                content["tags"] = filter(
-                    lambda x: matcher.fullmatch(x), content["tags"]
-                )
-            content["tags"] = chain(
-                form.get("injectedTags", []), content["tags"]
+        res = pre_clean_content_spec(True, content, result)
+        required_keys = set(
+            Content.objects.required_keys_full(source.cluster).values_list(
+                "contentHash", flat=True
             )
-        else:
-            content["tags"] = form.get("injectedTags") or []
-        if content.get("references") is not None:
-            content["references"] = chain(
-                form.get("injectedReferences", []), content["references"]
-            )
-        else:
-            content["references"] = form.get("injectedReferences") or []
-        required_keys = list(
-            Content.objects.injected_keys(
-                group=source.group, states=["required"]
-            ).values_list("contentHash", flat=True)
         )
-        required_keys.extend(form.get("requiredKeys", []))
         action_key = None
-        if form.pop("updateable", False):
-            freeze = form.pop("freeze", False)
+        if res["updateable"]:
             action_key = os.urandom(32)
             content["actions"] = [
                 {
                     "key": action_key,
                     "action": "update",
                     "restrict": True,
-                    "freeze": freeze,
-                    "form": form,
+                    "freeze": res["freeze"],
                 }
             ]
         c = create_content_fn(
@@ -585,21 +503,13 @@ class TransferMutation(relay.ClientIDMutation):
         if key and url:
             raise ValueError()
 
-        requiredKeys = set()
-        for action in result["actions"].filter(
-            Q(contentAction__content_id=content_obj.id)
-            | Q(contentAction__isnull=True),
-            cluster_id=content_obj.cluster_id,
-        ):
-            form = result["forms"].get(action.id)
-            if form:
-                requiredKeys.update(form.get("requiredKeys") or [])
-        if not requiredKeys:
-            verifiers = None
-        else:
-            verifiers = Content.objects.filter(
-                id__in=requiredKeys, type="PublicKey"
-            )
+        trustedKeys = set()
+        for action_id in result["active_actions"]:
+            action_dict = result["decrypted"][action_id]
+            trustedKeys.update(action_dict.get("trustedKeys"))
+        verifiers = Content.objects.filter(
+            contentHash__in=trustedKeys, type="PublicKey"
+        )
 
         tres = transfer_value(
             content_obj, key=key, url=url, headers=headers, verifiers=verifiers
