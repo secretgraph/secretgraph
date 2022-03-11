@@ -126,6 +126,8 @@ def fetch_contents(
     public=True,
     deleted=False,
     clusters=None,
+    includeTypes=None,
+    excludeTypes=None,
     includeTags=None,
     excludeTags=None,
     decrypt=True,
@@ -172,6 +174,12 @@ def fetch_contents(
     result["objects"] = _fetch_contents(
         result["objects"],
         result["actions"],
+        includeTypes=includeTypes.split(",")
+        if isinstance(includeTypes, str)
+        else includeTypes,
+        excludeTypes=excludeTypes.split(",")
+        if isinstance(excludeTypes, str)
+        else excludeTypes,
         includeTags=includeTags.split(",")
         if isinstance(includeTags, str)
         else includeTags,

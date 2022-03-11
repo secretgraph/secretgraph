@@ -10,7 +10,7 @@ from uuid import uuid4
 import re
 from contextlib import nullcontext
 
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import Q
 
 from ....constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import initializeCachedResult
@@ -131,6 +131,7 @@ def transform_references(
     injectable_keys = Content.objects.injected_keys()
     for ref in references or []:
         injected_ref = None
+        refob = None
         if isinstance(ref, ContentReference):
             refob = ref
             if not allowed_targets.filter(
@@ -147,21 +148,15 @@ def transform_references(
                 if isinstance(ref["target"], int):
                     q = Q(id=ref["target"])
                 else:
-                    # in case keyhash is specified Content type_name is used
-                    _refs = Subquery(
-                        ContentTag.objects.filter(
-                            # for correct chaining
-                            tag="type=PublicKey",
-                            content_id=OuterRef("pk"),
-                            content__tags__tag=f"key_hash={ref['target']}",
-                        ).values("pk")
-                    )
                     # the direct way doesn't work
                     # subquery is necessary for chaining operations correctly
                     q = (
                         Q(flexid=ref["target"])
                         | Q(flexid_cached=ref["target"])
-                        | Q(tags__in=_refs)
+                        | Q(
+                            type="PublicKey",
+                            tags__tag=f"key_hash={ref['target']}",
+                        )
                     )
 
                 targetob = allowed_targets.filter(

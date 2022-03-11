@@ -418,7 +418,6 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
                 query,
                 result["actions"],
                 states=kwargs.get("states"),
-                types=kwargs.get("types"),
                 includeTypes=kwargs.get("includeTypes"),
                 excludeTypes=kwargs.get("excludeTypes"),
                 includeTags=kwargs.get("includeTags"),
@@ -680,7 +679,10 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
             contents.filter(cluster_id=self.id),
             result["actions"],
             states=kwargs.get("states"),
-            types=["PublicKey"] if self.limited else kwargs.get("types"),
+            includeTypes=["PublicKey"]
+            if self.limited
+            else kwargs.get("includeTypes"),
+            excludeTypes=kwargs.get("excludeTypes"),
             includeTags=kwargs.get("tagsInclude"),
             excludeTags=kwargs.get("tagsExclude"),
             contentHashes=kwargs.get("contentHashes"),

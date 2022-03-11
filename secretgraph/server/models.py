@@ -227,7 +227,10 @@ class Content(FlexidModel):
         )
 
     def clean(self):
-        # TODO: use validationerrors
+        if "," in self.type:
+            raise ValidationError(
+                {"type": "%s is an invalid type" % self.type}
+            )
         if self.type == "PrivateKey":
             if self.state != "internal":
                 raise ValidationError(

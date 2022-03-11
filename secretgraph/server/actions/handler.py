@@ -308,7 +308,7 @@ class ActionHandler:
             result["excludeTags"] = []
             result["includeTags"] = []
         else:
-            exclude_tags = action_dict.get("excludeTags", ["type=PrivateKey"])
+            exclude_tags = action_dict.get("excludeTags", [])
             result["excludeTags"] = list(map(str, exclude_tags))
             include_tags = action_dict.get("includeTags", [])
             result["includeTags"] = list(map(str, include_tags))
@@ -361,11 +361,11 @@ class ActionHandler:
                 "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(),
                 "accesslevel": -1,
-                "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
                 "allowedTypes": action_dict.get("allowedTypes", None),
                 "allowedStates": action_dict.get("allowedStates", None),
                 "allowedActions": action_dict.get("allowedActions", None),
+                "injectedTags": action_dict.get("injectedTags", []),
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),

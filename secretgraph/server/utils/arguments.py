@@ -7,7 +7,7 @@ def pre_clean_content_spec(create, content, result):
     freeze = False
     injectedTags = set()
     injectedRefs = {}
-    passed = False
+    passed = len(result["active_actions"]) == 0
     if content.get("value"):
         tags = content["value"].get("tags") or []
         state = content["value"].get("state")
