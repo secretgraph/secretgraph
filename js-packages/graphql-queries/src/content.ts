@@ -46,6 +46,8 @@ export const contentFeedQuery = gql`
                         link
                         updateId
                         deleted
+                        type
+                        state
                         tags(includeTags: $includeTags)
                         references(
                             groups: ["key", "signature"]
@@ -109,6 +111,8 @@ export const createContentMutation = gql`
                 id
                 nonce
                 link
+                state
+                type
                 updateId
             }
             writeok
@@ -153,6 +157,8 @@ export const createKeysMutation = gql`
                 id
                 nonce
                 link
+                state
+                type
                 updateId
             }
             writeok
@@ -198,6 +204,8 @@ export const updateKeyMutation = gql`
                 id
                 nonce
                 link
+                type
+                state
                 updateId
             }
             writeok
@@ -244,6 +252,8 @@ export const updateContentMutation = gql`
                 id
                 nonce
                 link
+                type
+                state
                 updateId
             }
             writeok
@@ -266,6 +276,7 @@ export const findPublicKeyQuery = gql`
                                     updateId
                                     link
                                     type
+                                    state
                                 }
                             }
                         }

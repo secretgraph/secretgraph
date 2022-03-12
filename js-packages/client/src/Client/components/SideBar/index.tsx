@@ -65,10 +65,6 @@ const SideBarItems = () => {
     const activeUrlAsURL = new URL(activeUrl, window.location.href).href
     const goTo = (node: any) => {
         let type = node.__typename == 'Cluster' ? 'Cluster' : node.type
-        if (type && type != 'Cluster') {
-            // split works different in js, so 2
-            type = type.match(/=(.*)/)[1]
-        }
         if (type == 'PrivateKey') {
             type = 'PublicKey'
         }

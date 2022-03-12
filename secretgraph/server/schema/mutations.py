@@ -382,7 +382,7 @@ class ContentMutation(relay.ClientIDMutation):
                 required_keys = set(
                     required_keys.values_list("contentHash", flat=True)
                 )
-            pre_clean_content_spec(True, content, result)
+            pre_clean_content_spec(False, content, result)
 
             returnval = cls(
                 **update_content_fn(
@@ -413,7 +413,7 @@ class ContentMutation(relay.ClientIDMutation):
                         cluster_obj
                     ).values_list("contentHash", flat=True)
                 )
-            pre_clean_content_spec(content, content, result)
+            pre_clean_content_spec(True, content, result)
 
             returnval = cls(
                 **create_content_fn(
