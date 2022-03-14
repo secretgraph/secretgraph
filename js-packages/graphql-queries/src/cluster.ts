@@ -156,7 +156,7 @@ export const createClusterMutation = gql`
                     public: $public
                     key: {
                         publicKey: $publicKey
-                        publicState: "public"
+                        publicState: "trusted"
                         privateKey: $privateKey
                         privateTags: $privateTags
                         nonce: $nonce
@@ -221,7 +221,7 @@ export const updateClusterMutation = gql`
                 availableActions {
                     keyHash
                     type
-                    requiredKeys
+                    trustedKeys
                     allowedTags
                 }
             }

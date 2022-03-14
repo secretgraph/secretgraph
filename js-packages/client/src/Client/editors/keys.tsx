@@ -63,6 +63,7 @@ import * as React from 'react'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
+import StateSelect from '../components/forms/StateSelect'
 import * as Contexts from '../contexts'
 import { newClusterLabel } from '../messages'
 
@@ -308,6 +309,16 @@ function InnerKeys({
                 </Grid>
                 <Grid item xs={12}>
                     <Field
+                        component={StateSelect}
+                        name="state"
+                        disabled={isSubmitting || disabled}
+                        label="State"
+                        forKey
+                        fullWidth
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <Field
                         name="publicKey"
                         component={FormikTextField}
                         validate={async (val: string) => {
@@ -497,6 +508,7 @@ const KeysIntern = ({
         cluster:
             publicKey?.nodeData?.cluster?.id ||
             (searchCtx.cluster ? searchCtx.cluster : null),
+        state: publicKey?.nodeData?.state,
         publicKey: publicKey
             ? `-----BEGIN PUBLIC KEY-----\n${Buffer.from(
                   publicKey.data
@@ -624,6 +636,7 @@ const KeysIntern = ({
                         client,
                         config,
                         cluster: values.cluster,
+                        publicState: values.state,
                         publicKey: pubKey,
                         privateKey: privKey || undefined,
                         privkeys: Object.values(privateKeys),
@@ -642,6 +655,7 @@ const KeysIntern = ({
                         updateId: publicKey.nodeData.updateId,
                         client,
                         config,
+                        publicState: values.state,
                         privkeys: await Promise.all(Object.values(privateKeys)),
                         pubkeys: Object.values(publicKeys),
                         hashAlgorithm: hashAlgorithmsWorking[0],
@@ -733,6 +747,7 @@ const KeysIntern = ({
 const ViewKeys = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
+    const theme = useTheme()
     const [data, setData] = React.useState<
         | (UnpackPromise<ReturnType<typeof loadKeys>> & {
               key: string
@@ -799,6 +814,13 @@ const ViewKeys = () => {
                 <Typography variant="h5">Cluster</Typography>
                 <Typography variant="body2" style={{ wordBreak: 'break-all' }}>
                     {data.publicKey.nodeData.cluster.id}
+                </Typography>
+            </Grid>
+            <Grid item xs={12}>
+                <Typography variant="h5">State</Typography>
+                <Typography variant="body2" style={{ wordBreak: 'break-all' }}>
+                    {theme.contentStatesKey.get(data.publicKey.nodeData.state)
+                        ?.label || ''}
                 </Typography>
             </Grid>
             <Grid item xs={12}>

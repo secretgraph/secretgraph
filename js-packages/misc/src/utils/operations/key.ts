@@ -117,6 +117,7 @@ export async function updateKey({
     id,
     updateId,
     client,
+    publicState,
     ...options
 }: {
     id: string
@@ -128,6 +129,7 @@ export async function updateKey({
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     tags?: Iterable<string | PromiseLike<string>>
+    publicState?: string
     contentHash?: string | null
     references?: Iterable<Interfaces.ReferenceInterface> | null
     actions?: Iterable<Interfaces.ActionInterface>
@@ -214,6 +216,7 @@ export async function updateKey({
             updateId,
             cluster: options.cluster ? options.cluster : null,
             references,
+            publicState,
             tags: tags
                 ? await Promise.all(
                       tags.map(

@@ -12,10 +12,12 @@ declare module '@mui/styles/defaultTheme' {
 declare module '@mui/material/styles' {
     interface Theme {
         contentStates: Map<string, { label: string }>
+        contentStatesKey: Map<string, { label: string }>
     }
     // allow configuration using `createTheme`
     interface ThemeOptions {
         contentStates: Map<string, { label: string }>
+        contentStatesKey: Map<string, { label: string }>
     }
 }
 
@@ -42,6 +44,12 @@ export const theme = responsiveFontSizes(
             ['draft', { label: gettext('Draft') }],
             ['internal', { label: gettext('Internal') }],
             ['public', { label: gettext('Public') }],
+        ]),
+        contentStatesKey: new Map([
+            ['internal', { label: gettext('Internal') }],
+            ['public', { label: gettext('Public') }],
+            ['trusted', { label: gettext('Trusted') }],
+            ['required', { label: gettext('Required') }],
         ]),
     })
 )

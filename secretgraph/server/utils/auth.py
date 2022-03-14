@@ -98,7 +98,7 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
         .filter(models.Q(stop__isnull=True) | models.Q(stop__gte=now))
         .order_by("-start", "-id")
     )
-    if isinstance(query.model, Content):
+    if issubclass(query.model, Content):
         pre_filtered_actions = pre_filtered_actions.filter(
             models.Q(contentAction__isnull=True)
             | models.Q(contentAction__content__in=query)
@@ -196,10 +196,10 @@ def retrieve_allowed_objects(request, scope, query, authset=None):
                 )
             if accesslevel <= newaccesslevel:
 
-                if isinstance(query.model, Content):
+                if issubclass(query.model, Content):
                     returnval["active_actions"].add(action.id)
                 elif (
-                    isinstance(query.model, Cluster)
+                    issubclass(query.model, Cluster)
                     and not action.contentAction
                 ):
                     returnval["active_actions"].add(action.id)
@@ -370,7 +370,9 @@ def ids_to_results(
 
 
 def check_permission(request, permission, query, authorization=None):
-    assert isinstance(query.model, Cluster), "Not a cluster query"
+    assert issubclass(query.model, Cluster), (
+        "Not a cluster query: %s" % query.model
+    )
     global_groups = GlobalGroupProperty.objects.get_or_create(
         name=permission, defaults={}
     )[0].groups.all()

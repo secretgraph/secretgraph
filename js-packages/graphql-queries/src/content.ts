@@ -268,6 +268,7 @@ export const findPublicKeyQuery = gql`
                 ... on Content {
                     id
                     type
+                    state
                     references(groups: ["public_key"]) {
                         edges {
                             node {
@@ -288,7 +289,7 @@ export const findPublicKeyQuery = gql`
 `
 
 export const keysRetrievalQuery = gql`
-    query contentKeyRetrievalQuery(
+    query keysRetrievalQuery(
         $id: ID!
         $authorization: [String!]
         $keyhashes: [String!]
@@ -304,6 +305,7 @@ export const keysRetrievalQuery = gql`
                     deleted
                     link
                     updateId
+                    state
                     tags
                     availableActions {
                         keyHash
@@ -339,6 +341,7 @@ export const keysRetrievalQuery = gql`
                                     link
                                     nonce
                                     updateId
+                                    state
                                     tags
                                     references(
                                         groups: ["key"]
@@ -507,7 +510,11 @@ export const getContentConfigurationQuery = gql`
                         allowedTags
                     }
 
-                    contents(includeTypes: ["PublicKey"], deleted: FALSE) {
+                    contents(
+                        includeTypes: ["PublicKey"]
+                        states: ["required", "trusted"]
+                        deleted: FALSE
+                    ) {
                         edges {
                             node {
                                 link
@@ -532,7 +539,11 @@ export const getContentConfigurationQuery = gql`
                     cluster {
                         id
                         groups
-                        contents(includeTypes: ["PublicKey"], deleted: FALSE) {
+                        contents(
+                            includeTypes: ["PublicKey"]
+                            states: ["required", "trusted"]
+                            deleted: FALSE
+                        ) {
                             edges {
                                 node {
                                     link

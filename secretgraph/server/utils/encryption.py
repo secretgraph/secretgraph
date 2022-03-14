@@ -235,11 +235,7 @@ def iter_decrypt_contents(
 
     for content in query:
         if content.id in transfer_map:
-            verifiers = set()
-            for action_id in content.active_action_ids:
-                verifiers.update(
-                    result["forms"][action_id].get("requiredKeys") or []
-                )
+            verifiers = Content.objects.trusted_keys()
             if not verifiers:
                 verifiers = None
             else:

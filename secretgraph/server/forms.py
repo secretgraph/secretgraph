@@ -64,6 +64,7 @@ class PushForm(forms.Form):
 
     def clean(self):
         ret = super().clean()
+        raise NotImplementedError
         form = self.result["forms"][self.instance.actions.get(group="push").id]
         if ret.get("tags") is not None:
             allowed = form.get("allowedTags", None)
