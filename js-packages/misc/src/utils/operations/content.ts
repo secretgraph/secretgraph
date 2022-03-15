@@ -348,6 +348,7 @@ export async function decryptContentObject({
     try {
         const found = findCertCandidatesForRefs(config, _node)
         if (!found.length) {
+            console.debug('No certificate nor key tag found')
             return null
         }
         // find key (=first result of decoding shared key)
@@ -363,7 +364,11 @@ export async function decryptContentObject({
             )
         ).data
     } catch (exc) {
-        console.debug('No matching certificate found', exc, exc?.errors)
+        console.debug(
+            'No matching certificate nor key tag found',
+            exc,
+            exc?.errors
+        )
         return null
     }
 

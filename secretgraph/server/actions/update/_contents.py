@@ -7,7 +7,6 @@ from contextlib import nullcontext
 from itertools import chain
 from uuid import UUID, uuid4
 
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.exceptions import ObjectDoesNotExist
@@ -44,12 +43,10 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             key_obj["publicKey"] = publicKeyContent.file.open("rb").read()
     try:
         if isinstance(key_obj["publicKey"], bytes):
-            key_obj["publicKey"] = load_der_public_key(
-                key_obj["publicKey"], default_backend()
-            )
+            key_obj["publicKey"] = load_der_public_key(key_obj["publicKey"])
         elif isinstance(key_obj["publicKey"], File):
             key_obj["publicKey"] = load_der_public_key(
-                key_obj["publicKey"].read(), default_backend()
+                key_obj["publicKey"].read()
             )
         key_obj["publicKey"] = key_obj["publicKey"].public_bytes(
             encoding=serialization.Encoding.DER,
@@ -63,12 +60,20 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             raise ValueError("Cannot change public key")
     hashes = calculate_hashes(key_obj["publicKey"])
     hashes_tags = tuple(map(lambda x: f"key_hash={x}", hashes))
-    if not any(
-        filter(
-            lambda x: x.startswith("key="), key_obj.get("privateTags") or []
-        )
-    ):
-        raise ValueError("missing key parameter")
+    if key_obj.get("privateKey"):
+        if not any(
+            filter(
+                lambda x: x.startswith("key="),
+                key_obj["privateTags"],
+            )
+        ):
+            raise ValueError("missing key tag")
+    publicState = key_obj.get("publicState")
+    if not publicState:
+        if publicKeyContent:
+            publicState = publicKeyContent.state
+        else:
+            publicState = "public"
 
     return (
         hashes,
@@ -76,7 +81,7 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "nonce": b"",
             "value": key_obj["publicKey"],
             "type": "PublicKey",
-            "state": key_obj.get("publicState") or "public",
+            "state": publicState,
             "tags": chain(hashes_tags, key_obj.get("publicTags", [])),
             "contentHash": hashes[0],
             "actions": key_obj.get("publicActions"),
@@ -86,7 +91,7 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "value": key_obj["privateKey"],
             "type": "PrivateKey",
             "state": "internal",
-            "tags": chain(hashes_tags, key_obj["privateTags"]),
+            "tags": chain(hashes_tags, key_obj.get("privateTags", [])),
             "contentHash": None,
             "actions": key_obj.get("privateActions"),
         }
@@ -278,6 +283,7 @@ def _update_or_create_content_or_key(
                     refresh_fields(final_tags, "content")
                 )
             else:
+                content.tags.all().delete()
                 ContentTag.objects.bulk_create(final_tags)
 
         if final_references is not None:
@@ -443,7 +449,7 @@ def update_content_fn(
                 else content.tags.exclude(
                     tag__startswith="key_hash="
                 ).values_list("tag", flat=True),
-                "privateTags": [],
+                "privateTags": None,
             },
             publicKeyContent=content,
         )
@@ -457,7 +463,7 @@ def update_content_fn(
         hashes, _public, newdata = _transform_key_into_dataobj(
             {
                 **key_obj,
-                "publicTags": [],
+                "publicTags": None,
                 "privateTags": key_obj["privateTags"]
                 if key_obj.get("privateTags") is not None
                 else content.tags.exclude(

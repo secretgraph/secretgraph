@@ -278,7 +278,10 @@ class ContentView(AllowCORSMixin, FormView):
             response = JsonResponse(response)
             response["X-IS-SIGNED"] = "false"
         else:
-            response = FileResponse(content.file.open("rb"))
+            try:
+                response = FileResponse(content.file.open("rb"))
+            except FileNotFoundError as e:
+                raise Http404() from e
             response["X-TYPE"] = content.type
             verifiers = content.references.filter(group="signature")
             response["X-IS-SIGNED"] = json.dumps(verifiers.exists())

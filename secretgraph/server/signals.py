@@ -138,7 +138,7 @@ def regenerateKeyHash(sender, force=False, **kwargs):
         if add_to == 0:
             continue
 
-        tags = map(lambda x: "key_hash=%s" % x, chashes)
+        tags = list(map(lambda x: "key_hash=%s" % x, chashes))
         batch_size = 1000
         final_tags = (
             ContentTag(tag=tag, content=content)

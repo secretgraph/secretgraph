@@ -5,7 +5,6 @@ import tempfile
 from io import BytesIO
 from typing import Iterable
 
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -39,9 +38,7 @@ def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
     nonce = os.urandom(13)
     if not key:
         key = os.urandom(32)
-    encryptor = Cipher(
-        algorithms.AES(key), modes.GCM(nonce), backend=default_backend()
-    ).encryptor()
+    encryptor = Cipher(algorithms.AES(key), modes.GCM(nonce)).encryptor()
 
     chunk = infile.read(512)
     while chunk:
@@ -124,9 +121,7 @@ def create_key_maps(contents, keyset=()):
                     privkey = aesgcm.decrypt(
                         key.file.open("rb").read(), nonce, None
                     )
-                    privkey = load_der_private_key(
-                        privkey, None, default_backend()
-                    )
+                    privkey = load_der_private_key(privkey, None)
                 except Exception as exc:
                     logger.warning(
                         "Could not decrypt privkey key (privkey)", exc_info=exc
@@ -261,7 +256,6 @@ def iter_decrypt_contents(
                 decryptor = Cipher(
                     algorithms.AES(content_map[content.id]),
                     modes.GCM(base64.b64decode(content.nonce)),
-                    backend=default_backend(),
                 ).decryptor()
             except Exception as exc:
                 logger.warning(

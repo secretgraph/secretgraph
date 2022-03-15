@@ -193,7 +193,7 @@ def transform_references(
         ):
             deduplicate.add((injected_ref.group, injected_ref.target.id))
             if len(injected_ref.extra) > 8000:
-                raise ValueError("Extra tag too big")
+                raise ValueError("Extra tag of ref too big")
             # must be target
             encrypt_target_hashes.add(injected_ref.contentHash)
             # is not required to be in tags
@@ -204,7 +204,7 @@ def transform_references(
         if refob and (refob.group, refob.target.id) not in deduplicate:
             deduplicate.add((refob.group, refob.target.id))
             if len(refob.extra) > 8000:
-                raise ValueError("Extra tag too big")
+                raise ValueError("Extra tag of ref too big")
             if refob.group == "signature":
                 sig_target_hashes.add(targetob.contentHash)
             if refob.group in {"key", "transfer"}:

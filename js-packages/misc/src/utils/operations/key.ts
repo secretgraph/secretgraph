@@ -128,7 +128,8 @@ export async function updateKey({
     key?: CryptoKey | PromiseLike<CryptoKey> // key or key data
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
-    tags?: Iterable<string | PromiseLike<string>>
+    publicTags?: Iterable<string | PromiseLike<string>>
+    privateTags?: Iterable<string | PromiseLike<string>>
     publicState?: string
     contentHash?: string | null
     references?: Iterable<Interfaces.ReferenceInterface> | null
@@ -141,10 +142,13 @@ export async function updateKey({
 }): Promise<FetchResult<any>> {
     let references
     const updatedKey = await options.key
-    const tags = options.tags
-        ? await Promise.all(options.tags)
+    const privateTags = options.privateTags
+        ? await Promise.all(options.privateTags)
         : updatedKey
         ? []
+        : null
+    const publicTags: string[] | null = options.publicTags
+        ? await Promise.all(options.publicTags)
         : null
     const encrypt: Set<string> | undefined = options.encryptTags
         ? new Set(options.encryptTags)
@@ -152,7 +156,7 @@ export async function updateKey({
     let sharedKey: ArrayBuffer | undefined
     if (updatedKey && updatedKey.type == 'private') {
         sharedKey = crypto.getRandomValues(new Uint8Array(32))
-    } else if (options.tags && encrypt && encrypt.size > 0) {
+    } else if (options.privateTags && encrypt && encrypt.size > 0) {
         if (!options.oldKey) {
             throw Error('Tag only update without oldKey')
         }
@@ -186,7 +190,10 @@ export async function updateKey({
                     options.hashAlgorithm
                 )
             )
-        ;(tags as string[]).push(`key=${specialRef.extra}`, ...privateTags)
+        ;(privateTags as string[]).push(
+            `key=${specialRef.extra}`,
+            ...privateTags
+        )
         references = publicKeyReferences.concat(
             options.references ? [...options.references] : []
         )
@@ -217,9 +224,10 @@ export async function updateKey({
             cluster: options.cluster ? options.cluster : null,
             references,
             publicState,
-            tags: tags
+            publicTags,
+            privateTags: privateTags
                 ? await Promise.all(
-                      tags.map(
+                      privateTags.map(
                           async (tagPromise: string | PromiseLike<string>) => {
                               return await encryptTag({
                                   key: sharedKey as ArrayBuffer,

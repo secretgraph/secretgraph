@@ -128,6 +128,7 @@ export const createKeysMutation = gql`
         $publicActions: [ActionInput!]
         $privateActions: [ActionInput!]
         $references: [ReferenceInput!]
+        $publicState: String
         $publicKey: Upload!
         $privateKey: Upload
         $nonce: String
@@ -146,6 +147,7 @@ export const createKeysMutation = gql`
                         privateActions: $privateActions
                         publicTags: $publicTags
                         publicActions: $publicActions
+                        publicState: $publicState
                     }
                     contentHash: $contentHash
                     references: $references
@@ -171,8 +173,9 @@ export const updateKeyMutation = gql`
         $updateId: ID!
         $cluster: ID
         $actions: [ActionInput!]
-        $publicTags: [String!]!
-        $privateTags: [String!]!
+        $publicTags: [String!]
+        $publicState: String
+        $privateTags: [String!]
         $references: [ReferenceInput!]
         $key: Upload
         $nonce: String
@@ -185,11 +188,11 @@ export const updateKeyMutation = gql`
                 content: {
                     cluster: $cluster
                     key: {
-                        publicKey: $key
                         privateKey: $key
                         nonce: $nonce
                         privateTags: $privateTags
                         publicTags: $publicTags
+                        publicState: $publicState
                         privateActions: $actions
                         publicActions: $actions
                     }
@@ -288,6 +291,7 @@ export const findPublicKeyQuery = gql`
     }
 `
 
+// needs type because this attribute is checked for the extra key tag extractor pass
 export const keysRetrievalQuery = gql`
     query keysRetrievalQuery(
         $id: ID!
@@ -306,6 +310,7 @@ export const keysRetrievalQuery = gql`
                     link
                     updateId
                     state
+                    type
                     tags
                     availableActions {
                         keyHash
@@ -326,7 +331,9 @@ export const keysRetrievalQuery = gql`
                                 extra
                                 target {
                                     link
-                                    tags(includeTags: ["key_hash="])
+                                    type
+                                    state
+                                    tags(includeTags: ["key_hash=", "name="])
                                 }
                             }
                         }
@@ -342,6 +349,7 @@ export const keysRetrievalQuery = gql`
                                     nonce
                                     updateId
                                     state
+                                    type
                                     tags
                                     references(
                                         groups: ["key"]

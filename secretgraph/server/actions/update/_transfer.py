@@ -7,7 +7,6 @@ from uuid import uuid4
 from email.parser import BytesParser
 
 import requests
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db import transaction
@@ -122,8 +121,7 @@ def transfer_value(
                 hashes_remote = [
                     *map(
                         lambda x: hashes.Hash(
-                            getattr(hashes, x.strip().upper()),
-                            default_backend(),
+                            getattr(hashes, x.strip().upper())
                         ),
                         set(response.get("X-HASH-ALGORITHMS").split(",")[5]),
                     )
@@ -163,10 +161,6 @@ def transfer_value(
                 if transfer and verifiers:
                     hashes_remote = [
                         *map(
-                            lambda x: hashes.Hash(
-                                getattr(hashes, x.strip().upper()),
-                                default_backend(),
-                            ),
                             set(
                                 response.get("X-HASH-ALGORITHMS").split(",")[5]
                             ),

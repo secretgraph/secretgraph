@@ -8,7 +8,6 @@ from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
 
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -189,12 +188,23 @@ class Content(FlexidModel):
 
     def load_pubkey(self):
         """Works only for public keys (special Content)"""
-        try:
-            return load_der_public_key(
-                self.value.open("rb").read(), default_backend()
-            )
-        except Exception as exc:
-            logger.error("Could not load public key", exc_info=exc)
+        if self.type != "PrivateKey" and self.type != "PublicKey":
+            return None
+        if self.type == "PublicKey":
+            try:
+                return load_der_public_key(self.value.open("rb").read())
+            except Exception as exc:
+                logger.error("Could not load public key", exc_info=exc)
+        else:
+            pubkey = ContentReference.objects.filter(
+                source_id=self.id, group="public_key"
+            ).first()
+            if pubkey:
+                pubkey = pubkey.target
+                try:
+                    return load_der_public_key(pubkey.value.open("rb").read())
+                except Exception as exc:
+                    logger.error("Could not load public key", exc_info=exc)
         return None
 
     @property

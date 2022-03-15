@@ -323,6 +323,7 @@ function InnerKeys({
                         component={FormikTextField}
                         validate={async (val: string) => {
                             // validate has side effects
+                            // TODO: fix this
                             if (!val) {
                                 setJoinedHashes('')
                                 return 'empty'
