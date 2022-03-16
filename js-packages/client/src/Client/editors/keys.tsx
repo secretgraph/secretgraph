@@ -267,12 +267,18 @@ function InnerKeys({
     const [joinedHashes, setJoinedHashes] = React.useState('loading')
     const { config } = React.useContext(Contexts.InitializedConfig)
     React.useEffect(() => {
+        let active = true
         calcHashes(values.publicKey, hashAlgorithmsWorking).then(
             (data) => {
-                setJoinedHashes(data.join(', '))
+                if (active) {
+                    setJoinedHashes(data.join(', '))
+                }
             },
             (reason) => {}
         )
+        return () => {
+            active = false
+        }
     }, [])
 
     const clusterSelectTokens = React.useMemo(() => {
@@ -285,6 +291,25 @@ function InnerKeys({
     return (
         <Form>
             <Grid container spacing={2}>
+                <Grid item xs={12}>
+                    <FastField
+                        component={FormikTextField}
+                        name="name"
+                        fullWidth
+                        label="Name"
+                        disabled={isSubmitting || disabled}
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <FastField
+                        component={FormikTextField}
+                        name="description"
+                        fullWidth
+                        multiline
+                        label="Description"
+                        disabled={isSubmitting || disabled}
+                    />
+                </Grid>
                 <Grid item xs={12} sm={6}>
                     <Typography variant="h5">Key hashes</Typography>
                     <Typography
@@ -510,6 +535,10 @@ const KeysIntern = ({
             publicKey?.nodeData?.cluster?.id ||
             (searchCtx.cluster ? searchCtx.cluster : null),
         state: publicKey?.nodeData?.state,
+        name: publicKey?.tags?.name ? publicKey.tags.name[0] : '',
+        description: publicKey?.tags?.description
+            ? publicKey.tags.description[0]
+            : '',
         publicKey: publicKey
             ? `-----BEGIN PUBLIC KEY-----\n${Buffer.from(
                   publicKey.data
@@ -534,141 +563,144 @@ const KeysIntern = ({
                 return errors
             }}
             onSubmit={async (values, { setSubmitting, setValues }) => {
-                const keyParams = {
-                    name: 'RSA-OAEP',
-                    hash: hashAlgorithmsWorking[0],
-                }
-                let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
-                let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
-                let tokensTarget = mainCtx.tokens
-                if (publicKey) {
-                    if (values.cluster != publicKey.nodeData.cluster.id) {
-                        tokensTarget = mainCtx.tokens.concat(
-                            authInfoFromConfig({
-                                config,
-                                clusters: new Set([values.cluster]),
-                                url: mainCtx.url as string,
-                                require: new Set(['create', 'manage']),
-                            }).tokens
-                        )
+                setSubmitting(true)
+                try {
+                    const keyParams = {
+                        name: 'RSA-OAEP',
+                        hash: hashAlgorithmsWorking[0],
                     }
-
-                    // steps: sign with all other keys, if private key specified: create cryptotag
-                    const pubkeysResult = await client.query({
-                        query: getContentConfigurationQuery,
-                        variables: {
-                            authorization: tokensTarget,
-                            id: mainCtx.item,
-                        },
-                    })
-
-                    //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
-                    privateKeys = extractPrivKeys({
-                        config,
-                        url: mainCtx.url as string,
-                        hashAlgorithm: hashAlgorithmsWorking[0],
-                    })
-                    publicKeys = extractPubKeysCluster({
-                        node: pubkeysResult.data.secretgraph.node,
-                        authorization: tokensTarget,
-                        params: keyParams,
-                    })
-                }
-                let privKey = null
-                if (values.privateKey.trim()) {
-                    // can fail, is wanted to crash
-                    const matchedPrivKey = (
-                        values.privateKey.match(
-                            /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
-                        ) as string[]
-                    )[1]
-                    privKey = await unserializeToCryptoKey(
-                        matchedPrivKey,
-                        keyParams,
-                        'privateKey',
-                        true
-                    )
-                } else if (privateKey) {
-                    // privateKey is empty
-                    await deleteNodes({
-                        client,
-                        ids: [privateKey.nodeData.id],
-                        authorization: mainCtx.tokens,
-                    })
-                }
-
-                // can fail, is wanted to crash
-                const matchedPubKey = (
-                    values.publicKey.match(
-                        /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
-                    ) as string[]
-                )[1]
-                // can fail, is wanted to crash
-                const pubKey = await unserializeToCryptoKey(
-                    matchedPubKey,
-                    keyParams,
-                    'publicKey',
-                    true
-                )
-                if (
-                    values.publicKey.trim() != initialValues.publicKey.trim() ||
-                    !publicKey ||
-                    (values.cluster &&
-                        values.cluster != publicKey.nodeData.cluster.id)
-                ) {
+                    let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
+                    let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
+                    let tokensTarget = mainCtx.tokens
                     if (publicKey) {
-                        // delete and recreate
-                        console.log('Public Key changed, recreate')
+                        if (values.cluster != publicKey.nodeData.cluster.id) {
+                            tokensTarget = mainCtx.tokens.concat(
+                                authInfoFromConfig({
+                                    config,
+                                    clusters: new Set([values.cluster]),
+                                    url: mainCtx.url as string,
+                                    require: new Set(['create', 'manage']),
+                                }).tokens
+                            )
+                        }
+
+                        // steps: sign with all other keys, if private key specified: create cryptotag
+                        const pubkeysResult = await client.query({
+                            query: getContentConfigurationQuery,
+                            variables: {
+                                authorization: tokensTarget,
+                                id: mainCtx.item,
+                            },
+                        })
+
+                        //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
+                        privateKeys = extractPrivKeys({
+                            config,
+                            url: mainCtx.url as string,
+                            hashAlgorithm: hashAlgorithmsWorking[0],
+                        })
+                        publicKeys = extractPubKeysCluster({
+                            node: pubkeysResult.data.secretgraph.node,
+                            authorization: tokensTarget,
+                            params: keyParams,
+                        })
+                    }
+                    let privKey = null
+                    if (values.privateKey.trim()) {
+                        // can fail, is wanted to crash
+                        const matchedPrivKey = (
+                            values.privateKey.match(
+                                /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
+                            ) as string[]
+                        )[1]
+                        privKey = await unserializeToCryptoKey(
+                            matchedPrivKey,
+                            keyParams,
+                            'privateKey',
+                            true
+                        )
+                    } else if (privateKey) {
+                        // privateKey is empty
                         await deleteNodes({
                             client,
-                            ids: [publicKey.nodeData.id],
+                            ids: [privateKey.nodeData.id],
                             authorization: mainCtx.tokens,
                         })
-                        // recursively deletes private key but it would still be visible, so do it here
-                        if (privateKey && privKey) {
+                    }
+
+                    // can fail, is wanted to crash
+                    const matchedPubKey = (
+                        values.publicKey.match(
+                            /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
+                        ) as string[]
+                    )[1]
+                    // can fail, is wanted to crash
+                    const pubKey = await unserializeToCryptoKey(
+                        matchedPubKey,
+                        keyParams,
+                        'publicKey',
+                        true
+                    )
+                    if (
+                        values.publicKey.trim() !=
+                            initialValues.publicKey.trim() ||
+                        !publicKey ||
+                        (values.cluster &&
+                            values.cluster != publicKey.nodeData.cluster.id)
+                    ) {
+                        if (publicKey) {
+                            // delete and recreate
+                            console.log('Public Key changed, recreate')
                             await deleteNodes({
                                 client,
-                                ids: [privateKey.nodeData.id],
+                                ids: [publicKey.nodeData.id],
                                 authorization: mainCtx.tokens,
                             })
+                            // recursively deletes private key but it would still be visible, so do it here
+                            if (privateKey && privKey) {
+                                await deleteNodes({
+                                    client,
+                                    ids: [privateKey.nodeData.id],
+                                    authorization: mainCtx.tokens,
+                                })
+                            }
                         }
-                    }
-                    const { data: newData } = await createKeys({
-                        client,
-                        config,
-                        cluster: values.cluster,
-                        publicState: values.state,
-                        publicKey: pubKey,
-                        privateKey: privKey || undefined,
-                        privkeys: Object.values(privateKeys),
-                        pubkeys: Object.values(publicKeys),
-                        hashAlgorithm: hashAlgorithmsWorking[0],
-                        authorization: tokensTarget,
-                    })
-                    updateMainCtx({
-                        item: newData.updateOrCreateContent.content.id,
-                        updateId:
-                            newData.updateOrCreateContent.content.updateId,
-                    })
-                } else {
-                    const { data: newData } = await updateKey({
-                        id: publicKey.nodeData.id,
-                        updateId: publicKey.nodeData.updateId,
-                        client,
-                        config,
-                        publicState: values.state,
-                        privkeys: await Promise.all(Object.values(privateKeys)),
-                        pubkeys: Object.values(publicKeys),
-                        hashAlgorithm: hashAlgorithmsWorking[0],
-                        authorization: mainCtx.tokens,
-                    })
-                    if (privateKey && privKey) {
-                        await updateKey({
-                            id: privateKey.nodeData.id,
-                            updateId: privateKey.nodeData.updateId,
+                        const { data: newData } = await createKeys({
                             client,
                             config,
-                            key: privKey,
+                            cluster: values.cluster,
+                            publicState: values.state,
+                            privateTags: [
+                                `description=${values.description}`,
+                                `name=${values.name}`,
+                            ],
+                            publicTags: [
+                                `description=${values.description}`,
+                                `name=${values.name}`,
+                            ],
+                            publicKey: pubKey,
+                            privateKey: privKey || undefined,
+                            privkeys: Object.values(privateKeys),
+                            pubkeys: Object.values(publicKeys),
+                            hashAlgorithm: hashAlgorithmsWorking[0],
+                            authorization: tokensTarget,
+                        })
+                        updateMainCtx({
+                            item: newData.updateOrCreateContent.content.id,
+                            updateId:
+                                newData.updateOrCreateContent.content.updateId,
+                        })
+                    } else {
+                        const { data: newData } = await updateKey({
+                            id: publicKey.nodeData.id,
+                            updateId: publicKey.nodeData.updateId,
+                            client,
+                            config,
+                            publicState: values.state,
+                            publicTags: [
+                                `description=${values.description}`,
+                                `name=${values.name}`,
+                            ],
                             privkeys: await Promise.all(
                                 Object.values(privateKeys)
                             ),
@@ -676,54 +708,80 @@ const KeysIntern = ({
                             hashAlgorithm: hashAlgorithmsWorking[0],
                             authorization: mainCtx.tokens,
                         })
-                    } else if (privKey) {
-                        await createKeys({
-                            client,
-                            config,
-                            cluster: values.cluster,
-                            publicKey: pubKey,
-                            privateKey: privKey,
-                            privkeys: Object.values(privateKeys),
-                            pubkeys: Object.values(publicKeys),
-                            hashAlgorithm: hashAlgorithmsWorking[0],
-                            authorization: mainCtx.tokens,
+                        if (privateKey && privKey) {
+                            await updateKey({
+                                id: privateKey.nodeData.id,
+                                updateId: privateKey.nodeData.updateId,
+                                client,
+                                config,
+                                key: privKey,
+                                privateTags: [
+                                    `description=${values.description}`,
+                                    `name=${values.name}`,
+                                ],
+                                privkeys: await Promise.all(
+                                    Object.values(privateKeys)
+                                ),
+                                pubkeys: Object.values(publicKeys),
+                                hashAlgorithm: hashAlgorithmsWorking[0],
+                                authorization: mainCtx.tokens,
+                            })
+                        } else if (privKey) {
+                            await createKeys({
+                                client,
+                                config,
+                                cluster: values.cluster,
+                                publicKey: pubKey,
+                                privateKey: privKey,
+                                privateTags: [
+                                    `description=${values.description}`,
+                                    `name=${values.name}`,
+                                ],
+                                privkeys: Object.values(privateKeys),
+                                pubkeys: Object.values(publicKeys),
+                                hashAlgorithm: hashAlgorithmsWorking[0],
+                                authorization: mainCtx.tokens,
+                            })
+                        }
+
+                        if (privKey || privateKey) {
+                            const configNew = await updateConfigRemoteReducer(
+                                config,
+                                {
+                                    update: {
+                                        certificates: {
+                                            [await serializeToBase64(
+                                                crypto.subtle.digest(
+                                                    hashAlgorithmsWorking[0],
+                                                    await crypto.subtle.exportKey(
+                                                        'spki' as const,
+                                                        pubKey
+                                                    )
+                                                )
+                                            )]: privKey
+                                                ? {
+                                                      data: await serializeToBase64(
+                                                          privKey
+                                                      ),
+                                                      note: '',
+                                                  }
+                                                : null,
+                                        },
+                                    },
+                                    client: baseClient,
+                                }
+                            )
+                            updateConfig(configNew, true)
+                        }
+                        updateMainCtx({
+                            updateId:
+                                newData.updateOrCreateContent.content.updateId,
                         })
                     }
-
-                    if (privKey || privateKey) {
-                        const configNew = await updateConfigRemoteReducer(
-                            config,
-                            {
-                                update: {
-                                    certificates: {
-                                        [await serializeToBase64(
-                                            crypto.subtle.digest(
-                                                hashAlgorithmsWorking[0],
-                                                await crypto.subtle.exportKey(
-                                                    'spki' as const,
-                                                    pubKey
-                                                )
-                                            )
-                                        )]: privKey
-                                            ? {
-                                                  data: await serializeToBase64(
-                                                      privKey
-                                                  ),
-                                                  note: '',
-                                              }
-                                            : null,
-                                    },
-                                },
-                                client: baseClient,
-                            }
-                        )
-                        updateConfig(configNew, true)
-                    }
-                    updateMainCtx({
-                        updateId:
-                            newData.updateOrCreateContent.content.updateId,
-                    })
-                    // reload()
+                } catch (exc) {
+                    console.error(exc)
+                    setSubmitting(false)
+                    throw exc
                 }
             }}
         >
@@ -772,6 +830,7 @@ const ViewKeys = () => {
     }, [mainCtx.updateId])
 
     React.useEffect(() => {
+        let active = true
         const f = async () => {
             if (!dataUnfinished) {
                 return
@@ -786,18 +845,21 @@ const ViewKeys = () => {
                     break
                 }
             }
-            updateMainCtx(updateOb)
-            setData({
-                ...(await loadKeys({
-                    baseUrl: mainCtx.url as string,
-                    data: dataUnfinished,
-                    config,
-                    authorization: mainCtx.tokens,
-                })),
-                key: `${new Date().getTime()}`,
+            const res = await loadKeys({
+                baseUrl: mainCtx.url as string,
+                data: dataUnfinished,
+                config,
+                authorization: mainCtx.tokens,
             })
+            if (active) {
+                updateMainCtx(updateOb)
+                setData({ ...res, key: `${new Date().getTime()}` })
+            }
         }
         f()
+        return () => {
+            active = false
+        }
     }, [dataUnfinished, config])
     if (!data) {
         return null
@@ -805,6 +867,22 @@ const ViewKeys = () => {
 
     return (
         <Grid container spacing={2}>
+            <Grid item xs={12}>
+                <Typography variant="h5">Name</Typography>
+                <Typography variant="body2">
+                    {data.publicKey?.tags?.name
+                        ? data.publicKey.tags.name[0]
+                        : ''}
+                </Typography>
+            </Grid>
+            <Grid item xs={12}>
+                <Typography variant="h5">Description</Typography>
+                <Typography variant="body2">
+                    {data.publicKey?.tags?.description
+                        ? data.publicKey.tags.description[0]
+                        : ''}
+                </Typography>
+            </Grid>
             <Grid item xs={12} sm={6}>
                 <Typography variant="h5">Key hashes</Typography>
                 <Typography variant="body2" style={{ wordBreak: 'break-all' }}>

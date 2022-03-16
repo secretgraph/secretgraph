@@ -3,6 +3,7 @@ import uuid
 
 from graphql_relay import to_global_id
 from django.db import transaction, models
+from django.db.models.functions import Length
 from django.db.utils import IntegrityError
 
 from ..constants import DeleteRecursive
@@ -123,34 +124,39 @@ def regenerateKeyHash(sender, force=False, **kwargs):
     contents = Content.objects.filter(type="PublicKey")
     # calculate for all old hashes
     if not force:
-        contents = contents.exclude(
-            contentHash__regex="^.{%d}$" % len(hash_object(b""))
-        )
+        contents = contents.annotate(
+            contentHash_length=Length("contentHash")
+        ).exclude(contentHash_length=len(hash_object(b"")))
 
     # distinct on contentHash field currently only for postgresql
     for content in contents:
         chashes = calculate_hashes(content.load_pubkey())
-        add_to = 0
+        until_index = 0
         for i in chashes:
             if i == content.contentHash:
                 break
-            add_to += 1
-        if add_to == 0:
+            until_index += 1
+        assert (
+            until_index > 0
+        ), "should be higher than 0 as only non-matching are selected"
+        # is already new
+        if until_index == 0:
             continue
 
+        #
         tags = list(map(lambda x: "key_hash=%s" % x, chashes))
         batch_size = 1000
-        final_tags = (
-            ContentTag(tag=tag, content=content)
-            for (tag, c) in product(
-                tags[:add_to],
-                Content.objects.exclude(tags__tag=tags[0]).filter(
-                    models.Q(tags__tag__in=tags[add_to:])
-                ),
-            )
+        # exclude Contents with current key_hash
+        contents_to_update = Content.objects.exclude(tags__tag=tags[0]).filter(
+            models.Q(tags__tag__in=tags[until_index:])
         )
         while True:
-            batch = list(islice(final_tags, batch_size))
+            batch = [
+                ContentTag(tag=tag, content=c)
+                for (tag, c) in product(
+                    tags[:until_index], islice(contents_to_update, batch_size)
+                )
+            ]
             if not batch:
                 break
             # ignore duplicate key_hash entries

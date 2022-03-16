@@ -172,7 +172,6 @@ idea: seperate actions with different concerns.
 -   harmonize incl/exclFilter and allowedTags specs (maybe)
 -   transform iter_decrypt_contents into QuerySet (maybe)
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
--   permissions for mark and delete
 -   update internal doc section
 -   replace json-editor by ActionDialog equivalent
 -   sanitize hashAlgorithms
@@ -182,6 +181,7 @@ idea: seperate actions with different concerns.
 -   metadata: limit amount of changed contents/clusters
 -   tags: limit amount tags
 -   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
+    -   partly solved
 -   test permissions
 -   disable editing/prompt for keys if keys are missing
 -   edge-serverside encryption

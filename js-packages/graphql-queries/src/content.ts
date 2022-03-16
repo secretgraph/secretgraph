@@ -333,7 +333,7 @@ export const keysRetrievalQuery = gql`
                                     link
                                     type
                                     state
-                                    tags(includeTags: ["key_hash=", "name="])
+                                    tags(includeTags: ["key_hash="])
                                 }
                             }
                         }
