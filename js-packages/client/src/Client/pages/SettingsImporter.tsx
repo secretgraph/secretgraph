@@ -131,7 +131,7 @@ function SettingsImporter() {
         setRegisterUrl(undefined)
         setActiveUrl(newConfig.baseUrl)
         updateMainCtx({
-            action: 'add',
+            action: 'create',
         })
     }
 
@@ -195,7 +195,7 @@ function SettingsImporter() {
             updateConfig(newConfig, true)
             setActiveUrl(newConfig.baseUrl)
             updateMainCtx({
-                action: 'add',
+                action: 'create',
             })
         } else if (typeof sconfig.registerUrl === 'string') {
             setRegisterUrl(sconfig.registerUrl)
@@ -274,7 +274,7 @@ function SettingsImporter() {
         updateConfig(newConfig, true)
         setActiveUrl(newConfig.baseUrl)
         updateMainCtx({
-            action: 'add',
+            action: 'create',
         })
     }
     const handleImport = async () => {

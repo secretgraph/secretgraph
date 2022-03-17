@@ -168,9 +168,9 @@ class ActionMixin(object):
         # don't copy
         for mapper in mappers:
             for key_val in mapper.items():
-                if key_val[0][0] == constants.Action.MANAGE:
+                if key_val[0][0] == "manage":
                     has_manage = True
-                if key_val[0][0] not in constants.Action.protected_values:
+                if key_val[0][0] not in constants.protectedActions:
                     seen_ids.add(key_val[1])
                     yield ActionEntry(
                         keyHash=key_val[0][1],
@@ -242,7 +242,7 @@ class ActionMixin(object):
             mappers = [result.get("action_info_clusters", {}).get(self.id, {})]
         for mapper in mappers:
             for key_val in mapper.items():
-                if key_val[0][0] == constants.Action.AUTH:
+                if key_val[0][0] == "auth":
                     authOk = True
                     break
             if authOk:

@@ -46,7 +46,7 @@ function Definitions({ defaultPath, homeUrl }: Props) {
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>
     >(updateState, {
-        action: config ? 'add' : 'initialize',
+        action: config ? 'create' : 'initialize',
         title: '',
         item: null,
         updateId: null,

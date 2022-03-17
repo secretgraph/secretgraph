@@ -231,7 +231,7 @@ function ActionBar(props: Props) {
                                     disabled={!createTokens.length}
                                     onChange={(event) => {
                                         updateMainCtx({
-                                            action: 'add',
+                                            action: 'create',
                                             title: '',
                                             item: null,
                                             url: activeUrl,
@@ -255,16 +255,16 @@ function ActionBar(props: Props) {
                                 <IconButton
                                     style={{
                                         display:
-                                            mainCtx.action == 'add'
+                                            mainCtx.action == 'create'
                                                 ? 'none'
                                                 : undefined,
                                     }}
                                     color="inherit"
-                                    aria-label="add"
+                                    aria-label="create"
                                     disabled={!createTokens.length}
                                     onClick={(event) => {
                                         updateMainCtx({
-                                            action: 'add',
+                                            action: 'create',
                                             title: '',
                                             item: null,
                                             url: activeUrl,

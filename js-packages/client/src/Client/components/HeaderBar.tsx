@@ -43,9 +43,9 @@ export default function HeaderBar() {
     )
     let title: string, documenttitle: string
     switch (mainCtx.action) {
-        case 'add':
+        case 'create':
             let temp = elements.get(mainCtx.type as string)
-            title = `Add: ${temp ? temp.label : 'unknown'}`
+            title = `Create: ${temp ? temp.label : 'unknown'}`
             documenttitle = `Secretgraph: ${title}`
             break
         case 'update':

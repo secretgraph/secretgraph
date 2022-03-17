@@ -1029,7 +1029,7 @@ const EditKeys = () => {
     )
 }
 
-const AddKeys = () => {
+const CreateKeys = () => {
     const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
@@ -1141,7 +1141,7 @@ export default function KeyComponent() {
             const result = await findOrReturn({
                 client,
                 id:
-                    mainCtx.action === 'add'
+                    mainCtx.action === 'create'
                         ? null
                         : (mainCtx.item as string | null),
                 config,
@@ -1156,7 +1156,7 @@ export default function KeyComponent() {
                     updateMainCtx({
                         item: null,
                         type: 'PublicKey',
-                        action: 'add',
+                        action: 'create',
                     })
                 }
             }
@@ -1176,7 +1176,7 @@ export default function KeyComponent() {
             mainCtx={mainCtx}
             view={ViewKeys}
             edit={EditKeys}
-            add={AddKeys}
+            create={CreateKeys}
         />
     )
 }

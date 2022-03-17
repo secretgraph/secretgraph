@@ -1135,7 +1135,7 @@ const ViewFile = () => {
     return <EditFile viewOnly />
 }
 
-const AddFile = () => {
+const CreateFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
@@ -1220,7 +1220,7 @@ export default function FileComponent() {
     return (
         <DecisionFrame
             mainCtx={mainCtx}
-            add={AddFile}
+            create={CreateFile}
             view={ViewFile}
             edit={EditFile}
         />

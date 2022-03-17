@@ -79,7 +79,7 @@ export default function ContactComponent(props: Props) {
         return <ViewFile />
     } else if (mainCtx.action == 'update' && mainCtx.item) {
         return <EditFile />
-    } else if (mainCtx.action == 'add') {
+    } else if (mainCtx.action == 'create') {
         return <AddFile />
     }
     return null

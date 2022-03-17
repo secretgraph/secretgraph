@@ -1,5 +1,5 @@
-import Typography from '@mui/material/Typography'
 import Skeleton from '@mui/material/Skeleton'
+import Typography from '@mui/material/Typography'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
@@ -7,7 +7,7 @@ interface DecisionFrameProps {
     mainCtx: Interfaces.MainContextInterface
     view: any
     edit: any
-    add: any
+    create: any
 }
 
 export default class DecisionFrame extends React.Component<
@@ -27,8 +27,8 @@ export default class DecisionFrame extends React.Component<
             this.props.mainCtx.item
         ) {
             Elem = this.props.edit
-        } else if (this.props.mainCtx.action == 'add') {
-            Elem = this.props.add
+        } else if (this.props.mainCtx.action == 'create') {
+            Elem = this.props.create
         } else {
             return () => <></>
         }

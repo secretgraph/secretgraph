@@ -76,10 +76,15 @@ key refs are assigned to privatekey, the rest to the public key
         -   excludeTags: like param, exclude contents with tag,
     -   freeze: cannot update after being viewed
     -   restricted: raise priority among filters only explicit specified
-    -   requiredKeys: require keys within array for encryption
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
 -   create (Cluster, partly implemented):
+    -   injectedTags: force inject tags
+    -   allowedTags: allow only tags specified here (if set)
+    -   not implemented yet (view and)
+        -   includeTags: like param, include only contents with tag
+        -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
+-   inejct (Cluster, Content): injects injectedTags, requiredKeys,
     -   requiredKeys: require keys within array for encryption
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
@@ -169,13 +174,9 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   harmonize incl/exclFilter and allowedTags specs (maybe)
--   transform iter_decrypt_contents into QuerySet (maybe)
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   update internal doc section
 -   replace json-editor by ActionDialog equivalent
--   sanitize hashAlgorithms
--   harmonize naming of add /create
 -   subscribe to config, watch changes
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters
@@ -193,3 +194,8 @@ idea: seperate actions with different concerns.
 -   implement form with send for Message
 -   if type=Message switch strings to Inbox, Send
 -   find way how Messages sent can be differed from messages received
+
+# TODO later
+
+-   harmonize incl/exclFilter and allowedTags specs (maybe)
+-   transform iter_decrypt_contents into QuerySet (maybe)

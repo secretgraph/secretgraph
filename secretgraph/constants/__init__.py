@@ -4,24 +4,9 @@ from rdflib import Namespace
 
 public_states = {"required", "trusted", "public"}
 
-
-class Action(enum.Enum):
-    _ignore_ = ["protected_values", "valid_values"]
-    AUTH = "auth"
-    CREATE = "create"
-    VIEW = "view"
-    DELETE = "delete"
-    UPDATE = "update"
-    PUSH = "push"
-    MANAGE = "manage"
-    STORED_UPDATE = "storedUpdate"
-
-
 # set here because ignored names are removed and must be manually set
 # must be normal set to be extendable
-Action.protected_values = {"storedUpdate", "auth"}
-# must be normal set to be extendable
-Action.valid_values = set(map(lambda x: x.value, Action.__members__.values()))
+protectedActions = frozenset({"storedUpdate", "auth"})
 
 
 class DeleteRecursive(enum.Enum):

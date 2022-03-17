@@ -536,7 +536,7 @@ export default function CustomComponent() {
         return <ViewCustom />
     } else if (mainCtx.action == 'update' && mainCtx.item) {
         return <EditCustom />
-    } else if (mainCtx.action == 'add') {
+    } else if (mainCtx.action == 'create') {
         return <AddCustom />
     }
     return null

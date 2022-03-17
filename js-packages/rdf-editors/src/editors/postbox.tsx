@@ -32,7 +32,7 @@ export default function PostboxComponent(props: Props) {
         return <ViewPostbox />
     } else if (mainCtx.action == 'update' && mainCtx.item) {
         return <EditPostbox />
-    } else if (mainCtx.action == 'add') {
+    } else if (mainCtx.action == 'create') {
         return <AddPostbox />
     }
     return null

@@ -476,7 +476,7 @@ const ViewCluster = () => {
     return <EditCluster viewOnly />
 }
 
-const AddCluster = () => {
+const CreateCluster = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const [data, setData] = React.useState<
@@ -550,7 +550,7 @@ export default function ClusterComponent() {
     return (
         <DecisionFrame
             mainCtx={mainCtx}
-            add={AddCluster}
+            create={CreateCluster}
             view={ViewCluster}
             edit={EditCluster}
         />
