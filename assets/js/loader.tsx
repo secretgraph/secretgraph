@@ -2,20 +2,20 @@ import '@secretgraph/rdf-editors/editors'
 
 import MainPage from '@secretgraph/client/Client'
 import { StrictMode } from 'react'
-import * as ReactDOM from 'react-dom'
+import * as ReactDOM from 'react-dom/client'
 
-let wrapper = document.getElementById('secretgraph-webclient')
+let wrapper = document.getElementById('secretgraph-webclient') as HTMLElement
 const defaultPath: string | undefined = wrapper
     ? wrapper.dataset.graphqlPath
     : undefined
 const homeUrl: string | undefined = wrapper
     ? wrapper.dataset.homeUrl
     : undefined
-ReactDOM.render(
+const root = ReactDOM.createRoot(wrapper, { identifierPrefix: 'webclient' })
+root.render(
     <StrictMode>
         <MainPage defaultPath={defaultPath} homeUrl={homeUrl} />
-    </StrictMode>,
-    wrapper
+    </StrictMode>
 )
 // doesn't work
 /**if (module.hot) {

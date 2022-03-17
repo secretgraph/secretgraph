@@ -174,12 +174,10 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   modernize ActionDialog
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   update internal doc section
 -   replace json-editor by ActionDialog equivalent
--   subscribe to config, watch changes
--   delete: limit amount?
--   metadata: limit amount of changed contents/clusters
 -   tags: limit amount tags
 -   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
     -   partly solved
@@ -199,3 +197,6 @@ idea: seperate actions with different concerns.
 
 -   harmonize incl/exclFilter and allowedTags specs (maybe)
 -   transform iter_decrypt_contents into QuerySet (maybe)
+-   subscribe to config, watch changes
+-   delete: limit amount?
+-   metadata: limit amount of changed contents/clusters
