@@ -1,21 +1,21 @@
 {
-  "name": "@secretgraph/rdf",
-  "version": "0.1.0",
-  "description": "Rdf definitions and further editors for @secretgraph/secretgraph",
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "n3": "*"
-  },
-  "devDependencies": {
-    "typescript": "*"
-  },
-  "exports":{
-    "./": "./lib/"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/secretgraph/secretgraph.git",
-    "directory": "js-packages/rdf"
-  }
+    "name": "@secretgraph/rdf",
+    "version": "0.1.0",
+    "description": "Rdf definitions and further editors for @secretgraph/secretgraph",
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "n3": "*"
+    },
+    "devDependencies": {
+        "typescript": "*"
+    },
+    "exports": {
+        "./": "./lib/"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/secretgraph/secretgraph.git",
+        "directory": "js-packages/rdf"
+    }
 }

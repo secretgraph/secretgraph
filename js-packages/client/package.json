@@ -1,46 +1,45 @@
 {
-  "name": "@secretgraph/client",
-  "version": "0.1.0",
-  "description": "",
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "@secretgraph/misc": "*",
-    "@secretgraph/graphql-queries": "*",
-    "@apollo/client": "*",
-    "graphql": "*",
-    "dompurify": "*",
-    "file-saver": "*",
-    "formik": "*",
-    "react": "*",
-    "suneditor": "*",
-    "suneditor-react": "*",
-    "@emotion/styled": "*",
-    "@emotion/react": "*",
-    "@mui/material": "*",
-    "@mui/icons-material": "*",
-    "@mui/lab": "*",
-    "@mui/system": "*",
-    "date-fns": "*"
-  },
-  "devDependencies": {
-    "typescript": "*",
-    "@types/dompurify": "*",
-    "@types/file-saver": "*",
-    "@types/react": "*",
-    "@types/react-dom": "*",
-    "@types/webpack-env": "*"
-  },
-  "optionalDependencies": {
-    "@secretgraph/rdf": "*"
-  },
-  "exports":{
-    "./": "./lib/"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/secretgraph/secretgraph.git",
-    "directory": "js-packages/client"
-  }
-
+    "name": "@secretgraph/client",
+    "version": "0.1.0",
+    "description": "",
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@secretgraph/misc": "*",
+        "@secretgraph/graphql-queries": "*",
+        "@apollo/client": "*",
+        "graphql": "*",
+        "dompurify": "*",
+        "file-saver": "*",
+        "formik": "*",
+        "react": "*",
+        "suneditor": "*",
+        "suneditor-react": "*",
+        "@emotion/styled": "*",
+        "@emotion/react": "*",
+        "@mui/material": "*",
+        "@mui/icons-material": "*",
+        "@mui/lab": "*",
+        "@mui/system": "*",
+        "date-fns": "*"
+    },
+    "devDependencies": {
+        "typescript": "*",
+        "@types/dompurify": "*",
+        "@types/file-saver": "*",
+        "@types/react": "*",
+        "@types/react-dom": "*",
+        "@types/webpack-env": "*"
+    },
+    "optionalDependencies": {
+        "@secretgraph/rdf": "*"
+    },
+    "exports": {
+        "./": "./lib/"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/secretgraph/secretgraph.git",
+        "directory": "js-packages/client"
+    }
 }

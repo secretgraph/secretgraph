@@ -1,36 +1,36 @@
 {
-  "private": true,
-  "workspaces": [
-    "./js-packages/*"
-  ],
-  "devDependencies": {
-    "@secretgraph/client": "*",
-    "@types/react": "*",
-    "@types/react-dom": "*",
-    "buffer": "*",
-    "css-loader": "*",
-    "graphql": "*",
-    "react": "*",
-    "react-dom": "*",
-    "style-loader": "*",
-    "ts-graphql-plugin": "*",
-    "ts-loader": "*",
-    "typescript": "*",
-    "webpack": ">=5.0",
-    "webpack-cli": "*",
-    "webpack-dev-server": ">=4.0",
-    "webpack-manifest-plugin": "*"
-  },
-  "scripts": {
-    "serve:dev": "webpack serve --mode development --no-client-overlay --no-static",
-    "watch:dev": "webpack --watch --mode development",
-    "build:dev": "webpack --mode development --progress",
-    "build": "webpack --mode production --progress"
-  },
-  "prettier": {
-    "trailingComma": "es5",
-    "tabWidth": 4,
-    "semi": false,
-    "singleQuote": true
-  }
+    "private": true,
+    "workspaces": [
+        "./js-packages/*"
+    ],
+    "devDependencies": {
+        "@secretgraph/client": "*",
+        "@types/react": "*",
+        "@types/react-dom": "*",
+        "buffer": "*",
+        "css-loader": "*",
+        "graphql": "*",
+        "react": "*",
+        "react-dom": "*",
+        "style-loader": "*",
+        "ts-graphql-plugin": "*",
+        "ts-loader": "*",
+        "typescript": "*",
+        "webpack": ">=5.0",
+        "webpack-cli": "*",
+        "webpack-dev-server": ">=4.0",
+        "webpack-manifest-plugin": "*"
+    },
+    "scripts": {
+        "serve:dev": "webpack serve --mode development --no-client-overlay --no-static",
+        "watch:dev": "webpack --watch --mode development",
+        "build:dev": "webpack --mode development --progress",
+        "build": "webpack --mode production --progress"
+    },
+    "prettier": {
+        "trailingComma": "es5",
+        "tabWidth": 4,
+        "semi": false,
+        "singleQuote": true
+    }
 }
