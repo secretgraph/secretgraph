@@ -16,24 +16,11 @@ from ...actions.handler import ActionHandler
 from ...models import Action, Content, Cluster, ContentAction
 
 
-def manage_actions_fn(
-    obj, actionlist, request, default_key=None, authset=None
-):
+def manage_actions_fn(request, obj, actionlist, authset=None):
     add_actions = []
     modify_actions = {}
     delete_actions = set()
     action_types = set()
-    if not default_key:
-        default_key = (
-            request.headers.get("Authorization", "")
-            .replace(" ", "")
-            .split(",", 1)[0]
-            .split(":", 1)[-1]
-        )
-        try:
-            default_key = base64.b64decode(default_key)
-        except Exception:
-            default_key = None
 
     if isinstance(obj, Content):
         cluster = obj.cluster
@@ -66,8 +53,6 @@ def manage_actions_fn(
             pass
         elif isinstance(action_key, str):
             action_key = base64.b64decode(action_key)
-        elif default_key:
-            action_key = default_key
         else:
             raise ValueError("No key specified/available")
 
@@ -198,5 +183,4 @@ def manage_actions_fn(
 
     setattr(save_fn, "actions", [*add_actions, *modify_actions.values()])
     setattr(save_fn, "action_types", action_types)
-    setattr(save_fn, "key", default_key)
     return save_fn

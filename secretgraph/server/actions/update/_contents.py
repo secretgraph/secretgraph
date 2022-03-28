@@ -268,7 +268,7 @@ def _update_or_create_content_or_key(
             raise ValueError(">=1 key references required for content")
     if objdata.get("actions") is not None:
         actions_save_fn = manage_actions_fn(
-            content, objdata["actions"], request, authset=authset
+            request, content, objdata["actions"], authset=authset
         )
     else:
 

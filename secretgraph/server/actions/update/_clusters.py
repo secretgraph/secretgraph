@@ -38,7 +38,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
     # path: actions are specified
     if objdata.get("actions"):
         action_save_fn = manage_actions_fn(
-            cluster, objdata["actions"], request, authset=authset
+            request, cluster, objdata["actions"], authset=authset
         )
 
         m_actions = filter(

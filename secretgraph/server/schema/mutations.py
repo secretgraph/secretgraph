@@ -20,6 +20,7 @@ from ..actions.update import (
     update_cluster_fn,
     update_content_fn,
     update_metadata_fn,
+    manage_actions_fn,
 )
 from ..models import Cluster, Content, GlobalGroupProperty, GlobalGroup
 from ..signals import generateFlexid
@@ -32,6 +33,7 @@ from ..utils.auth import (
 )
 from .arguments import (
     AuthList,
+    ActionInput,
     ClusterInput,
     ContentInput,
     PushContentInput,
@@ -530,6 +532,7 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         ids = graphene.List(graphene.NonNull(graphene.ID), required=True)
         authorization = AuthList()
         state = graphene.String(required=False)
+        actions = graphene.List(graphene.NonNull(ActionInput), required=False)
         tags = graphene.List(graphene.NonNull(graphene.String), required=False)
         references = graphene.List(
             graphene.NonNull(ReferenceInput), required=False
@@ -546,6 +549,7 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         ids,
         state=None,
         tags=None,
+        actions=None,
         operation=None,
         authorization=None,
         headers=None,
@@ -575,6 +579,15 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
                     authset=authorization,
                 )
             )
+            if actions:
+                requests.append(
+                    manage_actions_fn(
+                        info.context,
+                        content_obj,
+                        actions,
+                        authset=authorization,
+                    )
+                )
         contents = []
         with transaction.atomic():
             for f in requests:
