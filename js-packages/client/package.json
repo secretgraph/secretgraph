@@ -25,10 +25,9 @@
     },
     "devDependencies": {
         "typescript": "*",
+        "@types/react": "*",
         "@types/dompurify": "*",
         "@types/file-saver": "*",
-        "@types/react": "*",
-        "@types/react-dom": "*",
         "@types/webpack-env": "*"
     },
     "optionalDependencies": {

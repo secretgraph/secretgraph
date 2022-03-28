@@ -36,6 +36,7 @@ import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabe
 import FormikTextField from '../components/formik/FormikTextField'
 import SimpleShareDialog from '../components/share/SimpleShareDialog'
 import * as Contexts from '../contexts'
+import { mapperToArray } from '../hooks'
 
 async function extractCombinedInfo({
     config,
@@ -105,45 +106,7 @@ const ClusterIntern = ({
         updateMainCtx({ title: props.name || '' })
     }, [props.name])
 
-    const actions = React.useMemo(() => {
-        const actions: (ActionInputEntry | CertificateInputEntry)[] = []
-        Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
-            const entry = mapper[params.newHash]
-            if (entry.type == 'action') {
-                for (const actionType of entry.actions) {
-                    actions.push({
-                        type: 'action',
-                        data: params.data,
-                        newHash: params.newHash,
-                        oldHash: params.oldHash || undefined,
-                        start: '',
-                        stop: '',
-                        note: entry.note,
-                        value: {
-                            action: actionType,
-                        },
-                        update: entry.hasUpdate,
-                        delete: false,
-                        readonly: false,
-                        locked: !!mainCtx.item,
-                    })
-                }
-            } else {
-                actions.push({
-                    type: 'certificate',
-                    data: params.data,
-                    newHash: params.newHash,
-                    oldHash: params.oldHash || undefined,
-                    note: entry.note,
-                    update: entry.hasUpdate,
-                    delete: false,
-                    readonly: false,
-                    locked: true,
-                })
-            }
-        })
-        return actions
-    }, [mapper])
+    const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
     /**
     keyHash: string | null
     start: Date | null
@@ -307,6 +270,8 @@ const ClusterIntern = ({
                                         disabled={isSubmitting}
                                         handleClose={() => setOpen(false)}
                                         open={open}
+                                        maxWidth="xl"
+                                        fullWidth
                                     />
                                 )
                             }}
@@ -327,6 +292,7 @@ const ClusterIntern = ({
                                 <Tooltip title="Actions">
                                     <span>
                                         <IconButton
+                                            edge="start"
                                             onClick={() => setOpen(!open)}
                                             size="large"
                                         >

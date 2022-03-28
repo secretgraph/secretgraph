@@ -25,7 +25,7 @@ export interface ActionMapperEntry extends Omit<CertificateEntry, 'type'> {
 export interface CertificateInputEntry {
     type: 'certificate'
     data: string
-    newHash?: string
+    newHash: string
     oldHash?: string
     note: string
     update?: boolean

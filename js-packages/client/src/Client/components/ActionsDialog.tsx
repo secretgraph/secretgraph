@@ -1,7 +1,11 @@
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
+import Accordion from '@mui/material/Accordion'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import AccordionSummary from '@mui/material/AccordionSummary'
 import Button from '@mui/material/Button'
+import Card from '@mui/material/Card'
 import Dialog, { DialogProps } from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
@@ -12,9 +16,18 @@ import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import List from '@mui/material/List'
 import ListItem, { ListItemProps } from '@mui/material/ListItem'
+import ListItemButton from '@mui/material/ListItemButton'
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
 import ListItemText from '@mui/material/ListItemText'
 import Portal from '@mui/material/Portal'
+import Stack from '@mui/material/Stack'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow, { TableRowProps } from '@mui/material/TableRow'
+import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import {
@@ -24,6 +37,7 @@ import {
 import { deepEqual } from '@secretgraph/misc/utils/misc'
 import {
     FastField,
+    FastFieldProps,
     Field,
     FieldArray,
     FieldArrayRenderProps,
@@ -38,371 +52,79 @@ import * as React from 'react'
 import FormikCheckBox from './formik/FormikCheckbox'
 import FormikDateTimePicker from './formik/FormikDateTimePicker'
 import FormikTextField from './formik/FormikTextField'
+import ActionConfigurator from './forms/ActionConfigurator'
 import SimpleSelect from './forms/SimpleSelect'
 
-const availableActionsSet = new Set([
-    'manage',
-    'push',
-    'view',
-    'delete',
-    'update',
-])
-
-const ActionFields = React.memo(function ActionFields({
-    action,
-    index,
+const HashEntry = React.memo(function HashEntry({
+    item,
     disabled,
-}: {
-    action: string
-    index: number | undefined
-    disabled?: boolean
-}) {
-    switch (action) {
-        case 'auth':
-            return (
-                <>
-                    <Grid item></Grid>
-                </>
-            )
-        case 'view':
-        case 'delete':
-            return (
-                <>
-                    <Grid item></Grid>
-                </>
-            )
-        case 'update':
-            return (
-                <>
-                    <Grid item></Grid>
-                </>
-            )
-        case 'manage':
-            return (
-                <>
-                    <Grid item></Grid>
-                </>
-            )
-        case 'push':
-            return (
-                <>
-                    <Grid item></Grid>
-                </>
-            )
-        default:
-            return (
-                <Grid item xs={12}>
-                    <Typography color="error">
-                        Unsupported Actiontype: {`${action}`}
-                    </Typography>
-                </Grid>
-            )
-    }
-})
-
-function ActionEntryIntern({
-    action,
-    index,
-    disabled,
-    deleteFn,
-    submitFn,
-    tokens,
-}: {
-    action?: ActionInputEntry | CertificateInputEntry
-    index?: number
-    disabled?: boolean
-    deleteFn?: () => void
-    submitFn?: () => void
-    tokens: string[]
-}) {
-    const { values } = useFormikContext<any>()
-    disabled = !!(disabled || action?.readonly)
-    const locked =
-        action?.delete ||
-        action?.locked ||
-        !availableActionsSet.has(action?.value?.action || 'view')
-
-    return (
-        <Grid container spacing={2} direction="column">
-            <Grid item container wrap="nowrap" spacing={2}>
-                <Grid item container spacing={2}>
-                    {submitFn && (
-                        <Grid item xs={12}>
-                            <Typography variant="h4" align="center">
-                                Add
-                            </Typography>
-                        </Grid>
-                    )}
-                    <Grid item xs={12}>
-                        For security reasons action options are not shown after
-                        creation. Use note field to document them
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        {action?.type == 'certificate' ||
-                        action?.value?.action == 'other' ? null : (
-                            <FastField
-                                name={
-                                    !submitFn
-                                        ? `actions.${index}.value.action`
-                                        : 'value.action'
-                                }
-                                component={SimpleSelect}
-                                options={['view', 'update', 'manage']}
-                                disabled={disabled || locked}
-                                label="Action"
-                            />
-                        )}
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <FastField
-                            name={
-                                !submitFn ? `actions.${index}.start` : 'start'
-                            }
-                            component={FormikDateTimePicker}
-                            fullWidth
-                            maxDateTime={
-                                values[
-                                    !submitFn ? `actions.${index}.stop` : 'stop'
-                                ]
-                            }
-                            disabled={disabled || locked}
-                            clearable
-                            showTodayButton
-                            label="Start"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                        <FastField
-                            name={!submitFn ? `actions.${index}.stop` : 'stop'}
-                            component={FormikDateTimePicker}
-                            fullWidth
-                            minDateTime={
-                                values[
-                                    !submitFn
-                                        ? `actions.${index}.start`
-                                        : 'start'
-                                ]
-                            }
-                            clearable
-                            showTodayButton
-                            disabled={disabled || locked}
-                            label="Stop"
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        {action?.type == 'certificate' ? (
-                            <>
-                                <Typography variant="h4">
-                                    Certificate:
-                                </Typography>
-                                <div style={{ wordBreak: 'break-all' }}>
-                                    {action.data}
-                                </div>
-                            </>
-                        ) : (
-                            <FastField
-                                name={
-                                    !submitFn ? `actions.${index}.data` : 'data'
-                                }
-                                component={SimpleSelect}
-                                fullWidth
-                                freeSolo
-                                options={tokens}
-                                renderOption={(
-                                    props: React.HTMLAttributes<HTMLLIElement>,
-                                    val: string
-                                ) => {
-                                    if (val == 'new') {
-                                        return (
-                                            <li {...props}>
-                                                <Typography
-                                                    style={{ color: 'green' }}
-                                                >
-                                                    {val}
-                                                </Typography>
-                                            </li>
-                                        )
-                                    }
-                                    return <li {...props}>{val}</li>
-                                }}
-                                disabled={disabled || locked}
-                                label="Token"
-                            />
-                        )}
-                    </Grid>
-                    <Grid item xs={12}>
-                        <FastField
-                            name={!submitFn ? `actions.${index}.note` : 'note'}
-                            component={FormikTextField}
-                            fullWidth
-                            disabled={disabled || action?.delete}
-                            label="Note"
-                            multiline
-                            variant="outlined"
-                        />
-                    </Grid>
-                    {!locked && (
-                        <Grid item xs={12}>
-                            <Grid container spacing={2}>
-                                <ActionFields
-                                    action={
-                                        !submitFn
-                                            ? action?.value?.action
-                                            : values?.value?.action
-                                    }
-                                    index={index}
-                                    disabled={disabled || locked}
-                                />
-                            </Grid>
-                        </Grid>
-                    )}
-                </Grid>
-                {action && action.update !== undefined && !submitFn && (
-                    <Grid item>
-                        <Tooltip title="Update" arrow>
-                            <span>
-                                <FastField
-                                    name={`actions.${index}.update`}
-                                    disabled={
-                                        disabled ||
-                                        action?.delete ||
-                                        action?.readonly
-                                    }
-                                    component={FormikCheckBox}
-                                    type="checkbox"
-                                />
-                            </span>
-                        </Tooltip>
-                    </Grid>
-                )}
-                {action && !submitFn && deleteFn && (
-                    <Grid item>
-                        <Tooltip title="Delete" arrow>
-                            <span>
-                                {action?.oldHash ? (
-                                    <FastField
-                                        name={`actions.${index}.delete`}
-                                        disabled={disabled || action?.readonly}
-                                        component={FormikCheckBox}
-                                        type="checkbox"
-                                    />
-                                ) : (
-                                    <IconButton
-                                        onClick={deleteFn}
-                                        disabled={disabled || action?.readonly}
-                                        size="large"
-                                    >
-                                        <DeleteIcon />
-                                    </IconButton>
-                                )}
-                            </span>
-                        </Tooltip>
-                    </Grid>
-                )}
-            </Grid>
-            {submitFn && [
-                <Grid key="0" item>
-                    <Divider />
-                </Grid>,
-                <Grid key="1" item>
-                    <Tooltip title="Add Action" arrow>
-                        <span>
-                            <Button
-                                variant="outlined"
-                                color="primary"
-                                disabled={
-                                    disabled ||
-                                    action?.delete ||
-                                    action?.readonly
-                                }
-                                onClick={submitFn}
-                            >
-                                Add
-                            </Button>
-                        </span>
-                    </Tooltip>
-                </Grid>,
-            ]}
-        </Grid>
-    )
-}
-
-export function ActionEntry({
-    action,
-    index,
-    disabled,
-    addFn,
-    deleteFn,
-    tokens,
+    selectItem,
+    deleteItem,
     ...props
-}: Omit<ListItemProps, 'children' | 'button'> & {
-    action?: ActionInputEntry | CertificateInputEntry
-    index?: number
-    disabled?: boolean
-    addFn?: (arg: ActionInputEntry) => void | Promise<void>
-    deleteFn?: () => void
-    tokens: string[]
-}) {
-    const ref = React.useRef<any>()
-    const newTokens = React.useMemo(() => tokens.concat('new'), [tokens])
-    if (addFn) {
-        return (
-            <ListItem {...props}>
-                <div ref={ref} />
-                <Portal container={ref.current}>
-                    <Formik
-                        initialValues={{
-                            type: 'action',
-                            data: 'new',
-                            start: '',
-                            stop: '',
-                            note: '',
-                            delete: false,
-                            update: undefined,
-                            value: {
-                                action: 'view',
-                            } as any,
-                        }}
-                        onSubmit={async (
-                            { data, ...values },
-                            { resetForm }
-                        ) => {
-                            if (data == 'new') {
-                                data = Buffer.from(
-                                    crypto.getRandomValues(new Uint8Array(32))
-                                ).toString('base64')
-                            }
-                            await addFn({ data, ...values })
-                            resetForm()
-                        }}
-                    >
-                        {(formikProps: FormikProps<any>) => (
-                            <ActionEntryIntern
-                                disabled={disabled}
-                                tokens={newTokens}
-                                submitFn={formikProps.submitForm}
-                            />
-                        )}
-                    </Formik>
-                </Portal>
-            </ListItem>
-        )
-    } else {
-        return (
-            <ListItem {...props}>
-                <ActionEntryIntern
-                    action={action}
-                    index={index}
-                    disabled={disabled}
-                    tokens={tokens}
-                    deleteFn={
-                        action?.type != 'certificate' ? deleteFn : undefined
-                    }
-                />
-            </ListItem>
-        )
+}: Omit<TableRowProps, 'children'> & {
+    item: {
+        value: ActionInputEntry | CertificateInputEntry
+        index: number
     }
-}
+    disabled?: boolean
+    selectItem: (arg: {
+        value: ActionInputEntry | CertificateInputEntry
+        index: number
+    }) => void | Promise<void>
+    deleteItem?: (arg: {
+        value: ActionInputEntry
+        index: number
+    }) => void | Promise<void>
+}) {
+    return (
+        <TableRow {...props}>
+            <TableCell
+                size="small"
+                onClick={() => selectItem(item)}
+                style={{ wordBreak: 'break-all' }}
+            >
+                {item.value.newHash}
+            </TableCell>
+            <TableCell size="small" padding="checkbox">
+                <FastField
+                    name={`actions.${item.index}.update`}
+                    disabled={
+                        disabled || item.value.delete || item.value.readonly
+                    }
+                    component={FormikCheckBox}
+                    sx={{
+                        display:
+                            item.value.update !== undefined
+                                ? undefined
+                                : 'none',
+                    }}
+                    size="small"
+                    type="checkbox"
+                />
+            </TableCell>
+            <TableCell size="small">
+                {deleteItem ? (
+                    <IconButton
+                        size="small"
+                        edge="end"
+                        aria-label="trash"
+                        disabled={item.value.readonly}
+                        onClick={() =>
+                            deleteItem(
+                                item as {
+                                    value: ActionInputEntry
+                                    index: number
+                                }
+                            )
+                        }
+                    >
+                        <DeleteIcon />
+                    </IconButton>
+                ) : null}
+            </TableCell>
+        </TableRow>
+    )
+})
 
 interface ActionsDialogProps
     extends Pick<FieldArrayRenderProps, 'remove' | 'replace' | 'push'>,
@@ -410,7 +132,7 @@ interface ActionsDialogProps
     disabled?: boolean
     handleClose: () => void
     form: FormikProps<{
-        actions: ActionInputEntry[]
+        actions: (ActionInputEntry | CertificateInputEntry)[]
     }>
 }
 // specify in hierachy for setting formik fields
@@ -432,33 +154,174 @@ export default function ActionsDialog({
         }
         return tokens
     }, [form.values.actions])
+    const [selectedItem, setSelectedItem] = React.useState<
+        | { value: ActionInputEntry | CertificateInputEntry; index: number }
+        | undefined
+    >(undefined)
+    const deleteItem = React.useCallback(
+        ({ value, index }: { value: ActionInputEntry; index: number }) => {
+            if (value.delete) {
+                return
+            }
+            replace(index, { ...value, delete: true })
+        },
+        [form.values.actions]
+    )
+    const { filteredActions, filteredCertificates } = React.useMemo(() => {
+        const ret: {
+            filteredActions: {
+                value: ActionInputEntry
+                index: number
+            }[]
+            filteredCertificates: {
+                value: CertificateInputEntry
+                index: number
+            }[]
+        } = {
+            filteredActions: [],
+            filteredCertificates: [],
+        }
+        form.values.actions.forEach((value, index) => {
+            if (value.delete) {
+                return
+            }
+            if (value.type == 'action') {
+                ret.filteredActions.push({ value, index })
+            } else if (value.type == 'certificate') {
+                ret.filteredCertificates.push({ value, index })
+            } else {
+                console.warn('invalid type: ', { value, index })
+            }
+        })
+        ret.filteredActions.sort((a, b) =>
+            a.value.newHash!.localeCompare(b.value.newHash as string)
+        )
+        ret.filteredCertificates.sort((a, b) =>
+            a.value.newHash!.localeCompare(b.value.newHash as string)
+        )
+        return ret
+    }, [form.values.actions])
     return (
         <Dialog {...dialogProps} onClose={(ev) => handleClose()}>
             <DialogTitle>Access Control</DialogTitle>
             <DialogContent>
-                <List>
-                    {form.values.actions.map((val, index) => {
-                        return (
-                            <ActionEntry
-                                index={index}
-                                key={index}
-                                disabled={disabled}
-                                action={val}
-                                tokens={tokens}
-                                deleteFn={
-                                    val.oldHash
-                                        ? undefined
-                                        : () => remove(index)
-                                }
-                            />
-                        )
-                    })}
-                    <ActionEntry
-                        disabled={disabled}
-                        tokens={tokens}
-                        addFn={push}
-                    />
-                </List>
+                <div>
+                    <TextField label="Search" type="search" />
+                </div>
+                <Divider sx={{ marginBottom: '5px', marginTop: '5px' }} />
+                <Stack
+                    direction="row"
+                    divider={<Divider orientation="vertical" flexItem />}
+                    spacing={2}
+                >
+                    <div style={{ flex: 1 }}>
+                        <details open>
+                            <summary>
+                                <Typography component="span">
+                                    Actions
+                                </Typography>
+                                <Divider />
+                            </summary>
+
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Hash</TableCell>
+                                            <TableCell padding="checkbox">
+                                                Update
+                                            </TableCell>
+                                            <TableCell padding="none"></TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {filteredActions.map((item) => {
+                                            return (
+                                                <HashEntry
+                                                    hover
+                                                    selected={
+                                                        selectedItem?.index ==
+                                                        item.index
+                                                    }
+                                                    key={item.value.newHash}
+                                                    disabled={disabled}
+                                                    item={item}
+                                                    selectItem={setSelectedItem}
+                                                    deleteItem={deleteItem}
+                                                />
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </details>
+                        <details>
+                            <summary>
+                                <Typography component="span">
+                                    Certificates
+                                </Typography>
+                                <Divider />
+                            </summary>
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Hash</TableCell>
+                                            <TableCell padding="checkbox">
+                                                Update
+                                            </TableCell>
+                                            <TableCell padding="none"></TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {filteredCertificates.map((item) => {
+                                            return (
+                                                <HashEntry
+                                                    hover
+                                                    selected={
+                                                        selectedItem?.index ==
+                                                        item.index
+                                                    }
+                                                    key={item.value.newHash}
+                                                    disabled={disabled}
+                                                    item={item}
+                                                    selectItem={setSelectedItem}
+                                                    deleteItem={deleteItem}
+                                                />
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </details>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <ActionConfigurator
+                            path={
+                                selectedItem
+                                    ? `actions.${selectedItem.index}`
+                                    : `actions.${form.values.actions.length}`
+                            }
+                            value={
+                                selectedItem
+                                    ? selectedItem.value
+                                    : {
+                                          type: 'action',
+                                          start: '',
+                                          stop: '',
+                                          value: {
+                                              action: 'view',
+                                          },
+                                          data: '',
+                                          note: '',
+                                          newHash: '',
+                                      }
+                            }
+                            disabled={disabled}
+                            tokens={tokens}
+                        />
+                    </div>
+                </Stack>
             </DialogContent>
             <DialogActions>
                 <Button

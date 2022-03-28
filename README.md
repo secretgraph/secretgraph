@@ -174,10 +174,12 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   modernize ActionDialog
+-   add actions to MetaData update for share dialog
+-   modernize ActionDialog, redesign, multi column?
+-   modernize Keys, expose actions
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   update internal doc section
--   replace json-editor by ActionDialog equivalent
+-   replace json-editor by ActionConfigurator equivalent
 -   tags: limit amount tags
 -   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
     -   partly solved

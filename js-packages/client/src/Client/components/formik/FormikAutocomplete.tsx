@@ -15,12 +15,6 @@ export function createOnChangeFn<
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined
 >(
-    field: Pick<
-        FieldInputProps<
-            AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>
-        >,
-        'multiple' | 'value'
-    >,
     helpers: FieldHelperProps<
         AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>
     >
@@ -84,7 +78,7 @@ export default function FormikAutocomplete<
         <Autocomplete
             {...field}
             {...params}
-            onChange={onChange ?? createOnChangeFn(field, helpers)}
+            onChange={onChange ?? createOnChangeFn(helpers)}
         />
     )
 }

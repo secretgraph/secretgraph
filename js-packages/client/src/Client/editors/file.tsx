@@ -49,6 +49,7 @@ import SimpleShareDialog from '../components/share/SimpleShareDialog'
 import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
+import { mapperToArray } from '../hooks'
 
 const encryptSet = new Set(['name'])
 const ViewWidget = ({
@@ -251,48 +252,7 @@ const FileIntern = ({
         )
     }, [url, config])
 
-    const actions = React.useMemo(() => {
-        const actions: (ActionInputEntry | CertificateInputEntry)[] = []
-        Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
-            const entry = mapper[params.newHash]
-            if (entry.type == 'action') {
-                const readonly = !(
-                    content_hashes.has(params.newHash) ||
-                    (params.oldHash && content_hashes.has(params.oldHash))
-                )
-                for (const actionType of entry.actions) {
-                    actions.push({
-                        type: 'action',
-                        data: params.data,
-                        newHash: params.newHash,
-                        oldHash: params.oldHash || undefined,
-                        start: '',
-                        stop: '',
-                        note: entry.note || '',
-                        value: {
-                            action: actionType,
-                        },
-                        update: entry.hasUpdate,
-                        delete: false,
-                        readonly: readonly,
-                    })
-                }
-            } else {
-                actions.push({
-                    type: 'certificate',
-                    data: params.data,
-                    newHash: params.newHash,
-                    oldHash: params.oldHash || undefined,
-                    note: entry.note || '',
-                    update: entry.hasUpdate,
-                    delete: false,
-                    readonly: true,
-                    locked: true,
-                })
-            }
-        })
-        return actions
-    }, [mapper])
+    const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
     let encryptName = encryptedTags ? encryptedTags.has('name') : true
     if (tags) {
         if (tags.name && tags.name.length > 0) {
@@ -567,6 +527,8 @@ const FileIntern = ({
                                             disabled={isSubmitting}
                                             handleClose={() => setOpen(false)}
                                             open={open}
+                                            maxWidth="xl"
+                                            fullWidth
                                         />
                                     )
                                 }}

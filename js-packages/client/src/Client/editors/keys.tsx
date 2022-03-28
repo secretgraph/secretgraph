@@ -65,6 +65,7 @@ import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import StateSelect from '../components/forms/StateSelect'
 import * as Contexts from '../contexts'
+import { mapperToArray } from '../hooks'
 import { newClusterLabel } from '../messages'
 
 async function loadKeys({
