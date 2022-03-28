@@ -11,7 +11,9 @@ const defaultPath: string | undefined = wrapper
 const homeUrl: string | undefined = wrapper
     ? wrapper.dataset.homeUrl
     : undefined
-const root = ReactDOM.createRoot(wrapper, { identifierPrefix: 'webclient' })
+const root = ReactDOM.createRoot(wrapper, {
+    identifierPrefix: 'webclient',
+})
 root.render(
     <StrictMode>
         <MainPage defaultPath={defaultPath} homeUrl={homeUrl} />
