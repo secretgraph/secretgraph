@@ -268,9 +268,9 @@ const FileIntern = ({
     if (state == 'public') {
         encryptName = false
     }
+    // <SimpleShareDialog shareUrl={nodeData?.link} />
     return (
         <>
-            <SimpleShareDialog shareUrl={nodeData?.link} />
             <Formik
                 initialValues={{
                     plainInput: '',
@@ -529,6 +529,8 @@ const FileIntern = ({
                                             open={open}
                                             maxWidth="xl"
                                             fullWidth
+                                            isContent
+                                            isPublic={values.state == 'public'}
                                         />
                                     )
                                 }}

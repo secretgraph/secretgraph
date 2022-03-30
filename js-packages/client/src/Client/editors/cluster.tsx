@@ -255,7 +255,7 @@ const ClusterIntern = ({
                 })
             }}
         >
-            {({ submitForm, isSubmitting, initialValues, dirty }) => {
+            {({ submitForm, isSubmitting, values, dirty }) => {
                 const loading = !!(isSubmitting || loadingIntern)
                 return (
                     <Form>
@@ -270,8 +270,8 @@ const ClusterIntern = ({
                                         disabled={isSubmitting}
                                         handleClose={() => setOpen(false)}
                                         open={open}
-                                        maxWidth="xl"
-                                        fullWidth
+                                        isContent={false}
+                                        isPublic={values.public}
                                     />
                                 )
                             }}

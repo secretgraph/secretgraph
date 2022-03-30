@@ -1,9 +1,5 @@
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
-import MoreVertIcon from '@mui/icons-material/MoreVert'
-import Accordion from '@mui/material/Accordion'
-import AccordionDetails from '@mui/material/AccordionDetails'
-import AccordionSummary from '@mui/material/AccordionSummary'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Dialog, { DialogProps } from '@mui/material/Dialog'
@@ -13,13 +9,6 @@ import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
-import LinearProgress from '@mui/material/LinearProgress'
-import List from '@mui/material/List'
-import ListItem, { ListItemProps } from '@mui/material/ListItem'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
-import ListItemText from '@mui/material/ListItemText'
-import Portal from '@mui/material/Portal'
 import Stack from '@mui/material/Stack'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -34,24 +23,10 @@ import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
-import { deepEqual } from '@secretgraph/misc/utils/misc'
-import {
-    FastField,
-    FastFieldProps,
-    Field,
-    FieldArray,
-    FieldArrayRenderProps,
-    Form,
-    Formik,
-    FormikProps,
-    useField,
-    useFormikContext,
-} from 'formik'
+import { FastField, FieldArrayRenderProps, FormikProps } from 'formik'
 import * as React from 'react'
 
 import FormikCheckBox from './formik/FormikCheckbox'
-import FormikDateTimePicker from './formik/FormikDateTimePicker'
-import FormikTextField from './formik/FormikTextField'
 import ActionConfigurator from './forms/ActionConfigurator'
 import SimpleSelect from './forms/SimpleSelect'
 
@@ -130,6 +105,8 @@ interface ActionsDialogProps
     extends Pick<FieldArrayRenderProps, 'remove' | 'replace' | 'push'>,
         Omit<DialogProps, 'children' | 'onClose'> {
     disabled?: boolean
+    isContent: boolean
+    isPublic: boolean
     handleClose: () => void
     form: FormikProps<{
         actions: (ActionInputEntry | CertificateInputEntry)[]
@@ -143,6 +120,10 @@ export default function ActionsDialog({
     remove,
     replace,
     push,
+    isContent,
+    isPublic,
+    maxWidth = 'xl',
+    fullWidth = true,
     ...dialogProps
 }: ActionsDialogProps) {
     const tokens = React.useMemo(() => {
@@ -202,7 +183,12 @@ export default function ActionsDialog({
         return ret
     }, [form.values.actions])
     return (
-        <Dialog {...dialogProps} onClose={(ev) => handleClose()}>
+        <Dialog
+            fullWidth={fullWidth}
+            maxWidth={maxWidth}
+            onClose={(ev) => handleClose()}
+            {...dialogProps}
+        >
             <DialogTitle>Access Control</DialogTitle>
             <DialogContent>
                 <div>
@@ -299,9 +285,11 @@ export default function ActionsDialog({
                         <ActionConfigurator
                             path={
                                 selectedItem
-                                    ? `actions.${selectedItem.index}`
-                                    : `actions.${form.values.actions.length}`
+                                    ? `actions.${selectedItem.index}.`
+                                    : `actions.${form.values.actions.length}.`
                             }
+                            isContent={isContent}
+                            mode={isPublic ? 'public' : 'default'}
                             value={
                                 selectedItem
                                     ? selectedItem.value
@@ -310,7 +298,9 @@ export default function ActionsDialog({
                                           start: '',
                                           stop: '',
                                           value: {
-                                              action: 'view',
+                                              action: isPublic
+                                                  ? 'update'
+                                                  : 'view',
                                           },
                                           data: '',
                                           note: '',

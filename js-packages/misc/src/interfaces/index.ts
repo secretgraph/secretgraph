@@ -54,13 +54,21 @@ export interface ReferenceInterface {
     deleteRecursive?: 'NO_GROUP' | 'TRUE' | 'FALSE'
 }
 
+type ConfigHashValue = [] | string[]
+interface ConfigSValue {
+    data: string
+    note: string
+}
+
 export interface ConfigContentInterface<N = never> {
-    hashes: { [hash: string]: string[] | N }
+    hashes: { [hash: string]: ConfigHashValue | N }
+    //trusted: string[]
     cluster: string | N
 }
 
 export interface ConfigClusterInterface<N = never> {
-    hashes: { [hash: string]: string[] | N }
+    hashes: { [hash: string]: ConfigHashValue | N }
+    //trusted: string[]
 }
 
 interface BaseHostInterface<ClusterType, ContentType> {
@@ -68,11 +76,11 @@ interface BaseHostInterface<ClusterType, ContentType> {
     contents: { [flexid: string]: ContentType }
 }
 
-interface BaseConfigInterface<SType = { data: string; note: string }> {
+interface BaseConfigInterface<N = never> {
     baseUrl: string
     configCluster: string
-    certificates: { [hash: string]: SType }
-    tokens: { [hash: string]: SType }
+    certificates: { [hash: string]: ConfigSValue | N }
+    tokens: { [hash: string]: ConfigSValue | N }
 }
 
 export interface ConfigInterface extends BaseConfigInterface {
@@ -85,9 +93,7 @@ export interface ConfigInterface extends BaseConfigInterface {
 }
 
 export interface ConfigInputInterface
-    extends Partial<
-        BaseConfigInterface<{ data: string; note: string } | null>
-    > {
+    extends Partial<BaseConfigInterface<null>> {
     hosts?: {
         [url: string]: Partial<
             BaseHostInterface<

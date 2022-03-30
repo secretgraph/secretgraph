@@ -522,7 +522,6 @@ const AddCustom = () => {
     )
 }
 const ViewCustom = () => {
-    const theme = useTheme()
     // list all tags
     // view content if possible
     // elsewise just download

@@ -174,6 +174,8 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   switch to strawberry for subscriptions
+    -   cannot describe enum members
 -   add actions to MetaData update for share dialog
 -   modernize ActionDialog, redesign, multi column?
 -   modernize Keys, expose actions

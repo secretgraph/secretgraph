@@ -114,12 +114,12 @@ const SideBarItems = () => {
                     </SidebarTreeItemLabel>
                 }
             >
-                {authinfo && (
+                {authinfoCluster && (
                     <SideBarClusters
                         heading
                         nodeId={`${activeUrl}-clusters-owned`}
                         label="Owned"
-                        authinfo={authinfo}
+                        authinfo={authinfoCluster}
                         deleted={searchCtx.deleted}
                         goTo={goTo}
                     />

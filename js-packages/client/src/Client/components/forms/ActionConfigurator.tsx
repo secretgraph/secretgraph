@@ -37,35 +37,53 @@ import {
 } from 'formik'
 import * as React from 'react'
 
-import FormikCheckBox from '../formik/FormikCheckbox'
+import FormikCheckbox from '../formik/FormikCheckbox'
+import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
 import FormikDateTimePicker from '../formik/FormikDateTimePicker'
 import FormikTextField from '../formik/FormikTextField'
 import SimpleSelect from './SimpleSelect'
 
-const availableActionsSet = new Set([
+const availableActions = [
+    'auth',
+    'view',
+    'create',
     'manage',
     'push',
-    'view',
     'delete',
     'update',
-])
+]
+const publicActions = availableActions.filter((val) => val != 'view')
+
+const availableActionsSet = new Set(availableActions)
 
 const ActionFields = React.memo(function ActionFields({
     action,
     path,
     disabled,
+    isContent,
 }: {
     action: string
-    path: string
+    path: '' | `${string}.`
+    isContent: boolean
     disabled?: boolean
 }) {
     switch (action) {
         case 'auth':
-            return (
-                <>
-                    <div></div>
-                </>
-            )
+            if (isContent) {
+                return (
+                    <div>
+                        <FastField
+                            component={FormikCheckboxWithLabel}
+                            name={`${path}fetch`}
+                            type="checkbox"
+                            Label={{ label: 'Fetch' }}
+                            disabled={disabled}
+                        />
+                    </div>
+                )
+            } else {
+            }
+        case 'create':
         case 'view':
         case 'delete':
             return (
@@ -100,18 +118,24 @@ const ActionFields = React.memo(function ActionFields({
     }
 })
 
+export type ActionConfiguratorProps = {
+    value: ActionInputEntry | CertificateInputEntry
+    path?: '' | `${string}.`
+    disabled?: boolean
+    tokens: string[]
+    isContent: boolean
+    mode?: 'public' | 'auth' | 'default'
+}
+
 // Configurator for actions and certificates
 export default function ActionConfigurator({
     value,
-    path,
+    path = '',
     disabled,
     tokens,
-}: {
-    value: ActionInputEntry | CertificateInputEntry
-    path: string
-    disabled?: boolean
-    tokens: string[]
-}) {
+    isContent,
+    mode = 'default',
+}: ActionConfiguratorProps) {
     const tokensFinished = React.useMemo(() => {
         return [...tokens, 'new']
     }, [tokens])
@@ -122,9 +146,9 @@ export default function ActionConfigurator({
         value?.locked ||
         !availableActionsSet.has(value?.value?.action || 'view')
 
-    const { setValue: changeToken } = getFieldHelpers(`${path}.data`)
-    const { value: minDateTime } = useField(`${path}.start`)[0]
-    const { value: maxDateTime } = useField(`${path}.stop`)[0]
+    const { setValue: changeToken } = getFieldHelpers(`${path}data`)
+    const { value: minDateTime } = useField(`${path}start`)[0]
+    const { value: maxDateTime } = useField(`${path}stop`)[0]
 
     return (
         <Box
@@ -134,25 +158,35 @@ export default function ActionConfigurator({
         >
             {value.type == 'action' && value.value?.action != 'other' ? (
                 <>
-                    <div>
-                        <Typography>
-                            For security reasons action options are not shown
-                            after creation. Use note field to document them
-                        </Typography>
-                        <FastField
-                            name={`${path}.value.action`}
-                            component={SimpleSelect}
-                            options={['view', 'update', 'manage']}
-                            disabled={disabled || locked}
-                            label="Action"
-                            fullWidth
-                        />
-                    </div>
-                    <Divider />
+                    {mode != 'auth' ? (
+                        <>
+                            <div>
+                                <Typography>
+                                    For security reasons action options are not
+                                    shown after creation. Use note field to
+                                    document them
+                                </Typography>
+                                <FastField
+                                    name={`${path}value.action`}
+                                    component={SimpleSelect}
+                                    options={
+                                        mode == 'public'
+                                            ? publicActions
+                                            : availableActions
+                                    }
+                                    disabled={disabled || locked}
+                                    label="Action"
+                                    fullWidth
+                                />
+                            </div>
+                            <Divider />
+                        </>
+                    ) : null}
+
                     <Grid container>
                         <Grid item xs={12} sm={6}>
                             <FastField
-                                name={`${path}.start`}
+                                name={`${path}start`}
                                 component={FormikDateTimePicker}
                                 maxDateTime={maxDateTime}
                                 disabled={disabled || locked}
@@ -163,7 +197,7 @@ export default function ActionConfigurator({
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <FastField
-                                name={`${path}.stop`}
+                                name={`${path}stop`}
                                 component={FormikDateTimePicker}
                                 minDateTime={minDateTime}
                                 clearable
@@ -186,7 +220,7 @@ export default function ActionConfigurator({
                     </>
                 ) : (
                     <FastField
-                        name={`${path}.data`}
+                        name={`${path}data`}
                         component={SimpleSelect}
                         fullWidth
                         freeSolo
@@ -222,7 +256,7 @@ export default function ActionConfigurator({
 
             <div>
                 <FastField
-                    name={`${path}.note`}
+                    name={`${path}note`}
                     component={FormikTextField}
                     fullWidth
                     disabled={disabled || value?.delete}
@@ -238,6 +272,7 @@ export default function ActionConfigurator({
                             action={value.value?.action}
                             path={path}
                             disabled={disabled || locked}
+                            isContent={isContent}
                         />
                     </Grid>
                 </div>
