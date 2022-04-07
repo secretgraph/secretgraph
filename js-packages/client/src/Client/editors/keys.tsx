@@ -5,11 +5,17 @@ import {
     useApolloClient,
     useQuery,
 } from '@apollo/client'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import Button from '@mui/material/Button'
 import Grid from '@mui/material/Grid'
+import IconButton from '@mui/material/IconButton'
+import InputAdornment from '@mui/material/InputAdornment'
 import LinearProgress from '@mui/material/LinearProgress'
 import { Theme } from '@mui/material/styles'
 import { useTheme } from '@mui/material/styles'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import {
     findPublicKeyQuery,
@@ -282,6 +288,11 @@ function InnerKeys({
         }
     }, [])
 
+    const [showKey, toggleShowKey] = React.useReducer(
+        (state: boolean) => !state,
+        false
+    )
+
     const clusterSelectTokens = React.useMemo(() => {
         return authInfoFromConfig({
             config,
@@ -410,8 +421,33 @@ function InnerKeys({
                                     fullWidth
                                     label="Private Key"
                                     disabled={isSubmitting || disabled}
-                                    multiline
-                                    variant="outlined"
+                                    type={showKey ? 'text' : 'password'}
+                                    multiline={showKey}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <Tooltip
+                                                title={
+                                                    showKey ? 'Hide' : 'Show'
+                                                }
+                                            >
+                                                <InputAdornment position="end">
+                                                    <IconButton
+                                                        onClick={(event) => {
+                                                            event.preventDefault()
+                                                            event.stopPropagation()
+                                                            toggleShowKey()
+                                                        }}
+                                                    >
+                                                        {showKey ? (
+                                                            <VisibilityIcon />
+                                                        ) : (
+                                                            <VisibilityOffIcon />
+                                                        )}
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            </Tooltip>
+                                        ),
+                                    }}
                                 />
                             )
                         }}
@@ -808,6 +844,10 @@ const ViewKeys = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const theme = useTheme()
+    const [showKey, toggleShowKey] = React.useReducer(
+        (state: boolean) => !state,
+        false
+    )
     const [data, setData] = React.useState<
         | (UnpackPromise<ReturnType<typeof loadKeys>> & {
               key: string
@@ -916,25 +956,81 @@ const ViewKeys = () => {
             </Grid>
             <Grid item xs={12}>
                 <Typography variant="h5">Private Key</Typography>
-                <Typography
-                    variant="body2"
-                    style={{ whiteSpace: 'pre-line', wordBreak: 'break-all' }}
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        flexWrap: 'nowrap',
+                        alignContent: 'flex-start',
+                    }}
                 >
-                    {data.privateKey
-                        ? `-----BEGIN PRIVATE KEY-----\n${Buffer.from(
-                              data.privateKey.data
-                          ).toString('base64')}\n-----END PRIVATE KEY-----`
-                        : '-'}
-                </Typography>
+                    <Typography
+                        variant="body2"
+                        style={{
+                            whiteSpace: 'pre-line',
+                            wordBreak: 'break-all',
+                            flexGrow: 1,
+                        }}
+                    >
+                        {data.privateKey
+                            ? `-----BEGIN PRIVATE KEY-----\n${
+                                  showKey
+                                      ? Buffer.from(
+                                            data.privateKey.data
+                                        ).toString('base64')
+                                      : '...'
+                              }\n-----END PRIVATE KEY-----`
+                            : '-'}
+                    </Typography>
+                    {data.privateKey?.data && (
+                        <>
+                            <div>
+                                <Tooltip title={showKey ? 'Hide' : 'Show'}>
+                                    <IconButton onClick={toggleShowKey}>
+                                        {showKey ? (
+                                            <VisibilityIcon />
+                                        ) : (
+                                            <VisibilityOffIcon />
+                                        )}
+                                    </IconButton>
+                                </Tooltip>
+                            </div>
+                            <div>
+                                <Tooltip title="Copy">
+                                    <IconButton
+                                        onClick={(event) => {
+                                            if (navigator.clipboard) {
+                                                navigator.clipboard.writeText(
+                                                    `-----BEGIN PRIVATE KEY-----\n${Buffer.from(
+                                                        data.privateKey!.data
+                                                    ).toString(
+                                                        'base64'
+                                                    )}\n-----END PRIVATE KEY-----`
+                                                )
+                                                event.preventDefault()
+                                                console.log('url copied')
+                                                return false
+                                            } else {
+                                                console.log(
+                                                    'clipboard not supported'
+                                                )
+                                            }
+                                        }}
+                                    >
+                                        <ContentCopyIcon />
+                                    </IconButton>
+                                </Tooltip>
+                            </div>
+                        </>
+                    )}
+                </div>
             </Grid>
         </Grid>
     )
 }
 const EditKeys = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { config, updateConfig } = React.useContext(
-        Contexts.InitializedConfig
-    )
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const [cluster, setCluster] = React.useState<string | null>(null)
     const [data, setData] = React.useState<
         | (UnpackPromise<ReturnType<typeof loadKeys>> & {
@@ -1031,13 +1127,10 @@ const EditKeys = () => {
 }
 
 const CreateKeys = () => {
-    const theme = useTheme()
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { mainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { config, updateConfig } = React.useContext(
-        Contexts.InitializedConfig
-    )
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const [cluster, setCluster] = React.useState(
         searchCtx.cluster || config.configCluster
     )

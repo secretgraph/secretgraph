@@ -54,7 +54,7 @@ export interface ReferenceInterface {
     deleteRecursive?: 'NO_GROUP' | 'TRUE' | 'FALSE'
 }
 
-type ConfigHashValue = [] | string[]
+type ConfigHashValue = string[]
 interface ConfigSValue {
     data: string
     note: string

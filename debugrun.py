@@ -5,7 +5,13 @@ import subprocess
 if __name__ == "__main__":
     with subprocess.Popen(["npm", "run", "serve:dev"]) as npm:
         with subprocess.Popen(
-            ["poetry", "run", "./manage.py", "runserver_plus"]
+            [
+                "poetry",
+                "run",
+                "./manage.py",
+                "runserver_plus",
+                "--keep-meta-shutdown",
+            ]
         ) as django:
             while npm.poll() is None and django.poll() is None:
                 try:

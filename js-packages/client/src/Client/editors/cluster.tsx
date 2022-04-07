@@ -117,242 +117,260 @@ const ClusterIntern = ({
     delete: boolean
     readonly: boolean*/
     return (
-        <Formik
-            initialValues={{
-                actions,
-                name: props.name || '',
-                description: props.description || '',
-                featured: !!props.featured,
-                public: !!props.public,
-            }}
-            onSubmit={async (
-                { actions: actionsNew, name, description, ...values },
-                { setSubmitting, resetForm }
-            ) => {
-                let clusterResponse: FetchResult<any>
-                const {
-                    hashes,
-                    actions: finishedActions,
-                    configUpdate,
-                } = await transformActions({
-                    actions: actionsNew,
-                    mapper,
-                    hashAlgorithm,
-                })
-                let digestCert: undefined | string = undefined,
-                    privPromise: undefined | Promise<string> = undefined
-                if (mainCtx.item) {
-                    clusterResponse = await updateCluster({
-                        id: mainCtx.item as string,
-                        client: itemClient,
-                        updateId: mainCtx.updateId as string,
+        <>
+            <Formik
+                initialValues={{
+                    actions,
+                    name: props.name || '',
+                    description: props.description || '',
+                    featured: !!props.featured,
+                    public: !!props.public,
+                }}
+                onSubmit={async (
+                    { actions: actionsNew, name, description, ...values },
+                    { setSubmitting, resetForm }
+                ) => {
+                    let clusterResponse: FetchResult<any>
+                    const {
+                        hashes,
                         actions: finishedActions,
-                        name,
-                        description,
-                        authorization: mainCtx.tokens,
-                        public: values.public,
-                        featured: values.featured,
-                    })
-                } else {
-                    const key = crypto.getRandomValues(new Uint8Array(32))
-                    const { publicKey, privateKey } =
-                        (await crypto.subtle.generateKey(
-                            {
-                                name: 'RSA-OAEP',
-                                //modulusLength: 8192,
-                                modulusLength: 2048,
-                                publicExponent: new Uint8Array([1, 0, 1]),
-                                hash: hashAlgorithm,
-                            },
-                            true,
-                            ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-                        )) as Required<CryptoKeyPair>
-                    privPromise = serializeToBase64(privateKey)
-                    digestCert = await crypto.subtle
-                        .exportKey('spki' as const, publicKey)
-                        .then((keydata) =>
-                            crypto.subtle
-                                .digest(hashAlgorithm, keydata)
-                                .then((data) =>
-                                    Buffer.from(data).toString('base64')
-                                )
-                        )
-                    clusterResponse = await createCluster({
-                        client: itemClient,
-                        actions: finishedActions,
-                        name,
-                        description,
+                        configUpdate,
+                    } = await transformActions({
+                        actions: actionsNew,
+                        mapper,
                         hashAlgorithm,
-                        publicKey,
-                        privateKey,
-                        privateKeyKey: key,
-                        public: values.public,
-                        featured: values.featured,
                     })
-                }
-                if (clusterResponse.errors || !clusterResponse.data) {
-                    console.error('failed', clusterResponse.errors)
-                    setSubmitting(false)
-                    return
-                }
-                // should be solved better
-                const newNode =
-                    clusterResponse.data.updateOrCreateCluster.cluster
-                configUpdate.hosts[url] = {
-                    clusters: {
-                        [newNode.id as string]: {
-                            hashes: {
-                                ...hashes,
+                    let digestCert: undefined | string = undefined,
+                        privPromise: undefined | Promise<string> = undefined
+                    if (mainCtx.item) {
+                        clusterResponse = await updateCluster({
+                            id: mainCtx.item as string,
+                            client: itemClient,
+                            updateId: mainCtx.updateId as string,
+                            actions: finishedActions,
+                            name,
+                            description,
+                            authorization: mainCtx.tokens,
+                            public: values.public,
+                            featured: values.featured,
+                        })
+                    } else {
+                        const key = crypto.getRandomValues(new Uint8Array(32))
+                        const { publicKey, privateKey } =
+                            (await crypto.subtle.generateKey(
+                                {
+                                    name: 'RSA-OAEP',
+                                    //modulusLength: 8192,
+                                    modulusLength: 2048,
+                                    publicExponent: new Uint8Array([1, 0, 1]),
+                                    hash: hashAlgorithm,
+                                },
+                                true,
+                                ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+                            )) as Required<CryptoKeyPair>
+                        privPromise = serializeToBase64(privateKey)
+                        digestCert = await crypto.subtle
+                            .exportKey('spki' as const, publicKey)
+                            .then((keydata) =>
+                                crypto.subtle
+                                    .digest(hashAlgorithm, keydata)
+                                    .then((data) =>
+                                        Buffer.from(data).toString('base64')
+                                    )
+                            )
+                        clusterResponse = await createCluster({
+                            client: itemClient,
+                            actions: finishedActions,
+                            name,
+                            description,
+                            hashAlgorithm,
+                            publicKey,
+                            privateKey,
+                            privateKeyKey: key,
+                            public: values.public,
+                            featured: values.featured,
+                        })
+                    }
+                    if (clusterResponse.errors || !clusterResponse.data) {
+                        console.error('failed', clusterResponse.errors)
+                        setSubmitting(false)
+                        return
+                    }
+                    // should be solved better
+                    const newNode =
+                        clusterResponse.data.updateOrCreateCluster.cluster
+                    configUpdate.hosts[url] = {
+                        clusters: {
+                            [newNode.id as string]: {
+                                hashes: {
+                                    ...hashes,
+                                },
                             },
                         },
-                    },
-                    contents: {},
-                }
-                if (digestCert && privPromise) {
-                    ;(
-                        configUpdate.hosts as Interfaces.ConfigInterface['hosts']
-                    )[url].clusters[newNode.id as string].hashes[digestCert] =
-                        []
-                    configUpdate.certificates[digestCert] = {
-                        data: await privPromise,
-                        note: 'initial certificate',
+                        contents: {},
                     }
-                }
+                    if (digestCert && privPromise) {
+                        ;(
+                            configUpdate.hosts as Interfaces.ConfigInterface['hosts']
+                        )[url].clusters[newNode.id as string].hashes[
+                            digestCert
+                        ] = []
+                        configUpdate.certificates[digestCert] = {
+                            data: await privPromise,
+                            note: 'initial certificate',
+                        }
+                    }
 
-                const newConfig = await updateConfigRemoteReducer(config, {
-                    update: configUpdate,
-                    client: baseClient,
-                    nullonnoupdate: true,
-                })
-                const nTokens = newConfig
-                    ? authInfoFromConfig({
-                          config: newConfig,
-                          url,
-                          clusters: new Set([
-                              clusterResponse.data.updateOrCreateCluster.cluster
-                                  .id,
-                          ]),
-                          require: new Set(['update', 'manage']),
-                      }).tokens
-                    : []
-                if (newConfig) {
-                    saveConfig(newConfig as Interfaces.ConfigInterface)
-                    updateConfig(newConfig, true)
-                }
-                updateMainCtx({
-                    title: name || '',
-                    action: 'update',
-                    item: clusterResponse.data.updateOrCreateCluster.cluster.id,
-                    url,
-                    updateId:
-                        clusterResponse.data.updateOrCreateCluster.cluster
-                            .updateId,
-                    tokens: [...mainCtx.tokens, ...nTokens],
-                })
-                updateSearchCtx({
-                    cluster:
-                        clusterResponse.data.updateOrCreateCluster.cluster.id,
-                })
-            }}
-        >
-            {({ submitForm, isSubmitting, values, dirty }) => {
-                const loading = !!(isSubmitting || loadingIntern)
-                return (
-                    <Form>
-                        <FieldArray name="actions">
-                            {({ remove, replace, push, form }) => {
-                                return (
-                                    <ActionsDialog
-                                        remove={remove}
-                                        replace={replace}
-                                        push={push}
-                                        form={form}
-                                        disabled={isSubmitting}
-                                        handleClose={() => setOpen(false)}
-                                        open={open}
-                                        isContent={false}
-                                        isPublic={values.public}
-                                    />
-                                )
-                            }}
-                        </FieldArray>
-                        <Grid container spacing={2}>
-                            <Grid item xs={11}>
-                                <FastField
-                                    component={FormikTextField}
-                                    name="name"
-                                    type="text"
-                                    label="Name"
-                                    fullWidth
-                                    disabled={disabled || loading}
+                    const newConfig = await updateConfigRemoteReducer(config, {
+                        update: configUpdate,
+                        client: baseClient,
+                        nullonnoupdate: true,
+                    })
+                    const nTokens = newConfig
+                        ? authInfoFromConfig({
+                              config: newConfig,
+                              url,
+                              clusters: new Set([
+                                  clusterResponse.data.updateOrCreateCluster
+                                      .cluster.id,
+                              ]),
+                              require: new Set(['update', 'manage']),
+                          }).tokens
+                        : []
+                    if (newConfig) {
+                        saveConfig(newConfig as Interfaces.ConfigInterface)
+                        updateConfig(newConfig, true)
+                    }
+                    updateMainCtx({
+                        title: name || '',
+                        action: 'update',
+                        item: clusterResponse.data.updateOrCreateCluster.cluster
+                            .id,
+                        url,
+                        updateId:
+                            clusterResponse.data.updateOrCreateCluster.cluster
+                                .updateId,
+                        tokens: [...mainCtx.tokens, ...nTokens],
+                    })
+                    updateSearchCtx({
+                        cluster:
+                            clusterResponse.data.updateOrCreateCluster.cluster
+                                .id,
+                    })
+                }}
+            >
+                {({ submitForm, isSubmitting, values, dirty }) => {
+                    const loading = !!(isSubmitting || loadingIntern)
+                    return (
+                        <Form>
+                            {mainCtx.item && (
+                                <SimpleShareDialog
+                                    actions={actions}
+                                    shareUrl={
+                                        new URL(url, window.location.href).href
+                                    }
+                                    isPublic={values.public}
+                                    disabled={isSubmitting}
                                 />
-                            </Grid>
-
-                            <Grid item xs={1}>
-                                <Tooltip title="Actions">
-                                    <span>
-                                        <IconButton
-                                            edge="start"
-                                            onClick={() => setOpen(!open)}
-                                            size="large"
-                                        >
-                                            <Security />
-                                        </IconButton>
-                                    </span>
-                                </Tooltip>
-                            </Grid>
-
-                            <Grid item xs={12}>
-                                <FastField
-                                    component={FormikTextField}
-                                    name="description"
-                                    type="text"
-                                    label="Description"
-                                    fullWidth
-                                    multiline
-                                    disabled={disabled || loading}
-                                />
-                            </Grid>
-
-                            <Grid item xs={6}>
-                                <FastField
-                                    component={FormikCheckboxWithLabel}
-                                    name="public"
-                                    type="checkbox"
-                                    Label={{ label: 'Public' }}
-                                    disabled={disabled || loading}
-                                />
-                            </Grid>
-
-                            <Grid item xs={6}>
-                                <FastField
-                                    component={FormikCheckboxWithLabel}
-                                    name="featured"
-                                    type="checkbox"
-                                    Label={{ label: 'Featured' }}
-                                    disabled={disabled || loading}
-                                />
-                            </Grid>
-                            <Grid item xs={12}>
-                                {loading && <LinearProgress />}
-                            </Grid>
-                            {viewOnly ? null : (
-                                <Grid item xs={12}>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        disabled={loading || disabled || !dirty}
-                                        onClick={submitForm}
-                                    >
-                                        Submit
-                                    </Button>
-                                </Grid>
                             )}
-                        </Grid>
-                    </Form>
-                )
-            }}
-        </Formik>
+
+                            <FieldArray name="actions">
+                                {({ remove, replace, push, form }) => {
+                                    return (
+                                        <ActionsDialog
+                                            remove={remove}
+                                            replace={replace}
+                                            push={push}
+                                            form={form}
+                                            disabled={isSubmitting}
+                                            handleClose={() => setOpen(false)}
+                                            open={open}
+                                            isContent={false}
+                                            isPublic={values.public}
+                                        />
+                                    )
+                                }}
+                            </FieldArray>
+                            <Grid container spacing={2}>
+                                <Grid item xs={11}>
+                                    <FastField
+                                        component={FormikTextField}
+                                        name="name"
+                                        type="text"
+                                        label="Name"
+                                        fullWidth
+                                        disabled={disabled || loading}
+                                    />
+                                </Grid>
+
+                                <Grid item xs={1}>
+                                    <Tooltip title="Actions">
+                                        <span>
+                                            <IconButton
+                                                edge="start"
+                                                onClick={() => setOpen(!open)}
+                                                size="large"
+                                            >
+                                                <Security />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                </Grid>
+
+                                <Grid item xs={12}>
+                                    <FastField
+                                        component={FormikTextField}
+                                        name="description"
+                                        type="text"
+                                        label="Description"
+                                        fullWidth
+                                        multiline
+                                        disabled={disabled || loading}
+                                    />
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <FastField
+                                        component={FormikCheckboxWithLabel}
+                                        name="public"
+                                        type="checkbox"
+                                        Label={{ label: 'Public' }}
+                                        disabled={disabled || loading}
+                                    />
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <FastField
+                                        component={FormikCheckboxWithLabel}
+                                        name="featured"
+                                        type="checkbox"
+                                        Label={{ label: 'Featured' }}
+                                        disabled={disabled || loading}
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    {loading && <LinearProgress />}
+                                </Grid>
+                                {viewOnly ? null : (
+                                    <Grid item xs={12}>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            disabled={
+                                                loading || disabled || !dirty
+                                            }
+                                            onClick={submitForm}
+                                        >
+                                            Submit
+                                        </Button>
+                                    </Grid>
+                                )}
+                            </Grid>
+                        </Form>
+                    )
+                }}
+            </Formik>
+        </>
     )
 }
 

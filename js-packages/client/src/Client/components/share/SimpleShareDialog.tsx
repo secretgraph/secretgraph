@@ -20,7 +20,11 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow, { TableRowProps } from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
-import { ActionInputEntry } from '@secretgraph/misc/utils/action'
+import {
+    ActionInputEntry,
+    CertificateEntry,
+    CertificateInputEntry,
+} from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as SetOps from '@secretgraph/misc/utils/set'
 import { FastField, FieldArray, Form, Formik } from 'formik'
@@ -109,6 +113,7 @@ const HashEntry = React.memo(function HashEntry({
 function NewPanel({
     shareUrl,
     mode,
+    disabled,
     isContent,
     tokens,
     ...props
@@ -117,6 +122,7 @@ function NewPanel({
     shareUrl: string
     tokens: string[]
     isContent: boolean
+    disabled?: boolean
 }) {
     return (
         <TabPanel {...props}>
@@ -130,6 +136,7 @@ function NewPanel({
                 <Form>
                     <ActionConfigurator
                         path=""
+                        disabled={disabled}
                         isContent={isContent}
                         mode={mode}
                         tokens={tokens}
@@ -162,12 +169,14 @@ function OverviewPanel({
     isContent,
     actions,
     tokens,
+    disabled,
     ...props
 }: Exclude<TabPanelProps, 'children'> & {
     mode: NonNullable<ActionConfiguratorProps['mode']>
     shareUrl: string
+    disabled?: boolean
     isContent: boolean
-    actions: ActionInputEntry[]
+    actions: (ActionInputEntry | CertificateInputEntry)[]
     tokens: string[]
 }) {
     const [selectedItem, setSelectedItem] = React.useState<
@@ -193,21 +202,7 @@ function OverviewPanel({
     }, [actions])
     return (
         <TabPanel {...props}>
-            <Link
-                href={shareUrl}
-                onClick={(event: any) => {
-                    if (navigator.clipboard) {
-                        navigator.clipboard.writeText(shareUrl)
-                        event.preventDefault()
-                        console.log('url copied')
-                        return false
-                    } else {
-                        console.log('clipboard not supported')
-                    }
-                }}
-            >
-                {shareUrl}
-            </Link>
+            <SharePanel url={shareUrl} />
             <Divider sx={{ marginBottom: '5px', marginTop: '5px' }} />
             <div>
                 <TextField label="Search" type="search" />
@@ -260,6 +255,7 @@ function OverviewPanel({
                         <Form>
                             <ActionConfigurator
                                 path=""
+                                disabled={disabled}
                                 isContent={isContent}
                                 tokens={tokens}
                                 mode={mode}
@@ -278,11 +274,13 @@ export default function SimpleShareDialog({
     isPublic,
     actions,
     defaultTab = 'new',
+    disabled,
 }: {
     shareUrl?: string
-    actions?: ActionInputEntry[]
+    actions?: (ActionInputEntry | CertificateInputEntry)[]
     isPublic: boolean
-    defaultTab: 'new' | 'auth'
+    defaultTab?: 'new' | 'auth'
+    disabled?: boolean
 }) {
     const [tab, setTab] = React.useState(defaultTab)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
@@ -328,6 +326,7 @@ export default function SimpleShareDialog({
             maxWidth="xl"
             fullWidth
             aria-labelledby="share-dialog-title"
+            container={document.body}
         >
             <DialogTitle id="share-dialog-title">Share</DialogTitle>
             <DialogContent>
@@ -352,6 +351,7 @@ export default function SimpleShareDialog({
                         tokens={tokens}
                         isContent={mainCtx.type != 'Cluster'}
                         shareUrl={shareUrl}
+                        disabled={disabled}
                     />
                     <NewPanel
                         value="auth"
@@ -359,6 +359,7 @@ export default function SimpleShareDialog({
                         tokens={tokens}
                         isContent={mainCtx.type != 'Cluster'}
                         shareUrl={shareUrl}
+                        disabled={disabled}
                     />
                     {actions && (
                         <OverviewPanel
@@ -368,6 +369,7 @@ export default function SimpleShareDialog({
                             mode={isPublic ? 'public' : 'default'}
                             isContent={mainCtx.type != 'Cluster'}
                             shareUrl={shareUrl}
+                            disabled={disabled}
                         />
                     )}
                 </TabContext>

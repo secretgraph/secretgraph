@@ -107,9 +107,10 @@ interface ActionsDialogProps
     disabled?: boolean
     isContent: boolean
     isPublic: boolean
+    fieldname?: string
     handleClose: () => void
     form: FormikProps<{
-        actions: (ActionInputEntry | CertificateInputEntry)[]
+        [p: string]: (ActionInputEntry | CertificateInputEntry)[]
     }>
 }
 // specify in hierachy for setting formik fields
@@ -124,11 +125,12 @@ export default function ActionsDialog({
     isPublic,
     maxWidth = 'xl',
     fullWidth = true,
+    fieldname = 'actions',
     ...dialogProps
 }: ActionsDialogProps) {
     const tokens = React.useMemo(() => {
         const tokens: string[] = []
-        for (const action of form.values.actions) {
+        for (const action of form.values[fieldname]) {
             if (action.type == 'action') {
                 tokens.push(action.value.data)
             }
@@ -285,8 +287,8 @@ export default function ActionsDialog({
                         <ActionConfigurator
                             path={
                                 selectedItem
-                                    ? `actions.${selectedItem.index}.`
-                                    : `actions.${form.values.actions.length}.`
+                                    ? `${fieldname}.${selectedItem.index}.`
+                                    : `${fieldname}.${form.values.actions.length}.`
                             }
                             isContent={isContent}
                             mode={isPublic ? 'public' : 'default'}
@@ -324,7 +326,7 @@ export default function ActionsDialog({
                                     update: true,
                                 })
                         })
-                        form.setFieldTouched('actions', true)
+                        form.setFieldTouched(fieldname, true)
                     }}
                     disabled={
                         disabled ||
@@ -361,10 +363,10 @@ export default function ActionsDialog({
                     disabled={disabled}
                     onClick={(ev) => {
                         form.setFieldValue(
-                            'actions',
+                            fieldname,
                             form.initialValues.actions
                         )
-                        form.setFieldTouched('actions', false)
+                        form.setFieldTouched(fieldname, false)
                     }}
                 >
                     Reset Tokens

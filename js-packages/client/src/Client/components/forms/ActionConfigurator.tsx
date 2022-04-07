@@ -47,6 +47,7 @@ const availableActions = [
     'auth',
     'view',
     'create',
+    'inject',
     'manage',
     'push',
     'delete',
@@ -82,6 +83,28 @@ const ActionFields = React.memo(function ActionFields({
                     </div>
                 )
             } else {
+                return (
+                    <div>
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}includeTags`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Include tags"
+                            freeSolo
+                            multiple
+                        />
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}excludeTags`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Exclude tags"
+                            freeSolo
+                            multiple
+                        />
+                    </div>
+                )
             }
         case 'create':
         case 'view':
@@ -270,7 +293,7 @@ export default function ActionConfigurator({
                     <Grid container spacing={2}>
                         <ActionFields
                             action={value.value?.action}
-                            path={path}
+                            path={`${path}value.`}
                             disabled={disabled || locked}
                             isContent={isContent}
                         />

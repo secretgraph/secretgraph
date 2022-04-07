@@ -527,8 +527,6 @@ const FileIntern = ({
                                             disabled={isSubmitting}
                                             handleClose={() => setOpen(false)}
                                             open={open}
-                                            maxWidth="xl"
-                                            fullWidth
                                             isContent
                                             isPublic={values.state == 'public'}
                                         />
@@ -631,7 +629,7 @@ const FileIntern = ({
                                 {!data ? (
                                     <>
                                         {mainCtx.type != 'Text' ? (
-                                            <Grid item xs={12} md={6}>
+                                            <Grid item xs={12}>
                                                 <Field
                                                     component={FormikTextField}
                                                     name="plainInput"
@@ -639,6 +637,7 @@ const FileIntern = ({
                                                     fullWidth
                                                     variant="outlined"
                                                     multiline
+                                                    minRows={10}
                                                     disabled={
                                                         !!(
                                                             isSubmitting ||
@@ -652,11 +651,9 @@ const FileIntern = ({
                                         <Grid
                                             item
                                             xs={12}
-                                            md={
-                                                mainCtx.type != 'Text'
-                                                    ? 6
-                                                    : undefined
-                                            }
+                                            style={{
+                                                minHeight: '500px',
+                                            }}
                                         >
                                             <Field name="htmlInput">
                                                 {(
@@ -671,6 +668,7 @@ const FileIntern = ({
                                                             name="htmlInput"
                                                             label="Html Text"
                                                             variant="outlined"
+                                                            minRows={10}
                                                             onChange={(ev) => {
                                                                 formikFieldProps.form.setFieldValue(
                                                                     'htmlInput',
@@ -833,7 +831,13 @@ const FileIntern = ({
                                     </>
                                 ) : (
                                     <>
-                                        <Grid item xs={12}>
+                                        <Grid
+                                            item
+                                            xs={12}
+                                            style={{
+                                                minHeight: '500px',
+                                            }}
+                                        >
                                             <TextFileAdapter
                                                 value={values.fileInput as Blob}
                                                 onChange={(blob) => {

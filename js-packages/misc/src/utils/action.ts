@@ -401,9 +401,7 @@ export async function transformActions({
                 if (!hashes[activeHash]) {
                     hashes[activeHash] = []
                 }
-                ;(
-                    hashes[activeHash] as NonNullable<typeof hashes[string]>
-                ).push(val.value.action)
+                hashes[activeHash]!.push(val.value.action)
                 // send updates
                 finishedActions.push({
                     existingHash: val.oldHash || undefined,

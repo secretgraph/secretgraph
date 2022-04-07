@@ -80,11 +80,25 @@ class ActionHandler:
         if issubclass(sender, Content):
             excl_filters = Q(type="PrivateKey")
             for i in action_dict["excludeTags"]:
-                excl_filters |= Q(tags__tag__startswith=i)
+                if i.startswith("id="):
+                    excl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    excl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    excl_filters |= Q(tags__tag=i[1:])
+                else:
+                    excl_filters |= Q(tags__tag__startswith=i)
 
             incl_filters = Q()
             for i in action_dict["includeTags"]:
-                incl_filters |= Q(tags__tag__startswith=i)
+                if i.startswith("id="):
+                    incl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    incl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    incl_filters |= Q(tags__tag=i[1:])
+                else:
+                    incl_filters |= Q(tags__tag__startswith=i)
 
             return {
                 "filters": ~excl_filters & incl_filters,
@@ -133,7 +147,14 @@ class ActionHandler:
         if issubclass(sender, Content):
             excl_filters = Q(type="PrivateKey")
             for i in action_dict["excludeTags"]:
-                excl_filters |= Q(tags__tag__startswith=i)
+                if i.startswith("id="):
+                    excl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    excl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    excl_filters |= Q(tags__tag=i[1:])
+                else:
+                    excl_filters |= Q(tags__tag__startswith=i)
 
             incl_filters = Q()
             for i in action_dict["includeTags"]:
@@ -189,7 +210,14 @@ class ActionHandler:
         if issubclass(sender, Content):
             excl_filters = Q()
             for i in action_dict["excludeTags"]:
-                excl_filters |= Q(tags__tag__startswith=i)
+                if i.startswith("id="):
+                    excl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    excl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    excl_filters |= Q(tags__tag=i[1:])
+                else:
+                    excl_filters |= Q(tags__tag__startswith=i)
 
             incl_filters = Q()
             for i in action_dict["includeTags"]:
@@ -244,7 +272,14 @@ class ActionHandler:
         if issubclass(sender, Content):
             excl_filters = Q()
             for i in action_dict["excludeTags"]:
-                excl_filters |= Q(tags__tag__startswith=i)
+                if i.startswith("id="):
+                    excl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    excl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    excl_filters |= Q(tags__tag=i[1:])
+                else:
+                    excl_filters |= Q(tags__tag__startswith=i)
 
             incl_filters = Q()
             for i in action_dict["includeTags"]:
@@ -584,29 +619,36 @@ class ActionHandler:
 
     @staticmethod
     def clean_manage(action_dict, request, content, authset):
+        from ..utils.auth import retrieve_allowed_objects
+
         if content:
             raise ValueError("manage cannot be used for content")
         result = {
             "action": "manage",
             "exclude": {"Cluster": [], "Content": [], "Action": []},
         }
-        # TODO: Maybe fixed. Pass down excludes from old manage
         for idtuple in action_dict.get("exclude") or []:
             type_name, id = from_global_id(idtuple)
             result["exclude"][type_name].append(id)
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
-            result["exclude"][type_name] = list(
-                _only_owned_helper(
-                    klass,
-                    result["exclude"][type_name],
-                    request,
-                    check_field="keyHash"
-                    if type_name == "Action"
-                    else "flexid",
-                    authset=authset,
-                )
+            # for passing down exclude info
+            r = retrieve_allowed_objects(
+                request,
+                "manage",
+                klass.objects.filter(keyHash__in=result["exclude"][type_name])
+                if type_name == "Action"
+                else klass.objects.filter(
+                    flexid__in=result["exclude"][type_name]
+                ),
+                authset=authset,
             )
+            s = set(r["objects"].values_list("id", flat=True))
+            # now add exclude infos of authset
+            for action in r["decrypted"]:
+                if action["action"] == "manage":
+                    s.update(action["exclude"].get(type_name, []))
+            result["exclude"][type_name] = list(s)
         return result
 
     @staticmethod

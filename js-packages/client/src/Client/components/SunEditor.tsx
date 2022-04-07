@@ -77,7 +77,9 @@ export default function SunEditorField({
     InputProps,
     inputRef,
     ...props
-}: TextFieldProps) {
+}: TextFieldProps & {
+    InputProps?: Parameters<typeof SunEditor>[0] & TextFieldProps['InputProps']
+}) {
     return (
         <TextField
             fullWidth
