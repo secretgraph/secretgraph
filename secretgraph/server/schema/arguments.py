@@ -1,105 +1,96 @@
-import graphene
-from graphene_file_upload.scalars import Upload
+from typing import Optional, List
+from strawberry.file_uploads import Upload
+from datetime import datetime
+import strawberry
+from strawberry.scalars import JSON, ID
 
 from .shared import DeleteRecursive
 
 
-class AuthList(graphene.List):
-    def __init__(
-        self,
-        of_type=graphene.NonNull(graphene.String),
-        *args,
-        required=False,
-        **kwargs,
-    ):
-        super().__init__(of_type, *args, required=required, **kwargs)
+AuthList = Optional[List[str]]
 
 
-class ActionInput(graphene.InputObjectType):
-    existingHash = graphene.String(required=False)
-    start = graphene.DateTime(required=False)
-    stop = graphene.DateTime(required=False)
-    # "delete" for action deletion
-    value = graphene.JSONString(required=True, description="Action definition")
+@strawberry.input
+class ActionInput:
+    existingHash: Optional[str]
+    start: Optional[datetime]
+    stop: Optional[datetime]
+    value: JSON = strawberry.field(
+        description='Action definition, "delete" for action deletion'
+    )
     # except with deletion always required as actions must be checked and
     # transformed by server
-    key = graphene.String(
-        required=False,
-        description="Action key for encrypting action (base64, 32 bytes)",
+    key: Optional[str] = strawberry.field(
+        description="Action key for encrypting action (base64, 32 bytes)"
     )
 
 
-class ContentKeyInput(graphene.InputObjectType):
-    publicKey = Upload(
-        required=False, description="Cleartext public key in der format"
+@strawberry.input
+class ContentKeyInput:
+    publicKey: Optional[Upload] = strawberry.field(
+        description="Cleartext public key in der format"
     )
     # encrypted!
-    privateKey = Upload(
-        required=False, description=("Encrypted private key (requires nonce)")
+    privateKey: Optional[Upload] = strawberry.field(
+        description=("Encrypted private key (requires nonce)")
     )
-    privateTags = graphene.List(
-        graphene.NonNull(graphene.String),
-        required=False,
+    privateTags: Optional[List[str]] = strawberry.field(
         description="Metadata tags for private key",
     )
 
-    publicTags = graphene.List(
-        graphene.NonNull(graphene.String),
-        required=False,
+    publicTags: Optional[List[str]] = strawberry.field(
         description="Metadata tags for public key",
     )
-    privateActions = graphene.List(
-        graphene.NonNull(ActionInput), required=False
+    privateActions: Optional[List[str]]
+    publicActions: Optional[List[str]]
+    nonce: Optional[str] = strawberry.field(
+        description="Nonce for private key (base64, 13 bytes)"
     )
-    publicActions = graphene.List(
-        graphene.NonNull(ActionInput), required=False
-    )
-    nonce = graphene.String(
-        required=False, description="Nonce for private key (base64, 13 bytes)"
-    )
-    publicState = graphene.String(required=False)
+    publicState: Optional[str]
 
 
-class ReferenceInput(graphene.InputObjectType):
-    target = graphene.ID(
-        required=True,
+@strawberry.input
+class ReferenceInput:
+    target: ID = strawberry.field(
         description="Can be node id, direct id of content or hash of key",
     )
-    extra = graphene.String(required=False)
-    group = graphene.String(required=False)
-    deleteRecursive = DeleteRecursive(required=False)
+    extra: Optional[str]
+    group: Optional[str]
+    deleteRecursive: Optional[DeleteRecursive]
 
 
-class ContentValueInput(graphene.InputObjectType):
-    value = Upload(required=False)
-    state = graphene.String(required=False)
-    type = graphene.String(required=False)
-    nonce = graphene.String(required=False)
-    tags = graphene.List(graphene.NonNull(graphene.String), required=False)
-    actions = graphene.List(graphene.NonNull(ActionInput), required=False)
+@strawberry.input
+class ContentValueInput:
+    value: Optional[Upload]
+    state: Optional[str]
+    type: Optional[str]
+    nonce: Optional[str]
+    tags: Optional[List[str]]
+    actions: Optional[List[ActionInput]]
 
 
-class ContentInput(graphene.InputObjectType):
-    cluster = graphene.ID(required=False)
+@strawberry.input
+class ContentInput:
+    cluster: Optional[ID]
     # when creating keypair: references are automagically distributed
-    key = ContentKeyInput(required=False)
-    value = ContentValueInput(required=False)
-    references = graphene.List(
-        graphene.NonNull(ReferenceInput), required=False
-    )
-    contentHash = graphene.String(required=False)
+    key: Optional[ContentKeyInput]
+    value: Optional[ContentValueInput]
+    references: Optional[List[ReferenceInput]]
+    contentHash: Optional[str]
 
 
-class PushContentInput(graphene.InputObjectType):
-    parent = graphene.ID(required=True)
-    value = ContentValueInput(required=True)
+@strawberry.input
+class PushContentInput:
+    parent: ID
+    value: ContentValueInput
 
 
-class ClusterInput(graphene.InputObjectType):
-    name = graphene.String(required=False)
-    description = graphene.String(required=False)
-    public = graphene.Boolean(required=False)
-    featured = graphene.Boolean(required=False)
-    actions = graphene.List(graphene.NonNull(ActionInput), required=False)
+@strawberry.input
+class ClusterInput:
+    name: Optional[str]
+    description: Optional[str]
+    public: Optional[bool]
+    featured: Optional[bool]
+    actions: Optional[List[ActionInput]]
     # has no references so missing reference tag is no problem
-    key = ContentKeyInput(required=False)
+    key: Optional[ContentKeyInput]

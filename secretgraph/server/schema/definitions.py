@@ -1,9 +1,7 @@
-import graphene
+from typing import Optional
 from django.db.models import Subquery, Q
 from django.conf import settings
 from django.shortcuts import resolve_url
-from graphene import ObjectType, relay
-from graphene.types.generic import GenericScalar
 from graphene_django import (
     DjangoConnectionField,
     DjangoObjectType,
@@ -39,9 +37,9 @@ class InjectedKeyNode(DjangoObjectType):
         model = Content
         name = "InjectedKey"
 
-    id = graphene.ID(required=True)
-    hash = graphene.String(required=True)
-    link = graphene.String(required=True)
+    id: ID
+    hash: str
+    link: str
 
     def resolve_id(self, info):
         return self.flexid
@@ -59,7 +57,7 @@ class GlobalGroupPropertyNode(DjangoObjectType):
         name = "GlobalGroupProperty"
         fields = ["name"]
 
-    description = graphene.String(required=False)
+    description: Optional[str]
 
     def resolve_description(self, info):
         return "TODO"
@@ -83,13 +81,13 @@ class GlobalGroupNode(DjangoObjectType):
 
 
 class SecretgraphConfig(ObjectType):
-    id = graphene.ID(required=True)
+    id: ID
     hashAlgorithms = graphene.List(
         graphene.NonNull(graphene.String), required=True
     )
     groups = DjangoListField(GlobalGroupNode)
     registerUrl = graphene.Field(RegisterUrl, required=False)
-    loginUrl = graphene.String(required=False)
+    loginUrl: Optional[str]
 
     def resolve_id(self, info):
         return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
@@ -132,8 +130,8 @@ class FlexidMixin:
 
 class ActionEntry(graphene.ObjectType):
     # of action key
-    keyHash = graphene.String(required=True)
-    type = graphene.String(required=True)
+    keyHash: str
+    type: str
     allowedTags = graphene.List(
         graphene.NonNull(graphene.String), required=False
     )
@@ -359,7 +357,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             "state",
         ]
 
-    deleted = graphene.DateTime(required=False)
+    deleted: Optional[datetime]
     cluster = graphene.Field(lambda: ClusterNode, required=True)
     references = ContentReferenceConnectionField(required=True)
     referencedBy = ContentReferenceConnectionField(required=True)
@@ -378,7 +376,7 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             graphene.NonNull(graphene.String), required=False
         ),
     )
-    link = graphene.String(required=True)
+    link: str
 
     @classmethod
     def get_node(cls, info, id, authorization=None, **kwargs):
@@ -650,13 +648,13 @@ class ClusterNode(ActionMixin, FlexidMixin, DjangoObjectType):
         fields = ["public", "featured"]
 
     contents = ContentConnectionField(required=True, subfield=True)
-    deleted = graphene.DateTime(required=False)
-    updated = graphene.DateTime(required=True)
-    updateId = graphene.UUID(required=True)
+    deleted: Optional[datetime]
+    updated: datetime
+    updateId: UUID
     # MAYBE: reference user directly if possible
-    user = relay.GlobalID(required=False)
-    name = graphene.String(required=True)
-    description = graphene.String(required=True)
+    user: Optional[GlobalID]
+    name: str
+    description: str
     groups = graphene.List(graphene.NonNull(graphene.String), required=True)
 
     @classmethod

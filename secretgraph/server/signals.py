@@ -1,7 +1,7 @@
 from itertools import product, islice
 import uuid
 
-from graphql_relay import to_global_id
+from strawberry_django_plus.relay import to_base64
 from django.db import transaction, models
 from django.db.models.functions import Length
 from django.db.utils import IntegrityError
@@ -94,7 +94,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
             if i >= 999:
                 raise ValueError("A possible infinite loop was detected")
             instance.flexid = str(uuid.uuid4())
-            instance.flexid_cached = to_global_id(
+            instance.flexid_cached = to_base64(
                 sender.__name__, instance.flexid
             )
             try:

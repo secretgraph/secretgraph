@@ -1,6 +1,7 @@
+import strawberry
+from typing import Optional
 from datetime import timedelta as td
 
-import graphene
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -8,7 +9,6 @@ from django.db.models import Q
 from django.utils import timezone
 from graphene import relay
 from graphene_django import DjangoObjectType
-from graphql_relay import from_global_id
 
 from ..server.actions.update import create_cluster_fn
 from ..server.models import Cluster, Content
@@ -20,34 +20,32 @@ class UserNode(DjangoObjectType):
         model = get_user_model()
         name = "User"
         interfaces = (relay.Node,)
-        fields = [
-            'email', 'username', 'clusters'
-        ]
+        fields = ["email", "username", "clusters"]
 
 
-class UserInput(graphene.InputObjectType):
+@strawberry.input
+class UserInput:
     # TODO: use form, keys
-    email = graphene.String(required=True)
-    username = graphene.String(required=True)
+    email: str
+    username: str
 
 
 class UserMutation(relay.ClientIDMutation):
     class Input:
-        id = graphene.ID(required=False)
-        user = UserInput(required=False)
-    user = graphene.Field(UserNode)
-    actionKey = graphene.String(required=False)
+        id: Optional[ID]
+        user: Optional[UserInput]
+
+    user = UserNode
+    actionKey: Optional[str]
 
     @classmethod
-    def mutate_and_get_payload(
-        cls, root, info, id=None, user=None
-    ):
+    def mutate_and_get_payload(cls, root, info, id=None, user=None):
         if id:
             if not user:
                 raise ValueError()
-            result = ids_to_results(
-                info.context, id, Cluster, "manage"
-            )["Cluster"]
+            result = ids_to_results(info.context, id, Cluster, "manage")[
+                "Cluster"
+            ]
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError()
@@ -67,43 +65,32 @@ class UserMutation(relay.ClientIDMutation):
                 if not admin_user.is_authenticated:
                     raise ValueError("Must be logged in")
             elif (
-                getattr(
-                    settings, "SECRETGRAPH_ALLOW_REGISTER", False
-                ) == "cluster" and
-                not manage.exist()
+                getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False)
+                == "cluster"
+                and not manage.exist()
             ):
                 raise ValueError("Cannot register new cluster clusters")
-            elif getattr(
-                settings, "SECRETGRAPH_ALLOW_REGISTER", False
-            ) is not True:
+            elif (
+                getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False)
+                is not True
+            ):
                 raise ValueError("Cannot register new cluster")
-            user_obj = get_user_model().create_user(
-
-            )
-            action_key = \
-                create_cluster_fn(
-                    info.context, None, user_obj
-                )(transaction.atomic)[1]
-            return cls(
-                user=user_obj,
-                actionKey=action_key
-            )
+            user_obj = get_user_model().create_user()
+            action_key = create_cluster_fn(info.context, None, user_obj)(
+                transaction.atomic
+            )[1]
+            return cls(user=user_obj, actionKey=action_key)
 
 
 class DeleteUserMutation(relay.ClientIDMutation):
-    class Input:
-        id = graphene.ID(required=True)
-
-    user = graphene.Field(UserNode)
+    user: Optional[UserNode]
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, id):
+    def mutate_and_get_payload(cls, info, id: ID):
         now = timezone.now()
         now_plus_x = now + td(minutes=20)
         # cleanup expired
-        Content.objects.filter(
-            markForDestruction__lte=now
-        ).delete()
+        Content.objects.filter(markForDestruction__lte=now).delete()
         user = get_user_model().objects.get(pk=from_global_id(id)[0])
         result = retrieve_allowed_objects(
             info.context, "manage", Cluster.actions.all()
@@ -112,23 +99,21 @@ class DeleteUserMutation(relay.ClientIDMutation):
             id__in=result["objects"].values_list("id", flat=True)
         ):
             raise ValueError("No permission")
-        user_contents = Content.objects.filter(
-            cluster__user=user
-        )
+        user_contents = Content.objects.filter(cluster__user=user)
         if not user_contents.exists():
             user.delete()
         else:
             user_contents.filter(
-                Q(markForDestruction__isnull=True) |
-                Q(markForDestruction__gt=now_plus_x)
+                Q(markForDestruction__isnull=True)
+                | Q(markForDestruction__gt=now_plus_x)
             ).update(markForDestruction=now_plus_x)
         return cls(user=user)
 
 
-class Query():
-    user = graphene.Field(UserNode)
+class Query:
+    user: UserNode
 
 
-class Mutation():
-    signupUser = UserMutation.Field()
-    deleteUser = DeleteUserMutation.Field()
+class Mutation:
+    signupUser = UserMutation.mutate_and_get_payload
+    deleteUser = DeleteUserMutation.mutate_and_get_payload

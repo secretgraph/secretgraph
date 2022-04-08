@@ -31,8 +31,8 @@ rdflib = '*'
 requests = "*"
 certifi = "*"
 graphene-protector = {version=">=0.6.3", optional = true}
-graphene-django = {version=">=3.0b7", optional = true}
-graphene-file-upload = {version="*", optional = true}
+strawberry-graphql = {version="*",  optional = true}
+strawberry-django-plus = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 django-mysql = {version="*", optional = true}
@@ -46,8 +46,8 @@ bleach = {version="*", optional = true}
 
 [tool.poetry.dev-dependencies]
 graphene-protector = ">=0.6.3"
-graphene-django = '>=3.0b7'
-graphene-file-upload = "*"
+strawberry-graphql = '*'
+strawberry-django-plus = "*"
 django-extensions = '*'
 Werkzeug = '*'
 pylint = "*"
@@ -59,9 +59,9 @@ bleach = "*"
 
 [tool.poetry.extras]
 server = [
-    "graphene-django",
     "graphene-protector",
-    "graphene-file-upload",
+    "strawberry-graphql",
+    "strawberry-django-plus",
     "django-fast-ratelimit",
     "django-manifest-loader"
 ]

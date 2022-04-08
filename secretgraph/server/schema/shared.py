@@ -1,4 +1,4 @@
-import graphene
+import strawberry
 
 from ... import constants
 
@@ -16,9 +16,10 @@ def ReferenceInput_desc(v):
         raise Exception(f"Invalid type: {v}")
 
 
-DeleteRecursive = graphene.Enum.from_enum(
-    constants.DeleteRecursive, description=ReferenceInput_desc
-)
+# TODO annotate fields with description as soon as possible
+@strawberry.enum(description=ReferenceInput_desc())
+class DeleteRecursive(constants.DeleteRecursive):
+    pass
 
 
 def UseCriteria_desc(v):
@@ -45,11 +46,13 @@ def UseCriteria_desc(v):
         raise Exception(f"Invalid type: {v}")
 
 
-UseCriteria = graphene.Enum.from_enum(
-    constants.UseCriteria, description=UseCriteria_desc
-)
+# TODO annotate fields with description as soon as possible
+@strawberry.enum(description=UseCriteria_desc())
+class UseCriteria(constants.UseCriteria):
+    pass
 
 
-UseCriteriaPublic = graphene.Enum.from_enum(
-    constants.UseCriteriaPublic, description=UseCriteria_desc
-)
+# TODO annotate fields with description as soon as possible
+@strawberry.enum(description=UseCriteria_desc())
+class UseCriteriaPublic(constants.UseCriteriaPublic):
+    pass
