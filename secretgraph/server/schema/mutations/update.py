@@ -1,28 +1,22 @@
-import base64
+from __future__ import annotations
+
 import logging
-import os
-from datetime import timedelta as td
-from typing import Optional, List
+from typing import Optional
 
 import strawberry
-from strawberry_django_plus.relay import to_base64, GlobalID, input_mutation
+from strawberry_django_plus import relay
+from strawberry_django_plus import gql
+from strawberry.types import Info
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q, Subquery
-from django.utils import timezone
 
-from ....constants import MetadataOperations, TransferResult
 from ...actions.update import (
     create_cluster_fn,
     create_content_fn,
-    transfer_value,
     update_cluster_fn,
     update_content_fn,
-    update_metadata_fn,
-    manage_actions_fn,
 )
 from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup
-from ...signals import generateFlexid
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
@@ -32,11 +26,8 @@ from ...utils.auth import (
 )
 from ..arguments import (
     AuthList,
-    ActionInput,
     ClusterInput,
     ContentInput,
-    PushContentInput,
-    ReferenceInput,
 )
 from ...utils.arguments import pre_clean_content_spec
 from ..definitions import ClusterNode, ContentNode
@@ -46,25 +37,19 @@ logger = logging.getLogger(__name__)
 
 @strawberry.type
 class ClusterMutation:
-    class Input:
-        id: Optional[ID]
-        updateId: Optional[ID]
-        cluster: ClusterInput
-        authorization: Optional[AuthList]
-
     cluster: ClusterNode
     writeok: bool
 
+    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
-        root,
-        info,
-        cluster,
-        id=None,
-        updateId=None,
-        authorization=None,
-    ):
+        info: Info,
+        cluster: ClusterInput,
+        id: Optional[relay.GlobalID] = None,
+        updateId: Optional[strawberry.ID] = None,
+        authorization: Optional[AuthList] = None,
+    ) -> ClusterMutation:
         manage = retrieve_allowed_objects(
             info.context,
             "manage",
@@ -134,19 +119,20 @@ class ClusterMutation:
 
 @strawberry.type
 class ContentMutation:
-    class Input:
-        id: Optional[ID]
-        content: ContentInput
-        updateId: Optional[ID]
-        authorization: Optional[AuthList]
 
     content: ContentNode
     writeok: bool
 
+    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, content, id=None, updateId=None, authorization=None
-    ):
+        cls,
+        info: Info,
+        content: ContentInput,
+        id: Optional[relay.GlobalID] = None,
+        updateId: Optional[strawberry.ID] = None,
+        authorization: Optional[AuthList] = None,
+    ) -> ContentMutation:
         required_keys = set()
         if id:
             if not updateId:

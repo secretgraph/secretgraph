@@ -1,4 +1,5 @@
 import strawberry
+from strawberry_django_plus import relay
 from typing import Optional
 from datetime import timedelta as td
 
@@ -7,20 +8,21 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from graphene import relay
-from graphene_django import DjangoObjectType
 
 from ..server.actions.update import create_cluster_fn
 from ..server.models import Cluster, Content
 from ..server.utils.auth import ids_to_results, retrieve_allowed_objects
 
 
-class UserNode(DjangoObjectType):
-    class Meta:
-        model = get_user_model()
-        name = "User"
-        interfaces = (relay.Node,)
-        fields = ["email", "username", "clusters"]
+@strawberry.type
+class UserNode(relay.Node):
+    email: strawberry.auto()
+    username: strawberry.auto()
+    clusters: strawberry.auto()
+
+    @classmethod
+    def resolve_id(cls, root):
+        return root.username
 
 
 @strawberry.input
@@ -30,16 +32,20 @@ class UserInput:
     username: str
 
 
-class UserMutation(relay.ClientIDMutation):
-    class Input:
-        id: Optional[ID]
-        user: Optional[UserInput]
-
+@strawberry.type
+class UserMutation(relay.Node):
     user = UserNode
     actionKey: Optional[str]
 
+    @relay.input_mutation
     @classmethod
-    def mutate_and_get_payload(cls, root, info, id=None, user=None):
+    def mutate_and_get_payload(
+        cls,
+        root,
+        info,
+        id: Optional[relay.GlobalID] = None,
+        user: Optional[UserInput] = None,
+    ):
         if id:
             if not user:
                 raise ValueError()
@@ -82,16 +88,17 @@ class UserMutation(relay.ClientIDMutation):
             return cls(user=user_obj, actionKey=action_key)
 
 
-class DeleteUserMutation(relay.ClientIDMutation):
+@strawberry.type
+class DeleteUserMutation(relay.Node):
     user: Optional[UserNode]
 
     @classmethod
-    def mutate_and_get_payload(cls, info, id: ID):
+    def mutate_and_get_payload(cls, info, id: relay.GlobalID):
         now = timezone.now()
         now_plus_x = now + td(minutes=20)
         # cleanup expired
         Content.objects.filter(markForDestruction__lte=now).delete()
-        user = get_user_model().objects.get(pk=from_global_id(id)[0])
+        user = get_user_model().objects.get(pk=id.node_id)
         result = retrieve_allowed_objects(
             info.context, "manage", Cluster.actions.all()
         )

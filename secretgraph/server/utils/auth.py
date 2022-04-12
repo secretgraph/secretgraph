@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+from strawberry_django_plus import relay
 from functools import reduce
 from itertools import islice
 from operator import or_
@@ -14,7 +15,7 @@ from django.utils import timezone
 from ... import constants
 from ..actions.handler import ActionHandler
 from ..models import Action, Cluster, Content, GlobalGroupProperty
-from .misc import calculate_hashes, from_global_id_safe
+from .misc import calculate_hashes
 
 logger = logging.getLogger(__name__)
 
@@ -327,7 +328,7 @@ def ids_to_results(
     flexid_d = {}
     for id in ids:
         if isinstance(id, str):
-            type_name, flexid = from_global_id_safe(id)
+            type_name, flexid = relay.from_base64(id)
         elif isinstance(id, klasses):
             flexid = id.flexid
             type_name = type(id).__name__

@@ -21,7 +21,7 @@ from .mutations import (
 
 
 class SecretgraphObject(ObjectType):
-    node = relay.Node.Field()
+    node = relay.node()
     config = Field(SecretgraphConfig)
     clusters = ClusterConnectionField(ids=List(ID, required=False))
     contents = ContentConnectionField()

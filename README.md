@@ -175,8 +175,7 @@ idea: seperate actions with different concerns.
 # TODO
 
 -   switch to strawberry for subscriptions
-    -   cannot describe enum members
--   add actions to MetaData update for share dialog
+    -   cannot describe enum members - annotated hack (does it work?)
 -   modernize ActionDialog, redesign, multi column?
 -   modernize Keys, expose actions
 -   implement shareFn and ShareDialog, Config has Special ShareDialog

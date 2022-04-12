@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     "django.contrib.auth",  # required for user
     "django.contrib.contenttypes",  # required for auth
     "django.contrib.staticfiles",  # Required for GraphiQL
-    "graphene_django",
 ]
 try:
     import django_extensions  # noqa: F401

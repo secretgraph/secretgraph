@@ -1,15 +1,13 @@
-from typing import Optional
+from typing import Optional, Union, List
+from datetime import datetime
+import strawberry
+from strawberry.types import Info
+from strawberry_django_plus import relay, gql
 from django.db.models import Subquery, Q
 from django.conf import settings
 from django.shortcuts import resolve_url
-from graphene_django import (
-    DjangoConnectionField,
-    DjangoObjectType,
-    DjangoListField,
-)
 
 from ... import constants
-from ..utils.misc import from_global_id_safe
 from ..utils.auth import initializeCachedResult, fetch_by_id
 from ..actions.view import fetch_clusters, fetch_contents
 from ..models import (
@@ -24,7 +22,10 @@ from .shared import DeleteRecursive, UseCriteria, UseCriteriaPublic
 
 
 # why?: scalars cannot be used in Unions
-class RegisterUrl(GenericScalar):
+
+
+@strawberry.scalar
+class RegisterUrl:
     """
     The `RegisterUrl` scalar type represents can be:
     *  String: url,
@@ -32,70 +33,55 @@ class RegisterUrl(GenericScalar):
     """
 
 
-class InjectedKeyNode(DjangoObjectType):
-    class Meta:
-        model = Content
-        name = "InjectedKey"
+@gql.django.type(Content, name="InjectedKey")
+class InjectedKeyNode(relay.Node):
 
-    id: ID
-    hash: str
-    link: str
+    link: gql.auto
+    hash: gql.auto = gql.django.field(field_name="contentHash")
 
-    def resolve_id(self, info):
-        return self.flexid
-
-    def resolve_hash(self, info):
-        return self.contentHash
-
-    def resolve_link(self, info):
-        return self.link
+    @staticmethod
+    def resolve_id(root) -> str:
+        return root.flexid
 
 
-class GlobalGroupPropertyNode(DjangoObjectType):
-    class Meta:
-        model = GlobalGroupProperty
-        name = "GlobalGroupProperty"
-        fields = ["name"]
-
-    description: Optional[str]
-
-    def resolve_description(self, info):
-        return "TODO"
+@gql.django.type(GlobalGroupProperty, name="GlobalGroupProperty")
+class GlobalGroupPropertyNode(relay.Node):
+    name: gql.auto
+    description: gql.auto
 
 
-class GlobalGroupNode(DjangoObjectType):
-    class Meta:
-        model = GlobalGroup
-        name = "GlobalGroup"
-        interfaces = (relay.Node,)
-        fields = "__all__"
+@gql.django.type(GlobalGroup, name="GlobalGroup")
+class GlobalGroupNode(relay.Node):
 
-    injected_keys = DjangoListField(InjectedKeyNode, name="injected_keys")
-    properties = DjangoListField(GlobalGroupPropertyNode, name="properties")
+    name: gql.auto
+    description: gql.auto
+    hidden: gql.auto
+    matchUserGroup: gql.auto
+    clusters: gql.auto
+    injected_keys: gql.auto
 
-    def resolve_properties(self, info):
-        return self.properties.values_list("name", flat=True)
+    @gql.django.field(only=["properties"])
+    @staticmethod
+    def properties(root) -> List[str]:
+        return root.properties.values_list("name", flat=True)
 
-    def resolve_injected_keys(self, info):
-        return self.injected_keys.all()
 
+@relay.type
+class SecretgraphConfig(relay.Node):
+    groups: List[GlobalGroupNode] = gql.django.field()
 
-class SecretgraphConfig(ObjectType):
-    id: ID
-    hashAlgorithms = graphene.List(
-        graphene.NonNull(graphene.String), required=True
-    )
-    groups = DjangoListField(GlobalGroupNode)
-    registerUrl = graphene.Field(RegisterUrl, required=False)
-    loginUrl: Optional[str]
-
-    def resolve_id(self, info):
+    @staticmethod
+    def resolve_id() -> str:
         return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
 
-    def resolve_hashAlgorithms(self, info):
+    @strawberry.field
+    @staticmethod
+    def hashAlgorithms():
         return settings.SECRETGRAPH_HASH_ALGORITHMS
 
-    def resolve_registerUrl(self, info):
+    @strawberry.field
+    @staticmethod
+    def registerUrl():
         if getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) is not True:
             return False
         signup_url = getattr(settings, "SIGNUP_URL", None)
@@ -108,7 +94,9 @@ class SecretgraphConfig(ObjectType):
             return resolve_url(signup_url)
         return True
 
-    def resolve_loginUrl(self, info):
+    @strawberry.field
+    @staticmethod
+    def loginUrl():
         login_url = getattr(settings, "LOGIN_URL", None)
         if login_url:
             return resolve_url(login_url)
@@ -117,50 +105,40 @@ class SecretgraphConfig(ObjectType):
 
 class FlexidMixin:
     # exposed id is flexid
-
-    def resolve_id(self, info):
-        if self.limited:
+    @staticmethod
+    def resolve_id(root):
+        if root.limited:
             return None
-        return str(self.flexid)
-
-    @classmethod
-    def get_node(cls, info, id, **kwargs):
-        raise NotImplementedError()
+        return root.flexid
 
 
-class ActionEntry(graphene.ObjectType):
+@strawberry.type
+class ActionEntry:
     # of action key
     keyHash: str
     type: str
-    allowedTags = graphene.List(
-        graphene.NonNull(graphene.String), required=False
-    )
-    trustedKeys = graphene.List(
-        graphene.NonNull(graphene.String), required=True
-    )
+    allowedTags: Optional[List[str]]
+    trustedKeys: List[str]
 
 
-class ActionMixin(object):
-    availableActions = graphene.List(
-        graphene.NonNull(ActionEntry), required=True
-    )
-    authOk = graphene.Boolean(required=True)
-
-    def resolve_availableActions(self, info):
-        name = self.__class__.__name__
+class ActionMixin:
+    @gql.django.field(only=["id", "cluster_id"])
+    @staticmethod
+    def availableActions(root, info: Info) -> List[ActionEntry]:
+        name = root.__class__.__name__
         result = getattr(info.context, "secretgraphResult", {}).get(name, {})
         # only show some actions if not set
         has_manage = False
-        if isinstance(self, Content):
+        if isinstance(root, Content):
             # if content: check cluster and content keys
             mappers = [
-                result.get("action_info_contents", {}).get(self.id, {}),
+                result.get("action_info_contents", {}).get(root.id, {}),
                 result.get("action_info_clusters", {}).get(
-                    self.cluster_id, {}
+                    root.cluster_id, {}
                 ),
             ]
         else:
-            mappers = [result.get("action_info_clusters", {}).get(self.id, {})]
+            mappers = [result.get("action_info_clusters", {}).get(root.id, {})]
         # auth included unprotected ids
         seen_ids = set()
         # don't copy
@@ -184,15 +162,15 @@ class ActionMixin(object):
                         ),
                     )
         if has_manage:
-            if isinstance(self, Content):
+            if isinstance(root, Content):
                 for action in (
                     result.get("Action", {"objects": Action.objects.none()})[
                         "objects"
                     ]
                     .filter(
                         Q(contentAction__isnull=True)
-                        | Q(contentAction__content_id=self.id),
-                        cluster_id=self.cluster_id,
+                        | Q(contentAction__content_id=root.id),
+                        cluster_id=root.cluster_id,
                     )
                     .exclude(id__in=seen_ids)
                 ):
@@ -210,7 +188,7 @@ class ActionMixin(object):
                     result.get("Action", {"objects": Action.objects.none()})[
                         "objects"
                     ]
-                    .filter(contentAction__isnull=True, cluster_id=self.id)
+                    .filter(contentAction__isnull=True, cluster_id=root.id)
                     .exclude(id__in=seen_ids)
                 ):
                     yield ActionEntry(
@@ -223,21 +201,23 @@ class ActionMixin(object):
                         allowedTags=None,
                     )
 
-    def resolve_authOk(self, info):
-        name = self.__class__.__name__
+    @gql.django.field(only=["id", "cluster_id"])
+    @staticmethod
+    def authOk(root, info: Info) -> bool:
+        name = root.__class__.__name__
         result = getattr(info.context, "secretgraphResult", {}).get(name, {})
 
         authOk = False
-        if isinstance(self, Content):
+        if isinstance(root, Content):
             # if content: check cluster and content keys
             mappers = [
-                result.get("action_info_contents", {}).get(self.id, {}),
+                result.get("action_info_contents", {}).get(root.id, {}),
                 result.get("action_info_clusters", {}).get(
-                    self.cluster_id, {}
+                    root.cluster_id, {}
                 ),
             ]
         else:
-            mappers = [result.get("action_info_clusters", {}).get(self.id, {})]
+            mappers = [result.get("action_info_clusters", {}).get(root.id, {})]
         for mapper in mappers:
             for key_val in mapper.items():
                 if key_val[0][0] == "auth":
@@ -248,28 +228,31 @@ class ActionMixin(object):
         return authOk
 
 
-class ContentReferenceNode(DjangoObjectType):
+@gql.django.type(ContentReference, name="ContentReference")
+class ContentReferenceNode(relay.Node):
     safe = False
 
-    class Meta:
-        model = ContentReference
-        name = "ContentReference"
-        interfaces = (relay.Node,)
-        fields = ["source", "target", "group", "extra"]
+    source: gql.auto
+    target: gql.auto
+    group: gql.auto
+    extra: gql.auto
 
-    deleteRecursive = DeleteRecursive(required=True)
+    deleteRecursive: DeleteRecursive
 
-    def resolve_id(self, info):
-        return f"{self.source.flexid}:{self.target.flexid}:{self.group}"
+    @staticmethod
+    def resolve_id(root):
+        return f"{root.source.flexid}|{root.target.flexid}|{root.group}"
 
     @classmethod
-    def get_node(cls, info, id, authorization=None):
-        result = initializeCachedResult(info.context, authset=authorization)[
-            "Content"
-        ]
+    def resolve_node(
+        cls,
+        info: Info,
+        id: relay.GlobalID,
+    ):
+        result = initializeCachedResult(info.context)["Content"]
         queryset = cls.get_queryset(cls._meta.model.objects, info)
         try:
-            source, target, group = id.split(":", 2)
+            source, target, group = id.split("|", 2)
             return queryset.get(
                 source__in=fetch_contents(
                     result["objects"], result["actions"], source, noFetch=True
@@ -283,9 +266,6 @@ class ContentReferenceNode(DjangoObjectType):
             return None
         except ValueError:
             return None
-
-    def resolve_deleteRecursive(self, info):
-        return self.deleteRecursive
 
     def resolve_source(self, info, authorization=None, **kwargs):
         result = initializeCachedResult(info.context, authset=authorization)[
@@ -343,11 +323,9 @@ class ContentReferenceConnectionField(DjangoConnectionField):
         super().__init__(of_type, *args, **kwargs)
 
 
-class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
+@gql.django.type(Content, name="Content")
+class ContentNode(ActionMixin, FlexidMixin, relay.Node):
     class Meta:
-        model = Content
-        name = "Content"
-        interfaces = (relay.Node,)
         fields = [
             "nonce",
             "updated",
@@ -357,7 +335,9 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             "state",
         ]
 
-    deleted: Optional[datetime]
+    deleted: Optional[datetime] = gql.django.field(
+        field_name="markForDestruction"
+    )
     cluster = graphene.Field(lambda: ClusterNode, required=True)
     references = ContentReferenceConnectionField(required=True)
     referencedBy = ContentReferenceConnectionField(required=True)
@@ -506,13 +486,10 @@ class ContentNode(ActionMixin, FlexidMixin, DjangoObjectType):
             ContentReference.objects.filter(target__in=result["objects"]),
         )
 
-    def resolve_link(self, info):
-        return self.link
-
-    def resolve_availableActions(self, info):
+    def availableActions(self, info):
         if self.limited:
             return []
-        return ActionMixin.resolve_availableActions(self, info)
+        return ActionMixin.availableActions(self, info)
 
 
 class ContentConnectionField(DjangoConnectionField):
@@ -821,7 +798,7 @@ class ClusterConnectionField(DjangoConnectionField):
                 user = None
             else:
                 try:
-                    user = from_global_id_safe(user)[1]
+                    user = relay.from_base64(user)[1]
                 except Exception:
                     pass
                 queryset = queryset.filter(user__pk=user)
@@ -875,6 +852,4 @@ class ClusterConnectionField(DjangoConnectionField):
         )
 
 
-class FlexidType(graphene.Union):
-    class Meta:
-        types = (ClusterNode, ContentNode)
+FlexidType = Union[ClusterNode, ContentNode]

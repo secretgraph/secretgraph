@@ -1,65 +1,46 @@
+from __future__ import annotations
+
 import base64
 import logging
 import os
-from datetime import timedelta as td
-from itertools import chain
+from typing import Optional, Annotated
 
 import strawberry
-from strawberry_django_plus import relay
-from django.conf import settings
+from strawberry.scalars import JSON
+from strawberry.types import Info
+from strawberry_django_plus import relay, gql
 from django.db import transaction
-from django.db.models import Q, Subquery
-from django.utils import timezone
 
-from ....constants import MetadataOperations, TransferResult
-from ...actions.update import (
-    create_cluster_fn,
-    create_content_fn,
-    transfer_value,
-    update_cluster_fn,
-    update_content_fn,
-    update_metadata_fn,
-    manage_actions_fn,
-)
-from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup
-from ...signals import generateFlexid
+from ....constants import TransferResult
+from ...actions.update import transfer_value, create_content_fn
+from ...models import Content
 from ...utils.auth import (
-    fetch_by_id,
     ids_to_results,
     initializeCachedResult,
-    retrieve_allowed_objects,
-    check_permission,
 )
 from ..arguments import (
     AuthList,
-    ActionInput,
-    ClusterInput,
-    ContentInput,
     PushContentInput,
-    ReferenceInput,
 )
 from ...utils.arguments import pre_clean_content_spec
-from ..definitions import ClusterNode, ContentNode
+from ..definitions import ContentNode
 
 logger = logging.getLogger(__name__)
 
 
-class PushContentMutation(relay.ClientIDMutation):
-    class Input:
-        content
-        authorization
-
+@strawberry.type
+class PushContentMutation:
     content: ContentNode
     actionKey: Optional[str]
 
+    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
-        root,
-        info,
+        info: Info,
         content: PushContentInput,
         authorization: Optional[AuthList] = None,
-    ):
+    ) -> PushContentMutation:
         parent_id = content.pop("parent")
         result = ids_to_results(
             info.context, parent_id, Content, "push", authset=authorization
@@ -96,27 +77,25 @@ class PushContentMutation(relay.ClientIDMutation):
         )
 
 
-class TransferMutation(relay.ClientIDMutation):
-    class Input:
-        id: ID
-        url: Optional[str]
-        key: Optional[str] = strawberry.field(description="Transfer Key")
-        headers: Optional[JSON] = null
-        authorization: Optional[AuthList]
+@strawberry.type
+class TransferMutation:
 
-    content: Optional[ContentNode] = null
+    content: Optional[ContentNode] = None
 
+    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
         root,
         info,
-        id,
-        url=None,
-        key=None,
-        authorization=None,
-        headers=None,
-    ):
+        id: relay.GlobalID,
+        url: Optional[str] = None,
+        key: Annotated[
+            Optional[str], strawberry.argument(description="Transfer Key")
+        ] = None,
+        headers: Optional[JSON] = None,
+        authorization: Optional[AuthList] = None,
+    ) -> TransferMutation:
         result = ids_to_results(
             info.context, id, Content, "update", authset=authorization
         )["Content"]

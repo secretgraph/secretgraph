@@ -1,26 +1,26 @@
 from __future__ import annotations
 
-from typing import Optional, List
+import logging
 from datetime import datetime
 from itertools import chain
+from typing import List, Optional
 
 import strawberry
-from strawberry.scalars import ID
+from django.db.models import Q, Subquery
+from django.utils import timezone
 from strawberry.types import Info
 from strawberry_django_plus import relay
 
-from django.utils import timezone
-from django.db.models import Subquery, Q
-
-
 from ...models import Cluster, Content
+from ...utils.arguments import AuthList
 from ...utils.auth import (
+    check_permission,
     fetch_by_id,
     ids_to_results,
     retrieve_allowed_objects,
-    check_permission,
 )
-from ...utils.arguments import AuthList
+
+logger = logging.getLogger(__name__)
 
 
 @strawberry.type
@@ -32,7 +32,7 @@ class DeleteContentOrClusterMutation:
     def mutate_and_get_payload(
         cls,
         info: Info,
-        ids: List[ID],
+        ids: List[relay.GlobalID],
         when: Optional[datetime],
         authorization: Optional[AuthList] = None,
     ) -> DeleteContentOrClusterMutation:
@@ -92,15 +92,16 @@ class DeleteContentOrClusterMutation:
         )
 
 
-class ResetDeletionContentOrClusterMutation(relay.ClientIDMutation):
-    restored: List[ID]
+@strawberry.type
+class ResetDeletionContentOrClusterMutation:
+    restored: List[relay.GlobalID]
 
     @relay.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
         info: Info,
-        ids: List[ID],
+        ids: List[relay.GlobalID],
         authorization: Optional[AuthList] = None,
     ) -> ResetDeletionContentOrClusterMutation:
         manage = retrieve_allowed_objects(

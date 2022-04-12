@@ -1,59 +1,44 @@
-import base64
+from typing import List, Optional
 import logging
-import os
-from datetime import timedelta as td
-from itertools import chain
 
 import strawberry
-from strawberry_django_plus import relay
-from django.conf import settings
+from strawberry.types import Info
+from strawberry_django_plus import relay, gql
 from django.db import transaction
-from django.db.models import Q, Subquery
-from django.utils import timezone
 
-from ....constants import MetadataOperations, TransferResult
+from ....constants import MetadataOperations
 from ...actions.update import (
-    create_cluster_fn,
-    create_content_fn,
-    transfer_value,
-    update_cluster_fn,
-    update_content_fn,
     update_metadata_fn,
     manage_actions_fn,
 )
-from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup
+from ...models import Cluster, Content
 from ...signals import generateFlexid
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
-    initializeCachedResult,
     retrieve_allowed_objects,
     check_permission,
 )
 from ..arguments import (
     AuthList,
     ActionInput,
-    ClusterInput,
-    ContentInput,
-    PushContentInput,
-    ReferenceInput,
 )
-from ...utils.arguments import pre_clean_content_spec
-from ..definitions import ClusterNode, ContentNode
 
 logger = logging.getLogger(__name__)
 
 
 @strawberry.type
 class RegenerateFlexidMutation:
-    class Input:
-        ids: List[ID]
-        authorization: Optional[AuthList]
+    updated: List[relay.GlobalID]
 
-    updated: List[ID]
-
+    @gql.django.input_mutation
     @classmethod
-    def mutate_and_get_payload(cls, root, info, ids, authorization=None):
+    def mutate_and_get_payload(
+        cls,
+        info: Info,
+        ids: List[relay.GlobalID],
+        authorization: Optional[AuthList] = None,
+    ):
         manage = retrieve_allowed_objects(
             info.context,
             "manage",
@@ -85,23 +70,25 @@ class RegenerateFlexidMutation:
         for result in results.values():
             for obj in result["objects"]:
                 generateFlexid(type(obj), obj, True)
-                updated.append(to_base64(type(obj).__name__, obj.flexid))
+                updated.append(relay.to_base64(type(obj).__name__, obj.flexid))
         return cls(updated=updated)
 
 
 # only admin/moderator
-class MarkMutation(relay.ClientIDMutation):
-    class Input:
-        ids: List[ID]
-        authorization: Optional[AuthList]
-        hidden = graphene.Boolean()
-        featured = graphene.Boolean()
+@strawberry.type
+class MarkMutation:
 
-    markChanged: List[ID]
+    markChanged: List[relay.GlobalID]
 
+    @relay.input_mutation
     @classmethod
     def mutate_and_get_payload(
-        cls, root, info, ids, hidden=None, featured=None, authorization=None
+        cls,
+        info,
+        ids: List[relay.GlobalID],
+        hidden: Optional[bool] = None,
+        featured: Optional[bool] = None,
+        authorization: Optional[AuthList] = None,
     ):
         manage = retrieve_allowed_objects(
             info.context,
@@ -129,36 +116,26 @@ class MarkMutation(relay.ClientIDMutation):
             clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
             clusters.update(featured=featured)
         return cls(
-            markChanged=map(lambda x: to_base64("Content", x), contents)
+            markChanged=map(lambda x: relay.to_base64("Content", x), contents)
         )
 
 
-class MetadataUpdateMutation(relay.ClientIDMutation):
-    class Input:
-        ids: List[ID]
-        authorization: Optional[AuthList]
-        state: Optional[str]
-        actions = graphene.List(graphene.NonNull(ActionInput), required=False)
-        tags: Optional[List[str]]
-        references = graphene.List(
-            graphene.NonNull(ReferenceInput), required=False
-        )
-        operation = graphene.Enum.from_enum(MetadataOperations)
+@strawberry.type
+class MetadataUpdateMutation:
 
-    updated: List[ID]
+    updated: List[relay.GlobalID]
 
+    @relay.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
-        root,
-        info,
-        ids,
-        state=None,
-        tags=None,
-        actions=None,
-        operation=None,
-        authorization=None,
-        headers=None,
+        info: Info,
+        ids: List[relay.GlobalID],
+        state: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        actions: Optional[List[ActionInput]] = None,
+        operation: Optional[MetadataOperations] = MetadataOperations.append,
+        authorization: Optional[AuthList] = None,
     ):
 
         manage = retrieve_allowed_objects(
@@ -197,5 +174,5 @@ class MetadataUpdateMutation(relay.ClientIDMutation):
         contents = []
         with transaction.atomic():
             for f in requests:
-                contents.push(to_base64("Content", f().flexid))
+                contents.push(relay.to_base64("Content", f().flexid))
         return cls(updated=contents)
