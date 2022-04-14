@@ -13,7 +13,7 @@ from contextlib import nullcontext
 from django.db.models import Q
 
 from ....constants import MetadataOperations, DeleteRecursive
-from ...utils.auth import initializeCachedResult
+from ...utils.auth import get_cached_result
 from ...utils.misc import hash_object
 from ...models import Content, ContentReference, ContentTag
 
@@ -296,7 +296,7 @@ def update_metadata_fn(
         content,
         _refs,
         key_hashes_tags,
-        initializeCachedResult(request, authset=authset)["Content"]["objects"],
+        get_cached_result(request, authset=authset)["Content"]["objects"],
         no_final_refs=references is None,
     )
 

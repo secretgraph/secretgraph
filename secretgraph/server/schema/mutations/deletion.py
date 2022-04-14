@@ -14,10 +14,9 @@ from strawberry_django_plus import relay
 from ...models import Cluster, Content
 from ...utils.arguments import AuthList
 from ...utils.auth import (
-    check_permission,
+    get_cached_permissions,
     fetch_by_id,
     ids_to_results,
-    retrieve_allowed_objects,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,15 +37,9 @@ class DeleteContentOrClusterMutation:
     ) -> DeleteContentOrClusterMutation:
         now = timezone.now()
 
-        manage = retrieve_allowed_objects(
-            info.context,
-            "manage",
-            Cluster.objects.all(),
-            authset=authorization,
-        )
-        if check_permission(
-            info.context, "manage_deletion", manage["objects"]
-        ):
+        if get_cached_permissions(info.context, authset=authorization)[
+            "manage_deletion"
+        ]:
             contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
             clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
         else:
@@ -104,14 +97,8 @@ class ResetDeletionContentOrClusterMutation:
         ids: List[relay.GlobalID],
         authorization: Optional[AuthList] = None,
     ) -> ResetDeletionContentOrClusterMutation:
-        manage = retrieve_allowed_objects(
-            info.context,
-            "manage",
-            Cluster.objects.all(),
-            authset=authorization,
-        )
-        if check_permission(
-            info.context, "manage_deletion", manage["objects"]
+        if get_cached_permissions(
+            info.context["manage_deletion"], authset=authorization
         ):
             contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
             clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)

@@ -2,7 +2,7 @@ from graphene import Field, List, ID, ObjectType, relay
 from django.utils.translation import gettext_lazy as _
 
 from .arguments import AuthList
-from ..utils.auth import initializeCachedResult
+from ..utils.auth import get_cached_result
 from .definitions import (
     ClusterConnectionField,
     ContentConnectionField,
@@ -34,7 +34,7 @@ class Query:
     secretgraph = Field(SecretgraphObject, authorization=AuthList())
 
     def resolve_secretgraph(self, info, authorization=None, **kwargs):
-        initializeCachedResult(info.context, authset=authorization)
+        get_cached_result(info.context, authset=authorization)
         return SecretgraphObject()
 
 

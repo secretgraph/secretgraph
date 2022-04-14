@@ -16,7 +16,7 @@ from ...actions.update import transfer_value, create_content_fn
 from ...models import Content
 from ...utils.auth import (
     ids_to_results,
-    initializeCachedResult,
+    get_cached_result,
 )
 from ..arguments import (
     AuthList,
@@ -71,7 +71,7 @@ class PushContentMutation:
             required_keys=required_keys,
             authset=authorization,
         )(transaction.atomic)
-        initializeCachedResult(info.context, authset=authorization)
+        get_cached_result(info.context, authset=authorization)
         return cls(
             content=c, actionKey=base64.b64encode(action_key).decode("ascii")
         )

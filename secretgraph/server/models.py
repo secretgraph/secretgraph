@@ -212,15 +212,15 @@ class Content(FlexidModel):
         # path to raw view
         return reverse("secretgraph:contents", kwargs={"id": self.flexid})
 
-    def signatures(self, algos=None, references=None):
+    def signatures(self, hashAlgorithms=None, references=None):
         q = models.Q()
         q2 = models.Q()
         if references:
             references = references.filter(source__id=self.id)
         else:
             references = self.references
-        if algos:
-            for algo in algos:
+        if hashAlgorithms:
+            for algo in hashAlgorithms:
                 q |= models.Q(tag__startswith=f"signature={algo=}")
                 q2 |= models.Q(extra__startswith=f"{algo}=")
         else:

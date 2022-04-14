@@ -9,7 +9,7 @@ from .widgets import ListWidget
 from .models import Content
 from .actions.update import create_content_fn
 from . import messages
-from .utils.auth import initializeCachedResult
+from .utils.auth import get_cached_result
 
 
 class PushForm(forms.Form):
@@ -54,7 +54,7 @@ class PushForm(forms.Form):
         if self.result["scope"] == "view":
             vresult = self.result
         else:
-            vresult = initializeCachedResult(
+            vresult = get_cached_result(
                 self.request, authset=self.result["authset"]
             )["Content"]
 

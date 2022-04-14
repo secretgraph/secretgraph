@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 from strawberry_django_plus import relay
-from functools import reduce
+from functools import reduce, partial
 from itertools import islice
 from operator import or_
 
@@ -27,11 +27,11 @@ _allowed_auth_types = {"Cluster", "Content"}
 class LazyViewResult(object):
     _result_dict = None
 
-    def __init__(self, request, *viewResults, authset=None, scope="view"):
+    def __init__(self, fn, request, *viewResults, authset=None):
         self._result_dict = {}
         self.request = request
         self.authset = authset
-        self.scope = scope
+        self.fn = fn
         for r in viewResults:
             self._result_dict[r["objects"].model.__name__] = r
         if self.authset is None:
@@ -44,14 +44,13 @@ class LazyViewResult(object):
     def __getitem__(self, item):
         if item in _cached_classes:
             if item not in self._result_dict:
-                self._result_dict[item] = retrieve_allowed_objects(
+                self._result_dict[item] = self.fn(
                     self.request,
-                    self.scope,
-                    apps.get_model("secretgraph", item).objects.all(),
+                    item,
                     authset=self.authset,
                 )
             return self._result_dict[item]
-        if item in {"authset", "scope"}:
+        if item == "authset":
             return self.authset
         raise KeyError()
 
@@ -62,21 +61,10 @@ class LazyViewResult(object):
             return default
 
 
-def initializeCachedResult(
-    request, *viewResults, authset=None, scope="view", name="secretgraphResult"
-):
-    if not getattr(request, name, None):
-        setattr(
-            request,
-            name,
-            LazyViewResult(
-                request, *viewResults, scope=scope, authset=authset
-            ),
-        )
-    return getattr(request, name)
+def retrieve_allowed_objects(request, query, scope="view", authset=None):
+    if isinstance(query, str):
+        query = apps.get_model("secretgraph", query).objects.all()
 
-
-def retrieve_allowed_objects(request, scope, query, authset=None):
     if authset is None:
         authset = (
             request.headers.get("Authorization", "")
@@ -352,25 +340,25 @@ def ids_to_results(
         if not initialize_missing and not flexids:
             pass
         elif scope == "view" and type_name in _cached_classes:
-            results[type_name] = initializeCachedResult(
-                request, authset=authset
-            )[type_name].copy()
+            results[type_name] = get_cached_result(request, authset=authset)[
+                type_name
+            ].copy()
             results[type_name]["objects"] = results[type_name][
                 "objects"
             ].filter(flexid__in=flexids)
         else:
             results[type_name] = retrieve_allowed_objects(
                 request,
-                scope,
                 klass.objects.filter(flexid__in=flexids)
                 if flexids
                 else klass.objects.none(),
+                scope=scope,
                 authset=authset,
             )
     return results
 
 
-def check_permission(request, permission, query, authorization=None):
+def check_permission(request, permission, query):
     assert issubclass(query.model, Cluster), (
         "Not a cluster query: %s" % query.model
     )
@@ -397,3 +385,59 @@ def check_permission(request, permission, query, authorization=None):
                 )
 
     return global_groups.filter(q).exists()
+
+
+def get_cached_result(
+    request,
+    *viewResults,
+    authset=None,
+    scope="view",
+    name="secretgraphResult",
+    ensureExistance=False,
+):
+    if not getattr(request, name, None):
+        if ensureExistance:
+            raise AttributeError("cached query result does not exist")
+        setattr(
+            request,
+            name,
+            LazyViewResult(
+                retrieve_allowed_objects,
+                request,
+                *viewResults,
+                authset=authset,
+            ),
+        )
+    return getattr(request, name)
+
+
+def get_cached_permissions(
+    request,
+    permissions_name="secretgraphPermissions",
+    result_name="secretgraphResult",
+    authset=None,
+    ensureExistance=False,
+):
+    if not getattr(request, permissions_name, None):
+        if ensureExistance:
+            raise AttributeError("cached permissions does not exist")
+        if not authset:
+            authset = get_cached_result(
+                request, name=result_name, ensureExistance=ensureExistance
+            )["authset"]
+        query = retrieve_allowed_objects(
+            request,
+            Cluster.objects.all(),
+            scope="manage",
+            authset=authset,
+        )
+        setattr(
+            request,
+            permissions_name,
+            LazyViewResult(
+                partial(check_permission, query=query),
+                request,
+                authset=authset,
+            ),
+        )
+    return getattr(request, permissions_name)

@@ -16,8 +16,7 @@ from ...signals import generateFlexid
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
-    retrieve_allowed_objects,
-    check_permission,
+    get_cached_permissions,
 )
 from ..arguments import (
     AuthList,
@@ -39,13 +38,9 @@ class RegenerateFlexidMutation:
         ids: List[relay.GlobalID],
         authorization: Optional[AuthList] = None,
     ):
-        manage = retrieve_allowed_objects(
-            info.context,
-            "manage",
-            Cluster.objects.all(),
-            authset=authorization,
-        )
-        if check_permission(info.context, "manage_update", manage["objects"]):
+        if get_cached_permissions(info.context, authset=authorization)[
+            "manage_update"
+        ]:
             results = {
                 "Content": {
                     "objects": fetch_by_id(
@@ -90,21 +85,15 @@ class MarkMutation:
         featured: Optional[bool] = None,
         authorization: Optional[AuthList] = None,
     ):
-        manage = retrieve_allowed_objects(
-            info.context,
-            "manage",
-            Cluster.objects.all(),
-            authset=authorization,
-        )
         if featured is not None:
-            if not check_permission(
-                info.context, "manage_featured", manage["objects"]
-            ):
+            if not get_cached_permissions(info.context, authset=authorization)[
+                "manage_featured"
+            ]:
                 featured = None
         if hidden is not None:
-            if not check_permission(
-                info.context, "manage_hidden", manage["objects"]
-            ):
+            if not get_cached_permissions(info.context, authset=authorization)[
+                "manage_hidden"
+            ]:
                 hidden = None
         contents = Content.objects.none()
         clusters = Cluster.objects.none()
@@ -138,13 +127,9 @@ class MetadataUpdateMutation:
         authorization: Optional[AuthList] = None,
     ):
 
-        manage = retrieve_allowed_objects(
-            info.context,
-            "manage",
-            Cluster.objects.all(),
-            authset=authorization,
-        )
-        if check_permission(info.context, "manage_update", manage["objects"]):
+        if get_cached_permissions(info.context, authset=authorization)[
+            "manage_update"
+        ]:
             contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         else:
             result = ids_to_results(

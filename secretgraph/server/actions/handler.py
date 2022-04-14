@@ -29,8 +29,8 @@ def _only_owned_helper(
         fields = set(fields).difference({"flexid"})
     return retrieve_allowed_objects(
         request,
-        scope,
         klass.objects.filter(**{f"{check_field}__in": linput or []}),
+        scope,
         authset=authset,
     )["objects"].values_list(*fields, flat=True)
 
@@ -635,12 +635,12 @@ class ActionHandler:
             # for passing down exclude info
             r = retrieve_allowed_objects(
                 request,
-                "manage",
                 klass.objects.filter(keyHash__in=result["exclude"][type_name])
                 if type_name == "Action"
                 else klass.objects.filter(
                     flexid__in=result["exclude"][type_name]
                 ),
+                scope="manage",
                 authset=authset,
             )
             s = set(r["objects"].values_list("id", flat=True))

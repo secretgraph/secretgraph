@@ -24,7 +24,7 @@ from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
 from .utils.auth import (
     fetch_by_id,
-    initializeCachedResult,
+    get_cached_result,
     retrieve_allowed_objects,
 )
 from .utils.encryption import iter_decrypt_contents
@@ -68,9 +68,7 @@ class ContentView(AllowCORSMixin, FormView):
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
         # why not ids_to_results => uses flexid directly
-        self.result = initializeCachedResult(request, authset=authset)[
-            "Content"
-        ]
+        self.result = get_cached_result(request, authset=authset)["Content"]
 
         if "decrypt" in kwargs:
             if self.action != "view":

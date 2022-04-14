@@ -13,7 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 
 from .... import constants
-from ...utils.auth import ids_to_results, initializeCachedResult
+from ...utils.auth import ids_to_results, get_cached_result
 from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag
 from ._actions import manage_actions_fn
@@ -224,9 +224,7 @@ def _update_or_create_content_or_key(
             content,
             refs,
             key_hashes_tags,
-            initializeCachedResult(request, authset=authset)["Content"][
-                "objects"
-            ],
+            get_cached_result(request, authset=authset)["Content"]["objects"],
             no_final_refs=objdata.get("references") is None,
         )
         if required_keys and required_keys.isdisjoint(verifiers_ref):

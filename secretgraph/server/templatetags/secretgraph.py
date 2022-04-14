@@ -10,7 +10,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Subquery
 
 from ..models import Content
-from ..utils.auth import initializeCachedResult, fetch_by_id
+from ..utils.auth import get_cached_result, fetch_by_id
 from ..actions.view import (
     fetch_clusters as _fetch_clusters,
     fetch_contents as _fetch_contents,
@@ -86,7 +86,7 @@ def fetch_clusters(
     excludeTags=None,
     authorization=None,
 ):
-    queryset = initializeCachedResult(context.request, authset=authorization)[
+    queryset = get_cached_result(context.request, authset=authorization)[
         "Cluster"
     ]["objects"]
     if search is not None:
@@ -133,7 +133,7 @@ def fetch_contents(
     decrypt=True,
     authorization=None,
 ):
-    result = initializeCachedResult(context.request, authset=authorization)[
+    result = get_cached_result(context.request, authset=authorization)[
         "Content"
     ].copy()
 
@@ -220,9 +220,9 @@ def read_content_sync(context, content, authorization=None):
         )
         authorization.update(context["request"].GET.getlist("token"))
     if isinstance(content, str):
-        result = initializeCachedResult(
-            context.request, authset=authorization
-        )["Content"].copy()
+        result = get_cached_result(context.request, authset=authorization)[
+            "Content"
+        ].copy()
         result["objects"] = ContentFetchQueryset(
             fetch_by_id(result["objects"], content)
         )

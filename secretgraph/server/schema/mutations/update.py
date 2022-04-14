@@ -20,9 +20,9 @@ from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
-    initializeCachedResult,
+    get_cached_result,
+    get_cached_permissions,
     retrieve_allowed_objects,
-    check_permission,
 )
 from ..arguments import (
     AuthList,
@@ -52,20 +52,20 @@ class ClusterMutation:
     ) -> ClusterMutation:
         manage = retrieve_allowed_objects(
             info.context,
-            "manage",
             Cluster.objects.all(),
+            scope="manage",
             authset=authorization,
         )
         if cluster.get("featured") is not None:
-            if not check_permission(
-                info.context, "manage_featured", manage["objects"]
-            ):
+            if not get_cached_permissions(info.context, authset=authorization)[
+                "manage_featured"
+            ]:
                 del cluster["featured"]
 
         if cluster.get("groups") is not None:
-            if check_permission(
-                info.context, "manage_groups", manage["objects"]
-            ):
+            if get_cached_permissions(info.context, authset=authorization)[
+                "manage_groups"
+            ]:
                 cluster["groups"] = GlobalGroup.objects.filter(
                     name__in=cluster["groups"]
                 )
@@ -113,7 +113,7 @@ class ClusterMutation:
             _cluster_res = create_cluster_fn(
                 info.context, cluster, user=user, authset=authorization
             )(transaction.atomic)
-        initializeCachedResult(info.context, authset=authorization)
+        get_cached_result(info.context, authset=authorization)
         return cls(**_cluster_res)
 
 
@@ -203,5 +203,5 @@ class ContentMutation:
                     authset=authorization,
                 )(transaction.atomic)
             )
-        initializeCachedResult(info.context, authset=authorization)
+        get_cached_result(info.context, authset=authorization)
         return returnval
