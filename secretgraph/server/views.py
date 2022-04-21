@@ -1,7 +1,6 @@
 import base64
 import json
 import logging
-import pprint
 
 from django.conf import settings
 from django.core.paginator import Paginator
@@ -17,7 +16,7 @@ from django.http import (
 from django.shortcuts import resolve_url
 from django.urls import reverse
 from django.views.generic.edit import FormView
-from graphene_file_upload.django import FileUploadGraphQLView
+from strawberry.django.views import GraphQLView
 
 from .actions.view import ContentFetchQueryset
 from .forms import PreKeyForm, PushForm, UpdateForm
@@ -287,14 +286,15 @@ class ContentView(AllowCORSMixin, FormView):
         return response
 
 
-class CORSFileUploadGraphQLView(AllowCORSMixin, FileUploadGraphQLView):
-    def dispatch(self, request, *args, **kwargs):
-        if settings.DEBUG and "operations" in request.POST:
-            operations = json.loads(request.POST.get("operations", "{}"))
-            logger.debug(
-                "operations:\n%s\nmap:\n%s\nFILES:\n%s",
-                pprint.pformat(operations),
-                pprint.pformat(json.loads(request.POST.get("map", "{}"))),
-                pprint.pformat(request.FILES),
-            )
-        return super().dispatch(request, *args, **kwargs)
+class CORSFileUploadGraphQLView(AllowCORSMixin, GraphQLView):
+    pass
+    # def dispatch(self, request, *args, **kwargs):
+    #    if settings.DEBUG and "operations" in request.POST:
+    #        operations = json.loads(request.POST.get("operations", "{}"))
+    #        logger.debug(
+    #            "operations:\n%s\nmap:\n%s\nFILES:\n%s",
+    #            pprint.pformat(operations),
+    #            pprint.pformat(json.loads(request.POST.get("map", "{}"))),
+    #            pprint.pformat(request.FILES),
+    #        )
+    #    return super().dispatch(request, *args, **kwargs)

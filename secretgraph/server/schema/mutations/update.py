@@ -5,7 +5,6 @@ from typing import Optional
 
 import strawberry
 from strawberry_django_plus import relay
-from strawberry_django_plus import gql
 from strawberry.types import Info
 from django.conf import settings
 from django.db import transaction
@@ -35,12 +34,11 @@ from ..definitions import ClusterNode, ContentNode
 logger = logging.getLogger(__name__)
 
 
-@strawberry.type
+@strawberry.type()
 class ClusterMutation:
     cluster: ClusterNode
     writeok: bool
 
-    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
@@ -117,13 +115,12 @@ class ClusterMutation:
         return cls(**_cluster_res)
 
 
-@strawberry.type
+@strawberry.type()
 class ContentMutation:
 
     content: ContentNode
     writeok: bool
 
-    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,

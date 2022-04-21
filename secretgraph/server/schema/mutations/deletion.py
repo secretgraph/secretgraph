@@ -12,12 +12,8 @@ from strawberry.types import Info
 from strawberry_django_plus import relay
 
 from ...models import Cluster, Content
-from ...utils.arguments import AuthList
-from ...utils.auth import (
-    get_cached_permissions,
-    fetch_by_id,
-    ids_to_results,
-)
+from ...utils.auth import fetch_by_id, get_cached_permissions, ids_to_results
+from ..arguments import AuthList
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +22,6 @@ logger = logging.getLogger(__name__)
 class DeleteContentOrClusterMutation:
     latestDeletion: datetime
 
-    @relay.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,

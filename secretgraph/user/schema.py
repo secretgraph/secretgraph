@@ -16,9 +16,12 @@ from ..server.utils.auth import ids_to_results, retrieve_allowed_objects
 
 @strawberry.type
 class UserNode(relay.Node):
-    email: strawberry.auto()
-    username: strawberry.auto()
-    clusters: strawberry.auto()
+    email: str
+    username: str
+
+    # @gql.django.field
+    # def clusters(self) -> List[ClusterNode]:
+    #    return se
 
     @classmethod
     def resolve_id(cls, root):
@@ -37,7 +40,6 @@ class UserMutation(relay.Node):
     user = UserNode
     actionKey: Optional[str]
 
-    @relay.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,

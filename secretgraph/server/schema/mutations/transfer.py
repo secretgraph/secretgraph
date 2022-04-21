@@ -8,7 +8,7 @@ from typing import Optional, Annotated
 import strawberry
 from strawberry.scalars import JSON
 from strawberry.types import Info
-from strawberry_django_plus import relay, gql
+from strawberry_django_plus import relay
 from django.db import transaction
 
 from ....constants import TransferResult
@@ -33,7 +33,6 @@ class PushContentMutation:
     content: ContentNode
     actionKey: Optional[str]
 
-    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
@@ -82,7 +81,6 @@ class TransferMutation:
 
     content: Optional[ContentNode] = None
 
-    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,

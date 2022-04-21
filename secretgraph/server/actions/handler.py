@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from django.db.models import Q, Subquery
 from django.utils import timezone
-from graphql_relay import from_global_id
+from strawberry_django_plus import relay
 
 from ..models import Action, Cluster, Content
 from ... import constants
@@ -628,7 +628,7 @@ class ActionHandler:
             "exclude": {"Cluster": [], "Content": [], "Action": []},
         }
         for idtuple in action_dict.get("exclude") or []:
-            type_name, id = from_global_id(idtuple)
+            type_name, id = relay.from_base64(idtuple)
             result["exclude"][type_name].append(id)
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
@@ -704,7 +704,7 @@ class ActionHandler:
 
         for idtuple in action_dict.get("delete") or []:
             if ":" in idtuple:
-                type_name, id = from_global_id(idtuple)
+                type_name, id = relay.from_base64(idtuple)
                 if type_name not in {"Content", "Cluster"}:
                     raise ValueError("Invalid idtype")
                 result["delete"][type_name].append(id)
@@ -733,7 +733,7 @@ class ActionHandler:
             if isinstance(jsonob, str):
                 jsonob = json.loads(jsonob)
             newob = {}
-            type_name, idpart = from_global_id(jsonob["id"])
+            type_name, idpart = relay.from_base64(jsonob["id"])
             for name, field_type in get_valid_fields(type_name):
                 if name in jsonob:
                     if not isinstance(jsonob[name], field_type):

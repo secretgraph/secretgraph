@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 from typing import List, Optional
 import logging
 
 import strawberry
 from strawberry.types import Info
-from strawberry_django_plus import relay, gql
+from strawberry_django_plus import relay
 from django.db import transaction
+from ..shared import MetadataOperations
 
-from ....constants import MetadataOperations
 from ...actions.update import (
     update_metadata_fn,
     manage_actions_fn,
@@ -30,14 +32,13 @@ logger = logging.getLogger(__name__)
 class RegenerateFlexidMutation:
     updated: List[relay.GlobalID]
 
-    @gql.django.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
         info: Info,
         ids: List[relay.GlobalID],
         authorization: Optional[AuthList] = None,
-    ):
+    ) -> RegenerateFlexidMutation:
         if get_cached_permissions(info.context, authset=authorization)[
             "manage_update"
         ]:
@@ -75,7 +76,6 @@ class MarkMutation:
 
     markChanged: List[relay.GlobalID]
 
-    @relay.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
@@ -84,7 +84,7 @@ class MarkMutation:
         hidden: Optional[bool] = None,
         featured: Optional[bool] = None,
         authorization: Optional[AuthList] = None,
-    ):
+    ) -> MarkMutation:
         if featured is not None:
             if not get_cached_permissions(info.context, authset=authorization)[
                 "manage_featured"
@@ -114,7 +114,6 @@ class MetadataUpdateMutation:
 
     updated: List[relay.GlobalID]
 
-    @relay.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
@@ -125,7 +124,7 @@ class MetadataUpdateMutation:
         actions: Optional[List[ActionInput]] = None,
         operation: Optional[MetadataOperations] = MetadataOperations.append,
         authorization: Optional[AuthList] = None,
-    ):
+    ) -> MetadataUpdateMutation:
 
         if get_cached_permissions(info.context, authset=authorization)[
             "manage_update"

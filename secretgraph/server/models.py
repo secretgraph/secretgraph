@@ -7,6 +7,7 @@ import secrets
 from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
+from typing import Iterable
 
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
@@ -27,6 +28,10 @@ from .messages import (
 from .. import constants
 
 logger = logging.getLogger(__name__)
+
+
+class Signature:
+    signature: str
 
 
 def get_content_file_path(instance, filename) -> str:
@@ -150,7 +155,7 @@ class ContentManager(models.Manager):
 
 
 class Content(FlexidModel):
-    limited = False
+    limited: bool = False
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(
         blank=True, default=uuid4, db_column="update_id"
@@ -208,11 +213,13 @@ class Content(FlexidModel):
         return None
 
     @property
-    def link(self):
+    def link(self) -> str:
         # path to raw view
         return reverse("secretgraph:contents", kwargs={"id": self.flexid})
 
-    def signatures(self, hashAlgorithms=None, references=None):
+    def signatures(
+        self, hashAlgorithms=None, references=None
+    ) -> Iterable[Signature]:
         q = models.Q()
         q2 = models.Q()
         if references:
@@ -236,7 +243,7 @@ class Content(FlexidModel):
             ),
         )
 
-    def clean(self):
+    def clean(self) -> None:
         if "," in self.type:
             raise ValidationError(
                 {"type": "%s is an invalid type" % self.type}
@@ -270,7 +277,7 @@ class Content(FlexidModel):
                     }
                 )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Content: flexid(%s)>" % self.flexid
 
 
@@ -295,7 +302,7 @@ class ContentAction(models.Model):
             ),
         ]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<ContentAction: (%r:"%s")>' % (self.content, self.group)
 
 
@@ -420,7 +427,7 @@ class ContentReference(models.Model):
 
 
 class GlobalGroupManager(models.Manager):
-    def hidden(self, queryset=None):
+    def hidden(self, queryset=None) -> models.QuerySet[GlobalGroup]:
         if queryset is None:
             queryset = self.get_queryset()
         return queryset.filter(hidden=True)

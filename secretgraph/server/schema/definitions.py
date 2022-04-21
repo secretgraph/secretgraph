@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Annotated
 from datetime import datetime
 import strawberry
 from strawberry.types import Info
-from strawberry.fields import UUID
+from uuid import UUID
 from strawberry_django_plus import relay, gql
 from django.db.models import Subquery, Q
 from django.conf import settings
@@ -38,11 +38,11 @@ class RegisterUrl:
 @gql.django.type(Content, name="InjectedKey")
 class InjectedKeyNode(relay.Node):
 
-    link: gql.auto
-    hash: gql.auto = gql.django.field(field_name="contentHash")
+    link: str
+    hash: str = gql.django.field(field_name="contentHash")
 
-    @staticmethod
-    def resolve_id(root) -> str:
+    @classmethod
+    def resolve_id(cls, root) -> str:
         return root.flexid
 
 
@@ -67,28 +67,28 @@ class GlobalGroupNode(relay.Node):
         return self.properties.values_list("name", flat=True)
 
 
-@relay.type
+@gql.type()
 class SecretgraphConfig(relay.Node):
     groups: List[GlobalGroupNode] = gql.django.field()
 
-    @staticmethod
-    def resolve_id() -> str:
+    @classmethod
+    def resolve_id(cls) -> str:
         return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
 
     @classmethod
     def resolve_node(
         cls, *, info: Optional[Info] = None, node_id: str, required: bool
-    ):
+    ) -> SecretgraphConfig:
         return cls()
 
     @strawberry.field
     @staticmethod
-    def hashAlgorithms():
+    def hashAlgorithms() -> List[str]:
         return settings.SECRETGRAPH_HASH_ALGORITHMS
 
     @strawberry.field
     @staticmethod
-    def registerUrl():
+    def registerUrl() -> RegisterUrl:
         if getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) is not True:
             return False
         signup_url = getattr(settings, "SIGNUP_URL", None)
@@ -103,20 +103,11 @@ class SecretgraphConfig(relay.Node):
 
     @strawberry.field
     @staticmethod
-    def loginUrl():
+    def loginUrl() -> Optional[str]:
         login_url = getattr(settings, "LOGIN_URL", None)
         if login_url:
             return resolve_url(login_url)
         return None
-
-
-class FlexidMixin:
-    # exposed id is flexid
-    @staticmethod
-    def resolve_id(root):
-        if root.limited:
-            return None
-        return root.flexid
 
 
 @strawberry.type
@@ -242,20 +233,22 @@ class ContentReferenceNode(relay.Node):
 
     deleteRecursive: DeleteRecursive
 
-    @staticmethod
-    def resolve_id(root):
+    @classmethod
+    def resolve_id(cls, root) -> str:
         return f"{root.source.flexid}|{root.target.flexid}|{root.group}"
 
     @classmethod
     def resolve_node(
         cls,
+        node_id: str,
+        *,
         info: Info,
-        id: relay.GlobalID,
-    ):
+        required: bool = False,
+    ) -> ContentReferenceNode:
         result = get_cached_result(info.context)["Content"]
-        queryset = cls.get_queryset(cls._meta.model.objects, info)
+        queryset = ContentReference.objects.all()
         try:
-            source, target, group = id.split("|", 2)
+            source, target, group = id.node_id.split("|", 2)
             return queryset.get(
                 source__in=fetch_contents(
                     result["objects"], result["actions"], source, noFetch=True
@@ -265,10 +258,84 @@ class ContentReferenceNode(relay.Node):
                 ),
                 group=group,
             )
-        except cls._meta.model.DoesNotExist:
+        except ContentReference.DoesNotExist as exc:
+            if required:
+                raise exc
             return None
         except ValueError:
             return None
+
+    @classmethod
+    def resolve_connection(
+        cls,
+        *,
+        root: Content,
+        nodes: gql.django.Queryset[ContentReference],
+        info: Info,
+        # queryset
+        total_count: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        first: Optional[int] = None,
+        last: Optional[int] = None,
+        states: Optional[List[str]] = None,
+        includeTypes: Optional[List[str]] = None,
+        excludeTypes: Optional[List[str]] = None,
+        includeTags: Optional[List[str]] = None,
+        excludeTags: Optional[List[str]] = None,
+        contentHashes: Optional[List[str]] = None,
+        groups: Optional[List[str]] = None,
+        deleted: UseCriteria = UseCriteria.FALSE,
+    ):
+        if (
+            not isinstance(root, Content)
+            or root.limited
+            or root.cluster_id == 1
+        ):
+            return ContentReference.objects.none()
+        result = get_cached_result(info.context)["Content"]
+        query = result["objects"].exclude(hidden=True)
+        if deleted != UseCriteria.IGNORE:
+            query = query.filter(
+                markForDestruction__isnull=deleted == UseCriteria.FALSE
+            )
+        filterob = {}
+        if groups is not None:
+            filterob["group__in"] = groups
+        if info.field_name == "references":
+            filterob["target__in"] = fetch_contents(
+                query,
+                result["actions"],
+                states=states,
+                includeTypes=includeTypes,
+                excludeTypes=excludeTypes,
+                includeTags=includeTags,
+                excludeTags=excludeTags,
+                contentHashes=contentHashes,
+                noFetch=True,
+            )
+        else:
+            filterob["source__in"] = fetch_contents(
+                query,
+                result["actions"],
+                states=states,
+                includeTypes=includeTypes,
+                excludeTypes=excludeTypes,
+                includeTags=includeTags,
+                excludeTags=excludeTags,
+                contentHashes=contentHashes,
+                noFetch=True,
+            )
+        return relay.Connection.from_nodes(
+            nodes.filter(
+                **filterob,
+            ),
+            total_count=total_count,
+            before=before,
+            after=after,
+            first=first,
+            last=last,
+        )
 
     @gql.django.field
     def source(self, info: Info) -> ContentNode:
@@ -287,45 +354,8 @@ class ContentReferenceNode(relay.Node):
         ).first()
 
 
-class ContentReferenceConnectionField(DjangoConnectionField):
-    def __init__(self, of_type=ContentReferenceNode, *args, **kwargs):
-        kwargs.setdefault(
-            "states",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "includeTypes",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "excludeTypes",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "includeTags",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "excludeTags",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "contentHashes",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "groups",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "deleted",
-            UseCriteria(required=False, default_value=UseCriteria.FALSE),
-        )
-        super().__init__(of_type, *args, **kwargs)
-
-
 @gql.django.type(Content, name="Content")
-class ContentNode(ActionMixin, FlexidMixin, relay.Node):
+class ContentNode(ActionMixin, relay.Node):
     nonce: gql.auto
     updated: gql.auto
     contentHash: gql.auto
@@ -339,7 +369,7 @@ class ContentNode(ActionMixin, FlexidMixin, relay.Node):
 
     @gql.django.field()
     def tags(
-        self,
+        self: Content,
         info: Info,
         includeTags: Optional[List[str]] = None,
         excludeTags: Optional[List[str]] = None,
@@ -362,7 +392,9 @@ class ContentNode(ActionMixin, FlexidMixin, relay.Node):
 
     @gql.django.field()
     def signatures(
-        self, info: Info, includeAlgorithms: Optional[List[str]] = None
+        self: Content,
+        info: Info,
+        includeAlgorithms: Optional[List[str]] = None,
     ) -> List[ContentNode]:
         # authorization often cannot be used, but it is ok, we have cached then
         result = get_cached_result(info.context)["Content"]
@@ -372,7 +404,7 @@ class ContentNode(ActionMixin, FlexidMixin, relay.Node):
         )
 
     @gql.django.field()
-    def cluster(self, info: Info):
+    def cluster(self: Content, info: Info) -> ClusterNode:
         if self.limited:
             return None
         # authorization often cannot be used, but it is ok, we have cached then
@@ -386,83 +418,20 @@ class ContentNode(ActionMixin, FlexidMixin, relay.Node):
             res.limited = True
         return res
 
-    def availableActions(self, info: Info):
+    @gql.django.field()
+    def availableActions(self: Content, info: Info) -> List[ActionEntry]:
         if self.limited:
             return []
         return ActionMixin.availableActions(self, info)
 
-    #  TODO
-    references = ContentReferenceConnectionField(required=True)
-    referencedBy = ContentReferenceConnectionField(required=True)
+    references: relay.Connection[ContentReferenceNode] = relay.connection()
+    referencedBy: relay.Connection[ContentReferenceNode] = relay.connection()
 
-    def resolve_references(
-        self,
-        info,
-        authorization=None,
-        groups=None,
-        deleted=UseCriteria.FALSE,
-        **kwargs,
-    ):
-        if self.limited or self.cluster_id == 1:
-            return ContentReference.objects.none()
-        result = get_cached_result(info.context, authset=authorization)[
-            "Content"
-        ]
-        query = result["objects"].exclude(hidden=True)
-        if deleted != UseCriteria.IGNORE:
-            query = query.filter(
-                markForDestruction__isnull=deleted == UseCriteria.FALSE
-            )
-        return ContentReference.objects.filter(
-            source=self,
-            target__in=fetch_contents(
-                query,
-                result["actions"],
-                states=kwargs.get("states"),
-                includeTypes=kwargs.get("includeTypes"),
-                excludeTypes=kwargs.get("excludeTypes"),
-                includeTags=kwargs.get("includeTags"),
-                excludeTags=kwargs.get("excludeTags"),
-                contentHashes=kwargs.get("contentHashes"),
-                noFetch=True,
-            ),
-            **({} if groups is None else {"group__in": groups}),
-        )
-
-    def resolve_referencedBy(
-        self,
-        info,
-        authorization=None,
-        groups=None,
-        deleted=UseCriteria.FALSE,
-        **kwargs,
-    ):
-        if self.limited or self.cluster_id == 1:
-            return ContentReference.objects.none()
-        result = get_cached_result(info.context, authset=authorization)[
-            "Content"
-        ]
-        query = result["objects"].exclude(hidden=True)
-        if deleted != UseCriteria.IGNORE:
-            query = query.filter(
-                markForDestruction__isnull=deleted == UseCriteria.FALSE
-            )
-
-        return ContentReference.objects.filter(
-            target=self,
-            source__in=fetch_contents(
-                query,
-                result["actions"],
-                states=kwargs.get("states"),
-                includeTypes=kwargs.get("includeTypes"),
-                excludeTypes=kwargs.get("excludeTypes"),
-                includeTags=kwargs.get("includeTags"),
-                excludeTags=kwargs.get("excludeTags"),
-                contentHashes=kwargs.get("contentHashes"),
-                noFetch=True,
-            ),
-            **({} if groups is None else {"group__in": groups}),
-        )
+    @classmethod
+    def resolve_id(cls, root):
+        if root.limited:
+            return None
+        return root.flexid
 
     @classmethod
     def resolve_node(cls, info, id, authorization=None, **kwargs):
@@ -473,75 +442,46 @@ class ContentNode(ActionMixin, FlexidMixin, relay.Node):
             result["objects"], result["actions"], id=str(id)
         ).first()
 
-
-class ContentConnectionField(DjangoConnectionField):
-    def __init__(self, type=ContentNode, *args, subfield=False, **kwargs):
-        kwargs.setdefault(
-            "states",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "includeTypes",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "excludeTypes",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "includeTags",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "excludeTags",
-            graphene.List(
-                graphene.NonNull(graphene.String),
-                required=False,
-                description="Use id=xy for excluding content ids",
-            ),
-        )
-        kwargs.setdefault(
-            "contentHashes",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        if not subfield:
-            kwargs.setdefault(
-                "clusters", graphene.List(graphene.ID, required=False)
-            )
-            kwargs.setdefault(
-                "public",
-                UseCriteriaPublic(
-                    required=False, default_value=UseCriteriaPublic.IGNORE
-                ),
-            )
-            kwargs.setdefault(
-                "hidden",
-                UseCriteria(required=False, default_value=UseCriteria.FALSE),
-            )
-        kwargs.setdefault(
-            "deleted",
-            UseCriteria(required=False, default_value=UseCriteria.FALSE),
-        )
-        kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
-        kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
-        super().__init__(type, *args, **kwargs)
-
     @classmethod
-    def resolve_queryset(cls, connection, queryset, info, args):
-        public = args.get("public", UseCriteriaPublic.IGNORE)
-        deleted = args.get("deleted", UseCriteria.FALSE)
-        hidden = args.get("hidden", UseCriteria.FALSE)
+    def resolve_connection(
+        cls,
+        *,
+        nodes: Optional[gql.django.Queryset[Content]] = None,
+        info: Info,
+        # queryset
+        total_count: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        first: Optional[int] = None,
+        last: Optional[int] = None,
+        states: Optional[List[str]] = None,
+        includeTypes: Optional[List[str]] = None,
+        excludeTypes: Optional[List[str]] = None,
+        includeTags: Optional[List[str]] = None,
+        excludeTags: Annotated[
+            Optional[List[str]],
+            gql.argument(
+                description="Use id=xy for excluding clusters with content ids"
+            ),
+        ] = None,
+        contentHashes: Optional[List[str]] = None,
+        clusters: Optional[List[relay.GlobalID]] = None,
+        hidden: UseCriteria = UseCriteria.FALSE,
+        featured: UseCriteria = UseCriteria.IGNORE,
+        deleted: UseCriteria = UseCriteria.FALSE,
+        public: UseCriteriaPublic = UseCriteriaPublic.IGNORE,
+        minUpdated: Optional[datetime] = None,
+        maxUpdated: Optional[datetime] = None,
+    ):
+        if nodes is None:
+            nodes = Content.objects.all()
         result = get_cached_result(info.context)["Content"]
         # TODO: perm check for deleted and hidden
         if True:
             hidden = UseCriteria.FALSE
-        if isinstance(cls, Cluster):
-            clusters = [cls.flexid]
-        else:
-            clusters = args.get("clusters")
         if clusters:
-            queryset = fetch_by_id(
-                queryset,
+            nodes = fetch_by_id(
+                nodes,
                 clusters,
                 prefix="cluster__",
                 limit_ids=None,
@@ -553,29 +493,27 @@ class ContentConnectionField(DjangoConnectionField):
             # if no clusters are specified (e.g. root query)
             if public == UseCriteriaPublic.TRUE:
                 if not clusters:
-                    queryset = queryset.filter(
+                    nodes = nodes.filter(
                         state__in=constants.public_states,
                         cluster__public=True,
                     )
                 else:
-                    queryset = queryset.filter(
-                        state__in=constants.public_states
-                    )
+                    nodes = nodes.filter(state__in=constants.public_states)
             else:
-                queryset = queryset.exclude(state__in=constants.public_states)
+                nodes = nodes.exclude(state__in=constants.public_states)
         else:
             # only private or public with cluster public
-            queryset = queryset.filter(
+            nodes = nodes.filter(
                 ~Q(state__in=constants.public_states) | Q(cluster__public=True)
             )
 
         if deleted != UseCriteria.IGNORE:
-            queryset = queryset.filter(
+            nodes = nodes.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
         if hidden != UseCriteria.IGNORE:
-            queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
-        queryset = queryset.filter(
+            nodes = nodes.filter(hidden=hidden == UseCriteria.TRUE)
+        nodes = nodes.filter(
             id__in=Subquery(
                 result[
                     "objects_ignore_public"
@@ -585,43 +523,39 @@ class ContentConnectionField(DjangoConnectionField):
             )
         )
 
-        return fetch_contents(
-            queryset.distinct(),
-            result["actions"],
-            states=args.get("states"),
-            includeTypes=args.get("includeTypes"),
-            excludeTypes=args.get("excludeTypes"),
-            includeTags=args.get("includeTags"),
-            excludeTags=args.get("excludeTags"),
-            minUpdated=args.get("minUpdated"),
-            maxUpdated=args.get("maxUpdated"),
-            contentHashes=args.get("contentHashes"),
+        return relay.Connection.from_nodes(
+            fetch_contents(
+                nodes.distinct(),
+                result["actions"],
+                states=states,
+                includeTypes=includeTypes,
+                excludeTypes=excludeTypes,
+                includeTags=includeTags,
+                excludeTags=excludeTags,
+                minUpdated=minUpdated,
+                maxUpdated=maxUpdated,
+                contentHashes=contentHashes,
+            ),
+            total_count=total_count,
+            before=before,
+            after=after,
+            first=first,
+            last=last,
         )
 
 
 @gql.django.type(Cluster, name="Cluster")
-class ClusterNode(ActionMixin, FlexidMixin, relay.Node):
-    class Meta:
-        model = Cluster
-        name = "Cluster"
-        interfaces = (relay.Node,)
-        fields = ["public", "featured"]
-
-    contents = ContentConnectionField(required=True, subfield=True)
-    deleted: Optional[datetime]
-    updated: datetime
-    updateId: UUID
-    # MAYBE: reference user directly if possible
-    name: str
-    description: str
-    groups = graphene.List(graphene.NonNull(graphene.String), required=True)
+class ClusterNode(ActionMixin, relay.Node):
+    @classmethod
+    def resolve_id(cls, root) -> str:
+        if root.limited:
+            return None
+        return root.flexid
 
     @classmethod
     def resolve_node(cls, info: Info, id: relay.GlobalID, **kwargs):
         return fetch_clusters(
-            get_cached_result(info.context, authset=authorization)["Cluster"][
-                "objects"
-            ],
+            get_cached_result(info.context)["Cluster"]["objects"],
             ids=str(id),
         ).first()
 
@@ -636,6 +570,12 @@ class ClusterNode(ActionMixin, FlexidMixin, relay.Node):
         if self.limited:
             return None
         return self.public
+
+    @gql.django.field()
+    def updated(self) -> Optional[datetime]:
+        if self.limited:
+            return None
+        return self.updated
 
     @gql.django.field()
     def deleted(self) -> Optional[datetime]:
@@ -659,29 +599,25 @@ class ClusterNode(ActionMixin, FlexidMixin, relay.Node):
         return self.user
 
     @gql.django.field()
-    @staticmethod
-    def resolve_availableActions(self, info):
+    def availableActions(self, info: Info) -> List[ActionEntry]:
         if self.limited:
             return []
-        return ActionMixin.resolve_availableActions(self, info)
+        return ActionMixin.availableActions(self, info)
 
     @gql.django.field()
-    @staticmethod
-    def resolve_name(self, info):
+    def name(self) -> Optional[str]:
         if self.limited:
             return None
         return self.name
 
     @gql.django.field()
-    @staticmethod
-    def resolve_description(self, info):
+    def description(self) -> Optional[str]:
         if self.limited:
             return None
         return self.description
 
     @gql.django.field()
-    @staticmethod
-    def resolve_groups(self, info):
+    def groups(self, info) -> Optional[List[str]]:
         if self.limited:
             return None
         # remove hidden
@@ -690,109 +626,82 @@ class ClusterNode(ActionMixin, FlexidMixin, relay.Node):
             hidden
         )
 
-    def resolve_contents(self, info, **kwargs):
-        result = get_cached_result(
-            info.context, authset=kwargs.get("authorization")
-        )["Content"]
-        contents = result["objects"]
+    @gql.django.field()
+    def contents(
+        self,
+        info,
+        states: Optional[List[str]] = None,
+        includeTypes: Optional[List[str]] = None,
+        excludeTypes: Optional[List[str]] = None,
+        includeTags: Optional[List[str]] = None,
+        excludeTags: Annotated[
+            Optional[List[str]],
+            gql.argument(
+                description="Use id=xy for excluding clusters with content ids"
+            ),
+        ] = None,
+        contentHashes: Optional[List[str]] = None,
+        minUpdated: Optional[datetime] = None,
+        maxUpdated: Optional[datetime] = None,
+    ) -> relay.Connection[ContentNode]:
+        result = get_cached_result(info.context)["Content"]
+        contents = result["objects"].filter(hidden=False)
         if self.limited:
             contents = contents.annotate(limited=True)
-        return fetch_contents(
-            contents.filter(cluster_id=self.id),
-            result["actions"],
-            states=kwargs.get("states"),
-            includeTypes=["PublicKey"]
-            if self.limited
-            else kwargs.get("includeTypes"),
-            excludeTypes=kwargs.get("excludeTypes"),
-            includeTags=kwargs.get("tagsInclude"),
-            excludeTags=kwargs.get("tagsExclude"),
-            contentHashes=kwargs.get("contentHashes"),
+        return relay.Connection.from_nodes(
+            fetch_contents(
+                contents.filter(cluster_id=self.id),
+                result["actions"],
+                states=states,
+                includeTypes=["PublicKey"] if self.limited else includeTypes,
+                excludeTypes=excludeTypes,
+                includeTags=includeTags,
+                excludeTags=excludeTags,
+                contentHashes=contentHashes,
+            )
         )
-
-
-class ClusterConnectionField(DjangoConnectionField):
-    def __init__(self, type=ClusterNode, *args, **kwargs):
-        kwargs.setdefault(
-            "search",
-            graphene.String(
-                required=False,
-                description=("Search description and id"),
-            ),
-        )
-        kwargs.setdefault(
-            "states",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-
-        kwargs.setdefault(
-            "includeTypes",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "excludeTypes",
-            graphene.List(
-                graphene.NonNull(graphene.String),
-                required=False,
-            ),
-        )
-        kwargs.setdefault(
-            "includeTags",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "excludeTags",
-            graphene.List(
-                graphene.NonNull(graphene.String),
-                required=False,
-                description=(
-                    "Use id=xy for excluding clusters with content ids"
-                ),
-            ),
-        )
-        kwargs.setdefault(
-            "excludeIds",
-            graphene.List(
-                graphene.NonNull(graphene.String),
-                required=False,
-                description="For excluding clusters with ids",
-            ),
-        )
-        kwargs.setdefault(
-            "contentHashes",
-            graphene.List(graphene.NonNull(graphene.String), required=False),
-        )
-        kwargs.setdefault(
-            "ids", graphene.List(graphene.NonNull(graphene.ID), required=False)
-        )
-        kwargs.setdefault("user", graphene.ID(required=False))
-        kwargs.setdefault(
-            "public",
-            UseCriteriaPublic(
-                required=False, default_value=UseCriteriaPublic.IGNORE
-            ),
-        )
-        kwargs.setdefault(
-            "featured",
-            UseCriteria(required=False, default_value=UseCriteria.IGNORE),
-        )
-        kwargs.setdefault(
-            "deleted",
-            UseCriteria(required=False, default_value=UseCriteria.FALSE),
-        )
-        kwargs.setdefault("minUpdated", graphene.DateTime(required=False))
-        kwargs.setdefault("maxUpdated", graphene.DateTime(required=False))
-        super().__init__(type, *args, **kwargs)
 
     @classmethod
-    def resolve_queryset(cls, connection, queryset, info, args):
-        public = args.get("public", UseCriteriaPublic.IGNORE)
-        featured = args.get("featured", UseCriteria.IGNORE)
-        user = args.get("user")
-        deleted = args.get("deleted", UseCriteria.FALSE)
-        excludeIds = args.get("excludeIds")
-        ids = args.get("ids")
-        search = args.get("search")
+    def resolve_connection(
+        cls,
+        *,
+        nodes: Optional[gql.django.Queryset[Cluster]] = None,
+        info: Info,
+        # queryset
+        total_count: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        first: Optional[int] = None,
+        last: Optional[int] = None,
+        search: Annotated[
+            Optional[str],
+            gql.argument(description="Search description and id"),
+        ] = None,
+        states: Optional[List[str]] = None,
+        includeTypes: Optional[List[str]] = None,
+        excludeTypes: Optional[List[str]] = None,
+        includeTags: Optional[List[str]] = None,
+        excludeTags: Annotated[
+            Optional[List[str]],
+            gql.argument(
+                description="Use id=xy for excluding clusters with content ids"
+            ),
+        ] = None,
+        ids: Optional[List[str]] = None,
+        excludeIds: Annotated[
+            Optional[List[str]],
+            gql.argument(description="For excluding clusters with ids"),
+        ] = None,
+        contentHashes: Optional[List[str]] = None,
+        user: Optional[relay.GlobalID] = None,
+        featured: UseCriteria = UseCriteria.IGNORE,
+        deleted: UseCriteria = UseCriteria.FALSE,
+        public: UseCriteriaPublic = UseCriteriaPublic.IGNORE,
+        minUpdated: Optional[datetime] = None,
+        maxUpdated: Optional[datetime] = None,
+    ):
+        if not nodes:
+            nodes = Cluster.objects.all()
         if user:
             if not getattr(settings, "AUTH_USER_MODEL", None) and not getattr(
                 settings, "SECRETGRAPH_BIND_TO_USER", False
@@ -804,54 +713,57 @@ class ClusterConnectionField(DjangoConnectionField):
                     user = relay.from_base64(user)[1]
                 except Exception:
                     pass
-                queryset = queryset.filter(user__pk=user)
+                nodes = nodes.filter(user__pk=user)
 
         if search:
-            queryset = queryset.filter(
+            nodes = nodes.filter(
                 Q(flexid_cached__startswith=search)
                 | Q(name__icontains=search)
                 | Q(description__icontains=search)
             )
 
         if excludeIds is not None:
-            queryset = queryset.exclude(flexid_cached__in=excludeIds)
+            nodes = nodes.exclude(flexid_cached__in=excludeIds)
         if deleted != UseCriteria.IGNORE:
-            queryset = queryset.filter(
+            nodes = nodes.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
         if (
             public != UseCriteriaPublic.IGNORE
             and public != UseCriteriaPublic.TOKEN
         ):
-            queryset = queryset.filter(public=public == UseCriteriaPublic.TRUE)
+            nodes = nodes.filter(public=public == UseCriteriaPublic.TRUE)
         if featured != UseCriteria.IGNORE:
-            queryset = queryset.filter(featured=featured == UseCriteria.TRUE)
+            nodes = nodes.filter(featured=featured == UseCriteria.TRUE)
 
-        return fetch_clusters(
-            #  required for enforcing permissions
-            queryset.filter(
-                id__in=Subquery(
-                    get_cached_result(
-                        info.context, authset=args.get("authorization")
-                    )["Cluster"][
-                        "objects_ignore_public"
-                        if public == UseCriteriaPublic.TOKEN
-                        else "objects"
-                    ].values(
-                        "id"
+        return relay.Connection.from_nodes(
+            fetch_clusters(
+                #  required for enforcing permissions
+                nodes.filter(
+                    id__in=Subquery(
+                        get_cached_result(info.context)["Cluster"][
+                            "objects_ignore_public"
+                            if public == UseCriteriaPublic.TOKEN
+                            else "objects"
+                        ].values("id")
                     )
-                )
-            ).distinct(),
-            ids=ids,
-            limit_ids=None,
-            states=args.get("states"),
-            includeTypes=args.get("includeTypes"),
-            excludeTypes=args.get("excludeTypes"),
-            includeTags=args.get("includeTags"),
-            excludeTags=args.get("excludeTags"),
-            minUpdated=args.get("minUpdated"),
-            maxUpdated=args.get("maxUpdated"),
-            contentHashes=args.get("contentHashes"),
+                ).distinct(),
+                ids=ids,
+                limit_ids=None,
+                states=states,
+                includeTypes=includeTypes,
+                excludeTypes=excludeTypes,
+                includeTags=includeTags,
+                excludeTags=excludeTags,
+                minUpdated=minUpdated,
+                maxUpdated=maxUpdated,
+                contentHashes=contentHashes,
+            ),
+            total_count=total_count,
+            before=before,
+            after=after,
+            first=first,
+            last=last,
         )
 
 

@@ -11,13 +11,17 @@ def default_quota_user_remote():
     return getattr(settings, "SECRETGRAPH_USER_QUOTA_REMOTE", None)
 
 
-class QuotaUserBase():
+class QuotaUserBase:
     # optional quota
-    quota_local = models.PositiveIntegerField(
-        null=True, blank=True, default=default_quota_user_local,
-        help_text=_("Quota in Bytes, null for no limit")
+    quota_local: int = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        default=default_quota_user_local,
+        help_text=_("Quota in Bytes, null for no limit"),
     )
-    quota_remote = models.PositiveIntegerField(
-        null=True, blank=True, default=default_quota_user_remote,
-        help_text=_("Quota in Bytes, null for no limit")
+    quota_remote: int = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        default=default_quota_user_remote,
+        help_text=_("Quota in Bytes, null for no limit"),
     )

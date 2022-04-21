@@ -26,11 +26,6 @@ GRAPHENE = {
     "DJANGO_CHOICE_FIELD_ENUM_V3_NAMING": True,
 }
 
-if DEBUG:
-    GRAPHENE["MIDDLEWARE"].append(
-        "graphene_django.debug.DjangoDebugMiddleware"
-    )
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
@@ -44,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",  # required for user
     "django.contrib.contenttypes",  # required for auth
     "django.contrib.staticfiles",  # Required for GraphiQL
+    "strawberry.django",
 ]
 try:
     import django_extensions  # noqa: F401
