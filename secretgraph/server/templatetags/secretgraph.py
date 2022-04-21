@@ -103,6 +103,8 @@ def fetch_clusters(
         queryset = queryset.filter(featured=featured)
     if order_by:
         queryset = queryset.order_by(*order_by)
+    else:
+        queryset = queryset.order_by("flexid_cached")
     return Paginator(
         _fetch_clusters(
             queryset.distinct(),

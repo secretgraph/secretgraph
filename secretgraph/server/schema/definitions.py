@@ -48,19 +48,19 @@ class InjectedKeyNode(relay.Node):
 
 @gql.django.type(GlobalGroupProperty, name="GlobalGroupProperty")
 class GlobalGroupPropertyNode(relay.Node):
-    name: gql.auto
-    description: gql.auto
+    name: str
+    description: str
 
 
 @gql.django.type(GlobalGroup, name="GlobalGroup")
 class GlobalGroupNode(relay.Node):
 
-    name: gql.auto
-    description: gql.auto
-    hidden: gql.auto
-    matchUserGroup: gql.auto
-    clusters: gql.auto
-    injected_keys: gql.auto
+    name: str
+    description: str
+    hidden: bool
+    matchUserGroup: str
+    clusters: List[ClusterNode]
+    injected_keys: List[ContentNode]
 
     @gql.django.field(only=["properties"])
     def properties(self) -> List[str]:
@@ -228,8 +228,8 @@ class ActionMixin:
 class ContentReferenceNode(relay.Node):
     safe = False
 
-    group: gql.auto
-    extra: gql.auto
+    group: str
+    extra: str
 
     deleteRecursive: DeleteRecursive
 
@@ -356,12 +356,12 @@ class ContentReferenceNode(relay.Node):
 
 @gql.django.type(Content, name="Content")
 class ContentNode(ActionMixin, relay.Node):
-    nonce: gql.auto
-    updated: gql.auto
-    contentHash: gql.auto
-    updateId: gql.auto
-    type: gql.auto
-    state: gql.auto
+    nonce: str
+    updated: datetime
+    contentHash: str
+    updateId: UUID
+    type: str
+    state: str
     deleted: Optional[datetime] = gql.django.field(
         field_name="markForDestruction"
     )
@@ -617,7 +617,7 @@ class ClusterNode(ActionMixin, relay.Node):
         return self.description
 
     @gql.django.field()
-    def groups(self, info) -> Optional[List[str]]:
+    def groups(self, info: Info) -> Optional[List[str]]:
         if self.limited:
             return None
         # remove hidden
@@ -629,17 +629,12 @@ class ClusterNode(ActionMixin, relay.Node):
     @gql.django.field()
     def contents(
         self,
-        info,
+        info: Info,
         states: Optional[List[str]] = None,
         includeTypes: Optional[List[str]] = None,
         excludeTypes: Optional[List[str]] = None,
         includeTags: Optional[List[str]] = None,
-        excludeTags: Annotated[
-            Optional[List[str]],
-            gql.argument(
-                description="Use id=xy for excluding clusters with content ids"
-            ),
-        ] = None,
+        excludeTags: Optional[List[str]] = None,
         contentHashes: Optional[List[str]] = None,
         minUpdated: Optional[datetime] = None,
         maxUpdated: Optional[datetime] = None,

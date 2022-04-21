@@ -23,8 +23,9 @@ from .mutations import (
 )
 
 
+@strawberry.type
 class SecretgraphObject:
-    node = relay.node()
+    node: relay.Node = relay.node()
     config: SecretgraphConfig
     clusters: relay.Connection[Cluster]
     contents: relay.Connection[Content]
@@ -32,6 +33,7 @@ class SecretgraphObject:
 
 @strawberry.type
 class Query:
+    @strawberry.field
     @staticmethod
     def secretgraph(info: Info, authorization: AuthList) -> SecretgraphObject:
         get_cached_result(info.context, authset=authorization)
