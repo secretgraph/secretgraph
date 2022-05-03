@@ -1,0 +1,550 @@
+type ActionEntry {
+  keyHash: String!
+  type: String!
+  allowedTags: [String!]
+  trustedKeys: [String!]!
+}
+
+input ActionInput {
+  """Action definition, "delete" for action deletion"""
+  value: JSON!
+  existingHash: String = null
+  start: DateTime = null
+  stop: DateTime = null
+
+  """Action key for encrypting action (base64, 32 bytes)"""
+  key: String = null
+}
+
+type Cluster implements Node {
+  id: GlobalID!
+  availableActions: [ActionEntry!]!
+  deleted: DateTime
+  description: String
+  featured: Boolean
+
+  """cluster groups: groups for permissions and injected keys"""
+  groups: [String!]
+  name: String
+  public: Boolean
+  updateId: UUID
+  updated: DateTime
+  user: GlobalID
+}
+
+"""A connection to a list of items."""
+type ClusterConnection {
+  """Pagination data for this connection"""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection"""
+  edges: [ClusterEdge!]!
+
+  """Total quantity of existing nodes"""
+  totalCount: Int!
+}
+
+"""An edge in a connection."""
+type ClusterEdge {
+  """A cursor for use in pagination"""
+  cursor: String!
+
+  """The item at the end of the edge"""
+  node: Cluster!
+}
+
+input ClusterFilter {
+  user: GlobalID = null
+  search: String = null
+  states: [String!] = null
+  includeTypes: [String!] = null
+  excludeTypes: [String!] = null
+  includeTags: [String!] = null
+  excludeTags: [String!] = null
+  ids: [String!] = null
+  excludeIds: [String!] = null
+  contentHashes: [String!] = null
+  featured: UseCriteria = IGNORE
+  deleted: UseCriteria = FALSE
+  public: UseCriteriaPublic = IGNORE
+  minUpdated: DateTime = null
+  maxUpdated: DateTime = null
+}
+
+input ClusterInput {
+  name: String = null
+  description: String = null
+  public: Boolean = null
+  featured: Boolean = null
+  actions: [ActionInput!] = null
+  key: ContentKeyInput = null
+}
+
+type ClusterMutation {
+  cluster: Cluster!
+  writeok: Boolean!
+}
+
+type Content implements Node {
+  id: GlobalID!
+  nonce: String!
+  updated: DateTime!
+  contentHash: String!
+  updateId: UUID!
+  type: String!
+  state: String!
+  deleted: DateTime
+  link: String!
+  references(
+    """Returns the items in the list that come before the specified cursor."""
+    before: String = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    after: String = null
+
+    """Returns the first n items from the list."""
+    first: Int = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    last: Int = null
+    filters: ContentReferenceFilter
+  ): ContentReferenceConnection!
+  referencedBy(
+    """Returns the items in the list that come before the specified cursor."""
+    before: String = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    after: String = null
+
+    """Returns the first n items from the list."""
+    first: Int = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    last: Int = null
+    filters: ContentReferenceFilter
+  ): ContentReferenceConnection!
+  availableActions: [ActionEntry!]!
+  cluster: Cluster!
+  signatures(includeAlgorithms: [String!] = null): [Content!]!
+  tags(includeTags: [String!] = null, excludeTags: [String!] = null): [String!]!
+}
+
+"""A connection to a list of items."""
+type ContentConnection {
+  """Pagination data for this connection"""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection"""
+  edges: [ContentEdge!]!
+
+  """Total quantity of existing nodes"""
+  totalCount: Int!
+}
+
+"""An edge in a connection."""
+type ContentEdge {
+  """A cursor for use in pagination"""
+  cursor: String!
+
+  """The item at the end of the edge"""
+  node: Content!
+}
+
+input ContentFilter {
+  states: [String!] = null
+  includeTypes: [String!] = null
+  excludeTypes: [String!] = null
+  includeTags: [String!] = null
+
+  """Use id=xy for excluding contents with ids"""
+  excludeTags: [String!] = null
+  contentHashes: [String!] = null
+  clusters: [GlobalID!] = null
+  hidden: UseCriteria = FALSE
+  featured: UseCriteria = IGNORE
+  deleted: UseCriteria = FALSE
+  public: UseCriteriaPublic = IGNORE
+  minUpdated: DateTime = null
+  maxUpdated: DateTime = null
+}
+
+input ContentInput {
+  cluster: ID = null
+  key: ContentKeyInput = null
+  value: ContentValueInput = null
+  references: [ReferenceInput!] = null
+  contentHash: String = null
+}
+
+input ContentKeyInput {
+  """Cleartext public key in der format"""
+  publicKey: Upload = null
+
+  """Encrypted private key (requires nonce)"""
+  privateKey: Upload = null
+
+  """Metadata tags for private key"""
+  privateTags: [String!] = null
+
+  """Metadata tags for public key"""
+  publicTags: [String!] = null
+  privateActions: [String!] = null
+  publicActions: [String!] = null
+
+  """Nonce for private key (base64, 13 bytes)"""
+  nonce: String = null
+  publicState: String = null
+}
+
+type ContentMutation {
+  content: Content!
+  writeok: Boolean!
+}
+
+type ContentReference implements Node {
+  id: GlobalID!
+
+  """
+  ContentReference group: references are clustered in groups. They are used to signal different functions of the connection
+  """
+  group: String!
+  extra: String!
+  deleteRecursive: DeleteRecursive!
+  source: Content!
+  target: Content!
+}
+
+"""A connection to a list of items."""
+type ContentReferenceConnection {
+  """Pagination data for this connection"""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection"""
+  edges: [ContentReferenceEdge!]!
+
+  """Total quantity of existing nodes"""
+  totalCount: Int!
+}
+
+"""An edge in a connection."""
+type ContentReferenceEdge {
+  """A cursor for use in pagination"""
+  cursor: String!
+
+  """The item at the end of the edge"""
+  node: ContentReference!
+}
+
+input ContentReferenceFilter {
+  states: [String!] = null
+  includeTypes: [String!] = null
+  excludeTypes: [String!] = null
+  includeTags: [String!] = null
+  excludeTags: [String!] = null
+  contentHashes: [String!] = null
+  deleted: UseCriteria = FALSE
+  groups: [String!] = null
+}
+
+input ContentValueInput {
+  value: Upload = null
+  state: String = null
+  type: String = null
+  nonce: String = null
+  tags: [String!] = null
+  actions: [ActionInput!] = null
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+type DeleteContentOrClusterMutation {
+  latestDeletion: DateTime!
+}
+
+"""Specify policy for recursive deletions"""
+enum DeleteRecursive {
+  TRUE
+  FALSE
+  NO_GROUP
+}
+
+type GlobalGroup implements Node {
+  id: GlobalID!
+  name: String!
+  description: String!
+  hidden: Boolean!
+  matchUserGroup: String!
+
+  """cluster groups: groups for permissions and injected keys"""
+  clusters(filters: ClusterFilter): [Cluster!]!
+  injectedKeys: [InjectedKey!]!
+  properties: [GlobalGroupProperty!]!
+}
+
+type GlobalGroupProperty implements Node {
+  id: GlobalID!
+  name: String!
+  description: String!
+}
+
+"""
+The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"4"`) or integer (such as `4`) input value will be accepted as an ID.
+"""
+scalar GlobalID @specifiedBy(url: "https://relay.dev/graphql/objectidentification.htm")
+
+type InjectedKey implements Node {
+  id: GlobalID!
+  link: String!
+  hash: String!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
+"""Input data for `mutateAndGetPayload` mutation"""
+input MutateAndGetPayloadInput {
+  ids: [GlobalID!]!
+  authorization: [String!] = null
+}
+
+union MutateAndGetPayloadPayload = RegenerateFlexidMutation | OperationInfo
+
+"""Input data for `mutateCluster` mutation"""
+input MutateClusterInput {
+  cluster: ClusterInput!
+  id: GlobalID = null
+  updateId: ID = null
+  authorization: [String!] = null
+}
+
+union MutateClusterPayload = ClusterMutation | OperationInfo
+
+"""Input data for `mutateContent` mutation"""
+input MutateContentInput {
+  content: ContentInput!
+  id: GlobalID = null
+  updateId: ID = null
+  authorization: [String!] = null
+}
+
+union MutateContentPayload = ContentMutation | OperationInfo
+
+"""Input data for `mutatePushContent` mutation"""
+input MutatePushContentInput {
+  content: PushContentInput!
+  authorization: [String!] = null
+}
+
+union MutatePushContentPayload = PushContentMutation | OperationInfo
+
+"""Input data for `mutateTransfer` mutation"""
+input MutateTransferInput {
+  id: GlobalID!
+  url: String = null
+  key: String = null
+  headers: JSON = null
+  authorization: [String!] = null
+}
+
+union MutateTransferPayload = TransferMutation | OperationInfo
+
+type Mutation {
+  """
+  Supports creation or update of:
+    public key or key-pair (key): used for further encryption.
+    content (value): a content encrypted by public key except public
+  """
+  updateOrCreateContent(
+    """Input data for `mutateContent` mutation"""
+    input: MutateContentInput!
+  ): MutateContentPayload!
+
+  """Create a cluster, optionally initialize with a key-(pair)"""
+  updateOrCreateCluster(
+    """Input data for `mutateCluster` mutation"""
+    input: MutateClusterInput!
+  ): MutateClusterPayload!
+  deleteContentOrCluster: DeleteContentOrClusterMutation!
+  resetDeletionContentOrCluster: ResetDeletionContentOrClusterMutation!
+  regenerateFlexid(
+    """Input data for `mutateAndGetPayload` mutation"""
+    input: MutateAndGetPayloadInput!
+  ): MutateAndGetPayloadPayload!
+  updateMetadata(
+    """Input data for `mutateAndGetPayload` mutation"""
+    input: MutateAndGetPayloadInput!
+  ): MutateAndGetPayloadPayload!
+  updateMarks(
+    """Input data for `mutateAndGetPayload` mutation"""
+    input: MutateAndGetPayloadInput!
+  ): MutateAndGetPayloadPayload!
+  pushContent(
+    """Input data for `mutatePushContent` mutation"""
+    input: MutatePushContentInput!
+  ): MutatePushContentPayload!
+  transferContent(
+    """Input data for `mutateTransfer` mutation"""
+    input: MutateTransferInput!
+  ): MutateTransferPayload!
+}
+
+"""An object with a Globally Unique ID"""
+interface Node {
+  """The Globally Unique ID of this object"""
+  id: GlobalID!
+}
+
+"""Multiple messages returned by an operation."""
+type OperationInfo {
+  """List of messages returned by the operation."""
+  messages: [OperationMessage!]!
+}
+
+"""An error that happened while executing an operation."""
+type OperationMessage {
+  """The kind of this message."""
+  kind: OperationMessageKind!
+
+  """The error message."""
+  message: String!
+
+  """
+  The field that caused the error, or `null` if it isn't associated with any particular field.
+  """
+  field: String
+}
+
+"""The kind of the returned message."""
+enum OperationMessageKind {
+  INFO
+  WARNING
+  ERROR
+  PERMISSION
+  VALIDATION
+}
+
+"""Information to aid in pagination."""
+type PageInfo {
+  """When paginating forwards, are there more items?"""
+  hasNextPage: Boolean!
+
+  """When paginating backwards, are there more items?"""
+  hasPreviousPage: Boolean!
+
+  """When paginating backwards, the cursor to continue."""
+  startCursor: String
+
+  """When paginating forwards, the cursor to continue."""
+  endCursor: String
+}
+
+input PushContentInput {
+  parent: ID!
+  value: ContentValueInput!
+}
+
+type PushContentMutation {
+  content: Content!
+  actionKey: String
+}
+
+type Query {
+  secretgraph(authorization: [String!] = null): SecretgraphObject!
+  node(
+    """The ID of the object."""
+    id: GlobalID!
+  ): Node!
+}
+
+input ReferenceInput {
+  """Can be node id, direct id of content or hash of key"""
+  target: ID!
+  extra: String = null
+  group: String = null
+  deleteRecursive: DeleteRecursive = null
+}
+
+type RegenerateFlexidMutation {
+  updated: [GlobalID!]!
+}
+
+scalar RegisterUrl
+
+type ResetDeletionContentOrClusterMutation {
+  restored: [GlobalID!]!
+  mutateAndGetPayload(
+    """Input data for `mutateAndGetPayload` mutation"""
+    input: MutateAndGetPayloadInput!
+  ): ResetDeletionContentOrClusterMutation!
+}
+
+type SecretgraphConfig implements Node {
+  """The Globally Unique ID of this object"""
+  id: GlobalID!
+  groups: [GlobalGroup!]!
+  hashAlgorithms: [String!]!
+  registerUrl: RegisterUrl!
+  loginUrl: String
+}
+
+type SecretgraphObject {
+  node(
+    """The ID of the object."""
+    id: GlobalID!
+  ): Node
+  clusters(
+    """Returns the items in the list that come before the specified cursor."""
+    before: String = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    after: String = null
+
+    """Returns the first n items from the list."""
+    first: Int = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    last: Int = null
+    filters: ClusterFilter
+  ): ClusterConnection!
+  contents(
+    """Returns the items in the list that come before the specified cursor."""
+    before: String = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    after: String = null
+
+    """Returns the first n items from the list."""
+    first: Int = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    last: Int = null
+    filters: ContentFilter
+  ): ContentConnection!
+  config: SecretgraphConfig!
+}
+
+type TransferMutation {
+  content: Content
+}
+
+scalar UUID
+
+scalar Upload
+
+"""Specify criteria"""
+enum UseCriteria {
+  TRUE
+  FALSE
+  IGNORE
+}
+
+"""Specify criteria"""
+enum UseCriteriaPublic {
+  TRUE
+  FALSE
+  IGNORE
+  TOKEN
+}

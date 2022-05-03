@@ -1,4 +1,5 @@
 import strawberry
+from typing import Optional
 from strawberry_django_plus import relay, gql
 
 # from django.utils.translation import gettext_lazy as _
@@ -7,13 +8,18 @@ from strawberry.types import Info
 from .arguments import AuthList
 from ..utils.auth import get_cached_result
 from .definitions import (
-    Cluster,
-    Content,
+    ClusterNode,
+    ContentNode,
     SecretgraphConfig,
 )
 from .mutations import (
     ClusterMutation,
+    mutate_cluster,
     ContentMutation,
+    mutate_content,
+    mutate_push_content,
+    mutate_transfer,
+    TransferMutation,
     DeleteContentOrClusterMutation,
     MetadataUpdateMutation,
     PushContentMutation,
@@ -25,25 +31,27 @@ from .mutations import (
 
 @strawberry.type
 class SecretgraphObject:
-    node: relay.Node = relay.node()
-    config: SecretgraphConfig
-    clusters: relay.Connection[Cluster]
-    contents: relay.Connection[Content]
+    node: Optional[relay.Node] = gql.django.node()
+    clusters: relay.Connection[ClusterNode] = gql.django.connection()
+    contents: relay.Connection[ContentNode] = gql.django.connection()
+    config: SecretgraphConfig = strawberry.field(default=SecretgraphConfig())
 
 
 @strawberry.type
 class Query:
     @strawberry.field
     @staticmethod
-    def secretgraph(info: Info, authorization: AuthList) -> SecretgraphObject:
-        get_cached_result(info.context, authset=authorization)
-        return SecretgraphObject()
+    def secretgraph(
+        info: Info, authorization: Optional[AuthList] = None
+    ) -> SecretgraphObject:
+        get_cached_result(info.context.request, authset=authorization)
+        return SecretgraphObject
 
 
 @strawberry.type
 class Mutation:
     updateOrCreateContent: ContentMutation = gql.django.input_mutation(
-        ContentMutation.mutate_and_get_payload,
+        mutate_content,
         description=(
             "Supports creation or update of:\n"
             "  public key or key-pair (key): used for further encryption.\n"
@@ -52,13 +60,12 @@ class Mutation:
         ),
     )
     updateOrCreateCluster: ClusterMutation = gql.django.input_mutation(
-        ClusterMutation.mutate_and_get_payload,
+        mutate_cluster,
         description=(
             "Create a cluster, optionally initialize with a key-(pair)"
         ),
     )
 
-    (ClusterMutation.mutate_and_get_payload)
     deleteContentOrCluster: DeleteContentOrClusterMutation = (
         DeleteContentOrClusterMutation.mutate_and_get_payload
     )
@@ -75,5 +82,9 @@ class Mutation:
         MarkMutation.mutate_and_get_payload
     )
     pushContent: PushContentMutation = gql.django.input_mutation(
-        PushContentMutation.mutate_and_get_payload
+        mutate_push_content
+    )
+
+    transferContent: TransferMutation = gql.django.input_mutation(
+        mutate_transfer
     )

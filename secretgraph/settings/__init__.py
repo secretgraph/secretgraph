@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",  # required for auth
     "django.contrib.staticfiles",  # Required for GraphiQL
     "strawberry.django",
+    "strawberry_django_plus",
 ]
 try:
     import django_extensions  # noqa: F401

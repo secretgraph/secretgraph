@@ -14,13 +14,13 @@ class DeleteRecursive(Enum):
                 "Delete content when referenced content is deleted (default)"
             )
         ),
-    ] = constants.DeleteRecursive.TRUE
+    ] = constants.DeleteRecursive.TRUE.value
     FALSE: Annotated[
         str,
         strawberry.argument(
             description="Keep content when referenced content is deleted"
         ),
-    ] = constants.DeleteRecursive.FALSE
+    ] = constants.DeleteRecursive.FALSE.value
     NO_GROUP: Annotated[
         str,
         strawberry.argument(
@@ -29,7 +29,7 @@ class DeleteRecursive(Enum):
                 "no other reference with the same group is remaining"
             )
         ),
-    ] = constants.DeleteRecursive.NO_GROUP
+    ] = constants.DeleteRecursive.NO_GROUP.value
 
 
 def UseCriteria_desc(v):
@@ -59,24 +59,24 @@ def UseCriteria_desc(v):
 # TODO annotate fields with description as soon as possible
 @strawberry.enum(description="Specify criteria")
 class UseCriteria(Enum):
-    TRUE = constants.UseCriteria.TRUE
-    FALSE = constants.UseCriteria.FALSE
-    IGNORE = constants.UseCriteria.IGNORE
+    TRUE = constants.UseCriteria.TRUE.value
+    FALSE = constants.UseCriteria.FALSE.value
+    IGNORE = constants.UseCriteria.IGNORE.value
 
 
 # TODO annotate fields with description as soon as possible
 @strawberry.enum(description="Specify criteria")
 class UseCriteriaPublic(Enum):
-    TRUE = constants.UseCriteriaPublic.TRUE
-    FALSE = constants.UseCriteriaPublic.FALSE
-    IGNORE = constants.UseCriteriaPublic.IGNORE
+    TRUE = constants.UseCriteriaPublic.TRUE.value
+    FALSE = constants.UseCriteriaPublic.FALSE.value
+    IGNORE = constants.UseCriteriaPublic.IGNORE.value
     TOKEN: Annotated[
         str, strawberry.argument(description="Check only token")
-    ] = constants.UseCriteriaPublic.TOKEN
+    ] = constants.UseCriteriaPublic.TOKEN.value
 
 
 @strawberry.enum
 class MetadataOperations(Enum):
-    append = constants.MetadataOperations.append
-    remove = constants.MetadataOperations.remove
-    replace = constants.MetadataOperations.replace
+    append = constants.MetadataOperations.append.value
+    remove = constants.MetadataOperations.remove.value
+    replace = constants.MetadataOperations.replace.value

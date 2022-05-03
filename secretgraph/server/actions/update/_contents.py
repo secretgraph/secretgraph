@@ -82,7 +82,7 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "value": key_obj["publicKey"],
             "type": "PublicKey",
             "state": publicState,
-            "tags": chain(hashes_tags, key_obj.get("publicTags", [])),
+            "tags": chain(hashes_tags, key_obj.get("publicTags") or []),
             "contentHash": hashes[0],
             "actions": key_obj.get("publicActions"),
         },
@@ -91,7 +91,7 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "value": key_obj["privateKey"],
             "type": "PrivateKey",
             "state": "internal",
-            "tags": chain(hashes_tags, key_obj.get("privateTags", [])),
+            "tags": chain(hashes_tags, key_obj.get("privateTags") or []),
             "contentHash": None,
             "actions": key_obj.get("privateActions"),
         }

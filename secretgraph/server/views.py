@@ -44,6 +44,15 @@ class AllowCORSMixin(object):
         return response
 
 
+class AsyncAllowCORSMixin(AllowCORSMixin):
+    async def dispatch(self, request, *args, **kwargs):
+        response = await super(AllowCORSMixin, self).dispatch(
+            request, *args, **kwargs
+        )
+        self.add_cors_headers(response)
+        return response
+
+
 class ContentView(AllowCORSMixin, FormView):
     template_name = "secretgraph/content_form.html"
     action = "view"

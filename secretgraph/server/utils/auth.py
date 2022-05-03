@@ -286,10 +286,11 @@ def fetch_by_id(
     check_content_hash=False,
     limit_ids=1,
 ):
-    if isinstance(flexids, str):
+    if isinstance(flexids, (str, relay.GlobalID)):
         flexids = [flexids]
     elif limit_ids:
         flexids = flexids[:limit_ids]
+    flexids = list(map(str, flexids))
     if not flexids:
         raise ValueError("No id specified")
     filters = models.Q(**{f"{prefix}flexid_cached__in": flexids}) | models.Q(

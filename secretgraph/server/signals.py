@@ -1,7 +1,6 @@
 from itertools import product, islice
 import uuid
 
-from strawberry_django_plus.relay import to_base64
 from django.db import transaction, models
 from django.db.models.functions import Length
 from django.db.utils import IntegrityError
@@ -87,6 +86,7 @@ def deleteEncryptedFileCb(sender, instance, **kwargs):
 
 
 def generateFlexid(sender, instance, force=False, **kwargs):
+    from strawberry_django_plus.relay import to_base64
     from .models import Cluster, Content
 
     if not instance.flexid or not instance.flexid_cached or force:

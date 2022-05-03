@@ -100,7 +100,7 @@ def manage_actions_fn(request, obj, actionlist, authset=None):
         actionObj.value = aesgcm.encrypt(
             nonce, json.dumps(action_value).encode("utf-8"), None
         )
-        actionObj.start = action.get("start", timezone.now())
+        actionObj.start = action.get("start") or timezone.now()
         actionObj.stop = action.get("stop", None)
         if maxLifetime:
             maxStop = actionObj.start + maxLifetime

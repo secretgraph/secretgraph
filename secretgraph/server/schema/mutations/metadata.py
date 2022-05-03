@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Optional
+from dataclasses import asdict
 import logging
 
 import strawberry
@@ -39,7 +40,7 @@ class RegenerateFlexidMutation:
         ids: List[relay.GlobalID],
         authorization: Optional[AuthList] = None,
     ) -> RegenerateFlexidMutation:
-        if get_cached_permissions(info.context, authset=authorization)[
+        if get_cached_permissions(info.context.request, authset=authorization)[
             "manage_update"
         ]:
             results = {
@@ -56,7 +57,7 @@ class RegenerateFlexidMutation:
             }
         else:
             results = ids_to_results(
-                info.context,
+                info.context.request,
                 ids,
                 (Content, Cluster),
                 "update",
@@ -86,14 +87,14 @@ class MarkMutation:
         authorization: Optional[AuthList] = None,
     ) -> MarkMutation:
         if featured is not None:
-            if not get_cached_permissions(info.context, authset=authorization)[
-                "manage_featured"
-            ]:
+            if not get_cached_permissions(
+                info.context.request, authset=authorization
+            )["manage_featured"]:
                 featured = None
         if hidden is not None:
-            if not get_cached_permissions(info.context, authset=authorization)[
-                "manage_hidden"
-            ]:
+            if not get_cached_permissions(
+                info.context.request, authset=authorization
+            )["manage_hidden"]:
                 hidden = None
         contents = Content.objects.none()
         clusters = Cluster.objects.none()
@@ -125,20 +126,26 @@ class MetadataUpdateMutation:
         operation: Optional[MetadataOperations] = MetadataOperations.append,
         authorization: Optional[AuthList] = None,
     ) -> MetadataUpdateMutation:
+        if actions:
+            actions = asdict(actions)
 
-        if get_cached_permissions(info.context, authset=authorization)[
+        if get_cached_permissions(info.context.request, authset=authorization)[
             "manage_update"
         ]:
             contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         else:
             result = ids_to_results(
-                info.context, ids, Content, "update", authset=authorization
+                info.context.request,
+                ids,
+                Content,
+                "update",
+                authset=authorization,
             )["Content"]
         requests = []
         for content_obj in result.objects.all():
             requests.append(
                 update_metadata_fn(
-                    info.context,
+                    info.context.request,
                     content_obj,
                     state=state,
                     tags=tags,
@@ -149,7 +156,7 @@ class MetadataUpdateMutation:
             if actions:
                 requests.append(
                     manage_actions_fn(
-                        info.context,
+                        info.context.request,
                         content_obj,
                         actions,
                         authset=authorization,

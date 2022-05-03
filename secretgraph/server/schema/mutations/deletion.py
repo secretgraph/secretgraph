@@ -32,14 +32,14 @@ class DeleteContentOrClusterMutation:
     ) -> DeleteContentOrClusterMutation:
         now = timezone.now()
 
-        if get_cached_permissions(info.context, authset=authorization)[
+        if get_cached_permissions(info.context.request, authset=authorization)[
             "manage_deletion"
         ]:
             contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
             clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
         else:
             results = ids_to_results(
-                info.context,
+                info.context.request,
                 ids,
                 (Content, Cluster),
                 "delete",
@@ -93,13 +93,13 @@ class ResetDeletionContentOrClusterMutation:
         authorization: Optional[AuthList] = None,
     ) -> ResetDeletionContentOrClusterMutation:
         if get_cached_permissions(
-            info.context["manage_deletion"], authset=authorization
+            info.context.request["manage_deletion"], authset=authorization
         ):
             contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
             clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
         else:
             results = ids_to_results(
-                info.context,
+                info.context.request,
                 ids,
                 (Content, Cluster),
                 "delete",
@@ -120,11 +120,12 @@ class ResetDeletionContentOrClusterMutation:
         )
         clusters.update(markForDestruction=None)
         return cls(
-            restored=map(
-                lambda x: relay.to_base64(type(x).__name__, x.flexid),
-                chain(
-                    contents.filter(id__in=Subquery(contents.values("id"))),
-                    clusters.filter(id__in=Subquery(clusters.values("id"))),
-                ),
-            )
+            restored=chain(
+                contents.filter(
+                    id__in=Subquery(contents.values("id"))
+                ).values_list("flexid_cached", flat=True),
+                clusters.filter(
+                    id__in=Subquery(clusters.values("id"))
+                ).values_list("flexid_cached", flat=True),
+            ),
         )

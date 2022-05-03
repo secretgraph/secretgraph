@@ -14,7 +14,7 @@ export const serverConfigQuery = gql`
                         description
                     }
                     description
-                    injected_keys {
+                    injectedKeys {
                         id
                         link
                         hash

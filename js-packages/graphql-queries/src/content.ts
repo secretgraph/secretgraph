@@ -50,8 +50,10 @@ export const contentFeedQuery = gql`
                         state
                         tags(includeTags: $includeTags)
                         references(
-                            groups: ["key", "signature"]
-                            includeTags: $include
+                            filters: {
+                                groups: ["key", "signature"]
+                                includeTags: $include
+                            }
                         ) {
                             edges {
                                 node {
@@ -107,15 +109,17 @@ export const createContentMutation = gql`
                 authorization: $authorization
             }
         ) {
-            content {
-                id
-                nonce
-                link
-                state
-                type
-                updateId
+            ... on ContentMutation {
+                content {
+                    id
+                    nonce
+                    link
+                    state
+                    type
+                    updateId
+                }
+                writeok
             }
-            writeok
         }
     }
 `
@@ -155,15 +159,17 @@ export const createKeysMutation = gql`
                 authorization: $authorization
             }
         ) {
-            content {
-                id
-                nonce
-                link
-                state
-                type
-                updateId
+            ... on ContentMutation {
+                content {
+                    id
+                    nonce
+                    link
+                    state
+                    type
+                    updateId
+                }
+                writeok
             }
-            writeok
         }
     }
 `
@@ -203,15 +209,17 @@ export const updateKeyMutation = gql`
                 authorization: $authorization
             }
         ) {
-            content {
-                id
-                nonce
-                link
-                type
-                state
-                updateId
+            ... on ContentMutation {
+                content {
+                    id
+                    nonce
+                    link
+                    type
+                    state
+                    updateId
+                }
+                writeok
             }
-            writeok
         }
     }
 `
@@ -251,15 +259,17 @@ export const updateContentMutation = gql`
                 authorization: $authorization
             }
         ) {
-            content {
-                id
-                nonce
-                link
-                type
-                state
-                updateId
+            ... on ContentMutation {
+                content {
+                    id
+                    nonce
+                    link
+                    type
+                    state
+                    updateId
+                }
+                writeok
             }
-            writeok
         }
     }
 `
@@ -272,7 +282,7 @@ export const findPublicKeyQuery = gql`
                     id
                     type
                     state
-                    references(groups: ["public_key"]) {
+                    references(filters: { groups: ["public_key"] }) {
                         edges {
                             node {
                                 target {
@@ -322,9 +332,11 @@ export const keysRetrievalQuery = gql`
                         id
                     }
                     references(
-                        groups: ["signature"]
-                        includeTags: $keyhashes
-                        deleted: FALSE
+                        filters: {
+                            groups: ["signature"]
+                            includeTags: $keyhashes
+                            deleted: FALSE
+                        }
                     ) {
                         edges {
                             node {
@@ -338,7 +350,7 @@ export const keysRetrievalQuery = gql`
                             }
                         }
                     }
-                    referencedBy(groups: ["public_key"]) {
+                    referencedBy(filters: { groups: ["public_key"] }) {
                         edges {
                             node {
                                 extra
@@ -352,8 +364,10 @@ export const keysRetrievalQuery = gql`
                                     type
                                     tags
                                     references(
-                                        groups: ["key"]
-                                        includeTags: $keyhashes
+                                        filters: {
+                                            groups: ["key"]
+                                            includeTags: $keyhashes
+                                        }
                                     ) {
                                         edges {
                                             node {
@@ -410,8 +424,10 @@ export const contentRetrievalQuery = gql`
                         id
                     }
                     references(
-                        groups: ["key", "signature"]
-                        includeTags: $keyhashes
+                        filters: {
+                            groups: ["key", "signature"]
+                            includeTags: $keyhashes
+                        }
                     ) {
                         edges {
                             node {
@@ -455,7 +471,7 @@ export const findConfigQuery = gql`
                         link
                         tags
                         updateId
-                        references(groups: ["key"]) {
+                        references(filters: { groups: ["key"] }) {
                             edges {
                                 node {
                                     extra
@@ -463,7 +479,9 @@ export const findConfigQuery = gql`
                                         tags(includeTags: ["key_hash="])
                                         contentHash
                                         link
-                                        referencedBy(groups: ["public_key"]) {
+                                        referencedBy(
+                                            filters: { groups: ["public_key"] }
+                                        ) {
                                             edges {
                                                 node {
                                                     extra
@@ -500,7 +518,7 @@ export const getContentConfigurationQuery = gql`
                 hashAlgorithms
                 groups {
                     name
-                    injected_keys {
+                    injectedKeys {
                         id
                         link
                         hash

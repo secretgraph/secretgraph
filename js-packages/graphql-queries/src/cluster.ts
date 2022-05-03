@@ -72,7 +72,7 @@ export const getClusterConfigurationQuery = gql`
                 registerUrl
                 groups {
                     name
-                    injected_keys {
+                    injectedKeys {
                         id
                         link
                         hash
@@ -104,7 +104,7 @@ export const getClusterQuery = gql`
                 hashAlgorithms
                 groups {
                     name
-                    injected_keys {
+                    injectedKeys {
                         id
                         link
                         hash
@@ -165,22 +165,24 @@ export const createClusterMutation = gql`
                 authorization: $authorization
             }
         ) {
-            cluster {
-                id
-                groups
-                name
-                description
-                public
-                featured
-                updateId
-                availableActions {
-                    keyHash
-                    type
-                    trustedKeys
-                    allowedTags
+            ... on ClusterMutation {
+                cluster {
+                    id
+                    groups
+                    name
+                    description
+                    public
+                    featured
+                    updateId
+                    availableActions {
+                        keyHash
+                        type
+                        trustedKeys
+                        allowedTags
+                    }
                 }
+                writeok
             }
-            writeok
         }
     }
 `
@@ -210,22 +212,24 @@ export const updateClusterMutation = gql`
                 authorization: $authorization
             }
         ) {
-            cluster {
-                id
-                groups
-                name
-                description
-                updateId
-                public
-                featured
-                availableActions {
-                    keyHash
-                    type
-                    trustedKeys
-                    allowedTags
+            ... on ClusterMutation {
+                cluster {
+                    id
+                    groups
+                    name
+                    description
+                    updateId
+                    public
+                    featured
+                    availableActions {
+                        keyHash
+                        type
+                        trustedKeys
+                        allowedTags
+                    }
                 }
+                writeok
             }
-            writeok
         }
     }
 `

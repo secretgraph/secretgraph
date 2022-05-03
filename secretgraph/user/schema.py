@@ -1,4 +1,5 @@
 import strawberry
+from strawberry.types import Info
 from strawberry_django_plus import relay
 from typing import Optional
 from datetime import timedelta as td
@@ -43,17 +44,16 @@ class UserMutation(relay.Node):
     @classmethod
     def mutate_and_get_payload(
         cls,
-        root,
-        info,
+        info: Info,
         id: Optional[relay.GlobalID] = None,
         user: Optional[UserInput] = None,
     ):
         if id:
             if not user:
                 raise ValueError()
-            result = ids_to_results(info.context, id, Cluster, "manage")[
-                "Cluster"
-            ]
+            result = ids_to_results(
+                info.context.request, id, Cluster, "manage"
+            )["Cluster"]
             cluster_obj = result["objects"].first()
             if not cluster_obj:
                 raise ValueError()
@@ -62,14 +62,14 @@ class UserMutation(relay.Node):
         else:
             user = None
             manage = retrieve_allowed_objects(
-                info.context, Cluster.actions.all(), scope="manage"
+                info.context.request, Cluster.actions.all(), scope="manage"
             )["objects"].first()
 
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
                 if manage:
                     admin_user = manage.user
                 if not admin_user:
-                    admin_user = getattr(info.context, "user", None)
+                    admin_user = getattr(info.context.request, "user", None)
                 if not admin_user.is_authenticated:
                     raise ValueError("Must be logged in")
             elif (
@@ -84,9 +84,9 @@ class UserMutation(relay.Node):
             ):
                 raise ValueError("Cannot register new cluster")
             user_obj = get_user_model().create_user()
-            action_key = create_cluster_fn(info.context, None, user_obj)(
-                transaction.atomic
-            )[1]
+            action_key = create_cluster_fn(
+                info.context.request, None, user_obj
+            )(transaction.atomic)[1]
             return cls(user=user_obj, actionKey=action_key)
 
 
@@ -102,7 +102,7 @@ class DeleteUserMutation(relay.Node):
         Content.objects.filter(markForDestruction__lte=now).delete()
         user = get_user_model().objects.get(pk=id.node_id)
         result = retrieve_allowed_objects(
-            info.context, Cluster.actions.all(), scope="manage"
+            info.context.request, Cluster.actions.all(), scope="manage"
         )
         if user.clusters.exclude(
             id__in=result["objects"].values_list("id", flat=True)

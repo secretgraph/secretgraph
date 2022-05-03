@@ -1,5 +1,5 @@
 module.exports = {
     service: {
-        localSchemaFile: './schema.json',
+        localSchemaFile: './schema.graphql',
     },
 }
