@@ -29,7 +29,7 @@ type Cluster implements Node {
   public: Boolean
   updateId: UUID
   updated: DateTime
-  user: GlobalID
+  user: ID
 }
 
 """A connection to a list of items."""
@@ -54,7 +54,7 @@ type ClusterEdge {
 }
 
 input ClusterFilter {
-  user: GlobalID = null
+  user: ID = null
   search: String = null
   states: [String!] = null
   includeTypes: [String!] = null
@@ -159,7 +159,7 @@ input ContentFilter {
   """Use id=xy for excluding contents with ids"""
   excludeTags: [String!] = null
   contentHashes: [String!] = null
-  clusters: [GlobalID!] = null
+  clusters: [ID!] = null
   hidden: UseCriteria = FALSE
   featured: UseCriteria = IGNORE
   deleted: UseCriteria = FALSE
@@ -306,7 +306,7 @@ scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/fi
 
 """Input data for `mutateAndGetPayload` mutation"""
 input MutateAndGetPayloadInput {
-  ids: [GlobalID!]!
+  ids: [ID!]!
   authorization: [String!] = null
 }
 
@@ -315,7 +315,7 @@ union MutateAndGetPayloadPayload = RegenerateFlexidMutation | OperationInfo
 """Input data for `mutateCluster` mutation"""
 input MutateClusterInput {
   cluster: ClusterInput!
-  id: GlobalID = null
+  id: ID = null
   updateId: ID = null
   authorization: [String!] = null
 }
@@ -325,7 +325,7 @@ union MutateClusterPayload = ClusterMutation | OperationInfo
 """Input data for `mutateContent` mutation"""
 input MutateContentInput {
   content: ContentInput!
-  id: GlobalID = null
+  id: ID = null
   updateId: ID = null
   authorization: [String!] = null
 }
@@ -342,7 +342,7 @@ union MutatePushContentPayload = PushContentMutation | OperationInfo
 
 """Input data for `mutateTransfer` mutation"""
 input MutateTransferInput {
-  id: GlobalID!
+  id: ID!
   url: String = null
   key: String = null
   headers: JSON = null
@@ -468,13 +468,13 @@ input ReferenceInput {
 }
 
 type RegenerateFlexidMutation {
-  updated: [GlobalID!]!
+  updated: [ID!]!
 }
 
 scalar RegisterUrl
 
 type ResetDeletionContentOrClusterMutation {
-  restored: [GlobalID!]!
+  restored: [ID!]!
   mutateAndGetPayload(
     """Input data for `mutateAndGetPayload` mutation"""
     input: MutateAndGetPayloadInput!

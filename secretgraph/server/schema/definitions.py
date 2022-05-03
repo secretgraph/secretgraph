@@ -7,6 +7,7 @@ from uuid import UUID
 from strawberry_django_plus import relay, gql
 from django.db.models import Subquery, Q, QuerySet
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.shortcuts import resolve_url
 
 from ... import constants
@@ -462,7 +463,7 @@ class ContentFilter:
         description="Use id=xy for excluding contents with ids",
     )
     contentHashes: Optional[List[str]] = None
-    clusters: Optional[List[relay.GlobalID]] = None
+    clusters: Optional[List[strawberry.ID]] = None
     hidden: UseCriteria = UseCriteria.FALSE
     featured: UseCriteria = UseCriteria.IGNORE
     deleted: UseCriteria = UseCriteria.FALSE
@@ -690,7 +691,7 @@ class ContentNode(relay.Node):
 
 @strawberry.django.filters.filter(Cluster)
 class ClusterFilter:
-    user: Optional[relay.GlobalID] = None
+    user: Optional[strawberry.ID] = None
     search: Optional[str] = gql.field(
         default=None, description="Search description and id"
     )
@@ -828,13 +829,13 @@ class ClusterNode(relay.Node):
         return self.updateId
 
     @gql.django.field()
-    def user(self) -> Optional[relay.GlobalID]:
+    def user(self) -> Optional[strawberry.ID]:
         if self.limited:
             return None
         if not hasattr(self, "user"):
             return None
         #
-        return self.user
+        return relay.to_base64(get_user_model(), self.user_id)
 
     @gql.django.field(only=["id", "cluster_id"])
     def availableActions(self, info: Info) -> List[ActionEntry]:

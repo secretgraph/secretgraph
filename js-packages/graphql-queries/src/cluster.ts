@@ -16,15 +16,17 @@ export const clusterFeedQuery = gql`
     ) {
         clusters: secretgraph(authorization: $authorization) {
             clusters(
-                includeTypes: $types
-                excludeTypes: ["Config", "PrivateKey"]
-                states: $states
-                includeTags: $include
-                excludeTags: $exclude
-                excludeIds: $excludeIds
-                deleted: $deleted
-                public: $public
-                search: $search
+                filters: {
+                    includeTypes: $types
+                    excludeTypes: ["Config", "PrivateKey"]
+                    states: $states
+                    includeTags: $include
+                    excludeTags: $exclude
+                    excludeIds: $excludeIds
+                    deleted: $deleted
+                    public: $public
+                    search: $search
+                }
                 first: $count
                 after: $cursor
             )

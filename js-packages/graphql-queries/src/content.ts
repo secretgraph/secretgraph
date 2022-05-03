@@ -15,14 +15,16 @@ export const contentFeedQuery = gql`
     ) {
         contents: secretgraph(authorization: $authorization) {
             contents(
-                includeTypes: $types
-                excludeTypes: ["Config", "PrivateKey"]
-                states: $states
-                clusters: $clusters
-                includeTags: $include
-                excludeTags: $exclude
-                deleted: $deleted
-                public: $public
+                filters: {
+                    includeTypes: $types
+                    excludeTypes: ["Config", "PrivateKey"]
+                    states: $states
+                    clusters: $clusters
+                    includeTags: $include
+                    excludeTags: $exclude
+                    deleted: $deleted
+                    public: $public
+                }
                 first: $count
                 after: $cursor
             )
@@ -458,11 +460,13 @@ export const findConfigQuery = gql`
                 hashAlgorithms
             }
             contents(
-                public: FALSE
-                deleted: FALSE
-                clusters: [$cluster]
-                includeTypes: ["Config"]
-                contentHashes: $contentHashes
+                filters: {
+                    public: FALSE
+                    deleted: FALSE
+                    clusters: [$cluster]
+                    includeTypes: ["Config"]
+                    contentHashes: $contentHashes
+                }
             ) {
                 edges {
                     node {
@@ -537,9 +541,11 @@ export const getContentConfigurationQuery = gql`
                     }
 
                     contents(
-                        includeTypes: ["PublicKey"]
-                        states: ["required", "trusted"]
-                        deleted: FALSE
+                        filters: {
+                            includeTypes: ["PublicKey"]
+                            states: ["required", "trusted"]
+                            deleted: FALSE
+                        }
                     ) {
                         edges {
                             node {
@@ -566,9 +572,11 @@ export const getContentConfigurationQuery = gql`
                         id
                         groups
                         contents(
-                            includeTypes: ["PublicKey"]
-                            states: ["required", "trusted"]
-                            deleted: FALSE
+                            filters: {
+                                includeTypes: ["PublicKey"]
+                                states: ["required", "trusted"]
+                                deleted: FALSE
+                            }
                         ) {
                             edges {
                                 node {

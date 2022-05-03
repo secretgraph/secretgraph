@@ -26,7 +26,7 @@ class DeleteContentOrClusterMutation:
     def mutate_and_get_payload(
         cls,
         info: Info,
-        ids: List[relay.GlobalID],
+        ids: List[strawberry.ID],
         when: Optional[datetime],
         authorization: Optional[AuthList] = None,
     ) -> DeleteContentOrClusterMutation:
@@ -82,14 +82,14 @@ class DeleteContentOrClusterMutation:
 
 @strawberry.type
 class ResetDeletionContentOrClusterMutation:
-    restored: List[relay.GlobalID]
+    restored: List[strawberry.ID]
 
     @relay.input_mutation
     @classmethod
     def mutate_and_get_payload(
         cls,
         info: Info,
-        ids: List[relay.GlobalID],
+        ids: List[strawberry.ID],
         authorization: Optional[AuthList] = None,
     ) -> ResetDeletionContentOrClusterMutation:
         if get_cached_permissions(

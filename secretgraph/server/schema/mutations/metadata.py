@@ -31,13 +31,13 @@ logger = logging.getLogger(__name__)
 
 @strawberry.type
 class RegenerateFlexidMutation:
-    updated: List[relay.GlobalID]
+    updated: List[strawberry.ID]
 
     @classmethod
     def mutate_and_get_payload(
         cls,
         info: Info,
-        ids: List[relay.GlobalID],
+        ids: List[strawberry.ID],
         authorization: Optional[AuthList] = None,
     ) -> RegenerateFlexidMutation:
         if get_cached_permissions(info.context.request, authset=authorization)[
@@ -75,13 +75,13 @@ class RegenerateFlexidMutation:
 @strawberry.type
 class MarkMutation:
 
-    markChanged: List[relay.GlobalID]
+    markChanged: List[strawberry.ID]
 
     @classmethod
     def mutate_and_get_payload(
         cls,
         info,
-        ids: List[relay.GlobalID],
+        ids: List[strawberry.ID],
         hidden: Optional[bool] = None,
         featured: Optional[bool] = None,
         authorization: Optional[AuthList] = None,
@@ -113,13 +113,13 @@ class MarkMutation:
 @strawberry.type
 class MetadataUpdateMutation:
 
-    updated: List[relay.GlobalID]
+    updated: List[strawberry.ID]
 
     @classmethod
     def mutate_and_get_payload(
         cls,
         info: Info,
-        ids: List[relay.GlobalID],
+        ids: List[strawberry.ID],
         state: Optional[str] = None,
         tags: Optional[List[str]] = None,
         actions: Optional[List[ActionInput]] = None,

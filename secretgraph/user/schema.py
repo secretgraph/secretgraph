@@ -1,6 +1,6 @@
 import strawberry
 from strawberry.types import Info
-from strawberry_django_plus import relay
+from strawberry_django_plus import relay, gql
 from typing import Optional
 from datetime import timedelta as td
 
@@ -14,8 +14,10 @@ from ..server.actions.update import create_cluster_fn
 from ..server.models import Cluster, Content
 from ..server.utils.auth import ids_to_results, retrieve_allowed_objects
 
+user_model = get_user_model()
 
-@strawberry.type
+
+@gql.django.type(user_model, name="User")
 class UserNode(relay.Node):
     email: str
     username: str
@@ -45,7 +47,7 @@ class UserMutation(relay.Node):
     def mutate_and_get_payload(
         cls,
         info: Info,
-        id: Optional[relay.GlobalID] = None,
+        id: Optional[strawberry.ID] = None,
         user: Optional[UserInput] = None,
     ):
         if id:
@@ -83,7 +85,7 @@ class UserMutation(relay.Node):
                 is not True
             ):
                 raise ValueError("Cannot register new cluster")
-            user_obj = get_user_model().create_user()
+            user_obj = user_model.create_user()
             action_key = create_cluster_fn(
                 info.context.request, None, user_obj
             )(transaction.atomic)[1]
@@ -95,12 +97,12 @@ class DeleteUserMutation(relay.Node):
     user: Optional[UserNode]
 
     @classmethod
-    def mutate_and_get_payload(cls, info, id: relay.GlobalID):
+    def mutate_and_get_payload(cls, info, id: strawberry.ID):
         now = timezone.now()
         now_plus_x = now + td(minutes=20)
         # cleanup expired
         Content.objects.filter(markForDestruction__lte=now).delete()
-        user = get_user_model().objects.get(pk=id.node_id)
+        user = user_model.objects.get(pk=id.node_id)
         result = retrieve_allowed_objects(
             info.context.request, Cluster.actions.all(), scope="manage"
         )

@@ -89,7 +89,7 @@ class TransferMutation:
 
 def mutate_transfer(
     info: Info,
-    id: relay.GlobalID,
+    id: strawberry.ID,
     url: Optional[str] = None,
     key: Optional[
         str
