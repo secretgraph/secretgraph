@@ -107,7 +107,6 @@ type Content implements Node {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-    filters: ContentReferenceFilter
   ): ContentReferenceConnection!
   referencedBy(
     """Returns the items in the list that come before the specified cursor."""
@@ -121,7 +120,6 @@ type Content implements Node {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-    filters: ContentReferenceFilter
   ): ContentReferenceConnection!
   availableActions: [ActionEntry!]!
   cluster: Cluster!
@@ -235,17 +233,6 @@ type ContentReferenceEdge {
   node: ContentReference!
 }
 
-input ContentReferenceFilter {
-  states: [String!] = null
-  includeTypes: [String!] = null
-  excludeTypes: [String!] = null
-  includeTags: [String!] = null
-  excludeTags: [String!] = null
-  contentHashes: [String!] = null
-  deleted: UseCriteria = FALSE
-  groups: [String!] = null
-}
-
 input ContentValueInput {
   value: Upload = null
   state: String = null
@@ -315,7 +302,7 @@ union MutateAndGetPayloadPayload = RegenerateFlexidMutation | OperationInfo
 """Input data for `mutateCluster` mutation"""
 input MutateClusterInput {
   cluster: ClusterInput!
-  id: ID = null
+  id: GlobalID = null
   updateId: ID = null
   authorization: [String!] = null
 }
@@ -325,7 +312,7 @@ union MutateClusterPayload = ClusterMutation | OperationInfo
 """Input data for `mutateContent` mutation"""
 input MutateContentInput {
   content: ContentInput!
-  id: ID = null
+  id: GlobalID = null
   updateId: ID = null
   authorization: [String!] = null
 }

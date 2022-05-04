@@ -177,7 +177,7 @@ export const createKeysMutation = gql`
 `
 export const updateKeyMutation = gql`
     mutation contentUpdateKeyMutation(
-        $id: ID!
+        $id: GlobalID!
         $updateId: ID!
         $cluster: ID
         $actions: [ActionInput!]
@@ -228,7 +228,7 @@ export const updateKeyMutation = gql`
 
 export const updateContentMutation = gql`
     mutation contentUpdateEncryptedMutation(
-        $id: ID!
+        $id: GlobalID!
         $updateId: ID!
         $cluster: ID
         $state: String
@@ -277,7 +277,7 @@ export const updateContentMutation = gql`
 `
 
 export const findPublicKeyQuery = gql`
-    query contentFindPublicKeyQuery($id: ID!, $authorization: [String!]) {
+    query contentFindPublicKeyQuery($id: GlobalID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             node(id: $id) {
                 ... on Content {
@@ -306,7 +306,7 @@ export const findPublicKeyQuery = gql`
 // needs type because this attribute is checked for the extra key tag extractor pass
 export const keysRetrievalQuery = gql`
     query keysRetrievalQuery(
-        $id: ID!
+        $id: GlobalID!
         $authorization: [String!]
         $keyhashes: [String!]
     ) {
@@ -398,7 +398,7 @@ export const keysRetrievalQuery = gql`
 
 export const contentRetrievalQuery = gql`
     query contentRetrievalQuery(
-        $id: ID!
+        $id: GlobalID!
         $keyhashes: [String!]
         $authorization: [String!]
         $includeTags: [String!]
@@ -515,7 +515,10 @@ export const findConfigQuery = gql`
 `
 
 export const getContentConfigurationQuery = gql`
-    query contentGetConfigurationQuery($id: ID!, $authorization: [String!]) {
+    query contentGetConfigurationQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+    ) {
         secretgraph(authorization: $authorization) {
             config {
                 id

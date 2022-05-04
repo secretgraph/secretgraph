@@ -6,6 +6,7 @@ from dataclasses import asdict
 
 import strawberry
 from strawberry.types import Info
+from strawberry_django_plus import relay
 from django.conf import settings
 from django.db import transaction
 
@@ -43,7 +44,7 @@ class ClusterMutation:
 def mutate_cluster(
     info: Info,
     cluster: ClusterInput,
-    id: Optional[strawberry.ID] = None,
+    id: Optional[relay.GlobalID] = None,
     updateId: Optional[strawberry.ID] = None,
     authorization: Optional[AuthList] = None,
 ) -> ClusterMutation:
@@ -127,7 +128,7 @@ class ContentMutation:
 def mutate_content(
     info: Info,
     content: ContentInput,
-    id: Optional[strawberry.ID] = None,
+    id: Optional[relay.GlobalID] = None,
     updateId: Optional[strawberry.ID] = None,
     authorization: Optional[AuthList] = None,
 ) -> ContentMutation:

@@ -198,7 +198,7 @@ class ContentFetchQueryset(QuerySet):
 def fetch_contents(
     query,
     actions,
-    id=None,
+    ids=None,
     limit_ids=1,
     states=None,
     includeTypes=None,
@@ -212,9 +212,9 @@ def fetch_contents(
 ) -> QuerySet:
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
-    if id:
+    if ids:
         query = fetch_by_id(
-            query, id, check_content_hash=True, limit_ids=limit_ids
+            query, ids, check_content_hash=True, limit_ids=limit_ids
         )
     if (
         includeTags

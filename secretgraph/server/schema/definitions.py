@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Optional, Union, List, Iterable
 from datetime import datetime
 import strawberry
@@ -59,7 +60,7 @@ class InjectedKeyNode(relay.Node):
         *,
         info: Optional[Info] = None,
         required: bool = False,
-    ) -> Optional[ContentNode]:
+    ) -> Optional[InjectedKeyNode]:
         query = Content.objects.filter(
             type="PublicKey", injected_for__isnull=False, flexid=node_id
         )
@@ -319,8 +320,6 @@ class ContentReferenceFilter:
     ContentReference, filters=ContentReferenceFilter, name="ContentReference"
 )
 class ContentReferenceNode(relay.Node):
-    safe = False
-
     group: str
     extra: str
 
@@ -344,10 +343,16 @@ class ContentReferenceNode(relay.Node):
             source, target, group = id.node_id.split("|", 2)
             return queryset.get(
                 source__in=fetch_contents(
-                    result["objects"], result["actions"], source, noFetch=True
+                    result["objects"],
+                    result["actions"],
+                    ids=source,
+                    noFetch=True,
                 ),
                 target__in=fetch_contents(
-                    result["objects"], result["actions"], target, noFetch=True
+                    result["objects"],
+                    result["actions"],
+                    ids=target,
+                    noFetch=True,
                 ),
                 group=group,
             )
@@ -374,9 +379,10 @@ class ContentReferenceNode(relay.Node):
             result["actions"],
         ).first()
 
-    def get_queryset(
-        self, queryset, info: Info, filters: ContentReferenceFilter
-    ) -> QuerySet[ContentReferenceNode]:
+    @classmethod
+    def get_queryset(cls, queryset, info: Info) -> QuerySet[ContentReference]:
+        filters = info._field.get_filters()
+        breakpoint()
         if (
             not isinstance(self, Content)
             or self.limited
@@ -487,6 +493,9 @@ class ContentFilter:
         return queryset
 
     def filter_contentHashes(self, queryset):
+        return queryset
+
+    def filter_hidden(self, queryset):
         return queryset
 
     def filter_deleted(self, queryset):
@@ -626,7 +635,7 @@ class ContentNode(relay.Node):
     ) -> Optional[ContentNode]:
         result = get_cached_result(info.context.request)["Content"]
         query = fetch_contents(
-            result["objects"], result["actions"], id=str(node_id)
+            result["objects"], result["actions"], ids=str(node_id)
         )
         if required:
             return query.get()
@@ -644,20 +653,20 @@ class ContentNode(relay.Node):
         return fetch_contents(
             result["objects"],
             result["actions"],
-            id=node_ids or [],
+            ids=node_ids or [],
             limit_ids=100,
         )
 
-    def get_queryset(
-        self, queryset, info: Info, filters: ContentFilter
-    ) -> QuerySet[ContentNode]:
+    @classmethod
+    def get_queryset(cls, queryset, info: Info) -> QuerySet[Content]:
+        filters = info._field.get_filters()
         result = get_cached_result(info.context.request)["Content"]
         # TODO: perm check for deleted and hidden
+        breakpoint()
         hidden = filters.hidden
         deleted = filters.deleted
         if True:
             hidden = UseCriteria.FALSE
-
         if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
@@ -860,15 +869,15 @@ class ClusterNode(relay.Node):
         if self.limited:
             return None
         # remove hidden
-        hidden = GlobalGroup.objects.get_hidden_names()
+        hidden_names = GlobalGroup.objects.get_hidden_names()
         return set(self.groups.values_list("name", flat=True)).difference(
-            hidden
+            hidden_names
         )
 
     # @gql.django.connection(filters=ContentFilterSimple)
     def contents(
         self, info: Info, filters: ContentFilterSimple
-    ) -> QuerySet[ContentNode]:
+    ) -> QuerySet[Content]:
         result = get_cached_result(info.context.request)["Content"]
         contents = result["objects"].filter(hidden=False)
         if self.limited:
@@ -901,9 +910,7 @@ class ClusterNode(relay.Node):
         required: bool = False,
     ) -> Optional[ClusterNode]:
         result = get_cached_result(info.context.request)["Cluster"]
-        query = fetch_clusters(
-            result["objects"], result["actions"], id=str(node_id)
-        )
+        query = fetch_clusters(result["objects"], ids=str(node_id))
         if required:
             return query.get()
         else:
@@ -919,14 +926,13 @@ class ClusterNode(relay.Node):
         result = get_cached_result(info.context.request)["Cluster"]
         return fetch_clusters(
             result["objects"],
-            result["actions"],
-            id=node_ids or [],
+            ids=node_ids or [],
             limit_ids=100,
         )
 
-    def get_queryset(
-        self, queryset, info: Info, filters: ClusterFilter
-    ) -> QuerySet[ClusterNode]:
+    @classmethod
+    def get_queryset(cls, queryset, info: Info) -> QuerySet[Cluster]:
+        filters = info._field.get_filters()
 
         return fetch_clusters(
             #  required for enforcing permissions

@@ -20,7 +20,7 @@ export const resetDeletionNodes = gql`
 `
 
 export const getActionsQuery = gql`
-    query nodeGetActions($id: ID!, $authorization: [String!]) {
+    query nodeGetActions($id: GlobalID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
                 id

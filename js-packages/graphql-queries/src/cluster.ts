@@ -66,7 +66,10 @@ export const clusterFeedQuery = gql`
 `
 
 export const getClusterConfigurationQuery = gql`
-    query clusterGetConfigurationQuery($id: ID!, $authorization: [String!]) {
+    query clusterGetConfigurationQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+    ) {
         secretgraph(authorization: $authorization) {
             config {
                 id
@@ -99,7 +102,7 @@ export const getClusterConfigurationQuery = gql`
 
 // has also description
 export const getClusterQuery = gql`
-    query clusterGetClusterQuery($id: ID!, $authorization: [String!]) {
+    query clusterGetClusterQuery($id: GlobalID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
                 id
@@ -191,7 +194,7 @@ export const createClusterMutation = gql`
 
 export const updateClusterMutation = gql`
     mutation clusterUpdateMutation(
-        $id: ID!
+        $id: GlobalID!
         $updateId: ID!
         $name: String
         $description: String
