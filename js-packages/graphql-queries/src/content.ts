@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client'
 export const contentFeedQuery = gql`
     query SideBarContentFeedQuery(
-        $clusters: [ID!]
+        $   : [ID!]
         $authorization: [String!]
         $states: [String!]
         $types: [String!]
