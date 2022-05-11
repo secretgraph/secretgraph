@@ -11,7 +11,7 @@ tests = ["pytest", "pytest-asyncio", "mypy (>=0.800)"]
 
 [[package]]
 name = "astroid"
-version = "2.11.4"
+version = "2.11.5"
 description = "An abstract syntax tree for Python with inference support."
 category = "dev"
 optional = false
@@ -158,18 +158,6 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
-name = "django-debug-toolbar"
-version = "3.4.0"
-description = "A configurable set of panels that display various debug information about the current request/response."
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-Django = ">=3.2"
-sqlparse = ">=0.2.0"
-
-[[package]]
 name = "django-extensions"
 version = "3.1.5"
 description = "Extensions for Django"
@@ -204,14 +192,14 @@ django = "*"
 
 [[package]]
 name = "django-mysql"
-version = "4.5.0"
+version = "4.6.0"
 description = "Django-MySQL extends Django's built-in MySQL and MariaDB support their specific features not available on other databases."
 category = "main"
 optional = true
 python-versions = ">=3.7"
 
 [package.dependencies]
-Django = ">=2.2"
+Django = ">=3.2"
 
 [[package]]
 name = "django-webtest"
@@ -370,7 +358,7 @@ testutil = ["gitpython (>3)"]
 
 [[package]]
 name = "pyparsing"
-version = "3.0.8"
+version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
 category = "main"
 optional = false
@@ -473,7 +461,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "strawberry-django-plus"
-version = "1.10"
+version = "1.10.2"
 description = "Enhanced Strawberry GraphQL integration with Django"
 category = "main"
 optional = false
@@ -481,14 +469,17 @@ python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
 django = ">=3.2"
-django-debug-toolbar = ">=3.4"
 strawberry-graphql = ">=0.110.0"
 strawberry-graphql-django = ">=0.2.5"
 typing-extensions = ">=4.1.0"
 
+[package.extras]
+debug-toolbar = ["django-debug-toolbar (>=3.4)"]
+enum = ["django-choices-field (>=2.0)"]
+
 [[package]]
 name = "strawberry-graphql"
-version = "0.111.1"
+version = "0.111.2"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
@@ -661,8 +652,8 @@ asgiref = [
     {file = "asgiref-3.5.1.tar.gz", hash = "sha256:fddeea3c53fa99d0cdb613c3941cc6e52d822491fc2753fba25768fb5bf4e865"},
 ]
 astroid = [
-    {file = "astroid-2.11.4-py3-none-any.whl", hash = "sha256:da0632b7c046d8361dfe1b1abb2e085a38624961fabe2997565a9c06c1be9d9a"},
-    {file = "astroid-2.11.4.tar.gz", hash = "sha256:561dc6015eecce7e696ff7e3b40434bc56831afeff783f0ea853e19c4f635c06"},
+    {file = "astroid-2.11.5-py3-none-any.whl", hash = "sha256:14ffbb4f6aa2cf474a0834014005487f7ecd8924996083ab411e7fa0b508ce0b"},
+    {file = "astroid-2.11.5.tar.gz", hash = "sha256:f4e4ec5294c4b07ac38bab9ca5ddd3914d4bf46f9006eb5c0ae755755061044e"},
 ]
 "backports.cached-property" = [
     {file = "backports.cached-property-1.0.1.tar.gz", hash = "sha256:1a5ef1e750f8bc7d0204c807aae8e0f450c655be0cf4b30407a35fd4bb27186c"},
@@ -776,10 +767,6 @@ django = [
     {file = "Django-4.0.4-py3-none-any.whl", hash = "sha256:07c8638e7a7f548dc0acaaa7825d84b7bd42b10e8d22268b3d572946f1e9b687"},
     {file = "Django-4.0.4.tar.gz", hash = "sha256:4e8177858524417563cc0430f29ea249946d831eacb0068a1455686587df40b5"},
 ]
-django-debug-toolbar = [
-    {file = "django-debug-toolbar-3.4.0.tar.gz", hash = "sha256:ae6bec2c1ce0e6900b0ab0443e1427eb233d8e6f57a84a0b2705eeecb8874e22"},
-    {file = "django_debug_toolbar-3.4.0-py3-none-any.whl", hash = "sha256:42c1c2e9dc05bb57b53d641e3a6d131fc031b92377b34ae32e604a1fe439bb83"},
-]
 django-extensions = [
     {file = "django-extensions-3.1.5.tar.gz", hash = "sha256:28e1e1bf49f0e00307ba574d645b0af3564c981a6dfc87209d48cb98f77d0b1a"},
     {file = "django_extensions-3.1.5-py3-none-any.whl", hash = "sha256:9238b9e016bb0009d621e05cf56ea8ce5cce9b32e91ad2026996a7377ca28069"},
@@ -793,8 +780,8 @@ django-manifest-loader = [
     {file = "django_manifest_loader-1.0.0-py3-none-any.whl", hash = "sha256:17a6e5b47ff6999ca530e754d874c1e4b0c7f16e72c761e3e05bc529cee34145"},
 ]
 django-mysql = [
-    {file = "django-mysql-4.5.0.tar.gz", hash = "sha256:a68dffbffb656206ad2118e6972f5ee71b506bf18ec2f1e5885482d1d675dcbb"},
-    {file = "django_mysql-4.5.0-py3-none-any.whl", hash = "sha256:3656c1649bdc8a39afe6347a8ebe02ce69eeb30595ceaa994f994c0b81a42013"},
+    {file = "django-mysql-4.6.0.tar.gz", hash = "sha256:054dd0475753f9ced091e7e280d36bd8145f370e47251f64cfbac81fa0bcbd45"},
+    {file = "django_mysql-4.6.0-py3-none-any.whl", hash = "sha256:a507ae6d58795ef186370a12c63c74b9df8484ecafcb268859a12ace0ed85a19"},
 ]
 django-webtest = [
     {file = "django-webtest-1.9.10.tar.gz", hash = "sha256:c8c32041791cdae468e443097c432c67cf17cad339e1ab88b01a6c4841ee4c74"},
@@ -903,8 +890,8 @@ pylint = [
     {file = "pylint-2.13.8.tar.gz", hash = "sha256:ced8968c3b699df0615e2a709554dec3ddac2f5cd06efadb69554a69eeca364a"},
 ]
 pyparsing = [
-    {file = "pyparsing-3.0.8-py3-none-any.whl", hash = "sha256:ef7b523f6356f763771559412c0d7134753f037822dad1b16945b7b846f7ad06"},
-    {file = "pyparsing-3.0.8.tar.gz", hash = "sha256:7bf433498c016c4314268d95df76c81b842a4cb2b276fa3312cfb1e1d85f6954"},
+    {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
+    {file = "pyparsing-3.0.9.tar.gz", hash = "sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
@@ -938,12 +925,12 @@ sqlparse = [
     {file = "sqlparse-0.4.2.tar.gz", hash = "sha256:0c00730c74263a94e5a9919ade150dfc3b19c574389985446148402998287dae"},
 ]
 strawberry-django-plus = [
-    {file = "strawberry-django-plus-1.10.tar.gz", hash = "sha256:30683e8644e94ed491d405a49803e5909655ef354af6e99f7493f6788bcc6f2b"},
-    {file = "strawberry_django_plus-1.10-py3-none-any.whl", hash = "sha256:d32773788a1f1f8a0ee4070b554ef0e931c947474bf17882123d2beb334d480d"},
+    {file = "strawberry-django-plus-1.10.2.tar.gz", hash = "sha256:55460579374e977ab9e806748be0f24efc2fd954eae1aa3e8a432e0c2bc03eba"},
+    {file = "strawberry_django_plus-1.10.2-py3-none-any.whl", hash = "sha256:2d7f3cbc45b944479955e73aece3ffe5b91b4c32c0f89f724d199db1239645c3"},
 ]
 strawberry-graphql = [
-    {file = "strawberry-graphql-0.111.1.tar.gz", hash = "sha256:a4b91fb393e8385263bdba8b3ba9ce274207182a5d268b44253d0c79e326d217"},
-    {file = "strawberry_graphql-0.111.1-py3-none-any.whl", hash = "sha256:42bce8eda4b146fc466f52c8705f8cbad4ffa5723c6c6f69b0c154980a418cb2"},
+    {file = "strawberry-graphql-0.111.2.tar.gz", hash = "sha256:cab6f87181244c4fba42447824d13b4de81ad82fcd5ef9738b1da937485fa45c"},
+    {file = "strawberry_graphql-0.111.2-py3-none-any.whl", hash = "sha256:27a387e64df40f64d648df7e5a491f6876fc1605f95972e7802acceb84fa8450"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry-graphql-django-0.2.5.tar.gz", hash = "sha256:483d97c24ce440a1e3cb92ec3e1fdc0cf534d9afa79600396b0a27a5d9d97793"},
