@@ -1,5 +1,5 @@
 import strawberry
-from typing import Optional
+from typing import Optional, List
 from strawberry_django_plus import relay, gql
 
 # from django.utils.translation import gettext_lazy as _
@@ -8,7 +8,9 @@ from strawberry.types import Info
 from .arguments import AuthList
 from ..utils.auth import get_cached_result
 from .definitions import (
+    ClusterFilter,
     ClusterNode,
+    ContentFilter,
     ContentNode,
     SecretgraphConfig,
 )
@@ -32,8 +34,19 @@ from .mutations import (
 @strawberry.type
 class SecretgraphObject:
     node: Optional[relay.Node] = gql.django.node()
-    clusters: relay.Connection[ClusterNode] = gql.django.connection()
-    contents: relay.Connection[ContentNode] = gql.django.connection()
+
+    @gql.django.connection()
+    def clusters(
+        self, info: Info, filters: ClusterFilter
+    ) -> List[ClusterNode]:
+        return ClusterNode.get_queryset_intern(info, filters)
+
+    @gql.django.connection()
+    def contents(
+        self, info: Info, filters: ContentFilter
+    ) -> List[ContentNode]:
+        return ContentNode.get_queryset_intern(info, filters)
+
     config: SecretgraphConfig = strawberry.field(default=SecretgraphConfig())
 
 

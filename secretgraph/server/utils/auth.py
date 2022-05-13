@@ -42,17 +42,15 @@ class LazyViewResult(object):
             )
 
     def __getitem__(self, item):
-        if item in _cached_classes:
-            if item not in self._result_dict:
-                self._result_dict[item] = self.fn(
-                    self.request,
-                    item,
-                    authset=self.authset,
-                )
-            return self._result_dict[item]
         if item == "authset":
             return self.authset
-        raise KeyError()
+        if item not in self._result_dict:
+            self._result_dict[item] = self.fn(
+                self.request,
+                item,
+                authset=self.authset,
+            )
+        return self._result_dict[item]
 
     def get(self, item, default=None):
         try:
@@ -359,7 +357,7 @@ def ids_to_results(
     return results
 
 
-def check_permission(request, permission, query):
+def check_permission(request, permission, query, authset=None):
     assert issubclass(query.model, Cluster), (
         "Not a cluster query: %s" % query.model
     )
@@ -431,7 +429,7 @@ def get_cached_permissions(
             Cluster.objects.all(),
             scope="manage",
             authset=authset,
-        )
+        )["objects"]
         setattr(
             request,
             permissions_name,

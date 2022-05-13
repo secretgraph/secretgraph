@@ -23,7 +23,7 @@ export const CenteredSpinner = React.forwardRef(
 )
 
 export class CapturingSuspense extends React.PureComponent<
-    { noSuspense?: boolean },
+    { noSuspense?: boolean; children: React.ReactNode },
     { error: null | any }
 > {
     constructor(props: any) {

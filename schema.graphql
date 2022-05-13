@@ -19,6 +19,20 @@ input ActionInput {
 type Cluster implements Node {
   id: GlobalID!
   availableActions: [ActionEntry!]!
+  contents(
+    """Returns the items in the list that come before the specified cursor."""
+    before: String = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    after: String = null
+
+    """Returns the first n items from the list."""
+    first: Int = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    last: Int = null
+    filters: ContentFilterSimple!
+  ): ContentNodeConnection!
   deleted: DateTime
   description: String
   featured: Boolean
@@ -55,18 +69,24 @@ type ClusterEdge {
 
 input ClusterFilter {
   user: ID = null
+
+  """Search description and id"""
   search: String = null
   states: [String!] = null
   includeTypes: [String!] = null
   excludeTypes: [String!] = null
   includeTags: [String!] = null
+
+  """Use id=xy for excluding clusters with content ids"""
   excludeTags: [String!] = null
   ids: [String!] = null
+
+  """Use for excluding clusters with ids"""
   excludeIds: [String!] = null
   contentHashes: [String!] = null
-  featured: UseCriteria = IGNORE
-  deleted: UseCriteria = FALSE
-  public: UseCriteriaPublic = IGNORE
+  featured: UseCriteria! = IGNORE
+  deleted: UseCriteria! = FALSE
+  public: UseCriteriaPublic! = IGNORE
   minUpdated: DateTime = null
   maxUpdated: DateTime = null
 }
@@ -95,19 +115,8 @@ type Content implements Node {
   state: String!
   deleted: DateTime
   link: String!
-  references(
-    """Returns the items in the list that come before the specified cursor."""
-    before: String = null
-
-    """Returns the items in the list that come after the specified cursor."""
-    after: String = null
-
-    """Returns the first n items from the list."""
-    first: Int = null
-
-    """Returns the items in the list that come after the specified cursor."""
-    last: Int = null
-  ): ContentReferenceConnection!
+  availableActions: [ActionEntry!]!
+  cluster: Cluster!
   referencedBy(
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
@@ -120,9 +129,22 @@ type Content implements Node {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
+    filters: ContentReferenceFilter
   ): ContentReferenceConnection!
-  availableActions: [ActionEntry!]!
-  cluster: Cluster!
+  references(
+    """Returns the items in the list that come before the specified cursor."""
+    before: String = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    after: String = null
+
+    """Returns the first n items from the list."""
+    first: Int = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    last: Int = null
+    filters: ContentReferenceFilter
+  ): ContentReferenceConnection!
   signatures(includeAlgorithms: [String!] = null): [Content!]!
   tags(includeTags: [String!] = null, excludeTags: [String!] = null): [String!]!
 }
@@ -158,12 +180,24 @@ input ContentFilter {
   excludeTags: [String!] = null
   contentHashes: [String!] = null
   clusters: [ID!] = null
-  hidden: UseCriteria = FALSE
-  featured: UseCriteria = IGNORE
-  deleted: UseCriteria = FALSE
-  public: UseCriteriaPublic = IGNORE
+  hidden: UseCriteria! = FALSE
+  featured: UseCriteria! = IGNORE
+  deleted: UseCriteria! = FALSE
+  public: UseCriteriaPublic! = IGNORE
   minUpdated: DateTime = null
   maxUpdated: DateTime = null
+}
+
+input ContentFilterSimple {
+  states: [String!] = null
+  includeTypes: [String!] = null
+  excludeTypes: [String!] = null
+  includeTags: [String!] = null
+  excludeTags: [String!] = null
+  contentHashes: [String!] = null
+  minUpdated: DateTime = null
+  maxUpdated: DateTime = null
+  deleted: UseCriteria = null
 }
 
 input ContentInput {
@@ -197,6 +231,27 @@ input ContentKeyInput {
 type ContentMutation {
   content: Content!
   writeok: Boolean!
+}
+
+"""A connection to a list of items."""
+type ContentNodeConnection {
+  """Pagination data for this connection"""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection"""
+  edges: [ContentNodeEdge!]!
+
+  """Total quantity of existing nodes"""
+  totalCount: Int!
+}
+
+"""An edge in a connection."""
+type ContentNodeEdge {
+  """A cursor for use in pagination"""
+  cursor: String!
+
+  """The item at the end of the edge"""
+  node: Content!
 }
 
 type ContentReference implements Node {
@@ -233,6 +288,17 @@ type ContentReferenceEdge {
   node: ContentReference!
 }
 
+input ContentReferenceFilter {
+  states: [String!] = null
+  includeTypes: [String!] = null
+  excludeTypes: [String!] = null
+  includeTags: [String!] = null
+  excludeTags: [String!] = null
+  contentHashes: [String!] = null
+  deleted: UseCriteria! = FALSE
+  groups: [String!] = null
+}
+
 input ContentValueInput {
   value: Upload = null
   state: String = null
@@ -262,9 +328,6 @@ type GlobalGroup implements Node {
   description: String!
   hidden: Boolean!
   matchUserGroup: String!
-
-  """cluster groups: groups for permissions and injected keys"""
-  clusters(filters: ClusterFilter): [Cluster!]!
   injectedKeys: [InjectedKey!]!
   properties: [GlobalGroupProperty!]!
 }
@@ -482,6 +545,7 @@ type SecretgraphObject {
     """The ID of the object."""
     id: GlobalID!
   ): Node
+  config: SecretgraphConfig!
   clusters(
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
@@ -494,7 +558,7 @@ type SecretgraphObject {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-    filters: ClusterFilter
+    filters: ClusterFilter!
   ): ClusterConnection!
   contents(
     """Returns the items in the list that come before the specified cursor."""
@@ -508,9 +572,8 @@ type SecretgraphObject {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-    filters: ContentFilter
+    filters: ContentFilter!
   ): ContentConnection!
-  config: SecretgraphConfig!
 }
 
 type TransferMutation {

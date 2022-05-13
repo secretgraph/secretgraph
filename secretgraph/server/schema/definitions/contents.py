@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, List, Iterable
 from datetime import datetime
+import dataclasses
 import strawberry
 from strawberry.types import Info
 from uuid import UUID
@@ -9,7 +10,11 @@ from strawberry_django_plus import relay, gql
 from django.db.models import Subquery, Q, QuerySet
 
 from .... import constants
-from ...utils.auth import get_cached_result, fetch_by_id
+from ...utils.auth import (
+    get_cached_result,
+    get_cached_permissions,
+    fetch_by_id,
+)
 from ...actions.view import fetch_contents
 from ...models import (
     Cluster,
@@ -21,7 +26,7 @@ from ._shared import ActionEntry, ActionMixin
 from .references import ContentReferenceNode, ContentReferenceFilter
 
 
-@gql.django.filter(Content)
+@gql.input
 class ContentFilter:
     states: Optional[List[str]] = None
     includeTypes: Optional[List[str]] = None
@@ -40,44 +45,12 @@ class ContentFilter:
     minUpdated: Optional[datetime] = None
     maxUpdated: Optional[datetime] = None
 
-    def filter_states(self, queryset):
-        return queryset
 
-    def filter_includeTypes(self, queryset):
-        return queryset
-
-    def filter_excludeTypes(self, queryset):
-        return queryset
-
-    def filter_includeTags(self, queryset):
-        return queryset
-
-    def filter_excludeTags(self, queryset):
-        return queryset
-
-    def filter_contentHashes(self, queryset):
-        return queryset
-
-    def filter_hidden(self, queryset):
-        return queryset
-
-    def filter_deleted(self, queryset):
-        return queryset
-
-    def filter_clusters(self, queryset):
-        return queryset
-
-    def filter_public(self, queryset):
-        return queryset
-
-    def filter_minUpdated(self, queryset):
-        return queryset
-
-    def filter_maxUpdated(self, queryset):
-        return queryset
+for i in dataclasses.fields(ContentFilter):
+    setattr(ContentFilter, f"filter_{i.name}", lambda self, queryset: queryset)
 
 
-@gql.django.type(Content, name="Content", filters=ContentFilter)
+@gql.django.type(Content, name="Content")
 class ContentNode(relay.Node):
     nonce: str
     updated: datetime
@@ -118,7 +91,7 @@ class ContentNode(relay.Node):
         self: Content,
         info: Info,
         includeAlgorithms: Optional[List[str]] = None,
-    ) -> List[strawberry.LazyType["ContentNode", "."]]:
+    ) -> List["ContentNode"]:
         # authorization often cannot be used, but it is ok, we have cached then
         result = get_cached_result(info.context.request)["Content"]
         return self.signatures(
@@ -129,7 +102,7 @@ class ContentNode(relay.Node):
     @gql.django.field()
     def cluster(
         self: Content, info: Info
-    ) -> strawberry.LazyType["ClusterNode", ".clusters"]:
+    ) -> strawberry.LazyType["ClusterNode", ".clusters"]:  # noqa: F821,F722
         if self.limited:
             return None
         # authorization often cannot be used, but it is ok, we have cached then
@@ -149,18 +122,22 @@ class ContentNode(relay.Node):
             return []
         return ActionMixin.availableActions(self, info)
 
-    @gql.django.connection(filters=ContentReferenceFilter)
-    def references(self, info: Info) -> List[ContentReferenceNode]:
+    @gql.django.connection()
+    def references(
+        self, info: Info, filters: ContentReferenceFilter
+    ) -> List[ContentReferenceNode]:
         if (
             not isinstance(self, Content)
             or self.limited
             or self.cluster_id == 1
         ):
             return ContentReference.objects.none()
-        filters = info._field.get_filters()
         result = get_cached_result(info.context.request)["Content"]
         query = result["objects"].exclude(hidden=True)
         filterob = {}
+
+        if filters.groups is not None:
+            filterob["group__in"] = filters.groups
 
         filterob["target__in"] = fetch_contents(
             query,
@@ -177,8 +154,10 @@ class ContentNode(relay.Node):
             **filterob,
         )
 
-    @gql.django.connection(filters=ContentReferenceFilter)
-    def referencedBy(self, info: Info) -> List[ContentReferenceNode]:
+    @gql.django.connection()
+    def referencedBy(
+        self, info: Info, filters: ContentReferenceFilter
+    ) -> List[ContentReferenceNode]:
         if (
             not isinstance(self, Content)
             or self.limited
@@ -189,6 +168,8 @@ class ContentNode(relay.Node):
         result = get_cached_result(info.context.request)["Content"]
         query = result["objects"].exclude(hidden=True)
         filterob = {}
+        if filters.groups is not None:
+            filterob["group__in"] = filters.groups
 
         filterob["source__in"] = fetch_contents(
             query,
@@ -244,21 +225,33 @@ class ContentNode(relay.Node):
         )
 
     @classmethod
-    def get_queryset(cls, queryset, info: Info) -> QuerySet[Content]:
-        # if (
-        #     info.python_name == "references"
-        #     or info.python_name == "referencedBy"
-        # ):
-        #     return ContentReferenceNode.get_queryset(queryset, info)
-        filters = info._field.get_filters()
-        result = get_cached_result(info.context.request)["Content"]
-        # TODO: perm check for deleted and hidden
-        hidden = filters.hidden
+    def get_queryset_intern(
+        cls, info: Info, filters: ContentFilter
+    ) -> QuerySet[Content]:
+        result = get_cached_result(
+            info.context.request,
+        )["Content"]
         deleted = filters.deleted
-        if True:
-            hidden = UseCriteria.FALSE
+        queryset = result["objects"]
+        if (
+            deleted != UseCriteria.FALSE
+            and not get_cached_permissions(info.context.request)[
+                "manage_deletion"
+            ]
+        ):
+            del_result = get_cached_result(
+                info.context.request, scope="delete"
+            )["Content"]
+            queryset = queryset.filter(
+                id__in=Subquery(del_result["objects"].values("id"))
+            )
 
-        print("filters.clusters", filters.clusters)
+        if get_cached_permissions(
+            info.context.request,
+        )["manage_hidden"]:
+            hidden = filters.hidden
+        else:
+            hidden = UseCriteria.FALSE
         if filters.clusters is not None:
             queryset = fetch_by_id(
                 queryset,

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional, List, Iterable
 from datetime import datetime
 import strawberry
+import dataclasses
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
@@ -10,18 +11,17 @@ from django.db.models import Subquery, Q, QuerySet
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from ...utils.auth import get_cached_result
+from ...utils.auth import get_cached_result, get_cached_permissions
 from ...actions.view import fetch_clusters, fetch_contents
 from ...models import (
     Cluster,
-    Content,
     GlobalGroup,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import ActionEntry, ActionMixin
 
 
-@gql.django.filter(Content)
+@gql.input
 class ContentFilterSimple:
     states: Optional[List[str]] = None
     includeTypes: Optional[List[str]] = None
@@ -31,37 +31,18 @@ class ContentFilterSimple:
     contentHashes: Optional[List[str]] = None
     minUpdated: Optional[datetime] = None
     maxUpdated: Optional[datetime] = None
-    deleted: UseCriteria = None
-
-    def filter_states(self, queryset):
-        return queryset
-
-    def filter_includeTypes(self, queryset):
-        return queryset
-
-    def filter_excludeTypes(self, queryset):
-        return queryset
-
-    def filter_includeTags(self, queryset):
-        return queryset
-
-    def filter_excludeTags(self, queryset):
-        return queryset
-
-    def filter_contentHashes(self, queryset):
-        return queryset
-
-    def filter_minUpdated(self, queryset):
-        return queryset
-
-    def filter_maxUpdated(self, queryset):
-        return queryset
-
-    def filter_deleted(self, queryset):
-        return queryset
+    deleted: Optional[UseCriteria] = None
 
 
-@gql.django.filter(Cluster)
+for i in dataclasses.fields(ContentFilterSimple):
+    setattr(
+        ContentFilterSimple,
+        f"filter_{i.name}",
+        lambda self, queryset: queryset,
+    )
+
+
+@gql.input
 class ClusterFilter:
     user: Optional[strawberry.ID] = None
     search: Optional[str] = gql.field(
@@ -87,68 +68,12 @@ class ClusterFilter:
     minUpdated: Optional[datetime] = None
     maxUpdated: Optional[datetime] = None
 
-    def filter_user(self, queryset):
-        return queryset
 
-    def filter_search(self, queryset):
-        return queryset
-
-    def filter_ids(self, queryset):
-        return queryset
-
-    def filter_excludeIds(self, queryset):
-        return queryset
-
-    def filter_states(self, queryset):
-        return queryset
-
-    def filter_includeTypes(self, queryset):
-        return queryset
-
-    def filter_excludeTypes(self, queryset):
-        return queryset
-
-    def filter_includeTags(self, queryset):
-        return queryset
-
-    def filter_excludeTags(self, queryset):
-        return queryset
-
-    def filter_contentHashes(self, queryset):
-        return queryset
-
-    def filter_minUpdated(self, queryset):
-        return queryset
-
-    def filter_maxUpdated(self, queryset):
-        return queryset
-
-    def filter_public(self, queryset):
-        if (
-            self.public != UseCriteriaPublic.IGNORE
-            and self.public != UseCriteriaPublic.TOKEN
-        ):
-            queryset = queryset.filter(
-                public=self.public == UseCriteriaPublic.TRUE
-            )
-        return queryset
-
-    def filter_deleted(self, queryset):
-        if self.deleted != UseCriteria.IGNORE:
-            queryset = queryset.filter(
-                markForDestruction__isnull=self.deleted == UseCriteria.FALSE
-            )
-        return queryset
-
-    def filter_featured(self, queryset):
-        if self.featured != UseCriteria.IGNORE:
-            queryset = queryset.filter(
-                featured=self.featured == UseCriteria.TRUE
-            )
-        return queryset
+for i in dataclasses.fields(ClusterFilter):
+    setattr(ClusterFilter, f"filter_{i.name}", lambda self, queryset: queryset)
 
 
-@gql.django.type(Cluster, name="Cluster", filters=ClusterFilter)
+@gql.django.type(Cluster, name="Cluster")
 class ClusterNode(relay.Node):
     @gql.django.field()
     def featured(self) -> Optional[bool]:
@@ -217,16 +142,17 @@ class ClusterNode(relay.Node):
             hidden_names
         )
 
-    @gql.django.connection(filters=ContentFilterSimple)
+    @gql.django.connection()
     def contents(
         self, info: Info, filters: ContentFilterSimple
-    ) -> List[strawberry.LazyType["ContentNode", ".contents"]]:
+    ) -> List[
+        strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
+    ]:
         result = get_cached_result(info.context.request)["Content"]
-        contents = result["objects"].filter(hidden=False)
-        # TODO check for deleted permission
+        queryset = result["objects"].filter(hidden=False)
         deleted = filters.deleted
         if self.limited:
-            contents = contents.annotate(limited=True)
+            queryset = queryset.annotate(limited=True)
             deleted = UseCriteria.FALSE
         if not deleted:
             if self.markForDestruction:
@@ -234,8 +160,21 @@ class ClusterNode(relay.Node):
             else:
                 deleted = UseCriteria.TRUE
 
+        if (
+            deleted != UseCriteria.FALSE
+            and not get_cached_permissions(info.context.request)[
+                "manage_deletion"
+            ]
+        ):
+            del_result = get_cached_result(
+                info.context.request, scope="delete"
+            )["Content"]
+            queryset = queryset.filter(
+                id__in=Subquery(del_result["objects"].values("id"))
+            )
+
         return fetch_contents(
-            contents.filter(cluster_id=self.id),
+            queryset.filter(cluster_id=self.id),
             result["actions"],
             states=filters.states,
             includeTypes=["PublicKey"]
@@ -262,7 +201,9 @@ class ClusterNode(relay.Node):
         required: bool = False,
     ) -> Optional[ClusterNode]:
         result = get_cached_result(info.context.request)["Cluster"]
-        query = fetch_clusters(result["objects"], ids=str(node_id))
+        query = fetch_clusters(
+            result["objects"], ids=str(node_id), limit_ids=1
+        )
         if required:
             return query.get()
         else:
@@ -283,8 +224,24 @@ class ClusterNode(relay.Node):
         )
 
     @classmethod
-    def get_queryset(cls, queryset, info: Info) -> QuerySet[Cluster]:
-        filters = info._field.get_filters()
+    def get_queryset_intern(
+        cls, info: Info, filters: ClusterFilter
+    ) -> QuerySet[Cluster]:
+        result = get_cached_result(info.context.request)["Cluster"]
+        queryset = result["objects"]
+        deleted = filters.deleted
+        if (
+            deleted != UseCriteria.FALSE
+            and not get_cached_permissions(info.context.request)[
+                "manage_deletion"
+            ]
+        ):
+            del_result = get_cached_result(
+                info.context.request, scope="delete"
+            )["Cluster"]
+            queryset = queryset.filter(
+                id__in=Subquery(del_result["objects"].values("id"))
+            )
         if filters.user:
             if not getattr(settings, "AUTH_USER_MODEL", None) and not getattr(
                 settings, "SECRETGRAPH_BIND_TO_USER", False
@@ -315,11 +272,10 @@ class ClusterNode(relay.Node):
             queryset = queryset.filter(
                 public=filters.public == UseCriteriaPublic.TRUE
             )
-        if filters.deleted != UseCriteria.IGNORE:
+        if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(
-                markForDestruction__isnull=filters.deleted == UseCriteria.FALSE
+                markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
-        return queryset
 
         if filters.featured != UseCriteria.IGNORE:
             queryset = queryset.filter(
