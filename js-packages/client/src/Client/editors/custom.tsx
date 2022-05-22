@@ -307,7 +307,6 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         loading,
         refetch,
     } = useQuery(contentRetrievalQuery, {
-        pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         variables: {
             id: mainCtx.item as string,

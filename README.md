@@ -174,8 +174,7 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   switch to strawberry for subscriptions
-    -   cannot describe enum members - annotated hack (does it work?)
+-   too many queries when selecting node (sidebar is also updated, because updateId?)
 -   modernize ActionDialog, redesign, multi column?
 -   modernize Keys, expose actions
 -   implement shareFn and ShareDialog, Config has Special ShareDialog

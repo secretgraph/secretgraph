@@ -388,7 +388,6 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         refetch,
         loading,
     } = useQuery(getClusterQuery, {
-        pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
         variables: {
@@ -468,7 +467,6 @@ const CreateCluster = () => {
     >(null)
 
     let { data: dataUnfinished, loading } = useQuery(serverConfigQuery, {
-        pollInterval: 60000,
         onError: console.error,
     })
     const { key, keyb64 } = React.useMemo(() => {

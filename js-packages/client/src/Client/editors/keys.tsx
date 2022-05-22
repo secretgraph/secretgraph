@@ -296,7 +296,7 @@ function InnerKeys({
     const clusterSelectTokens = React.useMemo(() => {
         return authInfoFromConfig({
             config,
-            url: url as string,
+            url,
             require: new Set(['create', 'manage']),
         }).tokens
     }, [config])
@@ -855,7 +855,6 @@ const ViewKeys = () => {
         | null
     >(null)
     const { data: dataUnfinished, refetch } = useQuery(keysRetrievalQuery, {
-        pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
         variables: {
@@ -1044,7 +1043,6 @@ const EditKeys = () => {
         data: dataUnfinished,
         loading,
     } = useQuery(keysRetrievalQuery, {
-        pollInterval: 60000,
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
         variables: {
@@ -1153,10 +1151,8 @@ const CreateKeys = () => {
     const { data, loading, refetch } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
-            variables: {
-                id: cluster || '',
-                authorization,
-            },
+            id: cluster || '',
+            authorization,
         },
         onError: console.error,
     })

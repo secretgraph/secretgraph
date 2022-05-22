@@ -88,7 +88,7 @@ export default function SimpleSelect<
         appProps.getOptionLabel = (option: T) => `${option}`
     }
     if (appProps.renderTags === true) {
-        appProps.renderTags = (value, getTagProps) =>
+        appProps.renderTags = (value, getTagProps, ownerState) =>
             value.map((option, index) => {
                 return (
                     <Chip
@@ -126,7 +126,7 @@ export default function SimpleSelect<
                 ...(InputPropsMain || {}),
             }
             Object.assign(InputProps, params.InputProps)
-            if (!appProps.multiple && appProps.renderTags) {
+            /**if (!appProps.multiple && appProps.renderTags) {
                 const appProps2 = appProps as SimpleSelectPropsTagsStrict<
                     T,
                     Multiple,
@@ -135,9 +135,10 @@ export default function SimpleSelect<
                 >
                 InputProps['startAdornment'] = appProps2.renderTags(
                     appProps.options as T[],
-                    getTagPropsDropin
+                    getTagPropsDropin,
+                    {...params, options: appProps.options}
                 )
-            }
+            }*/
             return (
                 <TextField
                     {...params}

@@ -450,7 +450,7 @@ export const contentRetrievalQuery = gql`
 
 export const findConfigQuery = gql`
     query contentFindConfigQuery(
-        $cluster: ID
+        $cluster: ID!
         $authorization: [String!]
         $contentHashes: [String!]
     ) {

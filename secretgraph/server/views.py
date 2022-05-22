@@ -16,7 +16,7 @@ from django.http import (
 from django.shortcuts import resolve_url
 from django.urls import reverse
 from django.views.generic.edit import FormView
-from strawberry.django.views import GraphQLView
+from strawberry.django.views import AsyncGraphQLView
 
 from .actions.view import ContentFetchQueryset
 from .forms import PreKeyForm, PushForm, UpdateForm
@@ -295,7 +295,7 @@ class ContentView(AllowCORSMixin, FormView):
         return response
 
 
-class CORSFileUploadGraphQLView(AllowCORSMixin, GraphQLView):
+class CORSFileUploadGraphQLView(AsyncAllowCORSMixin, AsyncGraphQLView):
     pass
     # def dispatch(self, request, *args, **kwargs):
     #    if settings.DEBUG and "operations" in request.POST:

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import Optional, List, Iterable
 import strawberry
-import dataclasses
 from strawberry.types import Info
 from strawberry_django_plus import relay, gql
 
@@ -25,13 +24,8 @@ class ContentReferenceFilter:
     deleted: UseCriteria = UseCriteria.FALSE
     groups: Optional[List[str]] = None
 
-
-for i in dataclasses.fields(ContentReferenceFilter):
-    setattr(
-        ContentReferenceFilter,
-        f"filter_{i.name}",
-        lambda self, queryset: queryset,
-    )
+    def filter(self, queryset):
+        return queryset
 
 
 @gql.django.type(ContentReference, name="ContentReference")
@@ -78,6 +72,15 @@ class ContentReferenceNode(relay.Node):
             return None
         except ValueError:
             return None
+
+    @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: Optional[Info] = None,
+        node_ids: Optional[Iterable[str]] = None,
+    ) -> None:
+        raise NotImplementedError
 
     @gql.django.field
     def source(

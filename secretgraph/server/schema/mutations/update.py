@@ -114,7 +114,9 @@ def mutate_cluster(
         _cluster_res = create_cluster_fn(
             info.context.request, cluster, user=user, authset=authorization
         )(transaction.atomic)
-    get_cached_result(info.context.request, authset=authorization)
+    f = get_cached_result(info.context.request, authset=authorization)
+    f["Content"]
+    f["Cluster"]
     return ClusterMutation(**_cluster_res)
 
 
@@ -205,5 +207,7 @@ def mutate_content(
                 authset=authorization,
             )(transaction.atomic)
         )
-    get_cached_result(info.context.request, authset=authorization)
+    f = get_cached_result(info.context.request, authset=authorization)
+    f["Content"]
+    f["Cluster"]
     return returnval

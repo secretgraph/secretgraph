@@ -59,6 +59,39 @@ def get_content_file_path(instance, filename) -> str:
     return ret_path
 
 
+class FlexidManager(models.Manager):
+    def _update_pk_args(self, args, kwargs):
+        args = [*args]
+        pk = kwargs.pop("pk", None)
+        pk__in = kwargs.pop("pk__in", None)
+        if pk is not None:
+            if isinstance(pk, str):
+                args.append(models.Q(flexid=pk) | models.Q(flexid_cached=pk))
+            else:
+                kwargs["id"] = pk
+        if pk__in is not None:
+            if len(pk__in) and isinstance(pk__in[0], str):
+                args.append(
+                    models.Q(flexid__id=pk__in)
+                    | models.Q(flexid_cached__in=pk__in)
+                )
+            else:
+                kwargs["pk__in"] = pk__in
+        return args
+
+    def get(self, *args, **kwargs):
+        args = self._update_pk_args(args, kwargs)
+        return super().get(*args, **kwargs)
+
+    def filter(self, *args, **kwargs):
+        args = self._update_pk_args(args, kwargs)
+        return super().filter(*args, **kwargs)
+
+    def exclude(self, *args, **kwargs):
+        args = self._update_pk_args(args, kwargs)
+        return super().exclude(*args, **kwargs)
+
+
 class FlexidModel(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: str = models.CharField(
@@ -67,6 +100,7 @@ class FlexidModel(models.Model):
     flexid_cached: str = models.CharField(
         max_length=80, blank=True, null=True, unique=True
     )
+    objects = FlexidManager()
 
     class Meta:
         abstract = True
@@ -110,7 +144,7 @@ class Cluster(FlexidModel):
         )
 
 
-class ContentManager(models.Manager):
+class ContentManager(FlexidManager):
     def required_keys_full(
         self,
         cluster,

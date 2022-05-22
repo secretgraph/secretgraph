@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import Optional, List, Iterable
+from typing import Optional, List
 from datetime import datetime
 import strawberry
-import dataclasses
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
@@ -33,13 +32,8 @@ class ContentFilterSimple:
     maxUpdated: Optional[datetime] = None
     deleted: Optional[UseCriteria] = None
 
-
-for i in dataclasses.fields(ContentFilterSimple):
-    setattr(
-        ContentFilterSimple,
-        f"filter_{i.name}",
-        lambda self, queryset: queryset,
-    )
+    def filter(self, queryset):
+        return queryset
 
 
 @gql.input
@@ -68,9 +62,8 @@ class ClusterFilter:
     minUpdated: Optional[datetime] = None
     maxUpdated: Optional[datetime] = None
 
-
-for i in dataclasses.fields(ClusterFilter):
-    setattr(ClusterFilter, f"filter_{i.name}", lambda self, queryset: queryset)
+    def filter(self, queryset):
+        return queryset
 
 
 @gql.django.type(Cluster, name="Cluster")
@@ -149,7 +142,7 @@ class ClusterNode(relay.Node):
         strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
     ]:
         result = get_cached_result(info.context.request)["Content"]
-        queryset = result["objects"].filter(hidden=False)
+        queryset: QuerySet = self.contents.filter(hidden=False)
         deleted = filters.deleted
         if self.limited:
             queryset = queryset.annotate(limited=True)
@@ -174,7 +167,7 @@ class ClusterNode(relay.Node):
             )
 
         return fetch_contents(
-            queryset.filter(cluster_id=self.id),
+            queryset.filter(id__in=Subquery(result["objects"].values("id"))),
             result["actions"],
             states=filters.states,
             includeTypes=["PublicKey"]
@@ -193,42 +186,16 @@ class ClusterNode(relay.Node):
         return root.flexid
 
     @classmethod
-    def resolve_node(
-        cls,
-        node_id: str,
-        *,
-        info: Optional[Info] = None,
-        required: bool = False,
-    ) -> Optional[ClusterNode]:
+    def get_queryset(cls, queryset, info) -> QuerySet[Cluster]:
         result = get_cached_result(info.context.request)["Cluster"]
-        query = fetch_clusters(
-            result["objects"], ids=str(node_id), limit_ids=1
-        )
-        if required:
-            return query.get()
-        else:
-            return query.first()
-
-    @classmethod
-    def resolve_nodes(
-        cls,
-        *,
-        info: Optional[Info] = None,
-        node_ids: Optional[Iterable[str]] = None,
-    ) -> Iterable[ClusterNode]:
-        result = get_cached_result(info.context.request)["Cluster"]
-        return fetch_clusters(
-            result["objects"],
-            ids=node_ids or [],
-            limit_ids=100,
-        )
+        return queryset.filter(id__in=Subquery(result["objects"].values("id")))
 
     @classmethod
     def get_queryset_intern(
         cls, info: Info, filters: ClusterFilter
     ) -> QuerySet[Cluster]:
         result = get_cached_result(info.context.request)["Cluster"]
-        queryset = result["objects"]
+        queryset = Cluster.objects.all()
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
@@ -243,11 +210,12 @@ class ClusterNode(relay.Node):
                 id__in=Subquery(del_result["objects"].values("id"))
             )
         if filters.user:
+            # users are not supported in this configuration so ignore them
+            user = None
             if not getattr(settings, "AUTH_USER_MODEL", None) and not getattr(
                 settings, "SECRETGRAPH_BIND_TO_USER", False
             ):
-                # users are not supported in this configuration so ignore them
-                user = None
+                pass
             else:
                 try:
                     user = relay.from_base64(filters.user)[1]
@@ -286,7 +254,7 @@ class ClusterNode(relay.Node):
             #  required for enforcing permissions
             queryset.filter(
                 id__in=Subquery(
-                    get_cached_result(info.context.request)["Cluster"][
+                    result[
                         "objects_ignore_public"
                         if filters.public == UseCriteriaPublic.TOKEN
                         else "objects"

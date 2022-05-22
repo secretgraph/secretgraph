@@ -1,5 +1,5 @@
-import DateTimePicker, { DateTimePickerProps } from '@mui/lab/DateTimePicker'
 import TextField from '@mui/material/TextField'
+import { DateTimePicker, DateTimePickerProps } from '@mui/x-date-pickers/DateTimePicker'
 import { OptionalAttributes } from '@secretgraph/misc/typing'
 import { FieldProps } from 'formik'
 import * as React from 'react'
@@ -9,7 +9,7 @@ export type FormikDateTimePickerProps<
     FormValues = any
 > = OptionalAttributes<
     Omit<
-        DateTimePickerProps<string>,
+        DateTimePickerProps<string, Date>,
         keyof FieldProps<V, FormValues> | 'defaultValue' | 'onChange'
     >,
     'renderInput'

@@ -74,7 +74,9 @@ def mutate_push_content(
         required_keys=required_keys,
         authset=authorization,
     )(transaction.atomic)
-    get_cached_result(info.context.request, authset=authorization)
+    f = get_cached_result(info.context.request, authset=authorization)
+    f["Content"]
+    f["Cluster"]
     return PushContentMutation(
         content=c, actionKey=base64.b64encode(action_key).decode("ascii")
     )
@@ -123,5 +125,8 @@ def mutate_transfer(
     }:
         content_obj.delete()
     elif result == TransferResult.SUCCESS:
+        f = get_cached_result(info.context.request, authset=authorization)
+        f["Content"]
+        f["Cluster"]
         return TransferMutation(content=content_obj)
     return TransferMutation(content=None)

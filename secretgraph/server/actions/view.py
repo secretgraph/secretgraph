@@ -1,11 +1,12 @@
 import logging
 from datetime import timedelta as td, datetime as dt
+from typing import Optional
 
 from django.db.models import Q, QuerySet, Subquery
 from django.utils import timezone
 
 from ..utils.auth import fetch_by_id
-from ..models import Content, ContentAction
+from ..models import Cluster, Content, ContentAction
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 def fetch_clusters(
     query,
     ids=None,
-    limit_ids=1,
+    limit_ids: Optional[int] = 1,
     states=None,
     includeTypes=None,
     excludeTypes=None,
@@ -22,7 +23,7 @@ def fetch_clusters(
     contentHashes=None,
     minUpdated=None,
     maxUpdated=None,
-) -> QuerySet:
+) -> QuerySet[Cluster]:
     if ids:
         query = fetch_by_id(query, ids, limit_ids=limit_ids)
 
@@ -95,7 +96,7 @@ def fetch_clusters(
     return query
 
 
-class ContentFetchQueryset(QuerySet):
+class ContentFetchQueryset(QuerySet[Content]):
     """
     Tracks usage of contents and mark accordingly Content for removal
     """
@@ -209,7 +210,7 @@ def fetch_contents(
     noFetch=False,
     minUpdated=None,
     maxUpdated=None,
-) -> QuerySet:
+) -> QuerySet[Content]:
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
     if ids:

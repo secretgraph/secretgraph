@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+from typing import Optional
 from strawberry_django_plus import relay
 from functools import reduce, partial
 from itertools import islice
@@ -282,7 +283,7 @@ def fetch_by_id(
     flexids,
     prefix="",
     check_content_hash=False,
-    limit_ids=1,
+    limit_ids: Optional[int] = 1,
 ):
     if isinstance(flexids, (str, relay.GlobalID)):
         flexids = [flexids]

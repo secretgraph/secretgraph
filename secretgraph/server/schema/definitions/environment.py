@@ -6,6 +6,7 @@ from strawberry.types import Info
 from strawberry_django_plus import relay, gql
 from django.conf import settings
 from django.shortcuts import resolve_url
+from django.db.models import QuerySet
 
 from ...models import (
     Content,
@@ -39,33 +40,9 @@ class InjectedKeyNode(relay.Node):
     def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
         return root.flexid
 
-    def get_queryset(self, queryset, info):
+    @classmethod
+    def get_queryset(queryset, info) -> QuerySet[Content]:
         return queryset.filter(type="PublicKey", injected_for__isnull=False)
-
-    @classmethod
-    def resolve_node(
-        cls,
-        node_id: str,
-        *,
-        info: Optional[Info] = None,
-        required: bool = False,
-    ) -> Optional[InjectedKeyNode]:
-        query = Content.objects.filter(
-            type="PublicKey", injected_for__isnull=False, flexid=node_id
-        )
-        if required:
-            return query.get()
-        else:
-            return query.first()
-
-    @classmethod
-    def resolve_nodes(
-        cls,
-        *,
-        info: Optional[Info] = None,
-        node_ids: Optional[Iterable[str]] = None,
-    ) -> None:
-        raise NotImplementedError
 
 
 @gql.django.type(GlobalGroupProperty, name="GlobalGroupProperty")
@@ -82,17 +59,15 @@ class GlobalGroupNode(relay.Node):
     hidden: bool
     matchUserGroup: str
     injectedKeys: List[InjectedKeyNode]
-
-    @gql.django.field(only=["properties"])
-    def properties(self) -> List[GlobalGroupPropertyNode]:
-        return self.properties
+    properties: List[GlobalGroupPropertyNode]
 
 
 @gql.type()
 class SecretgraphConfig(relay.Node):
-    groups: List[GlobalGroupNode] = gql.django.field(
-        default_factory=GlobalGroup.objects.all
-    )
+    @gql.django.field()
+    @staticmethod
+    def groups(info: Info) -> List[GlobalGroupNode]:
+        return GlobalGroup.objects.all()
 
     @classmethod
     def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
@@ -115,7 +90,7 @@ class SecretgraphConfig(relay.Node):
         info: Optional[Info] = None,
         node_ids: Optional[Iterable[str]] = None,
     ) -> None:
-        raise NotImplementedError
+        return [cls()]
 
     @strawberry.field
     @staticmethod

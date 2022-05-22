@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, List, Iterable
+from typing import Optional, List
 from datetime import datetime
-import dataclasses
 import strawberry
 from strawberry.types import Info
 from uuid import UUID
@@ -17,7 +16,6 @@ from ...utils.auth import (
 )
 from ...actions.view import fetch_contents
 from ...models import (
-    Cluster,
     Content,
     ContentReference,
 )
@@ -45,9 +43,8 @@ class ContentFilter:
     minUpdated: Optional[datetime] = None
     maxUpdated: Optional[datetime] = None
 
-
-for i in dataclasses.fields(ContentFilter):
-    setattr(ContentFilter, f"filter_{i.name}", lambda self, queryset: queryset)
+    def filter(self, queryset):
+        return queryset
 
 
 @gql.django.type(Content, name="Content")
@@ -112,9 +109,8 @@ class ContentNode(relay.Node):
             .first()
         )
         if not res:
-            res = Cluster.objects.get(id=self.cluster_id)
-            res.limited = True
-        return res
+            self.cluster.limited = True
+        return self.cluster
 
     @gql.django.field(only=["id", "cluster_id"])
     def availableActions(self: Content, info: Info) -> List[ActionEntry]:
@@ -164,7 +160,6 @@ class ContentNode(relay.Node):
             or self.cluster_id == 1
         ):
             return ContentReference.objects.none()
-        filters = info._field.get_filters()
         result = get_cached_result(info.context.request)["Content"]
         query = result["objects"].exclude(hidden=True)
         filterob = {}
@@ -193,36 +188,9 @@ class ContentNode(relay.Node):
         return root.flexid
 
     @classmethod
-    def resolve_node(
-        cls,
-        node_id: str,
-        *,
-        info: Optional[Info] = None,
-        required: bool = False,
-    ) -> Optional[ContentNode]:
+    def get_queryset(cls, queryset, info) -> QuerySet[Content]:
         result = get_cached_result(info.context.request)["Content"]
-        query = fetch_contents(
-            result["objects"], result["actions"], ids=str(node_id)
-        )
-        if required:
-            return query.get()
-        else:
-            return query.first()
-
-    @classmethod
-    def resolve_nodes(
-        cls,
-        *,
-        info: Optional[Info] = None,
-        node_ids: Optional[Iterable[str]] = None,
-    ) -> List[ContentNode]:
-        result = get_cached_result(info.context.request)["Content"]
-        return fetch_contents(
-            result["objects"],
-            result["actions"],
-            ids=node_ids or [],
-            limit_ids=100,
-        )
+        return queryset.filter(id__in=Subquery(result["objects"].values("id")))
 
     @classmethod
     def get_queryset_intern(
@@ -231,8 +199,8 @@ class ContentNode(relay.Node):
         result = get_cached_result(
             info.context.request,
         )["Content"]
+        queryset = Content.objects.all()
         deleted = filters.deleted
-        queryset = result["objects"]
         if (
             deleted != UseCriteria.FALSE
             and not get_cached_permissions(info.context.request)[
