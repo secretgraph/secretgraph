@@ -526,7 +526,6 @@ export const getContentConfigurationQuery = gql`
                 groups {
                     name
                     injectedKeys {
-                        id
                         link
                         hash
                     }

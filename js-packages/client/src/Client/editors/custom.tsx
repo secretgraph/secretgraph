@@ -352,12 +352,14 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                 host && host.contents[dataUnfinished.secretgraph.node.id]
             const mapper = generateActionMapper({
                 config,
-                knownHashes: [
-                    dataUnfinished.secretgraph.node.cluster?.availableActions,
+                knownHashesContent: [
                     dataUnfinished.secretgraph.node.availableActions,
+                    contentstuff?.hashes,
+                ],
+                knownHashesCluster: [
+                    dataUnfinished.secretgraph.node.cluster?.availableActions,
                     contentstuff &&
                         host?.clusters[contentstuff.cluster]?.hashes,
-                    contentstuff?.hashes,
                 ],
                 hashAlgorithms:
                     dataUnfinished.secretgraph.config.hashAlgorithms,
@@ -478,7 +480,7 @@ const AddCustom = () => {
 
             const mapper = generateActionMapper({
                 config,
-                knownHashes: dataUnfinished.secretgraph.node
+                knownHashesCluster: dataUnfinished.secretgraph.node
                     ? [
                           dataUnfinished.secretgraph.node.availableActions,
                           host?.clusters[dataUnfinished.secretgraph.node.id]

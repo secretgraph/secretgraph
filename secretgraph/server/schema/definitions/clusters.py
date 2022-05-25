@@ -32,9 +32,6 @@ class ContentFilterSimple:
     maxUpdated: Optional[datetime] = None
     deleted: Optional[UseCriteria] = None
 
-    def filter(self, queryset):
-        return queryset
-
 
 @gql.input
 class ClusterFilter:
@@ -62,12 +59,11 @@ class ClusterFilter:
     minUpdated: Optional[datetime] = None
     maxUpdated: Optional[datetime] = None
 
-    def filter(self, queryset):
-        return queryset
-
 
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(relay.Node):
+    id_attr = "flexid"
+
     @gql.django.field()
     def featured(self) -> Optional[bool]:
         if self.limited:
@@ -139,7 +135,7 @@ class ClusterNode(relay.Node):
     def contents(
         self, info: Info, filters: ContentFilterSimple
     ) -> List[
-        strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
+        strawberry.LazyType["ContentNode", ".contents"]  #  noqa: F821,F722
     ]:
         result = get_cached_result(info.context.request)["Content"]
         queryset: QuerySet = self.contents.filter(hidden=False)
@@ -182,7 +178,7 @@ class ClusterNode(relay.Node):
     @classmethod
     def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
         if root.limited:
-            return None
+            return ""
         return root.flexid
 
     @classmethod

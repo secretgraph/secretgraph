@@ -20,7 +20,8 @@ export interface CertificateEntry {
 }
 export interface ActionMapperEntry extends Omit<CertificateEntry, 'type'> {
     type: 'action'
-    actions: Set<string>
+    // name, is cluster (unknown is also false)
+    actions: Set<`${string},${'true'|'false'}`>
 }
 export interface CertificateInputEntry {
     type: 'certificate'
@@ -43,27 +44,25 @@ export interface ActionInputEntry
     locked?: boolean
 }
 
+type knownHashesType =
+    | { [hash: string]: string[] }
+    | { keyHash: string; type: string }[] // cluster or content hashes
+type knownHashesTypeInput =
+    | (knownHashesType | null | undefined)[]
+    | (knownHashesType | null | undefined) // cluster or content hashes
+
+// TODO: mark actions from cluster
 export async function generateActionMapper({
     config,
-    knownHashes: knownHashesIntern,
+    knownHashesCluster,
+    knownHashesContent,
     unknownTokens,
     unknownKeyhashes,
     hashAlgorithms,
 }: {
     config: Interfaces.ConfigInterface
-    knownHashes?:
-        | (
-              | { [hash: string]: string[] }
-              | { keyHash: string; type: string }[]
-              | null
-              | undefined
-          )[]
-        | (
-              | { [hash: string]: string[] }
-              | { keyHash: string; type: string }[]
-              | null
-              | undefined
-          ) // cluster or content hashes
+    knownHashesCluster?: knownHashesTypeInput
+    knownHashesContent?: knownHashesTypeInput
     unknownTokens?: string[] // eg. tokens in url
     unknownKeyhashes?: string[] // eg tags
     hashAlgorithms: string[]
@@ -77,44 +76,68 @@ export async function generateActionMapper({
     )
 
     // merge knownHashes and initialize foundHashes
-    const knownHashes: { [hash: string]: Set<string> } = {}
-    if (!(knownHashesIntern instanceof Array)) {
-        knownHashesIntern = knownHashesIntern ? [knownHashesIntern] : []
+    const knownHashes: { [hash: string]: Set<`${string},${'true'|'false'}`> } = {}
+    if (!(knownHashesCluster instanceof Array)) {
+        knownHashesCluster = knownHashesCluster ? [knownHashesCluster] : []
     }
-    for (const entry of knownHashesIntern) {
-        if (entry instanceof Array) {
-            // typeof node actions
-            for (const el of entry) {
-                if (!el) {
-                    console.debug(
-                        'known hashes contains invalid entry',
-                        el,
-                        'context',
-                        entry
-                    )
+
+    if (!(knownHashesContent instanceof Array)) {
+        knownHashesContent = knownHashesContent ? [knownHashesContent] : []
+    }
+    function helper(arr: knownHashesType[], isCluster: boolean) {
+        for (const entry of arr) {
+            if (entry instanceof Array) {
+                // typeof node actions
+                for (const el of entry) {
+                    if (!el) {
+                        console.debug(
+                            'known hashes contains invalid entry',
+                            el,
+                            'context',
+                            entry
+                        )
+                        continue
+                    }
+                    if (!knownHashes[el.keyHash]) {
+                        foundHashes.add(el.keyHash)
+                        knownHashes[el.keyHash] = new Set<`${string},${'true'|'false'}`>([
+                            `${el.type},${isCluster}`,
+                        ])
+                    } else {
+                        knownHashes[el.keyHash].add(`${el.type},${isCluster}`)
+                    }
+                }
+            } else if (entry) {
+                if (!entry) {
+                    console.debug('known hashes contains invalid entry', entry)
                     continue
                 }
-                if (!knownHashes[el.keyHash]) {
-                    foundHashes.add(el.keyHash)
-                    knownHashes[el.keyHash] = new Set([el.type])
-                } else {
-                    knownHashes[el.keyHash].add(el.type)
+                for (const [hash, val] of Object.entries(entry)) {
+                    foundHashes.add(hash)
+                    knownHashes[hash] = SetOps.union(
+                        knownHashes[hash] || [],
+                        val.map<`${string},${'true'|'false'}`>((v) => `${v},${isCluster}`)
+                    )
                 }
-            }
-        } else if (entry) {
-            if (!entry) {
-                console.debug('known hashes contains invalid entry', entry)
-                continue
-            }
-            for (const [hash, val] of Object.entries(entry)) {
-                foundHashes.add(hash)
-                knownHashes[hash] = SetOps.union(knownHashes[hash] || [], val)
             }
         }
     }
+    helper(knownHashesCluster as knownHashesType[], true)
+    helper(knownHashesContent as knownHashesType[], false)
     for (const val of Object.values(knownHashes)) {
-        if (val.has('other') && val.size > 1) {
-            val.delete('other')
+        if (
+            val.size == 2 &&
+            val.has('other,true') &&
+            val.has('other,false')
+        ) {
+            // skip
+        } else if (val.size > 1) {
+            if (val.has('other,true')) {
+                val.delete('other,true')
+            }
+            if (val.has('other,false')) {
+                val.delete('other,false')
+            }
         }
     }
     const updateHashes = []
@@ -141,6 +164,7 @@ export async function generateActionMapper({
         }
     }
 
+    // generate mapper hash new hash
     for (const hash of foundHashes) {
         let found = false
         if (config.tokens[hash]) {
@@ -182,9 +206,20 @@ export async function generateActionMapper({
                 actions[upgradeHash[hash]].newHash
         ) {
             let hasActionUpdate = false
-            if (actionsRaw.has('other') && actionsRaw.size > 1) {
-                actionsRaw.delete('other')
-                hasActionUpdate = true
+            if (
+                actionsRaw.has('other,true') &&
+                actionsRaw.has('other,false') &&
+                actionsRaw.size == 2
+            ) {
+            } else if (actionsRaw.size > 1) {
+                if (actionsRaw.has('other,true')) {
+                    actionsRaw.delete('other,true')
+                    hasActionUpdate = true
+                }
+                if (actionsRaw.has('other,false')) {
+                    actionsRaw.delete('other,false')
+                    hasActionUpdate = true
+                }
             }
             let hasUpdate =
                 actions[upgradeHash[hash]] &&
@@ -266,7 +301,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note || '',
                     data: data.data || token,
-                    actions: new Set(['other']),
+                    actions: new Set(['other,false']),
                     hasUpdate: !data.data,
                 }
             } else if (config.tokens[hash]) {
@@ -277,7 +312,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note || '',
                     data: data.data || token,
-                    actions: new Set(['other']),
+                    actions: new Set(['other,false']),
                     hasUpdate: !data.data,
                 }
             } else {
@@ -287,7 +322,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: '',
                     data: token,
-                    actions: new Set(['other']),
+                    actions: new Set(['other,false']),
                     hasUpdate: true,
                 }
             }
@@ -305,12 +340,14 @@ export async function transformActions({
     actions,
     hashAlgorithm,
     mapper: _mapper,
+    ignoreCluster = true,
 }: {
     actions: (ActionInputEntry | CertificateInputEntry)[]
     hashAlgorithm: string
     mapper?:
         | ReturnType<typeof generateActionMapper>
         | UnpackPromise<ReturnType<typeof generateActionMapper>>
+    ignoreCluster?: boolean
 }) {
     const mapper = await _mapper
     const finishedActions: Interfaces.ActionInterface[] = []
@@ -365,7 +402,11 @@ export async function transformActions({
                     throw Error('requires mapper')
                 }
                 if (mapperval.type == 'action') {
-                    hashes[newHash] = [...mapperval.actions]
+                    let actions = [...mapperval.actions]
+                    if (ignoreCluster) {
+                        actions = actions.filter((val) => !val[1])
+                    }
+                    hashes[newHash] = actions.map((val) => val[0])
                     if (mapperval.oldHash && val.newHash != mapperval.oldHash) {
                         hashes[mapperval.oldHash] = null
                         configUpdate.tokens[mapperval.oldHash] = null

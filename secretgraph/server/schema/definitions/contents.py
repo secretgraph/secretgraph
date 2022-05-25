@@ -43,12 +43,11 @@ class ContentFilter:
     minUpdated: Optional[datetime] = None
     maxUpdated: Optional[datetime] = None
 
-    def filter(self, queryset):
-        return queryset
-
 
 @gql.django.type(Content, name="Content")
 class ContentNode(relay.Node):
+    id_attr = 'flexid'
+
     nonce: str
     updated: datetime
     contentHash: str
@@ -184,7 +183,7 @@ class ContentNode(relay.Node):
     @classmethod
     def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
         if root.limited:
-            return None
+            return ""
         return root.flexid
 
     @classmethod

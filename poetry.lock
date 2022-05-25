@@ -461,7 +461,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "strawberry-django-plus"
-version = "1.11.2"
+version = "1.13.1"
 description = "Enhanced Strawberry GraphQL integration with Django"
 category = "main"
 optional = false
@@ -470,7 +470,7 @@ python-versions = ">=3.8,<4.0"
 [package.dependencies]
 django = ">=3.2"
 strawberry-graphql = ">=0.110.0"
-strawberry-graphql-django = ">=0.2.5"
+strawberry-graphql-django = ">=0.3"
 typing-extensions = ">=4.1.0"
 
 [package.extras]
@@ -508,7 +508,7 @@ fastapi = ["fastapi (>=0.65.2)"]
 
 [[package]]
 name = "strawberry-graphql-django"
-version = "0.2.5"
+version = "0.3"
 description = "Strawberry GraphQL Django extension"
 category = "main"
 optional = false
@@ -516,7 +516,7 @@ python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 Django = ">=3.0"
-strawberry-graphql = ">=0.69.0"
+strawberry-graphql = ">=0.109.0"
 
 [[package]]
 name = "tomli"
@@ -925,16 +925,16 @@ sqlparse = [
     {file = "sqlparse-0.4.2.tar.gz", hash = "sha256:0c00730c74263a94e5a9919ade150dfc3b19c574389985446148402998287dae"},
 ]
 strawberry-django-plus = [
-    {file = "strawberry-django-plus-1.11.2.tar.gz", hash = "sha256:e9b534f23df5654a824d454028bfbd251b1dcec780a117b28135c34d9d6c09c3"},
-    {file = "strawberry_django_plus-1.11.2-py3-none-any.whl", hash = "sha256:4e3371eafd000a6696346adefe0a953b41a63225df3585159008b2cbba89f0d8"},
+    {file = "strawberry-django-plus-1.13.1.tar.gz", hash = "sha256:e68d103109920ed0f1cf01aaf5630e22672d6d33c2b36eb8db51750a02cf7a89"},
+    {file = "strawberry_django_plus-1.13.1-py3-none-any.whl", hash = "sha256:0747a8cc368ed40e49e58683e830b2be2edad17e45385112517c64ea5d3488e0"},
 ]
 strawberry-graphql = [
     {file = "strawberry-graphql-0.113.0.tar.gz", hash = "sha256:ff6743aa2c84ba56d9390460a84311c43aa3a1558a261c2fecea88cd70d0797a"},
     {file = "strawberry_graphql-0.113.0-py3-none-any.whl", hash = "sha256:eb131a33a51fb53d16eadcbe9651e45744ecfaeeea2d15167bea336a6e1ff9be"},
 ]
 strawberry-graphql-django = [
-    {file = "strawberry-graphql-django-0.2.5.tar.gz", hash = "sha256:483d97c24ce440a1e3cb92ec3e1fdc0cf534d9afa79600396b0a27a5d9d97793"},
-    {file = "strawberry_graphql_django-0.2.5-py3-none-any.whl", hash = "sha256:dee8011bf074c618b7ddab0a92d0832b0ceea2dcb69ee422003a98e4a28c14d6"},
+    {file = "strawberry-graphql-django-0.3.tar.gz", hash = "sha256:4f262b33dacb2e93b466ab231cb7b547f03debf229fed554c5d87f9e342fc1a2"},
+    {file = "strawberry_graphql_django-0.3-py3-none-any.whl", hash = "sha256:931970edc3c774b6ec656f9cff22c954327261877fc7ceede82b1bf4020b2bd4"},
 ]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},

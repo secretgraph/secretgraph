@@ -231,7 +231,7 @@ export default function ActionsDialog({
                                                         selectedItem?.index ==
                                                         item.index
                                                     }
-                                                    key={item.value.newHash}
+                                                    key={item.index}
                                                     disabled={disabled}
                                                     item={item}
                                                     selectItem={setSelectedItem}

@@ -28,17 +28,14 @@ class RegisterUrl:
 
 
 @gql.django.type(Content, name="InjectedKey")
-class InjectedKeyNode(relay.Node):
-
+class InjectedKeyNode:
     link: str
+
+    id_attr = "name"
 
     @gql.django.field(only=["contentHash"])
     def hash(self) -> str:
         return self.contentHash
-
-    @classmethod
-    def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
-        return root.flexid
 
     @classmethod
     def get_queryset(queryset, info) -> QuerySet[Content]:
@@ -46,7 +43,7 @@ class InjectedKeyNode(relay.Node):
 
 
 @gql.django.type(GlobalGroupProperty, name="GlobalGroupProperty")
-class GlobalGroupPropertyNode(relay.Node):
+class GlobalGroupPropertyNode:
     name: str
     description: str
 
@@ -58,8 +55,10 @@ class GlobalGroupNode(relay.Node):
     description: str
     hidden: bool
     matchUserGroup: str
-    injectedKeys: List[InjectedKeyNode]
     properties: List[GlobalGroupPropertyNode]
+    injectedKeys: List[InjectedKeyNode]
+
+    id_attr = "name"
 
 
 @gql.type()

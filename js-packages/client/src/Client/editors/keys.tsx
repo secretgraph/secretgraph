@@ -130,11 +130,13 @@ async function loadKeys({
                     data: await val.arrayBuffer(),
                     nodeData: data.secretgraph.node,
                     mapper: await generateActionMapper({
-                        knownHashes: [
-                            data.secretgraph.node.availableActions,
+                        knownHashesCluster: [
                             data.secretgraph.node?.cluster?.availableActions,
                             contentstuff &&
                                 host.clusters[contentstuff.cluster]?.hashes,
+                        ],
+                        knownHashesContent: [
+                            data.secretgraph.node.availableActions,
                             contentstuff?.hashes,
                         ],
                         hashAlgorithms: results['hashAlgorithmsWorking'],
@@ -175,12 +177,14 @@ async function loadKeys({
                         tags: val.tags,
                         nodeData: val.nodeData,
                         mapper: await generateActionMapper({
-                            knownHashes: [
+                            knownHashesContent: [
                                 nodeData.availableActions,
+                                contentstuff?.hashes,
+                            ],
+                            knownHashesCluster: [
                                 nodeData?.cluster?.availableActions,
                                 contentstuff &&
                                     host.clusters[contentstuff.cluster]?.hashes,
-                                contentstuff?.hashes,
                             ],
                             hashAlgorithms: results['hashAlgorithmsWorking'],
                             config,

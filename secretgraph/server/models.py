@@ -59,39 +59,6 @@ def get_content_file_path(instance, filename) -> str:
     return ret_path
 
 
-class FlexidManager(models.Manager):
-    def _update_pk_args(self, args, kwargs):
-        args = [*args]
-        pk = kwargs.pop("pk", None)
-        pk__in = kwargs.pop("pk__in", None)
-        if pk is not None:
-            if isinstance(pk, str):
-                args.append(models.Q(flexid=pk) | models.Q(flexid_cached=pk))
-            else:
-                kwargs["id"] = pk
-        if pk__in is not None:
-            if len(pk__in) and isinstance(pk__in[0], str):
-                args.append(
-                    models.Q(flexid__id=pk__in)
-                    | models.Q(flexid_cached__in=pk__in)
-                )
-            else:
-                kwargs["pk__in"] = pk__in
-        return args
-
-    def get(self, *args, **kwargs):
-        args = self._update_pk_args(args, kwargs)
-        return super().get(*args, **kwargs)
-
-    def filter(self, *args, **kwargs):
-        args = self._update_pk_args(args, kwargs)
-        return super().filter(*args, **kwargs)
-
-    def exclude(self, *args, **kwargs):
-        args = self._update_pk_args(args, kwargs)
-        return super().exclude(*args, **kwargs)
-
-
 class FlexidModel(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: str = models.CharField(
@@ -100,7 +67,6 @@ class FlexidModel(models.Model):
     flexid_cached: str = models.CharField(
         max_length=80, blank=True, null=True, unique=True
     )
-    objects = FlexidManager()
 
     class Meta:
         abstract = True
@@ -144,7 +110,7 @@ class Cluster(FlexidModel):
         )
 
 
-class ContentManager(FlexidManager):
+class ContentManager(models.Manager):
     def required_keys_full(
         self,
         cluster,
@@ -177,9 +143,9 @@ class ContentManager(FlexidManager):
         if groups:
             if isinstance(groups, str):
                 groups = [groups]
-            return queryset.filter(injected_for__name__in=groups)
+            return queryset.filter(injectedFor__name__in=groups)
         else:
-            return queryset.filter(injected_for__isnull=False)
+            return queryset.filter(injectedFor__isnull=False)
 
     def get_queryset(self, /, noannotation=False):
         queryset = super().get_queryset()
@@ -520,9 +486,9 @@ class GlobalGroup(models.Model):
         through="GlobalGroupCluster",
         help_text=cluster_groups_help,
     )
-    injected_keys: models.QuerySet[Content] = models.ManyToManyField(
+    injectedKeys: models.QuerySet[Content] = models.ManyToManyField(
         Content,
-        related_name="injected_for",
+        related_name="injectedFor",
         limit_choices_to={
             "type": "PublicKey",
             "cluster_id": 1,
@@ -535,15 +501,15 @@ class GlobalGroup(models.Model):
     objects = GlobalGroupManager()
 
     def clean(self):
-        if self.hidden and self.injected_keys.exists():
+        if self.hidden and self.injectedKeys.exists():
             raise ValidationError(
-                {"hidden": "injected_keys and hidden are mutual exclusive"}
+                {"hidden": "injectedKeys and hidden are mutual exclusive"}
             )
-        if self.injected_keys.exclude(type="PublicKey").exists():
+        if self.injectedKeys.exclude(type="PublicKey").exists():
             raise ValidationError(
-                {"injected_keys": "injected_keys are not keys"}
+                {"injectedKeys": "injectedKeys are not keys"}
             )
-        if self.injected_keys.exclude(state="public").exists():
+        if self.injectedKeys.exclude(state="public").exists():
             raise ValidationError(
-                {"injected_keys": "injected_keys are not public"}
+                {"injectedKeys": "injectedKeys are not public"}
             )

@@ -310,13 +310,13 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "injected_keys",
+                    "injectedKeys",
                     models.ManyToManyField(
                         limit_choices_to={
                             "cluster_id": 1,
                             "type": "PublicKey",
                         },
-                        related_name="injected_for",
+                        related_name="injectedFor",
                         to="secretgraph.Content",
                     ),
                 ),

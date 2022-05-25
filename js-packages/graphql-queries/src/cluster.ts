@@ -78,7 +78,6 @@ export const getClusterConfigurationQuery = gql`
                 groups {
                     name
                     injectedKeys {
-                        id
                         link
                         hash
                     }
@@ -110,7 +109,6 @@ export const getClusterQuery = gql`
                 groups {
                     name
                     injectedKeys {
-                        id
                         link
                         hash
                     }

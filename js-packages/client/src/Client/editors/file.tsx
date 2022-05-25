@@ -1035,11 +1035,13 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             )
             const mapper = await generateActionMapper({
                 config,
-                knownHashes: [
+                knownHashesCluster: [
                     dataUnfinished.secretgraph.node.cluster?.availableActions,
-                    dataUnfinished.secretgraph.node.availableActions,
                     contentstuff &&
                         host?.clusters[contentstuff.cluster]?.hashes,
+                ],
+                knownHashesContent: [
+                    dataUnfinished.secretgraph.node.availableActions,
                     contentstuff?.hashes,
                 ],
                 hashAlgorithms,
@@ -1153,7 +1155,7 @@ const CreateFile = () => {
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const mapper = await generateActionMapper({
                 config,
-                knownHashes: dataUnfinished.secretgraph.node
+                knownHashesCluster: dataUnfinished.secretgraph.node
                     ? [
                           dataUnfinished.secretgraph.node.availableActions,
                           host?.clusters[dataUnfinished.secretgraph.node.id]

@@ -8,14 +8,18 @@ import { useEffect, useMemo, useState } from 'react'
 
 export function mapperToArray(
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>,
-    { lockExisting = true }: { lockExisting?: boolean }
+    {
+        lockExisting = true,
+        readonlyCluster = true,
+    }: { lockExisting?: boolean; readonlyCluster?: boolean }
 ) {
     return useMemo(() => {
         const actions: (ActionInputEntry | CertificateInputEntry)[] = []
         Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
             const entry = mapper[params.newHash]
             if (entry.type == 'action') {
-                for (const actionType of entry.actions) {
+                for (const val of entry.actions) {
+                    const [actionType, isCluster] = val.split(",", 2)
                     actions.push({
                         type: 'action',
                         data: params.data,
@@ -29,7 +33,7 @@ export function mapperToArray(
                         },
                         update: entry.hasUpdate,
                         delete: false,
-                        readonly: false,
+                        readonly: isCluster == 'true' && readonlyCluster,
                         locked: lockExisting,
                     })
                 }

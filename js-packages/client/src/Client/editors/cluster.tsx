@@ -55,7 +55,7 @@ async function extractCombinedInfo({
     const mapper = await generateActionMapper({
         config,
         unknownTokens: tokens,
-        knownHashes: known
+        knownHashesCluster: known
             ? [known, node.availableActions]
             : node?.availableActions,
         hashAlgorithms,
@@ -106,7 +106,10 @@ const ClusterIntern = ({
         updateMainCtx({ title: props.name || '' })
     }, [props.name])
 
-    const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
+    const actions = mapperToArray(mapper, {
+        lockExisting: !!mainCtx.item,
+        readonlyCluster: false,
+    })
     /**
     keyHash: string | null
     start: Date | null
@@ -139,6 +142,7 @@ const ClusterIntern = ({
                         actions: actionsNew,
                         mapper,
                         hashAlgorithm,
+                        ignoreCluster: false,
                     })
                     let digestCert: undefined | string = undefined,
                         privPromise: undefined | Promise<string> = undefined
@@ -506,7 +510,7 @@ const CreateCluster = () => {
                             note: '',
                             newHash: hashKey,
                             oldHash: null,
-                            actions: new Set(['manage']),
+                            actions: new Set(['manage,true']),
                             hasUpdate: true,
                         },
                     },

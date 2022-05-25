@@ -24,9 +24,6 @@ class ContentReferenceFilter:
     deleted: UseCriteria = UseCriteria.FALSE
     groups: Optional[List[str]] = None
 
-    def filter(self, queryset):
-        return queryset
-
 
 @gql.django.type(ContentReference, name="ContentReference")
 class ContentReferenceNode(relay.Node):

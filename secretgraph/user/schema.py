@@ -26,9 +26,7 @@ class UserNode(relay.Node):
     # def clusters(self) -> List[ClusterNode]:
     #    return se
 
-    @classmethod
-    def resolve_id(cls, root):
-        return root.username
+    id_attr = "username"
 
 
 @strawberry.input
