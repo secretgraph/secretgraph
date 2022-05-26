@@ -1,10 +1,10 @@
 import strawberry
 from typing import Optional, List
-from strawberry_django import django_resolver
 from strawberry_django_plus import relay, gql
 
 # from django.utils.translation import gettext_lazy as _
 from strawberry.types import Info
+
 
 from .arguments import AuthList
 from ..utils.auth import get_cached_result
@@ -18,10 +18,15 @@ from .definitions import (
 from .mutations import (
     ClusterMutation,
     mutate_cluster,
+    delete_content_or_cluster,
+    reset_deletion_content_or_cluster,
     ContentMutation,
     mutate_content,
     mutate_push_content,
     mutate_transfer,
+    regenerate_flexid,
+    update_metadata,
+    mark,
     TransferMutation,
     DeleteContentOrClusterMutation,
     MetadataUpdateMutation,
@@ -37,14 +42,14 @@ class SecretgraphObject:
     node: Optional[relay.Node] = gql.django.node()
 
     @gql.django.connection()
-    @django_resolver
+    @gql.django.django_resolver
     def clusters(
         self, info: Info, filters: ClusterFilter
     ) -> List[ClusterNode]:
         return ClusterNode.get_queryset_intern(info, filters)
 
     @gql.django.connection()
-    @django_resolver
+    @gql.django.django_resolver
     def contents(
         self, info: Info, filters: ContentFilter
     ) -> List[ContentNode]:
@@ -56,7 +61,7 @@ class SecretgraphObject:
 @gql.type
 class Query:
     @strawberry.field
-    @django_resolver
+    @gql.django.django_resolver
     @staticmethod
     def secretgraph(
         info: Info, authorization: Optional[AuthList] = None
@@ -86,20 +91,18 @@ class Mutation:
     )
 
     deleteContentOrCluster: DeleteContentOrClusterMutation = (
-        DeleteContentOrClusterMutation.mutate_and_get_payload
+        gql.django.input_mutation(delete_content_or_cluster)
     )
     resetDeletionContentOrCluster: ResetDeletionContentOrClusterMutation = (
-        ResetDeletionContentOrClusterMutation.mutate_and_get_payload
+        gql.django.input_mutation(reset_deletion_content_or_cluster)
     )
     regenerateFlexid: RegenerateFlexidMutation = gql.django.input_mutation(
-        RegenerateFlexidMutation.mutate_and_get_payload
+        regenerate_flexid
     )
     updateMetadata: MetadataUpdateMutation = gql.django.input_mutation(
-        MetadataUpdateMutation.mutate_and_get_payload
+        update_metadata
     )
-    updateMarks: MarkMutation = gql.django.input_mutation(
-        MarkMutation.mutate_and_get_payload
-    )
+    updateMarks: MarkMutation = gql.django.input_mutation(mark)
     pushContent: PushContentMutation = gql.django.input_mutation(
         mutate_push_content
     )

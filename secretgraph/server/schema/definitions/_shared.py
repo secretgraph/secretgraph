@@ -7,6 +7,7 @@ from strawberry_django_plus import gql
 from django.db.models import Q
 
 from .... import constants
+from ...utils.auth import get_cached_result
 from ...models import (
     Action,
     Content,
@@ -25,9 +26,9 @@ class ActionEntry:
 class ActionMixin:
     def availableActions(self, info: Info) -> List[ActionEntry]:
         name = self.__class__.__name__
-        result = getattr(info.context.request, "secretgraphResult", {}).get(
-            name, {}
-        )
+        result = get_cached_result(
+            info.context.request, ensureExistance=True
+        ).get(name, {})
         # only show some actions if not set
         has_manage = False
         if isinstance(self, Content):

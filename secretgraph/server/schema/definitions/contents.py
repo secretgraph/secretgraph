@@ -17,6 +17,7 @@ from ...utils.auth import (
 from ...actions.view import fetch_contents
 from ...models import (
     Content,
+    Cluster,
     ContentReference,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
@@ -46,7 +47,7 @@ class ContentFilter:
 
 @gql.django.type(Content, name="Content")
 class ContentNode(relay.Node):
-    id_attr = 'flexid'
+    id_attr = "flexid"
 
     nonce: str
     updated: datetime
@@ -220,11 +221,12 @@ class ContentNode(relay.Node):
         else:
             hidden = UseCriteria.FALSE
         if filters.clusters is not None:
-            queryset = fetch_by_id(
-                queryset,
-                filters.clusters,
-                prefix="cluster__",
-                limit_ids=None,
+            queryset = queryset.filter(
+                cluster_id__in=Subquery(
+                    fetch_by_id(
+                        Cluster.objects.all(), filters.clusters
+                    ).values("id")
+                )
             )
 
         if filters.public != UseCriteriaPublic.TOKEN:

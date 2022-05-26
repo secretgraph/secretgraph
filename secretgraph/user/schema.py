@@ -70,7 +70,7 @@ class UserMutation(relay.Node):
                     admin_user = manage.user
                 if not admin_user:
                     admin_user = getattr(info.context.request, "user", None)
-                if not admin_user.is_authenticated:
+                if not admin_user or not admin_user.is_authenticated:
                     raise ValueError("Must be logged in")
             elif (
                 getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False)

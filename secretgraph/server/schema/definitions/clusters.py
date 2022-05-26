@@ -135,7 +135,7 @@ class ClusterNode(relay.Node):
     def contents(
         self, info: Info, filters: ContentFilterSimple
     ) -> List[
-        strawberry.LazyType["ContentNode", ".contents"]  #  noqa: F821,F722
+        strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
     ]:
         result = get_cached_result(info.context.request)["Content"]
         queryset: QuerySet = self.contents.filter(hidden=False)

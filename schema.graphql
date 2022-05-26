@@ -311,9 +311,18 @@ input ContentValueInput {
 """Date with time (isoformat)"""
 scalar DateTime
 
-type DeleteContentOrClusterMutation {
-  latestDeletion: DateTime!
+"""Input data for `deleteContentOrCluster` mutation"""
+input DeleteContentOrClusterInput {
+  ids: [ID!]!
+  when: DateTime = null
+  authorization: [String!] = null
 }
+
+type DeleteContentOrClusterMutation {
+  latestDeletion: DateTime
+}
+
+union DeleteContentOrClusterPayload = DeleteContentOrClusterMutation | OperationInfo
 
 """Specify policy for recursive deletions"""
 enum DeleteRecursive {
@@ -328,12 +337,11 @@ type GlobalGroup implements Node {
   description: String!
   hidden: Boolean!
   matchUserGroup: String!
-  injectedKeys: [InjectedKey!]!
   properties: [GlobalGroupProperty!]!
+  injectedKeys: [InjectedKey!]!
 }
 
-type GlobalGroupProperty implements Node {
-  id: GlobalID!
+type GlobalGroupProperty {
   name: String!
   description: String!
 }
@@ -343,8 +351,7 @@ The `ID` scalar type represents a unique identifier, often used to refetch an ob
 """
 scalar GlobalID @specifiedBy(url: "https://relay.dev/graphql/objectidentification.htm")
 
-type InjectedKey implements Node {
-  id: GlobalID!
+type InjectedKey {
   link: String!
   hash: String!
 }
@@ -354,13 +361,30 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
 
-"""Input data for `mutateAndGetPayload` mutation"""
-input MutateAndGetPayloadInput {
+"""Input data for `mark` mutation"""
+input MarkInput {
   ids: [ID!]!
+  hidden: Boolean = null
+  featured: Boolean = null
   authorization: [String!] = null
 }
 
-union MutateAndGetPayloadPayload = RegenerateFlexidMutation | OperationInfo
+type MarkMutation {
+  markChanged: [ID!]!
+}
+
+union MarkPayload = MarkMutation | OperationInfo
+
+"""An enumeration."""
+enum MetadataOperations {
+  append
+  remove
+  replace
+}
+
+type MetadataUpdateMutation {
+  updated: [ID!]!
+}
 
 """Input data for `mutateCluster` mutation"""
 input MutateClusterInput {
@@ -417,20 +441,26 @@ type Mutation {
     """Input data for `mutateCluster` mutation"""
     input: MutateClusterInput!
   ): MutateClusterPayload!
-  deleteContentOrCluster: DeleteContentOrClusterMutation!
-  resetDeletionContentOrCluster: ResetDeletionContentOrClusterMutation!
+  deleteContentOrCluster(
+    """Input data for `deleteContentOrCluster` mutation"""
+    input: DeleteContentOrClusterInput!
+  ): DeleteContentOrClusterPayload!
+  resetDeletionContentOrCluster(
+    """Input data for `resetDeletionContentOrCluster` mutation"""
+    input: ResetDeletionContentOrClusterInput!
+  ): ResetDeletionContentOrClusterPayload!
   regenerateFlexid(
-    """Input data for `mutateAndGetPayload` mutation"""
-    input: MutateAndGetPayloadInput!
-  ): MutateAndGetPayloadPayload!
+    """Input data for `regenerateFlexid` mutation"""
+    input: RegenerateFlexidInput!
+  ): RegenerateFlexidPayload!
   updateMetadata(
-    """Input data for `mutateAndGetPayload` mutation"""
-    input: MutateAndGetPayloadInput!
-  ): MutateAndGetPayloadPayload!
+    """Input data for `updateMetadata` mutation"""
+    input: UpdateMetadataInput!
+  ): UpdateMetadataPayload!
   updateMarks(
-    """Input data for `mutateAndGetPayload` mutation"""
-    input: MutateAndGetPayloadInput!
-  ): MutateAndGetPayloadPayload!
+    """Input data for `mark` mutation"""
+    input: MarkInput!
+  ): MarkPayload!
   pushContent(
     """Input data for `mutatePushContent` mutation"""
     input: MutatePushContentInput!
@@ -517,19 +547,31 @@ input ReferenceInput {
   deleteRecursive: DeleteRecursive = null
 }
 
+"""Input data for `regenerateFlexid` mutation"""
+input RegenerateFlexidInput {
+  ids: [ID!]!
+  authorization: [String!] = null
+}
+
 type RegenerateFlexidMutation {
   updated: [ID!]!
 }
 
+union RegenerateFlexidPayload = RegenerateFlexidMutation | OperationInfo
+
 scalar RegisterUrl
+
+"""Input data for `resetDeletionContentOrCluster` mutation"""
+input ResetDeletionContentOrClusterInput {
+  ids: [ID!]!
+  authorization: [String!] = null
+}
 
 type ResetDeletionContentOrClusterMutation {
   restored: [ID!]!
-  mutateAndGetPayload(
-    """Input data for `mutateAndGetPayload` mutation"""
-    input: MutateAndGetPayloadInput!
-  ): ResetDeletionContentOrClusterMutation!
 }
+
+union ResetDeletionContentOrClusterPayload = ResetDeletionContentOrClusterMutation | OperationInfo
 
 type SecretgraphConfig implements Node {
   """The Globally Unique ID of this object"""
@@ -581,6 +623,18 @@ type TransferMutation {
 }
 
 scalar UUID
+
+"""Input data for `updateMetadata` mutation"""
+input UpdateMetadataInput {
+  ids: [ID!]!
+  state: String = null
+  tags: [String!] = null
+  actions: [ActionInput!] = null
+  operation: MetadataOperations = append
+  authorization: [String!] = null
+}
+
+union UpdateMetadataPayload = MetadataUpdateMutation | OperationInfo
 
 scalar Upload
 

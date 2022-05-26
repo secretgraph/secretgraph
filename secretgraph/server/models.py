@@ -278,7 +278,7 @@ class Content(FlexidModel):
                 )
 
     def __repr__(self) -> str:
-        return "<Content: flexid(%s)>" % self.flexid
+        return "<Content: type(%s), flexid(%s)>" % (self.type, self.flexid)
 
 
 class ContentAction(models.Model):

@@ -65,26 +65,31 @@ export async function checkConfigObject(
     client: ApolloClient<any>,
     config: Interfaces.ConfigInterface
 ) {
-    let actions: string[] = [],
-        cert: Uint8Array | null = null
-    if (!actions || !cert) {
+    const authInfo = authInfoFromConfig({
+        config,
+        url: config.baseUrl,
+        clusters: new Set([config.configCluster]),
+    })
+    const cert: Uint8Array | null = authInfo.certificateHashes.length
+        ? b64toarr(config.certificates[authInfo.certificateHashes[0]].data)
+        : null
+    if (!authInfo.tokens.length || !cert) {
         return false
     }
-    const tokens = actions.map((action) => `${config.configCluster}:${action}`)
-    const result = await client.query({
+    const { data } = await client.query({
         query: findConfigQuery,
         variables: {
             cluster: config.configCluster,
-            authorization: tokens,
+            authorization: authInfo.tokens,
         },
     })
-    if (!result || result.data.contents.edges.length < 1) {
+    if (!data || data.secretgraph.contents.edges.length < 1) {
         return false
     }
-    if (result.data.contents.edges.length > 1) {
+    if (data.secretgraph.contents.edges.length > 1) {
         console.error(
             'Too many config objects found',
-            result.data.contents.edges
+            data.secretgraph.contents.edges
         )
         return false
     }

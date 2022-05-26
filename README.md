@@ -174,6 +174,10 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   repair encrypted import
+    -   logic: create two prepared arrays (pws, prekeys) and merge them. Don't call too often derivePw
+-   simplify config url export (no private key anymore)
+-   implement settings/config
 -   too many queries when selecting node (sidebar is also updated, because updateId?)
 -   modernize ActionDialog, redesign, multi column?
 -   modernize Keys, expose actions
@@ -184,13 +188,12 @@ idea: seperate actions with different concerns.
 -   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
     -   partly solved
 -   test permissions
--   disable editing/prompt for keys if keys are missing
+-   disable editing/or prompt for tokens if tokens are missing
 -   edge-serverside encryption
 -   document permissions, specialize
 -   cleanup js structure, harmonize naming
 -   updateId in form
 -   prekey implement form
--   simplify config url export (no private key anymore)
 -   implement form with send for Message
 -   if type=Message switch strings to Inbox, Send
 -   find way how Messages sent can be differed from messages received

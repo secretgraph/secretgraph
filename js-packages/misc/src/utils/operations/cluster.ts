@@ -201,7 +201,7 @@ export async function initializeCluster({
         contentHash: digest,
         hashAlgorithm,
         authorization,
-    }).then(({ data }) => {
+    }).then(async ({ data }) => {
         return {
             config,
             cluster: clusterResult,

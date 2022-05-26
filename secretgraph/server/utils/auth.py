@@ -281,7 +281,6 @@ def retrieve_allowed_objects(request, query, scope="view", authset=None):
 def fetch_by_id(
     query,
     flexids,
-    prefix="",
     check_content_hash=False,
     limit_ids: Optional[int] = 1,
 ):
@@ -289,16 +288,15 @@ def fetch_by_id(
         flexids = [flexids]
     elif limit_ids:
         flexids = flexids[:limit_ids]
+    assert all(map(lambda x: isinstance(x, (str, relay.GlobalID)), flexids))
     flexids = list(map(str, flexids))
     if not flexids:
         raise ValueError("No id specified")
-    filters = models.Q(**{f"{prefix}flexid_cached__in": flexids}) | models.Q(
-        **{
-            f"{prefix}flexid__in": flexids,  #
-        }
+    filters = models.Q(flexid_cached__in=flexids) | models.Q(
+        flexid__in=flexids
     )
     if check_content_hash:
-        filters |= models.Q(**{f"{prefix}contentHash__in": flexids})
+        filters |= models.Q(contentHash__in=flexids)
     return query.filter(filters)
 
 
@@ -402,7 +400,7 @@ def get_cached_result(
             request,
             name,
             LazyViewResult(
-                retrieve_allowed_objects,
+                partial(retrieve_allowed_objects, scope=scope),
                 request,
                 *viewResults,
                 authset=authset,

@@ -265,10 +265,10 @@ def fetch_contents(
 
         query = query.filter(
             (~excl_filters)
+            & (~excl_type_filters)
             & incl_filters
             & hash_filters
             & incl_type_filters
-            & (~excl_type_filters)
             & state_filters
         )
 
