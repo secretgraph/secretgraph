@@ -174,8 +174,6 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   repair encrypted import
-    -   logic: create two prepared arrays (pws, prekeys) and merge them. Don't call too often derivePw
 -   simplify config url export (no private key anymore)
 -   implement settings/config
 -   too many queries when selecting node (sidebar is also updated, because updateId?)

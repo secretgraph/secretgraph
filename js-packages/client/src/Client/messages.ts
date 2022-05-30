@@ -13,7 +13,7 @@ export const decryptingPasswordLabel = gettext(
     'Password for encrypted settings.'
 )
 export const decryptingPasswordHelp = gettext(
-    'Enter password for encrypted settings. Leave empty in case the settings are not encrypted.'
+    'Enter password for decrypting settings.'
 )
 export const encryptingPasswordHelp = gettext(
     'Enter password for encrypting generated settings. Leave empty for no encryption.'

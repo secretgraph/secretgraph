@@ -208,6 +208,8 @@ function compareObjects(obj1: any, obj2: any) {
 }
 
 class KeyTypeError extends Error {}
+class EmptyKeyError extends Error {}
+class UnknownAlgorithm extends Error {}
 
 export async function unserializeToCryptoKey(
     inp: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>,
@@ -243,6 +245,9 @@ export async function unserializeToCryptoKey(
     } else {
         _data = await unserializeToArrayBuffer(temp1 as Interfaces.RawInput)
     }
+    if (!_data.byteLength) {
+        throw new EmptyKeyError('Empty key')
+    }
     if (params.name.startsWith('AES-')) {
         if (!Constants.mapEncryptionAlgorithms[params.name]) {
             throw Error('Algorithm not supported: ' + params.name)
@@ -260,7 +265,9 @@ export async function unserializeToCryptoKey(
             !Constants.mapEncryptionAlgorithms[`${params.name}private`] ||
             !Constants.mapEncryptionAlgorithms[`${params.name}public`]
         ) {
-            throw Error(`Algorithm not supported: ${params.name}`)
+            throw new UnknownAlgorithm(
+                `Algorithm not supported: ${params.name}`
+            )
         }
         try {
             _result = await crypto.subtle.importKey(
@@ -582,7 +589,7 @@ export async function derivePW(
             key,
             256 // cap at 256 for AESGCM compatibility
         ),
-        key: key,
+        key,
     }
 }
 
@@ -820,9 +827,11 @@ export async function encryptPreKey({
         key,
         data: prekey,
     })
-    return `${Buffer.from(nonce).toString('base64')}${Buffer.from(
-        data
-    ).toString('base64')}`
+    const ret = Buffer.concat([nonce, new Uint8Array(data)]).toString('base64')
+    if (ret.length <= 23) {
+        throw new EmptyKeyError('prekey is too short <= 3 bytes')
+    }
+    return ret
 }
 
 async function _pwsdecryptprekey(options: {
@@ -845,25 +854,45 @@ async function _pwsdecryptprekey(options: {
         prekey = options.prekey
     }
     const nonce = new Uint8Array(prekey.slice(0, 13))
-    const realkey = prekey.slice(13)
+    if (!nonce.byteLength) {
+        console.error('nonce part error', nonce, new Uint8Array(prekey))
+        throw new EmptyKeyError('nonce part of pre key empty')
+    }
+    const realkey = new Uint8Array(prekey.slice(13))
+    if (!realkey.byteLength) {
+        console.error('realkey error', realkey, new Uint8Array(prekey))
+        throw new EmptyKeyError('real part of pre key empty')
+    }
     const decryptprocesses = []
     for (const pw of options.pws) {
         decryptprocesses.push(
             decryptAESGCM({
                 data: realkey,
-                key: (
-                    await derivePW({
-                        pw,
-                        salt: nonce,
-                        hashAlgorithm: options.hashAlgorithm,
-                        iterations: options.iterations,
-                    })
-                ).data,
-                nonce: nonce,
+                // pw hash uses nonce of prekey as salt
+                key: derivePW({
+                    pw,
+                    salt: nonce,
+                    hashAlgorithm: options.hashAlgorithm,
+                    iterations: options.iterations,
+                }).then(
+                    (result) => {
+                        return result.data
+                    },
+                    (reason) => {
+                        console.warn('Deriving pw failed', reason)
+                        return Promise.reject(reason)
+                    }
+                ),
+                nonce,
             })
         )
     }
-    return [await Promise.any(decryptprocesses).then((obj) => obj.data), prefix]
+    return [
+        await Promise.any(decryptprocesses).then((obj) => {
+            return obj.data
+        }, Promise.reject),
+        prefix,
+    ]
 }
 
 export async function decryptPreKeys(options: {
