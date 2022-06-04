@@ -1,40 +1,27 @@
-import { ApolloClient, useApolloClient } from '@apollo/client'
 import AccountCircle from '@mui/icons-material/AccountCircle'
 import HomeIcon from '@mui/icons-material/Home'
 import MenuIcon from '@mui/icons-material/Menu'
 import AppBar from '@mui/material/AppBar'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import FormControl from '@mui/material/FormControl'
-import FormHelperText from '@mui/material/FormHelperText'
 import IconButton from '@mui/material/IconButton'
-import Link from '@mui/material/Link'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { useTheme } from '@mui/material/styles'
-import TextField from '@mui/material/TextField'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
-import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
-import { exportConfig, exportConfigAsUrl } from '@secretgraph/misc/utils/config'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
-import { encryptingPasswordHelp, encryptingPasswordLabel } from '../messages'
+import ConfigShareDialog from './share/ConfigShareDialog'
 
 const menuRef: React.RefObject<any> = React.createRef()
 
-export default function HeaderBar() {
-    const { open, setOpen } = React.useContext(Contexts.OpenSidebar)
+export default React.memo(function HeaderBar() {
     const theme = useTheme()
+    const { open, setOpen } = React.useContext(Contexts.OpenSidebar)
     const [menuOpen, setMenuOpen] = React.useState(false)
-    const [exportOpen, setExportOpen] = React.useState(false)
-    const [exportUrl, setExportUrl] = React.useState('')
-    const [loadingExport, setLoadingExport] = React.useState(false)
+    const { open: openConfigShare, setOpen: setOpenConfigShare } =
+        React.useContext(Contexts.OpenConfigShare)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     const { homeUrl } = React.useContext(Contexts.External)
@@ -76,57 +63,6 @@ export default function HeaderBar() {
             break
         default:
             throw Error(`Invalid type: ${mainCtx.action}`)
-    }
-
-    const exportSettingsFile = async () => {
-        if (!config) return
-        setLoadingExport(true)
-        const encryptingPw = (
-            document.getElementById('secretgraph-export-pw') as HTMLInputElement
-        ).value
-        const sconfig: any = await baseClient
-            .query({
-                query: serverConfigQuery,
-            })
-            .then((obj: any) => obj.data.secretgraph.config)
-            .catch(() => setLoadingExport(false))
-        if (!sconfig) {
-            setLoadingExport(false)
-            return
-        }
-        exportConfig(config, encryptingPw, 100000, 'secretgraph_settings.json')
-        setExportOpen(false)
-        setLoadingExport(false)
-    }
-
-    const exportSettingsUrl = async () => {
-        await navigator.clipboard.writeText(exportUrl)
-        setExportOpen(false)
-    }
-
-    const exportSettingsOpener = async () => {
-        if (!config) return
-        const encryptingPw = (
-            document.getElementById('secretgraph-export-pw') as
-                | HTMLInputElement
-                | undefined
-        )?.value
-        let _exportUrl
-        try {
-            _exportUrl = await exportConfigAsUrl({
-                client: baseClient,
-                config,
-                pw: encryptingPw,
-                iterations: 100000,
-            })
-        } catch (exc) {
-            console.error(exc)
-        }
-
-        setExportUrl(_exportUrl ? (_exportUrl as string) : '')
-        setMenuOpen(false)
-        setExportOpen(true)
-        //const qr = qrcode(typeNumber, errorCorrectionLevel);
     }
 
     const logout = () => {
@@ -181,59 +117,12 @@ export default function HeaderBar() {
                 }),
             }}
         >
-            <Dialog
-                open={exportOpen}
-                onClose={() => setExportOpen(false)}
-                aria-labelledby="export-dialog-title"
-            >
-                <DialogTitle id="export-dialog-title">Export</DialogTitle>
-                <DialogContent>
-                    <FormControl>
-                        <TextField
-                            disabled={loadingExport}
-                            fullWidth={true}
-                            variant="outlined"
-                            label={encryptingPasswordLabel}
-                            id="secretgraph-export-pw"
-                            inputProps={{
-                                'aria-describedby':
-                                    'secretgraph-export-pw-help',
-                                autoComplete: 'new-password',
-                            }}
-                            type="password"
-                        />
-                        <FormHelperText id="secretgraph-export-pw-help">
-                            {encryptingPasswordHelp}
-                        </FormHelperText>
-                    </FormControl>
-                    <Link href={exportUrl} onClick={exportSettingsUrl}>
-                        {exportUrl}
-                    </Link>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        onClick={() => setExportOpen(false)}
-                        color="secondary"
-                        disabled={loadingExport}
-                    >
-                        Close
-                    </Button>
-                    <Button
-                        onClick={exportSettingsUrl}
-                        color="primary"
-                        disabled={loadingExport}
-                    >
-                        Export as url
-                    </Button>
-                    <Button
-                        onClick={exportSettingsFile}
-                        color="primary"
-                        disabled={loadingExport}
-                    >
-                        Export as file
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <ConfigShareDialog
+                open={openConfigShare}
+                closeFn={() => {
+                    setOpenConfigShare(false)
+                }}
+            />
             <Toolbar>
                 {sidebarButton}
                 <Typography
@@ -281,7 +170,10 @@ export default function HeaderBar() {
                     </MenuItem>
                     <MenuItem
                         style={{ display: !config ? 'none' : undefined }}
-                        onClick={exportSettingsOpener}
+                        onClick={() => {
+                            setMenuOpen(false)
+                            setOpenConfigShare(true)
+                        }}
                     >
                         Export Settings
                     </MenuItem>
@@ -303,4 +195,4 @@ export default function HeaderBar() {
             </Toolbar>
         </AppBar>
     )
-}
+})

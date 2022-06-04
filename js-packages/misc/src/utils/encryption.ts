@@ -364,76 +364,63 @@ export async function decryptRSAOEAP(
         nonce: ArrayBuffer | undefined = undefined,
         key: CryptoKey
     const _key = await _options.key
-    if (typeof _key === 'string') {
-        const split = _key.split(':')
-        let _hashalgo
-        switch (split.length) {
-            case 1:
-                _hashalgo = await _options.hashAlgorithm
-                hashValue = Constants.mapHashNames['' + _hashalgo]
-                if (!hashValue) {
-                    throw Error('hashalgorithm not supported: ' + _hashalgo)
-                }
-                key = await unserializeToCryptoKey(
-                    split[0],
+    let _data = await _options.data
+    const split = typeof _data == 'string' ? _data.split(':') : [_data]
+    let _hashalgo
+    switch (split.length) {
+        case 1:
+            _hashalgo = await _options.hashAlgorithm
+            _data = split[0]
+            hashValue = Constants.mapHashNames['' + _hashalgo]
+            if (!hashValue) {
+                throw Error('hashalgorithm not supported: ' + _hashalgo)
+            }
+            key = await unserializeToCryptoKey(
+                _key,
+                {
+                    name: 'RSA-OAEP',
+                    hash: hashValue.operationName,
+                },
+                'privateKey'
+            )
+            break
+        case 2:
+            _hashalgo = split[0]
+            _data = split[1]
+            hashValue = Constants.mapHashNames['' + _hashalgo]
+            if (!hashValue) {
+                throw Error('hashalgorithm not supported: ' + _hashalgo)
+            }
+            ;[nonce, key] = [
+                await unserializeToArrayBuffer(split[1]),
+                await unserializeToCryptoKey(
+                    _key,
                     {
                         name: 'RSA-OAEP',
                         hash: hashValue.operationName,
                     },
                     'privateKey'
-                )
-                break
-            case 2:
-                _hashalgo = split[0]
-                hashValue = Constants.mapHashNames['' + _hashalgo]
-                if (!hashValue) {
-                    throw Error('hashalgorithm not supported: ' + _hashalgo)
-                }
-                ;[nonce, key] = [
-                    await unserializeToArrayBuffer(split[1]),
-                    await unserializeToCryptoKey(
-                        split[1],
-                        {
-                            name: 'RSA-OAEP',
-                            hash: hashValue.operationName,
-                        },
-                        'privateKey'
-                    ),
-                ]
-                break
-            default:
-                ;[_hashalgo, nonce] = [
-                    split[0],
-                    await unserializeToArrayBuffer(split[1]),
-                ]
-                hashValue = Constants.mapHashNames['' + _hashalgo]
-                if (!hashValue) {
-                    throw Error('hashalgorithm not supported: ' + _hashalgo)
-                }
-                key = await unserializeToCryptoKey(
-                    split[2],
-                    {
-                        name: 'RSA-OAEP',
-                        hash: hashValue.operationName,
-                    },
-                    'privateKey'
-                )
-                break
-        }
-    } else {
-        const _hashalgo = await _options.hashAlgorithm
-        hashValue = Constants.mapHashNames['' + _hashalgo]
-        if (!hashValue) {
-            Error('hashalgorithm not supported: ' + _hashalgo)
-        }
-        key = await unserializeToCryptoKey(
-            _key,
-            {
-                name: 'RSA-OAEP',
-                hash: hashValue.operationName,
-            },
-            'privateKey'
-        )
+                ),
+            ]
+            break
+        default:
+            ;[_hashalgo, nonce] = [
+                split[0],
+                await unserializeToArrayBuffer(split[1]),
+            ]
+            hashValue = Constants.mapHashNames['' + _hashalgo]
+            if (!hashValue) {
+                throw Error('hashalgorithm not supported: ' + _hashalgo)
+            }
+            key = await unserializeToCryptoKey(
+                _key,
+                {
+                    name: 'RSA-OAEP',
+                    hash: hashValue.operationName,
+                },
+                'privateKey'
+            )
+            break
     }
     return {
         data: await crypto.subtle.decrypt(
@@ -441,7 +428,7 @@ export async function decryptRSAOEAP(
                 name: 'RSA-OAEP',
             },
             key,
-            await unserializeToArrayBuffer(_options.data)
+            await unserializeToArrayBuffer(_data)
         ),
         key,
         hashAlgorithm: hashValue.serializedName,

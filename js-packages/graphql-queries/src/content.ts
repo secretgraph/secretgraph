@@ -32,11 +32,11 @@ export const contentFeedQuery = gql`
                     key: "feedContents"
                     filter: [
                         "authorization"
-                        "clusters"
                         "types"
+                        "states"
                         "clusters"
-                        "includeTags"
-                        "excludeTags"
+                        "include"
+                        "exclude"
                         "deleted"
                         "public"
                     ]
@@ -452,7 +452,8 @@ export const findConfigQuery = gql`
     query contentFindConfigQuery(
         $cluster: ID!
         $authorization: [String!]
-        $contentHashes: [String!]
+        $configHashes: [String!]
+        $configKeyHashes: [String!]
     ) {
         secretgraph(authorization: $authorization) {
             config {
@@ -465,7 +466,8 @@ export const findConfigQuery = gql`
                     deleted: FALSE
                     clusters: [$cluster]
                     includeTypes: ["Config"]
-                    contentHashes: $contentHashes
+                    contentHashes: $configHashes
+                    includeTags: $configKeyHashes
                 }
             ) {
                 edges {
@@ -489,7 +491,7 @@ export const findConfigQuery = gql`
                                             edges {
                                                 node {
                                                     extra
-                                                    target {
+                                                    source {
                                                         id
                                                         tags(
                                                             includeTags: [

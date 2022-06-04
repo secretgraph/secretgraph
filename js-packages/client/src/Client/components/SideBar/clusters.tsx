@@ -49,24 +49,22 @@ export default React.memo(function Clusters({
     const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
-    let [
-        loadQuery,
-        { data, fetchMore, error, loading, refetch, called, variables },
-    ] = useLazyQuery(clusterFeedQuery, {
-        variables: {
-            authorization: authinfo?.tokens,
-            public:
-                !authinfo?.tokens || !authinfo.tokens.length
-                    ? Constants.UseCriteriaPublic.TRUE
-                    : Constants.UseCriteriaPublic.TOKEN,
-            deleted: searchCtx.deleted
-                ? Constants.UseCriteria.TRUE
-                : Constants.UseCriteria.FALSE,
-            include: searchCtx.include,
-            exclude: searchCtx.exclude,
-            excludeIds: excludeIds,
-        },
-    })
+    let [loadQuery, { data, fetchMore, error, loading, refetch, called }] =
+        useLazyQuery(clusterFeedQuery, {
+            variables: {
+                authorization: authinfo?.tokens,
+                public:
+                    !authinfo?.tokens || !authinfo.tokens.length
+                        ? Constants.UseCriteriaPublic.TRUE
+                        : Constants.UseCriteriaPublic.TOKEN,
+                deleted: searchCtx.deleted
+                    ? Constants.UseCriteria.TRUE
+                    : Constants.UseCriteria.FALSE,
+                include: searchCtx.include,
+                exclude: searchCtx.exclude,
+                excludeIds: excludeIds,
+            },
+        })
     React.useEffect(() => {
         expanded.includes(props.nodeId) && loadQuery()
     }, [expanded.includes(props.nodeId)])

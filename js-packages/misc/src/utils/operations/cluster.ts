@@ -10,6 +10,7 @@ import { authInfoFromConfig, cleanConfig } from '../config'
 import {
     encryptAESGCM,
     encryptRSAOEAP,
+    hashObject,
     serializeToBase64,
     unserializeToArrayBuffer,
 } from '../encryption'
@@ -179,6 +180,18 @@ export async function initializeCluster({
     if (!cleanConfig(config)) {
         throw Error('invalid config created')
     }
+    let testhash = await hashObject(
+        config['certificates'][digestCertificate].data,
+        hashAlgorithm
+    )
+    /**if (testhash != digestCertificate) {
+        console.log('diff between hashes', {
+            testhash,
+            digestCertificate,
+            cert: config['certificates'][digestCertificate].data,
+            hashAlgorithm,
+        })
+    }*/
     const digest = await sortedHash(['type=Config'], hashAlgorithm)
 
     const { tokens: authorization } = authInfoFromConfig({

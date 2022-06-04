@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 
+from strawberry_django_plus import relay
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
@@ -77,11 +78,12 @@ class ContentView(AllowCORSMixin, FormView):
         # authset can contain: ""
         # why not ids_to_results => uses flexid directly
         self.result = get_cached_result(request, authset=authset)["Content"]
-
-        if "decrypt" in kwargs:
+        if "decrypt" in request.GET:
             if self.action != "view":
                 raise Http404()
-            response = self.handle_decrypt(request, authset, *args, **kwargs)
+            response = self.handle_decrypt(
+                request, authset=authset, *args, **kwargs
+            )
         if self.action in {"push", "update"}:
             # user interface
             response = self.render_to_response(self.get_context_data())
@@ -199,6 +201,8 @@ class ContentView(AllowCORSMixin, FormView):
         """
         # shallow copy initialization of result
         result = self.result.copy()
+        if isinstance(id, (relay.GlobalID, str)):
+            id = [id]
         result["objects"] = ContentFetchQueryset(
             fetch_by_id(result["objects"], id, limit_ids=limit_ids)
             .distinct()
@@ -206,8 +210,7 @@ class ContentView(AllowCORSMixin, FormView):
             actions=result["actions"],
             ttl_hours=2,
         )
-        count = result["objects"].count()
-        if not count:
+        if not result["objects"].exists():
             raise Http404()
 
         def gen():
@@ -215,7 +218,7 @@ class ContentView(AllowCORSMixin, FormView):
             for content in iter_decrypt_contents(result):
                 if seperator is not None:
                     yield seperator
-                if count == 1:
+                if id and len(id) == 1:
                     # don't alter document
                     for chunk in content.read_decrypt():
                         yield chunk

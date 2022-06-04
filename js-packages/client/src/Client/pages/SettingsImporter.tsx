@@ -31,13 +31,13 @@ import * as React from 'react'
 
 import * as Contexts from '../contexts'
 import {
-    decryptingPasswordHelp,
-    decryptingPasswordLabel,
+    decryptingPasswordSettingsHelp,
     importFileLabel,
     importHelp,
     importStartLabel,
     initializeHelp,
     initializeLabel,
+    passwordLabel,
 } from '../messages'
 
 // TODO: use formik
@@ -514,7 +514,7 @@ function SettingsImporter() {
                             onChange={(event) => {
                                 setHasPw(event.target.value ? true : false)
                             }}
-                            label={decryptingPasswordLabel}
+                            label={passwordLabel}
                             id="secretgraph-decrypting"
                             inputProps={{
                                 'aria-describedby':
@@ -523,7 +523,7 @@ function SettingsImporter() {
                             type="password"
                         />
                         <FormHelperText id="secretgraph-decrypting-help">
-                            {decryptingPasswordHelp}
+                            {decryptingPasswordSettingsHelp}
                         </FormHelperText>
                     </FormControl>
                 </CardContent>

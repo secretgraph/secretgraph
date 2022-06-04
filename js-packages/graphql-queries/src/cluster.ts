@@ -18,7 +18,6 @@ export const clusterFeedQuery = gql`
             clusters(
                 filters: {
                     includeTypes: $types
-                    excludeTypes: ["Config", "PrivateKey"]
                     states: $states
                     includeTags: $include
                     excludeTags: $exclude
@@ -34,14 +33,14 @@ export const clusterFeedQuery = gql`
                     key: "feedClusters"
                     filter: [
                         "authorization"
-                        "states"
                         "types"
-                        "includeTags"
-                        "excludeTags"
+                        "states"
+                        "include"
+                        "exclude"
                         "excludeIds"
+                        "deleted"
                         "public"
                         "search"
-                        "deleted"
                     ]
                 ) {
                 edges {

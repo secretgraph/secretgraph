@@ -81,6 +81,14 @@ export const OpenSidebar = createContext<{
     setOpen: stubFn,
 })
 
+export const OpenConfigShare = createContext<{
+    open: boolean
+    setOpen: (arg: boolean) => void
+}>({
+    open: false,
+    setOpen: stubFn,
+})
+
 export const SidebarItemsSelected = createContext<{
     selected: string[]
     setSelected: (arg: string[]) => void

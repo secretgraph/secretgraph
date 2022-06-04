@@ -4,7 +4,7 @@ import {
     CertificateInputEntry,
     generateActionMapper,
 } from '@secretgraph/misc/utils/action'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 
 export function mapperToArray(
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>,
@@ -19,7 +19,7 @@ export function mapperToArray(
             const entry = mapper[params.newHash]
             if (entry.type == 'action') {
                 for (const val of entry.actions) {
-                    const [actionType, isCluster] = val.split(",", 2)
+                    const [actionType, isCluster] = val.split(',', 2)
                     actions.push({
                         type: 'action',
                         data: params.data,

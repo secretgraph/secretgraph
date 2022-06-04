@@ -10,6 +10,8 @@ import {
     decryptRSAOEAP,
     encryptAESGCM,
     encryptPreKey,
+    findWorkingHashAlgorithms,
+    hashObject,
     serializeToBase64,
     unserializeToArrayBuffer,
     unserializeToCryptoKey,
@@ -337,64 +339,44 @@ export async function exportConfigAsUrl({
         url: config.baseUrl,
         clusters: new Set([config.configCluster]),
     })
-    const cert: Uint8Array | null = authInfo.certificateHashes.length
+    const privcert: Uint8Array | null = authInfo.certificateHashes.length
         ? b64toarr(config.certificates[authInfo.certificateHashes[0]].data)
         : null
 
+    if (!privcert) {
+        return Promise.reject('no cert found')
+    }
     const obj = await client.query({
         query: findConfigQuery,
         variables: {
             cluster: config.configCluster,
             authorization: authInfo.tokens,
+            contentKeyHashes: authInfo.certificateHashes.map(
+                (hash) => `key_hash=${hash}`
+            ),
         },
     })
-    let certhashes: string[] = []
-    if (!cert) {
-        return Promise.reject('no cert found')
-    }
-    certhashes = await Promise.all(
-        obj.data.secretgraph.config.hashAlgorithms.map((hash: string) =>
-            crypto.subtle
-                .digest(
-                    Constants.mapHashNames[hash].operationName,
-                    cert as Uint8Array
-                )
-                .then((data) => Buffer.from(data).toString('base64'))
-        )
-    )
-    const searchcerthashes = new Set(
-        authInfo.hashes.map((hash) => `key_hash=${hash}`)
-    )
-    for (const { node: configContent } of obj.data.contents.edges) {
-        if (configContent.type != 'Config') {
-            continue
-        }
-        for (const { node: keyref } of configContent.references.edges) {
-            if (
-                keyref.target.tags.findIndex((val: any) =>
-                    searchcerthashes.has(val)
-                ) == -1
-            ) {
+    for (const { node: configContent } of obj.data.secretgraph.contents.edges) {
+        for (const {
+            node: { target: pubkey, extra },
+        } of configContent.references.edges) {
+            const privkey = pubkey.referencedBy.edges[0]?.node?.source
+            if (!privkey) {
                 continue
             }
-            const privkeyrefnode = keyref.target.references.find(
-                ({ node }: any) => node.target.tags
-            )
-            if (!privkeyrefnode) {
-                continue
-            }
-            const privkeykey = privkeyrefnode.node.target.tags
+            const privkeykey = privkey.tags
                 .find((tag: string) => tag.startsWith('key='))
                 .match(/=(.*)/)[1]
             const url = new URL(config.baseUrl, window.location.href)
+            // decrypt attached symmetric key
             const sharedKeyPrivateKeyRes = await decryptRSAOEAP({
-                key: cert,
+                key: privcert,
                 data: privkeykey,
             })
             if (pw) {
                 const sharedKeyConfigRes = decryptRSAOEAP({
                     key: sharedKeyPrivateKeyRes.key,
-                    data: keyref.extra,
+                    data: extra,
                 })
                 const prekey = await encryptPreKey({
                     prekey: sharedKeyPrivateKeyRes.data,
@@ -408,19 +390,32 @@ export async function exportConfigAsUrl({
                     hashAlgorithm: 'SHA-512',
                     iterations,
                 })
-                return `${url.origin}${
-                    configContent.link
-                }?decrypt&token=${authInfo.tokens.join('token=')}&prekey=${
-                    certhashes[0]
-                }:${prekey}&prekey=shared:${prekey2}`
+                url.pathname = configContent.link
+                url.searchParams.append('decrypt', '1')
+                for (const token of authInfo.tokens) {
+                    url.searchParams.append('token', token)
+                }
+                url.searchParams.append(
+                    'prekey',
+                    `${authInfo.certificateHashes[0]}:${prekey}`
+                )
+                url.searchParams.append('prekey', `shared:${prekey2}`)
+
+                return url.href
             } else {
-                return `${url.origin}${
-                    configContent.link
-                }?decrypt&token=${authInfo.tokens.join('token=')}&token=${
-                    certhashes[0]
-                }:${Buffer.from(sharedKeyPrivateKeyRes.data).toString(
-                    'base64'
-                )}`
+                url.pathname = configContent.link
+                url.searchParams.append('decrypt', '1')
+                for (const token of authInfo.tokens) {
+                    url.searchParams.append('token', token)
+                }
+                url.searchParams.append(
+                    'token',
+                    `${authInfo.certificateHashes[0]}:${Buffer.from(
+                        sharedKeyPrivateKeyRes.data
+                    ).toString('base64')}`
+                )
+
+                return url.href
             }
         }
     }

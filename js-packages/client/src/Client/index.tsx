@@ -1,7 +1,7 @@
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
-import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns'
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     loadConfigSync,
@@ -30,6 +30,7 @@ function Definitions({ defaultPath, homeUrl }: Props) {
     const [openSidebar, _setOpenSidebar] = React.useState(() => {
         return JSON.parse(sessionStorage.getItem('openSidebar') || 'true')
     })
+    const [openConfigShare, setOpenConfigShare] = React.useState(false)
     function setOpenSidebar(arg: boolean) {
         sessionStorage.setItem('openSidebar', JSON.stringify(arg))
         _setOpenSidebar(arg)
@@ -117,17 +118,30 @@ function Definitions({ defaultPath, homeUrl }: Props) {
                                     value={{ mainCtx, updateMainCtx }}
                                 >
                                     <Contexts.Search.Provider
-                                        value={{ searchCtx, updateSearchCtx }}
+                                        value={{
+                                            searchCtx,
+                                            updateSearchCtx,
+                                        }}
                                     >
                                         <Contexts.Config.Provider
                                             value={{ config, updateConfig }}
                                         >
-                                            <Contexts.Snackbar.Provider
-                                                value={{ message, sendMessage }}
+                                            <Contexts.OpenConfigShare.Provider
+                                                value={{
+                                                    open: openConfigShare,
+                                                    setOpen: setOpenConfigShare,
+                                                }}
                                             >
-                                                <CssBaseline />
-                                                <Main />
-                                            </Contexts.Snackbar.Provider>
+                                                <Contexts.Snackbar.Provider
+                                                    value={{
+                                                        message,
+                                                        sendMessage,
+                                                    }}
+                                                >
+                                                    <CssBaseline />
+                                                    <Main />
+                                                </Contexts.Snackbar.Provider>
+                                            </Contexts.OpenConfigShare.Provider>
                                         </Contexts.Config.Provider>
                                     </Contexts.Search.Provider>
                                 </Contexts.Main.Provider>
