@@ -142,7 +142,7 @@ graph = ["objgraph (>=1.7.2)"]
 
 [[package]]
 name = "django"
-version = "4.0.4"
+version = "4.0.5"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 category = "main"
 optional = false
@@ -192,7 +192,7 @@ django = "*"
 
 [[package]]
 name = "django-mysql"
-version = "4.6.0"
+version = "4.7.0"
 description = "Django-MySQL extends Django's built-in MySQL and MariaDB support their specific features not available on other databases."
 category = "main"
 optional = true
@@ -337,11 +337,11 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "pylint"
-version = "2.13.9"
+version = "2.14.1"
 description = "python code static checker"
 category = "dev"
 optional = false
-python-versions = ">=3.6.2"
+python-versions = ">=3.7.2"
 
 [package.dependencies]
 astroid = ">=2.11.5,<=2.12.0-dev0"
@@ -351,10 +351,12 @@ isort = ">=4.2.5,<6"
 mccabe = ">=0.6,<0.8"
 platformdirs = ">=2.2.0"
 tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
+tomlkit = ">=0.10.1"
 typing-extensions = {version = ">=3.10.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
-testutil = ["gitpython (>3)"]
+spelling = ["pyenchant (>=3.2,<4.0)"]
+testutils = ["gitpython (>3)"]
 
 [[package]]
 name = "pyparsing"
@@ -461,7 +463,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "strawberry-django-plus"
-version = "1.14"
+version = "1.14.1"
 description = "Enhanced Strawberry GraphQL integration with Django"
 category = "main"
 optional = false
@@ -527,6 +529,14 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "tomlkit"
+version = "0.11.0"
+description = "Style preserving TOML library"
+category = "dev"
+optional = false
+python-versions = ">=3.6,<4.0"
+
+[[package]]
 name = "typing-extensions"
 version = "4.2.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -557,7 +567,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "waitress"
-version = "2.1.1"
+version = "2.1.2"
 description = "Waitress WSGI server"
 category = "main"
 optional = true
@@ -764,8 +774,8 @@ dill = [
     {file = "dill-0.3.5.1.tar.gz", hash = "sha256:d75e41f3eff1eee599d738e76ba8f4ad98ea229db8b085318aa2b3333a208c86"},
 ]
 django = [
-    {file = "Django-4.0.4-py3-none-any.whl", hash = "sha256:07c8638e7a7f548dc0acaaa7825d84b7bd42b10e8d22268b3d572946f1e9b687"},
-    {file = "Django-4.0.4.tar.gz", hash = "sha256:4e8177858524417563cc0430f29ea249946d831eacb0068a1455686587df40b5"},
+    {file = "Django-4.0.5-py3-none-any.whl", hash = "sha256:502ae42b6ab1b612c933fb50d5ff850facf858a4c212f76946ecd8ea5b3bf2d9"},
+    {file = "Django-4.0.5.tar.gz", hash = "sha256:f7431a5de7277966f3785557c3928433347d998c1e6459324501378a291e5aab"},
 ]
 django-extensions = [
     {file = "django-extensions-3.1.5.tar.gz", hash = "sha256:28e1e1bf49f0e00307ba574d645b0af3564c981a6dfc87209d48cb98f77d0b1a"},
@@ -780,8 +790,8 @@ django-manifest-loader = [
     {file = "django_manifest_loader-1.0.0-py3-none-any.whl", hash = "sha256:17a6e5b47ff6999ca530e754d874c1e4b0c7f16e72c761e3e05bc529cee34145"},
 ]
 django-mysql = [
-    {file = "django-mysql-4.6.0.tar.gz", hash = "sha256:054dd0475753f9ced091e7e280d36bd8145f370e47251f64cfbac81fa0bcbd45"},
-    {file = "django_mysql-4.6.0-py3-none-any.whl", hash = "sha256:a507ae6d58795ef186370a12c63c74b9df8484ecafcb268859a12ace0ed85a19"},
+    {file = "django-mysql-4.7.0.tar.gz", hash = "sha256:13d640413680b57c0ea3a49c4a0a9d1ac2b4a6e679baa5ac299dd45f3880a583"},
+    {file = "django_mysql-4.7.0-py3-none-any.whl", hash = "sha256:26ba087d9163b411d404d44bc53dfbb4b321b4692eee3061a373040e9482000e"},
 ]
 django-webtest = [
     {file = "django-webtest-1.9.10.tar.gz", hash = "sha256:c8c32041791cdae468e443097c432c67cf17cad339e1ab88b01a6c4841ee4c74"},
@@ -886,8 +896,8 @@ pygments = [
     {file = "Pygments-2.12.0.tar.gz", hash = "sha256:5eb116118f9612ff1ee89ac96437bb6b49e8f04d8a13b514ba26f620208e26eb"},
 ]
 pylint = [
-    {file = "pylint-2.13.9-py3-none-any.whl", hash = "sha256:705c620d388035bdd9ff8b44c5bcdd235bfb49d276d488dd2c8ff1736aa42526"},
-    {file = "pylint-2.13.9.tar.gz", hash = "sha256:095567c96e19e6f57b5b907e67d265ff535e588fe26b12b5ebe1fc5645b2c731"},
+    {file = "pylint-2.14.1-py3-none-any.whl", hash = "sha256:bb71e6d169506de585edea997e48d9ff20c0dc0e2fbc1d166bad6b640120326b"},
+    {file = "pylint-2.14.1.tar.gz", hash = "sha256:549261e0762c3466cc001024c4419c08252cb8c8d40f5c2c6966fea690e7fe2a"},
 ]
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
@@ -925,8 +935,8 @@ sqlparse = [
     {file = "sqlparse-0.4.2.tar.gz", hash = "sha256:0c00730c74263a94e5a9919ade150dfc3b19c574389985446148402998287dae"},
 ]
 strawberry-django-plus = [
-    {file = "strawberry-django-plus-1.14.tar.gz", hash = "sha256:81e7d3c9ed5516b2861a7d0536fae94a2e808e9a4150c8db2492189c1ecc5609"},
-    {file = "strawberry_django_plus-1.14-py3-none-any.whl", hash = "sha256:9f2203279345490b1d5bac32e18a8fe3c5abd718680cf3d6ef940d6dd6f1f2c1"},
+    {file = "strawberry-django-plus-1.14.1.tar.gz", hash = "sha256:9c6be105942c2405a595cb9a1163d69c501301333054da0c08a377bd3633a92e"},
+    {file = "strawberry_django_plus-1.14.1-py3-none-any.whl", hash = "sha256:c79c474ea71f61b78f8639eb8b68c698927cbe7b1fa05aabdc6b97be9223364a"},
 ]
 strawberry-graphql = [
     {file = "strawberry-graphql-0.114.0.tar.gz", hash = "sha256:93cf617fb830f97ef5fad67655de5e6f9079c37271c696efbdb1fc299a3ff0f0"},
@@ -939,6 +949,10 @@ strawberry-graphql-django = [
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
+]
+tomlkit = [
+    {file = "tomlkit-0.11.0-py3-none-any.whl", hash = "sha256:0f4050db66fd445b885778900ce4dd9aea8c90c4721141fde0d6ade893820ef1"},
+    {file = "tomlkit-0.11.0.tar.gz", hash = "sha256:71ceb10c0eefd8b8f11fe34e8a51ad07812cb1dc3de23247425fbc9ddc47b9dd"},
 ]
 typing-extensions = [
     {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},
@@ -953,8 +967,8 @@ urllib3 = [
     {file = "urllib3-1.26.9.tar.gz", hash = "sha256:aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e"},
 ]
 waitress = [
-    {file = "waitress-2.1.1-py3-none-any.whl", hash = "sha256:c549f5b2b4afd44d9d97d7cec79f3ef581e25d832827f415dc175327af674aa8"},
-    {file = "waitress-2.1.1.tar.gz", hash = "sha256:e2e60576cf14a1539da79f7b7ee1e79a71e64f366a0b47db54a15e971f57bb16"},
+    {file = "waitress-2.1.2-py3-none-any.whl", hash = "sha256:7500c9625927c8ec60f54377d590f67b30c8e70ef4b8894214ac6e4cad233d2a"},
+    {file = "waitress-2.1.2.tar.gz", hash = "sha256:780a4082c5fbc0fde6a2fcfe5e26e6efc1e8f425730863c04085769781f51eba"},
 ]
 webencodings = [
     {file = "webencodings-0.5.1-py2.py3-none-any.whl", hash = "sha256:a0af1213f3c2226497a97e2b3aa01a7e4bee4f403f95be16fc9acd2947514a78"},
