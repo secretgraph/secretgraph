@@ -187,6 +187,7 @@ idea: seperate actions with different concerns.
     -   partly solved
 -   test permissions
 -   disable editing/or prompt for tokens if tokens are missing
+-   find better way to get hash algorithm (python)
 -   edge-serverside encryption
 -   document permissions, specialize
 -   cleanup js structure, harmonize naming

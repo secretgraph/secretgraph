@@ -5,6 +5,7 @@ import tempfile
 from io import BytesIO
 from typing import Iterable
 
+from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -17,13 +18,6 @@ from ...constants import TransferResult, public_states
 from ..models import Content, ContentReference
 
 logger = logging.getLogger(__name__)
-
-
-default_padding = padding.OAEP(
-    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-    algorithm=hashes.SHA256(),
-    label=None,
-)
 
 
 def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
@@ -93,8 +87,24 @@ def create_key_maps(contents, keyset=()):
         flexid=F("target__flexid"),
         flexid_cached=F("target__flexid_cached"),
     ):
-        esharedkey = base64.b64decode(ref.extra)
-        sharedkey = None
+        split = ref.extra.split(":", 1)
+        if len(split) == 1:
+            esharedkey = base64.b64decode(split[0])
+            p = padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            )
+        else:
+            esharedkey = base64.b64decode(split[1])
+            # TODO: find better way to get hash algorithm
+            algo = getattr(hashes, split[0].upper())
+            p = padding.OAEP(
+                mgf=padding.MGF1(algorithm=algo()),
+                algorithm=algo(),
+                label=None,
+            )
+        shared_key = None
         matching_key = None
         if ref.matching_tag:
             matching_key = key_map1[ref.matching_tag]
@@ -102,24 +112,32 @@ def create_key_maps(contents, keyset=()):
             matching_key = key_map2[ref.flexid_cached]
         elif ref.flexid in key_map2:
             matching_key = key_map2[ref.flexid]
-        if matching_key:
-            nonce = matching_key[:13]
-            matching_key = matching_key[13:]
-            aesgcm = AESGCM(matching_key)
+        if not matching_key:
+            continue
+        # try to decode shared key directly
+        nonce = matching_key[:13]
+        mkey = matching_key[13:]
+        aesgcm = None
+        try:
+            aesgcm = AESGCM(mkey)
+        except ValueError:
+            pass
+        if aesgcm:
             try:
-                aesgcm = AESGCM(matching_key)
-                sharedkey = aesgcm.decrypt(esharedkey, nonce, None)
+                shared_key = aesgcm.decrypt(nonce, esharedkey, None)
             except Exception as exc:
                 logger.warning(
                     "Could not decode shared key (direct)", exc_info=exc
                 )
-        if not sharedkey:
-            for key in key_query.filter(referencedby__source__in=ref.target):
+
+        # try to decrypt private key to decrypt shared key
+        if not shared_key:
+            for key in key_query.filter(references__target=ref.target):
                 try:
                     nonce = base64.b64decode(key.nonce)
                     aesgcm = AESGCM(matching_key)
                     privkey = aesgcm.decrypt(
-                        key.file.open("rb").read(), nonce, None
+                        nonce, key.file.open("rb").read(), None
                     )
                     privkey = load_der_private_key(privkey, None)
                 except Exception as exc:
@@ -129,17 +147,23 @@ def create_key_maps(contents, keyset=()):
                     continue
 
                 try:
-                    shared_key = privkey.decrypt(esharedkey, default_padding)
+                    shared_key = privkey.decrypt(
+                        esharedkey,
+                        p,
+                    )
                 except Exception as exc:
                     logger.warning(
                         "Could not decrypt shared key (privkey)", exc_info=exc
                     )
                     continue
+                if shared_key:
+                    break
+
         if shared_key:
             if ref.group == "key":
-                content_key_map[ref.content_id] = shared_key
+                content_key_map[ref.source_id] = shared_key
             else:
-                transfer_key_map[ref.content_id] = shared_key
+                transfer_key_map[ref.source_id] = shared_key
     return content_key_map, transfer_key_map
 
 
@@ -176,8 +200,15 @@ class ProxyTag:
         except Exception as exc:
             raise IndexError(f"Cannot decrypt index: {index}") from exc
 
+    def __len__(self):
+        self._persist()
+        return len(self._query)
+
     def first(self):
         return self[0]
+
+    def last(self):
+        return self[-1]
 
 
 class ProxyTags:
@@ -222,13 +253,17 @@ def iter_decrypt_contents(
             .filter(
                 Q(contentAction__content_id=OuterRef("id"))
                 | Q(contentAction=None),
-                id__in=result["forms"].keys(),
+                id__in=[
+                    *result.get("action_info_contents", {}).keys(),
+                    *result.get("action_info_clusters", {}).keys(),
+                ],
             )
             .values("id")
         ),
     )
 
     for content in query:
+        # check  if content should be transfered
         if content.id in transfer_map:
             verifiers = Content.objects.trusted_keys()
             if not verifiers:
@@ -241,6 +276,7 @@ def iter_decrypt_contents(
                 transfer=True,
                 verifiers=verifiers,
             )
+            # transfer failed
             if result in {
                 TransferResult.NOTFOUND,
                 TransferResult.FAILED_VERIFICATION,
@@ -251,6 +287,8 @@ def iter_decrypt_contents(
                 continue
         elif content.is_transfer:
             continue
+
+        # we can decrypt content now (transfers are also completed)
         if content.id in content_map:
             try:
                 decryptor = Cipher(
@@ -262,7 +300,7 @@ def iter_decrypt_contents(
                     "creating decrypting context failed", exc_info=exc
                 )
                 continue
-            content.tags.proxy = ProxyTags(
+            content.tags_proxy = ProxyTags(
                 content.tags, content_map[content.id]
             )
 
@@ -277,20 +315,21 @@ def iter_decrypt_contents(
                             yield decryptor.update(chunk)
                         else:
                             yield decryptor.update(chunk[:-16])
-                            yield decryptor.finalize_with_tag(chunk[-16:])
+                            try:
+                                yield decryptor.finalize_with_tag(chunk[-16:])
+                            except exceptions.InvalidTag:
+                                logging.warning(
+                                    "Error decoding crypted content: %s (%s)",
+                                    content.flexid,
+                                    content.type,
+                                )
                         chunk = nextchunk
                 result["objects"].fetch_action_trigger(content)
 
         else:
-            content.tags.proxy = ProxyTags(content.tags)
-
-            def _generator():
-                with content.file.open() as fileob:
-                    chunk = fileob.read(512)
-                    while chunk:
-                        yield chunk
-                        chunk = fileob.read(512)
-                result["objects"].fetch_action_trigger(content)
+            # otherwise garbled encrypted output could happen
+            logger.warning("content %s could not be decrypted", content.flexid)
+            continue
 
         content.read_decrypt = _generator
         yield content

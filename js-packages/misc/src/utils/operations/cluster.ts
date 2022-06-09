@@ -210,7 +210,7 @@ export async function initializeCluster({
         privkeys: [privateKey],
         type: 'Config',
         state: 'internal',
-        tags: [],
+        tags: ['name=config.json'],
         contentHash: digest,
         hashAlgorithm,
         authorization,

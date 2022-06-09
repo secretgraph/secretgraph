@@ -2,6 +2,9 @@ import base64
 import json
 import logging
 
+
+from urllib.parse import quote
+
 from strawberry_django_plus import relay
 from django.conf import settings
 from django.core.paginator import Paginator
@@ -81,7 +84,7 @@ class ContentView(AllowCORSMixin, FormView):
         if "decrypt" in request.GET:
             if self.action != "view":
                 raise Http404()
-            response = self.handle_decrypt(
+            return self.handle_decrypt(
                 request, authset=authset, *args, **kwargs
             )
         if self.action in {"push", "update"}:
@@ -213,23 +216,32 @@ class ContentView(AllowCORSMixin, FormView):
         if not result["objects"].exists():
             raise Http404()
 
-        def gen():
-            seperator = None
-            for content in iter_decrypt_contents(result):
-                if seperator is not None:
-                    yield seperator
-                if id and len(id) == 1:
-                    # don't alter document
-                    for chunk in content.read_decrypt():
-                        yield chunk
-                else:
+        if id and len(id) == 1:
+            try:
+                iterator = iter_decrypt_contents(result)
+                content = next(iterator)
+            except StopIteration:
+                return HttpResponse("Missing key", status=400)
+            ret = StreamingHttpResponse(content.read_decrypt())
+            names = content.tags_proxy.name
+            if names and len(names):
+                ret[
+                    "Content-Disposition"
+                ] = 'attachment; filename="{}"'.format(quote(names[0]))
+            return ret
+        else:
+
+            def gen():
+                seperator = None
+                for content in iter_decrypt_contents(result):
+                    if seperator is not None:
+                        yield seperator
                     # seperate with \0
                     for chunk in content.read_decrypt():
                         yield chunk.replace(b"\0", b"\\0")
-                seperator = b"\0"
+                    seperator = b"\0"
 
-        response = StreamingHttpResponse(gen())
-        return response
+            return StreamingHttpResponse(gen())
 
     def handle_raw_singlecontent(self, request, *args, **kwargs):
         content = None
