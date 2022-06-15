@@ -60,7 +60,7 @@ function SettingsImporter() {
     const [loadingStart, setLoadingStart] = React.useState(false)
     const [loadingImport, setLoadingImport] = React.useState(false)
     const [needsPw, setNeedsPw] = React.useState(false)
-    const [hasPw, setHasPw] = React.useState(false)
+    const [decryptingPw, setPw] = React.useState('')
     const [oldConfig, setOldConfig] = React.useState(null) as [
         Interfaces.ConfigInterface | null,
         any
@@ -72,11 +72,15 @@ function SettingsImporter() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
+    const registerDialogTitleId = React.useId()
+    const loginDialogTitleId = React.useId()
+
+    const secretgraphImportFile = React.useRef<HTMLInputElement>()
+    const secretgraphImportUrl = React.useRef<HTMLInputElement>()
+    const provider = React.useRef<HTMLInputElement>()
 
     const handleSecretgraphEvent_inner = async (event: any) => {
-        const providerUrl = (
-            document.getElementById('secretgraph-provider') as HTMLInputElement
-        ).value
+        const providerUrl = provider.current!.value
         let newConfig: Interfaces.ConfigInterface | null = null
         const client = createClient(providerUrl)
         if (!client) {
@@ -153,9 +157,7 @@ function SettingsImporter() {
     }
 
     const handleStart_inner = async () => {
-        const providerUrl: string = (
-            document.getElementById('secretgraph-provider') as HTMLInputElement
-        ).value
+        const providerUrl = provider.current!.value
         const client = createClient(providerUrl)
         const result: any = await client.query({ query: serverConfigQuery })
         if (!result) {
@@ -224,21 +226,9 @@ function SettingsImporter() {
     }
 
     const handleImport_inner = async () => {
-        const decryptingPw = (
-            document.getElementById(
-                'secretgraph-decrypting'
-            ) as HTMLInputElement
-        ).value
-        const importFiles: FileList | null = (
-            document.getElementById(
-                'secretgraph-import-file'
-            ) as HTMLInputElement
-        ).files
-        const importUrl: string = (
-            document.getElementById(
-                'secretgraph-import-url'
-            ) as HTMLInputElement
-        ).value
+        const importFiles: FileList | null =
+            secretgraphImportFile.current!.files
+        const importUrl: string = secretgraphImportUrl.current!.value
         if (!importFiles && !importUrl) {
             return
         }
@@ -247,10 +237,6 @@ function SettingsImporter() {
             decryptingPw ? [decryptingPw] : undefined
         )
         if (!newConfig) {
-            /**if (importUrl && !importFiles){
-
-        return;
-      } else {*/
             sendMessage({
                 severity: 'error',
                 message: 'Configuration is invalid',
@@ -308,9 +294,9 @@ function SettingsImporter() {
             <Dialog
                 open={registerUrl ? true : false}
                 onClose={() => loadingStart && setRegisterUrl(undefined)}
-                aria-labelledby="register-dialog-title"
+                aria-labelledby={registerDialogTitleId}
             >
-                <DialogTitle id="register-dialog-title">Register</DialogTitle>
+                <DialogTitle id={registerDialogTitleId}>Register</DialogTitle>
                 <DialogContent>
                     <iframe src={registerUrl} />
                 </DialogContent>
@@ -335,9 +321,9 @@ function SettingsImporter() {
             <Dialog
                 open={loginUrl ? true : false}
                 onClose={() => loadingImport && setLoginUrl(undefined)}
-                aria-labelledby="login-dialog-title"
+                aria-labelledby={loginDialogTitleId}
             >
-                <DialogTitle id="login-dialog-title">Login</DialogTitle>
+                <DialogTitle id={loginDialogTitleId}>Login</DialogTitle>
                 <DialogContent>
                     <iframe src={loginUrl} />
                 </DialogContent>
@@ -377,7 +363,7 @@ function SettingsImporter() {
                                 variant="outlined"
                                 defaultValue={defaultPath}
                                 label="Provider"
-                                id="secretgraph-provider"
+                                inputRef={provider}
                             />
                         </CardContent>
                         <CardActions>
@@ -423,13 +409,10 @@ function SettingsImporter() {
                                 style={{ display: 'none' }}
                                 type="file"
                                 id="secretgraph-import-file"
+                                ref={secretgraphImportFile as any}
                                 aria-describedby="secretgraph-import-file-help"
                                 onChange={async () => {
-                                    ;(
-                                        document.getElementById(
-                                            'secretgraph-import-url'
-                                        ) as HTMLInputElement
-                                    ).value = ''
+                                    secretgraphImportUrl.current!.value = ''
                                     const importFiles: FileList | null = (
                                         document.getElementById(
                                             'secretgraph-import-file'
@@ -492,13 +475,15 @@ function SettingsImporter() {
                                     setHasFile(
                                         event.target.value ? false : true
                                     )
-                                    setNeedsPw(true)
+                                    setNeedsPw(
+                                        event.target.value.includes('prekey')
+                                    )
                                 }}
                                 fullWidth={true}
                                 variant="outlined"
                                 size="small"
+                                inputRef={secretgraphImportUrl}
                                 placeholder="Import from url"
-                                id="secretgraph-import-url"
                             />
                             <FormHelperText id="secretgraph-import-url-help">
                                 Import from url
@@ -512,8 +497,9 @@ function SettingsImporter() {
                             variant="outlined"
                             disabled={loadingStart || loadingImport}
                             onChange={(event) => {
-                                setHasPw(event.target.value ? true : false)
+                                setPw(event.target.value)
                             }}
+                            value={decryptingPw}
                             label={passwordLabel}
                             id="secretgraph-decrypting"
                             inputProps={{
@@ -536,7 +522,7 @@ function SettingsImporter() {
                         disabled={
                             loadingStart ||
                             loadingImport ||
-                            !checkInputs(needsPw, hasPw)
+                            !checkInputs(needsPw, !!decryptingPw)
                         }
                         onClick={handleImport}
                     >

@@ -7,7 +7,6 @@ from urllib.parse import quote
 
 from strawberry_django_plus import relay
 from django.conf import settings
-from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
 from django.http import (
     FileResponse,
@@ -81,7 +80,7 @@ class ContentView(AllowCORSMixin, FormView):
         # authset can contain: ""
         # why not ids_to_results => uses flexid directly
         self.result = get_cached_result(request, authset=authset)["Content"]
-        if "decrypt" in request.GET:
+        if request.GET.get("key") or request.headers.get("X-Key"):
             if self.action != "view":
                 raise Http404()
             return self.handle_decrypt(
@@ -216,9 +215,13 @@ class ContentView(AllowCORSMixin, FormView):
         if not result["objects"].exists():
             raise Http404()
 
+        decryptset = set(
+            request.headers.get("X-Key", "").replace(" ", "").split(",")
+        )
+        decryptset.update(self.request.GET.getlist("key"))
         if id and len(id) == 1:
             try:
-                iterator = iter_decrypt_contents(result)
+                iterator = iter_decrypt_contents(result, decryptset=decryptset)
                 content = next(iterator)
             except StopIteration:
                 return HttpResponse("Missing key", status=400)
@@ -233,7 +236,9 @@ class ContentView(AllowCORSMixin, FormView):
 
             def gen():
                 seperator = None
-                for content in iter_decrypt_contents(result):
+                for content in iter_decrypt_contents(
+                    result, decryptset=decryptset
+                ):
                     if seperator is not None:
                         yield seperator
                     # seperate with \0
@@ -250,25 +255,31 @@ class ContentView(AllowCORSMixin, FormView):
             content = ContentFetchQueryset(
                 fetch_by_id(result["objects"], kwargs["id"]).query,
                 result["actions"],
-                ttl_hours=24 if "keys" in request.GET else 2,
+                ttl_hours=24 if "key_hash" in request.GET else 2,
             ).first()
         finally:
             if not content:
                 raise Http404()
-        if "keys" in request.GET:
+        if "key_hash" in request.GET or request.headers.get("X-Key_hash", ""):
+            keyhash_set = set(
+                request.headers.get("X-Key_hash", "")
+                .replace(" ", "")
+                .split(",", "")
+            )
+            keyhash_set.update(request.GET.getlist("key_hash"))
             refs = content.references.select_related("target").filter(
                 group__in=["key", "signature"]
             )
+            # Public key in result set
             q = Q(target__in=result["objects"])
-            for k in request.GET.getlist("keys"):
-                # digests have a length > 10
-                if len(k) >= 10:
-                    q |= Q(target__tags__tag=f"key_hash={k}")
+            for k in keyhash_set:
+                q |= Q(target__tags__tag=f"key_hash={k}")
             # signatures first, should be maximal 20, so on first page
             refs = (
                 refs.filter(q)
                 .annotate(
                     privkey_link=Subquery(
+                        # private keys in result set, empty if no permission
                         result["objects"]
                         .filter(
                             type="PrivateKey",
@@ -279,9 +290,7 @@ class ContentView(AllowCORSMixin, FormView):
                 )
                 .order_by("-group", "id")
             )
-            page = Paginator(refs, 500).get_page(request.GET.get("page", 1))
             response = {
-                "pages": page.paginator.num_pages,
                 "signatures": {},
                 "keys": {},
             }
@@ -289,7 +298,8 @@ class ContentView(AllowCORSMixin, FormView):
                 if ref.group == "key":
                     response["keys"][ref.target.contentHash] = {
                         "key": ref.extra,
-                        "link": ref.privkey_link and ref.privkey_link[0],
+                        "link": (ref.privkey_link and ref.privkey_link[0])
+                        or "",
                     }
                 else:
                     response["signatures"][ref.target.contentHash] = {
@@ -297,15 +307,14 @@ class ContentView(AllowCORSMixin, FormView):
                         "link": ref.target.link,
                     }
             response = JsonResponse(response)
-            response["X-IS-SIGNED"] = "false"
         else:
             try:
                 response = FileResponse(content.file.open("rb"))
             except FileNotFoundError as e:
                 raise Http404() from e
-            response["X-TYPE"] = content.type
-            verifiers = content.references.filter(group="signature")
-            response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
+        response["X-TYPE"] = content.type
+        verifiers = content.references.filter(group="signature")
+        response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
         return response
 

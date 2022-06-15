@@ -826,7 +826,7 @@ async function _pwsdecryptprekey(options: {
     pws: Interfaces.NonKeyInput[]
     hashAlgorithm: string
     iterations: number | string
-}) {
+}): Promise<[ArrayBuffer, string | null]> {
     let prefix = null,
         prekey
     if (typeof options.prekey === 'string') {
@@ -883,42 +883,43 @@ async function _pwsdecryptprekey(options: {
 }
 
 export async function decryptPreKeys(options: {
-    prekeys: ArrayBuffer[] | string[]
+    prekeys: (ArrayBuffer | string)[]
     pws: Interfaces.NonKeyInput[]
     hashAlgorithm: string
     iterations: number | string
-}) {
+}): Promise<[ArrayBuffer, string | null][]> {
     const decryptprocesses = []
     for (const prekey of options.prekeys) {
         decryptprocesses.push(_pwsdecryptprekey({ ...options, prekey }))
     }
-    const results = []
+    const results: [ArrayBuffer, string | null][] = []
     for (const res of await Promise.allSettled(decryptprocesses)) {
-        if ((res as any)['value']) {
-            results.push(
-                (res as PromiseFulfilledResult<[ArrayBuffer, string | null]>)
-                    .value
-            )
+        if (res.status == 'fulfilled') {
+            results.push(res.value)
         }
     }
     return results
 }
 
-export async function decryptFirstPreKey(options: {
+export async function decryptFirstPreKey<
+    T = [ArrayBuffer, string | null]
+>(options: {
     prekeys: ArrayBuffer[] | string[]
     pws: Interfaces.NonKeyInput[]
     hashAlgorithm: string
     iterations: number | string
-    fn?: any
-}) {
-    const decryptprocesses = []
+    fn?: (a: [ArrayBuffer, string | null]) => T
+}): Promise<T> {
+    const decryptprocesses: PromiseLike<T>[] = []
     for (const prekey of options.prekeys) {
         if (options.fn) {
             decryptprocesses.push(
                 _pwsdecryptprekey({ ...options, prekey }).then(options.fn)
             )
         } else {
-            decryptprocesses.push(_pwsdecryptprekey({ ...options, prekey }))
+            decryptprocesses.push(
+                _pwsdecryptprekey({ ...options, prekey }) as PromiseLike<any>
+            )
         }
     }
     return await Promise.any(decryptprocesses)

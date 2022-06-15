@@ -44,6 +44,15 @@ key refs are assigned to privatekey, the rest to the public key
 -   group "signature": extra holds signature for public key
 -   group "public_key": special, auto generated reference. Links private key with public key
 
+## request
+
+### GET or header
+
+-   key=key hash:sharedkey : decrypt on the fly with key as crypto key (or X-Key Header)
+-   prekey=key hash:encrypted sharedkey/key of private key : opens pw form to decrypt prekey (only GET parameter)
+-   token=flexid/global flexid:token: Auth token (or Authorization Header)
+-   key_hash=hash: retrieve keys with hash (or X-Key_hash Haader)
+
 ## Special tags
 
 -   key_hash: 2 needed except for keys (1 needed)
@@ -84,7 +93,7 @@ key refs are assigned to privatekey, the rest to the public key
     -   not implemented yet (view and)
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
--   inejct (Cluster, Content): injects injectedTags, requiredKeys,
+-   inject (Cluster, Content): injects injectedTags, requiredKeys,
     -   requiredKeys: require keys within array for encryption
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
@@ -136,6 +145,29 @@ Describe how internal plugins works
 
 includeTypes is stronger than excludeTypes, it disables excludeTypes
 
+## Security concept
+
+The idea is, that data can be stored on limitted trustworthy servers.
+Missing patches should ideally not affect the security
+For this we have two defense mechanism
+
+-   e2e Data encryption for preventing server leaks
+-   with tokens (keys for servers) encrypted auth informations to prevent forgery by server and having an access control
+
+## encryption for non-secretgraph users
+
+currently there are three ways:
+
+-   via X-Key_hash header, key_hash GET parameter: you get a list of shared keys and signatures matching the key_hash.
+    The shared keys may have a link to the private key (only if permission)
+    -   decrypt the shared key directly
+    -   decrypt the shared key via private key
+-   X-Key, key GET parameter: provide the key and get the decrypted result back (implements both decryption methods, direct and via private key)
+
+### why via private key
+
+-   otherwise the shared key could not be changed. This is especially an issue for often updated contents
+
 ## ContentActions
 
 ### clean returnal
@@ -174,7 +206,13 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   simplify config url export (no private key anymore)
+-   X-Key response: shared key of private key
+-   port settings importer to formik
+-   hash algo should be part of hashes hash?????
+-   how to seperate keys from tokens???
+    -   different GET parameter
+    -   key_hash for retrieving keys
+-   decrypt import urls
 -   implement settings/config
 -   too many queries when selecting node (sidebar is also updated, because updateId?)
 -   modernize ActionDialog, redesign, multi column?

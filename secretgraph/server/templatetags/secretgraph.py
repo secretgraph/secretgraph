@@ -132,7 +132,10 @@ def fetch_contents(
     excludeTypes=None,
     includeTags=None,
     excludeTags=None,
+    # fetch decrypt keys from request
     decrypt=True,
+    # provide default decrypt keys
+    default_decryptkeys=None,
     authorization=None,
 ):
     result = get_cached_result(context.request, authset=authorization)[
@@ -189,10 +192,29 @@ def fetch_contents(
         if isinstance(excludeTags, str)
         else excludeTags,
     )
-    if decrypt:
+
+    if decrypt or default_decryptkeys:
+        decryptset = set()
+        if decrypt:
+            decryptset.update(
+                context.request.headers.get("X-Key", "")
+                .replace(" ", "")
+                .split(",")
+            )
+            decryptset.update(context.request.GET.getlist("key"))
+        if default_decryptkeys:
+            decryptset.update(
+                default_decryptkeys.split(",")
+                if isinstance(default_decryptkeys, str)
+                else default_decryptkeys
+            )
 
         def gen(queryset):
-            for content in iter_decrypt_contents(result, queryset=queryset):
+            for content in iter_decrypt_contents(
+                result,
+                queryset=queryset,
+                decryptset=decryptset,
+            ):
                 yield content
 
         page = Paginator(result["objects"], page_size).get_page(page)
@@ -212,7 +234,13 @@ def fetch_contents(
 
 
 @register.filter(takes_context=True, is_safe=True)
-def read_content_sync(context, content, authorization=None):
+def read_content_sync(
+    context,
+    content,
+    authorization=None,
+    # provide default decrypt keys
+    default_decryptkeys=None,
+):
     if not authorization:
         authorization = set(
             context["request"]
@@ -228,7 +256,23 @@ def read_content_sync(context, content, authorization=None):
         result["objects"] = ContentFetchQueryset(
             fetch_by_id(result["objects"], content)
         )
-        content = next(iter_decrypt_contents(result), None)
+
+        decryptset = set(
+            context.request.headers.get("X-Key", "")
+            .replace(" ", "")
+            .split(",")
+        )
+        decryptset.update(context.request.GET.getlist("key"))
+        if default_decryptkeys:
+            decryptset.update(
+                default_decryptkeys.split(",")
+                if isinstance(default_decryptkeys, str)
+                else default_decryptkeys
+            )
+        content = next(
+            iter_decrypt_contents(result, decryptset=decryptset),
+            None,
+        )
     assert isinstance(content, Content), "Can only handle Contents"
     assert hasattr(content, "read_decrypt"), (
         "content lacks read_decrypt "

@@ -44,7 +44,7 @@ def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
     return outfile, nonce, key
 
 
-def create_key_maps(contents, keyset=()):
+def create_key_maps(contents, keyset):
     """
     queries transfers and create content key map
     """
@@ -53,6 +53,8 @@ def create_key_maps(contents, keyset=()):
     key_map1 = {}
     key_map2 = {}
     for keyspec in keyset:
+        if not keyspec:
+            continue
         keyspec = keyspec.split(":", 1)
         if len(keyspec) == 2:
             _key = base64.b64decode(keyspec[1])
@@ -225,12 +227,12 @@ class ProxyTags:
 
 
 def iter_decrypt_contents(
-    result, *, queryset=None, decryptset=None
+    result, /, *, queryset=None, decryptset=None
 ) -> Iterable[Iterable[str]]:
     from ..actions.update import transfer_value
 
-    if not decryptset:
-        decryptset = result["authset"]
+    if decryptset is None:
+        raise Exception("decryptset is missing")
     # copy query
     content_query = (queryset or result["objects"]).all()
     # per default verifiers=None, so that a failed verifications cannot happen

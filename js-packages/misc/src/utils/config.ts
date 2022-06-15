@@ -7,6 +7,7 @@ import * as Interfaces from '../interfaces'
 import {
     decryptAESGCM,
     decryptFirstPreKey,
+    decryptPreKeys,
     decryptRSAOEAP,
     encryptAESGCM,
     encryptPreKey,
@@ -98,6 +99,68 @@ export async function checkConfigObject(
     return true
 }
 
+async function loadConfigUrl_helper(
+    url: string,
+    content: Blob,
+    contentNonce: string,
+    tokens: string[],
+    keys: (ArrayBuffer | string)[],
+    obj: {
+        keys: { [hash: string]: { link: string; key: string } }
+        signatures: { [hash: string]: { link: string; signature: string } }
+    }
+) {
+    return await Promise.any(
+        Object.values(obj.keys).map(
+            async ({
+                link,
+                key: esharedkey,
+            }: {
+                link: string
+                key: string
+            }) => {
+                if (!link) {
+                    throw new Error(
+                        "not really an error: definition is unsuitable because it doesn't contain a link"
+                    )
+                }
+                const response = await fetch(new URL(link, url), {
+                    headers: { Authorization: tokens.join(',') },
+                })
+                const nonce = response.headers.get('X-Nonce')
+                if (!response.ok || !nonce) {
+                    throw Error('Invalid response')
+                }
+                const blob = await response.blob()
+                return await Promise.any(
+                    keys.map(async (key) => {
+                        const privkey = (
+                            await decryptAESGCM({
+                                data: blob,
+                                key: key,
+                                nonce,
+                            })
+                        ).data
+                        const sharedkey = (
+                            await decryptRSAOEAP({
+                                key: privkey,
+                                data: esharedkey,
+                            })
+                        ).data
+                        return (
+                            await decryptAESGCM({
+                                data: content,
+                                key: sharedkey,
+                                nonce: contentNonce,
+                            })
+                        ).data
+                    })
+                )
+            }
+        )
+    )
+}
+
 export function loadConfigSync(
     obj: Storage = window.localStorage
 ): Interfaces.ConfigInterface | null {
@@ -109,7 +172,7 @@ export function loadConfigSync(
 }
 
 export const loadConfig = async (
-    obj: string | File | Request | Storage = window.localStorage,
+    obj: string | File | Storage = window.localStorage,
     pws?: string[]
 ): Promise<Interfaces.ConfigInterface | null> => {
     if (obj instanceof Storage) {
@@ -143,124 +206,87 @@ export const loadConfig = async (
         }
         return cleanConfig(parsedResult)
     } else {
-        let request: Request
-        if (obj instanceof Request) {
-            request = obj
-        } else {
-            request = new Request(obj)
-        }
-        const contentResult = await fetch(request)
+        // strip url from prekeys and decrypt
+        const url = new URL(obj, window.location.href)
+        const prekeys = url.searchParams.getAll('prekey')
+        const keys = new Set<ArrayBuffer | string>(
+            url.searchParams.getAll('key')
+        )
+        const tokens = url.searchParams.getAll('token')
+        url.searchParams.delete('key')
+        url.searchParams.delete('token')
+        url.searchParams.delete('prekey')
+        const contentResult = await fetch(url, {
+            headers: {
+                Authorization: tokens.join(','),
+            },
+        })
         if (!contentResult.ok) {
             return null
         }
-        const decrypturl = new URL(request.url, window.location.href)
-        const prekeys = decrypturl.searchParams.getAll('prekey')
-        decrypturl.searchParams.delete('prekey')
-        if (pws) {
-            decrypturl.searchParams.set('keys', '')
-            const decryptResult = await fetch(
-                new Request(decrypturl.toString(), {
-                    headers: request.headers,
+        let content = await contentResult.blob()
+        try {
+            return cleanConfig(JSON.parse(await content.text()))
+        } catch (exc) {
+            const nonce = contentResult.headers.get('X-NONCE')
+            if (pws && nonce) {
+                const pkeys = await decryptPreKeys({
+                    pws,
+                    prekeys,
+                    hashAlgorithm: 'SHA-512',
+                    iterations: 100000,
                 })
-            )
-            decrypturl.searchParams.delete('keys')
-            if (!decryptResult.ok || !contentResult.headers.get('X-NONCE')) {
-                return null
-            }
-            const keyArr = await new Promise<[CryptoKey, Uint8Array, string]>(
-                async (resolve, reject) => {
-                    const queries = []
-                    // support only one page
-                    const page = await decryptResult.json()
-                    for (const k of page.keys) {
-                        if (!k.link) {
-                            continue
-                        }
-                        decrypturl.pathname = k.link
-                        queries.push(
-                            fetch(
-                                new Request(decrypturl.toString(), {
-                                    headers: request.headers,
-                                })
-                            ).then(async (response) => {
-                                if (
-                                    !response.ok ||
-                                    !response.headers.get('X-NONCE') ||
-                                    !response.headers.get('X-ITERATIONS')
-                                ) {
-                                    return
-                                }
-                                const nonce = b64toarr(
-                                    response.headers.get('X-NONCE') as string
-                                )
-                                const respdata = await response.arrayBuffer()
-                                for (const iterations of (
-                                    response.headers.get(
-                                        'X-ITERATIONS'
-                                    ) as string
-                                ).split(',')) {
-                                    try {
-                                        return await decryptFirstPreKey({
-                                            prekeys,
-                                            pws,
-                                            hashAlgorithm: 'SHA-512',
-                                            iterations,
-                                            fn: async (
-                                                data: [
-                                                    ArrayBuffer,
-                                                    string | null
-                                                ]
-                                            ) => {
-                                                if (data[1]) {
-                                                    return Promise.reject(
-                                                        'not for decryption'
-                                                    )
-                                                }
-                                                return await decryptAESGCM({
-                                                    key: data[0],
-                                                    nonce: nonce,
-                                                    data: respdata,
-                                                }).then((data) =>
-                                                    resolve([
-                                                        data.key,
-                                                        nonce,
-                                                        k.extra,
-                                                    ])
-                                                )
-                                            },
-                                        })
-                                    } finally {
-                                    }
-                                }
-                            })
-                        )
-                    }
-                    await Promise.allSettled(queries)
-                    reject()
+                const key_hashes = []
+                for (const pkey of pkeys) {
+                    pkey[1] && key_hashes.push(pkey[1])
+                    keys.add(pkey[0])
                 }
-            )
-            const sharedKey = await decryptAESGCM({
-                key: keyArr[0],
-                nonce: keyArr[1],
-                data: keyArr[2],
-            })
-            const config = await decryptAESGCM({
-                key: sharedKey.data,
-                nonce: b64toarr(contentResult.headers.get('X-NONCE') as string),
-                data: contentResult.arrayBuffer(),
-            }).then((data) =>
-                cleanConfig(
-                    JSON.parse(
-                        String.fromCharCode(...new Uint8Array(data.data))
+                const keys2: (string | ArrayBuffer)[] = [...keys]
+                // try direct way
+                try {
+                    content = await Promise.any(
+                        keys2.map(async (key) => {
+                            const res = await decryptAESGCM({
+                                key,
+                                data: content,
+                                nonce,
+                            })
+                            return new Blob([res.data])
+                        })
                     )
-                )
-            )
-            return cleanConfig(config)
-        } else if (prekeys) {
-            throw 'requires pw but not specified'
+                } catch (exc) {
+                    const keysResponse = await fetch(url, {
+                        headers: {
+                            Authorization: tokens.join(','),
+                            'X-Key_hash': key_hashes.join(','),
+                        },
+                    })
+                    if (!keysResponse.ok) {
+                        return null
+                    }
+                    const keysResult = await keysResponse.json()
+                    try {
+                        content = new Blob([
+                            await loadConfigUrl_helper(
+                                url.href,
+                                content,
+                                nonce,
+                                tokens,
+                                keys2,
+                                keysResult
+                            ),
+                        ])
+                    } catch (exc) {
+                        console.warn('retrieving from page failed: ', exc)
+                    }
+                }
+                // decrypt private key or shared key
+            } else {
+                throw new Error('requires pw and nonce')
+            }
         }
         try {
-            return cleanConfig(await contentResult.json())
+            return cleanConfig(JSON.parse(await content.text()))
         } catch (e) {
             console.warn(e)
             return null
@@ -373,11 +399,12 @@ export async function exportConfigAsUrl({
                 key: privcert,
                 data: privkeykey,
             })
+            // shared key of config
+            const sharedKeyConfigRes = decryptRSAOEAP({
+                key: sharedKeyPrivateKeyRes.key,
+                data: extra,
+            })
             if (pw) {
-                const sharedKeyConfigRes = decryptRSAOEAP({
-                    key: sharedKeyPrivateKeyRes.key,
-                    data: extra,
-                })
                 const prekey = await encryptPreKey({
                     prekey: sharedKeyPrivateKeyRes.data,
                     pw,
@@ -391,7 +418,6 @@ export async function exportConfigAsUrl({
                     iterations,
                 })
                 url.pathname = configContent.link
-                url.searchParams.append('decrypt', '1')
                 for (const token of authInfo.tokens) {
                     url.searchParams.append('token', token)
                 }
@@ -399,19 +425,27 @@ export async function exportConfigAsUrl({
                     'prekey',
                     `${authInfo.certificateHashes[0]}:${prekey}`
                 )
-                url.searchParams.append('prekey', `shared:${prekey2}`)
+                url.searchParams.append(
+                    'prekey',
+                    `${pubkey.contentHash}:${prekey2}`
+                )
 
                 return url.href
             } else {
                 url.pathname = configContent.link
-                url.searchParams.append('decrypt', '1')
                 for (const token of authInfo.tokens) {
                     url.searchParams.append('token', token)
                 }
                 url.searchParams.append(
-                    'token',
+                    'key',
                     `${authInfo.certificateHashes[0]}:${Buffer.from(
                         sharedKeyPrivateKeyRes.data
+                    ).toString('base64')}`
+                )
+                url.searchParams.append(
+                    'key',
+                    `${pubkey.contentHash}:${Buffer.from(
+                        (await sharedKeyConfigRes).data
                     ).toString('base64')}`
                 )
 
