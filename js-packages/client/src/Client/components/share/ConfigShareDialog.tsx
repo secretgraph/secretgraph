@@ -41,6 +41,7 @@ export default React.memo(function ConfigShareDialog({
                     config,
                     pw: password,
                     iterations: 100000,
+                    types: ['privatekey'],
                 })
                 if (active) {
                     setExportUrl(_exportUrl)

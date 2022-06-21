@@ -209,9 +209,7 @@ export const loadConfig = async (
         // strip url from prekeys and decrypt
         const url = new URL(obj, window.location.href)
         const prekeys = url.searchParams.getAll('prekey')
-        const keys = new Set<ArrayBuffer | string>(
-            url.searchParams.getAll('key')
-        )
+        const keys = url.searchParams.getAll('key')
         const tokens = url.searchParams.getAll('token')
         url.searchParams.delete('key')
         url.searchParams.delete('token')
@@ -225,65 +223,90 @@ export const loadConfig = async (
             return null
         }
         let content = await contentResult.blob()
+        // try unencrypted
         try {
             return cleanConfig(JSON.parse(await content.text()))
-        } catch (exc) {
-            const nonce = contentResult.headers.get('X-NONCE')
-            if (pws && nonce) {
-                const pkeys = await decryptPreKeys({
-                    pws,
-                    prekeys,
-                    hashAlgorithm: 'SHA-512',
-                    iterations: 100000,
-                })
-                const key_hashes = []
-                for (const pkey of pkeys) {
-                    pkey[1] && key_hashes.push(pkey[1])
-                    keys.add(pkey[0])
-                }
-                const keys2: (string | ArrayBuffer)[] = [...keys]
-                // try direct way
-                try {
-                    content = await Promise.any(
-                        keys2.map(async (key) => {
-                            const res = await decryptAESGCM({
-                                key,
-                                data: content,
-                                nonce,
-                            })
-                            return new Blob([res.data])
-                        })
-                    )
-                } catch (exc) {
-                    const keysResponse = await fetch(url, {
-                        headers: {
-                            Authorization: tokens.join(','),
-                            'X-Key_hash': key_hashes.join(','),
-                        },
-                    })
-                    if (!keysResponse.ok) {
-                        return null
-                    }
-                    const keysResult = await keysResponse.json()
-                    try {
-                        content = new Blob([
-                            await loadConfigUrl_helper(
-                                url.href,
-                                content,
-                                nonce,
-                                tokens,
-                                keys2,
-                                keysResult
-                            ),
-                        ])
-                    } catch (exc) {
-                        console.warn('retrieving from page failed: ', exc)
-                    }
-                }
-                // decrypt private key or shared key
+        } catch (ignore1) {}
+        const nonce = contentResult.headers.get('X-NONCE')
+        const key_hashes = []
+        const raw_keys = new Set<ArrayBuffer>()
+        if (!nonce || (prekeys.length && !pws?.length)) {
+            throw Error('requires nonce and/or pws')
+        }
+        for (const key of keys) {
+            const split = key.split(':', 2)
+            if (split.length == 2 && split[1]) {
+                raw_keys.add(Buffer.from(split[1], 'base64'))
+                key_hashes.push(split[1])
             } else {
-                throw new Error('requires pw and nonce')
+                raw_keys.add(Buffer.from(split[0], 'base64'))
             }
+        }
+        if (pws) {
+            const pkeys = await decryptPreKeys({
+                pws,
+                prekeys,
+                hashAlgorithm: 'SHA-512',
+                iterations: 100000,
+            })
+            for (const pkey of pkeys) {
+                pkey[1] && key_hashes.push(pkey[1])
+                raw_keys.add(pkey[0])
+            }
+        }
+        if (!raw_keys.size) {
+            return null
+        }
+        // try direct way
+        try {
+            return cleanConfig(
+                await Promise.any(
+                    [...raw_keys].map(async (key) => {
+                        const res = await decryptAESGCM({
+                            key,
+                            data: content,
+                            nonce,
+                        })
+                        return JSON.parse(await new Blob([res.data]).text())
+                    })
+                )
+            )
+        } catch (ignore2) {}
+        if (key_hashes.length == 0) {
+            console.warn('could not decode result, no key_hashes found', keys)
+            return null
+        }
+        const keysResponse = await fetch(url, {
+            headers: {
+                Authorization: tokens.join(','),
+                'X-Key_hash': key_hashes.join(','),
+            },
+        })
+        if (!keysResponse.ok) {
+            return null
+        }
+        let keysResult
+        // try walking the private key way
+        try {
+            keysResult = await keysResponse.json()
+        } catch (exc) {
+            console.error('Invalid response, expected json with keys', exc)
+            return null
+        }
+
+        try {
+            content = new Blob([
+                await loadConfigUrl_helper(
+                    url.href,
+                    content,
+                    nonce,
+                    tokens,
+                    [...raw_keys],
+                    keysResult
+                ),
+            ])
+        } catch (exc) {
+            console.warn('retrieving private keys failed: ', exc)
         }
         try {
             return cleanConfig(JSON.parse(await content.text()))
@@ -354,11 +377,13 @@ export async function exportConfigAsUrl({
     config,
     pw,
     iterations = 100000,
+    types = ['direct', 'privatekey'],
 }: {
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
-    iterations: number
     pw?: string
+    iterations: number
+    types: ('direct' | 'privatekey')[]
 }) {
     const authInfo = authInfoFromConfig({
         config,
@@ -395,40 +420,45 @@ export async function exportConfigAsUrl({
                 .match(/=(.*)/)[1]
             const url = new URL(config.baseUrl, window.location.href)
             // decrypt attached symmetric key
-            const sharedKeyPrivateKeyRes = await decryptRSAOEAP({
+            const sharedKeyPrivateKey = await decryptRSAOEAP({
                 key: privcert,
                 data: privkeykey,
             })
-            // shared key of config
-            const sharedKeyConfigRes = decryptRSAOEAP({
-                key: sharedKeyPrivateKeyRes.key,
+            // shared key of config, test that everything is alright
+            const sharedKeyConfig = await decryptRSAOEAP({
+                key: sharedKeyPrivateKey.key,
                 data: extra,
             })
             if (pw) {
-                const prekey = await encryptPreKey({
-                    prekey: sharedKeyPrivateKeyRes.data,
-                    pw,
-                    hashAlgorithm: 'SHA-512',
-                    iterations,
-                })
-                const prekey2 = await encryptPreKey({
-                    prekey: (await sharedKeyConfigRes).data,
-                    pw,
-                    hashAlgorithm: 'SHA-512',
-                    iterations,
-                })
-                url.pathname = configContent.link
-                for (const token of authInfo.tokens) {
-                    url.searchParams.append('token', token)
+                if (types.includes('privatekey')) {
+                    const prekeyPrivateKey = await encryptPreKey({
+                        prekey: sharedKeyPrivateKey.data,
+                        pw,
+                        hashAlgorithm: 'SHA-512',
+                        iterations,
+                    })
+                    url.searchParams.append(
+                        'prekey',
+                        `${authInfo.certificateHashes[0]}:${prekeyPrivateKey}`
+                    )
                 }
-                url.searchParams.append(
-                    'prekey',
-                    `${authInfo.certificateHashes[0]}:${prekey}`
-                )
-                url.searchParams.append(
-                    'prekey',
-                    `${pubkey.contentHash}:${prekey2}`
-                )
+
+                if (types.includes('direct')) {
+                    const prekeyConfig = await encryptPreKey({
+                        prekey: sharedKeyConfig.data,
+                        pw,
+                        hashAlgorithm: 'SHA-512',
+                        iterations,
+                    })
+                    url.pathname = configContent.link
+                    for (const token of authInfo.tokens) {
+                        url.searchParams.append('token', token)
+                    }
+                    url.searchParams.append(
+                        'prekey',
+                        `${configContent.id}:${prekeyConfig}`
+                    )
+                }
 
                 return url.href
             } else {
@@ -436,18 +466,23 @@ export async function exportConfigAsUrl({
                 for (const token of authInfo.tokens) {
                     url.searchParams.append('token', token)
                 }
-                url.searchParams.append(
-                    'key',
-                    `${authInfo.certificateHashes[0]}:${Buffer.from(
-                        sharedKeyPrivateKeyRes.data
-                    ).toString('base64')}`
-                )
-                url.searchParams.append(
-                    'key',
-                    `${pubkey.contentHash}:${Buffer.from(
-                        (await sharedKeyConfigRes).data
-                    ).toString('base64')}`
-                )
+                if (types.includes('privatekey')) {
+                    url.searchParams.append(
+                        'key',
+                        `${authInfo.certificateHashes[0]}:${Buffer.from(
+                            sharedKeyPrivateKey.data
+                        ).toString('base64')}`
+                    )
+                }
+
+                if (types.includes('direct')) {
+                    url.searchParams.append(
+                        'key',
+                        `${configContent.id}:${Buffer.from(
+                            sharedKeyConfig.data
+                        ).toString('base64')}`
+                    )
+                }
 
                 return url.href
             }

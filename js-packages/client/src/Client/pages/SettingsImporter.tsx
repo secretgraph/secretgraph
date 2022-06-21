@@ -40,20 +40,6 @@ import {
     passwordLabel,
 } from '../messages'
 
-// TODO: use formik
-function checkInputs(needsPw: boolean, hasPw: boolean) {
-    return (
-        (document.getElementById('secretgraph-import-url') as HTMLInputElement)
-            ?.value ||
-        ((
-            document.getElementById(
-                'secretgraph-import-file'
-            ) as HTMLInputElement
-        )?.files &&
-            (!needsPw || hasPw))
-    )
-}
-
 function SettingsImporter() {
     const theme = useTheme()
     const [registerUrl, setRegisterUrl] = React.useState(undefined)
@@ -61,13 +47,15 @@ function SettingsImporter() {
     const [loadingImport, setLoadingImport] = React.useState(false)
     const [needsPw, setNeedsPw] = React.useState(false)
     const [decryptingPw, setPw] = React.useState('')
+    const [importUrl, setImportUrl] = React.useState('')
+    const { defaultPath } = React.useContext(Contexts.External)
+    const [providerUrl, setProviderUrl] = React.useState(defaultPath)
     const [oldConfig, setOldConfig] = React.useState(null) as [
         Interfaces.ConfigInterface | null,
         any
     ]
     const [loginUrl, setLoginUrl] = React.useState(undefined)
     const [hasFile, setHasFile] = React.useState(false)
-    const { defaultPath } = React.useContext(Contexts.External)
     const { sendMessage } = React.useContext(Contexts.Snackbar)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)
@@ -76,11 +64,15 @@ function SettingsImporter() {
     const loginDialogTitleId = React.useId()
 
     const secretgraphImportFile = React.useRef<HTMLInputElement>()
-    const secretgraphImportUrl = React.useRef<HTMLInputElement>()
-    const provider = React.useRef<HTMLInputElement>()
+
+    function checkIsSubmittable() {
+        return (
+            (importUrl || secretgraphImportFile.current?.files) &&
+            (!needsPw || decryptingPw)
+        )
+    }
 
     const handleSecretgraphEvent_inner = async (event: any) => {
-        const providerUrl = provider.current!.value
         let newConfig: Interfaces.ConfigInterface | null = null
         const client = createClient(providerUrl)
         if (!client) {
@@ -157,7 +149,6 @@ function SettingsImporter() {
     }
 
     const handleStart_inner = async () => {
-        const providerUrl = provider.current!.value
         const client = createClient(providerUrl)
         const result: any = await client.query({ query: serverConfigQuery })
         if (!result) {
@@ -228,7 +219,6 @@ function SettingsImporter() {
     const handleImport_inner = async () => {
         const importFiles: FileList | null =
             secretgraphImportFile.current!.files
-        const importUrl: string = secretgraphImportUrl.current!.value
         if (!importFiles && !importUrl) {
             return
         }
@@ -361,9 +351,11 @@ function SettingsImporter() {
                                 disabled={loadingStart || loadingImport}
                                 fullWidth
                                 variant="outlined"
-                                defaultValue={defaultPath}
+                                value={providerUrl}
                                 label="Provider"
-                                inputRef={provider}
+                                onChange={(ev) => {
+                                    setProviderUrl(ev.target.value)
+                                }}
                             />
                         </CardContent>
                         <CardActions>
@@ -412,12 +404,8 @@ function SettingsImporter() {
                                 ref={secretgraphImportFile as any}
                                 aria-describedby="secretgraph-import-file-help"
                                 onChange={async () => {
-                                    secretgraphImportUrl.current!.value = ''
-                                    const importFiles: FileList | null = (
-                                        document.getElementById(
-                                            'secretgraph-import-file'
-                                        ) as HTMLInputElement
-                                    ).files
+                                    const importFiles: FileList | null =
+                                        secretgraphImportFile.current!.files
                                     try {
                                         if (importFiles) {
                                             setNeedsPw(
@@ -471,6 +459,7 @@ function SettingsImporter() {
                         >
                             <TextField
                                 disabled={loadingStart || loadingImport}
+                                value={importUrl}
                                 onChange={(event) => {
                                     setHasFile(
                                         event.target.value ? false : true
@@ -478,11 +467,11 @@ function SettingsImporter() {
                                     setNeedsPw(
                                         event.target.value.includes('prekey')
                                     )
+                                    setImportUrl(event.target.value)
                                 }}
                                 fullWidth={true}
                                 variant="outlined"
                                 size="small"
-                                inputRef={secretgraphImportUrl}
                                 placeholder="Import from url"
                             />
                             <FormHelperText id="secretgraph-import-url-help">
@@ -522,7 +511,7 @@ function SettingsImporter() {
                         disabled={
                             loadingStart ||
                             loadingImport ||
-                            !checkInputs(needsPw, !!decryptingPw)
+                            !checkIsSubmittable()
                         }
                         onClick={handleImport}
                     >

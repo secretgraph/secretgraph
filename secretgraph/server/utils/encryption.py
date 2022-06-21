@@ -50,31 +50,30 @@ def create_key_maps(contents, keyset):
     """
     from ..models import ContentTag
 
-    key_map1 = {}
-    key_map2 = {}
+    key_map_key = {}
+    key_map_id = {}
     for keyspec in keyset:
         if not keyspec:
             continue
         keyspec = keyspec.split(":", 1)
         if len(keyspec) == 2:
             _key = base64.b64decode(keyspec[1])
-            # is hash, flexid or global id
-            key_map1[f"key_hash={keyspec[0]}"] = _key
-            key_map2[keyspec[0]] = _key
+            # is hash
+            key_map_key[f"key_hash={keyspec[0]}"] = _key
+            # is flexid or global id
+            key_map_id[keyspec[0]] = _key
 
     reference_query = ContentReference.objects.filter(
         Q(group="key") | Q(group="transfer"), source__in=contents
     )
 
     key_query = Content.objects.filter(
-        Q(tags__tag__in=key_map1.keys())
-        | Q(flexid__in=key_map2.keys())
-        | Q(flexid_cached__in=key_map2.keys()),
+        Q(tags__tag__in=key_map_key.keys()),
         type="PrivateKey",
     ).annotate(
         matching_tag=Subquery(
             ContentTag.objects.filter(
-                tag__in=key_map1.keys(), content_id=OuterRef("pk")
+                tag__in=key_map_key.keys(), content_id=OuterRef("pk")
             ).values("tag")[:1]
         )
     )
@@ -83,7 +82,7 @@ def create_key_maps(contents, keyset):
     for ref in reference_query.annotate(
         matching_tag=Subquery(
             ContentTag.objects.filter(
-                content_id=OuterRef("target"), tag__in=key_map1.keys()
+                content_id=OuterRef("target"), tag__in=key_map_key.keys()
             ).values("tag")[:1]
         ),
         flexid=F("target__flexid"),
@@ -109,31 +108,9 @@ def create_key_maps(contents, keyset):
         shared_key = None
         matching_key = None
         if ref.matching_tag:
-            matching_key = key_map1[ref.matching_tag]
-        elif ref.flexid_cached in key_map2:
-            matching_key = key_map2[ref.flexid_cached]
-        elif ref.flexid in key_map2:
-            matching_key = key_map2[ref.flexid]
-        if not matching_key:
-            continue
-        # try to decode shared key directly
-        nonce = matching_key[:13]
-        mkey = matching_key[13:]
-        aesgcm = None
-        try:
-            aesgcm = AESGCM(mkey)
-        except ValueError:
-            pass
-        if aesgcm:
-            try:
-                shared_key = aesgcm.decrypt(nonce, esharedkey, None)
-            except Exception as exc:
-                logger.warning(
-                    "Could not decode shared key (direct)", exc_info=exc
-                )
-
-        # try to decrypt private key to decrypt shared key
-        if not shared_key:
+            matching_key = key_map_key[ref.matching_tag]
+            if not matching_key:
+                continue
             for key in key_query.filter(references__target=ref.target):
                 try:
                     nonce = base64.b64decode(key.nonce)
@@ -160,12 +137,35 @@ def create_key_maps(contents, keyset):
                     continue
                 if shared_key:
                     break
+            if shared_key:
+                if ref.group == "key":
+                    content_key_map[ref.source_id] = shared_key
+                else:
+                    transfer_key_map[ref.source_id] = shared_key
+        else:
+            if ref.flexid_cached in key_map_id:
+                matching_key = key_map_id[ref.flexid_cached]
+            elif ref.flexid in key_map_id:
+                matching_key = key_map_id[ref.flexid]
+            if not matching_key:
+                continue
 
-        if shared_key:
-            if ref.group == "key":
-                content_key_map[ref.source_id] = shared_key
-            else:
-                transfer_key_map[ref.source_id] = shared_key
+            # try to decode shared key directly
+            aesgcm = None
+            try:
+                aesgcm = AESGCM(matching_key)
+            except ValueError:
+                pass
+            if aesgcm:
+                shared_key = matching_key
+
+                # prefer key from private key method
+                if ref.group == "key":
+                    if not content_key_map.get(ref.source_id):
+                        content_key_map[ref.source_id] = shared_key
+                else:
+                    if not transfer_key_map.get(ref.source_id):
+                        transfer_key_map[ref.source_id] = shared_key
     return content_key_map, transfer_key_map
 
 
