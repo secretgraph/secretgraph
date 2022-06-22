@@ -24,22 +24,26 @@ export default React.memo(function ConfigShareDialog({
     const [password, setPassword] = React.useState('')
     const [exportUrl, setExportUrl] = React.useState('')
     const [loadingExport, setLoadingExport] = React.useState(false)
+    const [typing, setTyping] = React.useState(false)
     const { config } = React.useContext(Contexts.Config)
-    const { baseClient } = React.useContext(Contexts.Clients)
     const deferredPw = React.useDeferredValue(password)
+    const { baseClient } = React.useContext(Contexts.Clients)
     React.useEffect(() => {
         if (!config || !open) {
             return
         }
         let active = true
         const f = async () => {
-            setLoadingExport(true)
+            if (!active) {
+                return
+            }
+            setTyping(true)
             let _exportUrl
             try {
                 _exportUrl = await exportConfigAsUrl({
                     client: baseClient,
                     config,
-                    pw: password,
+                    pw: deferredPw,
                     iterations: 100000,
                     types: ['privatekey'],
                 })
@@ -50,7 +54,7 @@ export default React.memo(function ConfigShareDialog({
                 console.error(exc)
             } finally {
                 if (active) {
-                    setLoadingExport(false)
+                    setTyping(false)
                 }
             }
         }
@@ -71,8 +75,8 @@ export default React.memo(function ConfigShareDialog({
                 'secretgraph_settings.json'
             )
         } finally {
-            closeFn()
             setLoadingExport(false)
+            closeFn()
         }
     }
 
@@ -93,8 +97,8 @@ export default React.memo(function ConfigShareDialog({
             <DialogContent>
                 <FormControl>
                     <TextField
-                        disabled={loadingExport}
                         fullWidth={true}
+                        disabled={loadingExport}
                         value={password}
                         onChange={(ev) => setPassword(ev.target.value)}
                         variant="outlined"
@@ -111,7 +115,7 @@ export default React.memo(function ConfigShareDialog({
                 </FormControl>
                 <div
                     style={{
-                        visibility: loadingExport ? 'hidden' : 'visible',
+                        visibility: typing ? 'hidden' : 'visible',
                     }}
                 >
                     <div>
@@ -131,7 +135,7 @@ export default React.memo(function ConfigShareDialog({
                     Close
                 </Button>
                 <Button
-                    disabled={loadingExport}
+                    disabled={loadingExport || typing}
                     onClick={() => {
                         copySettingsUrl()
                         closeFn()
@@ -140,7 +144,11 @@ export default React.memo(function ConfigShareDialog({
                 >
                     Export as url
                 </Button>
-                <Button onClick={exportSettingsFile} color="primary">
+                <Button
+                    disabled={loadingExport}
+                    onClick={exportSettingsFile}
+                    color="primary"
+                >
                     Export as file
                 </Button>
             </DialogActions>
