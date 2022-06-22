@@ -51,7 +51,7 @@ key refs are assigned to privatekey, the rest to the public key
 -   key=key hash:sharedkey : decrypt on the fly with key as crypto key (or X-Key Header)
 -   prekey=key hash:encrypted sharedkey/key of private key : opens pw form to decrypt prekey (only GET parameter)
 -   token=flexid/global flexid:token: Auth token (or Authorization Header)
--   key_hash=hash: retrieve keys with hash (or X-Key_hash Haader)
+-   key_hash=hash: retrieve keys with hash (or X-KEY-HASH Haader)
 
 ## Special tags
 
@@ -158,7 +158,7 @@ For this we have two defense mechanism
 
 currently there are three ways:
 
--   via X-Key_hash header, key_hash GET parameter: you get a list of shared keys and signatures matching the key_hash.
+-   via X-KEY-HASH header, key_hash GET parameter: you get a list of shared keys and signatures matching the key_hash.
     The shared keys may have a link to the private key (only if permission)
     -   decrypt the shared key directly
     -   decrypt the shared key via private key

@@ -260,11 +260,11 @@ class ContentView(AllowCORSMixin, FormView):
         finally:
             if not content:
                 raise Http404()
-        if "key_hash" in request.GET or request.headers.get("X-Key_hash", ""):
+        if "key_hash" in request.GET or request.headers.get("X-KEY-HASH", ""):
             keyhash_set = set(
-                request.headers.get("X-Key_hash", "")
+                request.headers.get("X-KEY-HASH", "")
                 .replace(" ", "")
-                .split(",", "")
+                .split(",")
             )
             keyhash_set.update(request.GET.getlist("key_hash"))
             refs = content.references.select_related("target").filter(
@@ -278,14 +278,14 @@ class ContentView(AllowCORSMixin, FormView):
             refs = (
                 refs.filter(q)
                 .annotate(
-                    privkey_link=Subquery(
+                    privkey_flexid=Subquery(
                         # private keys in result set, empty if no permission
                         result["objects"]
                         .filter(
                             type="PrivateKey",
-                            referencedBy__source__referencedBy=OuterRef("pk"),
+                            references__target__referencedBy=OuterRef("pk"),
                         )
-                        .values("link")[:1]
+                        .values("flexid")[:1]
                     )
                 )
                 .order_by("-group", "id")
@@ -298,7 +298,13 @@ class ContentView(AllowCORSMixin, FormView):
                 if ref.group == "key":
                     response["keys"][ref.target.contentHash] = {
                         "key": ref.extra,
-                        "link": (ref.privkey_link and ref.privkey_link[0])
+                        "link": (
+                            ref.privkey_flexid
+                            and reverse(
+                                "secretgraph:contents",
+                                kwargs={"id": ref.privkey_flexid},
+                            )
+                        )
                         or "",
                     }
                 else:
@@ -316,6 +322,8 @@ class ContentView(AllowCORSMixin, FormView):
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
+        if content.contentHash:
+            response["X-CONTENT-HASH"] = content.contentHash
         return response
 
 

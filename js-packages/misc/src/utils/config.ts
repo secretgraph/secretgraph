@@ -110,54 +110,62 @@ async function loadConfigUrl_helper(
         signatures: { [hash: string]: { link: string; signature: string } }
     }
 ) {
-    return await Promise.any(
-        Object.values(obj.keys).map(
-            async ({
-                link,
-                key: esharedkey,
-            }: {
-                link: string
-                key: string
-            }) => {
-                if (!link) {
-                    throw new Error(
-                        "not really an error: definition is unsuitable because it doesn't contain a link"
-                    )
-                }
-                const response = await fetch(new URL(link, url), {
-                    headers: { Authorization: tokens.join(',') },
-                })
-                const nonce = response.headers.get('X-Nonce')
-                if (!response.ok || !nonce) {
-                    throw Error('Invalid response')
-                }
-                const blob = await response.blob()
-                return await Promise.any(
-                    keys.map(async (key) => {
-                        const privkey = (
-                            await decryptAESGCM({
-                                data: blob,
-                                key: key,
-                                nonce,
-                            })
-                        ).data
-                        const sharedkey = (
-                            await decryptRSAOEAP({
-                                key: privkey,
-                                data: esharedkey,
-                            })
-                        ).data
-                        return (
-                            await decryptAESGCM({
-                                data: content,
-                                key: sharedkey,
-                                nonce: contentNonce,
-                            })
-                        ).data
-                    })
-                )
+    if (!Object.keys(keys).length) {
+        throw new Error('No shared keys found')
+    }
+    const sharedkeys: ArrayBuffer[] = []
+    for (const [hash, { link, key: esharedkey }] of Object.entries(obj.keys)) {
+        if (!link) {
+            console.debug('Skip: ', esharedkey)
+            continue
+        }
+        const fn = async () => {
+            const response = await fetch(new URL(link, url), {
+                headers: { Authorization: tokens.join(',') },
+            })
+            if (!response.ok) {
+                throw Error('Invalid response')
             }
-        )
+            const nonce = response.headers.get('X-NONCE')
+            if (!nonce) {
+                throw Error('Missing nonce')
+            }
+            const blob = await response.blob()
+            return await Promise.any(
+                keys.map(async (key) => {
+                    const privkey = (
+                        await decryptAESGCM({
+                            data: blob,
+                            key: key,
+                            nonce,
+                        })
+                    ).data
+                    return (
+                        await decryptRSAOEAP({
+                            key: privkey,
+                            data: esharedkey,
+                        })
+                    ).data
+                })
+            )
+        }
+        try {
+            sharedkeys.push(await fn())
+        } catch (ex) {}
+    }
+    if (!sharedkeys.length) {
+        throw new Error('No shared keys could be decrypted')
+    }
+    return await Promise.any(
+        sharedkeys.map(async (sharedkey: ArrayBuffer) => {
+            return (
+                await decryptAESGCM({
+                    data: content,
+                    key: sharedkey,
+                    nonce: contentNonce,
+                })
+            ).data
+        })
     )
 }
 
@@ -279,7 +287,7 @@ export const loadConfig = async (
         const keysResponse = await fetch(url, {
             headers: {
                 Authorization: tokens.join(','),
-                'X-Key_hash': key_hashes.join(','),
+                'X-KEY-HASH': key_hashes.join(','),
             },
         })
         if (!keysResponse.ok) {
@@ -295,7 +303,7 @@ export const loadConfig = async (
         }
 
         try {
-            content = new Blob([
+            const text = await new Blob([
                 await loadConfigUrl_helper(
                     url.href,
                     content,
@@ -304,16 +312,17 @@ export const loadConfig = async (
                     [...raw_keys],
                     keysResult
                 ),
-            ])
+            ]).text()
+            try {
+                return cleanConfig(JSON.parse(text))
+            } catch (e) {
+                console.warn('failed to parse config file', e)
+                return null
+            }
         } catch (exc) {
             console.warn('retrieving private keys failed: ', exc)
         }
-        try {
-            return cleanConfig(JSON.parse(await content.text()))
-        } catch (e) {
-            console.warn(e)
-            return null
-        }
+        return null
     }
 }
 
@@ -429,7 +438,11 @@ export async function exportConfigAsUrl({
                 key: sharedKeyPrivateKey.key,
                 data: extra,
             })
+            for (const token of authInfo.tokens) {
+                url.searchParams.append('token', token)
+            }
             if (pw) {
+                url.pathname = configContent.link
                 if (types.includes('privatekey')) {
                     const prekeyPrivateKey = await encryptPreKey({
                         prekey: sharedKeyPrivateKey.data,
