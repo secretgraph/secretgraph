@@ -445,12 +445,16 @@ export async function exportConfigAsUrl({
                 key: sharedKeyPrivateKey.key,
                 data: extra,
             })
+            // clean url
+            url.searchParams.delete('token')
+            url.searchParams.delete('key')
+            url.searchParams.delete('prekey')
             for (const token of authInfo.tokens) {
                 url.searchParams.append('token', token)
             }
             if (pw) {
                 url.pathname = configContent.link
-                url.searchParams.append('iterations', `${iterations}`)
+                url.searchParams.set('iterations', `${iterations}`)
                 if (types.includes('privatekey')) {
                     const prekeyPrivateKey = await encryptPreKey({
                         prekey: sharedKeyPrivateKey.data,
