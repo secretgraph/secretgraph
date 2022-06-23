@@ -219,9 +219,13 @@ export const loadConfig = async (
         const prekeys = url.searchParams.getAll('prekey')
         const keys = url.searchParams.getAll('key')
         const tokens = url.searchParams.getAll('token')
+        const iterations = parseInt(
+            url.searchParams.get('iterations') || '100000'
+        )
         url.searchParams.delete('key')
         url.searchParams.delete('token')
         url.searchParams.delete('prekey')
+        url.searchParams.delete('iterations')
         const contentResult = await fetch(url, {
             headers: {
                 Authorization: tokens.join(','),
@@ -243,7 +247,7 @@ export const loadConfig = async (
         }
         for (const key of keys) {
             const split = key.split(':', 2)
-            if (split.length == 2 && split[1]) {
+            if (split.length > 1 && split[1]) {
                 raw_keys.add(Buffer.from(split[1], 'base64'))
                 key_hashes.push(split[1])
             } else {
@@ -252,17 +256,19 @@ export const loadConfig = async (
         }
         if (pws) {
             const pkeys = await decryptPreKeys({
-                pws,
                 prekeys,
+                pws,
                 hashAlgorithm: 'SHA-512',
-                iterations: 100000,
+                iterations,
             })
+
             for (const pkey of pkeys) {
                 pkey[1] && key_hashes.push(pkey[1])
                 raw_keys.add(pkey[0])
             }
         }
         if (!raw_keys.size) {
+            console.debug('no prekeys decrypted')
             return null
         }
         // try direct way
@@ -291,6 +297,7 @@ export const loadConfig = async (
             },
         })
         if (!keysResponse.ok) {
+            console.error('key response errored', keysResponse.statusText)
             return null
         }
         let keysResult
@@ -443,6 +450,7 @@ export async function exportConfigAsUrl({
             }
             if (pw) {
                 url.pathname = configContent.link
+                url.searchParams.append('iterations', `${iterations}`)
                 if (types.includes('privatekey')) {
                     const prekeyPrivateKey = await encryptPreKey({
                         prekey: sharedKeyPrivateKey.data,

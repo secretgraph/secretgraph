@@ -96,6 +96,9 @@ export default React.memo(function ConfigShareDialog({
             <DialogTitle id="export-dialog-title">Export</DialogTitle>
             <DialogContent>
                 <FormControl>
+                    <div style={{ display: 'none' }}>
+                        <input type="password" tabIndex={-1} />
+                    </div>
                     <TextField
                         fullWidth={true}
                         disabled={loadingExport}

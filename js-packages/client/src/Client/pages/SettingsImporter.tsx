@@ -482,6 +482,9 @@ function SettingsImporter() {
                     <FormControl
                         style={{ display: needsPw ? undefined : 'none' }}
                     >
+                        <div style={{ display: 'none' }}>
+                            <input type="password" tabIndex={-1} />
+                        </div>
                         <TextField
                             variant="outlined"
                             disabled={loadingStart || loadingImport}

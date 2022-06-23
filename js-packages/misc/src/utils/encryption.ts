@@ -830,7 +830,7 @@ async function _pwsdecryptprekey(options: {
     let prefix = null,
         prekey
     if (typeof options.prekey === 'string') {
-        const _prekey = options.prekey.split(':', 1)
+        const _prekey = options.prekey.split(':', 2)
         if (_prekey.length > 1) {
             prefix = _prekey[0]
             prekey = Buffer.from(_prekey[1], 'base64').buffer
@@ -841,12 +841,12 @@ async function _pwsdecryptprekey(options: {
         prekey = options.prekey
     }
     const nonce = new Uint8Array(prekey.slice(0, 13))
-    if (!nonce.byteLength) {
+    if (!nonce.length) {
         console.error('nonce part error', nonce, new Uint8Array(prekey))
         throw new EmptyKeyError('nonce part of pre key empty')
     }
     const realkey = new Uint8Array(prekey.slice(13))
-    if (!realkey.byteLength) {
+    if (!realkey.length) {
         console.error('realkey error', realkey, new Uint8Array(prekey))
         throw new EmptyKeyError('real part of pre key empty')
     }
