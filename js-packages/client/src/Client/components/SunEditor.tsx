@@ -5,6 +5,15 @@ import * as React from 'react'
 import SunEditor from 'suneditor-react'
 import SunEditorCore from 'suneditor/src/lib/core'
 
+export type SunEditorProps = Omit<
+    Parameters<typeof SunEditor>[0],
+    'onBlur' | 'onChange' | 'setContents'
+> & {
+    disabled?: boolean
+    onBlur?: TextFieldProps['onBlur']
+    onChange?: TextFieldProps['onChange']
+}
+
 export const SunEditorWrapper = React.forwardRef<HTMLDivElement>(
     function SunEditorWrapper(
         {
@@ -14,10 +23,7 @@ export const SunEditorWrapper = React.forwardRef<HTMLDivElement>(
             onBlur,
             onChange,
             ...props
-        }: { inputRef?: React.RefObject<any> } & Parameters<
-            typeof SunEditor
-        >[0] &
-            TextFieldProps['inputProps'],
+        }: SunEditorProps & { inputRef?: React.RefObject<any>; value: string },
         ref
     ) {
         const suneditor = React.useRef<SunEditorCore>()
@@ -34,7 +40,10 @@ export const SunEditorWrapper = React.forwardRef<HTMLDivElement>(
             [suneditor.current]
         )
         return (
-            <div style={{ marginTop: '30px' }} ref={ref}>
+            <div
+                style={{ marginTop: '30px', width: '100%', height: '100%' }}
+                ref={ref}
+            >
                 <SunEditor
                     getSunEditorInstance={(instance) =>
                         (suneditor.current = instance)
@@ -73,12 +82,15 @@ export const SunEditorWrapper = React.forwardRef<HTMLDivElement>(
     }
 )
 
+// SunEditor for exports outside
 export default function SunEditorField({
     InputProps,
     inputRef,
     ...props
-}: TextFieldProps & {
-    InputProps?: Parameters<typeof SunEditor>[0] & TextFieldProps['InputProps']
+}: Omit<TextFieldProps, 'InputProps'> & {
+    InputProps?: Omit<TextFieldProps['InputProps'], 'inputProps'> & {
+        inputProps: SunEditorProps
+    }
 }) {
     return (
         <TextField
@@ -86,13 +98,12 @@ export default function SunEditorField({
             variant="outlined"
             multiline
             {...props}
-            InputProps={{
-                ...InputProps,
-                inputComponent: SunEditorWrapper,
-                inputProps: {
-                    width: '100%',
-                },
-            }}
+            InputProps={
+                {
+                    ...InputProps,
+                    inputComponent: SunEditorWrapper,
+                } as any
+            }
         />
     )
 }

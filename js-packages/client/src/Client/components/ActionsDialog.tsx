@@ -83,7 +83,7 @@ const HashEntry = React.memo(function HashEntry({
                         size="small"
                         edge="end"
                         aria-label="trash"
-                        disabled={item.value.readonly}
+                        disabled={item.value.readonly || disabled}
                         onClick={() =>
                             deleteItem(
                                 item as {
@@ -283,7 +283,10 @@ export default function ActionsDialog({
                             </TableContainer>
                         </details>
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div
+                        style={{ flex: 1 }}
+                        key={`isSelected${!!selectedItem}`}
+                    >
                         <ActionConfigurator
                             path={
                                 selectedItem
@@ -371,9 +374,7 @@ export default function ActionsDialog({
                 >
                     Reset Tokens
                 </Button>
-                <Button disabled={disabled} onClick={(ev) => handleClose()}>
-                    Back
-                </Button>
+                <Button onClick={(ev) => handleClose()}>Back</Button>
             </DialogActions>
         </Dialog>
     )

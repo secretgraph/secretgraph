@@ -139,11 +139,13 @@ const ViewWidget = ({
                 <Typography variant="h5">Content</Typography>
                 {inner}
             </Grid>
-            <Grid item xs={12}>
-                <a href={blobUrlOrText} type={mime} target="_blank">
-                    <CloudDownloadIcon />
-                </a>
-            </Grid>
+            {mime.startsWith('text/') ? null : (
+                <Grid item xs={12}>
+                    <a href={blobUrlOrText} type={mime} target="_blank">
+                        <CloudDownloadIcon />
+                    </a>
+                </Grid>
+            )}
         </>
     )
 }
@@ -182,6 +184,14 @@ const TextFileAdapter = ({
                     onChange(new Blob([ev.currentTarget.value], { type: mime }))
                 }}
                 onBlur={onBlur}
+                InputProps={{
+                    inputProps: {
+                        width: '100%',
+                        setOptions: {
+                            minHeight: '500px',
+                        },
+                    },
+                }}
                 {...props}
             />
         )
@@ -540,7 +550,7 @@ const FileIntern = ({
                                             replace={replace}
                                             push={push}
                                             form={form}
-                                            disabled={isSubmitting}
+                                            disabled={isSubmitting || disabled}
                                             handleClose={() => setOpen(false)}
                                             open={open}
                                             isContent
@@ -558,7 +568,7 @@ const FileIntern = ({
                                         name="name"
                                         fullWidth
                                         label="Name"
-                                        disabled={isSubmitting}
+                                        disabled={isSubmitting || disabled}
                                         validate={(val: string) => {
                                             if (!val) {
                                                 return 'empty'
@@ -580,7 +590,8 @@ const FileIntern = ({
                                                 }}
                                                 disabled={
                                                     isSubmitting ||
-                                                    values.state == 'public'
+                                                    values.state == 'public' ||
+                                                    disabled
                                                 }
                                                 type="checkbox"
                                             />
@@ -605,7 +616,7 @@ const FileIntern = ({
                                         name="state"
                                         fullWidth
                                         label="State"
-                                        disabled={isSubmitting}
+                                        disabled={isSubmitting || disabled}
                                         validate={(val: string) => {
                                             if (!val) {
                                                 return 'empty'
@@ -619,7 +630,7 @@ const FileIntern = ({
                                         component={ClusterSelect}
                                         url={url}
                                         name="cluster"
-                                        disabled={isSubmitting}
+                                        disabled={isSubmitting || disabled}
                                         label="Cluster"
                                         firstIfEmpty
                                         tokens={clusterSelectTokens}
@@ -635,7 +646,7 @@ const FileIntern = ({
                                     <FastField
                                         component={SimpleSelect}
                                         name="keywords"
-                                        disabled={isSubmitting}
+                                        disabled={isSubmitting || disabled}
                                         options={[]}
                                         label="Keywords"
                                         freeSolo
@@ -644,6 +655,7 @@ const FileIntern = ({
                                 </Grid>
                                 {!data ? (
                                     <>
+                                        {/** Only include if non-Text as Text means html */}
                                         {mainCtx.type != 'Text' ? (
                                             <Grid item xs={12}>
                                                 <Field
@@ -675,9 +687,15 @@ const FileIntern = ({
                                                                 formikFieldProps
                                                                     .meta.value
                                                             }
-                                                            style={{
-                                                                minHeight:
-                                                                    '500px',
+                                                            InputProps={{
+                                                                inputProps: {
+                                                                    width: '100%',
+                                                                    setOptions:
+                                                                        {
+                                                                            minHeight:
+                                                                                '500px',
+                                                                        },
+                                                                },
                                                             }}
                                                             name="htmlInput"
                                                             label="Html Text"
@@ -770,10 +788,19 @@ const FileIntern = ({
                                                                                 .target
                                                                                 .files[0]
                                                                         )
+
+                                                                        setFieldTouched(
+                                                                            'fileInput',
+                                                                            true
+                                                                        )
                                                                     } else {
                                                                         formikFieldProps.form.setFieldValue(
                                                                             'fileInput',
                                                                             null
+                                                                        )
+                                                                        setFieldTouched(
+                                                                            'fileInput',
+                                                                            false
                                                                         )
                                                                     }
                                                                 }}
@@ -809,13 +836,17 @@ const FileIntern = ({
                                                                         values.htmlInput
                                                                     )
                                                                 }
-                                                                onClick={() =>
+                                                                onClick={() => {
                                                                     setValues({
                                                                         ...values,
                                                                         fileInput:
                                                                             null,
                                                                     })
-                                                                }
+                                                                    setFieldTouched(
+                                                                        'fileInput',
+                                                                        false
+                                                                    )
+                                                                }}
                                                             >
                                                                 Clear
                                                             </Button>
@@ -845,13 +876,7 @@ const FileIntern = ({
                                     </>
                                 ) : (
                                     <>
-                                        <Grid
-                                            item
-                                            xs={12}
-                                            style={{
-                                                minHeight: '500px',
-                                            }}
-                                        >
+                                        <Grid item xs={12}>
                                             <TextFileAdapter
                                                 value={values.fileInput as Blob}
                                                 onChange={(blob) => {
@@ -901,6 +926,11 @@ const FileIntern = ({
                                                                                 .target
                                                                                 .files[0]
                                                                         )
+
+                                                                        setFieldTouched(
+                                                                            'fileInput',
+                                                                            true
+                                                                        )
                                                                     }
                                                                 }}
                                                                 accept={
@@ -912,7 +942,8 @@ const FileIntern = ({
                                                             >
                                                                 <Button
                                                                     disabled={
-                                                                        isSubmitting
+                                                                        isSubmitting ||
+                                                                        disabled
                                                                     }
                                                                     variant="contained"
                                                                     color="primary"
@@ -954,7 +985,11 @@ const FileIntern = ({
                                     <Button
                                         variant="contained"
                                         color="primary"
-                                        disabled={isSubmitting || !dirty}
+                                        disabled={
+                                            isSubmitting ||
+                                            !dirty ||
+                                            touched?.fileInput
+                                        }
                                         onClick={submitForm}
                                     >
                                         Submit
