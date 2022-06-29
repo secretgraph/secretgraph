@@ -124,6 +124,8 @@ export async function toPublicKey(
     )
 }
 
+class Base64Error extends Error {}
+
 export async function unserializeToArrayBuffer(
     inp:
         | Interfaces.RawInput
@@ -134,6 +136,9 @@ export async function unserializeToArrayBuffer(
     let _result: ArrayBuffer
     if (typeof _inp === 'string') {
         _result = Buffer.from(_inp, 'base64').buffer
+        if (_result.byteLength == 0 && _inp.length) {
+            throw new Base64Error('Not a base64 string')
+        }
     } else {
         let _data
         const _finp = (_inp as Interfaces.KeyOutInterface).data
@@ -684,27 +689,55 @@ export async function deparseTag(options: {
 
 export async function decryptTagRaw(
     options: Interfaces.CryptoGCMInInterface
-): Promise<{ data: ArrayBufferLike; encrypted: boolean }> {
+): Promise<{ data: ArrayBuffer | string; encrypted: boolean }> {
     let data
+    const rawData = await options.data
     try {
-        data = await unserializeToArrayBuffer(options.data)
+        data = await unserializeToArrayBuffer(rawData)
     } catch (error) {
+        if (error instanceof Base64Error) {
+            return {
+                data:
+                    rawData instanceof ArrayBuffer
+                        ? String.fromCharCode(...new Uint8Array(rawData))
+                        : (rawData as string),
+                encrypted: false,
+            }
+        } else {
+            throw error
+        }
+    }
+    if (data.byteLength <= 13) {
         return {
-            data: utf8encoder.encode(options.data as string),
+            data:
+                rawData instanceof ArrayBuffer
+                    ? String.fromCharCode(...new Uint8Array(rawData))
+                    : (rawData as string),
             encrypted: false,
         }
     }
-    const nonce = new Uint8Array(data.slice(0, 13))
-    const realdata = data.slice(13)
-    return {
-        data: (
-            await decryptAESGCM({
-                ...options,
-                data: realdata,
-                nonce,
-            })
-        ).data,
-        encrypted: true,
+    try {
+        const nonce = new Uint8Array(data.slice(0, 13))
+        const realdata = data.slice(13)
+        return {
+            data: (
+                await decryptAESGCM({
+                    ...options,
+                    data: realdata,
+                    nonce,
+                })
+            ).data,
+            encrypted: true,
+        }
+    } catch (error) {
+        console.debug('decrypting tag failed', error)
+        return {
+            data:
+                rawData instanceof ArrayBuffer
+                    ? String.fromCharCode(...new Uint8Array(rawData))
+                    : (rawData as string),
+            encrypted: false,
+        }
     }
 }
 
@@ -712,12 +745,17 @@ export async function decryptTag(
     options: Omit<Interfaces.CryptoGCMInInterface, 'data'> & {
         readonly data: string | PromiseLike<string>
     }
-) {
+): Promise<{ data: string; encrypted: boolean; tag: string }> {
     const [_, tag, b64data] = (await options.data).match(
         /^([^=]+?)=(.*)/
     ) as string[]
+    const result = await decryptTagRaw({ ...options, data: b64data })
     return {
-        ...(await decryptTagRaw({ ...options, data: b64data })),
+        ...result,
+        data:
+            result.data instanceof ArrayBuffer
+                ? String.fromCharCode(...new Uint8Array(result.data))
+                : result.data,
         tag,
     }
 }
@@ -774,13 +812,17 @@ export async function extractTags(
                             data,
                         })
                         tags[tag].push(
-                            String.fromCharCode(...new Uint8Array(val.data))
+                            val.data instanceof ArrayBuffer
+                                ? String.fromCharCode(
+                                      ...new Uint8Array(val.data)
+                                  )
+                                : val.data
                         )
                         if (val.encrypted) {
                             encryptedTags.add(tag)
                         }
                     } catch (error) {
-                        console.info('decrypting tag failed', tag, error)
+                        console.error('decrypting tag caused error', tag, error)
                     }
                 } else {
                     tags[tag].push(data)

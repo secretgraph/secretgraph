@@ -150,10 +150,10 @@ def mutate_content(
         if not content_obj:
             raise ValueError()
 
-        if content.value:
-            if content.cluster:
+        if content.get("value"):
+            if content.get("cluster"):
                 clusterObj = fetch_by_id(
-                    Cluster.objects.all(), [content.cluster]
+                    Cluster.objects.all(), [content["cluster"]]
                 ).first()
                 if clusterObj:
                     required_keys = Content.objects.required_keys_full(

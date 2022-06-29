@@ -437,27 +437,43 @@ const FileIntern = ({
                             {
                                 update: configUpdate,
                                 client: baseClient,
+                                nullonnoupdate: true,
                             }
                         )
-                        const nTokens = authInfoFromConfig({
-                            config: newConfig as Interfaces.ConfigInterface,
-                            url,
-                            clusters: values.cluster
-                                ? new Set([values.cluster])
-                                : undefined,
-                            require: new Set(['update', 'manage']),
-                        }).tokens
-                        saveConfig(newConfig as Interfaces.ConfigInterface)
-                        updateConfig(newConfig, true)
-                        updateMainCtx({
-                            item: result.data.updateOrCreateContent.content.id,
-                            updateId:
-                                result.data.updateOrCreateContent.content
-                                    .updateId,
-                            url,
-                            action: 'update',
-                            tokens: [...mainCtx.tokens, ...nTokens],
-                        })
+                        if (newConfig) {
+                            const nTokens = authInfoFromConfig({
+                                config: newConfig as Interfaces.ConfigInterface,
+                                url,
+                                clusters: values.cluster
+                                    ? new Set([values.cluster])
+                                    : undefined,
+                                require: new Set(['update', 'manage']),
+                            }).tokens
+                            saveConfig(newConfig as Interfaces.ConfigInterface)
+                            updateConfig(newConfig, true)
+                            updateMainCtx({
+                                item: result.data.updateOrCreateContent.content
+                                    .id,
+                                updateId:
+                                    result.data.updateOrCreateContent.content
+                                        .updateId,
+                                url,
+                                action: 'update',
+                                tokens: [
+                                    ...new Set(...mainCtx.tokens, ...nTokens),
+                                ],
+                            })
+                        } else {
+                            updateMainCtx({
+                                item: result.data.updateOrCreateContent.content
+                                    .id,
+                                updateId:
+                                    result.data.updateOrCreateContent.content
+                                        .updateId,
+                                url,
+                                action: 'update',
+                            })
+                        }
                     } catch (exc) {
                         console.error(exc)
                         setSubmitting(false)
@@ -488,7 +504,7 @@ const FileIntern = ({
                                 arrayBuffer={new Blob([
                                     values.plainInput,
                                 ]).arrayBuffer()}
-                                mime={'text/plain'}
+                                mime="text/plain"
                                 name={values.name}
                             />
                         )
@@ -509,7 +525,7 @@ const FileIntern = ({
                                 arrayBuffer={new Blob([
                                     values.htmlInput,
                                 ]).arrayBuffer()}
-                                mime={'text/html'}
+                                mime="text/html"
                                 name={values.name}
                             />
                         )
@@ -648,13 +664,7 @@ const FileIntern = ({
                                                 />
                                             </Grid>
                                         ) : null}
-                                        <Grid
-                                            item
-                                            xs={12}
-                                            style={{
-                                                minHeight: '500px',
-                                            }}
-                                        >
+                                        <Grid item xs={12}>
                                             <Field name="htmlInput">
                                                 {(
                                                     formikFieldProps: FieldProps
@@ -665,6 +675,10 @@ const FileIntern = ({
                                                                 formikFieldProps
                                                                     .meta.value
                                                             }
+                                                            style={{
+                                                                minHeight:
+                                                                    '500px',
+                                                            }}
                                                             name="htmlInput"
                                                             label="Html Text"
                                                             variant="outlined"
@@ -999,7 +1013,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         }
     }, [cluster])
     React.useEffect(() => {
-        if (!dataUnfinished) {
+        if (!dataUnfinished || loading) {
             return
         }
         if (!dataUnfinished.secretgraph.node) {
