@@ -296,7 +296,7 @@ const ClusterIntern = ({
                                 }}
                             </FieldArray>
                             <Grid container spacing={2}>
-                                <Grid item xs={11}>
+                                <Grid item xs>
                                     <FastField
                                         component={FormikTextField}
                                         name="name"
@@ -307,7 +307,7 @@ const ClusterIntern = ({
                                     />
                                 </Grid>
 
-                                <Grid item xs={1}>
+                                <Grid item xs="auto">
                                     <Tooltip title="Actions">
                                         <span>
                                             <IconButton
