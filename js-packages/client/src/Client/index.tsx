@@ -3,16 +3,10 @@ import { ThemeProvider } from '@mui/material/styles'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import {
-    loadConfigSync,
-    updateConfigReducer,
-} from '@secretgraph/misc/utils/config'
-import { createClient } from '@secretgraph/misc/utils/graphql'
+import { loadConfig, loadConfigSync } from '@secretgraph/misc/utils/config'
 import * as React from 'react'
 
-import * as Contexts from './contexts'
-import { elements } from './editors'
-import Main from './pages/Main'
+import Definitions from './Definitions'
 import { theme as themeDefinition } from './theme'
 
 type Props = {
@@ -20,138 +14,48 @@ type Props = {
     homeUrl?: string
 }
 
-function updateState<T>(state: T, update: Partial<T>): T {
-    return Object.assign({}, state, update)
-}
-type updateStateType<T> = (state: T, update: Partial<T>) => T
-
-function Definitions({ defaultPath, homeUrl }: Props) {
-    const query = new URLSearchParams(document.location.search)
-    const [openSidebar, _setOpenSidebar] = React.useState(() => {
-        return JSON.parse(sessionStorage.getItem('openSidebar') || 'true')
-    })
-    const [openConfigShare, setOpenConfigShare] = React.useState(false)
-    function setOpenSidebar(arg: boolean) {
-        sessionStorage.setItem('openSidebar', JSON.stringify(arg))
-        _setOpenSidebar(arg)
-    }
-    const [config, updateConfigIntern] = React.useReducer(
-        updateConfigReducer,
-        null,
-        () => loadConfigSync()
-    )
-    const updateConfig = (
-        update: Interfaces.ConfigInputInterface | null,
-        replace?: boolean
-    ) => updateConfigIntern({ update, replace })
-    const [mainCtx, updateMainCtx] = React.useReducer<
-        updateStateType<Interfaces.MainContextInterface>
-    >(updateState, {
-        action: config ? 'create' : 'initialize',
-        title: '',
-        item: null,
-        updateId: null,
-        url: null,
-        type: elements.has(query.get('type') as any)
-            ? query.get('type')
-            : elements.keys().next().value,
-        shareFn: null,
-        deleted: null,
-        tokens: [],
-        tokensPermissions: new Set(),
-        cluster: null,
-    })
-    const [searchCtx, updateSearchCtx] = React.useReducer<
-        updateStateType<Interfaces.SearchContextInterface>
-    >(updateState, {
-        cluster: null,
-        include: [],
-        exclude: [],
-        deleted: false,
-    })
-    const [activeUrl, setActiveUrl] = React.useState(
-        () => (config ? config.baseUrl : defaultPath) as string
-    )
-    const [message, sendMessage] =
-        React.useState<React.ContextType<typeof Contexts.Snackbar>['message']>(
-            undefined
-        )
-    const navClient = React.useMemo(() => {
-        return createClient(activeUrl)
-    }, [activeUrl, !config])
-    const configClient = React.useMemo(() => {
-        if (config && config.baseUrl != activeUrl) {
-            return createClient(config.baseUrl)
+function Client(props: Props) {
+    const [config, setConfig] = React.useState<Interfaces.ConfigInterface|null>(()=> loadConfigSync())
+    const [loading, setLoading] = React.useState(()=>!config)
+    React.useEffect(()=> {
+        if(config){
+            return
         }
-        return navClient
-    }, [config ? config.baseUrl : ''])
-    const itemClient = React.useMemo(() => {
-        if (mainCtx.url && mainCtx.url != activeUrl) {
-            return createClient(mainCtx.url)
+        let active = true
+        const query = new URLSearchParams(window.location.hash.substring(1))
+        async function f(){
+            const url = new URL(query.get("url") || props.defaultPath || "", window.location.href)
+            query.delete("url")
+            url.hash = query.toString()
+            try {
+                const conf = await loadConfig(url.href)
+                if(conf && active){
+                    setConfig(conf)
+                }
+            } finally {
+                if(active){
+                    setLoading(false)
+                }
+            }
         }
-        return navClient
-    }, [config ? config.baseUrl : ''])
-
+        // TODO: Login screen
+        if(query.has("key") && (query.get("url") || props.defaultPath )){
+            f()
+        } else {
+            setLoading(false)
+        }
+        return ()=> {
+            active = false
+        }
+    }, [])
     return (
-        <Contexts.External.Provider
-            value={{ defaultPath: defaultPath ?? '/graphql', homeUrl }}
-        >
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <ThemeProvider theme={themeDefinition}>
-                    <Contexts.OpenSidebar.Provider
-                        value={{
-                            open: openSidebar,
-                            setOpen: setOpenSidebar,
-                        }}
-                    >
-                        <Contexts.Clients.Provider
-                            value={{
-                                navClient,
-                                itemClient,
-                                baseClient: configClient,
-                            }}
-                        >
-                            <Contexts.ActiveUrl.Provider
-                                value={{ activeUrl, setActiveUrl }}
-                            >
-                                <Contexts.Main.Provider
-                                    value={{ mainCtx, updateMainCtx }}
-                                >
-                                    <Contexts.Search.Provider
-                                        value={{
-                                            searchCtx,
-                                            updateSearchCtx,
-                                        }}
-                                    >
-                                        <Contexts.Config.Provider
-                                            value={{ config, updateConfig }}
-                                        >
-                                            <Contexts.OpenConfigShare.Provider
-                                                value={{
-                                                    open: openConfigShare,
-                                                    setOpen: setOpenConfigShare,
-                                                }}
-                                            >
-                                                <Contexts.Snackbar.Provider
-                                                    value={{
-                                                        message,
-                                                        sendMessage,
-                                                    }}
-                                                >
-                                                    <CssBaseline />
-                                                    <Main />
-                                                </Contexts.Snackbar.Provider>
-                                            </Contexts.OpenConfigShare.Provider>
-                                        </Contexts.Config.Provider>
-                                    </Contexts.Search.Provider>
-                                </Contexts.Main.Provider>
-                            </Contexts.ActiveUrl.Provider>
-                        </Contexts.Clients.Provider>
-                    </Contexts.OpenSidebar.Provider>
-                </ThemeProvider>
-            </LocalizationProvider>
-        </Contexts.External.Provider>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <ThemeProvider theme={themeDefinition}>
+                <CssBaseline />
+                {!loading && <Definitions {...props} config={config} />}
+            </ThemeProvider>
+        </LocalizationProvider>
     )
 }
 
-export default React.memo(Definitions)
+export default React.memo(Client)

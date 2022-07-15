@@ -97,7 +97,7 @@ export default React.memo(function Contents({
                 variables: {
                     cursor: data.contents.contents.pageInfo.endCursor,
                 },
-            }).then((result: any) => {})
+            })
     }
 
     const contentsHalfFinished: (JSX.Element | null)[] = React.useMemo(() => {
@@ -205,6 +205,7 @@ export default React.memo(function Contents({
                                     ev.preventDefault()
                                     ev.stopPropagation()
                                     refetch && refetch()
+                                    // in case parent should be notified
                                     refetchNotify && refetchNotify()
                                 }}
                             >

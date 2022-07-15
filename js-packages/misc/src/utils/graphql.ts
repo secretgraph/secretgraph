@@ -39,24 +39,12 @@ export const createClient = (url: string) => {
                     queryType: true,
                     fields: {
                         clusters: relayStylePagination([
-                            'includeTags',
-                            'excludeTags',
-                            'contentHashes',
-                            'user',
-                            'public',
-                            'featured',
-                            'deleted',
-                            'minUpdated',
-                            'maxUpdated',
+                            "authorization",
+                            "filters"
                         ]),
                         contents: relayStylePagination([
-                            'includeTags',
-                            'excludeTags',
-                            'contentHashes',
-                            'public',
-                            'deleted',
-                            'minUpdated',
-                            'maxUpdated',
+                            "authorization",
+                            "filters"
                         ]),
                     },
                 },
