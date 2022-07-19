@@ -12,7 +12,7 @@
         "dompurify": "*",
         "file-saver": "*",
         "formik": "*",
-        "react": ">=18.0.0",
+        "react": ">=18.2.0",
         "suneditor": "*",
         "suneditor-react": "*",
         "@emotion/styled": "*",

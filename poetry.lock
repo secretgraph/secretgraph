@@ -348,7 +348,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "pylint"
-version = "2.14.4"
+version = "2.14.5"
 description = "python code static checker"
 category = "dev"
 optional = false
@@ -496,7 +496,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "strawberry-django-plus"
-version = "1.19.1"
+version = "1.20.0"
 description = "Enhanced Strawberry GraphQL integration with Django"
 category = "main"
 optional = false
@@ -514,7 +514,7 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.119.0"
+version = "0.119.1"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
@@ -949,8 +949,8 @@ pygments = [
     {file = "Pygments-2.12.0.tar.gz", hash = "sha256:5eb116118f9612ff1ee89ac96437bb6b49e8f04d8a13b514ba26f620208e26eb"},
 ]
 pylint = [
-    {file = "pylint-2.14.4-py3-none-any.whl", hash = "sha256:89b61867db16eefb7b3c5b84afc94081edaf11544189e2b238154677529ad69f"},
-    {file = "pylint-2.14.4.tar.gz", hash = "sha256:47705453aa9dce520e123a7d51843d5f0032cbfa06870f89f00927aa1f735a4a"},
+    {file = "pylint-2.14.5-py3-none-any.whl", hash = "sha256:fabe30000de7d07636d2e82c9a518ad5ad7908590fe135ace169b44839c15f90"},
+    {file = "pylint-2.14.5.tar.gz", hash = "sha256:487ce2192eee48211269a0e976421f334cf94de1806ca9d0a99449adcdf0285e"},
 ]
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
@@ -992,12 +992,12 @@ sqlparse = [
     {file = "sqlparse-0.4.2.tar.gz", hash = "sha256:0c00730c74263a94e5a9919ade150dfc3b19c574389985446148402998287dae"},
 ]
 strawberry-django-plus = [
-    {file = "strawberry-django-plus-1.19.1.tar.gz", hash = "sha256:276aeddd4916bceefd4cc59d7c1ec201d1e5fc96c7801734300672f8dca3d324"},
-    {file = "strawberry_django_plus-1.19.1-py3-none-any.whl", hash = "sha256:d87e0c22eccc0f599a9bc8c63f1856d53cc3163e27a637f5271bf70f5eb8ba5c"},
+    {file = "strawberry-django-plus-1.20.0.tar.gz", hash = "sha256:dda266b4b8670c9f7aee0721e7375ba5e010b333561f2d1f4896f2fcc40413b5"},
+    {file = "strawberry_django_plus-1.20.0-py3-none-any.whl", hash = "sha256:d5f92f958db209d61ec9339260bedc0177f73e1d1cf0cc1c8b93aa23aba635e7"},
 ]
 strawberry-graphql = [
-    {file = "strawberry-graphql-0.119.0.tar.gz", hash = "sha256:bfe720035a36f199aa4cdfdc51e5ecd891ae86d160946744d7c6551347e49c04"},
-    {file = "strawberry_graphql-0.119.0-py3-none-any.whl", hash = "sha256:1d1ae1f8e2646f5fbae54c60770cec558436a4dc2099217c94d5dc72f9cdef74"},
+    {file = "strawberry-graphql-0.119.1.tar.gz", hash = "sha256:7603022d96509fcd5a80e6ea4e22657b51970853a36d2a790212186fbb72f3c6"},
+    {file = "strawberry_graphql-0.119.1-py3-none-any.whl", hash = "sha256:15b7bed3b629556cc3eac3b877cdc113365fcfd2c2e8b2625fa7ff4b5f9e0ffb"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry-graphql-django-0.4.0.tar.gz", hash = "sha256:d321f173834f9156e33cc91a175000ff38e72afa9c7f412b30c678d7f274d014"},
