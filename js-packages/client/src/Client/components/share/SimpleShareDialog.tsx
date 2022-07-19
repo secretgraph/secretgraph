@@ -286,6 +286,7 @@ export default function SimpleShareDialog({
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.Config)
     const [open, setOpen] = React.useState(false)
+    const dialogTitleId = React.useId()
     const tokens = React.useMemo(() => {
         if (!shareUrl) {
             return []
@@ -325,10 +326,10 @@ export default function SimpleShareDialog({
             onClose={() => setOpen(false)}
             maxWidth="xl"
             fullWidth
-            aria-labelledby="share-dialog-title"
+            aria-labelledby={dialogTitleId}
             container={document.body}
         >
-            <DialogTitle id="share-dialog-title">Share</DialogTitle>
+            <DialogTitle id={dialogTitleId}>Share</DialogTitle>
             <DialogContent>
                 <TabContext value={tab}>
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

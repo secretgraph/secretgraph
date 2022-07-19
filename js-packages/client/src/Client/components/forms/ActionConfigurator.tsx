@@ -69,6 +69,7 @@ const ActionFields = React.memo(function ActionFields({
     disabled?: boolean
 }) {
     switch (action) {
+        case 'view':
         case 'auth':
             if (isContent) {
                 return (
@@ -106,14 +107,37 @@ const ActionFields = React.memo(function ActionFields({
                     </div>
                 )
             }
-        case 'create':
-        case 'view':
         case 'delete':
-            return (
-                <>
-                    <div></div>
-                </>
-            )
+            if (isContent) {
+                return (
+                    <div>
+                    </div>
+                )
+            } else {
+                return (
+                    <div>
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}includeTags`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Include tags"
+                            freeSolo
+                            multiple
+                        />
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}excludeTags`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Exclude tags"
+                            freeSolo
+                            multiple
+                        />
+                    </div>
+                )
+            }
+        case 'create':
         case 'update':
             return (
                 <>

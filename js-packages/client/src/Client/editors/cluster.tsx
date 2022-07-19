@@ -410,7 +410,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         const f = async () => {
             if (!dataUnfinished || !dataUnfinished.secretgraph.node) {
                 if (dataUnfinished) {
-                    console.debug(dataUnfinished.secretgraph.node)
+                    console.debug(dataUnfinished.secretgraph.node, mainCtx.tokens)
                     refetch()
                 }
                 return

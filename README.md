@@ -70,16 +70,25 @@ key refs are assigned to privatekey, the rest to the public key
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[\]
+        -   states:like param, include only contents with state
+        -   includeTypes: like param, include only contents with type
+        -   excludeTypes: like param, exclude contents with type, default: \[\]
 -   view (Content, Cluster) affects (Content, Cluster):
     -   for Content:
         -   fetch: autodelete content after viewing
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[\]
+        -   states:like param, include only contents with state
+        -   includeTypes: like param, include only contents with type
+        -   excludeTypes: like param, exclude contents with type, default: \[\]
 -   delete (Content, Cluster):
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[\]
+        -   states:like param, include only contents with state
+        -   includeTypes: like param, include only contents with type
+        -   excludeTypes: like param, exclude contents with type, default: \[\]
 -   update (Content, Cluster) affects (Content, Cluster) (has default view permission):
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
@@ -207,6 +216,8 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   actions: states 
+-   handler split file
 -   X-Key response: shared key of private key
 -   port settings importer to formik
 -   hash algo should be part of hashes hash?????

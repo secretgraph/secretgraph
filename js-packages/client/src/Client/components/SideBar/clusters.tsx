@@ -64,6 +64,7 @@ export default React.memo(function Clusters({
                 exclude: searchCtx.exclude,
                 excludeIds: excludeIds,
             },
+            nextFetchPolicy: "cache-and-network"
         })
     React.useEffect(() => {
         expanded.includes(props.nodeId) && loadQuery()

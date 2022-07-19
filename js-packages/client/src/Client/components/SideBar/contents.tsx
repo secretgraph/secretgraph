@@ -87,6 +87,7 @@ export default React.memo(function Contents({
                 count: 30,
                 cursor: null,
             },
+            nextFetchPolicy: "cache-and-network"
         })
     React.useEffect(() => {
         expanded.includes(props.nodeId) && loadQuery()

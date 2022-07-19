@@ -5,6 +5,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { validActions } from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
+    authInfoFromConfig,
     loadConfigSync,
     updateConfigReducer,
 } from '@secretgraph/misc/utils/config'
@@ -48,8 +49,7 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>, URLSearchParams
     >(updateState, searchInit, (query)=> {
-
-        return {
+        const ctx: Interfaces.MainContextInterface = {
             action: validActions.has(query.get("action") as any) ? query.get("action") as any: config ? 'create' : 'initialize',
             title: '',
             item: query.get("item"),
@@ -62,6 +62,22 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
             tokensPermissions: new Set(),
             cluster: null,
         }
+        /*if(config){
+            const require = new Set(ctx.action == "create" ? ["manage"] : ctx.action == "update" ? ["manage", "update"] : ['view', 'update', 'manage'])
+            const authinfo = authInfoFromConfig({
+                config,
+                url: ctx.url || config.baseUrl,
+                contents: ctx.type == "Cluster" || !ctx.item ? undefined : new Set([ctx.item]),
+                clusters: ctx.type != "Cluster" || !ctx.item ? undefined : new Set([ctx.item]),
+                require: require
+            })
+            ctx.tokens = authinfo.tokens
+            ctx.tokensPermissions = require
+        }
+        if(ctx.type == "Cluster" && ctx.item){
+            ctx.cluster = ctx.item
+        }*/
+        return ctx
     })
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
