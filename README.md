@@ -216,8 +216,8 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   actions: states 
--   handler split file
+-   mainCtx.cluster for communicating current cluster of content
+-   actions: states
 -   X-Key response: shared key of private key
 -   port settings importer to formik
 -   hash algo should be part of hashes hash?????

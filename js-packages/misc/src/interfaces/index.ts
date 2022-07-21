@@ -112,7 +112,9 @@ export interface MainContextInterface {
     action: 'initialize' | 'create' | 'view' | 'update' | 'help'
     updateId: null | string
     title: string
+    // Content
     item: null | string
+    // Cluster
     cluster: null | string
     // activeUrl can be changed without changing active element, so cache it here
     url: null | string

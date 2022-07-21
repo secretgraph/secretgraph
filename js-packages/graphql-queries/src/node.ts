@@ -51,3 +51,23 @@ export const getActionsQuery = gql`
         }
     }
 `
+
+export const getNodeType = gql`
+    query getNodeTypeQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+    ) {
+        node(id: $id) {
+            ... on Cluster {
+                id
+                public
+                featured
+            }
+            ... on Content {
+                id
+                type
+                state
+            }
+        }
+    }
+`

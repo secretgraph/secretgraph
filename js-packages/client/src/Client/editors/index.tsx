@@ -3,6 +3,11 @@ declare var gettext: any
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
+const loading =  React.lazy(
+    () =>
+        import(/*  webpackChunkName: 'loading-types' */ './loading')
+)
+
 export const elements = new Map<string, Interfaces.ElementEntryInterface>([
     [
         'Cluster',
@@ -62,13 +67,29 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
     [
-        'undefined',
+        'custom',
         {
             label: gettext('Custom'),
             component: React.lazy(
                 () =>
                     import(/*  webpackChunkName: 'custom-editor' */ './custom')
             ),
+        },
+    ],
+    [
+        'loading',
+        {
+            label: gettext('Loading'),
+            ignore: true,
+            component:loading
+        },
+    ],
+    [
+        'undefined',
+        {
+            label: gettext('Loading'),
+            ignore: true,
+            component:loading
         },
     ],
 ])

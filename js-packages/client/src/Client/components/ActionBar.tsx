@@ -30,6 +30,7 @@ type Props = {}
 function ActionBar(props: Props) {
     const theme = useTheme()
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { searchCtx } = React.useContext(Contexts.Search)
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const client = useApolloClient()
@@ -66,6 +67,9 @@ function ActionBar(props: Props) {
             require: _create_set,
         }).tokens
     }, [mainCtx.tokens, mainCtx.tokensPermissions, activeUrl, config])
+    if(mainCtx.type == "loading"){
+        return null
+    }
 
     return (
         <nav
@@ -238,6 +242,7 @@ function ActionBar(props: Props) {
                                             shareFn: null,
                                             deleted: null,
                                             type: event.currentTarget.value,
+                                            cluster: searchCtx.cluster || config.configCluster,
                                             tokens: createTokens,
                                         })
                                     }}
@@ -272,6 +277,7 @@ function ActionBar(props: Props) {
                                             shareFn: null,
                                             deleted: null,
                                             type: mainCtx.type,
+                                            cluster: searchCtx.cluster || config.configCluster,
                                             tokens: createTokens,
                                         })
                                     }}

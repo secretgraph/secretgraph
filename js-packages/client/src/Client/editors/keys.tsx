@@ -1129,24 +1129,20 @@ const EditKeys = () => {
 }
 
 const CreateKeys = () => {
-    const { mainCtx } = React.useContext(Contexts.Main)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
-    const { searchCtx } = React.useContext(Contexts.Search)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [cluster, setCluster] = React.useState(
-        searchCtx.cluster || config.configCluster
-    )
     const { tokens } = React.useMemo(() => {
-        if (cluster) {
+        if (mainCtx.cluster) {
             return authInfoFromConfig({
                 config,
                 url: activeUrl,
-                clusters: new Set([cluster]),
+                clusters: new Set([mainCtx.cluster]),
                 require: new Set(['create', 'manage']),
             })
         }
         return { tokens: [] }
-    }, [config, cluster, activeUrl])
+    }, [config, mainCtx.cluster, activeUrl])
 
     const authorization = React.useMemo(() => {
         return [...new Set([...mainCtx.tokens, ...tokens])]
@@ -1155,7 +1151,7 @@ const CreateKeys = () => {
     const { data, loading, refetch } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
-            id: cluster || '',
+            id: mainCtx.cluster || '',
             authorization,
         },
         onError: console.error,
@@ -1164,7 +1160,7 @@ const CreateKeys = () => {
         if (data) {
             refetch()
         }
-    }, [cluster])
+    }, [mainCtx.cluster])
     const algos = React.useMemo(() => {
         const hashAlgorithmsRaw =
             data?.secretgraph?.config?.hashAlgorithms || []
@@ -1176,7 +1172,7 @@ const CreateKeys = () => {
     return (
         <KeysIntern
             url={activeUrl}
-            setCluster={setCluster}
+            setCluster={(cluster: string)=> updateMainCtx({cluster})}
             disabled={loading}
             {...algos}
         />
@@ -1263,7 +1259,7 @@ export default function KeyComponent() {
     }, [mainCtx.url, mainCtx.item])
     if (barrier) {
         return null
-        //throw barrier
+        // throw barrier
     }
     return (
         <DecisionFrame

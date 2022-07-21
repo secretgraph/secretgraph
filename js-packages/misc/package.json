@@ -9,7 +9,9 @@
         "typescript": "*"
     },
     "optionalDependencies": {
-        "@secretgraph/graphql-queries": "*"
+        "@secretgraph/graphql-queries": "*",
+        "@apollo/client": "*",
+        "graphql-ws": "*"
     },
     "exports": {
         "./": "./lib/"

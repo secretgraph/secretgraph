@@ -90,6 +90,7 @@ const SideBarItems = () => {
 
         updateMainCtx({
             item: node.id,
+            cluster: type == 'Cluster' ? node.id : null,
             updateId: node.updateId,
             type,
             deleted: false,

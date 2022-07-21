@@ -55,14 +55,17 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
             item: query.get("item"),
             updateId: null,
             url: query.get("url") || null,
-            type: elements.has(query.get('type') as any) ? query.get('type') : elements.keys().next().value,
+            type: query.get('type') || "Cluster",
             shareFn: null,
             deleted: null,
             tokens: [],
             tokensPermissions: new Set(),
-            cluster: null,
+            cluster:  null,
         }
-        /*if(config){
+        if(ctx.action != "create"){
+            ctx.type = "loading"
+        }
+        if(config){
             const require = new Set(ctx.action == "create" ? ["manage"] : ctx.action == "update" ? ["manage", "update"] : ['view', 'update', 'manage'])
             const authinfo = authInfoFromConfig({
                 config,
@@ -74,9 +77,6 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
             ctx.tokens = authinfo.tokens
             ctx.tokensPermissions = require
         }
-        if(ctx.type == "Cluster" && ctx.item){
-            ctx.cluster = ctx.item
-        }*/
         return ctx
     })
     const [activeUrl, setActiveUrl] = React.useState(
@@ -92,7 +92,6 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
         }
         if(mainCtx.url){
             search.set("url", mainCtx.url)
-
         }
         window.location.hash = search.toString()
 

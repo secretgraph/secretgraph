@@ -8,6 +8,7 @@
         "@secretgraph/misc": "*",
         "@secretgraph/graphql-queries": "*",
         "@apollo/client": "*",
+        "graphql-ws": "*",
         "graphql": "*",
         "dompurify": "*",
         "file-saver": "*",

@@ -1058,7 +1058,6 @@ const FileIntern = ({
 const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [cluster, setCluster] = React.useState<string | null>(null)
     const [data, setData] = React.useState<{
         mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
         hashAlgorithms: string[]
@@ -1092,12 +1091,12 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     React.useEffect(() => {
         if (
             dataUnfinished &&
-            dataUnfinished.secretgraph.node.cluster.id != cluster
+            dataUnfinished.secretgraph.node.cluster.id != mainCtx.cluster
         ) {
             loading = true
             refetch()
         }
-    }, [cluster])
+    }, [mainCtx.cluster])
     React.useEffect(() => {
         if (!dataUnfinished || loading) {
             return
@@ -1106,11 +1105,13 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             console.log('empty node, permissions?')
             return
         }
-        if (!cluster) {
+        if (!mainCtx.cluster) {
             if (!dataUnfinished.secretgraph.node.cluster.id) {
                 throw Error('no cluster found')
             }
-            setCluster(dataUnfinished.secretgraph.node.cluster.id)
+            updateMainCtx({
+                cluster: dataUnfinished.secretgraph.node.cluster.id
+            })
         }
         loading = true
         let active = true
@@ -1195,7 +1196,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         <FileIntern
             {...data}
             url={mainCtx.url as string}
-            setCluster={setCluster}
+            setCluster={(cluster: string)=> updateMainCtx({cluster})}
             disabled={loading || viewOnly}
             viewOnly={viewOnly}
         />
@@ -1218,15 +1219,12 @@ const CreateFile = () => {
         key: string | number
     } | null>(null)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
-    const [cluster, setCluster] = React.useState(
-        searchCtx.cluster || config.configCluster
-    )
     const { data: dataUnfinished, refetch } = useQuery(
         getContentConfigurationQuery,
         {
             fetchPolicy: 'cache-and-network',
             variables: {
-                id: cluster || '',
+                id: mainCtx.cluster || '',
                 authorization: mainCtx.tokens,
             },
             onError: console.error,
@@ -1237,7 +1235,7 @@ const CreateFile = () => {
         if (dataUnfinished) {
             refetch()
         }
-    }, [cluster, activeUrl])
+    }, [mainCtx.cluster, activeUrl])
 
     React.useEffect(() => {
         let active = true
@@ -1283,7 +1281,7 @@ const CreateFile = () => {
         return null
     }
 
-    return <FileIntern url={activeUrl} setCluster={setCluster} {...data} />
+    return <FileIntern url={activeUrl} setCluster={(cluster: string)=> updateMainCtx({cluster})} {...data} />
 }
 
 export default function FileComponent() {
