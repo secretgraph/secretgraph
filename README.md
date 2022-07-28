@@ -254,3 +254,11 @@ idea: seperate actions with different concerns.
 -   subscribe to config, watch changes
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters
+-   recovery:
+
+# TODO far future
+
+- recovery:
+    - save a recovery token in remote identity provider (needs identity provider+ identity editor)
+        - can retrieve it via sms
+        - or identity verification (passport, e.g.)

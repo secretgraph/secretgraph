@@ -17,15 +17,6 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # last reload time (secretgraph specific)
 LAST_CONFIG_RELOAD_ID = str(time.time())
 
-GRAPHENE = {
-    "SCHEMA": "secretgraph.schema.schema",
-    "SCHEMA_OUTPUT": "schema.json",
-    "SCHEMA_INDENT": 2,
-    "MIDDLEWARE": [],
-    "RELAY_CONNECTION_MAX_LIMIT": 100,
-    "DJANGO_CHOICE_FIELD_ENUM_V3_NAMING": True,
-}
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 

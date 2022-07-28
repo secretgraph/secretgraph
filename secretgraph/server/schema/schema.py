@@ -75,7 +75,7 @@ class Query:
 @gql.type
 class Mutation:
     updateOrCreateContent: ContentMutation = gql.django.input_mutation(
-        mutate_content,
+        resolver=mutate_content,
         description=(
             "Supports creation or update of:\n"
             "  public key or key-pair (key): used for further encryption.\n"
@@ -84,29 +84,29 @@ class Mutation:
         ),
     )
     updateOrCreateCluster: ClusterMutation = gql.django.input_mutation(
-        mutate_cluster,
+        resolver=mutate_cluster,
         description=(
             "Create a cluster, optionally initialize with a key-(pair)"
         ),
     )
 
     deleteContentOrCluster: DeleteContentOrClusterMutation = (
-        gql.django.input_mutation(delete_content_or_cluster)
+        gql.django.input_mutation(resolver=delete_content_or_cluster)
     )
     resetDeletionContentOrCluster: ResetDeletionContentOrClusterMutation = (
-        gql.django.input_mutation(reset_deletion_content_or_cluster)
+        gql.django.input_mutation(resolver=reset_deletion_content_or_cluster)
     )
     regenerateFlexid: RegenerateFlexidMutation = gql.django.input_mutation(
-        regenerate_flexid
+        resolver=regenerate_flexid
     )
     updateMetadata: MetadataUpdateMutation = gql.django.input_mutation(
-        update_metadata
+        resolver=update_metadata
     )
-    updateMarks: MarkMutation = gql.django.input_mutation(mark)
+    updateMarks: MarkMutation = gql.django.input_mutation(resolver=mark)
     pushContent: PushContentMutation = gql.django.input_mutation(
-        mutate_push_content
+        resolver=mutate_push_content
     )
 
     transferContent: TransferMutation = gql.django.input_mutation(
-        mutate_transfer
+        resolver=mutate_transfer
     )
