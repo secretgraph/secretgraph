@@ -1,49 +1,117 @@
-import {
-    useApolloClient,
-} from '@apollo/client'
-import {
-    findPublicKeyQuery,
-} from '@secretgraph/graphql-queries/content'
+import { useApolloClient } from '@apollo/client'
+import { findPublicKeyQuery } from '@secretgraph/graphql-queries/content'
+import { getNodeType } from '@secretgraph/graphql-queries/node'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
 
 export default function LoadingComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
     React.useEffect(() => {
         let active = true
         const f = async () => {
-            if(["update", "view"].includes(mainCtx.action)){
-                if(mainCtx.item){
+            if (['update', 'view'].includes(mainCtx.action)) {
+                const require = new Set(
+                    mainCtx.action == 'create'
+                        ? ['manage']
+                        : mainCtx.action == 'update'
+                        ? ['manage', 'update']
+                        : ['view', 'update', 'manage']
+                )
+                let authinfo = authInfoFromConfig({
+                    config,
+                    url: mainCtx.url || config.baseUrl,
+                    contents:
+                        mainCtx.type == 'Cluster' || !mainCtx.item
+                            ? undefined
+                            : new Set([mainCtx.item]),
+                    clusters:
+                        mainCtx.type != 'Cluster' || !mainCtx.item
+                            ? undefined
+                            : new Set([mainCtx.item]),
+                    require,
+                })
+                if (!authinfo.tokens.length) {
+                    authinfo = authInfoFromConfig({
+                        config,
+                        url: mainCtx.url || config.baseUrl,
+                        require: require,
+                    })
+                }
+                if (mainCtx.item) {
                     try {
                         const result = await client.query({
-                            query: findPublicKeyQuery,
+                            query: getNodeType,
                             variables: {
-                                authorization: mainCtx.tokens,
+                                authorization: authinfo.tokens,
                                 id: mainCtx.item,
                             },
                         })
                         if (active) {
                             if (result.data.secretgraph.node) {
-                                if(result.data.secretgraph.node.type){
-                                    updateMainCtx({type: result.data.secretgraph.node.type})
+                                if (result.data.secretgraph.node.type) {
+                                    updateMainCtx({
+                                        type: result.data.secretgraph.node.type,
+                                        tokens: authinfo.tokens,
+                                        tokensPermissions: authinfo.types,
+                                    })
                                 } else {
-                                    updateMainCtx({item: null, type: result.data.secretgraph.node.__typename})
+                                    updateMainCtx({
+                                        type: result.data.secretgraph.node
+                                            .__typename,
+                                        tokens: authinfo.tokens,
+                                        tokensPermissions: authinfo.types,
+                                    })
                                 }
                             } else {
-                                updateMainCtx({item: null, type: "Cluster"})
+                                console.error('failed to load node, fallback')
+                                // TODO: better way of recovery (editor named recovery)
+                                const authinfo = authInfoFromConfig({
+                                    config,
+                                    url: mainCtx.url || config.baseUrl,
+                                    require: new Set(['manage']),
+                                })
+                                updateMainCtx({
+                                    action: 'create',
+                                    item: null,
+                                    type: 'Cluster',
+                                    tokens: authinfo.tokens,
+                                    tokensPermissions: authinfo.types,
+                                })
                             }
-                        }    
-                    } catch(exc){
-                        console.error("failed to determinate type", exc)
+                        }
+                    } catch (exc) {
+                        console.error('failed to determinate type', exc)
                     }
-                    
                 } else {
-                    updateMainCtx({item: null, type: "Cluster"})
+                    const authinfo = authInfoFromConfig({
+                        config,
+                        url: mainCtx.url || config.baseUrl,
+                        require: new Set(['manage']),
+                    })
+                    updateMainCtx({
+                        action: 'create',
+                        item: null,
+                        type: 'Cluster',
+                        tokens: authinfo.tokens,
+                        tokensPermissions: authinfo.types,
+                    })
                 }
             } else {
-                updateMainCtx({item: null, type: "Cluster"})
+                const authinfo = authInfoFromConfig({
+                    config,
+                    url: mainCtx.url || config.baseUrl,
+                    require: new Set(['manage']),
+                })
+                updateMainCtx({
+                    item: null,
+                    type: 'Cluster',
+                    tokens: authinfo.tokens,
+                    tokensPermissions: authinfo.types,
+                })
             }
         }
         f()

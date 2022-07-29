@@ -756,10 +756,7 @@ const KeysIntern = ({
                                 client,
                                 config,
                                 key: privKey,
-                                privateTags: [
-                                    `description=${values.description}`,
-                                    `name=${values.name}`,
-                                ],
+                                privateTags: privateKey.nodeData.tags.filter((tag: string)=> tag.startsWith("key=")),
                                 privkeys: await Promise.all(
                                     Object.values(privateKeys)
                                 ),
@@ -774,7 +771,7 @@ const KeysIntern = ({
                                 cluster: values.cluster,
                                 publicKey: pubKey,
                                 privateKey: privKey,
-                                privateTags: [
+                                publicTags: [
                                     `description=${values.description}`,
                                     `name=${values.name}`,
                                 ],

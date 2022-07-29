@@ -47,32 +47,34 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
         replace?: boolean
     ) => updateConfigIntern({ update, replace })
     const [mainCtx, updateMainCtx] = React.useReducer<
-        updateStateType<Interfaces.MainContextInterface>, URLSearchParams
-    >(updateState, searchInit, (query)=> {
+        updateStateType<Interfaces.MainContextInterface>,
+        URLSearchParams
+    >(updateState, searchInit, (query) => {
         const ctx: Interfaces.MainContextInterface = {
-            action: validActions.has(query.get("action") as any) ? query.get("action") as any: config ? 'create' : 'initialize',
+            action: validActions.has(query.get('action') as any)
+                ? (query.get('action') as any)
+                : config
+                ? 'create'
+                : 'initialize',
             title: '',
-            item: query.get("item"),
+            item: query.get('item'),
             updateId: null,
-            url: query.get("url") || null,
-            type: query.get('type') || "Cluster",
+            url: query.get('url') || null,
+            type: query.get('type') || 'Cluster',
             shareFn: null,
             deleted: null,
             tokens: [],
             tokensPermissions: new Set(),
-            cluster:  null,
+            cluster: null,
         }
-        if(ctx.action != "create"){
-            ctx.type = "loading"
-        }
-        if(config){
-            const require = new Set(ctx.action == "create" ? ["manage"] : ctx.action == "update" ? ["manage", "update"] : ['view', 'update', 'manage'])
+        if (ctx.action != 'create') {
+            ctx.type = 'loading'
+        } else if (config) {
+            const require = new Set(['manage'])
             const authinfo = authInfoFromConfig({
                 config,
                 url: ctx.url || config.baseUrl,
-                contents: ctx.type == "Cluster" || !ctx.item ? undefined : new Set([ctx.item]),
-                clusters: ctx.type != "Cluster" || !ctx.item ? undefined : new Set([ctx.item]),
-                require: require
+                require,
             })
             ctx.tokens = authinfo.tokens
             ctx.tokensPermissions = require
@@ -82,20 +84,19 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
-    React.useEffect(()=> {
+    React.useEffect(() => {
         const search = new URLSearchParams()
-        search.set("action", mainCtx.action)
-        if(mainCtx.action == "create" && mainCtx.type){
-            search.set("type", mainCtx.type)
-        } else if(mainCtx.item){
-            search.set("item", mainCtx.item)
+        search.set('action', mainCtx.action)
+        if (mainCtx.action == 'create' && mainCtx.type) {
+            search.set('type', mainCtx.type)
+        } else if (mainCtx.item) {
+            search.set('item', mainCtx.item)
         }
-        if(mainCtx.url){
-            search.set("url", mainCtx.url)
+        if (mainCtx.url) {
+            search.set('url', mainCtx.url)
         }
         window.location.hash = search.toString()
-
-    },[mainCtx.action, mainCtx.item, mainCtx.type, mainCtx.url])
+    }, [mainCtx.action, mainCtx.item, mainCtx.type, mainCtx.url])
 
     const [searchCtx, updateSearchCtx] = React.useReducer<
         updateStateType<Interfaces.SearchContextInterface>

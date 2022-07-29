@@ -5,6 +5,7 @@ import base64
 import logging
 from contextlib import nullcontext
 from itertools import chain
+from typing import List, Optional
 from uuid import UUID, uuid4
 
 from cryptography.hazmat.primitives import serialization
@@ -22,6 +23,14 @@ from ._metadata import transform_references, transform_tags
 logger = logging.getLogger(__name__)
 
 len_default_hash = len(hash_object(b""))
+
+
+def _condMergeKeyTags(
+    hashes_tags: List[str], tags: Optional[List[str]], isUpdate: bool
+):
+    if tags is None and isUpdate:
+        return None
+    return chain(hashes_tags, tags or [])
 
 
 def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
@@ -82,7 +91,11 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "value": key_obj["publicKey"],
             "type": "PublicKey",
             "state": publicState,
-            "tags": chain(hashes_tags, key_obj.get("publicTags") or []),
+            "tags": _condMergeKeyTags(
+                hashes_tags,
+                key_obj.get("publicTags"),
+                bool(publicKeyContent)
+            ),
             "contentHash": hashes[0],
             "actions": key_obj.get("publicActions"),
         },
@@ -91,7 +104,11 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "value": key_obj["privateKey"],
             "type": "PrivateKey",
             "state": "internal",
-            "tags": chain(hashes_tags, key_obj.get("privateTags") or []),
+            "tags": _condMergeKeyTags(
+                hashes_tags,
+                key_obj.get("privateTags"),
+                bool(publicKeyContent)
+            ),
             "contentHash": None,
             "actions": key_obj.get("privateActions"),
         }
@@ -457,6 +474,12 @@ def update_content_fn(
         key_obj = objdata.get("key")
         if not key_obj:
             raise ValueError("Cannot transform key to content")
+        # we don't see it or update it anyway so include all
+        # without regard to state
+        publicKeyContent = Content.objects.filter(
+            type="PublicKey",
+            referencedBy__source=content
+        ).first()
 
         hashes, _public, newdata = _transform_key_into_dataobj(
             {
@@ -468,6 +491,7 @@ def update_content_fn(
                     tag__startswith="key_hash="
                 ).values_list("tag", flat=True),
             },
+            publicKeyContent=publicKeyContent
         )
         if not newdata:
             raise ValueError("No data for private key")
