@@ -258,7 +258,12 @@ idea: seperate actions with different concerns.
 
 # TODO far future
 
-- recovery:
-    - save a recovery token in remote identity provider (needs identity provider+ identity editor)
-        - can retrieve it via sms
-        - or identity verification (passport, e.g.)
+-   recovery:
+    -   save a recovery token in remote identity provider (needs identity provider+ identity editor)
+        -   can retrieve it via sms
+        -   or identity verification (passport, e.g.)
+-   moving / hiding by regenerating flexids
+    1. list all providers
+    2. issue an onetime update token for all of them and save it (with flexid relation)
+    3. regenerate flexid / move content
+    4. update providers via token
