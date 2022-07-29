@@ -42,8 +42,8 @@ class ContentKeyInput:
     publicTags: Optional[List[str]] = strawberry.field(
         description="Metadata tags for public key", default=None
     )
-    privateActions: Optional[List[str]] = None
-    publicActions: Optional[List[str]] = None
+    privateActions: Optional[List[ActionInput]] = None
+    publicActions: Optional[List[ActionInput]] = None
     nonce: Optional[str] = strawberry.field(
         description="Nonce for private key (base64, 13 bytes)", default=None
     )

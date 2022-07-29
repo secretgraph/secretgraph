@@ -6,7 +6,7 @@ import strawberry
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q, QuerySet
+from django.db.models import Subquery, Q, QuerySet, Value
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
@@ -141,7 +141,7 @@ class ClusterNode(relay.Node):
         queryset: QuerySet = self.contents.filter(hidden=False)
         deleted = filters.deleted
         if self.limited:
-            queryset = queryset.annotate(limited=True)
+            queryset = queryset.annotate(limited=Value(True))
             deleted = UseCriteria.FALSE
         if not deleted:
             if self.markForDestruction:

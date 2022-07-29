@@ -161,6 +161,7 @@ export const createClusterMutation = gql`
                         publicState: "trusted"
                         privateKey: $privateKey
                         privateTags: $privateTags
+                        publicTags: ["name=initial key"]
                         nonce: $nonce
                     }
                 }

@@ -221,7 +221,7 @@ export async function updateKey({
         variables: {
             id,
             updateId,
-            cluster: options.cluster ? options.cluster : null,
+            cluster: options.cluster ? options.cluster : undefined,
             references,
             publicState,
             publicTags,
@@ -237,11 +237,11 @@ export async function updateKey({
                           }
                       )
                   )
-                : null,
+                : undefined,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
-            key: completedKey ? new Blob([completedKey.data]) : null,
-            actions: options.actions ? [...options.actions] : null,
-            contentHash: options.contentHash ? options.contentHash : null,
+            key: completedKey ? new Blob([completedKey.data]) : undefined,
+            actions: options.actions ? [...options.actions] : undefined,
+            contentHash: options.contentHash ? options.contentHash : undefined,
             authorization: [...options.authorization],
         },
     })
