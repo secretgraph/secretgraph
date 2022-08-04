@@ -224,7 +224,7 @@ class ContentNode(relay.Node):
             queryset = queryset.filter(
                 cluster_id__in=Subquery(
                     fetch_by_id(
-                        Cluster.objects.all(), filters.clusters
+                        Cluster.objects.all(), filters.clusters, limit_ids=None
                     ).values("id")
                 )
             )

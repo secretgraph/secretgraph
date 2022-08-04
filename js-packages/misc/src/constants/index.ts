@@ -1,5 +1,11 @@
-import { MainContextInterface } from "../interfaces"
-export const validActions = new Set<MainContextInterface["action"]>(['initialize' , 'create' , 'view' , 'update' , 'help'])
+import { MainContextInterface } from '../interfaces'
+export const validActions = new Set<MainContextInterface['action']>([
+    'initialize',
+    'create',
+    'view',
+    'update',
+    'help',
+])
 
 export const public_states = ['required', 'trusted', 'public']
 

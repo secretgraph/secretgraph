@@ -405,6 +405,10 @@ export async function exportConfigAsUrl({
         config,
         url: config.baseUrl,
         clusters: new Set([config.configCluster]),
+        // only view action is allowed here as manage can do damage without decryption
+        require: new Set(['view']),
+        // only use token named recovery token
+        search: 'recovery token',
     })
     const privcert: Uint8Array | null = authInfo.certificateHashes.length
         ? b64toarr(config.certificates[authInfo.certificateHashes[0]].data)
@@ -529,6 +533,7 @@ export function authInfoFromConfig({
     readonly excludeClusters?: Set<string>
     readonly contents?: Set<string>
     readonly require?: Set<string>
+    readonly search?: string
 }): Interfaces.AuthInfoInterface {
     const tokens = new Set<string>()
     const hashes = new Set<string>()
@@ -584,7 +589,10 @@ export function authInfoFromConfig({
                             hashes.add(hash)
                             if (!config.tokens[hash] || !hash) {
                                 console.warn('token not found for:', hash)
-                            } else {
+                            } else if (
+                                !props.search ||
+                                props.search === config.tokens[hash].note
+                            ) {
                                 tokens.add(
                                     `${contentconf.cluster}:${config.tokens[hash]?.data}`
                                 )

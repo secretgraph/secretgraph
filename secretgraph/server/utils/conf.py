@@ -4,7 +4,7 @@ from django.http.request import validate_host
 from django.conf import settings
 
 
-_default_allowed_hosts = ['localhost', '127.0.0.1', '[::1]']
+_default_allowed_hosts = ["localhost", "127.0.0.1", "[::1]"]
 
 
 def inline_path(urlsplitted):
@@ -17,9 +17,9 @@ def inline_path(urlsplitted):
     return None
 
 
-def get_requests_params(url):
+def get_httpx_params(url):
     """
-        returns (request parameters, inline url or None)
+    returns (httpx parameters, inline url or None)
     """
     urlsplitted = urlsplit(url)
     if "." in urlsplitted.netloc:
@@ -28,9 +28,6 @@ def get_requests_params(url):
         tld = None
     mapper = settings.SECRETGRAPH_REQUEST_KWARGS_MAP
     return (
-        mapper.get(
-            urlsplitted.netloc,
-            mapper[tld]
-        ),
-        inline_path(urlsplitted)
+        mapper.get(urlsplitted.netloc, mapper[tld]),
+        inline_path(urlsplitted),
     )

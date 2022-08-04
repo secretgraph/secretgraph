@@ -3,24 +3,24 @@ __all__ = ["retrieve_signatures", "verify_signatures"]
 import base64
 import logging
 
-import requests
+import httpx
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, utils
 from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Substr
-from django.test import Client
 
-from ...utils.conf import get_requests_params
+from ....asgi import application
+from ...utils.conf import get_httpx_params
 from ...models import ContentTag
 
 logger = logging.getLogger(__name__)
 
 
-def retrieve_signatures(
+async def retrieve_signatures(
     url, headers, session=None, params=None, inline_domain=None, keepalive=True
 ):
     if params is None or inline_domain is None:
-        params, inline_domain = get_requests_params(url)
+        params, inline_domain = get_httpx_params(url)
     prepared_url = url.rstrip("?&")
     # signatures should be on first page
     prepared_url = "%s%skeys" % (
@@ -28,12 +28,20 @@ def retrieve_signatures(
         "&" if "?" in prepared_url else "?",
     )
     jsonob = None
-    if inline_domain:
-        response = Client().get(
+    if session:
+        s = session
+    elif inline_domain:
+        s = httpx.AsyncClient(app=application)
+    else:
+        s = httpx.AsyncClient()
+    try:
+        response = await s.get(
             prepared_url,
-            Connection="Keep-Alive" if keepalive else "close",
-            SERVER_NAME=inline_domain,
-            **headers,
+            headers={
+                "Connection": "Keep-Alive" if keepalive else "close",
+                **headers,
+            },
+            **params,
         )
         if response.status_code == 200:
             jsonob = response.json()
@@ -41,31 +49,11 @@ def retrieve_signatures(
             logger.warning(
                 "Could not retrieve signatures:\n%s", response.content
             )
-    else:
-        if session:
-            s = session
-        else:
-            s = requests.Session()
-        try:
-            response = s.get(
-                prepared_url,
-                headers={
-                    "Connection": "Keep-Alive" if keepalive else "close",
-                    **headers,
-                },
-                **params,
-            )
-            if response.status_code == 200:
-                jsonob = response.json()
-            else:
-                logger.warning(
-                    "Could not retrieve signatures:\n%s", response.content
-                )
-        except Exception as exc:
-            logger.error("Error while fetching signatures", exc_info=exc)
-        finally:
-            if not session:
-                s.close()
+    except Exception as exc:
+        logger.error("Error while fetching signatures", exc_info=exc)
+    finally:
+        if not session:
+            s.close()
     try:
         for i in jsonob["signatures"].values():
             if "=" not in i.get("signature", ""):

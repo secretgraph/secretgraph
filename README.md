@@ -249,6 +249,7 @@ idea: seperate actions with different concerns.
 
 # TODO later
 
+-   ratelimit API access per ip and per flexid
 -   harmonize incl/exclFilter and allowedTags specs (maybe)
 -   transform iter_decrypt_contents into QuerySet (maybe)
 -   subscribe to config, watch changes

@@ -58,7 +58,7 @@ def manage_actions_fn(request, obj, actionlist, authset=None):
 
         action_key_hash = hash_object(action_key)
         action_value = ActionHandler.clean_action(
-            action_value, request, authset, content
+            action_value, request=request, authset=authset, content=content
         )
         action_value["trustedKeys"] = list(
             Content.objects.trusted_keys(cluster).values_list(

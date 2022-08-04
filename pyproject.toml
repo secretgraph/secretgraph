@@ -28,8 +28,8 @@ python = ">=3.9, <4"
 django = '>=4.0'
 cryptography = "*"
 rdflib = '*'
-requests = "*"
 certifi = "*"
+httpx = {version = "*", extras = ["http2"]}
 graphene-protector = {version=">=0.6.3", optional = true}
 strawberry-graphql = {version="*",  optional = true}
 strawberry-django-plus = {version="*", optional = true}

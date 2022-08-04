@@ -6,6 +6,7 @@ import logging
 import os
 from typing import Optional
 
+from asgiref.sync import async_to_sync
 import strawberry
 from strawberry.scalars import JSON
 from strawberry.types import Info
@@ -115,8 +116,10 @@ def mutate_transfer(
         contentHash__in=trustedKeys, type="PublicKey"
     )
 
-    tres = transfer_value(
-        content_obj, key=key, url=url, headers=headers, verifiers=verifiers
+    tres = async_to_sync(
+        transfer_value(
+            content_obj, key=key, url=url, headers=headers, verifiers=verifiers
+        )
     )
 
     if tres in {

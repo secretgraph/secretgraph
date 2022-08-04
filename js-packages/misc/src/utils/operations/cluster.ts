@@ -120,7 +120,8 @@ export async function initializeCluster({
     featured?: boolean
     hashAlgorithm: string
 }) {
-    const key = crypto.getRandomValues(new Uint8Array(32))
+    const manage_key = crypto.getRandomValues(new Uint8Array(32))
+    const view_key = crypto.getRandomValues(new Uint8Array(32))
     const { publicKey, privateKey } = (await crypto.subtle.generateKey(
         {
             name: 'RSA-OAEP',
@@ -139,33 +140,49 @@ export async function initializeCluster({
                 .digest(hashAlgorithm, keydata)
                 .then((data) => Buffer.from(data).toString('base64'))
         )
-    const digestActionKeyPromise = crypto.subtle
-        .digest(hashAlgorithm, key)
         .then((data) => Buffer.from(data).toString('base64'))
-    const keyb64 = Buffer.from(key).toString('base64')
+    const digestManageKeyPromise = crypto.subtle
+        .digest(hashAlgorithm, manage_key)
+        .then((data) => Buffer.from(data).toString('base64'))
+    const digestViewKeyPromise = crypto.subtle
+        .digest(hashAlgorithm, view_key)
+        .then((data) => Buffer.from(data).toString('base64'))
+    const manage_keyb64 = Buffer.from(manage_key).toString('base64')
+    const view_keyb64 = Buffer.from(manage_key).toString('base64')
     const clusterResponse = await createCluster({
         client,
-        actions: [{ value: '{"action": "manage"}', key: keyb64 }],
+        actions: [
+            { value: '{"action": "manage"}', key: manage_keyb64 },
+            {
+                value: '{"action": "view", "includeTypes": ["COnfig"]}',
+                key: view_keyb64,
+            },
+        ],
         name,
         description,
         hashAlgorithm,
         publicKey,
         privateKey,
-        privateKeyKey: key,
+        privateKeyKey: manage_key,
         ...options,
     })
     const clusterResult = clusterResponse.data.updateOrCreateCluster
-    const [digestActionKey, digestCertificate] = await Promise.all([
-        digestActionKeyPromise,
-        digestCertificatePromise,
-    ])
+    const [digestManageKey, digestViewKey, digestCertificate] =
+        await Promise.all([
+            digestManageKeyPromise,
+            digestViewKeyPromise,
+            digestCertificatePromise,
+        ])
     config.configCluster = clusterResult.cluster['id']
     config.hosts[config['baseUrl']].clusters[clusterResult.cluster['id']] = {
         hashes: {},
     }
     config.hosts[config['baseUrl']].clusters[
         clusterResult.cluster['id']
-    ].hashes[digestActionKey] = ['manage']
+    ].hashes[digestManageKey] = ['manage']
+    config.hosts[config['baseUrl']].clusters[
+        clusterResult.cluster['id']
+    ].hashes[digestViewKey] = ['view']
     config.hosts[config['baseUrl']].clusters[
         clusterResult.cluster['id']
     ].hashes[digestCertificate] = []
@@ -173,9 +190,13 @@ export async function initializeCluster({
         data: await serializeToBase64(privateKey),
         note: 'initial certificate',
     }
-    config.tokens[digestActionKey] = {
-        data: keyb64,
+    config.tokens[digestManageKey] = {
+        data: manage_keyb64,
         note: 'initial token',
+    }
+    config.tokens[digestViewKey] = {
+        data: view_keyb64,
+        note: 'recovery token',
     }
     if (!cleanConfig(config)) {
         throw Error('invalid config created')
@@ -201,7 +222,7 @@ export async function initializeCluster({
         url: config.baseUrl,
     })
 
-    return await createContent({
+    const { data: contentResult } = await createContent({
         client,
         config,
         cluster: clusterResult.cluster['id'],
@@ -214,11 +235,11 @@ export async function initializeCluster({
         contentHash: digest,
         hashAlgorithm,
         authorization,
-    }).then(async ({ data }) => {
-        return {
-            config,
-            cluster: clusterResult,
-            content: data.updateOrCreateContent,
-        }
     })
+
+    return {
+        config,
+        cluster: clusterResult,
+        content: contentResult.updateOrCreateContent,
+    }
 }

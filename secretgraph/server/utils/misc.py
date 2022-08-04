@@ -1,8 +1,15 @@
 import hashlib
 import base64
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
+from django.db.transaction import Atomic
 from cryptography.hazmat.primitives import serialization
+
+
+class AsyncAtomic(Atomic):
+    __aenter__ = sync_to_async(Atomic.__enter__, thread_sensitive=True)
+    __aexit__ = sync_to_async(Atomic.__exit__, thread_sensitive=True)
 
 
 def refresh_fields(inp, *fields):
