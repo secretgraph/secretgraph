@@ -46,7 +46,6 @@ export default React.memo(function Clusters({
     icon,
     ...props
 }: SideBarItemsProps & TreeItemProps) {
-    const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     let [loadQuery, { data, fetchMore, error, loading, refetch, called }] =
@@ -64,7 +63,7 @@ export default React.memo(function Clusters({
                 exclude: searchCtx.exclude,
                 excludeIds: excludeIds,
             },
-            nextFetchPolicy: "cache-and-network"
+            nextFetchPolicy: 'cache-and-network',
         })
     React.useEffect(() => {
         expanded.includes(props.nodeId) && loadQuery()
@@ -97,27 +96,52 @@ export default React.memo(function Clusters({
             const nodeId = deleteable
                 ? `clusters::${node.id}`
                 : `clusters.${node.id}`
+            const name = node.name ? node.name : `...${node.id.slice(-48)}`
             ret.push(
-                <SideBarContents
-                    goTo={goTo}
-                    cluster={node.id}
-                    authinfo={authinfo}
-                    title={node.description || undefined}
-                    deleted={node.deleted}
-                    marked={mainCtx.item == node.id}
-                    // state public needs no key_hash
-                    injectStates={['public']}
-                    icon={<GroupWorkIcon fontSize="small" />}
-                    label={node.name ? node.name : `...${node.id.slice(-48)}`}
+                <TreeItem
+                    label={
+                        <SidebarTreeItemLabel
+                            title={node.description || undefined}
+                            deleted={node.deleted}
+                            marked
+                            leftIcon={<GroupWorkIcon fontSize="small" />}
+                        >
+                            {name}
+                        </SidebarTreeItemLabel>
+                    }
+                    key={`${props.nodeId}-${nodeId}`}
                     nodeId={`${props.nodeId}-${nodeId}`}
-                    key={nodeId}
-                    onClick={(ev) => ev.preventDefault()}
+                    onClick={(ev) => {
+                        ev.preventDefault()
+                        ev.stopPropagation()
+                    }}
                     onDoubleClick={(ev) => {
                         ev.preventDefault()
                         ev.stopPropagation()
-                        goTo({ ...node, title: name })
+                        data?.node && goTo({ ...node, title: node.name })
                     }}
-                />
+                >
+                    <SideBarContents
+                        goTo={goTo}
+                        cluster={node.id}
+                        deleted={node.deleted}
+                        public={Constants.UseCriteriaPublic.TRUE}
+                        heading
+                        label="Public"
+                        nodeId={`${props.nodeId}-${nodeId}-public`}
+                    />
+                    <SideBarContents
+                        goTo={goTo}
+                        cluster={node.id}
+                        authinfo={authinfo}
+                        deleted={node.deleted}
+                        heading
+                        label="Private"
+                        nodeId={`${props.nodeId}-${nodeId}-private`}
+                        public={Constants.UseCriteriaPublic.FALSE}
+                        onClick={(ev) => ev.preventDefault()}
+                    />
+                </TreeItem>
             )
         }
         return ret

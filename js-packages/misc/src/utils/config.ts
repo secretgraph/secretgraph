@@ -41,6 +41,7 @@ export function cleanConfig(
             config.tokens[key] = {
                 data: val,
                 note: '',
+                system: false,
             }
         }
     }
@@ -407,8 +408,8 @@ export async function exportConfigAsUrl({
         clusters: new Set([config.configCluster]),
         // only view action is allowed here as manage can do damage without decryption
         require: new Set(['view']),
-        // only use token named recovery token
-        search: 'recovery token',
+        // only use token named config token
+        search: 'config token',
     })
     const privcert: Uint8Array | null = authInfo.certificateHashes.length
         ? b64toarr(config.certificates[authInfo.certificateHashes[0]].data)
@@ -591,7 +592,8 @@ export function authInfoFromConfig({
                                 console.warn('token not found for:', hash)
                             } else if (
                                 !props.search ||
-                                props.search === config.tokens[hash].note
+                                (config.tokens[hash].system &&
+                                    props.search === config.tokens[hash].note)
                             ) {
                                 tokens.add(
                                     `${contentconf.cluster}:${config.tokens[hash]?.data}`

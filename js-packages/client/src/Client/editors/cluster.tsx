@@ -407,7 +407,10 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         const f = async () => {
             if (!dataUnfinished || !dataUnfinished.secretgraph.node) {
                 if (dataUnfinished) {
-                    console.debug(dataUnfinished.secretgraph.node, mainCtx.tokens)
+                    console.debug(
+                        dataUnfinished.secretgraph.node,
+                        mainCtx.tokens
+                    )
                     refetch()
                 }
                 return
@@ -420,7 +423,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             const updateOb = {
                 deleted: dataUnfinished.secretgraph.node.deleted || null,
                 updateId: dataUnfinished.secretgraph.node.updateId,
-                cluster: dataUnfinished.secretgraph.node.id
+                cluster: dataUnfinished.secretgraph.node.id,
             }
             if (
                 dataUnfinished.secretgraph.node.id == config.configCluster &&
@@ -509,6 +512,7 @@ const CreateCluster = () => {
                             newHash: hashKey,
                             oldHash: null,
                             actions: new Set(['manage,true']),
+                            system: false,
                             hasUpdate: true,
                         },
                     },

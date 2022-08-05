@@ -18,7 +18,6 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import { drawerWidth } from '../../theme'
 import { CapturingSuspense } from '../misc'
-import ActiveCluster from './ActiveCluster'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))
 const SideBarNotifications = React.lazy(() => import('./notifications')) */
@@ -157,19 +156,19 @@ const SideBarItems = () => {
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
-                            injectStates={['draft']}
+                            states={['draft']}
                             label="Drafts"
                             heading
                             goTo={goTo}
                         />
                         <SideBarContents
-                            key="SideBarContentsInternal"
-                            nodeId={`${activeUrl}-contents-internal`}
+                            key="SideBarContentsPrivate"
+                            nodeId={`${activeUrl}-contents-private`}
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
-                            injectStates={['internal']}
-                            label="Internal"
+                            states={['internal']}
+                            label="Private"
                             heading
                             goTo={goTo}
                         />

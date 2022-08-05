@@ -14,13 +14,13 @@ export function mapperToArray(
     }: { lockExisting?: boolean; readonlyCluster?: boolean }
 ) {
     return useMemo(() => {
-        const actions: (ActionInputEntry | CertificateInputEntry)[] = []
+        const elements: (ActionInputEntry | CertificateInputEntry)[] = []
         Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
             const entry = mapper[params.newHash]
             if (entry.type == 'action') {
                 for (const val of entry.actions) {
                     const [actionType, isCluster] = val.split(',', 2)
-                    actions.push({
+                    elements.push({
                         type: 'action',
                         data: params.data,
                         newHash: params.newHash,
@@ -33,12 +33,14 @@ export function mapperToArray(
                         },
                         update: entry.hasUpdate,
                         delete: false,
-                        readonly: isCluster == 'true' && readonlyCluster,
+                        readonly:
+                            entry.system ||
+                            (isCluster == 'true' && readonlyCluster),
                         locked: lockExisting,
                     })
                 }
             } else {
-                actions.push({
+                elements.push({
                     type: 'certificate',
                     data: params.data,
                     newHash: params.newHash,
@@ -51,7 +53,7 @@ export function mapperToArray(
                 })
             }
         })
-        return actions
+        return elements
     }, [mapper])
 }
 

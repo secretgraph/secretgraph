@@ -193,10 +193,12 @@ export async function initializeCluster({
     config.tokens[digestManageKey] = {
         data: manage_keyb64,
         note: 'initial token',
+        system: false,
     }
     config.tokens[digestViewKey] = {
         data: view_keyb64,
-        note: 'recovery token',
+        note: 'config token',
+        system: true,
     }
     if (!cleanConfig(config)) {
         throw Error('invalid config created')

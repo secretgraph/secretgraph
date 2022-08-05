@@ -21,7 +21,8 @@ export interface CertificateEntry {
 export interface ActionMapperEntry extends Omit<CertificateEntry, 'type'> {
     type: 'action'
     // name, is cluster (unknown is also false)
-    actions: Set<`${string},${'true'|'false'}`>
+    actions: Set<`${string},${'true' | 'false'}`>
+    system: boolean
 }
 export interface CertificateInputEntry {
     type: 'certificate'
@@ -76,7 +77,9 @@ export async function generateActionMapper({
     )
 
     // merge knownHashes and initialize foundHashes
-    const knownHashes: { [hash: string]: Set<`${string},${'true'|'false'}`> } = {}
+    const knownHashes: {
+        [hash: string]: Set<`${string},${'true' | 'false'}`>
+    } = {}
     if (!(knownHashesCluster instanceof Array)) {
         knownHashesCluster = knownHashesCluster ? [knownHashesCluster] : []
     }
@@ -100,9 +103,9 @@ export async function generateActionMapper({
                     }
                     if (!knownHashes[el.keyHash]) {
                         foundHashes.add(el.keyHash)
-                        knownHashes[el.keyHash] = new Set<`${string},${'true'|'false'}`>([
-                            `${el.type},${isCluster}`,
-                        ])
+                        knownHashes[el.keyHash] = new Set<`${string},${
+                            | 'true'
+                            | 'false'}`>([`${el.type},${isCluster}`])
                     } else {
                         knownHashes[el.keyHash].add(`${el.type},${isCluster}`)
                     }
@@ -116,7 +119,9 @@ export async function generateActionMapper({
                     foundHashes.add(hash)
                     knownHashes[hash] = SetOps.union(
                         knownHashes[hash] || [],
-                        val.map<`${string},${'true'|'false'}`>((v) => `${v},${isCluster}`)
+                        val.map<`${string},${'true' | 'false'}`>(
+                            (v) => `${v},${isCluster}`
+                        )
                     )
                 }
             }
@@ -125,11 +130,7 @@ export async function generateActionMapper({
     helper(knownHashesCluster as knownHashesType[], true)
     helper(knownHashesContent as knownHashesType[], false)
     for (const val of Object.values(knownHashes)) {
-        if (
-            val.size == 2 &&
-            val.has('other,true') &&
-            val.has('other,false')
-        ) {
+        if (val.size == 2 && val.has('other,true') && val.has('other,false')) {
             // skip
         } else if (val.size > 1) {
             if (val.has('other,true')) {
@@ -233,6 +234,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note,
                     data: data.data,
+                    system: data.system || false,
                     actions: actionsRaw,
                     hasUpdate: hasActionUpdate || hasUpdate,
                 }
@@ -244,6 +246,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note,
                     data: data.data,
+                    system: data.system || false,
                     actions: actionsRaw,
                     hasUpdate: hasActionUpdate || hasUpdate,
                 }
@@ -301,6 +304,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note || '',
                     data: data.data || token,
+                    system: data.system || false,
                     actions: new Set(['other,false']),
                     hasUpdate: !data.data,
                 }
@@ -312,6 +316,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note || '',
                     data: data.data || token,
+                    system: data.system || false,
                     actions: new Set(['other,false']),
                     hasUpdate: !data.data,
                 }
@@ -322,6 +327,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: '',
                     data: token,
+                    system: false,
                     actions: new Set(['other,false']),
                     hasUpdate: true,
                 }
@@ -434,6 +440,7 @@ export async function transformActions({
                     configUpdate.tokens[activeHash] = {
                         data: val.data,
                         note: val.note,
+                        system: false,
                     }
                 }
                 if (val.locked || val.value.action == 'other') {

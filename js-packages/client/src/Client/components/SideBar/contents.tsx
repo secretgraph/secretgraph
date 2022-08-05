@@ -27,7 +27,7 @@ type SideBarItemsProps = {
     injectInclude?: string[]
     injectExclude?: string[]
     injectKeys?: string[]
-    injectStates?: string[]
+    states?: string[]
     title?: string
     deleted?: boolean
     heading?: boolean
@@ -35,7 +35,7 @@ type SideBarItemsProps = {
     icon?: React.ReactNode
 }
 
-export default React.memo(function Contents({
+export default React.memo(function SidebarContents({
     authinfo,
     goTo,
     activeContent,
@@ -43,8 +43,8 @@ export default React.memo(function Contents({
     public: publicParam = Constants.UseCriteriaPublic.IGNORE,
     injectInclude = [],
     injectExclude = [],
+    states = undefined,
     injectKeys = [],
-    injectStates = [],
     title,
     deleted,
     marked,
@@ -79,6 +79,7 @@ export default React.memo(function Contents({
                 includeTags: ['name='],
                 include: incl,
                 exclude: excl,
+                states,
                 clusters: cluster ? [cluster] : undefined,
                 public: publicParam,
                 deleted: searchCtx.deleted
@@ -87,7 +88,7 @@ export default React.memo(function Contents({
                 count: 30,
                 cursor: null,
             },
-            nextFetchPolicy: "cache-and-network"
+            nextFetchPolicy: 'cache-and-network',
         })
     React.useEffect(() => {
         expanded.includes(props.nodeId) && loadQuery()

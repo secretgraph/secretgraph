@@ -1,18 +1,15 @@
-import {
-    ApolloClient,
-    useApolloClient,
-    useLazyQuery,
-    useQuery,
-} from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import GroupWorkIcon from '@mui/icons-material/GroupWork'
 import ReplayIcon from '@mui/icons-material/Replay'
 import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
 import { getClusterQuery } from '@secretgraph/graphql-queries/cluster'
+import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
+import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 
 export default React.memo(function ActiveCluster({
     authinfo,
@@ -54,28 +51,50 @@ export default React.memo(function ActiveCluster({
         }
     }, [mainCtx.updateId])
     return (
-        <SideBarContents
-            goTo={goTo}
-            authinfo={authinfo}
-            deleted={data?.node?.deleted}
-            marked
-            disabled={loading}
-            title={data?.description}
-            icon={<GroupWorkIcon fontSize="small" />}
-            label={data?.name ? data?.name : `...${cluster.slice(-48)}`}
+        <TreeItem
+            label={
+                <SidebarTreeItemLabel
+                    title={data?.node?.description || undefined}
+                    deleted={data?.node?.deleted}
+                    marked
+                    leftIcon={<GroupWorkIcon fontSize="small" />}
+                >
+                    {data?.node?.name
+                        ? data.node.name
+                        : `...${cluster.slice(-48)}`}
+                </SidebarTreeItemLabel>
+            }
             onClick={(ev) => {
                 ev.preventDefault()
+                ev.stopPropagation()
             }}
             onDoubleClick={(ev) => {
                 ev.preventDefault()
                 ev.stopPropagation()
-                data?.node && goTo({ ...data?.node, title: data?.name })
+                goTo({ ...data?.node, title: data?.name })
             }}
-            refetchNotify={refetch}
-            cluster={cluster}
-            // state public needs no key_hash
-            injectStates={['public']}
             {...props}
-        />
+        >
+            <SideBarContents
+                goTo={goTo}
+                cluster={cluster}
+                heading
+                deleted={data?.node?.deleted}
+                public={Constants.UseCriteriaPublic.TRUE}
+                label="Public"
+                nodeId={`${props.nodeId}-public`}
+            />
+            <SideBarContents
+                goTo={goTo}
+                cluster={cluster}
+                authinfo={authinfo}
+                heading
+                deleted={data?.node?.deleted}
+                label="Private"
+                nodeId={`${props.nodeId}-private`}
+                public={Constants.UseCriteriaPublic.FALSE}
+                onClick={(ev) => ev.preventDefault()}
+            />
+        </TreeItem>
     )
 })

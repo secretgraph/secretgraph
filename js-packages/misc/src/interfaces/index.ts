@@ -55,7 +55,13 @@ export interface ReferenceInterface {
 }
 
 type ConfigHashValue = string[]
-interface ConfigSValue {
+
+interface ConfigTokenValue {
+    data: string
+    note: string
+    system: boolean
+}
+interface ConfigCertificateValue {
     data: string
     note: string
 }
@@ -79,8 +85,8 @@ interface BaseHostInterface<ClusterType, ContentType> {
 interface BaseConfigInterface<N = never> {
     baseUrl: string
     configCluster: string
-    certificates: { [hash: string]: ConfigSValue | N }
-    tokens: { [hash: string]: ConfigSValue | N }
+    certificates: { [hash: string]: ConfigCertificateValue | N }
+    tokens: { [hash: string]: ConfigTokenValue | N }
 }
 
 export interface ConfigInterface extends BaseConfigInterface {

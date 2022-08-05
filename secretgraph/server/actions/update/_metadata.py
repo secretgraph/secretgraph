@@ -306,7 +306,9 @@ def update_metadata_fn(
         content.type not in {"PrivateKey", "PublicKey"}
         and len(key_hashes_ref) < 1
     ):
-        raise ValueError(">=1 key references required for content")
+        raise ValueError(
+            ">=1 key references required for content (except Keys)"
+        )
 
     content.clean()
 

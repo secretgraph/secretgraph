@@ -17,7 +17,7 @@ export const contentFeedQuery = gql`
             contents(
                 filters: {
                     includeTypes: $types
-                    excludeTypes: ["Config", "PrivateKey"]
+                    excludeTypes: []
                     states: $states
                     clusters: $clusters
                     includeTags: $include
