@@ -619,7 +619,7 @@ const KeysIntern = ({
                                 authInfoFromConfig({
                                     config,
                                     clusters: new Set([values.cluster]),
-                                    url: mainCtx.url as string,
+                                    url,
                                     require: new Set(['create', 'manage']),
                                 }).tokens
                             )
@@ -637,7 +637,7 @@ const KeysIntern = ({
                         //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
                         privateKeys = extractPrivKeys({
                             config,
-                            url: mainCtx.url as string,
+                            url,
                             hashAlgorithm: hashAlgorithmsWorking[0],
                         })
                         publicKeys = extractPubKeysCluster({
@@ -756,7 +756,9 @@ const KeysIntern = ({
                                 client,
                                 config,
                                 key: privKey,
-                                privateTags: privateKey.nodeData.tags.filter((tag: string)=> tag.startsWith("key=")),
+                                privateTags: privateKey.nodeData.tags.filter(
+                                    (tag: string) => tag.startsWith('key=')
+                                ),
                                 privkeys: await Promise.all(
                                     Object.values(privateKeys)
                                 ),
@@ -831,7 +833,7 @@ const KeysIntern = ({
                     <InnerKeys
                         hashAlgorithmsRaw={hashAlgorithmsRaw}
                         hashAlgorithmsWorking={hashAlgorithmsWorking}
-                        url={mainCtx.url as string}
+                        url={url}
                         generateButton={!publicKey}
                         canSelectCluster={!!setCluster}
                     />
@@ -1169,7 +1171,7 @@ const CreateKeys = () => {
     return (
         <KeysIntern
             url={activeUrl}
-            setCluster={(cluster: string)=> updateMainCtx({cluster})}
+            setCluster={(cluster: string) => updateMainCtx({ cluster })}
             disabled={loading}
             {...algos}
         />

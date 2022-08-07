@@ -135,6 +135,7 @@ export async function unserializeToArrayBuffer(
     const _inp = await inp
     let _result: ArrayBuffer
     if (typeof _inp === 'string') {
+        // as there is a new Buffer it is safe to assume that there is no byteoffset
         _result = Buffer.from(_inp, 'base64').buffer
         if (_result.byteLength == 0 && _inp.length) {
             throw new Base64Error('Not a base64 string')

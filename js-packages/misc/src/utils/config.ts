@@ -666,9 +666,9 @@ export function findCertCandidatesForRefs(
     // extract tag key from private key
     if (nodeData.type == 'PrivateKey') {
         const hashes = []
-        for (const tag of nodeData.tags) {
-            if (tag.startsWith('key_hash=')) {
-                const [_, hashAlgorithm, cleanhash] = tag.match(
+        for (const tag_value of nodeData.tags) {
+            if (tag_value.startsWith('key_hash=')) {
+                const [_, hashAlgorithm, cleanhash] = tag_value.match(
                     /=(?:([^:]*?):)?([^:]*)/
                 )
                 if (cleanhash) {
@@ -686,15 +686,15 @@ export function findCertCandidatesForRefs(
                 }
             }
         }
-        for (const tag of nodeData.tags) {
-            if (tag.startsWith('key=')) {
+        for (const tag_value of nodeData.tags) {
+            if (tag_value.startsWith('key=')) {
                 for (const { hash, hashAlgorithm } of hashes) {
-                    const [_, hashAlgorithm2, shared] = tag.match(
+                    const [_, hashAlgorithmKey, shared] = tag_value.match(
                         /=(?:([^:]*?):)?([^:]*)/
                     )
                     found.push({
                         hash,
-                        hashAlgorithm: hashAlgorithm2 || hashAlgorithm,
+                        hashAlgorithm: hashAlgorithmKey || hashAlgorithm,
                         sharedKey: b64toarr(shared),
                     })
                 }
@@ -705,8 +705,8 @@ export function findCertCandidatesForRefs(
     }
     // extract tags with hashes
     for (const { node: refnode } of nodeData.references.edges) {
-        for (const dirtyhash of refnode.target.tags) {
-            const [_, hashAlgorithm, cleanhash] = dirtyhash.match(
+        for (const tag_value of refnode.target.tags) {
+            const [_, hashAlgorithm, cleanhash] = tag_value.match(
                 /^[^=]+=(?:([^:]*?):)?([^:]*)/
             )
             if (cleanhash) {

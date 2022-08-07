@@ -133,20 +133,6 @@ export async function initializeCluster({
         true,
         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
     )) as Required<CryptoKeyPair>
-    const digestCertificatePromise = crypto.subtle
-        .exportKey('spki' as const, publicKey)
-        .then((keydata) =>
-            crypto.subtle
-                .digest(hashAlgorithm, keydata)
-                .then((data) => Buffer.from(data).toString('base64'))
-        )
-        .then((data) => Buffer.from(data).toString('base64'))
-    const digestManageKeyPromise = crypto.subtle
-        .digest(hashAlgorithm, manage_key)
-        .then((data) => Buffer.from(data).toString('base64'))
-    const digestViewKeyPromise = crypto.subtle
-        .digest(hashAlgorithm, view_key)
-        .then((data) => Buffer.from(data).toString('base64'))
     const manage_keyb64 = Buffer.from(manage_key).toString('base64')
     const view_keyb64 = Buffer.from(manage_key).toString('base64')
     const clusterResponse = await createCluster({
@@ -167,21 +153,19 @@ export async function initializeCluster({
         ...options,
     })
     const clusterResult = clusterResponse.data.updateOrCreateCluster
-    const [digestManageKey, digestViewKey, digestCertificate] =
-        await Promise.all([
-            digestManageKeyPromise,
-            digestViewKeyPromise,
-            digestCertificatePromise,
-        ])
+    const digestPublicKey = await hashObject(publicKey, hashAlgorithm)
+    const digestManageKey = await hashObject(manage_key, hashAlgorithm)
+    const digestViewKey = await hashObject(view_key, hashAlgorithm)
     config.configCluster = clusterResult.cluster['id']
     config.hosts[config['baseUrl']].clusters[clusterResult.cluster['id']] = {
         hashes: {
             [digestManageKey]: ['manage'],
             [digestViewKey]: ['view'],
-            [digestCertificate]: [],
+            [digestPublicKey]: [],
         },
     }
-    config['certificates'][digestCertificate] = {
+    config['certificates'][digestPublicKey] = {
+        // private key is serialized
         data: await serializeToBase64(privateKey),
         note: 'initial certificate',
     }
@@ -198,18 +182,6 @@ export async function initializeCluster({
     if (!cleanConfig(config)) {
         throw Error('invalid config created')
     }
-    let testhash = await hashObject(
-        config['certificates'][digestCertificate].data,
-        hashAlgorithm
-    )
-    /**if (testhash != digestCertificate) {
-        console.log('diff between hashes', {
-            testhash,
-            digestCertificate,
-            cert: config['certificates'][digestCertificate].data,
-            hashAlgorithm,
-        })
-    }*/
     const contentHash = await sortedHash(['type=Config'], hashAlgorithm)
 
     const { tokens: authorization } = authInfoFromConfig({
