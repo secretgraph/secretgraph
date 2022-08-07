@@ -175,17 +175,12 @@ export async function initializeCluster({
         ])
     config.configCluster = clusterResult.cluster['id']
     config.hosts[config['baseUrl']].clusters[clusterResult.cluster['id']] = {
-        hashes: {},
+        hashes: {
+            [digestManageKey]: ['manage'],
+            [digestViewKey]: ['view'],
+            [digestCertificate]: [],
+        },
     }
-    config.hosts[config['baseUrl']].clusters[
-        clusterResult.cluster['id']
-    ].hashes[digestManageKey] = ['manage']
-    config.hosts[config['baseUrl']].clusters[
-        clusterResult.cluster['id']
-    ].hashes[digestViewKey] = ['view']
-    config.hosts[config['baseUrl']].clusters[
-        clusterResult.cluster['id']
-    ].hashes[digestCertificate] = []
     config['certificates'][digestCertificate] = {
         data: await serializeToBase64(privateKey),
         note: 'initial certificate',
@@ -215,7 +210,7 @@ export async function initializeCluster({
             hashAlgorithm,
         })
     }*/
-    const digest = await sortedHash(['type=Config'], hashAlgorithm)
+    const contentHash = await sortedHash(['type=Config'], hashAlgorithm)
 
     const { tokens: authorization } = authInfoFromConfig({
         config: config,
@@ -223,7 +218,9 @@ export async function initializeCluster({
         require: new Set(['manage']),
         url: config.baseUrl,
     })
-
+    if (!authorization.length) {
+        throw new Error('no tokens found after initialization')
+    }
     const { data: contentResult } = await createContent({
         client,
         config,
@@ -234,7 +231,7 @@ export async function initializeCluster({
         type: 'Config',
         state: 'internal',
         tags: ['name=config.json'],
-        contentHash: digest,
+        contentHash,
         hashAlgorithm,
         authorization,
     })

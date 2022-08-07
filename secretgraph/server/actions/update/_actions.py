@@ -31,8 +31,12 @@ def manage_actions_fn(request, obj, actionlist, authset=None):
     else:
         raise ValueError("Invalid type")
 
-    result = retrieve_allowed_objects(
-        request, cluster.actions.all(), scope="manage", authset=authset
+    result = (
+        retrieve_allowed_objects(
+            request, cluster.actions.all(), scope="manage", authset=authset
+        )
+        if cluster.id
+        else {"objects": Action.objects.none()}
     )
     for action in actionlist:
         # if already decoded by e.g. graphql

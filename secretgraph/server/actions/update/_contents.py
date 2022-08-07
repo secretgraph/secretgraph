@@ -92,9 +92,7 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "type": "PublicKey",
             "state": publicState,
             "tags": _condMergeKeyTags(
-                hashes_tags,
-                key_obj.get("publicTags"),
-                bool(publicKeyContent)
+                hashes_tags, key_obj.get("publicTags"), bool(publicKeyContent)
             ),
             "contentHash": hashes[0],
             "actions": key_obj.get("publicActions"),
@@ -105,9 +103,7 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
             "type": "PrivateKey",
             "state": "internal",
             "tags": _condMergeKeyTags(
-                hashes_tags,
-                key_obj.get("privateTags"),
-                bool(publicKeyContent)
+                hashes_tags, key_obj.get("privateTags"), bool(publicKeyContent)
             ),
             "contentHash": None,
             "actions": key_obj.get("privateActions"),
@@ -233,7 +229,11 @@ def _update_or_create_content_or_key(
         or objdata.get("tags") is not None
     ):
         if objdata.get("references") is None:
-            refs = content.references.all()
+            refs = (
+                content.references.all()
+                if content.id
+                else ContentReference.objects.none()
+            )
         else:
             refs = objdata["references"]
         # no_final_refs final_references => None
@@ -477,8 +477,7 @@ def update_content_fn(
         # we don't see it or update it anyway so include all
         # without regard to state
         publicKeyContent = Content.objects.filter(
-            type="PublicKey",
-            referencedBy__source=content
+            type="PublicKey", referencedBy__source=content
         ).first()
 
         hashes, _public, newdata = _transform_key_into_dataobj(
@@ -491,7 +490,7 @@ def update_content_fn(
                     tag__startswith="key_hash="
                 ).values_list("tag", flat=True),
             },
-            publicKeyContent=publicKeyContent
+            publicKeyContent=publicKeyContent,
         )
         if not newdata:
             raise ValueError("No data for private key")
