@@ -135,11 +135,18 @@ export async function unserializeToArrayBuffer(
     const _inp = await inp
     let _result: ArrayBuffer
     if (typeof _inp === 'string') {
-        // as there is a new Buffer it is safe to assume that there is no byteoffset
-        _result = Buffer.from(_inp, 'base64').buffer
-        if (_result.byteLength == 0 && _inp.length) {
+        const tmp = Buffer.from(_inp, 'base64')
+        if (tmp.byteLength == 0 && _inp.length) {
             throw new Base64Error('Not a base64 string')
         }
+        // in case byteOffset is 0 just use tmp.buffer, otherwise slice
+        _result =
+            tmp.byteOffset == 0
+                ? tmp.buffer
+                : tmp.buffer.slice(
+                      tmp.byteOffset,
+                      tmp.byteOffset + tmp.byteLength
+                  )
     } else {
         let _data
         const _finp = (_inp as Interfaces.KeyOutInterface).data
