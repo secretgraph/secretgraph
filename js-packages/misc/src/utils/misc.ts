@@ -5,8 +5,23 @@ export function utf8ToBinary(inp: string): string {
     return String.fromCharCode(...utf8encoder.encode(inp))
 }
 
+export class Base64Error extends Error {}
+
+export function b64tobuffer(inp: string) {
+    const tmp = Buffer.from(inp, 'base64')
+
+    if (tmp.byteLength == 0 && inp.length) {
+        throw new Base64Error('Not a base64 string')
+    }
+
+    // in case byteOffset is 0 just use tmp.buffer, otherwise slice
+    return tmp.byteOffset == 0
+        ? tmp.buffer
+        : tmp.buffer.slice(tmp.byteOffset, tmp.byteOffset + tmp.byteLength)
+}
+
 export function b64toarr(inp: string) {
-    return new Uint8Array(Buffer.from(inp, 'base64').buffer)
+    return new Uint8Array(b64tobuffer(inp))
 }
 export function b64toutf8(inp: string) {
     return utf8decoder.decode(b64toarr(inp))

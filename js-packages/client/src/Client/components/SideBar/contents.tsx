@@ -173,7 +173,7 @@ export default React.memo(function SidebarContents({
         return data.contents.contents.edges.map((edge: any) =>
             render_item(edge.node)
         )
-    }, [data])
+    }, [data, mainCtx.type != 'Cluster' ? mainCtx.item : ''])
     const contentsFinished = [...contentsHalfFinished]
     if (
         !loading &&

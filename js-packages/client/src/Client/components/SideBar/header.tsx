@@ -47,7 +47,8 @@ function CloseButton() {
         <IconButton
             style={{ display: matches ? 'none' : undefined }}
             onClick={() => setOpen(false)}
-            size="large"
+            size="small"
+            edge="end"
         >
             {theme.direction === 'ltr' ? (
                 <ChevronLeftIcon />
@@ -265,7 +266,8 @@ function MainSearchField() {
                                                     ? 'red'
                                                     : undefined,
                                         }}
-                                        size="large"
+                                        size="small"
+                                        edge="end"
                                     >
                                         <FilterListIcon />
                                     </IconButton>

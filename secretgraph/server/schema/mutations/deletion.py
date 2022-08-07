@@ -87,9 +87,9 @@ def reset_deletion_content_or_cluster(
     ids: List[strawberry.ID],
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
-    if get_cached_permissions(
-        info.context.request["manage_deletion"], authset=authorization
-    ):
+    if get_cached_permissions(info.context.request, authset=authorization)[
+        "manage_deletion"
+    ]:
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
     else:
@@ -115,12 +115,12 @@ def reset_deletion_content_or_cluster(
     )
     clusters.update(markForDestruction=None)
     return ResetDeletionContentOrClusterMutation(
-        restored=chain(
-            contents.filter(
+        restored=[
+            *contents.filter(
                 id__in=Subquery(contents.values("id"))
             ).values_list("flexid_cached", flat=True),
-            clusters.filter(
+            *clusters.filter(
                 id__in=Subquery(clusters.values("id"))
             ).values_list("flexid_cached", flat=True),
-        ),
+        ],
     )

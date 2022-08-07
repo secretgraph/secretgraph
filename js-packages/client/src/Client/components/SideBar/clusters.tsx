@@ -47,6 +47,7 @@ export default React.memo(function Clusters({
     ...props
 }: SideBarItemsProps & TreeItemProps) {
     const { searchCtx } = React.useContext(Contexts.Search)
+    const { mainCtx } = React.useContext(Contexts.Main)
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     let [loadQuery, { data, fetchMore, error, loading, refetch, called }] =
         useLazyQuery(clusterFeedQuery, {
@@ -145,7 +146,7 @@ export default React.memo(function Clusters({
             )
         }
         return ret
-    }, [data])
+    }, [data, mainCtx.type == 'Cluster' ? mainCtx.item : ''])
     /*
                 disabled={
                     loading ||

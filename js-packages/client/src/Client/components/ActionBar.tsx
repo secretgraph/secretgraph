@@ -67,7 +67,7 @@ function ActionBar(props: Props) {
             require: _create_set,
         }).tokens
     }, [mainCtx.tokens, mainCtx.tokensPermissions, activeUrl, config])
-    if(mainCtx.type == "loading"){
+    if (mainCtx.type == 'loading') {
         return null
     }
 
@@ -185,10 +185,7 @@ function ActionBar(props: Props) {
                                                     authorization: authtokens,
                                                 })
                                             updateMainCtx({
-                                                deleted:
-                                                    data
-                                                        .resetDeletionContentOrCluster
-                                                        .deleted,
+                                                deleted: data.deleted,
                                                 updateId: null,
                                             })
                                         } else {
@@ -242,7 +239,9 @@ function ActionBar(props: Props) {
                                             shareFn: null,
                                             deleted: null,
                                             type: event.currentTarget.value,
-                                            cluster: searchCtx.cluster || config.configCluster,
+                                            cluster:
+                                                searchCtx.cluster ||
+                                                config.configCluster,
                                             tokens: createTokens,
                                         })
                                     }}
@@ -277,7 +276,9 @@ function ActionBar(props: Props) {
                                             shareFn: null,
                                             deleted: null,
                                             type: mainCtx.type,
-                                            cluster: searchCtx.cluster || config.configCluster,
+                                            cluster:
+                                                searchCtx.cluster ||
+                                                config.configCluster,
                                             tokens: createTokens,
                                         })
                                     }}

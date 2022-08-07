@@ -229,7 +229,7 @@ class ContentNode(relay.Node):
                 )
             )
 
-        if filters.public != UseCriteriaPublic.TOKEN:
+        if filters.public == UseCriteriaPublic.TOKEN:
             pass
         elif filters.public != UseCriteriaPublic.IGNORE:
             # should only include public contents with public cluster

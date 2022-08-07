@@ -21,7 +21,7 @@ declare module '@mui/material/styles' {
     }
 }
 
-export const drawerWidth = '16rem'
+export const drawerWidth = '22rem'
 
 export const theme = responsiveFontSizes(
     createTheme({

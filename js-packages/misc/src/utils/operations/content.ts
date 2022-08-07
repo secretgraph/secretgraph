@@ -32,7 +32,7 @@ import {
     encryptSharedKey,
     extractPubKeysReferences,
 } from '../graphql'
-import { b64toarr } from '../misc'
+import { b64toarr, b64tobuffer } from '../misc'
 
 export async function createContent({
     client,
@@ -321,7 +321,7 @@ export async function decryptContentObject({
     if (_info instanceof Blob) {
         arrPromise = _info.arrayBuffer()
     } else if (typeof _info == 'string') {
-        arrPromise = Promise.resolve(b64toarr(_info).buffer)
+        arrPromise = Promise.resolve(b64tobuffer(_info))
     } else {
         arrPromise = fetch(
             new URL(_node.link, baseUrl || config.baseUrl).href,

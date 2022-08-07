@@ -16,7 +16,7 @@ export const resetDeletionNodes = gql`
         resetDeletionContentOrCluster(
             input: { ids: $ids, authorization: $authorization }
         ) {
-            ... on ResetDeletionContentOrCluster {
+            ... on ResetDeletionContentOrClusterMutation {
                 restored
             }
         }

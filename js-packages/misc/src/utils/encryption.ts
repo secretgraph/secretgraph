@@ -1,7 +1,7 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import * as IterableOps from './iterable'
-import { utf8encoder } from './misc'
+import { Base64Error, b64tobuffer, utf8encoder } from './misc'
 
 export function findWorkingHashAlgorithms(hashAlgorithms: string[]) {
     const hashAlgos = []
@@ -124,8 +124,6 @@ export async function toPublicKey(
     )
 }
 
-class Base64Error extends Error {}
-
 export async function unserializeToArrayBuffer(
     inp:
         | Interfaces.RawInput
@@ -135,18 +133,7 @@ export async function unserializeToArrayBuffer(
     const _inp = await inp
     let _result: ArrayBuffer
     if (typeof _inp === 'string') {
-        const tmp = Buffer.from(_inp, 'base64')
-        if (tmp.byteLength == 0 && _inp.length) {
-            throw new Base64Error('Not a base64 string')
-        }
-        // in case byteOffset is 0 just use tmp.buffer, otherwise slice
-        _result =
-            tmp.byteOffset == 0
-                ? tmp.buffer
-                : tmp.buffer.slice(
-                      tmp.byteOffset,
-                      tmp.byteOffset + tmp.byteLength
-                  )
+        _result = b64tobuffer(_inp)
     } else {
         let _data
         const _finp = (_inp as Interfaces.KeyOutInterface).data
@@ -883,9 +870,9 @@ async function _pwsdecryptprekey(options: {
         const _prekey = options.prekey.split(':', 2)
         if (_prekey.length > 1) {
             prefix = _prekey[0]
-            prekey = Buffer.from(_prekey[1], 'base64').buffer
+            prekey = b64tobuffer(_prekey[1])
         } else {
-            prekey = Buffer.from(_prekey[0], 'base64').buffer
+            prekey = b64tobuffer(_prekey[0])
         }
     } else {
         prekey = options.prekey
