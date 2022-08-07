@@ -58,7 +58,6 @@ TEMPLATES = [
         },
     },
 ]
-ASGI_APPLICATION = "secretgraph.asgi.application"
 WSGI_APPLICATION = "secretgraph.wsgi.application"
 
 # Password validation
