@@ -33,13 +33,6 @@ INSTALLED_APPS = [
     "strawberry.django",
     "strawberry_django_plus",
 ]
-try:
-    import django_extensions  # noqa: F401
-
-    INSTALLED_APPS.append("django_extensions")
-except ImportError:
-    pass
-
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

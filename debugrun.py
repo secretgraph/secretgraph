@@ -9,8 +9,7 @@ if __name__ == "__main__":
                 "poetry",
                 "run",
                 "./manage.py",
-                "runserver_plus",
-                "--keep-meta-shutdown",
+                "runserver",
             ]
         ) as django:
             while npm.poll() is None and django.poll() is None:

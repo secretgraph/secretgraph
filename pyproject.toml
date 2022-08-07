@@ -48,8 +48,6 @@ bleach = {version="*", optional = true}
 graphene-protector = ">=0.6.3"
 strawberry-graphql = '*'
 strawberry-django-plus = "*"
-django-extensions = '*'
-Werkzeug = '*'
 pylint = "*"
 rope = "*"
 django-manifest-loader = "*"
