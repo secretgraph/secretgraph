@@ -20,6 +20,36 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
+            name="Net",
+            fields=[
+                (
+                    "id",
+                    models.BigAutoField(
+                        editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                (
+                    "quota",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        default=None,
+                        help_text="quota in Bytes, null for no limit",
+                        null=True,
+                    ),
+                ),
+                (
+                    "max_upload_size",
+                    models.PositiveIntegerField(
+                        blank=True, default=None, null=True
+                    ),
+                ),
+                (
+                    "bytes_in_use",
+                    models.PositiveBigIntegerField(blank=True, default=0),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
             name="Cluster",
             fields=[
                 (
@@ -44,6 +74,15 @@ class Migration(migrations.Migration):
                     "name",
                     models.CharField(
                         blank=True, default="", max_length=255, null=False
+                    ),
+                ),
+                (
+                    "net",
+                    models.ForeignKey(
+                        null=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="clusters",
+                        to="secretgraph.net",
                     ),
                 ),
                 ("description", models.TextField(blank=True, default="")),
@@ -124,6 +163,15 @@ class Migration(migrations.Migration):
                         db_column="content_hash",
                         max_length=255,
                         null=True,
+                    ),
+                ),
+                (
+                    "net",
+                    models.ForeignKey(
+                        null=False,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="contents",
+                        to="secretgraph.net",
                     ),
                 ),
                 (
@@ -323,7 +371,7 @@ class Migration(migrations.Migration):
                 (
                     "properties",
                     models.ManyToManyField(
-                        related_name="group",
+                        related_name="groups",
                         to="secretgraph.GlobalGroupProperty",
                     ),
                 ),

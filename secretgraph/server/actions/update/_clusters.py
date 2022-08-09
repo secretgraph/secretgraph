@@ -1,13 +1,12 @@
 __all__ = ["create_cluster_fn", "update_cluster_fn"]
 
-import os
 from contextlib import nullcontext
 from uuid import UUID, uuid4
 
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from ...utils.misc import hash_object
+from ...utils.auth import ids_to_results
 from ...models import Cluster
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
@@ -66,20 +65,8 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
     return save_fn
 
 
-def create_cluster_fn(request, objdata=None, user=None, authset=None):
-    prebuild = {}
-
-    if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
-        if not user:
-            raise ValueError("No user specified")
-    if user:
-        prebuild["user"] = user
-    action_key = None
-    if not objdata:
-        action_key = os.urandom(32)
-        objdata = {
-            "actions": [{"key": action_key, "value": {"action": "manage"}}]
-        }
+def create_cluster_fn(request, objdata, net, authset=None):
+    prebuild = {"net": net}
 
     if not objdata.get("actions"):
         raise ValueError("Actions required")
@@ -101,16 +88,22 @@ def create_cluster_fn(request, objdata=None, user=None, authset=None):
     return save_fn
 
 
-def update_cluster_fn(
-    request, cluster, objdata, updateId, user=None, authset=None
-):
+def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
     assert cluster.id
     try:
         updateId = UUID(updateId)
     except Exception:
         raise ValueError("updateId is not an uuid")
-    if user:
-        cluster.user = user
+
+    if objdata.get("net"):
+        net_result = ids_to_results(
+            request,
+            objdata.get("net"),
+            Cluster,
+            "manage",
+            authset=authset,
+        )["Cluster"]
+        cluster.net = net_result["objects"].get().net
 
     cluster_fn = _update_or_create_cluster(
         request, cluster, objdata, authset=authset

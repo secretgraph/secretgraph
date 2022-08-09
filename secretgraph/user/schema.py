@@ -6,11 +6,9 @@ from datetime import timedelta as td
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from ..server.actions.update import create_cluster_fn
 from ..server.models import Cluster, Content
 from ..server.utils.auth import ids_to_results, retrieve_allowed_objects
 
@@ -39,7 +37,6 @@ class UserInput:
 @strawberry.type
 class UserMutation(relay.Node):
     user = UserNode
-    actionKey: Optional[str]
 
     @classmethod
     def mutate_and_get_payload(
@@ -84,10 +81,7 @@ class UserMutation(relay.Node):
             ):
                 raise ValueError("Cannot register new cluster")
             user_obj = user_model.create_user()
-            action_key = create_cluster_fn(
-                info.context.request, None, user_obj
-            )(transaction.atomic)[1]
-            return cls(user=user_obj, actionKey=action_key)
+            return cls(user=user_obj)
 
 
 @strawberry.type

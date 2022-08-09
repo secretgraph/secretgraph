@@ -216,7 +216,8 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   implement token system prop and system prop filtering
+-   dataclass for returns instead of simple dicts to have typing
+-   introduce Net Model for resource tracking
 -   mainCtx.cluster for communicating current cluster of content
 -   actions: states
 -   X-Key response: shared key of private key
@@ -250,13 +251,14 @@ idea: seperate actions with different concerns.
 
 # TODO later
 
+-   move validation logic to validators
+-   use more mainCtx.url instead of passing urls through
 -   ratelimit API access per ip and per flexid
 -   harmonize incl/exclFilter and allowedTags specs (maybe)
 -   transform iter_decrypt_contents into QuerySet (maybe)
 -   subscribe to config, watch changes
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters
--   recovery:
 
 # TODO far future
 

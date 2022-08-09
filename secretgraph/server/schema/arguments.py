@@ -72,6 +72,7 @@ class ContentValueInput:
 
 @strawberry.input
 class ContentInput:
+    net: Optional[ID] = None
     cluster: Optional[ID] = None
     # when creating keypair: references are automagically distributed
     key: Optional[ContentKeyInput] = None
@@ -88,6 +89,7 @@ class PushContentInput:
 
 @strawberry.input
 class ClusterInput:
+    net: Optional[ID] = None
     name: Optional[str] = None
     description: Optional[str] = None
     public: Optional[bool] = None

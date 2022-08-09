@@ -7,6 +7,7 @@ extra_tags_label = _("Extra metadata for content")
 tags_tag_label = _("Metadata Tag")
 reference_label = _("Reference")
 
+net_quota_help = _("quota in Bytes, null for no limit")
 
 cluster_groups_help = _(
     "cluster groups: groups for permissions and injected keys"

@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
+from django.db.models import F
 
 from .... import constants
 from ...utils.auth import ids_to_results, get_cached_result
@@ -131,10 +132,33 @@ def _update_or_create_content_or_key(
             .filter(markForDestruction=None)
             .first()
         )
+    cluster_changed = False
     if objdata.get("cluster"):
+        if content.cluster and objdata.get("cluster") != content.cluster:
+            cluster_changed = True
         content.cluster = objdata["cluster"]
+
     if not getattr(content, "cluster", None):
         raise ValueError("No cluster specified")
+
+    # set net on non-initializated contents
+    # either by explicit cluster id of net or implicit of the current cluster
+    net_id = objdata.get("net")
+    if net_id:
+        if net_id == content.cluster.flexid_cached or content.cluster.flexid:
+            content.net = content.cluster.net
+        else:
+            net_result = ids_to_results(
+                request,
+                objdata.get("net"),
+                Cluster,
+                "create",
+                authset=authset,
+            )["Cluster"]
+            content.net = net_result["objects"].get().net
+    elif create or cluster_changed:
+        content.net = content.cluster.net
+
     if create:
         content.type = objdata["type"]
     if not content.type:
@@ -197,18 +221,35 @@ def _update_or_create_content_or_key(
             objdata["value"] = ContentFile(base64.b64decode(objdata["value"]))
         else:
             objdata["value"] = File(objdata["value"])
+        if content.net.max_upload_size is not None:
+            if content.net.max_upload_size < objdata["value"].size:
+                raise ValueError("file too big")
+
+        if content.net.quota is not None:
+            if create:
+                size_diff = objdata["value"].size
+            else:
+                size_diff = objdata["value"].size - content.file.size
+            if (
+                size_diff != 0
+                and content.net.bytes_in_use + size_diff > content.net.quota
+            ):
+                raise ValueError("quota exceeded")
+            content.net.bytes_in_use = F("bytes_in_user") + size_diff
         content.clean()
 
         def save_fn_value():
             content.file.delete(False)
             content.updateId = uuid4()
             content.file.save("ignored", objdata["value"])
+            content.net.save()
 
     else:
 
         def save_fn_value():
             content.updateId = uuid4()
             content.save()
+            content.net.save()
 
     # cannot change because of special key transformation
     chash = objdata.get("contentHash")
@@ -225,7 +266,8 @@ def _update_or_create_content_or_key(
     key_hashes_ref = set()
     verifiers_ref = set()
     if (
-        objdata.get("references") is not None
+        cluster_changed
+        or objdata.get("references") is not None
         or objdata.get("tags") is not None
     ):
         if objdata.get("references") is None:

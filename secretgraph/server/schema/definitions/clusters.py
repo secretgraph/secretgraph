@@ -98,10 +98,10 @@ class ClusterNode(relay.Node):
     def user(self) -> Optional[strawberry.ID]:
         if self.limited:
             return None
-        if not hasattr(self, "user"):
+        if not hasattr(self.net, "user_id"):
             return None
         #
-        return relay.to_base64(get_user_model(), self.user_id)
+        return relay.to_base64(get_user_model(), self.net.user_id)
 
     @gql.django.field(only=["id", "cluster_id"])
     def availableActions(self, info: Info) -> List[ActionEntry]:

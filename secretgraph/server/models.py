@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 import logging
 import posixpath
 import secrets
@@ -24,6 +23,7 @@ from .messages import (
     contentaction_group_help,
     cluster_groups_help,
     reference_group_help,
+    net_quota_help,
 )
 from .. import constants
 
@@ -59,6 +59,13 @@ def get_content_file_path(instance, filename) -> str:
     return ret_path
 
 
+def default_net_limit(net, attr):
+    quota = getattr(settings, attr, None)
+    if callable(quota):
+        return quota(net)
+    return quota
+
+
 class FlexidModel(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: str = models.CharField(
@@ -70,6 +77,48 @@ class FlexidModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class Net(models.Model):
+    id: int = models.BigAutoField(primary_key=True, editable=False)
+    # quota, should be greater than ?? (saving config), can be None to disable
+    quota: int = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text=net_quota_help,
+    )
+    max_upload_size: int = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        default=None,
+    )
+    bytes_in_use: int = models.PositiveBigIntegerField(
+        null=False,
+        blank=True,
+        default=0,
+    )
+    clusters: models.ManyToOneRel["Cluster"]
+    contents: models.ManyToOneRel["Content"]
+
+    if getattr(settings, "AUTH_USER_MODEL", None) or getattr(
+        settings, "SECRETGRAPH_BIND_TO_USER", False
+    ):
+        user = models.OneToOneField(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.CASCADE,
+            null=True,
+            blank=True,
+            related_name="secretgraph_net",
+        )
+
+    def reset_quota(self):
+        self.quota = default_net_limit(self, "SECRETGRAPH_QUOTA")
+
+    def reset_max_upload_size(self):
+        self.max_upload_size = default_net_limit(
+            self, "SECRETGRAPH_MAX_UPLOAD"
+        )
 
 
 class Cluster(FlexidModel):
@@ -97,17 +146,9 @@ class Cluster(FlexidModel):
     markForDestruction: dt = models.DateTimeField(
         null=True, blank=True, db_column="mark_for_destruction"
     )
-
-    if getattr(settings, "AUTH_USER_MODEL", None) or getattr(
-        settings, "SECRETGRAPH_BIND_TO_USER", False
-    ):
-        user = models.ForeignKey(
-            settings.AUTH_USER_MODEL,
-            on_delete=models.CASCADE,
-            null=True,
-            blank=True,
-            related_name="clusters",
-        )
+    net: Net = models.ForeignKey(
+        Net, on_delete=models.CASCADE, related_name="clusters"
+    )
 
 
 class ContentManager(models.Manager):
@@ -173,6 +214,9 @@ class Content(FlexidModel):
     # null if multiple contents are allowed
     contentHash: str = models.CharField(
         max_length=255, blank=True, null=True, db_column="content_hash"
+    )
+    net: Net = models.ForeignKey(
+        Net, on_delete=models.CASCADE, related_name="contents"
     )
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="contents"

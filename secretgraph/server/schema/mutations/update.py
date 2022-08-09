@@ -16,7 +16,7 @@ from ...actions.update import (
     update_cluster_fn,
     update_content_fn,
 )
-from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup
+from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup, Net
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
@@ -91,28 +91,32 @@ def mutate_cluster(
             authset=authorization,
         )(transaction.atomic)
     else:
-        user = None
-        if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
-            if manage:
-                user = manage.first().user
-            if not user:
+        net = None
+        if manage:
+            if cluster.get("net"):
+                net = fetch_by_id(manage, cluster.get("net")).first().net
+            else:
+                net = manage.first().net
+        if not net:
+            user = None
+            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
                 user = getattr(info.context.request, "user", None)
-            if not user or not user.is_authenticated:
-                raise ValueError("Must be logged in")
-        elif (
-            getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) == "cluster"
-            and not manage.exist()
-        ):
-            raise ValueError("Cannot register new cluster")
-        elif (
-            getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) is not True
-        ):
-            raise ValueError("Cannot register new cluster")
+                if not user or not user.is_authenticated:
+                    raise ValueError("Must be logged in")
+                net = user.secretgraph_net
+            elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
+                raise ValueError("Cannot register new cluster")
+            if not net:
+                net = Net()
+                if user:
+                    net.user = user
+                net.reset_quota()
+                net.reset_max_upload_size()
         cluster["groups"] = GlobalGroupProperty.objects.get_or_create(
             name="default", defaults={}
         )[0].groups.all()
         _cluster_res = create_cluster_fn(
-            info.context.request, cluster, user=user, authset=authorization
+            info.context.request, cluster, net=net, authset=authorization
         )(transaction.atomic)
     f = get_cached_result(info.context.request, authset=authorization)
     f["Content"]

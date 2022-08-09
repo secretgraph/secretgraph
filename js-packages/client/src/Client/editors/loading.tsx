@@ -8,6 +8,7 @@ import * as Contexts from '../contexts'
 
 export default function LoadingComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
     React.useEffect(() => {
@@ -77,6 +78,7 @@ export default function LoadingComponent() {
                                 updateMainCtx({
                                     action: 'create',
                                     item: null,
+                                    url: activeUrl,
                                     type: 'Cluster',
                                     tokens: authinfo.tokens,
                                     tokensPermissions: authinfo.types,
@@ -95,6 +97,7 @@ export default function LoadingComponent() {
                     updateMainCtx({
                         action: 'create',
                         item: null,
+                        url: activeUrl,
                         type: 'Cluster',
                         tokens: authinfo.tokens,
                         tokensPermissions: authinfo.types,
@@ -109,6 +112,7 @@ export default function LoadingComponent() {
                 updateMainCtx({
                     item: null,
                     type: 'Cluster',
+                    url: activeUrl,
                     tokens: authinfo.tokens,
                     tokensPermissions: authinfo.types,
                 })

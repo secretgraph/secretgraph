@@ -46,6 +46,9 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
         update: Interfaces.ConfigInputInterface | null,
         replace?: boolean
     ) => updateConfigIntern({ update, replace })
+    const [activeUrl, setActiveUrl] = React.useState(
+        () => (config ? config.baseUrl : defaultPath) as string
+    )
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>,
         URLSearchParams
@@ -59,7 +62,7 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
             title: '',
             item: query.get('item'),
             updateId: null,
-            url: query.get('url') || null,
+            url: query.get('url') || activeUrl,
             type: query.get('type') || 'Cluster',
             shareFn: null,
             deleted: null,
@@ -81,9 +84,6 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
         }
         return ctx
     })
-    const [activeUrl, setActiveUrl] = React.useState(
-        () => (config ? config.baseUrl : defaultPath) as string
-    )
     React.useEffect(() => {
         const search = new URLSearchParams()
         search.set('action', mainCtx.action)
