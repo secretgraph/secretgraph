@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from ...models import Cluster, Net
-from ...utils.auth import fetch_by_id, ids_to_results, retrieve_allowed_objects
+from ...utils.auth import ids_to_results, retrieve_allowed_objects
 from ...utils.misc import hash_object
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
@@ -16,7 +16,7 @@ len_default_hash = len(hash_object(b""))
 
 
 def _update_or_create_cluster(request, cluster, objdata, authset):
-    created = not cluster.id
+    create = not cluster.id
 
     if "public" in objdata:
         cluster.public = bool(objdata["public"])
@@ -29,8 +29,52 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
     if "description" in objdata:
         cluster.description = objdata["description"] or ""
 
+    net = objdata.get("net")
+    if net:
+        if isinstance(net, Net):
+            cluster.net = net
+        else:
+            net_result = ids_to_results(
+                request,
+                [objdata.get("net")],
+                Cluster,
+                "manage",
+                authset=authset,
+            )["Cluster"]
+            cluster.net = net_result["objects"].get().net
+    elif create:
+        user = None
+        manage = retrieve_allowed_objects(
+            request,
+            Cluster.objects.all(),
+            scope="manage",
+            authset=authset,
+        )
+        if manage:
+            net = manage.first().net
+        if not net:
+            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+                user = getattr(request, "user", None)
+                if not user or not user.is_authenticated:
+                    raise ValueError("Must be logged in")
+                net = user.secretgraph_net
+            elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
+                raise ValueError("Cannot register new cluster")
+        if not net:
+            net = Net()
+            if user:
+                net.user = user
+            net.reset_quota()
+            net.reset_max_upload_size()
+        cluster.net = net
+    # cleanup after scope
+    del net
+    del user
+
     def cluster_save_fn():
         cluster.updateId = uuid4()
+        if not cluster.net.id:
+            cluster.net.save()
         cluster.save()
         if "groups" in objdata:
             cluster.groups.set(objdata["groups"])
@@ -46,7 +90,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
         )
         m_actions = set(map(lambda x: x.keyHash, m_actions))
 
-        if created and "manage" not in action_save_fn.action_types:
+        if create and "manage" not in action_save_fn.action_types:
             raise ValueError('Requires "manage" Action')
 
         def save_fn():
@@ -54,7 +98,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
             action_save_fn()
             return cluster
 
-    elif not created:
+    elif not create:
         # path: actions are not specified but cluster exists and no
         # new public_secret_hashes
         def save_fn():
@@ -67,35 +111,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
 
 
 def create_cluster_fn(request, objdata, authset=None):
-    net = objdata.get("net")
-    if not isinstance(net, Net):
-        manage = retrieve_allowed_objects(
-            request,
-            Cluster.objects.all(),
-            scope="manage",
-            authset=authset,
-        )
-        if manage:
-            if objdata.get("net"):
-                net = fetch_by_id(manage, objdata.get("net")).first().net
-            else:
-                net = manage.first().net
-        if not net:
-            user = None
-            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
-                user = getattr(request, "user", None)
-                if not user or not user.is_authenticated:
-                    raise ValueError("Must be logged in")
-                net = user.secretgraph_net
-            elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
-                raise ValueError("Cannot register new cluster")
-            if not net:
-                net = Net()
-                if user:
-                    net.user = user
-                net.reset_quota()
-                net.reset_max_upload_size()
-    prebuild = {"net": net}
+    prebuild = {}
 
     if not objdata.get("actions"):
         raise ValueError("Actions required")
@@ -123,20 +139,6 @@ def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
         updateId = UUID(updateId)
     except Exception:
         raise ValueError("updateId is not an uuid")
-
-    net = objdata.get("net")
-    if net:
-        if isinstance(net, Net):
-            cluster.net = net
-        else:
-            net_result = ids_to_results(
-                request,
-                objdata.get("net"),
-                Cluster,
-                "manage",
-                authset=authset,
-            )["Cluster"]
-            cluster.net = net_result["objects"].get().net
 
     cluster_fn = _update_or_create_cluster(
         request, cluster, objdata, authset=authset

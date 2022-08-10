@@ -1,26 +1,32 @@
 from functools import lru_cache
 
+from django.db.models import Q
+
 
 def only_owned_helper(
     klass,
     linput,
     request,
     fields=("id",),
-    check_field=None,
+    check_fields=None,
     scope="manage",
     authset=None,
+    only_first_field=False,
 ):
     from ...utils.auth import retrieve_allowed_objects
 
-    if not check_field:
-        check_field = "flexid"
-    if check_field == "flexid" and not hasattr(klass, "flexid"):
-        check_field = "id"
-    if not hasattr(klass, "flexid"):
-        fields = set(fields).difference({"flexid"})
+    if not check_fields:
+        check_fields = ["flexid", "id"]
+    q = Q()
+    for field in check_fields:
+        if hasattr(klass, field):
+            q |= Q(**{f"{field}__in": linput or []})
+    fields = filter(lambda x: hasattr(klass, x))
+    if only_first_field:
+        fields = list(fields)[:1]
     return retrieve_allowed_objects(
         request,
-        klass.objects.filter(**{f"{check_field}__in": linput or []}),
+        klass.objects.filter(q),
         scope,
         authset=authset,
     )["objects"].values_list(*fields, flat=True)

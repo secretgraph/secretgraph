@@ -7,7 +7,8 @@ from ..models import Net
 def pre_clean_content_spec(create: bool, content, result):
     updateable = False
     freeze = False
-    net = None
+    # must be ordered
+    additionalNets = {}
     injectedTags = set()
     injectedRefs = {}
     passed = len(result["active_actions"]) == 0
@@ -51,9 +52,12 @@ def pre_clean_content_spec(create: bool, content, result):
         else:
             if state not in action_dict["allowedStates"]:
                 continue
-        _net = action_dict.get("net")
-        if _net and not net:
-            net = _net
+        _nets = action_dict.get("nets") or []
+        for _net in _nets:
+            if isinstance(_net, Net):
+                additionalNets[_net.id] = True
+            elif _net not in additionalNets:
+                additionalNets[_net] = True
 
         if not tags:
             if not create:
@@ -106,8 +110,14 @@ def pre_clean_content_spec(create: bool, content, result):
             content["references"] = chain(
                 content.get("references") or [], injectedRefs.values()
             )
-    if net and not content.get("net"):
+    additionalNets = list(additionalNets.keys())
+    if create and not content.get("net"):
         # we identify the net directly by the net id if set by action
         # this bypasses the ownership check
-        content["net"] = Net.objects.get(id=net)
-    return {"freeze": freeze, "updateable": updateable}
+        if additionalNets:
+            content["net"] = Net.objects.get(id=additionalNets[0])
+    content["additionalNets"] = additionalNets
+    return {
+        "freeze": freeze,
+        "updateable": updateable,
+    }

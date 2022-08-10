@@ -59,8 +59,8 @@ class SideEffectsHandlers:
             for _flexid, _id in only_owned_helper(
                 Content,
                 references.keys(),
-                request,
-                fields=("flexid",),
+                request=request,
+                fields=("flexid", "id"),
                 authset=authset,
             ):
                 deleteRecursive = references[_flexid].get(
@@ -153,6 +153,7 @@ class SideEffectsHandlers:
                     request,
                     check_field="keyHash" if type_name == "Action" else None,
                     authset=authset,
+                    only_first_field=True,
                 )
             )
 
@@ -186,7 +187,7 @@ class SideEffectsHandlers:
             for _flexid, _id in only_owned_helper(
                 klass,
                 update_mapper[type_name].keys(),
-                request,
+                request=request,
                 fields=(
                     ("id", "id") if type_name == "Action" else ("flexid", "id")
                 ),

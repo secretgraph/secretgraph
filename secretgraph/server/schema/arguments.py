@@ -85,6 +85,7 @@ class ContentInput:
 class PushContentInput:
     parent: ID
     value: ContentValueInput
+    net: Optional[ID] = None
 
 
 @strawberry.input

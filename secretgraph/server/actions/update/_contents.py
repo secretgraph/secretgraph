@@ -12,18 +12,19 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
-from django.db.models import F
+from django.db.models import F, Q
 
 from .... import constants
 from ...utils.auth import ids_to_results, get_cached_result
 from ...utils.misc import calculate_hashes, hash_object, refresh_fields
-from ...models import Cluster, Content, ContentReference, ContentTag
+from ...models import Cluster, Content, ContentReference, ContentTag, Net
 from ._actions import manage_actions_fn
 from ._metadata import transform_references, transform_tags
 
 logger = logging.getLogger(__name__)
 
 len_default_hash = len(hash_object(b""))
+_emptyset = frozenset()
 
 
 def _condMergeKeyTags(
@@ -31,7 +32,7 @@ def _condMergeKeyTags(
 ):
     if tags is None and isUpdate:
         return None
-    return chain(hashes_tags, tags or [])
+    return chain(hashes_tags, tags or _emptyset)
 
 
 def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
@@ -144,21 +145,34 @@ def _update_or_create_content_or_key(
 
     # set net on non-initializated contents
     # either by explicit cluster id of net or implicit of the current cluster
-    net_id = objdata.get("net")
-    if net_id:
-        if net_id == content.cluster.flexid_cached or content.cluster.flexid:
+    net = objdata.get("net")
+    if net:
+        if isinstance(net, Net):
+            content.net = net
+        elif net == content.cluster.flexid_cached or content.cluster.flexid:
             content.net = content.cluster.net
         else:
-            net_result = ids_to_results(
-                request,
-                objdata.get("net"),
-                Cluster,
-                "create",
-                authset=authset,
-            )["Cluster"]
-            content.net = net_result["objects"].get().net
+            # first use simple query checking if
+            if objdata.get("additionalNets"):
+                content.net = Net.objects.filter(
+                    Q(clusters__flexid=net) | Q(clusters__flexid_cached=net),
+                    id__in=objdata["additionalNets"],
+                ).first()
+            else:
+                content.net = None
+            # content.net is None or result of first()
+            if not content.net:
+                net_result = ids_to_results(
+                    request,
+                    objdata.get("net"),
+                    Cluster,
+                    "create",
+                    authset=authset,
+                )["Cluster"]
+                content.net = net_result["objects"].get().net
     elif create or (old_cluster and old_cluster.net == content.net):
         content.net = content.cluster.net
+    del net
 
     if create:
         content.type = objdata["type"]
@@ -262,6 +276,7 @@ def _update_or_create_content_or_key(
             content.contentHash = None
         else:
             content.contentHash = chash
+    del chash
 
     final_references = None
     key_hashes_ref = set()

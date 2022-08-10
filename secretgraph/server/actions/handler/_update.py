@@ -1,4 +1,3 @@
-
 from django.db.models import Q, Subquery
 from strawberry_django_plus import relay
 
@@ -8,7 +7,6 @@ from ._shared import only_owned_helper
 
 
 class UpdateHandlers:
-
     @staticmethod
     def do_delete(action_dict, scope, sender, accesslevel, action, **kwargs):
         if scope != "delete":
@@ -202,7 +200,7 @@ class UpdateHandlers:
                 Content,
                 references.keys(),
                 request,
-                fields=("flexid",),
+                fields=("flexid", "id"),
                 authset=authset,
             ):
                 deleteRecursive = references[_flexid].get(
@@ -234,6 +232,7 @@ class UpdateHandlers:
                 "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(),
                 "accesslevel": 3,
+                "nets": action_dict.get("nets", []),
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
                 "allowedTypes": action_dict.get("allowedTypes", None),
@@ -251,6 +250,7 @@ class UpdateHandlers:
             "id": content.id if content and content.id else None,
             "injectedTags": [],
             "injectedReferences": [],
+            "nets": [],
             "allowedTags": None,
             "allowedStates": None,
             "allowedTypes": None,
@@ -264,6 +264,8 @@ class UpdateHandlers:
                 }
             )
 
+        if action_dict.get("nets"):
+            result["nets"].extend(action_dict["nets"])
         if action_dict.get("injectedTags"):
             result["injectedTags"].extend(action_dict["injectedTags"])
         if action_dict.get("allowedTags") is not None:
@@ -280,7 +282,7 @@ class UpdateHandlers:
                 Content,
                 references.keys(),
                 request,
-                fields=("flexid",),
+                fields=("flexid", "id"),
                 authset=authset,
             ):
                 deleteRecursive = references[_flexid].get(
@@ -322,6 +324,7 @@ class UpdateHandlers:
                 "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(),
                 "accesslevel": 3,
+                "nets": action_dict.get("nets", []),
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
                 "allowedTypes": action_dict.get("allowedTypes", None),
@@ -345,6 +348,7 @@ class UpdateHandlers:
                 "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(id=action_dict["id"]),
                 "accesslevel": 0,
+                "nets": action_dict.get("nets", []),
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
                 "allowedTypes": action_dict.get("allowedTypes", None),
