@@ -52,21 +52,21 @@ def mutate_push_content(
     source = result["objects"].first()
     if not source:
         raise ValueError("Content not found")
-    res = pre_clean_content_spec(True, content, result)
+    cleaned_result = pre_clean_content_spec(True, content, result)
     required_keys = set(
         Content.objects.required_keys_full(source.cluster).values_list(
             "contentHash", flat=True
         )
     )
     action_key = None
-    if res["updateable"]:
+    if cleaned_result["updateable"]:
         action_key = os.urandom(32)
         content["actions"] = [
             {
                 "key": action_key,
                 "action": "update",
                 "restrict": True,
-                "freeze": res["freeze"],
+                "freeze": cleaned_result["freeze"],
             }
         ]
     c = create_content_fn(

@@ -7,7 +7,6 @@ from dataclasses import asdict
 import strawberry
 from strawberry.types import Info
 from strawberry_django_plus import relay
-from django.conf import settings
 from django.db import transaction
 
 from ...actions.update import (
@@ -16,13 +15,12 @@ from ...actions.update import (
     update_cluster_fn,
     update_content_fn,
 )
-from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup, Net
+from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
     get_cached_result,
     get_cached_permissions,
-    retrieve_allowed_objects,
 )
 from ..arguments import (
     AuthList,
@@ -49,12 +47,6 @@ def mutate_cluster(
     authorization: Optional[AuthList] = None,
 ) -> ClusterMutation:
     cluster = asdict(cluster)
-    manage = retrieve_allowed_objects(
-        info.context.request,
-        Cluster.objects.all(),
-        scope="manage",
-        authset=authorization,
-    )
     if cluster.get("featured") is not None:
         if not get_cached_permissions(
             info.context.request, authset=authorization
@@ -91,32 +83,11 @@ def mutate_cluster(
             authset=authorization,
         )(transaction.atomic)
     else:
-        net = None
-        if manage:
-            if cluster.get("net"):
-                net = fetch_by_id(manage, cluster.get("net")).first().net
-            else:
-                net = manage.first().net
-        if not net:
-            user = None
-            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
-                user = getattr(info.context.request, "user", None)
-                if not user or not user.is_authenticated:
-                    raise ValueError("Must be logged in")
-                net = user.secretgraph_net
-            elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
-                raise ValueError("Cannot register new cluster")
-            if not net:
-                net = Net()
-                if user:
-                    net.user = user
-                net.reset_quota()
-                net.reset_max_upload_size()
         cluster["groups"] = GlobalGroupProperty.objects.get_or_create(
             name="default", defaults={}
         )[0].groups.all()
         _cluster_res = create_cluster_fn(
-            info.context.request, cluster, net=net, authset=authorization
+            info.context.request, cluster, authset=authorization
         )(transaction.atomic)
     f = get_cached_result(info.context.request, authset=authorization)
     f["Content"]

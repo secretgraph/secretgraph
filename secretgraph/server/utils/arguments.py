@@ -1,10 +1,13 @@
 import re
 from itertools import chain
 
+from ..models import Net
 
-def pre_clean_content_spec(create, content, result):
+
+def pre_clean_content_spec(create: bool, content, result):
     updateable = False
     freeze = False
+    net = None
     injectedTags = set()
     injectedRefs = {}
     passed = len(result["active_actions"]) == 0
@@ -48,6 +51,9 @@ def pre_clean_content_spec(create, content, result):
         else:
             if state not in action_dict["allowedStates"]:
                 continue
+        _net = action_dict.get("net")
+        if _net and not net:
+            net = _net
 
         if not tags:
             if not create:
@@ -100,7 +106,8 @@ def pre_clean_content_spec(create, content, result):
             content["references"] = chain(
                 content.get("references") or [], injectedRefs.values()
             )
-    return {
-        "freeze": freeze,
-        "updateable": updateable,
-    }
+    if net and not content.get("net"):
+        # we identify the net directly by the net id if set by action
+        # this bypasses the ownership check
+        content["net"] = Net.objects.get(id=net)
+    return {"freeze": freeze, "updateable": updateable}

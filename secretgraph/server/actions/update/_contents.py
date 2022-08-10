@@ -132,10 +132,11 @@ def _update_or_create_content_or_key(
             .filter(markForDestruction=None)
             .first()
         )
-    cluster_changed = False
+    # when changed
+    old_cluster = None
     if objdata.get("cluster"):
         if content.cluster and objdata.get("cluster") != content.cluster:
-            cluster_changed = True
+            old_cluster = content.cluster
         content.cluster = objdata["cluster"]
 
     if not getattr(content, "cluster", None):
@@ -156,7 +157,7 @@ def _update_or_create_content_or_key(
                 authset=authset,
             )["Cluster"]
             content.net = net_result["objects"].get().net
-    elif create or cluster_changed:
+    elif create or (old_cluster and old_cluster.net == content.net):
         content.net = content.cluster.net
 
     if create:
@@ -266,7 +267,7 @@ def _update_or_create_content_or_key(
     key_hashes_ref = set()
     verifiers_ref = set()
     if (
-        cluster_changed
+        old_cluster
         or objdata.get("references") is not None
         or objdata.get("tags") is not None
     ):

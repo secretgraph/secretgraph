@@ -3,11 +3,12 @@ __all__ = ["create_cluster_fn", "update_cluster_fn"]
 from contextlib import nullcontext
 from uuid import UUID, uuid4
 
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
+from ...models import Cluster, Net
+from ...utils.auth import fetch_by_id, ids_to_results, retrieve_allowed_objects
 from ...utils.misc import hash_object
-from ...utils.auth import ids_to_results
-from ...models import Cluster
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
 
@@ -65,7 +66,35 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
     return save_fn
 
 
-def create_cluster_fn(request, objdata, net, authset=None):
+def create_cluster_fn(request, objdata, authset=None):
+    net = objdata.get("net")
+    if not isinstance(net, Net):
+        manage = retrieve_allowed_objects(
+            request,
+            Cluster.objects.all(),
+            scope="manage",
+            authset=authset,
+        )
+        if manage:
+            if objdata.get("net"):
+                net = fetch_by_id(manage, objdata.get("net")).first().net
+            else:
+                net = manage.first().net
+        if not net:
+            user = None
+            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+                user = getattr(request, "user", None)
+                if not user or not user.is_authenticated:
+                    raise ValueError("Must be logged in")
+                net = user.secretgraph_net
+            elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
+                raise ValueError("Cannot register new cluster")
+            if not net:
+                net = Net()
+                if user:
+                    net.user = user
+                net.reset_quota()
+                net.reset_max_upload_size()
     prebuild = {"net": net}
 
     if not objdata.get("actions"):
@@ -95,15 +124,19 @@ def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
     except Exception:
         raise ValueError("updateId is not an uuid")
 
-    if objdata.get("net"):
-        net_result = ids_to_results(
-            request,
-            objdata.get("net"),
-            Cluster,
-            "manage",
-            authset=authset,
-        )["Cluster"]
-        cluster.net = net_result["objects"].get().net
+    net = objdata.get("net")
+    if net:
+        if isinstance(net, Net):
+            cluster.net = net
+        else:
+            net_result = ids_to_results(
+                request,
+                objdata.get("net"),
+                Cluster,
+                "manage",
+                authset=authset,
+            )["Cluster"]
+            cluster.net = net_result["objects"].get().net
 
     cluster_fn = _update_or_create_cluster(
         request, cluster, objdata, authset=authset
