@@ -92,6 +92,7 @@ input ClusterFilter {
 }
 
 input ClusterInput {
+  net: ID = null
   name: String = null
   description: String = null
   public: Boolean = null
@@ -201,6 +202,7 @@ input ContentFilterSimple {
 }
 
 input ContentInput {
+  net: ID = null
   cluster: ID = null
   key: ContentKeyInput = null
   value: ContentValueInput = null
@@ -524,6 +526,7 @@ type PageInfo {
 input PushContentInput {
   parent: ID!
   value: ContentValueInput!
+  net: ID = null
 }
 
 type PushContentMutation {
