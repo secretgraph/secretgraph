@@ -119,6 +119,9 @@ def _update_or_create_content_or_key(
     request, content, objdata, authset, is_key, required_keys
 ):
     create = not content.id
+    size_diff_value = 0
+    size_diff_tags = 0
+    size_refs = 0
 
     if isinstance(objdata.get("cluster"), str):
         objdata["cluster"] = (
@@ -188,7 +191,7 @@ def _update_or_create_content_or_key(
     tags_dict = None
     key_hashes_tags = set()
     if objdata.get("tags") is not None:
-        tags_dict, key_hashes_tags = transform_tags(
+        tags_dict, key_hashes_tags, size_diff_tags = transform_tags(
             content.type, objdata.get("tags")
         )
     elif create:
@@ -242,22 +245,16 @@ def _update_or_create_content_or_key(
 
         if content.net.quota is not None:
             if create:
-                size_diff = objdata["value"].size
+                size_diff_value = objdata["value"].size
             else:
-                size_diff = objdata["value"].size - content.file.size
-            if (
-                size_diff != 0
-                and content.net.bytes_in_use + size_diff > content.net.quota
-            ):
-                raise ValueError("quota exceeded")
-            content.net.bytes_in_use = F("bytes_in_user") + size_diff
+                size_diff_value = objdata["value"].size - content.file.size
         content.clean()
 
         def save_fn_value():
             content.file.delete(False)
             content.updateId = uuid4()
             content.file.save("ignored", objdata["value"])
-            content.net.save()
+            content.net.save(update_fields=["bytes_in_use"])
 
     else:
 
@@ -295,7 +292,12 @@ def _update_or_create_content_or_key(
         else:
             refs = objdata["references"]
         # no_final_refs final_references => None
-        final_references, key_hashes_ref, verifiers_ref = transform_references(
+        (
+            final_references,
+            key_hashes_ref,
+            verifiers_ref,
+            size_refs,
+        ) = transform_references(
             content,
             refs,
             key_hashes_tags,
@@ -347,6 +349,14 @@ def _update_or_create_content_or_key(
 
         def actions_save_fn():
             pass
+
+    size_diff = size_diff_value + size_diff_tags
+    if (
+        size_diff > 0
+        and content.net.bytes_in_use + size_diff > content.net.quota
+    ):
+        raise ValueError("quota exceeded")
+    content.net.bytes_in_use = F("bytes_in_user") + size_diff
 
     def save_fn():
         save_fn_value()

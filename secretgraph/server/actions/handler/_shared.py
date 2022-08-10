@@ -16,7 +16,7 @@ def only_owned_helper(
     from ...utils.auth import retrieve_allowed_objects
 
     if not check_fields:
-        check_fields = ["flexid", "id"]
+        check_fields = ["flexid", "flexid_cached", "id"]
     q = Q()
     for field in check_fields:
         if hasattr(klass, field):

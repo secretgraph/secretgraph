@@ -100,7 +100,10 @@ def transform_tags(
 
     if content_type == "PrivateKey" and not newtags.get("key"):
         raise ValueError("PrivateKey has no key=<foo> tag")
-    return newtags, key_hashes
+    size_diff = len("".join(newtags))
+    if oldtags:
+        size_diff -= len("".join(oldtags))
+    return newtags, key_hashes, size_diff
 
 
 def clean_deleteRecursive(group, val):
@@ -129,6 +132,7 @@ def transform_references(
     encrypt_target_hashes = set()
     deduplicate = set()
     injectable_keys = Content.objects.injected_keys()
+    size = 0
     for ref in references or []:
         injected_ref = None
         refob = None
@@ -192,6 +196,7 @@ def transform_references(
             and (injected_ref.group, injected_ref.target.id) not in deduplicate
         ):
             deduplicate.add((injected_ref.group, injected_ref.target.id))
+            size += len(injected_ref.extra)
             if len(injected_ref.extra) > 8000:
                 raise ValueError("Extra tag of ref too big")
             # must be target
@@ -203,6 +208,7 @@ def transform_references(
         # first extra tag in same group  with same target wins
         if refob and (refob.group, refob.target.id) not in deduplicate:
             deduplicate.add((refob.group, refob.target.id))
+            size += len(injected_ref.extra)
             if len(refob.extra) > 8000:
                 raise ValueError("Extra tag of ref too big")
             if refob.group == "signature":
@@ -214,7 +220,7 @@ def transform_references(
                     raise ValueError("Key hash not found in tags")
             if not no_final_refs:
                 final_references.append(refob)
-    return final_references, encrypt_target_hashes, sig_target_hashes
+    return final_references, encrypt_target_hashes, sig_target_hashes, size
 
 
 def update_metadata_fn(
@@ -232,11 +238,13 @@ def update_metadata_fn(
     final_tags = None
     remove_tags_q = Q()
     remove_refs_q = Q()
+    size_diff_tags = 0
+    size_refs = 0
     if state:
         content.state = state
     if tags:
         oldtags = content.tags.values_list("tag", flat=True)
-        tags_dict, key_hashes_tags = transform_tags(
+        tags_dict, key_hashes_tags, size_diff_tags = transform_tags(
             content.type, tags, oldtags, operation
         )
 
@@ -292,7 +300,12 @@ def update_metadata_fn(
         # prefer old extra values, no problem with crashing as ignore_conflict
         _refs = [*content.references.all(), *references]
     # no_final_refs => final_references = None
-    final_references, key_hashes_ref, verifiers_ref = transform_references(
+    (
+        final_references,
+        key_hashes_ref,
+        verifiers_ref,
+        size_refs,
+    ) = transform_references(
         content,
         _refs,
         key_hashes_tags,
@@ -312,12 +325,20 @@ def update_metadata_fn(
 
     content.clean()
 
+    size_diff = size_diff_tags
+    if (
+        size_diff > 0
+        and content.net.bytes_in_use + size_diff > content.net.quota
+    ):
+        raise ValueError("quota exceeded")
+
     def save_fn(context=nullcontext):
         if callable(context):
             context = context()
         with context:
             content.updateId = uuid4()
             content.save(update_fields=["updateId"])
+            content.net.save(update_fields=["bytes_in_use"])
             if final_tags is not None:
                 if operation in {
                     MetadataOperations.remove,

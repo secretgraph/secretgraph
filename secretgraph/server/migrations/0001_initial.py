@@ -29,6 +29,10 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    "created",
+                    models.DateTimeField(auto_now_add=True),
+                ),
+                (
                     "quota",
                     models.PositiveIntegerField(
                         blank=True,

@@ -183,9 +183,8 @@ currently there are three ways:
 ### clean returnal
 
 -   freeze: together with "fetch" content group of views updates will be disabled
--   form: create new content
-    -   updateable
-    -   freeze
+-   updateable
+-   nets: (only for contents): specify which resource net to use. nets are addressed by clusters
 
 ### Groups
 
@@ -217,15 +216,12 @@ idea: seperate actions with different concerns.
 # TODO
 
 -   dataclass for returns instead of simple dicts to have typing
--   introduce Net Model for resource tracking
+-   document net resource tracking, ClusterGroups
 -   mainCtx.cluster for communicating current cluster of content
 -   actions: states
 -   X-Key response: shared key of private key
 -   port settings importer to formik
 -   hash algo should be part of hashes hash?????
--   how to seperate keys from tokens???
-    -   different GET parameter
-    -   key_hash for retrieving keys
 -   decrypt import urls
 -   implement settings/config
 -   too many queries when selecting node (sidebar is also updated, because updateId?)
@@ -235,6 +231,7 @@ idea: seperate actions with different concerns.
 -   update internal doc section
 -   replace json-editor by ActionConfigurator equivalent
 -   tags: limit amount tags
+    -   resource tracking
 -   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
     -   partly solved
 -   test permissions
@@ -251,6 +248,7 @@ idea: seperate actions with different concerns.
 
 # TODO later
 
+-   implement different net resource logic in frontend
 -   move validation logic to validators
 -   use more mainCtx.url instead of passing urls through
 -   ratelimit API access per ip and per flexid

@@ -2,7 +2,7 @@ from django.db.models import Q, Subquery
 from strawberry_django_plus import relay
 
 from .... import constants
-from ...models import Action, Cluster, Content
+from ...models import Action, Cluster, Content, Net
 from ._shared import only_owned_helper
 
 
@@ -126,6 +126,7 @@ class UpdateHandlers:
                 )
             return {
                 "filters": ~excl_filters & incl_filters,
+                "nets": action_dict.get("nets", []),
                 "trustedKeys": action_dict.get("trustedKeys", []),
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
@@ -161,6 +162,7 @@ class UpdateHandlers:
             "contentActionGroup": "update",
             "restricted": bool(action_dict.get("restricted")),
             "freeze": bool(action_dict.get("freeze")),
+            "nets": None,
             "injectedTags": [],
             "allowedTags": None,
             "allowedStates": action_dict.get("allowedStates", None),
@@ -192,6 +194,22 @@ class UpdateHandlers:
             result["allowedTags"] = list(action_dict["allowedTags"])
         if action_dict.get("allowedStates") is not None:
             result["allowedStates"] = list(action_dict["allowedStates"])
+
+        nets = action_dict.get("nets")
+        if nets:
+            clusters = only_owned_helper(
+                Cluster,
+                nets,
+                request,
+                scope="create",
+                fields=("id",),
+                authset=authset,
+            )
+            action_dict["nets"] = Net.objects.filter(
+                clusters__id__in=clusters
+            ).values_list("id", flat=True)
+            del clusters
+        del nets
         references = action_dict.get("injectedReferences")
         if references:
             if isinstance(references, list):
@@ -263,9 +281,6 @@ class UpdateHandlers:
                     "deleteRecursive": (constants.DeleteRecursive.TRUE.value,),
                 }
             )
-
-        if action_dict.get("nets"):
-            result["nets"].extend(action_dict["nets"])
         if action_dict.get("injectedTags"):
             result["injectedTags"].extend(action_dict["injectedTags"])
         if action_dict.get("allowedTags") is not None:
@@ -274,6 +289,22 @@ class UpdateHandlers:
             result["allowedStates"] = list(action_dict["allowedStates"])
         if action_dict.get("allowedTypes") is not None:
             result["allowedTypes"] = list(action_dict["allowedTypes"])
+
+        nets = action_dict.get("nets")
+        if nets:
+            clusters = only_owned_helper(
+                Cluster,
+                nets,
+                request,
+                scope="create",
+                fields=("id",),
+                authset=authset,
+            )
+            action_dict["nets"] = Net.objects.filter(
+                clusters__id__in=clusters
+            ).values_list("id", flat=True)
+            del clusters
+        del nets
         references = action_dict.get("injectedReferences")
         if references:
             if isinstance(references, list):
@@ -304,6 +335,7 @@ class UpdateHandlers:
                         "deleteRecursive": deleteRecursive,
                     }
                 )
+        del references
         return result
 
     @classmethod
@@ -385,6 +417,7 @@ class UpdateHandlers:
             )
         return {
             "trustedKeys": action_dict.get("trustedKeys", []),
+            "nets": action_dict.get("nets", []),
             "filters": ~excl_filters,
             "accesslevel": 2,
         }
@@ -397,8 +430,24 @@ class UpdateHandlers:
             raise ValueError("manage cannot be used for content")
         result = {
             "action": "manage",
+            "nets": [],
             "exclude": {"Cluster": [], "Content": [], "Action": []},
         }
+        nets = action_dict.get("nets")
+        if nets:
+            clusters = only_owned_helper(
+                Cluster,
+                nets,
+                request,
+                scope="create",
+                fields=("id",),
+                authset=authset,
+            )
+            action_dict["nets"] = Net.objects.filter(
+                clusters__id__in=clusters
+            ).values_list("id", flat=True)
+            del clusters
+        del nets
         for idtuple in action_dict.get("exclude") or []:
             type_name, id = relay.from_base64(idtuple)
             result["exclude"][type_name].append(id)

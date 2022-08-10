@@ -81,6 +81,7 @@ class FlexidModel(models.Model):
 
 class Net(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
+    created: dt = models.DateTimeField(auto_now_add=True, editable=False)
     # quota, should be greater than ?? (saving config), can be None to disable
     quota: int = models.PositiveIntegerField(
         null=True,
