@@ -1,8 +1,6 @@
 import { ApolloClient, FetchResult } from '@apollo/client'
 import {
     createKeysMutation,
-    findConfigQuery,
-    updateContentMutation,
     updateKeyMutation,
 } from '@secretgraph/graphql-queries/content'
 
@@ -118,13 +116,14 @@ export async function updateKey({
     updateId,
     client,
     publicState,
+    net,
     ...options
 }: {
     id: string
     updateId: string
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
-    cluster?: string
+    net?: string
     key?: CryptoKey | PromiseLike<CryptoKey> // key or key data
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
@@ -221,7 +220,7 @@ export async function updateKey({
         variables: {
             id,
             updateId,
-            cluster: options.cluster ? options.cluster : undefined,
+            net,
             references,
             publicState,
             publicTags,

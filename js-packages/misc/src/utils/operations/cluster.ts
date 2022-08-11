@@ -21,6 +21,7 @@ export async function createCluster(options: {
     client: ApolloClient<any>
     actions: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
+    net?: string
     name?: string
     description?: string
     public?: boolean
@@ -62,6 +63,7 @@ export async function createCluster(options: {
         // we need a current updateId
         awaitRefetchQueries: true,
         variables: {
+            net: options.net,
             name: options.name,
             description: options.description,
             publicKey: await publicKeyPromise,
@@ -83,6 +85,7 @@ export async function updateCluster(options: {
     actions?: Interfaces.ActionInterface[]
     public?: boolean
     featured?: boolean
+    net?: string
     name?: string
     description?: string
     authorization: string[]
@@ -93,6 +96,7 @@ export async function updateCluster(options: {
         awaitRefetchQueries: true,
         variables: {
             id: options.id,
+            net: options.net,
             updateId: options.updateId,
             name: options.name,
             description: options.description,
@@ -110,10 +114,12 @@ export async function initializeCluster({
     config,
     name,
     description,
+    net,
     ...options
 }: {
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
+    net?: string
     name?: string
     description?: string
     public?: boolean
@@ -145,6 +151,7 @@ export async function initializeCluster({
             },
         ],
         name,
+        net,
         description,
         hashAlgorithm,
         publicKey,

@@ -215,6 +215,7 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   remove/handle orphan nets (no cluster assigned)
 -   dataclass for returns instead of simple dicts to have typing
 -   document net resource tracking, ClusterGroups
 -   mainCtx.cluster for communicating current cluster of content

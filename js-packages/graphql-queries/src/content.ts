@@ -182,7 +182,7 @@ export const updateKeyMutation = gql`
     mutation contentUpdateKeyMutation(
         $id: GlobalID!
         $updateId: ID!
-        $cluster: ID
+        $net: ID
         $actions: [ActionInput!]
         $publicTags: [String!]
         $publicState: String
@@ -197,8 +197,7 @@ export const updateKeyMutation = gql`
             input: {
                 id: $id
                 content: {
-                    cluster: $cluster
-                    net: $cluster
+                    net: $net
                     key: {
                         privateKey: $key
                         nonce: $nonce

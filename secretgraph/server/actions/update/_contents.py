@@ -532,6 +532,8 @@ def update_content_fn(
         key_obj = objdata.get("key")
         if not key_obj:
             raise ValueError("Cannot transform key to content")
+        if objdata.get("cluster"):
+            raise ValueError("Cannot update cluster of key")
 
         hashes, newdata, _private = _transform_key_into_dataobj(
             {
@@ -552,6 +554,8 @@ def update_content_fn(
         key_obj = objdata.get("key")
         if not key_obj:
             raise ValueError("Cannot transform key to content")
+        if objdata.get("cluster"):
+            raise ValueError("Cannot update cluster of key")
         # we don't see it or update it anyway so include all
         # without regard to state
         publicKeyContent = Content.objects.filter(

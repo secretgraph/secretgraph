@@ -37,6 +37,7 @@ import { b64toarr, b64tobuffer } from '../misc'
 export async function createContent({
     client,
     cluster,
+    net,
     tags: tagsIntern,
     value,
     ...options
@@ -44,6 +45,7 @@ export async function createContent({
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
     cluster: string
+    net?: string
     type: string
     state: string
     value: Interfaces.CryptoGCMInInterface['data']
@@ -129,6 +131,7 @@ export async function createContent({
         awaitRefetchQueries: true,
         variables: {
             cluster,
+            net: net || cluster,
             references: ([] as Interfaces.ReferenceInterface[]).concat(
                 await publicKeyReferencesPromise,
                 await signatureReferencesPromise,
@@ -153,6 +156,7 @@ export async function updateContent({
     updateId,
     client,
     state,
+    net,
     ...options
 }: {
     id: string
@@ -160,6 +164,7 @@ export async function updateContent({
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
     cluster?: string
+    net?: string
     state?: string
     value?: Interfaces.CryptoGCMInInterface['data']
     pubkeys: Parameters<typeof encryptSharedKey>[1]
@@ -271,17 +276,18 @@ export async function updateContent({
         variables: {
             id,
             updateId,
-            cluster: options.cluster ? options.cluster : null,
+            net,
+            cluster: options.cluster ? options.cluster : undefined,
             references,
-            tags: tags ? await Promise.all(tags) : null,
-            nonce: nonce ? await serializeToBase64(nonce) : null,
+            tags: tags ? await Promise.all(tags) : undefined,
+            nonce: nonce ? await serializeToBase64(nonce) : undefined,
             value: encryptedContent
                 ? new Blob([encryptedContent], {
                       type: 'application/octet-stream',
                   })
-                : null,
-            actions: options.actions ? [...options.actions] : null,
-            contentHash: options.contentHash ? options.contentHash : null,
+                : undefined,
+            actions: options.actions ? [...options.actions] : undefined,
+            contentHash: options.contentHash ? options.contentHash : undefined,
             authorization: [...options.authorization],
         },
     })

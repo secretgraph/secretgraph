@@ -141,6 +141,7 @@ const InnerCustom = ({
                     client,
                     config,
                     cluster: values.cluster, // can be null for keeping cluster
+                    net: values.cluster,
                     value,
                     tags: values.tags,
                     encryptTags: new Set(encryptedTags),

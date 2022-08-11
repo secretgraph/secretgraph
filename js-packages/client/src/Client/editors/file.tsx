@@ -418,6 +418,7 @@ const FileIntern = ({
                         const result = await (nodeData
                             ? updateContent({
                                   ...options,
+                                  net: options.cluster,
                                   id: nodeData.id,
                                   updateId: nodeData.updateId,
                               })
@@ -1110,7 +1111,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 throw Error('no cluster found')
             }
             updateMainCtx({
-                cluster: dataUnfinished.secretgraph.node.cluster.id
+                cluster: dataUnfinished.secretgraph.node.cluster.id,
             })
         }
         loading = true
@@ -1196,7 +1197,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         <FileIntern
             {...data}
             url={mainCtx.url as string}
-            setCluster={(cluster: string)=> updateMainCtx({cluster})}
+            setCluster={(cluster: string) => updateMainCtx({ cluster })}
             disabled={loading || viewOnly}
             viewOnly={viewOnly}
         />
@@ -1281,7 +1282,13 @@ const CreateFile = () => {
         return null
     }
 
-    return <FileIntern url={activeUrl} setCluster={(cluster: string)=> updateMainCtx({cluster})} {...data} />
+    return (
+        <FileIntern
+            url={activeUrl}
+            setCluster={(cluster: string) => updateMainCtx({ cluster })}
+            {...data}
+        />
+    )
 }
 
 export default function FileComponent() {
