@@ -173,7 +173,7 @@ def _update_or_create_content_or_key(
                     authset=authset,
                 )["Cluster"]
                 content.net = net_result["objects"].get().net
-    elif create or (old_cluster and old_cluster.net == content.net):
+    elif create:
         content.net = content.cluster.net
     del net
 
@@ -352,11 +352,16 @@ def _update_or_create_content_or_key(
 
     size_diff = size_diff_value + size_diff_tags
     if (
-        size_diff > 0
+        content.net.quota is not None
+        and size_diff > 0
         and content.net.bytes_in_use + size_diff > content.net.quota
     ):
         raise ValueError("quota exceeded")
-    content.net.bytes_in_use = F("bytes_in_user") + size_diff
+    # still in memory not serialized to db
+    if not content.net.id:
+        content.net.bytes_in_use += size_diff
+    else:
+        content.net.bytes_in_use = F("bytes_in_use") + size_diff
 
     def save_fn():
         save_fn_value()
@@ -408,6 +413,10 @@ def create_key_fn(request, objdata, authset=None):
         raise ValueError("No cluster")
 
     hashes, public, private = _transform_key_into_dataobj(key_obj)
+
+    public["net"] = objdata.get("net")
+    if private:
+        private["net"] = objdata.get("net")
     publickey_content = None
     if objdata["cluster"].id:
         publickey_content = Content.objects.filter(
@@ -536,6 +545,7 @@ def update_content_fn(
             },
             publicKeyContent=content,
         )
+        newdata["net"] = objdata.get("net")
     elif content.type == "PrivateKey":
         # can only update private tags and actions, updateId
         is_key = True
@@ -562,9 +572,11 @@ def update_content_fn(
         )
         if not newdata:
             raise ValueError("No data for private key")
+        newdata["net"] = objdata.get("net")
     else:
         newdata = {
             "cluster": objdata.get("cluster"),
+            "net": objdata.get("net"),
             "references": objdata.get("references"),
             "contentHash": objdata.get("contentHash"),
             **(objdata.get("value") or {}),

@@ -86,6 +86,13 @@ const SideBarItems = () => {
             tokens = res.tokens
             tokensPermissions = res.types
         }
+        let name = ''
+        for (const tag of node.tags) {
+            if (tag.startsWith('name=')) {
+                name = tag.match(/=(.*)/)[1]
+                break
+            }
+        }
 
         updateMainCtx({
             item: node.id,

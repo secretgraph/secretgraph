@@ -10,7 +10,7 @@ from uuid import uuid4
 import re
 from contextlib import nullcontext
 
-from django.db.models import Q
+from django.db.models import Q, F
 
 from ....constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import get_cached_result
@@ -208,7 +208,7 @@ def transform_references(
         # first extra tag in same group  with same target wins
         if refob and (refob.group, refob.target.id) not in deduplicate:
             deduplicate.add((refob.group, refob.target.id))
-            size += len(injected_ref.extra)
+            size += len(refob.extra)
             if len(refob.extra) > 8000:
                 raise ValueError("Extra tag of ref too big")
             if refob.group == "signature":
@@ -327,10 +327,16 @@ def update_metadata_fn(
 
     size_diff = size_diff_tags
     if (
-        size_diff > 0
+        content.net.quota is not None
+        and size_diff > 0
         and content.net.bytes_in_use + size_diff > content.net.quota
     ):
         raise ValueError("quota exceeded")
+    # still in memory not serialized to db
+    if not content.net.id:
+        content.net.bytes_in_use += size_diff
+    else:
+        content.net.bytes_in_use = F("bytes_in_use") + size_diff
 
     def save_fn(context=nullcontext):
         if callable(context):

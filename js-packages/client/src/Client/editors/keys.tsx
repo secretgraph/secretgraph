@@ -888,6 +888,12 @@ const ViewKeys = () => {
                     break
                 }
             }
+            for (const tag of dataUnfinished.secretgraph.node.tags) {
+                if (tag.startsWith('name=')) {
+                    updateOb['title'] = tag.match(/=(.*)/)[1]
+                    break
+                }
+            }
             const res = await loadKeys({
                 baseUrl: mainCtx.url as string,
                 data: dataUnfinished,
@@ -1085,6 +1091,12 @@ const EditKeys = () => {
             }
             for (const tag of dataUnfinished.secretgraph.node.tags) {
                 if (tag.startsWith('key_hash=')) {
+                    updateOb['title'] = tag.match(/=(.*)/)[1]
+                    break
+                }
+            }
+            for (const tag of dataUnfinished.secretgraph.node.tags) {
+                if (tag.startsWith('name=')) {
                     updateOb['title'] = tag.match(/=(.*)/)[1]
                     break
                 }

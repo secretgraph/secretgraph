@@ -83,6 +83,7 @@ export const contentFeedQuery = gql`
 export const createContentMutation = gql`
     mutation contentCreateEncryptedMutation(
         $cluster: ID!
+        $net: ID
         $tags: [String!]
         $references: [ReferenceInput!]
         $value: Upload!
@@ -97,6 +98,7 @@ export const createContentMutation = gql`
             input: {
                 content: {
                     cluster: $cluster
+                    net: $net
                     value: {
                         state: $state
                         type: $type
@@ -145,6 +147,7 @@ export const createKeysMutation = gql`
             input: {
                 content: {
                     cluster: $cluster
+                    net: $cluster
                     key: {
                         publicKey: $publicKey
                         privateKey: $privateKey
@@ -195,6 +198,7 @@ export const updateKeyMutation = gql`
                 id: $id
                 content: {
                     cluster: $cluster
+                    net: $cluster
                     key: {
                         privateKey: $key
                         nonce: $nonce
@@ -231,6 +235,7 @@ export const updateContentMutation = gql`
         $id: GlobalID!
         $updateId: ID!
         $cluster: ID
+        $net: ID
         $state: String
         $type: String
         $tags: [String!]
@@ -246,6 +251,7 @@ export const updateContentMutation = gql`
                 id: $id
                 content: {
                     cluster: $cluster
+                    net: $net
                     value: {
                         tags: $tags
                         value: $value

@@ -9,8 +9,13 @@ from ..constants import DeleteRecursive
 
 
 def initializeDb(sender, **kwargs):
-    from .models import Cluster, GlobalGroupProperty
+    from .models import Net, Cluster, GlobalGroupProperty
     from django.conf import settings
+
+    net = Net.objects.update_or_create(
+        id=1,
+        defaults={"id": 1, "quota": None, "max_upload_size": None},
+    )[0]
 
     Cluster.objects.update_or_create(
         id=1,
@@ -19,6 +24,7 @@ def initializeDb(sender, **kwargs):
             "name": "system",
             "public": False,
             "featured": False,
+            "net": net,
         },
     )
     for group in list(getattr(settings, "SECRETGRAPH_DEFAULT_GROUPS", [])):

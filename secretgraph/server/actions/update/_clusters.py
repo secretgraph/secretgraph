@@ -49,7 +49,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
             Cluster.objects.all(),
             scope="manage",
             authset=authset,
-        )
+        )["objects"]
         if manage:
             net = manage.first().net
         if not net:
