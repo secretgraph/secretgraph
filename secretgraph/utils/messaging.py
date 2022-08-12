@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+import hashlib
 import tempfile
 from email import parser as emailparser
 from email import policy
@@ -514,7 +515,8 @@ class PostBox(object):
         }:
             raise SrcException("No Message")
         # every object has it's own copy of the hash algorithm, used
-        hash_algo = getattr(hashes, result[0].hash_algorithm.upper())()
+        hash_algo = hashlib.new(result[0].hash_algorithm)
+        hash_algo = getattr(hashes, hash_algo.name.upper())()
 
         if not outfp:
             outfp = tempfile.TempFile()

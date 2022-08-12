@@ -153,7 +153,12 @@ class Migration(migrations.Migration):
                     models.CharField(max_length=50, null=False),
                 ),
                 ("hidden", models.BooleanField(blank=True, default=False)),
-                ("nonce", models.CharField(max_length=255)),
+                (
+                    "nonce",
+                    models.CharField(
+                        max_length=255, null=False, blank=True, default=""
+                    ),
+                ),
                 (
                     "file",
                     models.FileField(

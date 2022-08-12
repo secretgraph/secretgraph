@@ -249,6 +249,8 @@ idea: seperate actions with different concerns.
 
 # TODO later
 
+-   cleanup user
+-   support dsa
 -   implement different net resource logic in frontend
 -   move validation logic to validators
 -   use more mainCtx.url instead of passing urls through

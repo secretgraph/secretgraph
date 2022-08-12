@@ -4,6 +4,7 @@ import os
 import tempfile
 from io import BytesIO
 from typing import Iterable
+import hashlib
 
 from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
@@ -99,10 +100,11 @@ def create_key_maps(contents, keyset):
         else:
             esharedkey = base64.b64decode(split[1])
             # TODO: find better way to get hash algorithm
-            algo = getattr(hashes, split[0].upper())
+            hash_algo = hashlib.new(split[0])
+            algo = getattr(hashes, hash_algo.name.upper())()
             p = padding.OAEP(
-                mgf=padding.MGF1(algorithm=algo()),
-                algorithm=algo(),
+                mgf=padding.MGF1(algorithm=algo),
+                algorithm=algo,
                 label=None,
             )
         shared_key = None

@@ -18,6 +18,8 @@ SECRET_KEY = "CHANGEME"
 
 
 INSTALLED_APPS += [  # noqa F405
+    "django.contrib.auth",  # required for user
+    "django.contrib.contenttypes",  # required for auth
     "secretgraph.user",
     "secretgraph.server",
 ]

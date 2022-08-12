@@ -2,6 +2,7 @@ __all__ = ["AttestationChecker"]
 
 import base64
 import binascii
+import hashlib
 from itertools import repeat
 
 from cryptography.exceptions import InvalidSignature
@@ -51,14 +52,10 @@ def _extract_hash_key2(val, algo=None):
         digest.update(
             v.public_bytes(
                 encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
             ).strip()
         )
-        return KeyTriple(
-            digest.finalize(),
-            v,
-            signature
-        )
+        return KeyTriple(digest.finalize(), v, signature)
     else:
         raise NotImplementedError()
 
@@ -68,10 +65,12 @@ def _extract_hash_key(val, algo=None, check_hash=False):
     if check_hash and algo and ret[1] and len(val) >= 2:
         digest = hashes.Hash(algo)
         digest.update(
-            ret[1].public_bytes(
+            ret[1]
+            .public_bytes(
                 encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo
-            ).strip()
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
+            .strip()
         )
         if ret[0] != digest.finalize():
             raise ValueError("Key does not match hash")
@@ -101,17 +100,17 @@ class AttestationChecker(object):
     def create(self):
         cur = self.con.cursor()
         cur.execute(
-            '''
+            """
             CREATE TABLE IF NOT EXISTS domain (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 url TEXT NOT NULL UNIQUE,
                 attestation BLOB,
                 hash_algo TEXT
             )
-            '''
+            """
         )
         cur.execute(
-            '''
+            """
             CREATE TABLE IF NOT EXISTS key (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 domain INTEGER NOT NULL,
@@ -119,7 +118,7 @@ class AttestationChecker(object):
                 FOREIGN KEY(domain) REFERENCES domain(id),
                 UNIQUE(domain, hash)
             )
-            '''
+            """
         )
         self.con.commit()
 
@@ -129,21 +128,25 @@ class AttestationChecker(object):
     @classmethod
     def calc_attestation(cls, key_list, algo, embed=False):
         """
-            key_list:
-                string/bytes: hashes
-                pairs (hash, key): use hash of key
-                pairs (key, signature): autogeneration of missing key hash
-                triples (hash, key, signature):
-                    use hash of key
-            embed: assert correct triple format. Disables checks, conversions
+        key_list:
+            string/bytes: hashes
+            pairs (hash, key): use hash of key
+            pairs (key, signature): autogeneration of missing key hash
+            triples (hash, key, signature):
+                use hash of key
+        embed: assert correct triple format. Disables checks, conversions
         """
         hasher = hashes.Hash(algo)
         if not embed:
+
             def func(x):
                 return _extract_only_hash(x, algo)
+
         else:
+
             def func(x):
                 return x[0]
+
         for digest in sorted(map(func, key_list)):
             hasher.update(digest)
         return hasher.finalize()
@@ -172,14 +175,13 @@ class AttestationChecker(object):
 
         """  # noqa: E501
         if not embed:
-            key_list = [
-                 _extract_hash_key(x, algo) for x in key_list
-            ]
+            key_list = [_extract_hash_key(x, algo) for x in key_list]
 
-        assert \
-            not embed or \
-            len(key_list) == 0 or \
-            isinstance(key_list[0], KeyTriple)
+        assert (
+            not embed
+            or len(key_list) == 0
+            or isinstance(key_list[0], KeyTriple)
+        )
         if not attestation and algo:
             attestation = cls.calc_attestation(key_list, algo, embed=True)
         elif isinstance(attestation, str):
@@ -191,15 +193,16 @@ class AttestationChecker(object):
             key = entry[1]
             try:
                 hashalgo, signature = entry[2].split("=", 1)
-                hashalgo = getattr(hashes, hashalgo.upper())()
+                hashalgo = hashlib.new(hashalgo)
+                hashalgo = getattr(hashes, hashalgo.name.upper())()
                 key.verify(
                     base64.b64decode(signature),
                     attestation,
                     padding.PSS(
                         mgf=padding.MGF1(hashalgo),
-                        salt_length=padding.PSS.MAX_LENGTH
+                        salt_length=padding.PSS.MAX_LENGTH,
                     ),
-                    hashalgo
+                    hashalgo,
                 )
             except (InvalidSignature, ValueError):
                 errored.append(entry)
@@ -207,36 +210,44 @@ class AttestationChecker(object):
         return (attestation, errored, key_list)
 
     def get_domain_info(self, domain):
-        domain_row = self.con.execute("""
+        domain_row = self.con.execute(
+            """
             SElECT id, attestation, hash_algo FROM domain WHERE url=?
-        """, (domain,)).fetchone()
+        """,
+            (domain,),
+        ).fetchone()
         if domain_row:
             return DomainInfo(*domain_row)
         return DomainInfo(None, None, None)
 
     def add(
-        self, domain, key_list, algo, *, attestation=None, _cur=None,
+        self,
+        domain,
+        key_list,
+        algo,
+        *,
+        attestation=None,
+        _cur=None,
         embed=False
     ):
         """
-            attestation: provide attestation instead of generating it again
-            algo: hash algorithm
-            key_list:
-                string/bytes: use as hash
-                public_keys/certs: calc hash (in combination with algo)
-                pairs (hash, key): use hash
-                pairs (key, signature): calc hash
-                triples (hash, key, signature): use hash
+        attestation: provide attestation instead of generating it again
+        algo: hash algorithm
+        key_list:
+            string/bytes: use as hash
+            public_keys/certs: calc hash (in combination with algo)
+            pairs (hash, key): use hash
+            pairs (key, signature): calc hash
+            triples (hash, key, signature): use hash
         """
         # _cur is used if embedding in check
         if not embed:
-            key_list = [
-                _extract_hash_key(x, algo, not _cur) for x in key_list
-            ]
-        assert \
-            not embed or \
-            len(key_list) == 0 or \
-            isinstance(key_list[0], KeyTriple)
+            key_list = [_extract_hash_key(x, algo, not _cur) for x in key_list]
+        assert (
+            not embed
+            or len(key_list) == 0
+            or isinstance(key_list[0], KeyTriple)
+        )
         if isinstance(attestation, str):
             attestation = base64.b64decode(attestation)
         elif not attestation and algo:
@@ -246,55 +257,75 @@ class AttestationChecker(object):
         else:
             cursor = self.con.cursor()
         if attestation is None:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR IGNORE INTO domain (url) VALUES(?)
-            """, (domain, ))
+            """,
+                (domain,),
+            )
         else:
             if not attestation:
                 attestation = None
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR REPLACE INTO domain
                 (url, attestation)
                 VALUES(?, ?)
-            """, (domain, attestation))
+            """,
+                (domain, attestation),
+            )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO domain
             (url, hash_algo)
             VALUES(?, ?)
-        """, (domain, algo.name.upper()))
+        """,
+            (domain, algo.name.upper()),
+        )
 
-        domainid = self.con.execute("""
+        domainid = self.con.execute(
+            """
             SElECT id, attestation FROM domain WHERE url=?
-        """, (domain,)).fetchone()[0]
+        """,
+            (domain,),
+        ).fetchone()[0]
 
-        cursor.executemany("""
+        cursor.executemany(
+            """
             INSERT OR IGNORE INTO key (domain, hash)
             VALUES(?, ?);
-        """, zip(repeat(domainid), map(lambda x: x[0], key_list)))
+        """,
+            zip(repeat(domainid), map(lambda x: x[0], key_list)),
+        )
         self.con.commit()
         return key_list
 
     def check(
-        self, domain, key_list, algo=None, *, attestation=None, auto_add=True,
+        self,
+        domain,
+        key_list,
+        algo=None,
+        *,
+        attestation=None,
+        auto_add=True,
         embed=False
     ):
         """
-            attestation: provide attestation
-            key_list:
-                pairs (key, signature): check also signature
-                triples (hash, key, signature): check signature, recalc
-            embed: assert correct triples format, disables checks
+        attestation: provide attestation
+        key_list:
+            pairs (key, signature): check also signature
+            triples (hash, key, signature): check signature, recalc
+        embed: assert correct triples format, disables checks
         """
         assert algo or not auto_add
         if not embed:
-            key_list = [
-                _extract_hash_key(x, algo, True) for x in key_list
-            ]
-        assert \
-            not embed or \
-            len(key_list) == 0 or \
-            isinstance(key_list[0], KeyTriple)
+            key_list = [_extract_hash_key(x, algo, True) for x in key_list]
+        assert (
+            not embed
+            or len(key_list) == 0
+            or isinstance(key_list[0], KeyTriple)
+        )
         if len(key_list) == 0:
             AttestationResult.error, [], key_list
         only_hashes = set(map(lambda x: x[0], key_list))
@@ -310,22 +341,26 @@ class AttestationChecker(object):
             if result[1]:
                 return (AttestationResult.error, result[1], key_list)
 
-        domain_row = self.con.execute("""
+        domain_row = self.con.execute(
+            """
             SElECT id, attestation FROM domain WHERE url=?
-        """, (domain,)).fetchone()
+        """,
+            (domain,),
+        ).fetchone()
         if not domain_row:
-            return (
-                AttestationResult.domain_unknown, [], key_list
-            )
+            return (AttestationResult.domain_unknown, [], key_list)
         # nothing has changed, skip
         if attestation and domain_row[1] == attestation:
             return (AttestationResult.success, [], key_list)
 
         # hack lists
-        old_hashes = self.con.execute("""
+        old_hashes = self.con.execute(
+            """
             SELECT hash FROM key WHERE domain=? AND hash IN ({})
-        """.format(("?, "*len(only_hashes)).rstrip(", ")),
-            (domain_row[0], *only_hashes)
+        """.format(
+                ("?, " * len(only_hashes)).rstrip(", ")
+            ),
+            (domain_row[0], *only_hashes),
         )
         old_hashes = set(map(lambda x: x[0], old_hashes.fetchall()))
         if len(old_hashes) == 0:
@@ -335,17 +370,24 @@ class AttestationChecker(object):
         if auto_add:
             # hack lists
             _cur = self.con.cursor()
-            _cur.execute("""
+            _cur.execute(
+                """
                 DELETE FROM key WHERE domain=? AND hash NOT IN ({})
-            """.format(("?, "*len(only_hashes)).rstrip(", ")),
-                (domain_row[0], *only_hashes)
+            """.format(
+                    ("?, " * len(only_hashes)).rstrip(", ")
+                ),
+                (domain_row[0], *only_hashes),
             )
             if only_hashes.issubset(old_hashes):
                 self.con.commit()
                 return (AttestationResult.success, [], key_list)
             self.add(
-                domain, only_hashes.difference(old_hashes), algo,
-                attestation=attestation, _cur=_cur, embed=True
+                domain,
+                only_hashes.difference(old_hashes),
+                algo,
+                attestation=attestation,
+                _cur=_cur,
+                embed=True,
             )
         if only_hashes.issubset(old_hashes):
             return (AttestationResult.success, [], key_list)

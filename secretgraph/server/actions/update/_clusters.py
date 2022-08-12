@@ -67,9 +67,9 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
             net.reset_quota()
             net.reset_max_upload_size()
         cluster.net = net
+        del user
     # cleanup after scope
     del net
-    del user
 
     def cluster_save_fn():
         cluster.updateId = uuid4()

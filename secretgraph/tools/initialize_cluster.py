@@ -9,7 +9,7 @@ import argparse
 from cryptography.hazmat.primitives.asymmetric import rsa, dsa, padding, utils
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-import requests
+import httpx
 
 from ..utils.graphql import transform_payload
 
@@ -128,7 +128,7 @@ def main(argv=None):
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    session = requests.Session()
+    session = httpx.Client()
     body, files = transform_payload(serverConfigQuery_query, {})
     result = session.post(argv.url, data=body, files=files)
     if not result.ok and not argv.url.endswith("/graphql"):

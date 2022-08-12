@@ -27,8 +27,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.auth",  # required for user
-    "django.contrib.contenttypes",  # required for auth
     "django.contrib.staticfiles",  # Required for GraphiQL
     "strawberry.django",
     "strawberry_django_plus",
@@ -93,8 +91,6 @@ USE_L10N = True
 USE_TZ = True
 
 
-RATELIMIT_KEY_HASH = "sha512"
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
@@ -122,7 +118,7 @@ LOGOUT_REDIRECT_URL = "home"
 # * b"default": default parameters for request
 # why binary? Because it cannot clash with a "default" host this way
 # hierarchy: host > tld > b"default"
-SECRETGRAPH_REQUEST_KWARGS_MAP = {
+SECRETGRAPH_HTTPX_KWARGS_MAP = {
     b"default": {"verify": certifi.where(), "timeout": 3, "proxies": {}},
     # example for usage with tor (requires requests[socks])
     # ".onion": {
@@ -143,10 +139,11 @@ SECRETGRAPH_REQUEST_KWARGS_MAP = {
 SECRETGRAPH_HASH_ALGORITHMS = ["sha512"]
 # length of tokens used in file names
 SECRETGRAPH_FILETOKEN_LENGTH = 100
-SECRETGRAPH_REST_URL = "/secretgraph/"
-SECRETGRAPH_GRAPHQL_URL = "/graphql"
 
 GRAPHENE_PROTECTOR_DEPTH_LIMIT = 20
+
+
+RATELIMIT_KEY_HASH = "sha512"
 
 # for sites
 SITE_ID = 1

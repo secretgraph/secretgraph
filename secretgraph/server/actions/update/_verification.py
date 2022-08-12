@@ -65,14 +65,14 @@ async def retrieve_signatures(
 
 
 def verify_signatures(hashobjects, signatures, contents):
-    digest_dict = {
-        i.name: (
+    digest_dict = {}
+    for i in hashobjects:
+        chosen_hash_algo = getattr(hashes, i.name.upper())()
+        digest_dict[i.name] -= (
             getattr(i, "finalize", i.digest)(),
-            getattr(hashes, i.upper()),
-            utils.Prehashed(getattr(hashes, i.upper())),
+            chosen_hash_algo,
+            utils.Prehashed(chosen_hash_algo),
         )
-        for i in hashobjects
-    }
     keys = contents.annotate(
         keyHash=Subquery(
             ContentTag.objects.filter(

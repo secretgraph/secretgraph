@@ -146,7 +146,7 @@ export async function initializeCluster({
         actions: [
             { value: '{"action": "manage"}', key: manage_keyb64 },
             {
-                value: '{"action": "view", "includeTypes": ["COnfig"]}',
+                value: '{"action": "view", "includeTypes": ["Config"]}',
                 key: view_keyb64,
             },
         ],

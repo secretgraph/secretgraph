@@ -112,7 +112,9 @@ def clean_deleteRecursive(group, val):
         if hasattr(val, "value"):
             val = val.value
         if val not in DeleteRecursive.valid_values:
-            raise ValueError("Invalid value for deleteRecursive")
+            raise ValueError(
+                "Invalid value for deleteRecursive: %s (%s)" % (val, type(val))
+            )
         return val
     # set defaults
     if group == "signature":

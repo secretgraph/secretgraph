@@ -208,7 +208,9 @@ class Content(FlexidModel):
     # doesn't appear in non-admin searches
     hidden: bool = models.BooleanField(blank=True, default=False)
 
-    nonce: str = models.CharField(max_length=255)
+    nonce: str = models.CharField(
+        max_length=255, null=False, blank=True, default=""
+    )
     # can decrypt = correct key
     file: File = models.FileField(upload_to=get_content_file_path)
     # unique hash for content, e.g. generated from some tags
@@ -321,6 +323,8 @@ class Content(FlexidModel):
                         % self.state
                     }
                 )
+        if self.state not in constants.public_states and not self.nonce:
+            raise ValidationError({"nonce": "nonce empty"})
 
     def __repr__(self) -> str:
         return "<Content: type(%s), flexid(%s)>" % (self.type, self.flexid)

@@ -89,7 +89,6 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
     return (
         hashes,
         {
-            "nonce": b"",
             "value": key_obj["publicKey"],
             "type": "PublicKey",
             "state": publicState,
@@ -139,7 +138,11 @@ def _update_or_create_content_or_key(
     # when changed
     old_cluster = None
     if objdata.get("cluster"):
-        if content.cluster and objdata.get("cluster") != content.cluster:
+        if (
+            not create
+            and content.cluster
+            and objdata.get("cluster") != content.cluster
+        ):
             old_cluster = content.cluster
         content.cluster = objdata["cluster"]
 
@@ -203,7 +206,7 @@ def _update_or_create_content_or_key(
     # if create checked in parent function
     if objdata.get("value"):
         # normalize nonce and check constraints
-        if content.state == "public":
+        if content.state in constants.public_states:
             objdata["nonce"] = ""
             checknonce = b""
         elif isinstance(objdata["nonce"], bytes):
