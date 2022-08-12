@@ -240,9 +240,17 @@ class Command(BaseCommand):
                         cluster.flexid_cached,
                         b64encode(view_key).decode("ascii"),
                     ),
-                    "key": "{}:{}".format(
-                        publicKey_hash, b64encode(privkey_key).decode("ascii")
-                    ),
-                }
+                    "key": [
+                        "{}:{}".format(
+                            publicKey_hash,
+                            b64encode(privkey_key).decode("ascii"),
+                        ),
+                        "{}:{}".format(
+                            content.flexid_cached,
+                            b64encode(config_shared_key).decode("ascii"),
+                        ),
+                    ],
+                },
+                doseq=True,
             )
             print("{}?{}".format(content.link, search))

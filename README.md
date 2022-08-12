@@ -215,6 +215,8 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   fix issue that no private key is available anymore with limited view
+    -   fix create_cluster
 -   remove/handle orphan nets (no cluster assigned)
 -   dataclass for returns instead of simple dicts to have typing
 -   document net resource tracking, ClusterGroups
