@@ -2,7 +2,7 @@ import hashlib
 import json
 import os
 from base64 import b64decode, b64encode
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urljoin
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
@@ -33,6 +33,7 @@ class Command(BaseCommand):
         )
         parser.add_argument("--net", nargs="?", default=None)
         parser.add_argument("--user", nargs="?", default=None)
+        parser.add_argument("domain", nargs="?", default="localhost:8000")
 
     def handle(self, **options):
         if not options["key"]:
@@ -85,7 +86,7 @@ class Command(BaseCommand):
         )
         publicKey_hash = hash_object(publicKey_bytes)
 
-        url = reverse("graphql-plain")
+        url = urljoin(options["domain"], reverse("graphql-plain"))
         request = RequestFactory().get(url)
         clusterfn = create_cluster_fn(
             request,
@@ -261,4 +262,4 @@ class Command(BaseCommand):
                 },
                 doseq=True,
             )
-            print("{}?{}".format(content.link, search))
+            print("{}?{}".format(urljoin(url, content.link), search))
