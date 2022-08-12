@@ -28,6 +28,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     "django.contrib.staticfiles",  # Required for GraphiQL
+    "channels",
     "strawberry.django",
     "strawberry_django_plus",
 ]
@@ -56,6 +57,7 @@ TEMPLATES = [
         },
     },
 ]
+ASGI_APPLICATION = "secretgraph.asgi.application"
 WSGI_APPLICATION = "secretgraph.wsgi.application"
 
 # Password validation

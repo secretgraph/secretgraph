@@ -141,12 +141,20 @@ export async function initializeCluster({
     )) as Required<CryptoKeyPair>
     const manage_keyb64 = Buffer.from(manage_key).toString('base64')
     const view_keyb64 = Buffer.from(manage_key).toString('base64')
+    const digestPublicKey = await hashObject(publicKey, hashAlgorithm)
+    const digestManageKey = await hashObject(manage_key, hashAlgorithm)
+    const digestViewKey = await hashObject(view_key, hashAlgorithm)
     const clusterResponse = await createCluster({
         client,
         actions: [
             { value: '{"action": "manage"}', key: manage_keyb64 },
             {
-                value: '{"action": "view", "includeTypes": ["Config"]}',
+                value: JSON.stringify({
+                    action: 'view',
+                    //for safety reasons include also PublicKey
+                    includeTypes: ['PublicKey', 'PrivateKey', 'Config'],
+                    includeTags: [`key_hash=${digestPublicKey}`],
+                }),
                 key: view_keyb64,
             },
         ],
@@ -160,9 +168,6 @@ export async function initializeCluster({
         ...options,
     })
     const clusterResult = clusterResponse.data.updateOrCreateCluster
-    const digestPublicKey = await hashObject(publicKey, hashAlgorithm)
-    const digestManageKey = await hashObject(manage_key, hashAlgorithm)
-    const digestViewKey = await hashObject(view_key, hashAlgorithm)
     config.configCluster = clusterResult.cluster['id']
     config.hosts[config['baseUrl']].clusters[clusterResult.cluster['id']] = {
         hashes: {

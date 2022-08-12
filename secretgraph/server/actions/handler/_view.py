@@ -13,36 +13,44 @@ class ViewHandlers:
         action.delete()
 
         if issubclass(sender, Content):
-            excl_filters = Q(type="PrivateKey")
+            excl_filters_type = Q(type="PrivateKey")
             if action_dict["excludeTypes"]:
-                excl_filters |= Q(type__in=action_dict["excludeTypes"])
+                excl_filters_type |= Q(type__in=action_dict["excludeTypes"])
+            excl_filters_tag = Q()
             for i in action_dict["excludeTags"]:
                 if i.startswith("id="):
-                    excl_filters |= Q(flexid_cached=i[3:])
+                    excl_filters_tag |= Q(flexid_cached=i[3:])
                 elif i.startswith("=id="):
-                    excl_filters |= Q(flexid_cached=i[4:])
+                    excl_filters_tag |= Q(flexid_cached=i[4:])
                 elif i.startswith("="):
-                    excl_filters |= Q(tags__tag=i[1:])
+                    excl_filters_tag |= Q(tags__tag=i[1:])
                 else:
-                    excl_filters |= Q(tags__tag__startswith=i)
+                    excl_filters_tag |= Q(tags__tag__startswith=i)
 
-            incl_filters = Q()
+            incl_filters_type = Q()
             if action_dict["includeTypes"]:
-                incl_filters |= Q(type__in=action_dict["includeTypes"])
+                incl_filters_type |= Q(type__in=action_dict["includeTypes"])
+            incl_filters_state = Q()
             if action_dict["states"]:
-                incl_filters |= Q(state__in=action_dict["states"])
+                incl_filters_state |= Q(state__in=action_dict["states"])
+
+            incl_filters_tag = Q()
             for i in action_dict["includeTags"]:
                 if i.startswith("id="):
-                    incl_filters |= Q(flexid_cached=i[3:])
+                    incl_filters_tag |= Q(flexid_cached=i[3:])
                 elif i.startswith("=id="):
-                    incl_filters |= Q(flexid_cached=i[4:])
+                    incl_filters_tag |= Q(flexid_cached=i[4:])
                 elif i.startswith("="):
-                    incl_filters |= Q(tags__tag=i[1:])
+                    incl_filters_tag |= Q(tags__tag=i[1:])
                 else:
-                    incl_filters |= Q(tags__tag__startswith=i)
+                    incl_filters_tag |= Q(tags__tag__startswith=i)
 
             return {
-                "filters": ~excl_filters & incl_filters,
+                "filters": ~excl_filters_type
+                & ~excl_filters_tag
+                & incl_filters_state
+                & incl_filters_tag
+                & incl_filters_type,
                 "accesslevel": 3,
                 "trustedKeys": action_dict.get("trustedKeys", []),
             }
@@ -63,6 +71,10 @@ class ViewHandlers:
             else "fetch",
             "maxLifetime": td(hours=1),
         }
+        if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
+            raise ValueError(
+                "Either includeTypes or excludeTypes should be specified"
+            )
         if content:
             # ignore tags if specified for a content
             result["excludeTags"] = []
@@ -92,36 +104,44 @@ class ViewHandlers:
             return None
 
         if issubclass(sender, Content):
-            excl_filters = Q(type="PrivateKey")
+            excl_filters_type = Q()
             if action_dict["excludeTypes"]:
-                excl_filters |= Q(type__in=action_dict["excludeTypes"])
+                excl_filters_type |= Q(type__in=action_dict["excludeTypes"])
+            excl_filters_tag = Q()
             for i in action_dict["excludeTags"]:
                 if i.startswith("id="):
-                    excl_filters |= Q(flexid_cached=i[3:])
+                    excl_filters_tag |= Q(flexid_cached=i[3:])
                 elif i.startswith("=id="):
-                    excl_filters |= Q(flexid_cached=i[4:])
+                    excl_filters_tag |= Q(flexid_cached=i[4:])
                 elif i.startswith("="):
-                    excl_filters |= Q(tags__tag=i[1:])
+                    excl_filters_tag |= Q(tags__tag=i[1:])
                 else:
-                    excl_filters |= Q(tags__tag__startswith=i)
+                    excl_filters_tag |= Q(tags__tag__startswith=i)
 
-            incl_filters = Q()
+            incl_filters_type = Q()
             if action_dict["includeTypes"]:
-                incl_filters |= Q(type__in=action_dict["includeTypes"])
+                incl_filters_type |= Q(type__in=action_dict["includeTypes"])
+            incl_filters_state = Q()
             if action_dict["states"]:
-                incl_filters |= Q(state__in=action_dict["states"])
+                incl_filters_state |= Q(state__in=action_dict["states"])
+
+            incl_filters_tag = Q()
             for i in action_dict["includeTags"]:
                 if i.startswith("id="):
-                    incl_filters |= Q(flexid_cached=i[3:])
+                    incl_filters_tag |= Q(flexid_cached=i[3:])
                 elif i.startswith("=id="):
-                    incl_filters |= Q(flexid_cached=i[4:])
+                    incl_filters_tag |= Q(flexid_cached=i[4:])
                 elif i.startswith("="):
-                    incl_filters |= Q(tags__tag=i[1:])
+                    incl_filters_tag |= Q(tags__tag=i[1:])
                 else:
-                    incl_filters |= Q(tags__tag__startswith=i)
+                    incl_filters_tag |= Q(tags__tag__startswith=i)
 
             return {
-                "filters": ~excl_filters & incl_filters,
+                "filters": ~excl_filters_type
+                & ~excl_filters_tag
+                & incl_filters_state
+                & incl_filters_tag
+                & incl_filters_type,
                 "accesslevel": ownaccesslevel,
                 "trustedKeys": action_dict.get("trustedKeys", []),
             }
@@ -141,6 +161,10 @@ class ViewHandlers:
             if not action_dict.get("fetch") or not content
             else "fetch",
         }
+        if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
+            raise ValueError(
+                "Either includeTypes or excludeTypes should be specified"
+            )
         if content:
             # ignore tags if specified for a content
             result["excludeTags"] = []

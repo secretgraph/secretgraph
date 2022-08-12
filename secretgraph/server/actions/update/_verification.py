@@ -6,12 +6,13 @@ import logging
 import httpx
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, utils
+from django.conf import settings
 from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Substr
+from django.utils.module_loading import import_string
 
-from ....asgi import application
-from ...utils.conf import get_httpx_params
 from ...models import ContentTag
+from ...utils.conf import get_httpx_params
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ async def retrieve_signatures(
     if session:
         s = session
     elif inline_domain:
-        s = httpx.AsyncClient(app=application)
+        s = httpx.AsyncClient(app=import_string(settings.ASGI_APPLICATION))
     else:
         s = httpx.AsyncClient()
     try:

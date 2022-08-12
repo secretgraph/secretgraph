@@ -97,8 +97,16 @@ class Command(BaseCommand):
                         "key": manage_key,
                     },
                     {
-                        "value": (
-                            '{"action": "view",' '"includeTypes": ["Config"]}'
+                        "value": json.dumps(
+                            {
+                                "action": "view",
+                                "includeTypes": [
+                                    "PublicKey",  # for safety reasons
+                                    "PrivateKey",
+                                    "Config",
+                                ],
+                                "includeTags": [f"key_hash={publicKey_hash}"],
+                            }
                         ),
                         "key": view_key,
                     },

@@ -10,8 +10,9 @@ from asgiref.sync import sync_to_async
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
+from django.utils.module_loading import import_string
+from django.conf import settings
 
-from ....asgi import application
 from ....constants import TransferResult
 from ...utils.conf import get_httpx_params
 from ...utils.misc import AsyncAtomic
@@ -115,7 +116,7 @@ async def transfer_value(
     if session:
         s = session
     elif inline_domain:
-        s = httpx.AsyncClient(app=application)
+        s = httpx.AsyncClient(app=import_string(settings.ASGI_APPLICATION))
     else:
         s = httpx.AsyncClient()
     signatures = None
