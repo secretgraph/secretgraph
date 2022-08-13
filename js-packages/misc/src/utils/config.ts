@@ -33,7 +33,7 @@ export function cleanConfig(
         !(config.certificates instanceof Object) ||
         !config.configCluster
     ) {
-        console.error(config)
+        console.error('Errors in config', config)
         return null
     }
     for (const [key, val] of Object.entries(config.tokens)) {

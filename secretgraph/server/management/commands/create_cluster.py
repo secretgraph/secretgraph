@@ -21,6 +21,20 @@ from ...utils.misc import hash_object
 from .... import constants
 
 
+def _gen_key_vars_nohash(inp: bytes | str):
+    if isinstance(inp, str):
+        return (
+            b64decode(inp),
+            inp,
+        )
+    return inp, b64encode(inp).decode("ascii")
+
+
+def _gen_key_vars(inp: bytes | str):
+    ret = _gen_key_vars_nohash(inp)
+    return *ret, hash_object(ret[0])
+
+
 class Command(BaseCommand):
     help = "Create cluster"
 
@@ -67,24 +81,31 @@ class Command(BaseCommand):
         hash_algo = getattr(hashes, hash_algo_name.upper())()
         nonce_config = os.urandom(13)
         nonce_privkey = os.urandom(13)
-        view_key = b64decode(options["key"])
-        manage_key = os.urandom(32)
-        privkey_key = os.urandom(32)
-        config_shared_key = os.urandom(32)
+        view_key, view_key_b64, view_key_hash = _gen_key_vars(options["key"])
+        manage_key, manage_key_b64, manage_key_hash = _gen_key_vars(
+            os.urandom(32)
+        )
+        privkey_key, privkey_key_b64 = _gen_key_vars_nohash(os.urandom(32))
+        config_shared_key, config_shared_key_b64 = _gen_key_vars_nohash(
+            os.urandom(32)
+        )
         privateKey = rsa.generate_private_key(
             public_exponent=65537, key_size=options["bits"]
         )
-        privateKey_bytes = privateKey.private_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
+        privateKey_bytes, privateKey_b64 = _gen_key_vars_nohash(
+            privateKey.private_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
         )
         publicKey = privateKey.public_key()
-        publicKey_bytes = publicKey.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        publicKey_bytes, publicKey_b64, publicKey_hash = _gen_key_vars(
+            publicKey.public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
         )
-        publicKey_hash = hash_object(publicKey_bytes)
 
         url = urljoin(options["domain"], reverse("graphql-plain"))
         request = RequestFactory().get(url)
@@ -143,41 +164,47 @@ class Command(BaseCommand):
             if not net.id:
                 net.save()
             cluster = clusterfn()["cluster"]
+            configEncoded = json.dumps(
+                {
+                    "baseUrl": url,
+                    "configCluster": cluster.flexid_cached,
+                    "certificates": {
+                        publicKey_hash: {
+                            "data": privateKey_b64,
+                            "note": "initial certificate",
+                        }
+                    },
+                    "tokens": {
+                        view_key_hash: {
+                            "data": view_key_b64,
+                            "system": True,
+                            "note": "config token",
+                        },
+                        manage_key_hash: {
+                            "data": manage_key_b64,
+                            "system": False,
+                            "note": "initial token",
+                        },
+                    },
+                    "hosts": {
+                        url: {
+                            "clusters": {
+                                cluster.flexid_cached: {
+                                    "hashes": {
+                                        view_key_hash: ["view"],
+                                        manage_key_hash: ["manage"],
+                                        publicKey_hash: [],
+                                    }
+                                }
+                            },
+                            "contents": {},
+                        }
+                    },
+                }
+            )
             ecnryptedContent = AESGCM(config_shared_key).encrypt(
                 nonce_config,
-                json.dumps(
-                    {
-                        "baseUrl": url,
-                        "configCluster": cluster.flexid_cached,
-                        "certificates": {
-                            publicKey_hash: b64encode(privateKey_bytes).decode(
-                                "ascii"
-                            )
-                        },
-                        "tokens": {
-                            hash_object(view_key): {
-                                "data": b64encode(view_key).decode("ascii"),
-                                "system": True,
-                                "note": "config token",
-                            },
-                            hash_object(manage_key): {
-                                "data": b64encode(manage_key).decode("ascii"),
-                                "system": False,
-                                "note": "initial token",
-                            },
-                        },
-                        "hosts": {
-                            url: {
-                                "clusters": {
-                                    hash_object(view_key): ["view"],
-                                    hash_object(manage_key): ["manage"],
-                                    publicKey_hash: [],
-                                },
-                                "contents": {},
-                            }
-                        },
-                    }
-                ).encode("utf8"),
+                configEncoded.encode("utf8"),
                 None,
             )
             content = create_content_fn(
@@ -247,16 +274,12 @@ class Command(BaseCommand):
                 {
                     "token": "{}:{}".format(
                         cluster.flexid_cached,
-                        b64encode(view_key).decode("ascii"),
+                        view_key_b64,
                     ),
                     "key": [
                         "{}:{}".format(
                             publicKey_hash,
-                            b64encode(privkey_key).decode("ascii"),
-                        ),
-                        "{}:{}".format(
-                            content.flexid_cached,
-                            b64encode(config_shared_key).decode("ascii"),
+                            privkey_key_b64,
                         ),
                     ],
                 },

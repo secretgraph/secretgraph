@@ -3,9 +3,8 @@ declare var gettext: any
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
-const loading =  React.lazy(
-    () =>
-        import(/*  webpackChunkName: 'loading-types' */ './loading')
+const Loading = React.lazy(
+    () => import(/*  webpackChunkName: 'loading-types' */ './loading')
 )
 
 export const elements = new Map<string, Interfaces.ElementEntryInterface>([
@@ -81,7 +80,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('Loading'),
             ignore: true,
-            component:loading
+            component: Loading,
         },
     ],
     [
@@ -89,7 +88,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('Loading'),
             ignore: true,
-            component:loading
+            component: Loading,
         },
     ],
 ])
