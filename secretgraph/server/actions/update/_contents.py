@@ -155,10 +155,8 @@ def _update_or_create_content_or_key(
     if net:
         if isinstance(net, Net):
             content.net = net
-        elif net == content.cluster.flexid_cached or content.cluster.flexid:
-            content.net = content.cluster.net
         else:
-            # first use simple query checking if
+            # first use simple query checking if in additionalNets
             if objdata.get("additionalNets"):
                 content.net = Net.objects.filter(
                     Q(clusters__flexid=net) | Q(clusters__flexid_cached=net),
@@ -167,6 +165,8 @@ def _update_or_create_content_or_key(
             else:
                 content.net = None
             # content.net is None or result of first()
+            # then check if user has permission to use the selected net
+            # there is no shortcut possible (why, because of update action)
             if not content.net:
                 net_result = ids_to_results(
                     request,
@@ -176,7 +176,7 @@ def _update_or_create_content_or_key(
                     authset=authset,
                 )["Cluster"]
                 content.net = net_result["objects"].get().net
-    elif create:
+    if create and not content.net:
         content.net = content.cluster.net
     del net
 
