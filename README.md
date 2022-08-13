@@ -215,8 +215,8 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   fix issue that no private key is available anymore with limited view
-    -   fix create_cluster
+-   revert to asgi as soon as staticfiles problems are solved
+-   net: resource tracking of references
 -   remove/handle orphan nets (no cluster assigned)
 -   dataclass for returns instead of simple dicts to have typing
 -   document net resource tracking, ClusterGroups
@@ -225,7 +225,6 @@ idea: seperate actions with different concerns.
 -   X-Key response: shared key of private key
 -   port settings importer to formik
 -   hash algo should be part of hashes hash?????
--   decrypt import urls
 -   implement settings/config
 -   too many queries when selecting node (sidebar is also updated, because updateId?)
 -   modernize ActionDialog, redesign, multi column?
