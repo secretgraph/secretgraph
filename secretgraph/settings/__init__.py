@@ -23,6 +23,8 @@ LAST_CONFIG_RELOAD_ID = str(time.time())
 
 ALLOWED_HOSTS = []
 
+FIXTURE_DIRS = ["tests/fixtures/"]
+
 
 # Application definition
 

@@ -3,3 +3,4 @@
 !__init__.py
 !debug.py
 !withclient.py
+!docker.py

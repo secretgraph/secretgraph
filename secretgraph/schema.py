@@ -5,17 +5,18 @@ from strawberry_django_plus import relay
 
 from .server.schema import Query as ServerQuery
 from .server.schema import Mutation as ServerMutation
-from .user.schema import Query as UserQuery
-from .user.schema import Mutation as UserMutation
+
+# from .user.schema import Query as UserQuery
+# from .user.schema import Mutation as UserMutation
 
 
 @strawberry.type
-class Query(ServerQuery, UserQuery):
+class Query(ServerQuery):
     node: relay.Node = relay.node()
 
 
 @strawberry.type
-class Mutation(ServerMutation, UserMutation):
+class Mutation(ServerMutation):
     pass
 
 

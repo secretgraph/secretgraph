@@ -12,19 +12,14 @@ DATABASES = {
     }
 }
 
-FIXTURE_DIRS = ["tests/fixtures/"]
-
 SECRET_KEY = "CHANGEME"
 
 
 INSTALLED_APPS += [  # noqa F405
     "django.contrib.auth",  # required for user
     "django.contrib.contenttypes",  # required for auth
-    "secretgraph.user",
     "secretgraph.server",
 ]
-
-AUTH_USER_MODEL = "secretgraph_user.QuotaUser"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
