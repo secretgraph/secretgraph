@@ -34,7 +34,7 @@ class SideEffectsHandlers:
         return None
 
     @staticmethod
-    def clean_inject(action_dict, request, content, authset):
+    def clean_inject(action_dict, request, content, authset, admin):
         result = {
             "id": content.id if content and content.id else None,
             "injectedTags": [],
@@ -62,6 +62,7 @@ class SideEffectsHandlers:
                 request=request,
                 fields=("flexid", "id"),
                 authset=authset,
+                admin=admin,
             ):
                 deleteRecursive = references[_flexid].get(
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
@@ -123,7 +124,7 @@ class SideEffectsHandlers:
         return None
 
     @staticmethod
-    def clean_storedUpdate(action_dict, request, content, authset):
+    def clean_storedUpdate(action_dict, request, content, authset, admin):
         if content:
             raise ValueError("storedUpdate cannot be used as contentaction")
         now_plus_x = timezone.now() + td(minutes=20)
@@ -154,6 +155,7 @@ class SideEffectsHandlers:
                     check_field="keyHash" if type_name == "Action" else None,
                     authset=authset,
                     only_first_field=True,
+                    admin=admin,
                 )
             )
 
@@ -192,6 +194,7 @@ class SideEffectsHandlers:
                     ("id", "id") if type_name == "Action" else ("flexid", "id")
                 ),
                 authset=authset,
+                admin=admin,
             ):
                 if _id in _del_sets[type_name]:
                     continue

@@ -63,7 +63,7 @@ class ViewHandlers:
         return None
 
     @staticmethod
-    def clean_auth(action_dict, request, content, authset):
+    def clean_auth(action_dict, request, content, authset, admin):
         result = {
             "action": "auth",
             "contentActionGroup": "view"
@@ -154,7 +154,7 @@ class ViewHandlers:
         return None
 
     @staticmethod
-    def clean_view(action_dict, request, content, authset):
+    def clean_view(action_dict, request, content, authset, admin):
         result = {
             "action": "view",
             "contentActionGroup": "view"

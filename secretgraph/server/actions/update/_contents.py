@@ -396,6 +396,7 @@ def _update_or_create_content_or_key(
 
 
 def create_key_fn(request, objdata, authset=None):
+    """creates or updates public key, creates private key if specified"""
     key_obj = objdata.get("key")
     if not key_obj:
         raise ValueError("Requires key")

@@ -16,7 +16,7 @@ from ...actions.handler import ActionHandler
 from ...models import Action, Content, Cluster, ContentAction
 
 
-def manage_actions_fn(request, obj, actionlist, authset=None):
+def manage_actions_fn(request, obj, actionlist, authset=None, admin=False):
     add_actions = []
     modify_actions = {}
     delete_actions = set()
@@ -31,13 +31,18 @@ def manage_actions_fn(request, obj, actionlist, authset=None):
     else:
         raise ValueError("Invalid type")
 
-    result = (
-        retrieve_allowed_objects(
-            request, cluster.actions.all(), scope="manage", authset=authset
-        )
-        if cluster.id
-        else {"objects": Action.objects.none()}
+    allowed_and_existing_actions = (
+        cluster.actions.all() if cluster.id else Action.objects.none()
     )
+    if not admin and cluster.id:
+        allowed_and_existing_actions = (
+            retrieve_allowed_objects(
+                request,
+                allowed_and_existing_actions,
+                scope="manage",
+                authset=authset,
+            )
+        )["objects"]
     for action in actionlist:
         # if already decoded by e.g. graphql
         if action["value"] == "delete":
@@ -79,12 +84,12 @@ def manage_actions_fn(request, obj, actionlist, authset=None):
         existing = action.get("existingHash")
         if existing:
             if existing.isdecimal():
-                actionObjs = result["objects"].filter(
+                actionObjs = allowed_and_existing_actions.filter(
                     Q(id=int(action["existingHash"]))
                     | Q(keyHash=action["existingHash"])
                 )
             else:
-                actionObjs = result["objects"].filter(
+                actionObjs = allowed_and_existing_actions.filter(
                     keyHash=action["existingHash"]
                 )
             if not actionObjs.exists():
@@ -140,7 +145,7 @@ def manage_actions_fn(request, obj, actionlist, authset=None):
         with context:
             if not create and delete_q:
                 # delete old actions of obj, if allowed to
-                actions = result["objects"].filter(delete_q)
+                actions = allowed_and_existing_actions.filter(delete_q)
                 if content:
                     # recursive deletion
                     ContentAction.objects.filter(

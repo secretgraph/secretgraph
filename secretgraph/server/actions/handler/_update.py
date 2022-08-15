@@ -57,7 +57,7 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def clean_delete(action_dict, request, content, authset):
+    def clean_delete(action_dict, request, content, authset, admin):
         result = {"action": "delete", "contentActionGroup": "delete"}
         if content:
             # ignore tags if specified for a content
@@ -165,7 +165,7 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def clean_update(action_dict, request, content, authset):
+    def clean_update(action_dict, request, content, authset, admin):
         result = {
             "action": "update",
             "contentActionGroup": "update",
@@ -217,6 +217,7 @@ class UpdateHandlers:
                 scope="create",
                 fields=("id",),
                 authset=authset,
+                admin=admin,
             )
             action_dict["nets"] = Net.objects.filter(
                 clusters__id__in=clusters
@@ -276,7 +277,7 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def _clean_create_or_push(action_dict, request, content, authset):
+    def _clean_create_or_push(action_dict, request, content, authset, admin):
         result = {
             "id": content.id if content and content.id else None,
             "injectedTags": [],
@@ -312,6 +313,7 @@ class UpdateHandlers:
                 scope="create",
                 fields=("id",),
                 authset=authset,
+                admin=admin,
             )
             action_dict["nets"] = Net.objects.filter(
                 clusters__id__in=clusters
@@ -328,6 +330,7 @@ class UpdateHandlers:
                 request,
                 fields=("flexid", "id"),
                 authset=authset,
+                admin=admin,
             ):
                 deleteRecursive = references[_flexid].get(
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
@@ -352,11 +355,11 @@ class UpdateHandlers:
         return result
 
     @classmethod
-    def clean_create(cls, action_dict, request, content, authset):
+    def clean_create(cls, action_dict, request, content, authset, admin):
         if content:
             raise ValueError("create invalid for content")
         result = cls._clean_create_or_push(
-            action_dict, request, content, authset
+            action_dict, request, content=content, authset=authset, admin=admin
         )
         result["action"] = "create"
         return result
@@ -409,11 +412,11 @@ class UpdateHandlers:
         return None
 
     @classmethod
-    def clean_push(cls, action_dict, request, content, authset):
+    def clean_push(cls, action_dict, request, content, authset, admin):
         if not content:
             raise ValueError("push invalid for content")
         result = cls._clean_create_or_push(
-            action_dict, request, content, authset
+            action_dict, request, content=content, authset=authset, admin=admin
         )
         result["action"] = "push"
         return result
@@ -436,7 +439,7 @@ class UpdateHandlers:
         }
 
     @staticmethod
-    def clean_manage(action_dict, request, content, authset):
+    def clean_manage(action_dict, request, content, authset, admin):
         from ...utils.auth import retrieve_allowed_objects
 
         if content:
@@ -455,6 +458,7 @@ class UpdateHandlers:
                 scope="create",
                 fields=("id",),
                 authset=authset,
+                admin=admin,
             )
             action_dict["nets"] = Net.objects.filter(
                 clusters__id__in=clusters
@@ -475,7 +479,7 @@ class UpdateHandlers:
                     flexid__in=result["exclude"][type_name]
                 ),
                 scope="manage",
-                authset=authset,
+                authset=[] if admin else authset,
             )
             s = set(r["objects"].values_list("id", flat=True))
             # now add exclude infos of authset

@@ -12,10 +12,12 @@ class ActionHandler(SideEffectsHandlers, UpdateHandlers, ViewHandlers):
         )
 
     @classmethod
-    def clean_action(cls, action_dict, /, request, authset, content=None):
+    def clean_action(
+        cls, action_dict, /, request, authset, content=None, admin=False
+    ):
         action = action_dict["action"]
         result = getattr(cls, "clean_%s" % action)(
-            action_dict, request, content, authset
+            action_dict, request, content=content, authset=authset, admin=admin
         )
         assert result["action"] == action
         return result

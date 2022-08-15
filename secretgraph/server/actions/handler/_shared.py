@@ -12,6 +12,7 @@ def only_owned_helper(
     scope="manage",
     authset=None,
     only_first_field=False,
+    admin=False,
 ):
     from ...utils.auth import retrieve_allowed_objects
 
@@ -24,6 +25,8 @@ def only_owned_helper(
     fields = filter(lambda x: hasattr(klass, x))
     if only_first_field:
         fields = list(fields)[:1]
+    if admin:
+        return klass.objects.filter(q).values_list(*fields, flat=True)
     return retrieve_allowed_objects(
         request,
         klass.objects.filter(q),
