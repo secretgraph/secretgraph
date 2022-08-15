@@ -3,6 +3,9 @@
 .github
 __pycache__
 node_modules
+webpack_bundles
 media
 static
 db.sqlite3
+dist
+secretgraph.egg-info

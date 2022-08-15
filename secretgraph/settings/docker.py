@@ -33,6 +33,4 @@ SECRETGRAPH_ALLOW_REGISTER = (
     os.environ.get("ALLOW_REGISTER", "false").lower() == "true"
 )
 
-
-STATIC_ROOT = os.path.join(DOCKER_VOLUME_DIR, "static/")
 MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")

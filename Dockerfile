@@ -1,11 +1,14 @@
 FROM python:3
-ENV PYTHONUNBUFFERED 1
-ENV DJANGO_SETTINGS secretgraph.settings.docker
+ENV PYTHONUNBUFFERED=1 DJANGO_SETTINGS_MODULE=secretgraph.settings.docker
 RUN useradd -Mr -G www-data secretgraph
-ADD . /app
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+RUN mkdir -p /var/secretgraph && chown secretgraph:secretgraph /var/secretgraph
+RUN apt-get install -y nodejs && apt-get clean
+COPY . /app
 WORKDIR /app
-RUN apt-get update && apt-get install nodejs npm curl -y
-RUN npm install
-RUN pip install . hypercorn[h3]
-RUN npm run build
-CMD ["./tools/start.sh"]
+RUN mkdir -p /app/static && chown -R secretgraph:www-data /app/static
+RUN python -m pip install --no-cache .[server] hypercorn[h3] && python -m pip uninstall -y secretgraph
+RUN npm install && npm run build
+RUN python ./manage.py collectstatic
+EXPOSE 8000
+CMD ["./tools/start_docker.sh"]
