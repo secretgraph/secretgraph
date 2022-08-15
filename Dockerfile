@@ -1,5 +1,6 @@
 FROM python:3
 ENV PYTHONUNBUFFERED 1
+ENV DJANGO_SETTINGS secretgraph.settings.docker
 RUN useradd -Mr -G www-data secretgraph
 ADD . /app
 WORKDIR /app
