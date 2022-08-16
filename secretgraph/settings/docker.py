@@ -34,3 +34,4 @@ SECRETGRAPH_ALLOW_REGISTER = (
 )
 
 MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost:8001").split(",")

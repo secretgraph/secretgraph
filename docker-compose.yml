@@ -1,0 +1,26 @@
+version: 3.9
+services:
+    nginx:
+        image: docker.io/nginx:stable-alpine
+        volumes:
+            - ./nginx-docker.conf.template:/etc/nginx/templates/default.conf.template:ro
+            - static_files:/static:ro
+            - secretgraph:/vol:ro
+        ports:
+            - '8000:8000'
+        links:
+            - 'secretgraph:secretgraph'
+    secretgraph:
+        build:
+            context: .
+        volumes:
+            - secretgraph:/var/secretgraph
+            - static_files:/app/static
+        environment:
+            USER_GROUP: '101'
+            SECRET_KEY: 'changeme'
+            ALLOWED_HOSTS: 'localhost:8000,localhost:8001'
+
+volumes:
+    static_files:
+    secretgraph:
