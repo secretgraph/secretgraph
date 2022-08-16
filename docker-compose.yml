@@ -5,7 +5,7 @@ services:
         volumes:
             - ./nginx-docker.conf.template:/etc/nginx/templates/default.conf.template:ro
             - static_files:/static:ro
-            - secretgraph:/vol:ro
+            - secretgraph:/vol
         ports:
             - '8000:8000'
         links:
@@ -16,10 +16,11 @@ services:
         volumes:
             - secretgraph:/var/secretgraph
             - static_files:/app/static
+            - ./tools:/app/tools
         environment:
             USER_GROUP: '101'
             SECRET_KEY: 'changeme'
-            ALLOWED_HOSTS: 'localhost:8000,localhost:8001'
+            ALLOWED_HOSTS: 'localhost'
 
 volumes:
     static_files:
