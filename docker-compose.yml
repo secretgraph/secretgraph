@@ -8,8 +8,8 @@ services:
             - secretgraph:/vol
         ports:
             - '8000:8000'
-        links:
-            - 'secretgraph:secretgraph'
+        depends_on:
+            - secretgraph
     secretgraph:
         build:
             context: .
