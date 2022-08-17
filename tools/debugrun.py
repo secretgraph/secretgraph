@@ -3,6 +3,7 @@ import os
 import subprocess
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+os.environ["DEBUG"] = "true"
 
 if __name__ == "__main__":
     with subprocess.Popen(["npm", "run", "serve:dev"], cwd=BASE_DIR) as npm:

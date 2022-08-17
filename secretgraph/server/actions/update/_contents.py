@@ -118,9 +118,10 @@ def _update_or_create_content_or_key(
     request, content, objdata, authset, is_key, required_keys
 ):
     create = not content.id
-    size_diff_value = 0
-    size_diff_tags = 0
-    size_refs = 0
+    size_new = 0
+    size_old = 0
+    if not create:
+        size_old = content.size
 
     if isinstance(objdata.get("cluster"), str):
         objdata["cluster"] = (
@@ -152,6 +153,9 @@ def _update_or_create_content_or_key(
     # set net on non-initializated contents
     # either by explicit cluster id of net or implicit of the current cluster
     net = objdata.get("net")
+    old_net = None
+    if not create:
+        old_net = content.net
     if net:
         if isinstance(net, Net):
             content.net = net
@@ -178,6 +182,8 @@ def _update_or_create_content_or_key(
                 content.net = net_result["objects"].get().net
     if create and not content.net_id:
         content.net = content.cluster.net
+    if old_net == content.net:
+        old_net = None
     del net
 
     if create:
@@ -194,12 +200,15 @@ def _update_or_create_content_or_key(
     tags_dict = None
     key_hashes_tags = set()
     if objdata.get("tags") is not None:
-        tags_dict, key_hashes_tags, size_diff_tags = transform_tags(
-            content.type, objdata.get("tags")
+        tags_dict, key_hashes_tags, size_new_tags = transform_tags(
+            content.type,
+            objdata.get("tags"),
         )
+        size_new += size_new_tags
     elif create:
         raise ValueError("Content tags are missing")
     else:
+        size_new += content.size_tags
         if objdata.get("references") is not None:
             key_hashes_tags = set()
 
@@ -245,26 +254,33 @@ def _update_or_create_content_or_key(
         if content.net.max_upload_size is not None:
             if content.net.max_upload_size < objdata["value"].size:
                 raise ValueError("file too big")
-
-        if content.net.quota is not None:
-            if create:
-                size_diff_value = objdata["value"].size
-            else:
-                size_diff_value = objdata["value"].size - content.file.size
+        size_new += objdata["value"].size
         content.clean()
 
         def save_fn_value():
             content.file.delete(False)
             content.updateId = uuid4()
             content.file.save("ignored", objdata["value"])
-            content.net.save(update_fields=["bytes_in_use"])
+            content.net.save(
+                update_fields=["bytes_in_use"] if content.net.id else None
+            )
+            if old_net:
+                old_net.save(
+                    update_fields=["bytes_in_use"] if old_net.id else None
+                )
 
     else:
 
         def save_fn_value():
             content.updateId = uuid4()
             content.save()
-            content.net.save()
+            content.net.save(
+                update_fields=["bytes_in_use"] if content.net.id else None
+            )
+            if old_net:
+                old_net.save(
+                    update_fields=["bytes_in_use"] if old_net.id else None
+                )
 
     # cannot change because of special key transformation
     chash = objdata.get("contentHash")
@@ -309,8 +325,12 @@ def _update_or_create_content_or_key(
         )
         if required_keys and required_keys.isdisjoint(verifiers_ref):
             raise ValueError("Not signed by required keys")
+        size_new += size_refs
     elif create:
         final_references = []
+        # size_new += 0
+    else:
+        size_new += content.size_references
 
     final_tags = None
     if tags_dict is not None:
@@ -353,18 +373,36 @@ def _update_or_create_content_or_key(
         def actions_save_fn():
             pass
 
-    size_diff = size_diff_value + size_diff_tags
-    if (
-        content.net.quota is not None
-        and size_diff > 0
-        and content.net.bytes_in_use + size_diff > content.net.quota
-    ):
-        raise ValueError("quota exceeded")
-    # still in memory not serialized to db
-    if not content.net.id:
-        content.net.bytes_in_use += size_diff
+    if old_net is None:
+        size_diff = size_new - size_old
+        if (
+            content.net.quota is not None
+            and size_diff > 0
+            and content.net.bytes_in_use + size_diff > content.net.quota
+        ):
+            raise ValueError("quota exceeded")
+        # still in memory not serialized to db
+        if not content.net.id:
+            content.net.bytes_in_use += size_diff
+        else:
+            content.net.bytes_in_use = F("bytes_in_use") + size_diff
     else:
-        content.net.bytes_in_use = F("bytes_in_use") + size_diff
+        if (
+            content.net.quota is not None
+            and size_new > 0
+            and content.net.bytes_in_use + size_new > content.net.quota
+        ):
+            raise ValueError("quota exceeded")
+        # still in memory not serialized to db
+        if not content.net.id:
+            content.net.bytes_in_use += size_new
+        else:
+            content.net.bytes_in_use = F("bytes_in_use") + size_new
+
+        if not old_net.id:
+            old_net.bytes_in_use -= size_old
+        else:
+            old_net.bytes_in_use = F("bytes_in_use") - size_old
 
     def save_fn():
         save_fn_value()

@@ -9,6 +9,6 @@ COPY . /app
 WORKDIR /app
 RUN mkdir -p /app/static && chown -R secretgraph:www-data /app/static
 RUN python -m pip install --no-cache .[server] hypercorn[h3] && python -m pip uninstall -y secretgraph
-RUN npm install && npm run build
+RUN npm install && npm run build:dev
 RUN python ./manage.py collectstatic --noinput
 CMD ["./tools/start_docker.sh"]

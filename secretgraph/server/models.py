@@ -15,7 +15,7 @@ from django.core.files.base import File
 from django.core.cache import caches
 from django.core.files.storage import default_storage
 from django.db import models
-from django.db.models.functions import Concat, Substr
+from django.db.models.functions import Concat, Substr, Length
 from django.urls import reverse
 from django.utils import timezone
 
@@ -263,6 +263,28 @@ class Content(FlexidModel):
     def link(self) -> str:
         # path to raw view
         return reverse("secretgraph:contents", kwargs={"id": self.flexid})
+
+    @property
+    def size_tags(self) -> int:
+        tags = self.tags.annotate(size=Length("tag")).aggregate(
+            size_sum=models.Sum("size")
+        )
+        return tags["size_sum"]
+
+    @property
+    def size_references(self) -> int:
+        refs = self.references.annotate(size=Length("extra")).aggregate(
+            size_sum=models.Sum("size")
+        )
+        # include target id size
+        return refs["size_sum"] + refs.count() * 8
+
+    @property
+    def size(self) -> int:
+        size = self.value.size
+        size += self.size_tags
+        size += self.size_references
+        return size
 
     def signatures(
         self, hashAlgorithms=None, references=None

@@ -4,6 +4,7 @@ upstream secretgraph {
 
 server {
     listen 8000;
+
     location / {
         proxy_pass http://secretgraph;
         proxy_set_header Host $http_host;

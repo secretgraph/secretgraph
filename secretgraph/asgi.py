@@ -37,17 +37,17 @@ django_asgi_app = get_asgi_application()
 
 
 from .schema import schema  # noqa: E402
+from django.conf import settings  # noqa: E402
+
 
 websocket_urlpatterns = [
     re_path(r"ws/graphql/?$", GraphQLWSConsumer.as_asgi(schema=schema)),
 ]
+websocket_stack = URLRouter(websocket_urlpatterns)
+if "django.contrib.auth" in settings.INSTALLED_APPS:
+    websocket_stack = AuthMiddlewareStack(websocket_stack)
+websocket_stack = AllowedHostsOriginValidator(websocket_stack)
 
-gql_ws_consumer = GraphQLWSConsumer.as_asgi(schema=schema)
 application = ProtocolTypeRouter(
-    {
-        "http": django_asgi_app,
-        "websocket": AllowedHostsOriginValidator(
-            AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
-        ),
-    }
+    {"http": django_asgi_app, "websocket": websocket_stack}
 )

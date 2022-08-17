@@ -215,7 +215,7 @@ idea: seperate actions with different concerns.
 
 # TODO
 
--   initial docker setup
+-   fix production build
 -   revert to asgi as soon as staticfiles problems are solved
 -   net: resource tracking of references
 -   remove/handle orphan nets (no cluster assigned)

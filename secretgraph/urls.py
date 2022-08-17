@@ -18,7 +18,7 @@ urlpatterns = [
         "graphql",
         csrf_exempt(
             CORSFileUploadGraphQLView.as_view(
-                graphiql=True, subscriptions_enabled=True, schema=schema
+                graphiql=True, subscriptions_enabled=False, schema=schema
             )
         ),
         name="graphql-plain",
@@ -40,7 +40,7 @@ urlpatterns += i18n_patterns(
         "graphql",
         csrf_exempt(
             CORSFileUploadGraphQLView.as_view(
-                graphiql=True, subscriptions_enabled=True, schema=schema
+                graphiql=True, subscriptions_enabled=False, schema=schema
             )
         ),
         name="graphql-localized",
