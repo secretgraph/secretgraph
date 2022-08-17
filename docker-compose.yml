@@ -16,7 +16,6 @@ services:
         volumes:
             - secretgraph:/var/secretgraph
             - static_files:/app/static
-            - ./tools:/app/tools
         environment:
             USER_GROUP: '101'
             SECRET_KEY: 'changeme'
