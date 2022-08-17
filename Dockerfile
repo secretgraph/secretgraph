@@ -1,4 +1,4 @@
-FROM python:3
+FROM docker.io/python:3
 STOPSIGNAL SIGINT
 ENV PYTHONUNBUFFERED=1 DJANGO_SETTINGS_MODULE=secretgraph.settings.docker
 RUN useradd -Mr -G www-data secretgraph
