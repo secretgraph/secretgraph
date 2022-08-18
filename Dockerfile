@@ -8,6 +8,7 @@ RUN apt-get install -y nodejs && apt-get clean
 COPY . /app
 WORKDIR /app
 RUN mkdir -p /app/static && chown -R secretgraph:www-data /app/static
+RUN mkdir -p /sockets && chown -R secretgraph:www-data /sockets
 RUN python -m pip install --no-cache .[server] hypercorn[h3] && python -m pip uninstall -y secretgraph
 RUN npm install && npm run build:dev
 RUN python ./manage.py collectstatic --noinput

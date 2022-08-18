@@ -5,7 +5,7 @@ services:
         volumes:
             - ./nginx-docker.conf.template:/etc/nginx/templates/default.conf.template:ro
             - static_files:/static:ro
-            - secretgraph:/vol
+            - sockets:/sockets
         ports:
             - '8000:8000'
         depends_on:
@@ -16,6 +16,7 @@ services:
         volumes:
             - secretgraph:/var/secretgraph
             - static_files:/app/static
+            - sockets:/sockets
         environment:
             USER_GROUP: '101'
             SECRET_KEY: 'changeme'
@@ -23,4 +24,5 @@ services:
 
 volumes:
     static_files:
+    sockets:
     secretgraph:

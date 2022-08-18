@@ -5,4 +5,4 @@ basedir="$(dirname "$basedir")"
 cd "$basedir"
 ./manage.py migrate
 ./manage.py collectstatic --noinput
-hypercorn -b unix:///var/secretgraph/asgi.socket -m 000 secretgraph.asgi:application
+hypercorn -b unix:///sockets/asgi.socket -m 007 secretgraph.asgi:application

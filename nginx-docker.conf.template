@@ -1,5 +1,5 @@
 upstream secretgraph {
-    server unix:///vol/asgi.socket;
+    server unix:///sockets/asgi.socket;
 }
 
 server {
@@ -22,8 +22,5 @@ server {
 
     location /static/ {
         root /;
-    }
-    location /media/ {
-        root /vol/;
     }
 }
