@@ -11,6 +11,7 @@ services:
         depends_on:
             - secretgraph
     secretgraph:
+        init: true
         build:
             context: .
         volumes:
