@@ -45,8 +45,12 @@ export default React.memo(function HeaderBar() {
             title = `Help: ${mainCtx.type}`
             documenttitle = `Secretgraph: ${title}`
             break
-        case 'initialize':
-            title = 'Secretgraph - Init'
+        case 'register':
+            title = 'Secretgraph - Register'
+            documenttitle = title
+            break
+        case 'login':
+            title = 'Secretgraph - Login'
             documenttitle = title
             break
         case 'view':
@@ -71,7 +75,7 @@ export default React.memo(function HeaderBar() {
         updateConfig(null, true)
         // type is kept
         updateMainCtx({
-            action: 'initialize',
+            action: 'login',
             title: '',
             item: null,
             updateId: null,

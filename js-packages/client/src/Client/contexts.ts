@@ -16,7 +16,7 @@ export const Main = createContext<{
     updateMainCtx: (update: Partial<Interfaces.MainContextInterface>) => void
 }>({
     mainCtx: {
-        action: 'initialize',
+        action: 'login',
         title: '',
         item: null,
         cluster: null,

@@ -16,11 +16,11 @@ import { elements } from '../editors'
 import { drawerWidth } from '../theme'
 
 // const SideBar = React.lazy(() => import('../components/SideBar'));
-const SettingsImporter = React.lazy(
-    () =>
-        import(
-            /*webpackChunkName: "main-SettingsImporter" */ './SettingsImporter'
-        )
+const Login = React.lazy(
+    () => import(/*webpackChunkName: "main-Login" */ './Login')
+)
+const Register = React.lazy(
+    () => import(/*webpackChunkName: "main-Register" */ './Register')
 )
 const Help = React.lazy(
     () => import(/*webpackChunkName: "main-help" */ './Help')
@@ -34,7 +34,7 @@ function MainPage() {
     const { navClient, itemClient } = React.useContext(Contexts.Clients)
     const { open: openSidebar } = React.useContext(Contexts.OpenSidebar)
     const frameElement = React.useMemo(() => {
-        let frameElement = null
+        let FrameElement = null
         switch (mainCtx.action) {
             case 'view':
             case 'create':
@@ -47,32 +47,26 @@ function MainPage() {
                         'undefined'
                     ) as Interfaces.ElementEntryInterface
                 }
-                const FrameElementType = (
+                FrameElement = (
                     FrameElementWrapper as Interfaces.ElementEntryInterface
                 ).component
-                frameElement = (
-                    <CapturingSuspense>
-                        <FrameElementType />
-                    </CapturingSuspense>
-                )
 
                 break
-            case 'initialize':
-                frameElement = (
-                    <CapturingSuspense>
-                        <SettingsImporter />
-                    </CapturingSuspense>
-                )
+            case 'login':
+                FrameElement = Login
+                break
+            case 'register':
+                FrameElement = Register
                 break
             case 'help':
-                frameElement = (
-                    <CapturingSuspense>
-                        <Help />
-                    </CapturingSuspense>
-                )
+                FrameElement = Help
                 break
         }
-        return frameElement
+        return (
+            <CapturingSuspense>
+                <FrameElement />
+            </CapturingSuspense>
+        )
     }, [mainCtx.action, mainCtx.url, mainCtx.type])
     return (
         <Box

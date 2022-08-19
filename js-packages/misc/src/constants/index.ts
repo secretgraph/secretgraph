@@ -1,6 +1,7 @@
 import { MainContextInterface } from '../interfaces'
 export const validActions = new Set<MainContextInterface['action']>([
-    'initialize',
+    'login',
+    'register',
     'create',
     'view',
     'update',

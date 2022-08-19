@@ -1,21 +1,14 @@
-import CssBaseline from '@mui/material/CssBaseline'
-import { ThemeProvider } from '@mui/material/styles'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { validActions } from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     authInfoFromConfig,
-    loadConfigSync,
     updateConfigReducer,
 } from '@secretgraph/misc/utils/config'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import * as React from 'react'
 
 import * as Contexts from './contexts'
-import { elements } from './editors'
 import Main from './pages/Main'
-import { theme as themeDefinition } from './theme'
 
 type Props = {
     defaultPath?: string
@@ -58,7 +51,7 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
                 ? (query.get('action') as any)
                 : config
                 ? 'create'
-                : 'initialize',
+                : 'login',
             title: '',
             item: query.get('item'),
             updateId: null,

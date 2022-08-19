@@ -115,7 +115,7 @@ export interface SecretgraphEventInterface {
 }
 
 export interface MainContextInterface {
-    action: 'initialize' | 'create' | 'view' | 'update' | 'help'
+    action: 'login' | 'register' | 'create' | 'view' | 'update' | 'help'
     updateId: null | string
     title: string
     // Content

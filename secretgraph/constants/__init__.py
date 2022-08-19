@@ -9,7 +9,7 @@ public_states = {"required", "trusted", "public"}
 protectedActions = frozenset({"storedUpdate", "auth"})
 
 
-class DeleteRecursive(enum.Enum):
+class DeleteRecursive(str, enum.Enum):
     _ignore_ = ["valid_values"]
     TRUE = "a"
     FALSE = "b"
@@ -21,7 +21,7 @@ DeleteRecursive.valid_values = frozenset(
 )
 
 
-class UseCriteria(enum.Enum):
+class UseCriteria(str, enum.Enum):
     _ignore_ = ["valid_values"]
     TRUE = "true"
     FALSE = "false"
@@ -33,7 +33,7 @@ UseCriteria.valid_values = frozenset(
 )
 
 
-class UseCriteriaPublic(enum.Enum):
+class UseCriteriaPublic(str, enum.Enum):
     _ignore_ = ["valid_values"]
     TRUE = "true"
     FALSE = "false"
@@ -46,7 +46,7 @@ UseCriteriaPublic.valid_values = frozenset(
 )
 
 
-class MetadataOperations(enum.Enum):
+class MetadataOperations(str, enum.Enum):
     _ignore_ = ["valid_values"]
     append = "append"
     remove = "remove"
@@ -58,7 +58,7 @@ MetadataOperations.valid_values = frozenset(
 )
 
 
-class TransferResult(enum.Enum):
+class TransferResult(str, enum.Enum):
     SUCCESS = "success"
     NOTFOUND = "notfound"
     ERROR = "error"
