@@ -328,8 +328,15 @@ union DeleteContentOrClusterPayload = DeleteContentOrClusterMutation | Operation
 
 """Specify policy for recursive deletions"""
 enum DeleteRecursive {
+  """Delete content when referenced content is deleted (default)"""
   TRUE
+
+  """Keep content when referenced content is deleted"""
   FALSE
+
+  """
+  Delete content when referenced content is deleted and no other reference with the same group is remaining
+  """
   NO_GROUP
 }
 
@@ -653,5 +660,7 @@ enum UseCriteriaPublic {
   TRUE
   FALSE
   IGNORE
+
+  """Check only token"""
   TOKEN
 }

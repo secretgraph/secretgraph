@@ -5,11 +5,11 @@ from ... import constants
 
 
 @strawberry.enum(description="Specify policy for recursive deletions")
-class DeleteRecursive(str, Enum):
+class DeleteRecursive(Enum):
     TRUE = strawberry.enum_value(
         constants.DeleteRecursive.TRUE.value,
         description=(
-            "Delete content when referenced " "content is deleted (default)"
+            "Delete content when referenced content is deleted (default)"
         ),
     )
     FALSE = strawberry.enum_value(
@@ -19,21 +19,21 @@ class DeleteRecursive(str, Enum):
     NO_GROUP = strawberry.enum_value(
         constants.DeleteRecursive.NO_GROUP.value,
         description=(
-            "Delete content when referenced content is deleted and"
+            "Delete content when referenced content is deleted and "
             "no other reference with the same group is remaining"
         ),
     )
 
 
 @strawberry.enum(description="Specify criteria")
-class UseCriteria(str, Enum):
+class UseCriteria(Enum):
     TRUE = constants.UseCriteria.TRUE.value
     FALSE = constants.UseCriteria.FALSE.value
     IGNORE = constants.UseCriteria.IGNORE.value
 
 
 @strawberry.enum(description="Specify criteria")
-class UseCriteriaPublic(str, Enum):
+class UseCriteriaPublic(Enum):
     TRUE = constants.UseCriteriaPublic.TRUE.value
     FALSE = constants.UseCriteriaPublic.FALSE.value
     IGNORE = constants.UseCriteriaPublic.IGNORE.value
@@ -43,7 +43,7 @@ class UseCriteriaPublic(str, Enum):
 
 
 @strawberry.enum
-class MetadataOperations(str, Enum):
+class MetadataOperations(Enum):
     append = constants.MetadataOperations.append.value
     remove = constants.MetadataOperations.remove.value
     replace = constants.MetadataOperations.replace.value

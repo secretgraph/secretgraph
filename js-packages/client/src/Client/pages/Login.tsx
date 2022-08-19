@@ -5,6 +5,7 @@ import { Box } from '@mui/material'
 import Button from '@mui/material/Button'
 import FormControl from '@mui/material/FormControl'
 import FormHelperText from '@mui/material/FormHelperText'
+import Grid from '@mui/material/Grid'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import * as Interfaces from '@secretgraph/misc/interfaces'
@@ -116,128 +117,135 @@ function Login() {
                     setNeedsPw(values.url.includes('prekey'))
                 }, [values.url])
                 return (
-                    <>
-                        <Typography
-                            variant="h5"
-                            color="textPrimary"
-                            gutterBottom
-                            paragraph
-                        >
-                            {importHelp}
-                        </Typography>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'row' as const,
-                                alignItems: 'stretch',
-                            }}
-                        >
-                            <FormControl
-                                sx={{
-                                    padding: theme.spacing(0, 1),
-                                    textAlign: 'center' as const,
-                                }}
-                            >
-                                <input
-                                    disabled={isSubmitting}
-                                    style={{ display: 'none' }}
-                                    type="file"
-                                    id="secretgraph-import-file"
-                                    aria-describedby="secretgraph-import-file-help"
-                                    onChange={async (event) => {
-                                        const importFiles: FileList | null =
-                                            event.target!.files
-                                        try {
-                                            if (importFiles) {
-                                                setNeedsPw(
-                                                    !!JSON.parse(
-                                                        await importFiles[0].text()
-                                                    ).prekeys
-                                                )
-                                                setFieldValue(
-                                                    'file',
-                                                    importFiles[0]
-                                                )
-                                                setFieldTouched('file', true)
-                                            } else {
-                                                throw Error()
-                                            }
-                                        } catch (exc) {
-                                            setFieldValue('file', null)
-                                        }
-                                    }}
-                                />
-                                <label htmlFor="secretgraph-import-file">
-                                    <Button
-                                        variant="contained"
-                                        component="span"
-                                        color="primary"
-                                        disabled={isSubmitting}
-                                        endIcon={
-                                            values.file ? (
-                                                <CheckIcon />
-                                            ) : (
-                                                <SystemUpdateAltIcon />
-                                            )
-                                        }
-                                    >
-                                        Import from File
-                                    </Button>
-                                </label>
-                                <FormHelperText id="secretgraph-import-file-help">
-                                    {importFileLabel}
-                                </FormHelperText>
-                            </FormControl>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <Typography variant="h5" color="textPrimary">
+                                {importHelp}
+                            </Typography>
+                        </Grid>
+                        <Grid item xs={12}>
                             <Box
                                 sx={{
-                                    padding: theme.spacing(0, 1),
-                                    textAlign: 'center',
+                                    display: 'flex',
+                                    flexDirection: 'row' as const,
+                                    alignItems: 'stretch',
                                 }}
                             >
-                                or
+                                <FormControl
+                                    sx={{
+                                        padding: theme.spacing(0, 1),
+                                        textAlign: 'center' as const,
+                                    }}
+                                >
+                                    <input
+                                        disabled={isSubmitting}
+                                        style={{ display: 'none' }}
+                                        type="file"
+                                        id="secretgraph-import-file"
+                                        aria-describedby="secretgraph-import-file-help"
+                                        onChange={async (event) => {
+                                            const importFiles: FileList | null =
+                                                event.target!.files
+                                            try {
+                                                if (importFiles) {
+                                                    setNeedsPw(
+                                                        !!JSON.parse(
+                                                            await importFiles[0].text()
+                                                        ).prekeys
+                                                    )
+                                                    setFieldValue(
+                                                        'file',
+                                                        importFiles[0]
+                                                    )
+                                                    setFieldTouched(
+                                                        'file',
+                                                        true
+                                                    )
+                                                } else {
+                                                    throw Error()
+                                                }
+                                            } catch (exc) {
+                                                setFieldValue('file', null)
+                                            }
+                                        }}
+                                    />
+                                    <label htmlFor="secretgraph-import-file">
+                                        <Button
+                                            variant="contained"
+                                            component="span"
+                                            color="primary"
+                                            disabled={isSubmitting}
+                                            endIcon={
+                                                values.file ? (
+                                                    <CheckIcon />
+                                                ) : (
+                                                    <SystemUpdateAltIcon />
+                                                )
+                                            }
+                                        >
+                                            Import from File
+                                        </Button>
+                                    </label>
+                                    <FormHelperText id="secretgraph-import-file-help">
+                                        {importFileLabel}
+                                    </FormHelperText>
+                                </FormControl>
+                                <Box
+                                    sx={{
+                                        padding: theme.spacing(0, 1),
+                                        textAlign: 'center',
+                                    }}
+                                >
+                                    or
+                                </Box>
+                                <FormControl
+                                    sx={{
+                                        flexGrow: 1,
+                                        padding: theme.spacing(0, 1),
+                                    }}
+                                >
+                                    <Field
+                                        component={FormikTextField}
+                                        name="url"
+                                        disabled={isSubmitting}
+                                        fullWidth={true}
+                                        variant="outlined"
+                                        size="small"
+                                        placeholder="Import from url"
+                                    />
+                                    <FormHelperText id="secretgraph-import-url-help">
+                                        Import from url
+                                    </FormHelperText>
+                                </FormControl>
                             </Box>
+                        </Grid>
+                        <Grid item xs={12}>
                             <FormControl
-                                sx={{
-                                    flexGrow: 1,
-                                    padding: theme.spacing(0, 1),
+                                style={{
+                                    display: needsPw ? undefined : 'none',
                                 }}
                             >
+                                <div style={{ display: 'none' }}>
+                                    <input type="password" tabIndex={-1} />
+                                </div>
                                 <Field
+                                    name="password"
                                     component={FormikTextField}
-                                    disabled={isSubmitting}
-                                    fullWidth={true}
                                     variant="outlined"
-                                    size="small"
-                                    placeholder="Import from url"
+                                    disabled={isSubmitting}
+                                    label={passwordLabel}
+                                    inputProps={{
+                                        'aria-describedby':
+                                            'secretgraph-decrypting-help',
+                                    }}
+                                    type="password"
                                 />
-                                <FormHelperText id="secretgraph-import-url-help">
-                                    Import from url
+                                <FormHelperText id="secretgraph-decrypting-help">
+                                    {decryptingPasswordSettingsHelp}
                                 </FormHelperText>
                             </FormControl>
-                        </Box>
-                        <FormControl
-                            style={{ display: needsPw ? undefined : 'none' }}
-                        >
-                            <div style={{ display: 'none' }}>
-                                <input type="password" tabIndex={-1} />
-                            </div>
-                            <Field
-                                component={FormikTextField}
-                                variant="outlined"
-                                disabled={isSubmitting}
-                                label={passwordLabel}
-                                id="secretgraph-decrypting"
-                                inputProps={{
-                                    'aria-describedby':
-                                        'secretgraph-decrypting-help',
-                                }}
-                                type="password"
-                            />
-                            <FormHelperText id="secretgraph-decrypting-help">
-                                {decryptingPasswordSettingsHelp}
-                            </FormHelperText>
-                        </FormControl>
-                        <div>
+                        </Grid>
+                        <Grid item xs={12}>
                             <LoadingButton
                                 size="small"
                                 variant="contained"
@@ -250,17 +258,16 @@ function Login() {
                             </LoadingButton>
                             <Button
                                 size="small"
-                                variant="contained"
-                                color="primary"
+                                variant="text"
                                 disabled={isSubmitting || !isValid}
                                 onClick={() => {
                                     updateMainCtx({ action: 'register' })
                                 }}
                             >
-                                "Register instead"
+                                Register instead
                             </Button>
-                        </div>
-                    </>
+                        </Grid>
+                    </Grid>
                 )
             }}
         </Formik>
