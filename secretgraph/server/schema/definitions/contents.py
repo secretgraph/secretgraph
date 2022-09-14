@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Optional, List
 from datetime import datetime
-import strawberry
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
@@ -36,7 +35,7 @@ class ContentFilter:
         description="Use id=xy for excluding contents with ids",
     )
     contentHashes: Optional[List[str]] = None
-    clusters: Optional[List[strawberry.ID]] = None
+    clusters: Optional[List[gql.ID]] = None
     hidden: UseCriteria = UseCriteria.FALSE
     featured: UseCriteria = UseCriteria.IGNORE
     deleted: UseCriteria = UseCriteria.FALSE
@@ -99,7 +98,7 @@ class ContentNode(relay.Node):
     @gql.django.field()
     def cluster(
         self: Content, info: Info
-    ) -> strawberry.LazyType["ClusterNode", ".clusters"]:  # noqa: F821,F722
+    ) -> Optional[gql.LazyType["ClusterNode", ".clusters"]]:
         if self.limited:
             return None
         # authorization often cannot be used, but it is ok, we have cached then

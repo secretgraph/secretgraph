@@ -37,8 +37,8 @@ function Login() {
         any
     ]
     const { sendMessage } = React.useContext(Contexts.Snackbar)
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)
+    const { updateMainCtx } = React.useContext(Contexts.Main)
+    const { setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
 
     return (
