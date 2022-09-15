@@ -5,6 +5,8 @@ It exposes the WSGI callable as a module-level variable named ``application``.
 
 """
 
+# WARNING: prefer asgi over wsgi as wsgi lacks lots of features like websockets
+
 from pathlib import Path
 import os
 import sys
