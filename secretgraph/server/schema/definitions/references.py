@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, List, Iterable
+from typing import TYPE_CHECKING, Optional, List, Iterable
 import strawberry
 from strawberry.types import Info
 from strawberry_django_plus import relay, gql
@@ -11,6 +11,9 @@ from ...models import (
     ContentReference,
 )
 from ..shared import DeleteRecursive, UseCriteria
+
+if TYPE_CHECKING:
+    from .contents import ContentNode
 
 
 @gql.input

@@ -29,7 +29,7 @@ cryptography = "*"
 rdflib = '*'
 certifi = "*"
 django = {version = '>=4.0', optional = true}
-channels = {version = "*", optional = true}
+channels = {version = ">=4.0b1", optional = true}
 httpx = {version = "*", extras = ["http2"]}
 graphene-protector = {version=">=0.6.3", optional = true}
 strawberry-graphql = {version="*",  optional = true}
@@ -48,7 +48,7 @@ bleach = {version="*", optional = true}
 [tool.poetry.dev-dependencies]
 graphene-protector = ">=0.6.3"
 django = ">=4.0"
-channels = '*'
+channels = {version = '>=4.0b1', extras = ["daphne"] }
 strawberry-graphql = '*'
 strawberry-django-plus = "*"
 pylint = "*"

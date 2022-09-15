@@ -46,7 +46,7 @@ wrapt = [
 name = "attrs"
 version = "22.1.0"
 description = "Classes Without Boilerplate"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 
@@ -60,7 +60,7 @@ tests_no_zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy 
 name = "autobahn"
 version = "22.7.1"
 description = "WebSocket client & server library, WAMP real-time framework"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -86,7 +86,7 @@ xbr = ["base58 (>=2.1.0)", "cbor2 (>=5.2.0)", "click (>=8.1.2)", "ecdsa (>=0.16.
 name = "Automat"
 version = "20.2.0"
 description = "Self-service finite-state machines for the programmer on the go."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -130,7 +130,7 @@ dev = ["Sphinx (==4.3.2)", "black (==22.3.0)", "build (==0.8.0)", "flake8 (==4.0
 
 [[package]]
 name = "certifi"
-version = "2022.6.15.2"
+version = "2022.9.14"
 description = "Python package for providing Mozilla's CA Bundle."
 category = "main"
 optional = false
@@ -149,18 +149,19 @@ pycparser = "*"
 
 [[package]]
 name = "channels"
-version = "3.0.5"
-description = "Brings async, event-driven capabilities to Django. Django 2.2 and up only."
+version = "4.0.0b1"
+description = "Brings async, event-driven capabilities to Django 3.2 and up."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
 asgiref = ">=3.5.0,<4"
-daphne = ">=3.0,<4"
-Django = ">=2.2"
+daphne = {version = ">=4.0.0b1", optional = true, markers = "extra == \"daphne\""}
+Django = ">=3.2"
 
 [package.extras]
+daphne = ["daphne (>=4.0.0b1)"]
 tests = ["async-timeout", "coverage (>=4.5,<5.0)", "pytest", "pytest-asyncio", "pytest-django"]
 
 [[package]]
@@ -186,7 +187,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 name = "constantly"
 version = "15.1.0"
 description = "Symbolic constants in Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -211,19 +212,19 @@ test = ["hypothesis (>=1.11.4,!=3.79.2)", "iso8601", "pretend", "pytest (>=6.2.0
 
 [[package]]
 name = "daphne"
-version = "3.0.2"
+version = "4.0.0b1"
 description = "Django ASGI (HTTP/WebSocket) server"
-category = "main"
+category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
-asgiref = ">=3.2.10,<4"
-autobahn = ">=0.18"
-twisted = {version = ">=18.7", extras = ["tls"]}
+asgiref = ">=3.5.2,<4"
+autobahn = ">=22.4.2"
+twisted = {version = ">=22.4", extras = ["tls"]}
 
 [package.extras]
-tests = ["hypothesis (==4.23)", "pytest (>=3.10,<4.0)", "pytest-asyncio (>=0.8,<1.0)"]
+tests = ["django", "hypothesis", "pytest", "pytest-asyncio"]
 
 [[package]]
 name = "dill"
@@ -409,7 +410,7 @@ python-versions = ">=3.6.1"
 name = "hyperlink"
 version = "21.0.0"
 description = "A featureful, immutable, and correct URL for Python."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
@@ -428,7 +429,7 @@ python-versions = ">=3.5"
 name = "incremental"
 version = "21.3.0"
 description = "A small library that versions your Python projects."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -519,7 +520,7 @@ python-versions = ">=3.6"
 name = "pyasn1"
 version = "0.4.8"
 description = "ASN.1 types and codecs"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -527,7 +528,7 @@ python-versions = "*"
 name = "pyasn1-modules"
 version = "0.2.8"
 description = "A collection of ASN.1-based protocols modules."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -580,7 +581,7 @@ testutils = ["gitpython (>3)"]
 name = "pyOpenSSL"
 version = "22.0.0"
 description = "Python wrapper module around the OpenSSL library"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -696,7 +697,7 @@ doc = ["pytoolconfig[doc]", "sphinx (>=4.5.0)", "sphinx-autodoc-typehints (>=1.1
 name = "service-identity"
 version = "21.1.0"
 description = "Service identity verification for pyOpenSSL & cryptography."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -778,7 +779,7 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.130.3"
+version = "0.130.4"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
@@ -837,7 +838,7 @@ python-versions = ">=3.6,<4.0"
 name = "Twisted"
 version = "22.8.0"
 description = "An asynchronous networking framework written in Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7.1"
 
@@ -875,7 +876,7 @@ windows_platform = ["PyHamcrest (>=1.9.0)", "appdirs (>=1.4.0)", "bcrypt (>=3.0.
 name = "twisted-iocpsupport"
 version = "1.0.2"
 description = "An extension for use in the twisted I/O Completion Ports reactor."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -883,7 +884,7 @@ python-versions = "*"
 name = "txaio"
 version = "22.2.1"
 description = "Compatibility API between asyncio/Twisted/Trollius"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -980,7 +981,7 @@ webob = "*"
 name = "zope.interface"
 version = "5.4.0"
 description = "Interfaces for Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -1002,7 +1003,7 @@ test = ["django-webtest", "WSGIProxy2"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <4"
-content-hash = "db1aa3e8e6f323b795634e3b900b2e913b4675a2642dbd07b9df8d44acaf2e00"
+content-hash = "e52105a73575fa6585d09ef5b43ebe5f62205d5c9a5da0ec9e34d2dea3824ec0"
 
 [metadata.files]
 anyio = [
@@ -1037,8 +1038,8 @@ bleach = [
     {file = "bleach-5.0.1.tar.gz", hash = "sha256:0d03255c47eb9bd2f26aa9bb7f2107732e7e8fe195ca2f64709fcf3b0a4a085c"},
 ]
 certifi = [
-    {file = "certifi-2022.6.15.2-py3-none-any.whl", hash = "sha256:0aa1a42fbd57645fabeb6290a7687c21755b0344ecaeaa05f4e9f6207ae2e9a8"},
-    {file = "certifi-2022.6.15.2.tar.gz", hash = "sha256:aa08c101214127b9b0472ca6338315113c9487d45376fd3e669201b477c71003"},
+    {file = "certifi-2022.9.14-py3-none-any.whl", hash = "sha256:e232343de1ab72c2aa521b625c80f699e356830fd0e2c620b465b304b17b0516"},
+    {file = "certifi-2022.9.14.tar.gz", hash = "sha256:36973885b9542e6bd01dea287b2b4b3b21236307c56324fcc3f1160f2d655ed5"},
 ]
 cffi = [
     {file = "cffi-1.15.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:a66d3508133af6e8548451b25058d5812812ec3798c886bf38ed24a98216fab2"},
@@ -1107,8 +1108,8 @@ cffi = [
     {file = "cffi-1.15.1.tar.gz", hash = "sha256:d400bfb9a37b1351253cb402671cea7e89bdecc294e8016a707f6d1d8ac934f9"},
 ]
 channels = [
-    {file = "channels-3.0.5-py3-none-any.whl", hash = "sha256:3813b8025bf85509769793aca720e6c3b1c5bde1cb253a961252bf0242b60a26"},
-    {file = "channels-3.0.5.tar.gz", hash = "sha256:a3dc3339cc033e7c2afe083fb3dedf74fc5009815967e317e080e7bfdc92ea26"},
+    {file = "channels-4.0.0b1-py3-none-any.whl", hash = "sha256:173830f6686ca703420427a4f6779583589f7aaf8f9e4f396d6a20647e60b5c8"},
+    {file = "channels-4.0.0b1.tar.gz", hash = "sha256:124e5362ad2be690540e2d38e5a082c9dfb653d5e53d6aa55915cc865826f4ff"},
 ]
 click = [
     {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
@@ -1151,8 +1152,8 @@ cryptography = [
     {file = "cryptography-38.0.1.tar.gz", hash = "sha256:1db3d807a14931fa317f96435695d9ec386be7b84b618cc61cfa5d08b0ae33d7"},
 ]
 daphne = [
-    {file = "daphne-3.0.2-py3-none-any.whl", hash = "sha256:a9af943c79717bc52fe64a3c236ae5d3adccc8b5be19c881b442d2c3db233393"},
-    {file = "daphne-3.0.2.tar.gz", hash = "sha256:76ffae916ba3aa66b46996c14fa713e46004788167a4873d647544e750e0e99f"},
+    {file = "daphne-4.0.0b1-py3-none-any.whl", hash = "sha256:8f2c61ca6fb146f172ef9662219343aa57316f29d7694b73431d7a8a72653a7c"},
+    {file = "daphne-4.0.0b1.tar.gz", hash = "sha256:6c0e7447c9f4bf9078fd9e5df1aec6ac95cbd89857540e2fa22127e04742c082"},
 ]
 dill = [
     {file = "dill-0.3.5.1-py2.py3-none-any.whl", hash = "sha256:33501d03270bbe410c72639b350e941882a8b0fd55357580fbc873fba0c59302"},
@@ -1408,8 +1409,8 @@ strawberry-django-plus = [
     {file = "strawberry_django_plus-1.26.1-py3-none-any.whl", hash = "sha256:2c3cd13820ce2379fc57f822fd29d93593e3fb8aff1b2eac132ba8ffadcae6fd"},
 ]
 strawberry-graphql = [
-    {file = "strawberry-graphql-0.130.3.tar.gz", hash = "sha256:81c0ef427b50f2ca5e87bc9842f53ecfa2042837c465082126dcb0c527f10d2a"},
-    {file = "strawberry_graphql-0.130.3-py3-none-any.whl", hash = "sha256:c421b444d555666d957a054e395615a388866b26ae25409a80f0fc13a809fa46"},
+    {file = "strawberry-graphql-0.130.4.tar.gz", hash = "sha256:ac86f6cda58171664e5ff47ecddce59f1031d608b6ca6415c123f69943a2ac5c"},
+    {file = "strawberry_graphql-0.130.4-py3-none-any.whl", hash = "sha256:19f2d40985e43edaca19b5e6d41e333f7f40501ae374d2016af90c3d5253e87b"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry-graphql-django-0.5.1.tar.gz", hash = "sha256:e807492399f1c823c88d82919efb6e5a564edc405f0c72b704beec8d608b5012"},

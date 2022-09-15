@@ -37,7 +37,8 @@ class LazyViewResult(object):
             self._result_dict[r["objects"].model.__name__] = r
         if self.authset is None:
             self.authset = (
-                request.headers.get("Authorization", "")
+                getattr(request, "headers", {})
+                .get("Authorization", "")
                 .replace(" ", "")
                 .split(",")
             )
@@ -66,7 +67,8 @@ def retrieve_allowed_objects(request, query, scope="view", authset=None):
 
     if authset is None:
         authset = (
-            request.headers.get("Authorization", "")
+            getattr(request, "headers", {})
+            .get("Authorization", "")
             .replace(" ", "")
             .split(",")
         )
@@ -315,6 +317,8 @@ def ids_to_results(
     for id in ids:
         if isinstance(id, str):
             type_name, flexid = relay.from_base64(id)
+        elif isinstance(id, relay.GlobalID):
+            type_name, flexid = id.type_name, id.node_id
         elif isinstance(id, klasses):
             flexid = id.flexid
             type_name = type(id).__name__

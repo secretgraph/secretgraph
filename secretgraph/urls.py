@@ -18,7 +18,7 @@ urlpatterns = [
         "graphql",
         csrf_exempt(
             CORSFileUploadGraphQLView.as_view(
-                graphiql=True, subscriptions_enabled=False, schema=schema
+                graphiql=True, subscriptions_enabled=True, schema=schema
             )
         ),
         name="graphql-plain",
@@ -36,13 +36,14 @@ urlpatterns += i18n_patterns(
     path("", include("secretgraph.proxy.urls"), name="secretgraph_proxy"),
     path("jsi18n/", JavaScriptCatalog.as_view(), name="javascript-i18n"),
     # for localized graphql
-    path(
-        "graphql",
-        csrf_exempt(
-            CORSFileUploadGraphQLView.as_view(
-                graphiql=True, subscriptions_enabled=False, schema=schema
-            )
-        ),
-        name="graphql-localized",
-    ),
+    # TODO: remove completely as not compatible to strawberry?
+    # path(
+    #    "graphql",
+    #    csrf_exempt(
+    #        CORSFileUploadGraphQLView.as_view(
+    #            graphiql=True, subscriptions_enabled=True, schema=schema
+    #        )
+    #    ),
+    #    name="graphql-localized",
+    # ),
 )

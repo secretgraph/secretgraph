@@ -20,6 +20,13 @@ INSTALLED_APPS += [  # noqa F405
     "django.contrib.contenttypes",  # required for auth
     "secretgraph.server",
 ]
+try:
+    import daphne  # noqa: F401
+
+    # before staticfiles
+    INSTALLED_APPS.insert(0, "daphne")
+except ImportError:
+    pass
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app

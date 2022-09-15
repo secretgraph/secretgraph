@@ -41,7 +41,7 @@ from django.conf import settings  # noqa: E402
 
 
 websocket_urlpatterns = [
-    re_path(r"ws/graphql/?$", GraphQLWSConsumer.as_asgi(schema=schema)),
+    re_path(r"graphql/?$", GraphQLWSConsumer.as_asgi(schema=schema)),
 ]
 websocket_stack = URLRouter(websocket_urlpatterns)
 if "django.contrib.auth" in settings.INSTALLED_APPS:

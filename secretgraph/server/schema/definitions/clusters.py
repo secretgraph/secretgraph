@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import TYPE_CHECKING, Optional, List
 from datetime import datetime
 import strawberry
 from strawberry.types import Info
@@ -18,6 +18,10 @@ from ...models import (
 )
 from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import ActionEntry, ActionMixin
+
+
+if TYPE_CHECKING:
+    from .contents import ContentNode
 
 
 @gql.input
@@ -63,6 +67,7 @@ class ClusterFilter:
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(relay.Node):
     id_attr = "flexid"
+    limited: gql.Private[bool] = False
 
     @gql.django.field()
     def featured(self) -> Optional[bool]:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import TYPE_CHECKING, Optional, List
 from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
@@ -22,6 +22,9 @@ from ...models import (
 from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import ActionEntry, ActionMixin
 from .references import ContentReferenceNode, ContentReferenceFilter
+
+if TYPE_CHECKING:
+    from .clusters import ClusterNode
 
 
 @gql.input
@@ -58,6 +61,7 @@ class ContentNode(relay.Node):
         field_name="markForDestruction"
     )
     link: str
+    limited: gql.Private[bool] = False
 
     @gql.django.field()
     def tags(

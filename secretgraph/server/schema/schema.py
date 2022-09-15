@@ -36,6 +36,8 @@ from .mutations import (
     MarkMutation,
 )
 
+from .subscriptions import subscribe_node_updates, NodeUpdateSubscription
+
 
 @strawberry.type
 class SecretgraphObject:
@@ -109,4 +111,11 @@ class Mutation:
 
     transferContent: TransferMutation = gql.django.input_mutation(
         resolver=mutate_transfer
+    )
+
+
+@gql.type
+class Subscription:
+    subscribeNodeUpdates: NodeUpdateSubscription = strawberry.subscription(
+        resolver=subscribe_node_updates
     )
