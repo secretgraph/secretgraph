@@ -92,7 +92,7 @@ function Login() {
             }}
             initialValues={{
                 password: '',
-                url: defaultPath,
+                url: '',
                 file: null,
             }}
             validate={({ password, url, file }) => {
@@ -211,7 +211,7 @@ function Login() {
                                         fullWidth={true}
                                         variant="outlined"
                                         size="small"
-                                        placeholder="Import from url"
+                                        placeholder="import url"
                                     />
                                     <FormHelperText id="secretgraph-import-url-help">
                                         Import from url

@@ -115,10 +115,12 @@ export async function initializeCluster({
     name,
     description,
     net,
+    slot,
     ...options
 }: {
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
+    slot: string
     net?: string
     name?: string
     description?: string
@@ -194,7 +196,10 @@ export async function initializeCluster({
     if (!cleanConfig(config)) {
         throw Error('invalid config created')
     }
-    const contentHash = await sortedHash(['type=Config'], hashAlgorithm)
+    const contentHash = await sortedHash(
+        ['type=Config', `slot=${slot}`],
+        hashAlgorithm
+    )
 
     const { tokens: authorization } = authInfoFromConfig({
         config: config,
@@ -214,7 +219,7 @@ export async function initializeCluster({
         privkeys: [privateKey],
         type: 'Config',
         state: 'internal',
-        tags: ['name=config.json'],
+        tags: ['name=config.json', `slot=${slot}`],
         contentHash,
         hashAlgorithm,
         authorization,

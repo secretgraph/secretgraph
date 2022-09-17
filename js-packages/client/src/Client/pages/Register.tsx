@@ -1,4 +1,6 @@
+import { ApolloQueryResult } from '@apollo/client'
 import LoadingButton from '@mui/lab/LoadingButton'
+import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
@@ -12,12 +14,20 @@ import { Field, Formik } from 'formik'
 import * as React from 'react'
 
 import FormikTextField from '../components/formik/FormikTextField'
+import { CenteredSpinner } from '../components/misc'
 import * as Contexts from '../contexts'
-import { initializeHelp, initializeLabel } from '../messages'
+import { initializeHelp, registerLabel } from '../messages'
 
 function Register() {
     const theme = useTheme()
-    const [registerUrl, setRegisterUrl] = React.useState(undefined)
+    const [registerContext, setRegisterContext] = React.useState<
+        | {
+              registerUrl: string | boolean
+              hashAlgorithms: string[]
+              errors: string[]
+          }
+        | undefined
+    >(undefined)
     const { defaultPath } = React.useContext(Contexts.External)
     const [oldConfig, setOldConfig] = React.useState(null) as [
         Interfaces.ConfigInterface | null,
@@ -41,18 +51,14 @@ function Register() {
                     if (!result) {
                         return
                     }
-                    const sconfig = result.data.secretgraph.config
-                    const hashAlgos = findWorkingHashAlgorithms(
-                        sconfig.hashAlgorithms
-                    )
-                    if (!hashAlgos.length) {
+                    if (!registerContext?.hashAlgorithms.length) {
                         sendMessage({
                             severity: 'warning',
-                            message: 'unsupported hash algorithm',
+                            message: 'unsupported hash algorithms',
                         })
                         return
                     }
-                    if (sconfig.registerUrl === true) {
+                    if (registerContext?.registerUrl === true) {
                         const newConfig: Interfaces.ConfigInterface = {
                             certificates: {},
                             tokens: {},
@@ -68,23 +74,17 @@ function Register() {
                         const result = await initializeCluster({
                             client,
                             config: newConfig,
-                            hashAlgorithm: hashAlgos[0],
+                            hashAlgorithm: registerContext!.hashAlgorithms[0],
+                            slot: 'main',
                         })
                         // TODO: handle exceptions and try with login
-                        setRegisterUrl(undefined)
                         saveConfig(newConfig)
                         updateConfig(newConfig, true)
                         setActiveUrl(newConfig.baseUrl)
                         updateMainCtx({
                             action: 'create',
                         })
-                    } else if (typeof sconfig.registerUrl === 'string') {
-                        setRegisterUrl(sconfig.registerUrl)
                     } else {
-                        sendMessage({
-                            severity: 'warning',
-                            message: 'cannot register here',
-                        })
                         setSubmitting(false)
                     }
                 } catch (errors) {
@@ -101,7 +101,53 @@ function Register() {
             }}
             initialValues={{ url: defaultPath }}
         >
-            {({ submitForm, isSubmitting, isValid }) => {
+            {({ submitForm, isSubmitting, isValid, values }) => {
+                React.useEffect(() => {
+                    let active = true
+                    const f = async () => {
+                        setRegisterContext(undefined)
+                        const client = createClient(values.url)
+                        let result: ApolloQueryResult<any> | undefined =
+                            undefined
+                        try {
+                            result = await client.query({
+                                query: serverConfigQuery,
+                            })
+                            if (!active) {
+                                return
+                            }
+                        } catch (exc) {
+                            console.debug('could not parse url', exc)
+                        }
+                        if (!result || !result?.data) {
+                            setRegisterContext({
+                                registerUrl: false,
+                                hashAlgorithms: [],
+                                errors: ['provider url invalid'],
+                            })
+                            return
+                        }
+                        const sconfig = result.data.secretgraph.config
+                        const context = {
+                            registerUrl: sconfig.registerUrl,
+                            hashAlgorithms: findWorkingHashAlgorithms(
+                                sconfig.hashAlgorithms
+                            ),
+                            errors: [] as string[],
+                        }
+                        if (context.registerUrl === false) {
+                            context.errors.push('cannot register here')
+                        }
+                        if (!context.hashAlgorithms.length) {
+                            context.errors.push('no supported hash algorithms')
+                        }
+                        setRegisterContext(context)
+                    }
+                    f()
+                    return () => {
+                        active = false
+                    }
+                }, [values.url])
                 return (
                     <>
                         <Typography
@@ -120,16 +166,52 @@ function Register() {
                             variant="outlined"
                             label="Provider"
                         />
-                        <div>
+
+                        {registerContext?.errors?.length ? (
+                            <div style={{ paddingTop: theme.spacing(1) }}>
+                                {registerContext!.errors.map(
+                                    (error: string) => (
+                                        <Alert severity="error">{error}</Alert>
+                                    )
+                                )}
+                            </div>
+                        ) : undefined}
+                        {typeof registerContext?.registerUrl === 'string' &&
+                        !registerContext?.errors?.length ? (
+                            <iframe
+                                style={{
+                                    border: '1px solid red;',
+                                    height: '100%',
+                                    width: '100%',
+                                    display: 'block',
+                                    paddingTop: theme.spacing(1),
+                                }}
+                                src={registerContext?.registerUrl}
+                            ></iframe>
+                        ) : undefined}
+
+                        <div style={{ paddingTop: theme.spacing(1) }}>
                             <LoadingButton
                                 size="small"
                                 variant="contained"
                                 color="secondary"
                                 onClick={submitForm}
-                                disabled={isSubmitting || !isValid}
-                                loading={isSubmitting}
+                                style={{
+                                    visibility:
+                                        typeof registerContext?.registerUrl ===
+                                        'string'
+                                            ? 'hidden'
+                                            : undefined,
+                                }}
+                                disabled={
+                                    !registerContext ||
+                                    isSubmitting ||
+                                    !isValid ||
+                                    !!registerContext?.errors?.length
+                                }
+                                loading={isSubmitting || !registerContext}
                             >
-                                {initializeLabel}
+                                {registerLabel}
                             </LoadingButton>
                             <Button
                                 size="small"
