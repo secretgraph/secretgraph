@@ -216,15 +216,12 @@ idea: seperate actions with different concerns.
 # TODO
 
 -   fix production build
--   revert to asgi as soon as staticfiles problems are solved
--   net: resource tracking of references
 -   remove/handle orphan nets (no cluster assigned)
 -   dataclass for returns instead of simple dicts to have typing
 -   document net resource tracking, ClusterGroups
 -   mainCtx.cluster for communicating current cluster of content
 -   actions: states
 -   X-Key response: shared key of private key
--   port settings importer to formik
 -   hash algo should be part of hashes hash?????
 -   implement settings/config
 -   too many queries when selecting node (sidebar is also updated, because updateId?)
@@ -245,9 +242,6 @@ idea: seperate actions with different concerns.
 -   cleanup js structure, harmonize naming
 -   updateId in form
 -   prekey implement form
--   implement form with send for Message
--   if type=Message switch strings to Inbox, Send
--   find way how Messages sent can be differed from messages received
 
 # TODO later
 
@@ -262,6 +256,10 @@ idea: seperate actions with different concerns.
 -   subscribe to config, watch changes
 -   delete: limit amount?
 -   metadata: limit amount of changed contents/clusters
+-   implement form with send for Message
+-   if type=Message switch strings to Inbox, Send
+-   find way how Messages sent can be differed from messages received
+
 
 # TODO far future
 
