@@ -215,9 +215,10 @@ idea: seperate actions with different concerns.
 
 # TODO
 
+-   implement early_size_limit
+-   move to dataclasses and TypedDicts
 -   fix production build
 -   remove/handle orphan nets (no cluster assigned)
--   dataclass for returns instead of simple dicts to have typing
 -   document net resource tracking, ClusterGroups
 -   mainCtx.cluster for communicating current cluster of content
 -   actions: states
@@ -230,8 +231,7 @@ idea: seperate actions with different concerns.
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   update internal doc section
 -   replace json-editor by ActionConfigurator equivalent
--   tags: limit amount tags
-    -   resource tracking
+-   tags, references: early limit
 -   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
     -   partly solved
 -   test permissions
@@ -259,7 +259,6 @@ idea: seperate actions with different concerns.
 -   implement form with send for Message
 -   if type=Message switch strings to Inbox, Send
 -   find way how Messages sent can be differed from messages received
-
 
 # TODO far future
 

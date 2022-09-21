@@ -1,12 +1,21 @@
 import enum
 
+from typing import TYPE_CHECKING
+
 from rdflib import Namespace
 
-public_states = {"required", "trusted", "public"}
+if TYPE_CHECKING:
+    from . import State
+
+public_states: set[State] = {
+    "required",
+    "trusted",
+    "public",
+}
 
 # set here because ignored names are removed and must be manually set
 # must be normal set to be extendable
-protectedActions = frozenset({"storedUpdate", "auth"})
+protectedActions = {"storedUpdate", "auth"}
 
 
 class DeleteRecursive(enum.Enum):
@@ -48,9 +57,9 @@ UseCriteriaPublic.valid_values = frozenset(
 
 class MetadataOperations(enum.Enum):
     _ignore_ = ["valid_values"]
-    append = "append"
-    remove = "remove"
-    replace = "replace"
+    APPEND = "append"
+    REMOVE = "remove"
+    REPLACE = "replace"
 
 
 MetadataOperations.valid_values = frozenset(

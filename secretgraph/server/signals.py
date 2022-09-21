@@ -5,7 +5,7 @@ from django.db import transaction, models
 from django.db.models.functions import Length
 from django.db.utils import IntegrityError
 
-from ..constants import DeleteRecursive
+from ..core.constants import DeleteRecursive
 
 
 def initializeDb(sender, **kwargs):

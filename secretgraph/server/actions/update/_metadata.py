@@ -12,7 +12,7 @@ from contextlib import nullcontext
 
 from django.db.models import Q, F
 
-from ....constants import MetadataOperations, DeleteRecursive
+from ....core.constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import get_cached_result
 from ...utils.misc import hash_object
 from ...models import Content, ContentReference, ContentTag
@@ -40,16 +40,20 @@ def extract_key_hashes(tags):
 
 
 def transform_tags(
-    content_type, tags, oldtags=None, operation=MetadataOperations.append
+    content_type,
+    tags,
+    oldtags=None,
+    operation=MetadataOperations.APPEND,
+    early_size_limit=None,
 ):
     newtags = {}
     newtags_set = set()
     key_hashes = set()
     tags = tags or []
     oldtags = oldtags or []
-    operation = operation or MetadataOperations.append
+    operation = operation or MetadataOperations.APPEND
     new_had_keyhash = False
-    if operation == MetadataOperations.remove and oldtags:
+    if operation == MetadataOperations.REMOVE and oldtags:
         tags = filter(lambda x: not _invalid_update_tags.match(x), tags)
         remove_filter = re.compile(r"^(?:%s)" % "|".join(map(re.escape, tags)))
         tags = filter(lambda x: not remove_filter.match(x), oldtags)
@@ -75,20 +79,20 @@ def transform_tags(
             raise ValueError("Tag and Flag name collision")
         newtags_set.add(splitted_tag[0])
 
-    if operation != MetadataOperations.remove and oldtags:
+    if operation != MetadataOperations.REMOVE and oldtags:
         for tag in oldtags:
             splitted_tag = tag.split("=", 1)
             if splitted_tag[0] == "id":
                 continue
             if splitted_tag[0] == "key_hash":
-                if operation == MetadataOperations.replace and new_had_keyhash:
+                if operation == MetadataOperations.REPLACE and new_had_keyhash:
                     continue
                 if len_default_hash == len(splitted_tag[1]):
                     key_hashes.add(splitted_tag[1])
 
             if len(splitted_tag) == 2:
                 if (
-                    operation == MetadataOperations.append
+                    operation == MetadataOperations.APPEND
                     or splitted_tag[0] not in newtags_set
                 ):
                     s = newtags.setdefault(splitted_tag[0], set())
@@ -124,7 +128,12 @@ def clean_deleteRecursive(group, val):
 
 
 def transform_references(
-    content, references, key_hashes_tags, allowed_targets, no_final_refs=False
+    content,
+    references,
+    key_hashes_tags,
+    allowed_targets,
+    no_final_refs=False,
+    early_size_limit=None,
 ):
     # no_final_refs final_references => None
     final_references = None if no_final_refs else []
@@ -230,11 +239,11 @@ def update_metadata_fn(
     state=None,
     tags=None,
     references=None,
-    operation=MetadataOperations.append,
+    operation=MetadataOperations.APPEND,
     authset=None,
     required_keys=None,
 ):
-    operation = operation or MetadataOperations.append
+    operation = operation or MetadataOperations.APPEND
     final_tags = None
     remove_tags_q = Q()
     remove_refs_q = Q()
@@ -249,8 +258,8 @@ def update_metadata_fn(
         size_diff += size_tags_new - content.size_tags
 
         if operation in {
-            MetadataOperations.append,
-            MetadataOperations.replace,
+            MetadataOperations.APPEND,
+            MetadataOperations.REPLACE,
         }:
             final_tags = []
             for prefix, val in tags_dict.items():
@@ -280,9 +289,9 @@ def update_metadata_fn(
 
     if references is None:
         _refs = content.references.all()
-    elif operation in {MetadataOperations.remove, MetadataOperations.replace}:
+    elif operation in {MetadataOperations.REMOVE, MetadataOperations.REPLACE}:
         _refs = []
-        if MetadataOperations.replace:
+        if MetadataOperations.REPLACE:
             _refs = references
         remrefs = set(map(lambda x: (x["group"], x["target"]), references))
         for ref in content.references.all():
@@ -296,7 +305,7 @@ def update_metadata_fn(
                 remove_refs_q |= Q(id=ref.id)
                 continue
             _refs.append(ref)
-    elif MetadataOperations.append:
+    elif MetadataOperations.APPEND:
         # prefer old extra values, no problem with crashing as ignore_conflict
         _refs = [*content.references.all(), *references]
     # no_final_refs => final_references = None
@@ -350,26 +359,26 @@ def update_metadata_fn(
             )
             if final_tags is not None:
                 if operation in {
-                    MetadataOperations.remove,
-                    MetadataOperations.replace,
+                    MetadataOperations.REMOVE,
+                    MetadataOperations.REPLACE,
                 }:
                     content.tags.filter(remove_tags_q).delete()
                 if operation in {
-                    MetadataOperations.append,
-                    MetadataOperations.replace,
+                    MetadataOperations.APPEND,
+                    MetadataOperations.REPLACE,
                 }:
                     ContentTag.objects.bulk_create(
                         final_tags, ignore_conflicts=True
                     )
             if final_references is not None:
                 if operation in {
-                    MetadataOperations.remove,
-                    MetadataOperations.replace,
+                    MetadataOperations.REMOVE,
+                    MetadataOperations.REPLACE,
                 }:
                     content.references.filter(remove_refs_q).delete()
                 if operation in {
-                    MetadataOperations.append,
-                    MetadataOperations.replace,
+                    MetadataOperations.APPEND,
+                    MetadataOperations.REPLACE,
                 }:
                     ContentReference.objects.bulk_create(
                         final_references, ignore_conflicts=True

@@ -12,7 +12,7 @@ from strawberry.scalars import JSON
 from strawberry.types import Info
 from django.db import transaction
 
-from ....constants import TransferResult
+from ....core.constants import TransferResult
 from ...actions.update import transfer_value, create_content_fn
 from ...models import Content
 from ...utils.auth import (

@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import httpx
 
-from ..utils.graphql import transform_payload
+from ..core.utils.graphql import transform_payload
 
 parser = argparse.ArgumentParser()
 parser.add_argument("url")

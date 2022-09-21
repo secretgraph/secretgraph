@@ -13,7 +13,7 @@ from django.db.models import Q
 from django.utils.module_loading import import_string
 from django.conf import settings
 
-from ....constants import TransferResult
+from ....core.constants import TransferResult
 from ...utils.conf import get_httpx_params
 from ...utils.misc import AsyncAtomic
 from ...models import Content, ContentTag

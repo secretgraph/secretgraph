@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.serialization import load_der_private_key
 from django.conf import settings
 from django.db.models import Exists, OuterRef, Q, Subquery, F
 
-from ...constants import TransferResult, public_states
+from ...core.constants import TransferResult, public_states
 from ..models import Content, ContentReference
 
 logger = logging.getLogger(__name__)

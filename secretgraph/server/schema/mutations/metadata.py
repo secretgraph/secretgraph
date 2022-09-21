@@ -119,7 +119,7 @@ def update_metadata(
     state: Optional[str] = None,
     tags: Optional[List[str]] = None,
     actions: Optional[List[ActionInput]] = None,
-    operation: Optional[MetadataOperations] = MetadataOperations.append,
+    operation: Optional[MetadataOperations] = MetadataOperations.APPEND,
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
     if actions:

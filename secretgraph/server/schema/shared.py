@@ -44,6 +44,6 @@ class UseCriteriaPublic(Enum):
 
 @strawberry.enum
 class MetadataOperations(Enum):
-    append = constants.MetadataOperations.append.value
-    remove = constants.MetadataOperations.remove.value
-    replace = constants.MetadataOperations.replace.value
+    APPEND = constants.MetadataOperations.APPEND.value
+    REMOVE = constants.MetadataOperations.REMOVE.value
+    REPLACE = constants.MetadataOperations.REPLACE.value

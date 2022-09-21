@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 
 _cached_classes = {"Content", "Cluster", "Action"}
-_allowed_auth_types = {"Cluster", "Content"}
 
 
 class LazyViewResult(object):
@@ -76,6 +75,7 @@ def retrieve_allowed_objects(request, query, scope="view", authset=None):
     now = timezone.now()
     # cleanup expired Contents
     Content.objects.filter(markForDestruction__lte=now).delete()
+    # cleanup expired Clusters afterward
     if query.model == Cluster:
         Cluster.objects.annotate(models.Count("contents")).filter(
             markForDestruction__lte=now, contents__count=0
