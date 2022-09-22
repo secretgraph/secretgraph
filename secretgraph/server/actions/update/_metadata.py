@@ -11,6 +11,9 @@ import re
 from contextlib import nullcontext
 
 from django.db.models import Q, F
+from django.conf import settings
+
+from ....core.exceptions import ResourceLimitExceeded
 
 from ....core.constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import get_cached_result
@@ -53,11 +56,18 @@ def transform_tags(
     oldtags = oldtags or []
     operation = operation or MetadataOperations.APPEND
     new_had_keyhash = False
+    if early_size_limit is not None and len("".join(tags)) > early_size_limit:
+        raise ResourceLimitExceeded(
+            "tags specified exceed maximal operation"
+            "size (quota or global limit)"
+        )
     if operation == MetadataOperations.REMOVE and oldtags:
         tags = filter(lambda x: not _invalid_update_tags.match(x), tags)
         remove_filter = re.compile(r"^(?:%s)" % "|".join(map(re.escape, tags)))
         tags = filter(lambda x: not remove_filter.match(x), oldtags)
     for tag in tags:
+        if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
+            raise ResourceLimitExceeded("Tag too big")
         splitted_tag = tag.split("=", 1)
         if _invalid_update_tags.match(splitted_tag[0]):
             logger.warning(f"{splitted_tag[0]} is a not updatable tag")
@@ -68,8 +78,6 @@ def transform_tags(
             new_had_keyhash = True
             if len_default_hash == len(splitted_tag[1]):
                 key_hashes.add(splitted_tag[1])
-        if len(tag) > 8000:
-            raise ValueError("Tag too big")
         if len(splitted_tag) == 2:
             s = newtags.setdefault(splitted_tag[0], set())
             if not isinstance(s, set):
@@ -104,7 +112,7 @@ def transform_tags(
 
     if content_type == "PrivateKey" and not newtags.get("key"):
         raise ValueError("PrivateKey has no key=<foo> tag")
-    size_new = len("".join(newtags))
+    size_new = sum(map(lambda k, v: len("".join(v)) + len(k), newtags.items()))
     return newtags, key_hashes, size_new
 
 
@@ -206,8 +214,12 @@ def transform_references(
         ):
             deduplicate.add((injected_ref.group, injected_ref.target.id))
             size += len(injected_ref.extra) + 8
-            if len(injected_ref.extra) > 8000:
-                raise ValueError("Extra tag of ref too big")
+            if len(injected_ref.extra) > settings.SECRETGRAPH_TAG_LIMIT:
+                raise ResourceLimitExceeded("Extra tag of ref too big")
+            if early_size_limit is not None and len(size) > early_size_limit:
+                raise ResourceLimitExceeded(
+                    "references exhausts resource limit "
+                )
             # must be target
             encrypt_target_hashes.add(injected_ref.contentHash)
             # is not required to be in tags
@@ -218,8 +230,13 @@ def transform_references(
         if refob and (refob.group, refob.target.id) not in deduplicate:
             deduplicate.add((refob.group, refob.target.id))
             size += len(refob.extra) + 8
-            if len(refob.extra) > 8000:
-                raise ValueError("Extra tag of ref too big")
+            if len(refob.extra) > settings.SECRETGRAPH_TAG_LIMIT:
+                raise ResourceLimitExceeded("Extra tag of ref too big")
+            if early_size_limit is not None and len(size) > early_size_limit:
+                raise ResourceLimitExceeded(
+                    "references specified exceed maximal operation"
+                    "size (quota or global limit)"
+                )
             if refob.group == "signature":
                 sig_target_hashes.add(targetob.contentHash)
             if refob.group in {"key", "transfer"}:
@@ -250,10 +267,19 @@ def update_metadata_fn(
     size_diff = 0
     if state:
         content.state = state
+    early_op_limit = (
+        settings.SECRETGRAPH_OPERATION_SIZE_LIMIT
+        if content.net.quota is None
+        else content.net.quota
+    )
     if tags:
         oldtags = content.tags.values_list("tag", flat=True)
         tags_dict, key_hashes_tags, size_tags_new = transform_tags(
-            content.type, tags, oldtags, operation
+            content.type,
+            tags,
+            oldtags,
+            operation,
+            early_size_limit=early_op_limit,
         )
         size_diff += size_tags_new - content.size_tags
 
@@ -320,6 +346,7 @@ def update_metadata_fn(
         key_hashes_tags,
         get_cached_result(request, authset=authset)["Content"]["objects"],
         no_final_refs=references is None,
+        early_size_limit=early_op_limit,
     )
     if references is not None:
         size_diff += size_refs_new - content.size_references

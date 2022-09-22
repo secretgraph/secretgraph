@@ -12,7 +12,10 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
+from django.conf import settings
 from django.db.models import F, Q
+
+from ....core.exceptions import ResourceLimitExceeded
 
 from .... import constants
 from ...utils.auth import ids_to_results, get_cached_result
@@ -184,6 +187,11 @@ def _update_or_create_content_or_key(
         content.net = content.cluster.net
     if old_net == content.net:
         old_net = None
+    early_op_limit = (
+        settings.SECRETGRAPH_OPERATION_SIZE_LIMIT
+        if net.quota is None
+        else net.quota
+    )
     del net
 
     if create:
@@ -201,8 +209,7 @@ def _update_or_create_content_or_key(
     key_hashes_tags = set()
     if objdata.get("tags") is not None:
         tags_dict, key_hashes_tags, size_new_tags = transform_tags(
-            content.type,
-            objdata.get("tags"),
+            content.type, objdata.get("tags"), early_size_limit=early_op_limit
         )
         size_new += size_new_tags
     elif create:
@@ -322,6 +329,7 @@ def _update_or_create_content_or_key(
             key_hashes_tags,
             get_cached_result(request, authset=authset)["Content"]["objects"],
             no_final_refs=objdata.get("references") is None,
+            early_size_limit=early_op_limit,
         )
         if required_keys and required_keys.isdisjoint(verifiers_ref):
             raise ValueError("Not signed by required keys")
@@ -380,7 +388,7 @@ def _update_or_create_content_or_key(
             and size_diff > 0
             and content.net.bytes_in_use + size_diff > content.net.quota
         ):
-            raise ValueError("quota exceeded")
+            raise ResourceLimitExceeded("quota exceeded")
         # still in memory not serialized to db
         if not content.net.id:
             content.net.bytes_in_use += size_diff
@@ -392,7 +400,7 @@ def _update_or_create_content_or_key(
             and size_new > 0
             and content.net.bytes_in_use + size_new > content.net.quota
         ):
-            raise ValueError("quota exceeded")
+            raise ResourceLimitExceeded("quota exceeded")
         # still in memory not serialized to db
         if not content.net.id:
             content.net.bytes_in_use += size_new
