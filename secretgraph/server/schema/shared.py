@@ -4,6 +4,22 @@ from enum import Enum
 from ...core import constants
 
 
+# remove when proper fixed
+def _fixup_enum_value(enum):
+    new_enum = Enum(
+        enum.__name__,
+        map(
+            lambda enum_value: (enum_value.name, enum_value.value),
+            enum._enum_definition.values,
+        ),
+        module=enum.__module__,
+        qualname=enum.__qualname__,
+    )
+    new_enum._enum_definition = enum._enum_definition
+    return new_enum
+
+
+@_fixup_enum_value
 @strawberry.enum(description="Specify policy for recursive deletions")
 class DeleteRecursive(Enum):
     TRUE = strawberry.enum_value(
@@ -32,6 +48,7 @@ class UseCriteria(Enum):
     IGNORE = constants.UseCriteria.IGNORE.value
 
 
+@_fixup_enum_value
 @strawberry.enum(description="Specify criteria")
 class UseCriteriaPublic(Enum):
     TRUE = constants.UseCriteriaPublic.TRUE.value
