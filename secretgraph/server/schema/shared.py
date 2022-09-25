@@ -1,7 +1,7 @@
 import strawberry
 from enum import Enum
 
-from ... import constants
+from ...core import constants
 
 
 @strawberry.enum(description="Specify policy for recursive deletions")

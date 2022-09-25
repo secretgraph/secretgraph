@@ -25,7 +25,7 @@ from .messages import (
     reference_group_help,
     net_quota_help,
 )
-from .. import constants
+from ..core import constants
 
 logger = logging.getLogger(__name__)
 

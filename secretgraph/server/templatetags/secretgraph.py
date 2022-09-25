@@ -17,7 +17,7 @@ from ..actions.view import (
     ContentFetchQueryset,
 )
 from ..utils.encryption import iter_decrypt_contents
-from ... import constants
+from ...core import constants
 
 try:
     from bleach import sanitizer

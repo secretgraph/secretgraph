@@ -7,7 +7,7 @@ from uuid import UUID
 from strawberry_django_plus import relay, gql
 from django.db.models import Subquery, Q, QuerySet
 
-from .... import constants
+from ....core import constants
 from ...utils.auth import (
     get_cached_result,
     get_cached_permissions,

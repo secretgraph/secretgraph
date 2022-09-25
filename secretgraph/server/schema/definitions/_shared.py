@@ -6,7 +6,7 @@ from strawberry.types import Info
 from strawberry_django_plus import gql
 from django.db.models import Q
 
-from .... import constants
+from ....core import constants
 from ...utils.auth import get_cached_result
 from ...models import (
     Action,

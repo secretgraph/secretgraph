@@ -13,7 +13,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 
-from ... import constants
+from ...core import constants
 from ..actions.handler import ActionHandler
 from ..models import Action, Cluster, Content, GlobalGroupProperty
 from .misc import calculate_hashes

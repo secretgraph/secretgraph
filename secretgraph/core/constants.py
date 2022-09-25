@@ -1,11 +1,8 @@
 import enum
 
-from typing import TYPE_CHECKING
-
 from rdflib import Namespace
 
-if TYPE_CHECKING:
-    from . import State
+from .typings import State
 
 public_states: set[State] = {
     "required",

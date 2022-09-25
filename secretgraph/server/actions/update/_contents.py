@@ -17,7 +17,7 @@ from django.db.models import F, Q
 
 from ....core.exceptions import ResourceLimitExceeded
 
-from .... import constants
+from ....core import constants
 from ...utils.auth import ids_to_results, get_cached_result
 from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag, Net

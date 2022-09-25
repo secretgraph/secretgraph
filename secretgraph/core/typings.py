@@ -1,12 +1,7 @@
-from typing import TypeVar, Literal, TypeAlias
+from typing import Literal
 
-Scope = TypeVar(
-    "Scope", Literal["manage", "create", "delete", "update", "push", "view"]
-)
-State = TypeVar(
-    "State", Literal["required", "trusted", "public", "internal", "draft"]
-)
+Scope = Literal["manage", "create", "delete", "update", "push", "view"]
+State = Literal["required", "trusted", "public", "internal", "draft"]
 
-
-Hash = TypeAlias(str)
-Action = TypeAlias(str)
+Hash = str
+Action = str

@@ -1,7 +1,7 @@
 from django.db.models import Q, Subquery
 from strawberry_django_plus import relay
 
-from .... import constants
+from ....core import constants
 from ...models import Action, Cluster, Content, Net
 from ._shared import only_owned_helper
 

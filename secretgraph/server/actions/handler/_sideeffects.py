@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.utils import timezone
 from strawberry_django_plus import relay
 
-from .... import constants
+from ....core import constants
 from ...models import Action, Cluster, Content
 from ._shared import get_valid_fields, only_owned_helper
 

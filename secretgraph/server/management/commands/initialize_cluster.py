@@ -18,7 +18,7 @@ from django.urls import reverse
 from ...actions.update import create_cluster_fn, create_content_fn
 from ...models import Net
 from ...utils.misc import hash_object
-from .... import constants
+from ....core import constants
 
 
 def _gen_key_vars_nohash(inp: bytes | str):
