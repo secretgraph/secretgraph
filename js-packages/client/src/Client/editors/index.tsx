@@ -3,46 +3,36 @@ declare var gettext: any
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as React from 'react'
 
-const Loading = React.lazy(
-    () => import(/*  webpackChunkName: 'loading-types' */ './loading')
-)
+const Loading = React.lazy(() => import('./loading'))
+const Keys = React.lazy(() => import('./keys'))
 
 export const elements = new Map<string, Interfaces.ElementEntryInterface>([
     [
         'Cluster',
         {
             label: gettext('Cluster'),
-            component: React.lazy(
-                () =>
-                    import(/* webpackChunkName: 'cluster-editor' */ './cluster')
-            ),
+            component: React.lazy(() => import('./cluster')),
         },
     ],
     [
         'File',
         {
             label: gettext('File'),
-            component: React.lazy(
-                () => import(/* webpackChunkName: 'file-editor' */ './file')
-            ),
+            component: React.lazy(() => import('./file')),
         },
     ],
     [
         'Text',
         {
             label: gettext('Text'),
-            component: React.lazy(
-                () => import(/* webpackChunkName: 'file-editor' */ './file')
-            ),
+            component: React.lazy(() => import('./file')),
         },
     ],
     [
         'PublicKey',
         {
             label: gettext('Keys'),
-            component: React.lazy(
-                () => import(/* webpackChunkName: 'keys-editor' */ './keys')
-            ),
+            component: Keys,
         },
     ],
     [
@@ -50,9 +40,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('Keys'),
             ignore: true,
-            component: React.lazy(
-                () => import(/* webpackChunkName: 'keys-editor' */ './keys')
-            ),
+            component: Keys,
         },
     ],
     [
@@ -60,9 +48,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         {
             label: gettext('Config'),
             ignore: true,
-            component: React.lazy(
-                () => import(/* webpackChunkName: 'keys-editor' */ './config')
-            ),
+            component: React.lazy(() => import('./config')),
         },
     ],
     [

@@ -86,15 +86,12 @@ module.exports = (env, options) => {
                         compilerOptions: {
                             jsx:
                                 options.mode == 'development'
-                                    ? 'react-jsx'
-                                    : 'react-jsxdev',
+                                    ? 'react-jsxdev'
+                                    : 'react-jsx',
                         },
-                        /*getCustomTransformers: () => ({
-                            before: [
-                                tsgqlPlugin.getTransformer({
-                                }),
-                            ],
-                        }),*/
+                        getCustomTransformers: () => ({
+                            before: [tsgqlPlugin.getTransformer({})],
+                        }),
                     },
                 },
                 {
@@ -128,42 +125,10 @@ module.exports = (env, options) => {
                 buffer: false,
             },
             alias,
-            plugins: [],
         },
         plugins,
         optimization: {
             runtimeChunk: 'single',
-            splitChunks: {
-                chunks: 'all',
-                maxAsyncRequests: 100,
-                cacheGroups: {
-                    vendors: {
-                        test: /[\\/]node_modules[\\/]/,
-                        priority: -10,
-                        reuseExistingChunk: true,
-                        name(module) {
-                            const packageName = module.context.match(
-                                /[\\/]node_modules[\\/](.*?)([\\/]|$)/
-                            )[1]
-
-                            return `vendors.${packageName}`
-                        },
-                    },
-                    default: {
-                        minChunks: 4,
-                        priority: -20,
-                        reuseExistingChunk: true,
-
-                        name(module) {
-                            const moduleFileName = module
-                                .identifier()
-                                .split('/')
-                                .reduceRight((item) => item)
-                            return `default.${moduleFileName}`
-                        },
-                    },
-                },
-            },
         },
     }
 }
