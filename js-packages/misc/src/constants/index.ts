@@ -7,6 +7,11 @@ export const validActions = new Set<MainContextInterface['action']>([
     'update',
     'help',
 ])
+export const validNotLoggedInActions = new Set<MainContextInterface['action']>([
+    'login',
+    'register',
+    'help',
+])
 
 export const public_states = ['required', 'trusted', 'public']
 

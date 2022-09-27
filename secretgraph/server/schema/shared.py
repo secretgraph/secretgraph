@@ -16,6 +16,7 @@ def _fixup_enum_value(enum):
         qualname=enum.__qualname__,
     )
     new_enum._enum_definition = enum._enum_definition
+    new_enum._enum_definition.wrapped_cls = new_enum
     return new_enum
 
 

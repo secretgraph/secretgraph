@@ -24,8 +24,6 @@ logger = logging.getLogger(__name__)
 
 len_default_hash = len(hash_object(b""))
 
-_invalid_update_tags = re.compile("^(?:id|state|type)=?")
-
 
 def extract_key_hashes(tags):
     key_hashes = set()
@@ -42,6 +40,22 @@ def extract_key_hashes(tags):
     return key_hashes, content_type
 
 
+def tags_sanitizer(tag: str):
+    if tag == "key_hash":
+        raise ValueError("key_hash should be tag not flag")
+
+    if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
+        raise ResourceLimitExceeded(f"Tag too big ({tag})")
+    return True
+
+
+def _tag_value_size(key_val):
+    size = len(key_val[0])
+    if key_val[1]:
+        size += sum(map(len, key_val[1]))
+    return size
+
+
 def transform_tags(
     content_type,
     tags,
@@ -50,33 +64,30 @@ def transform_tags(
     early_size_limit=None,
 ):
     newtags = {}
-    newtags_set = set()
     key_hashes = set()
-    tags = tags or []
     oldtags = oldtags or []
     operation = operation or MetadataOperations.APPEND
     new_had_keyhash = False
-    if early_size_limit is not None and len("".join(tags)) > early_size_limit:
-        raise ResourceLimitExceeded(
-            "tags specified exceed maximal operation"
-            "size (quota or global limit)"
-        )
+    size_new = 0
+    tags = filter(tags_sanitizer, tags)
     if operation == MetadataOperations.REMOVE and oldtags:
-        tags = filter(lambda x: not _invalid_update_tags.match(x), tags)
         remove_filter = re.compile(r"^(?:%s)" % "|".join(map(re.escape, tags)))
         tags = filter(lambda x: not remove_filter.match(x), oldtags)
+
     for tag in tags:
-        if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
-            raise ResourceLimitExceeded("Tag too big")
+        # otherwise the iterator is exhausted
+        size_new += len(tag)
+        if early_size_limit is not None and size_new > early_size_limit:
+            raise ResourceLimitExceeded(
+                "tags specified exceed maximal operation"
+                "size (quota or global limit)"
+            )
         splitted_tag = tag.split("=", 1)
-        if _invalid_update_tags.match(splitted_tag[0]):
-            logger.warning(f"{splitted_tag[0]} is a not updatable tag")
-            continue
-        elif splitted_tag[0] == "key_hash":
-            if len(splitted_tag) == 1:
-                raise ValueError("key_hash should be tag not flag")
-            new_had_keyhash = True
+        if splitted_tag[0] == "key_hash":
+            # TODO: we identify hashes currently via length
+            #       this will maybe change in future
             if len_default_hash == len(splitted_tag[1]):
+                new_had_keyhash = True
                 key_hashes.add(splitted_tag[1])
         if len(splitted_tag) == 2:
             s = newtags.setdefault(splitted_tag[0], set())
@@ -85,34 +96,38 @@ def transform_tags(
             s.add(splitted_tag[1])
         elif newtags.setdefault(splitted_tag[0], None) is not None:
             raise ValueError("Tag and Flag name collision")
-        newtags_set.add(splitted_tag[0])
 
     if operation != MetadataOperations.REMOVE and oldtags:
         for tag in oldtags:
             splitted_tag = tag.split("=", 1)
-            if splitted_tag[0] == "id":
-                continue
             if splitted_tag[0] == "key_hash":
                 if operation == MetadataOperations.REPLACE and new_had_keyhash:
                     continue
+                # TODO: we identify hashes currently via length
+                #       this will maybe change in future
                 if len_default_hash == len(splitted_tag[1]):
                     key_hashes.add(splitted_tag[1])
 
             if len(splitted_tag) == 2:
                 if (
                     operation == MetadataOperations.APPEND
-                    or splitted_tag[0] not in newtags_set
+                    or splitted_tag[0] not in newtags
                 ):
                     s = newtags.setdefault(splitted_tag[0], set())
+                    # can switch type of tag (flag/key value)
                     if not isinstance(s, set):
                         continue
-                    s.add(splitted_tag[1])
-            elif newtags.setdefault(splitted_tag[0], None) is not None:
-                pass
+                    if splitted_tag[1] not in s:
+                        s.add(splitted_tag[1])
+                        size_new += len(tag)
+            else:
+                # can switch type of tag (flag/key value)
+                if splitted_tag[0] not in s:
+                    size_new += len(tag)
+                    newtags[splitted_tag[0]] = None
 
     if content_type == "PrivateKey" and not newtags.get("key"):
         raise ValueError("PrivateKey has no key=<foo> tag")
-    size_new = sum(map(lambda k, v: len("".join(v)) + len(k), newtags.items()))
     return newtags, key_hashes, size_new
 
 
@@ -216,7 +231,7 @@ def transform_references(
             size += len(injected_ref.extra) + 8
             if len(injected_ref.extra) > settings.SECRETGRAPH_TAG_LIMIT:
                 raise ResourceLimitExceeded("Extra tag of ref too big")
-            if early_size_limit is not None and len(size) > early_size_limit:
+            if early_size_limit is not None and size > early_size_limit:
                 raise ResourceLimitExceeded(
                     "references exhausts resource limit "
                 )
@@ -232,7 +247,7 @@ def transform_references(
             size += len(refob.extra) + 8
             if len(refob.extra) > settings.SECRETGRAPH_TAG_LIMIT:
                 raise ResourceLimitExceeded("Extra tag of ref too big")
-            if early_size_limit is not None and len(size) > early_size_limit:
+            if early_size_limit is not None and size > early_size_limit:
                 raise ResourceLimitExceeded(
                     "references specified exceed maximal operation"
                     "size (quota or global limit)"

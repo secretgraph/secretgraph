@@ -6,7 +6,6 @@ import Button from '@mui/material/Button'
 import FormControl from '@mui/material/FormControl'
 import FormHelperText from '@mui/material/FormHelperText'
 import Grid from '@mui/material/Grid'
-import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
@@ -29,13 +28,12 @@ import {
 } from '../messages'
 
 function Login() {
-    const theme = useTheme()
     const [needsPw, setNeedsPw] = React.useState(false)
-    const { defaultPath } = React.useContext(Contexts.External)
     const [oldConfig, setOldConfig] = React.useState(null) as [
         Interfaces.ConfigInterface | null,
         any
     ]
+    const { loginUrl } = React.useContext(Contexts.External)
     const { sendMessage } = React.useContext(Contexts.Snackbar)
     const { updateMainCtx } = React.useContext(Contexts.Main)
     const { setActiveUrl } = React.useContext(Contexts.ActiveUrl)
@@ -92,15 +90,20 @@ function Login() {
             }}
             initialValues={{
                 password: '',
-                url: '',
+                url: loginUrl,
                 file: null,
             }}
             validate={({ password, url, file }) => {
                 if (!url && !file) {
-                    throw Error('nothing set')
+                    return {
+                        url: 'One of file or url required',
+                        file: 'One of file or url required',
+                    }
                 }
                 if (needsPw && !password) {
-                    throw Error('password is missing')
+                    return {
+                        password: 'password is missing',
+                    }
                 }
             }}
         >
@@ -108,6 +111,8 @@ function Login() {
                 submitForm,
                 isSubmitting,
                 values,
+                errors,
+                touched,
                 isValid,
                 setFieldTouched,
                 setFieldValue,
@@ -133,7 +138,7 @@ function Login() {
                             >
                                 <FormControl
                                     sx={{
-                                        padding: theme.spacing(0, 1),
+                                        padding: (theme) => theme.spacing(0, 1),
                                         textAlign: 'center' as const,
                                     }}
                                 >
@@ -187,12 +192,23 @@ function Login() {
                                         </Button>
                                     </label>
                                     <FormHelperText id="secretgraph-import-file-help">
+                                        {errors?.file && touched?.file ? (
+                                            <Box
+                                                sx={{
+                                                    color: (theme) =>
+                                                        theme.palette.error
+                                                            .main,
+                                                }}
+                                            >
+                                                {errors!.file}
+                                            </Box>
+                                        ) : null}
                                         {importFileLabel}
                                     </FormHelperText>
                                 </FormControl>
                                 <Box
                                     sx={{
-                                        padding: theme.spacing(0, 1),
+                                        padding: (theme) => theme.spacing(0, 1),
                                         textAlign: 'center',
                                     }}
                                 >
@@ -201,7 +217,7 @@ function Login() {
                                 <FormControl
                                     sx={{
                                         flexGrow: 1,
-                                        padding: theme.spacing(0, 1),
+                                        padding: (theme) => theme.spacing(0, 1),
                                     }}
                                 >
                                     <Field
@@ -259,7 +275,7 @@ function Login() {
                             <Button
                                 size="small"
                                 variant="text"
-                                disabled={isSubmitting || !isValid}
+                                disabled={isSubmitting}
                                 onClick={() => {
                                     updateMainCtx({ action: 'register' })
                                 }}

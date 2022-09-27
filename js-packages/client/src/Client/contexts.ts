@@ -71,7 +71,8 @@ export const ActiveUrl = createContext<{
 export const External = createContext<{
     defaultPath: string
     homeUrl?: string
-}>({ defaultPath: '' })
+    loginUrl: string
+}>({ defaultPath: '', loginUrl: '' })
 
 export const OpenSidebar = createContext<{
     open: boolean

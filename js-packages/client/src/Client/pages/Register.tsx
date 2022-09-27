@@ -216,7 +216,7 @@ function Register() {
                             <Button
                                 size="small"
                                 variant="text"
-                                disabled={isSubmitting || !isValid}
+                                disabled={isSubmitting}
                                 onClick={() => {
                                     updateMainCtx({ action: 'login' })
                                 }}

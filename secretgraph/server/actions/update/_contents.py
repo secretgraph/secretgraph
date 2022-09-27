@@ -187,12 +187,12 @@ def _update_or_create_content_or_key(
         content.net = content.cluster.net
     if old_net == content.net:
         old_net = None
+    del net
     early_op_limit = (
         settings.SECRETGRAPH_OPERATION_SIZE_LIMIT
-        if net.quota is None
-        else net.quota
+        if content.net.quota is None
+        else content.net.quota
     )
-    del net
 
     if create:
         content.type = objdata["type"]

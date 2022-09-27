@@ -15,36 +15,41 @@ type Props = {
 }
 
 function Client(props: Props) {
-    const [config, setConfig] = React.useState<Interfaces.ConfigInterface|null>(()=> loadConfigSync())
-    const [loading, setLoading] = React.useState(()=>!config)
-    React.useEffect(()=> {
-        if(config){
+    const [config, setConfig] =
+        React.useState<Interfaces.ConfigInterface | null>(() =>
+            loadConfigSync()
+        )
+    const [loading, setLoading] = React.useState(() => !config)
+    React.useEffect(() => {
+        if (config) {
             return
         }
         let active = true
         const query = new URLSearchParams(window.location.hash.substring(1))
-        async function f(){
-            const url = new URL(query.get("url") || props.defaultPath || "", window.location.href)
-            query.delete("url")
+        async function f() {
+            const url = new URL(
+                query.get('url') || props.defaultPath || '',
+                window.location.href
+            )
+            query.delete('url')
             url.hash = query.toString()
             try {
                 const conf = await loadConfig(url.href)
-                if(conf && active){
+                if (conf && active) {
                     setConfig(conf)
                 }
             } finally {
-                if(active){
+                if (active) {
                     setLoading(false)
                 }
             }
         }
-        // TODO: Login screen
-        if(query.has("key") && (query.get("url") || props.defaultPath )){
+        if (query.has('key') && (query.get('url') || props.defaultPath)) {
             f()
         } else {
             setLoading(false)
         }
-        return ()=> {
+        return () => {
             active = false
         }
     }, [])

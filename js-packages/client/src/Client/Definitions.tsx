@@ -1,4 +1,7 @@
-import { validActions } from '@secretgraph/misc/constants'
+import {
+    validActions,
+    validNotLoggedInActions,
+} from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     authInfoFromConfig,
@@ -42,16 +45,20 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
+    const [loginUrl, setLoginUrl] = React.useState('')
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>,
         URLSearchParams
     >(updateState, searchInit, (query) => {
+        const vActions = config ? validActions : validNotLoggedInActions
+        let action: Interfaces.MainContextInterface['action'] = config
+            ? 'create'
+            : 'login'
+        if (vActions.has(query.get('action') as any)) {
+            action = query.get('action') as any
+        }
         const ctx: Interfaces.MainContextInterface = {
-            action: validActions.has(query.get('action') as any)
-                ? (query.get('action') as any)
-                : config
-                ? 'create'
-                : 'login',
+            action,
             title: '',
             item: query.get('item'),
             updateId: null,
@@ -63,17 +70,32 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
             tokensPermissions: new Set(),
             cluster: null,
         }
-        if (ctx.action != 'create') {
-            ctx.type = 'loading'
-        } else if (config) {
-            const require = new Set(['manage'])
-            const authinfo = authInfoFromConfig({
-                config,
-                url: ctx.url || config.baseUrl,
-                require,
-            })
-            ctx.tokens = authinfo.tokens
-            ctx.tokensPermissions = require
+        if (!config && ctx.action == 'login') {
+            if (query.has('prekey') || query.has('token') || query.has('key')) {
+                const loginQuery = new URLSearchParams(query)
+                loginQuery.delete('url')
+                loginQuery.delete('action')
+                setLoginUrl(`${ctx.url}?${loginQuery}`)
+            }
+        } else {
+            if (
+                ctx.action != 'create' &&
+                ctx.action != 'register' &&
+                ctx.action != 'help'
+            ) {
+                ctx.type = 'loading'
+            }
+            if (config) {
+                setLoginUrl('')
+                const require = new Set(['manage'])
+                const authinfo = authInfoFromConfig({
+                    config,
+                    url: ctx.url || config.baseUrl,
+                    require,
+                })
+                ctx.tokens = authinfo.tokens
+                ctx.tokensPermissions = require
+            }
         }
         return ctx
     })
@@ -121,7 +143,11 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
 
     return (
         <Contexts.External.Provider
-            value={{ defaultPath: defaultPath ?? '/graphql', homeUrl }}
+            value={{
+                defaultPath: defaultPath ?? '/graphql',
+                homeUrl,
+                loginUrl,
+            }}
         >
             <Contexts.OpenSidebar.Provider
                 value={{
