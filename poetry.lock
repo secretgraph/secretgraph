@@ -101,8 +101,8 @@ visualize = ["Twisted (>=16.1.1)", "graphviz (>0.5.1)"]
 name = "beautifulsoup4"
 version = "4.11.1"
 description = "Screen-scraping library"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.6.0"
 
 [package.dependencies]
@@ -165,21 +165,10 @@ daphne = ["daphne (>=4.0.0b1)"]
 tests = ["async-timeout", "coverage (>=4.5,<5.0)", "pytest", "pytest-asyncio", "pytest-django"]
 
 [[package]]
-name = "click"
-version = "8.1.3"
-description = "Composable command line interface toolkit"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
-
-[[package]]
 name = "colorama"
 version = "0.4.5"
 description = "Cross-platform colored terminal text."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -294,8 +283,8 @@ Django = ">=3.2"
 name = "django-webtest"
 version = "1.9.10"
 description = "Instant integration of Ian Bicking's WebTest (http://docs.pylonsproject.org/projects/webtest/) with Django's testing framework."
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = "*"
 
 [package.dependencies]
@@ -544,17 +533,6 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
-name = "Pygments"
-version = "2.13.0"
-description = "Pygments is a syntax highlighting package written in Python."
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[package.extras]
-plugins = ["importlib-metadata"]
-
-[[package]]
 name = "pylint"
 version = "2.15.3"
 description = "python code static checker"
@@ -579,17 +557,17 @@ testutils = ["gitpython (>3)"]
 
 [[package]]
 name = "pyOpenSSL"
-version = "22.0.0"
+version = "22.1.0"
 description = "Python wrapper module around the OpenSSL library"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-cryptography = ">=35.0"
+cryptography = ">=38.0.0,<39"
 
 [package.extras]
-docs = ["sphinx", "sphinx-rtd-theme"]
+docs = ["sphinx (!=5.2.0,!=5.2.0.post0)", "sphinx-rtd-theme"]
 test = ["flaky", "pretend", "pytest (>=3.0.1)"]
 
 [[package]]
@@ -613,17 +591,6 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 
 [package.dependencies]
 six = ">=1.5"
-
-[[package]]
-name = "python-multipart"
-version = "0.0.5"
-description = "A streaming multipart parser for Python"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-six = ">=1.4.0"
 
 [[package]]
 name = "pytoolconfig"
@@ -747,8 +714,8 @@ python-versions = ">=3.7"
 name = "soupsieve"
 version = "2.3.2.post1"
 description = "A modern CSS selector implementation for Beautiful Soup."
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.6"
 
 [[package]]
@@ -779,28 +746,26 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.132.1"
+version = "0.133.0"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
-click = ">=7.0,<9.0"
 graphql-core = ">=3.2.0,<3.3.0"
-pygments = ">=2.3,<3.0"
 python-dateutil = ">=2.7.0,<3.0.0"
-python-multipart = ">=0.0.5,<0.0.6"
 typing_extensions = ">=3.7.4,<5.0.0"
 
 [package.extras]
 aiohttp = ["aiohttp (>=3.7.4.post0,<4.0.0)"]
-asgi = ["starlette (>=0.13.6)"]
+asgi = ["python-multipart (>=0.0.5,<0.0.6)", "starlette (>=0.13.6)"]
 chalice = ["chalice (>=1.22,<2.0)"]
 channels = ["asgiref (>=3.2,<4.0)", "channels (>=3.0.5)"]
-debug-server = ["starlette (>=0.13.6)", "uvicorn (>=0.11.6,<0.19.0)"]
+cli = ["click (>=7.0,<9.0)", "pygments (>=2.3,<3.0)"]
+debug-server = ["click (>=7.0,<9.0)", "pygments (>=2.3,<3.0)", "python-multipart (>=0.0.5,<0.0.6)", "starlette (>=0.13.6)", "uvicorn (>=0.11.6,<0.19.0)"]
 django = ["Django (>=3.2)", "asgiref (>=3.2,<4.0)"]
-fastapi = ["fastapi (>=0.65.2)"]
+fastapi = ["fastapi (>=0.65.2)", "python-multipart (>=0.0.5,<0.0.6)"]
 flask = ["flask (>=1.1)"]
 opentelemetry = ["opentelemetry-api (<2)", "opentelemetry-sdk (<2)"]
 pydantic = ["pydantic (<2)"]
@@ -903,7 +868,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "tzdata"
-version = "2022.2"
+version = "2022.4"
 description = "Provider of IANA time zone data"
 category = "main"
 optional = false
@@ -913,8 +878,8 @@ python-versions = ">=2"
 name = "waitress"
 version = "2.1.2"
 description = "Waitress WSGI server"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7.0"
 
 [package.extras]
@@ -933,8 +898,8 @@ python-versions = "*"
 name = "WebOb"
 version = "1.8.7"
 description = "WSGI request and response object"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*"
 
 [package.extras]
@@ -945,8 +910,8 @@ testing = ["coverage", "pytest (>=3.1.0)", "pytest-cov", "pytest-xdist"]
 name = "WebTest"
 version = "3.0.0"
 description = "Helper to test WSGI applications"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.6, <4"
 
 [package.dependencies]
@@ -970,8 +935,8 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 name = "WSGIProxy2"
 version = "0.5.1"
 description = "A WSGI Proxy with various http client backends"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = "*"
 
 [package.dependencies]
@@ -998,12 +963,11 @@ fastcgi = ["flipflop"]
 mysql = ["mysqlclient", "django-mysql"]
 postgresql = ["psycopg2"]
 server = ["django", "channels", "graphene-protector", "strawberry-graphql", "strawberry-django-plus", "django-fast-ratelimit", "django-manifest-loader"]
-test = ["django-webtest", "WSGIProxy2"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <4"
-content-hash = "e52105a73575fa6585d09ef5b43ebe5f62205d5c9a5da0ec9e34d2dea3824ec0"
+content-hash = "39dc6206e54a60e6fb60c9215c546098d05e28d180ea84787be928d314fe02e8"
 
 [metadata.files]
 anyio = [
@@ -1110,10 +1074,6 @@ cffi = [
 channels = [
     {file = "channels-4.0.0b1-py3-none-any.whl", hash = "sha256:173830f6686ca703420427a4f6779583589f7aaf8f9e4f396d6a20647e60b5c8"},
     {file = "channels-4.0.0b1.tar.gz", hash = "sha256:124e5362ad2be690540e2d38e5a082c9dfb653d5e53d6aa55915cc865826f4ff"},
-]
-click = [
-    {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
-    {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
 ]
 colorama = [
     {file = "colorama-0.4.5-py2.py3-none-any.whl", hash = "sha256:854bf444933e37f5824ae7bfc1e98d5bce2ebe4160d46b5edf346a89358e99da"},
@@ -1308,50 +1268,24 @@ psycopg2 = [
     {file = "psycopg2-2.9.3.tar.gz", hash = "sha256:8e841d1bf3434da985cc5ef13e6f75c8981ced601fd70cc6bf33351b91562981"},
 ]
 pyasn1 = [
-    {file = "pyasn1-0.4.8-py2.4.egg", hash = "sha256:fec3e9d8e36808a28efb59b489e4528c10ad0f480e57dcc32b4de5c9d8c9fdf3"},
-    {file = "pyasn1-0.4.8-py2.5.egg", hash = "sha256:0458773cfe65b153891ac249bcf1b5f8f320b7c2ce462151f8fa74de8934becf"},
-    {file = "pyasn1-0.4.8-py2.6.egg", hash = "sha256:5c9414dcfede6e441f7e8f81b43b34e834731003427e5b09e4e00e3172a10f00"},
-    {file = "pyasn1-0.4.8-py2.7.egg", hash = "sha256:6e7545f1a61025a4e58bb336952c5061697da694db1cae97b116e9c46abcf7c8"},
     {file = "pyasn1-0.4.8-py2.py3-none-any.whl", hash = "sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d"},
-    {file = "pyasn1-0.4.8-py3.1.egg", hash = "sha256:78fa6da68ed2727915c4767bb386ab32cdba863caa7dbe473eaae45f9959da86"},
-    {file = "pyasn1-0.4.8-py3.2.egg", hash = "sha256:08c3c53b75eaa48d71cf8c710312316392ed40899cb34710d092e96745a358b7"},
-    {file = "pyasn1-0.4.8-py3.3.egg", hash = "sha256:03840c999ba71680a131cfaee6fab142e1ed9bbd9c693e285cc6aca0d555e576"},
-    {file = "pyasn1-0.4.8-py3.4.egg", hash = "sha256:7ab8a544af125fb704feadb008c99a88805126fb525280b2270bb25cc1d78a12"},
-    {file = "pyasn1-0.4.8-py3.5.egg", hash = "sha256:e89bf84b5437b532b0803ba5c9a5e054d21fec423a89952a74f87fa2c9b7bce2"},
-    {file = "pyasn1-0.4.8-py3.6.egg", hash = "sha256:014c0e9976956a08139dc0712ae195324a75e142284d5f87f1a87ee1b068a359"},
-    {file = "pyasn1-0.4.8-py3.7.egg", hash = "sha256:99fcc3c8d804d1bc6d9a099921e39d827026409a58f2a720dcdb89374ea0c776"},
     {file = "pyasn1-0.4.8.tar.gz", hash = "sha256:aef77c9fb94a3ac588e87841208bdec464471d9871bd5050a287cc9a475cd0ba"},
 ]
 pyasn1-modules = [
     {file = "pyasn1-modules-0.2.8.tar.gz", hash = "sha256:905f84c712230b2c592c19470d3ca8d552de726050d1d1716282a1f6146be65e"},
-    {file = "pyasn1_modules-0.2.8-py2.4.egg", hash = "sha256:0fe1b68d1e486a1ed5473f1302bd991c1611d319bba158e98b106ff86e1d7199"},
-    {file = "pyasn1_modules-0.2.8-py2.5.egg", hash = "sha256:fe0644d9ab041506b62782e92b06b8c68cca799e1a9636ec398675459e031405"},
-    {file = "pyasn1_modules-0.2.8-py2.6.egg", hash = "sha256:a99324196732f53093a84c4369c996713eb8c89d360a496b599fb1a9c47fc3eb"},
-    {file = "pyasn1_modules-0.2.8-py2.7.egg", hash = "sha256:0845a5582f6a02bb3e1bde9ecfc4bfcae6ec3210dd270522fee602365430c3f8"},
     {file = "pyasn1_modules-0.2.8-py2.py3-none-any.whl", hash = "sha256:a50b808ffeb97cb3601dd25981f6b016cbb3d31fbf57a8b8a87428e6158d0c74"},
-    {file = "pyasn1_modules-0.2.8-py3.1.egg", hash = "sha256:f39edd8c4ecaa4556e989147ebf219227e2cd2e8a43c7e7fcb1f1c18c5fd6a3d"},
-    {file = "pyasn1_modules-0.2.8-py3.2.egg", hash = "sha256:b80486a6c77252ea3a3e9b1e360bc9cf28eaac41263d173c032581ad2f20fe45"},
-    {file = "pyasn1_modules-0.2.8-py3.3.egg", hash = "sha256:65cebbaffc913f4fe9e4808735c95ea22d7a7775646ab690518c056784bc21b4"},
-    {file = "pyasn1_modules-0.2.8-py3.4.egg", hash = "sha256:15b7c67fabc7fc240d87fb9aabf999cf82311a6d6fb2c70d00d3d0604878c811"},
-    {file = "pyasn1_modules-0.2.8-py3.5.egg", hash = "sha256:426edb7a5e8879f1ec54a1864f16b882c2837bfd06eee62f2c982315ee2473ed"},
-    {file = "pyasn1_modules-0.2.8-py3.6.egg", hash = "sha256:cbac4bc38d117f2a49aeedec4407d23e8866ea4ac27ff2cf7fb3e5b570df19e0"},
-    {file = "pyasn1_modules-0.2.8-py3.7.egg", hash = "sha256:c29a5e5cc7a3f05926aff34e097e84f8589cd790ce0ed41b67aed6857b26aafd"},
 ]
 pycparser = [
     {file = "pycparser-2.21-py2.py3-none-any.whl", hash = "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"},
     {file = "pycparser-2.21.tar.gz", hash = "sha256:e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"},
-]
-Pygments = [
-    {file = "Pygments-2.13.0-py3-none-any.whl", hash = "sha256:f643f331ab57ba3c9d89212ee4a2dabc6e94f117cf4eefde99a0574720d14c42"},
-    {file = "Pygments-2.13.0.tar.gz", hash = "sha256:56a8508ae95f98e2b9bdf93a6be5ae3f7d8af858b43e02c5a2ff083726be40c1"},
 ]
 pylint = [
     {file = "pylint-2.15.3-py3-none-any.whl", hash = "sha256:7f6aad1d8d50807f7bc64f89ac75256a9baf8e6ed491cc9bc65592bc3f462cf1"},
     {file = "pylint-2.15.3.tar.gz", hash = "sha256:5fdfd44af182866999e6123139d265334267339f29961f00c89783155eacc60b"},
 ]
 pyOpenSSL = [
-    {file = "pyOpenSSL-22.0.0-py2.py3-none-any.whl", hash = "sha256:ea252b38c87425b64116f808355e8da644ef9b07e429398bfece610f893ee2e0"},
-    {file = "pyOpenSSL-22.0.0.tar.gz", hash = "sha256:660b1b1425aac4a1bea1d94168a85d99f0b3144c869dd4390d27629d0087f1bf"},
+    {file = "pyOpenSSL-22.1.0-py3-none-any.whl", hash = "sha256:b28437c9773bb6c6958628cf9c3bebe585de661dba6f63df17111966363dd15e"},
+    {file = "pyOpenSSL-22.1.0.tar.gz", hash = "sha256:7a83b7b272dd595222d672f5ce29aa030f1fb837630ef229f62e72e395ce8968"},
 ]
 pyparsing = [
     {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
@@ -1360,9 +1294,6 @@ pyparsing = [
 python-dateutil = [
     {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
     {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
-]
-python-multipart = [
-    {file = "python-multipart-0.0.5.tar.gz", hash = "sha256:f7bb5f611fc600d15fa47b3974c8aa16e93724513b49b5f95c81e6624c83fa43"},
 ]
 pytoolconfig = [
     {file = "pytoolconfig-1.2.2-py3-none-any.whl", hash = "sha256:825d97b052e58b609c2684b04efeb543075588d33a4916a6dc2ae39676458c7d"},
@@ -1409,8 +1340,8 @@ strawberry-django-plus = [
     {file = "strawberry_django_plus-1.27-py3-none-any.whl", hash = "sha256:8707b023b09ce0e15004c3b00b6cb27285e3bc24564bc95b61bb8c63a97e0902"},
 ]
 strawberry-graphql = [
-    {file = "strawberry-graphql-0.132.1.tar.gz", hash = "sha256:96230df8da4e8077243ee82cce996d788826d3db1efb4bafd01e8db4a69dd104"},
-    {file = "strawberry_graphql-0.132.1-py3-none-any.whl", hash = "sha256:65cdc13e28529bc498b86cb2ee77245f4aa7310e4e8eb03d3bcbe241ef7bc4f8"},
+    {file = "strawberry-graphql-0.133.0.tar.gz", hash = "sha256:e3e2feeac1a111899951ea7a04abd163d3996f23fce34ec05c1b6d74d4d5a52b"},
+    {file = "strawberry_graphql-0.133.0-py3-none-any.whl", hash = "sha256:911ee09c86d66afbecc2873f2dac9974d179e6d439d67083ea399626dd18a344"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry-graphql-django-0.5.1.tar.gz", hash = "sha256:e807492399f1c823c88d82919efb6e5a564edc405f0c72b704beec8d608b5012"},
@@ -1451,8 +1382,8 @@ typing-extensions = [
     {file = "typing_extensions-4.3.0.tar.gz", hash = "sha256:e6d2677a32f47fc7eb2795db1dd15c1f34eff616bcaf2cfb5e997f854fa1c4a6"},
 ]
 tzdata = [
-    {file = "tzdata-2022.2-py2.py3-none-any.whl", hash = "sha256:c3119520447d68ef3eb8187a55a4f44fa455f30eb1b4238fa5691ba094f2b05b"},
-    {file = "tzdata-2022.2.tar.gz", hash = "sha256:21f4f0d7241572efa7f7a4fdabb052e61b55dc48274e6842697ccdf5253e5451"},
+    {file = "tzdata-2022.4-py2.py3-none-any.whl", hash = "sha256:74da81ecf2b3887c94e53fc1d466d4362aaf8b26fc87cda18f22004544694583"},
+    {file = "tzdata-2022.4.tar.gz", hash = "sha256:ada9133fbd561e6ec3d1674d3fba50251636e918aa97bd59d63735bef5a513bb"},
 ]
 waitress = [
     {file = "waitress-2.1.2-py3-none-any.whl", hash = "sha256:7500c9625927c8ec60f54377d590f67b30c8e70ef4b8894214ac6e4cad233d2a"},

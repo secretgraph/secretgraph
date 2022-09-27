@@ -9,3 +9,4 @@ static
 db.sqlite3
 dist
 secretgraph.egg-info
+js-packages/*/lib

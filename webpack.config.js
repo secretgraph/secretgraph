@@ -128,7 +128,7 @@ module.exports = (env, options) => {
         },
         plugins,
         optimization: {
-            runtimeChunk: 'single',
+            chunkIds: 'size',
         },
     }
 }
