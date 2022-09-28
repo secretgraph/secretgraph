@@ -36,7 +36,6 @@ strawberry-graphql = {version="*",  optional = true}
 strawberry-django-plus = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
-django-mysql = {version="*", optional = true}
 psycopg2 = {version="*", optional = true}
 django-manifest-loader = {version="*", optional = true}
 django-fast-ratelimit = {version="*", optional = true}
