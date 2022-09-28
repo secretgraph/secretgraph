@@ -20,10 +20,16 @@ server {
         # prevents duplicate buffering of files and problems with websockets
         proxy_redirect off;
         proxy_buffering off;
-
+        # don't cache, cache in reverse proxy
+        proxy_cache off;
+        proxy_ignore_headers "Expires";
     }
 
     location /static/ {
         root /;
+        proxy_set_header X-Accel-Buffering "yes";
+        access_log off;
+        # 1 week
+        expires 168h;
     }
 }
