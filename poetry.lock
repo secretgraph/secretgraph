@@ -746,7 +746,7 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.133.0"
+version = "0.133.1"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
@@ -960,14 +960,14 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [extras]
 fastcgi = ["flipflop"]
-mysql = ["mysqlclient", "django-mysql"]
+mysql = ["mysqlclient"]
 postgresql = ["psycopg2"]
 server = ["django", "channels", "graphene-protector", "strawberry-graphql", "strawberry-django-plus", "django-fast-ratelimit", "django-manifest-loader"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <4"
-content-hash = "39dc6206e54a60e6fb60c9215c546098d05e28d180ea84787be928d314fe02e8"
+content-hash = "f29f902b95e0bce0e022a8d2aebf742eb1a46253253b001f258287e108b55575"
 
 [metadata.files]
 anyio = [
@@ -1340,8 +1340,8 @@ strawberry-django-plus = [
     {file = "strawberry_django_plus-1.27-py3-none-any.whl", hash = "sha256:8707b023b09ce0e15004c3b00b6cb27285e3bc24564bc95b61bb8c63a97e0902"},
 ]
 strawberry-graphql = [
-    {file = "strawberry-graphql-0.133.0.tar.gz", hash = "sha256:e3e2feeac1a111899951ea7a04abd163d3996f23fce34ec05c1b6d74d4d5a52b"},
-    {file = "strawberry_graphql-0.133.0-py3-none-any.whl", hash = "sha256:911ee09c86d66afbecc2873f2dac9974d179e6d439d67083ea399626dd18a344"},
+    {file = "strawberry-graphql-0.133.1.tar.gz", hash = "sha256:d55d80c4f41abd26a3c044c04dfcde9b21159bd0f464b31605153f1f2e8ed075"},
+    {file = "strawberry_graphql-0.133.1-py3-none-any.whl", hash = "sha256:66574f88b0a5e00aa7037dad8f480adb4a1cb58246639480d8ac114ccf82fcdb"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry-graphql-django-0.5.1.tar.gz", hash = "sha256:e807492399f1c823c88d82919efb6e5a564edc405f0c72b704beec8d608b5012"},

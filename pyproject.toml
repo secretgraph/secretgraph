@@ -76,7 +76,7 @@ server = [
 ]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
-mysql = ["mysqlclient", "django-mysql"]
+mysql = ["mysqlclient"]
 
 [tool.tox]
 legacy_tox_ini = """
