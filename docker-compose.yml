@@ -15,7 +15,7 @@ services:
         build:
             context: .
         volumes:
-            - secretgraph:/var/secretgraph
+            - secretgraph:/var/lib/secretgraph
             - static_files:/app/static
             - sockets:/sockets
         environment:

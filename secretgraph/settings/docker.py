@@ -2,7 +2,7 @@ import os
 import secrets
 from secretgraph.settings.withclient import *  # noqa: F403, F401, E402
 
-DOCKER_VOLUME_DIR = "/var/secretgraph"
+DOCKER_VOLUME_DIR = "/var/lib/secretgraph"
 
 DATABASES = {
     "default": {
