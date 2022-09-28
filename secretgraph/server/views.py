@@ -7,6 +7,7 @@ from urllib.parse import quote
 
 from strawberry_django_plus import relay
 from django.views.decorators.http import last_modified
+from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 from django.conf import settings
 from django.db.models import OuterRef, Q, Subquery
@@ -61,10 +62,6 @@ class AsyncAllowCORSMixin(AllowCORSMixin):
 def calc_content_modified_raw(request, content, *args, **kwargs):
     if "key_hash" in request.GET or request.headers.get("X-KEY-HASH", ""):
         return None
-    return content.updated
-
-
-def calc_content_modified_decrypt(request, content, *args, **kwargs):
     return content.updated
 
 
@@ -268,7 +265,7 @@ class ContentView(AllowCORSMixin, FormView):
 
             return StreamingHttpResponse(gen())
 
-    @method_decorator(last_modified(calc_content_modified_decrypt))
+    @method_decorator(never_cache)
     def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
         ret = StreamingHttpResponse(content.read_decrypt())
         names = content.tags_proxy.name
