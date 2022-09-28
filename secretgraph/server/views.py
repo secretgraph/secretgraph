@@ -6,6 +6,8 @@ import logging
 from urllib.parse import quote
 
 from strawberry_django_plus import relay
+from django.views.decorators.http import last_modified
+from django.utils.decorators import method_decorator
 from django.conf import settings
 from django.db.models import OuterRef, Q, Subquery
 from django.http import (
@@ -56,6 +58,16 @@ class AsyncAllowCORSMixin(AllowCORSMixin):
         return response
 
 
+def calc_content_modified_raw(request, content, *args, **kwargs):
+    if "key_hash" in request.GET or request.headers.get("X-KEY-HASH", ""):
+        return None
+    return content.updated
+
+
+def calc_content_modified_decrypt(request, content, *args, **kwargs):
+    return content.updated
+
+
 class ContentView(AllowCORSMixin, FormView):
     template_name = "secretgraph/content_form.html"
     action = "view"
@@ -91,7 +103,19 @@ class ContentView(AllowCORSMixin, FormView):
             response = self.render_to_response(self.get_context_data())
         else:
             # raw interface
-            response = self.handle_raw_singlecontent(request, *args, **kwargs)
+            content = None
+            try:
+                content = ContentFetchQueryset(
+                    fetch_by_id(self.result["objects"], kwargs["id"]).query,
+                    self.result["actions"],
+                    ttl_hours=24 if "key_hash" in request.GET else 2,
+                ).first()
+            finally:
+                if not content:
+                    raise Http404()
+            response = self.handle_raw_singlecontent(
+                request, content, *args, **kwargs
+            )
         return response
 
     def post(self, request, *args, **kwargs):
@@ -225,13 +249,9 @@ class ContentView(AllowCORSMixin, FormView):
                 content = next(iterator)
             except StopIteration:
                 return HttpResponse("Missing key", status=400)
-            ret = StreamingHttpResponse(content.read_decrypt())
-            names = content.tags_proxy.name
-            if names and len(names):
-                ret[
-                    "Content-Disposition"
-                ] = 'attachment; filename="{}"'.format(quote(names[0]))
-            return ret
+            return self.handle_decrypt_singlecontent(
+                request, content, *args, **kwargs
+            )
         else:
 
             def gen():
@@ -248,18 +268,18 @@ class ContentView(AllowCORSMixin, FormView):
 
             return StreamingHttpResponse(gen())
 
-    def handle_raw_singlecontent(self, request, *args, **kwargs):
-        content = None
-        result = self.result
-        try:
-            content = ContentFetchQueryset(
-                fetch_by_id(result["objects"], kwargs["id"]).query,
-                result["actions"],
-                ttl_hours=24 if "key_hash" in request.GET else 2,
-            ).first()
-        finally:
-            if not content:
-                raise Http404()
+    @method_decorator(last_modified(calc_content_modified_decrypt))
+    def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
+        ret = StreamingHttpResponse(content.read_decrypt())
+        names = content.tags_proxy.name
+        if names and len(names):
+            ret["Content-Disposition"] = 'attachment; filename="{}"'.format(
+                quote(names[0])
+            )
+        return ret
+
+    @method_decorator(last_modified(calc_content_modified_raw))
+    def handle_raw_singlecontent(self, request, content, *args, **kwargs):
         if "key_hash" in request.GET or request.headers.get("X-KEY-HASH", ""):
             keyhash_set = set(
                 request.headers.get("X-KEY-HASH", "")
@@ -271,7 +291,7 @@ class ContentView(AllowCORSMixin, FormView):
                 group__in=["key", "signature"]
             )
             # Public key in result set
-            q = Q(target__in=result["objects"])
+            q = Q(target__in=self.result["objects"])
             for k in keyhash_set:
                 q |= Q(target__tags__tag=f"key_hash={k}")
             # signatures first, should be maximal 20, so on first page
@@ -280,7 +300,7 @@ class ContentView(AllowCORSMixin, FormView):
                 .annotate(
                     privkey_flexid=Subquery(
                         # private keys in result set, empty if no permission
-                        result["objects"]
+                        self.result["objects"]
                         .filter(
                             type="PrivateKey",
                             references__target__referencedBy=OuterRef("pk"),
