@@ -175,7 +175,7 @@ class ContentManager(models.Manager):
 
     def injected_keys(self, /, noannotation=False, groups=None, states=None):
         queryset = self.get_queryset(noannotation=noannotation).filter(
-            cluster_id=1
+            cluster_id=0
         )
         if not states:
             states = constants.public_states

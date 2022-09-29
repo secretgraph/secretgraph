@@ -12,15 +12,17 @@ def initializeDb(sender, **kwargs):
     from .models import Net, Cluster, GlobalGroupProperty
     from django.conf import settings
 
+    # system net for injected keys cluster and as fallback
     net = Net.objects.update_or_create(
-        id=1,
-        defaults={"id": 1, "quota": None, "max_upload_size": None},
+        id=0,
+        defaults={"id": 0, "quota": None, "max_upload_size": None},
     )[0]
 
+    # system cluster for injected keys
     Cluster.objects.update_or_create(
-        id=1,
+        id=0,
         defaults={
-            "id": 1,
+            "id": 0,
             "name": "system",
             "public": False,
             "featured": False,
