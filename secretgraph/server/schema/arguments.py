@@ -1,10 +1,11 @@
-from typing import Optional, List
+from typing import Iterable, Optional, List
 from strawberry.file_uploads import Upload
 from datetime import datetime
 import strawberry
 from strawberry.scalars import JSON, ID
 
 from .shared import DeleteRecursive
+from ..models import GlobalGroup, Net
 
 
 AuthList = Optional[List[str]]
@@ -79,6 +80,7 @@ class ContentInput:
     value: Optional[ContentValueInput] = None
     references: Optional[List[ReferenceInput]] = None
     contentHash: Optional[str] = None
+    additionalNets: strawberry.Private[Optional[Iterable[Net]]] = None
 
 
 @strawberry.input
@@ -98,3 +100,4 @@ class ClusterInput:
     actions: Optional[List[ActionInput]] = None
     # has no references so missing reference tag is no problem
     key: Optional[ContentKeyInput] = None
+    groups: strawberry.Private[Optional[Iterable[GlobalGroup]]] = None

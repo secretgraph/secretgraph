@@ -5,6 +5,7 @@ import base64
 import json
 import os
 from contextlib import nullcontext
+from typing import List
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
@@ -15,8 +16,12 @@ from ...utils.misc import hash_object, refresh_fields
 from ...actions.handler import ActionHandler
 from ...models import Action, Content, Cluster, ContentAction
 
+from ._arguments import ActionInput
 
-def manage_actions_fn(request, obj, actionlist, authset=None, admin=False):
+
+def manage_actions_fn(
+    request, obj, actionlist: List[ActionInput], authset=None, admin=False
+):
     add_actions = []
     modify_actions = {}
     delete_actions = set()
@@ -45,10 +50,10 @@ def manage_actions_fn(request, obj, actionlist, authset=None, admin=False):
         )["objects"]
     for action in actionlist:
         # if already decoded by e.g. graphql
-        if action["value"] == "delete":
+        if action.value == "delete":
             action_value = "delete"
         else:
-            action_value = action["value"]
+            action_value = action.value
             if isinstance(action_value, str):
                 action_value = json.loads(action_value)
         if action_value == "delete":
@@ -57,7 +62,7 @@ def manage_actions_fn(request, obj, actionlist, authset=None, admin=False):
                     raise ValueError("update id in delete set")
                 delete_actions.add(action["existingHash"])
             continue
-        action_key = action.get("key")
+        action_key = getattr(action, "key", None)
         if isinstance(action_key, bytes):
             pass
         elif isinstance(action_key, str):
@@ -81,16 +86,15 @@ def manage_actions_fn(request, obj, actionlist, authset=None, admin=False):
         # add contentAction
         group = action_value.pop("contentActionGroup", "")
         maxLifetime = action_value.pop("maxLifetime", None)
-        existing = action.get("existingHash")
+        existing = action.existingHash
         if existing:
             if existing.isdecimal():
                 actionObjs = allowed_and_existing_actions.filter(
-                    Q(id=int(action["existingHash"]))
-                    | Q(keyHash=action["existingHash"])
+                    Q(id=int(existing)) | Q(keyHash=existing)
                 )
             else:
                 actionObjs = allowed_and_existing_actions.filter(
-                    keyHash=action["existingHash"]
+                    keyHash=existing
                 )
             if not actionObjs.exists():
                 continue
@@ -109,8 +113,8 @@ def manage_actions_fn(request, obj, actionlist, authset=None, admin=False):
         actionObj.value = aesgcm.encrypt(
             nonce, json.dumps(action_value).encode("utf-8"), None
         )
-        actionObj.start = action.get("start") or timezone.now()
-        actionObj.stop = action.get("stop", None)
+        actionObj.start = action.start or timezone.now()
+        actionObj.stop = action.stop or None
         if maxLifetime:
             maxStop = actionObj.start + maxLifetime
             if actionObj.stop:

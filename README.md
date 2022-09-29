@@ -216,7 +216,7 @@ idea: seperate actions with different concerns.
 # TODO
 
 -   move to dataclasses and TypedDicts
--   fix production build
+    -   nearly complete needs testing and TypedDicts
 -   remove/handle orphan nets (no cluster assigned)
 -   document net resource tracking, ClusterGroups
 -   actions: states

@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from ...models import Cluster, Net
 from ...utils.auth import ids_to_results, retrieve_allowed_objects
 from ...utils.misc import hash_object
+from ._arguments import ContentInput
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
 
@@ -18,25 +19,25 @@ len_default_hash = len(hash_object(b""))
 def _update_or_create_cluster(request, cluster, objdata, authset):
     create = not cluster.id
 
-    if "public" in objdata:
-        cluster.public = bool(objdata["public"])
-    if "featured" in objdata:
-        cluster.featured = bool(objdata["featured"])
+    if getattr(objdata, "public", None) is not None:
+        cluster.public = bool(objdata.public)
+    if getattr(objdata, "featured", None) is not None:
+        cluster.featured = bool(objdata.featured)
 
-    if "name" in objdata:
-        cluster.name = objdata["name"] or ""
+    if getattr(objdata, "name", None) is not None:
+        cluster.name = objdata.name or ""
 
-    if "description" in objdata:
-        cluster.description = objdata["description"] or ""
+    if getattr(objdata, "description", None) is not None:
+        cluster.description = objdata.description or ""
 
-    net = objdata.get("net")
+    net = getattr(objdata, "net", None)
     if net:
         if isinstance(net, Net):
             cluster.net = net
         else:
             net_result = ids_to_results(
                 request,
-                [objdata.get("net")],
+                [net],
                 Cluster,
                 "manage",
                 authset=authset,
@@ -76,13 +77,13 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
         if not cluster.net.id:
             cluster.net.save()
         cluster.save()
-        if "groups" in objdata:
-            cluster.groups.set(objdata["groups"])
+        if getattr(objdata, "groups", None) is not None:
+            cluster.groups.set(objdata.groups)
 
     # path: actions are specified
-    if objdata.get("actions"):
+    if getattr(objdata, "actions", None) is not None:
         action_save_fn = manage_actions_fn(
-            request, cluster, objdata["actions"], authset=authset
+            request, cluster, objdata.actions, authset=authset
         )
 
         m_actions = filter(
@@ -113,13 +114,15 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
 def create_cluster_fn(request, objdata, authset=None):
     prebuild = {}
 
-    if not objdata.get("actions"):
+    if not getattr(objdata, "actions", None):
         raise ValueError("Actions required")
-    contentdata = {"key": objdata["key"]}
+    contentdata = {"key": objdata.key}
     cluster = Cluster(**prebuild)
     cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset)
     contentdata["cluster"] = cluster
-    content_fn = create_key_fn(request, contentdata, authset=authset)
+    content_fn = create_key_fn(
+        request, ContentInput(**contentdata), authset=authset
+    )
 
     def save_fn(context=nullcontext):
         if callable(context):

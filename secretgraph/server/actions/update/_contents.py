@@ -7,6 +7,7 @@ from contextlib import nullcontext
 from itertools import chain
 from typing import List, Optional
 from uuid import UUID, uuid4
+from dataclasses import fields
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
@@ -14,6 +15,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.conf import settings
 from django.db.models import F, Q
+
+from ...schema.arguments import ReferenceInput
 
 from ....core.exceptions import ResourceLimitExceeded
 
@@ -23,6 +26,7 @@ from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag, Net
 from ._actions import manage_actions_fn
 from ._metadata import transform_references, transform_tags
+from ._arguments import ContentMergedInput, ContentKeyInput
 
 logger = logging.getLogger(__name__)
 
@@ -38,31 +42,38 @@ def _condMergeKeyTags(
     return chain(hashes_tags, tags or _emptyset)
 
 
-def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
-    if isinstance(key_obj.get("privateKey"), str):
-        key_obj["privateKey"] = base64.b64decode(key_obj["privateKey"])
-    if isinstance(key_obj.get("publicKey"), str):
-        key_obj["publicKey"] = base64.b64decode(key_obj["publicKey"])
-    if isinstance(key_obj.get("nonce"), str):
-        key_obj["nonce"] = base64.b64decode(key_obj["nonce"])
-    if key_obj.get("privateKey"):
-        if not key_obj.get("nonce"):
+# work around problems with upload
+def _value_to_dict(obj):
+    return dict(
+        (field.name, getattr(obj, field.name)) for field in fields(obj)
+    )
+
+
+def _transform_key_into_dataobj(
+    key_obj, publicKeyContent=None
+) -> tuple[list[str], ContentMergedInput, Optional[ContentMergedInput]]:
+    if isinstance(key_obj.privateKey, str):
+        key_obj.privateKey = base64.b64decode(key_obj.privateKey)
+    if isinstance(key_obj.publicKey, str):
+        key_obj.publicKey = base64.b64decode(key_obj.publicKey)
+    if isinstance(key_obj.nonce, str):
+        key_obj.nonce = base64.b64decode(key_obj.nonce)
+    if key_obj.privateKey:
+        if not key_obj.nonce:
             raise ValueError("encrypted private key requires nonce")
     has_public_key = True
-    if not key_obj.get("publicKey"):
+    if not key_obj.publicKey:
         if not publicKeyContent:
             raise ValueError("No public key")
         else:
             has_public_key = False
-            key_obj["publicKey"] = publicKeyContent.file.open("rb").read()
+            key_obj.publicKey = publicKeyContent.file.open("rb").read()
     try:
-        if isinstance(key_obj["publicKey"], bytes):
-            key_obj["publicKey"] = load_der_public_key(key_obj["publicKey"])
-        elif isinstance(key_obj["publicKey"], File):
-            key_obj["publicKey"] = load_der_public_key(
-                key_obj["publicKey"].read()
-            )
-        key_obj["publicKey"] = key_obj["publicKey"].public_bytes(
+        if isinstance(key_obj.publicKey, bytes):
+            key_obj.publicKey = load_der_public_key(key_obj.publicKey)
+        elif isinstance(key_obj.publicKey, File):
+            key_obj.publicKey = load_der_public_key(key_obj.publicKey.read())
+        key_obj.publicKey = key_obj.publicKey.public_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
@@ -70,19 +81,19 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
         # logger.debug("loading public key failed", exc_info=exc)
         raise ValueError("Invalid public key") from exc
     if publicKeyContent and has_public_key:
-        if publicKeyContent.file.open("rb").read() != key_obj["publicKey"]:
+        if publicKeyContent.file.open("rb").read() != key_obj.publicKey:
             raise ValueError("Cannot change public key")
-    hashes = calculate_hashes(key_obj["publicKey"])
+    hashes = calculate_hashes(key_obj.publicKey)
     hashes_tags = tuple(map(lambda x: f"key_hash={x}", hashes))
-    if key_obj.get("privateKey"):
+    if key_obj.privateKey:
         if not any(
             filter(
                 lambda x: x.startswith("key="),
-                key_obj["privateTags"],
+                key_obj.privateTags,
             )
         ):
             raise ValueError("missing key tag")
-    publicState = key_obj.get("publicState")
+    publicState = key_obj.publicState
     if not publicState:
         if publicKeyContent:
             publicState = publicKeyContent.state
@@ -91,34 +102,39 @@ def _transform_key_into_dataobj(key_obj, publicKeyContent=None):
 
     return (
         hashes,
-        {
-            "value": key_obj["publicKey"],
-            "type": "PublicKey",
-            "state": publicState,
-            "tags": _condMergeKeyTags(
-                hashes_tags, key_obj.get("publicTags"), bool(publicKeyContent)
+        ContentMergedInput(
+            value=key_obj.publicKey,
+            type="PublicKey",
+            state=publicState,
+            tags=_condMergeKeyTags(
+                hashes_tags, key_obj.publicTags, bool(publicKeyContent)
             ),
-            "contentHash": hashes[0],
-            "actions": key_obj.get("publicActions"),
-        },
-        {
-            "nonce": key_obj["nonce"],
-            "value": key_obj["privateKey"],
-            "type": "PrivateKey",
-            "state": "internal",
-            "tags": _condMergeKeyTags(
-                hashes_tags, key_obj.get("privateTags"), bool(publicKeyContent)
+            contentHash=hashes[0],
+            actions=key_obj.publicActions,
+        ),
+        ContentMergedInput(
+            nonce=key_obj.nonce,
+            value=key_obj.privateKey,
+            type="PrivateKey",
+            state="internal",
+            tags=_condMergeKeyTags(
+                hashes_tags, key_obj.privateTags, bool(publicKeyContent)
             ),
-            "contentHash": None,
-            "actions": key_obj.get("privateActions"),
-        }
-        if key_obj.get("privateKey")
+            contentHash=None,
+            actions=key_obj.privateActions,
+        )
+        if key_obj.privateKey
         else None,
     )
 
 
 def _update_or_create_content_or_key(
-    request, content, objdata, authset, is_key, required_keys
+    request,
+    content,
+    objdata: ContentMergedInput,
+    authset,
+    is_key,
+    required_keys,
 ):
     create = not content.id
     size_new = 0
@@ -126,11 +142,11 @@ def _update_or_create_content_or_key(
     if not create:
         size_old = content.size
 
-    if isinstance(objdata.get("cluster"), str):
-        objdata["cluster"] = (
+    if isinstance(objdata.cluster, str):
+        objdata.cluster = (
             ids_to_results(
                 request,
-                objdata["cluster"],
+                objdata.cluster,
                 Cluster,
                 # create includes move permission
                 scope="create",
@@ -141,21 +157,21 @@ def _update_or_create_content_or_key(
         )
     # when changed
     old_cluster = None
-    if objdata.get("cluster"):
+    if objdata.cluster:
         if (
             not create
             and content.cluster
-            and objdata.get("cluster") != content.cluster
+            and objdata.cluster != content.cluster
         ):
             old_cluster = content.cluster
-        content.cluster = objdata["cluster"]
+        content.cluster = objdata.cluster
 
     if not getattr(content, "cluster", None):
         raise ValueError("No cluster specified")
 
     # set net on non-initializated contents
     # either by explicit cluster id of net or implicit of the current cluster
-    net = objdata.get("net")
+    net = objdata.net
     old_net = None
     if not create:
         old_net = content.net
@@ -164,10 +180,10 @@ def _update_or_create_content_or_key(
             content.net = net
         else:
             # first use simple query checking if in additionalNets
-            if objdata.get("additionalNets"):
+            if objdata.additionalNets:
                 content.net = Net.objects.filter(
                     Q(clusters__flexid=net) | Q(clusters__flexid_cached=net),
-                    id__in=objdata["additionalNets"],
+                    id__in=objdata.additionalNets,
                 ).first()
             else:
                 content.net = None
@@ -177,7 +193,7 @@ def _update_or_create_content_or_key(
             if not content.net_id:
                 net_result = ids_to_results(
                     request,
-                    objdata.get("net"),
+                    objdata.net,
                     Cluster,
                     "create",
                     authset=authset,
@@ -195,41 +211,41 @@ def _update_or_create_content_or_key(
     )
 
     if create:
-        content.type = objdata["type"]
+        content.type = objdata.type
     if not content.type:
         raise ValueError("No type specified")
     elif not is_key and content.type in {"PrivateKey", "PublicKey"}:
         raise ValueError("%s is an invalid type" % content.type)
-    content_state = objdata.get("state")
+    content_state = objdata.state
     if content_state:
         content.state = content_state
     if not content.state:
         raise ValueError("No state specified")
     tags_dict = None
     key_hashes_tags = set()
-    if objdata.get("tags") is not None:
+    if objdata.tags is not None:
         tags_dict, key_hashes_tags, size_new_tags = transform_tags(
-            content.type, objdata.get("tags"), early_size_limit=early_op_limit
+            content.type, objdata.tags, early_size_limit=early_op_limit
         )
         size_new += size_new_tags
     elif create:
         raise ValueError("Content tags are missing")
     else:
         size_new += content.size_tags
-        if objdata.get("references") is not None:
+        if objdata.references is not None:
             key_hashes_tags = set()
 
     # if create checked in parent function
-    if objdata.get("value"):
+    if objdata.value:
         # normalize nonce and check constraints
         if content.state in constants.public_states:
-            objdata["nonce"] = ""
+            objdata.nonce = ""
             checknonce = b""
-        elif isinstance(objdata["nonce"], bytes):
-            checknonce = objdata["nonce"]
-            objdata["nonce"] = base64.b64encode(checknonce).decode("ascii")
+        elif isinstance(objdata.nonce, bytes):
+            checknonce = objdata.nonce
+            objdata.nonce = base64.b64encode(checknonce).decode("ascii")
         else:
-            checknonce = base64.b64decode(objdata["nonce"])
+            checknonce = base64.b64decode(objdata.nonce)
         # is public key or public? then ignore nonce checks
         if not is_key and content.state != "public":
             if not checknonce:
@@ -241,33 +257,33 @@ def _update_or_create_content_or_key(
             if checknonce.count(b"\0") == len(checknonce):
                 raise ValueError("weak nonce")
         assert isinstance(
-            objdata["nonce"], str
+            objdata.nonce, str
         ), "nonce should be here a base64 string or public, %s" % type(
-            objdata["nonce"]
+            objdata.nonce
         )  # noqa E502
         assert isinstance(
             checknonce, bytes
         ), "checknonce should be bytes, %s" % type(
             checknonce
         )  # noqa E502
-        content.nonce = objdata["nonce"]
+        content.nonce = objdata.nonce
 
-        if isinstance(objdata["value"], bytes):
-            objdata["value"] = ContentFile(objdata["value"])
-        elif isinstance(objdata["value"], str):
-            objdata["value"] = ContentFile(base64.b64decode(objdata["value"]))
-        else:
-            objdata["value"] = File(objdata["value"])
+        if isinstance(objdata.value, bytes):
+            objdata.value = ContentFile(objdata.value)
+        elif isinstance(objdata.value, str):
+            objdata.value = ContentFile(base64.b64decode(objdata.value))
+        elif not isinstance(objdata.value, File):
+            objdata.value = File(objdata.value)
         if content.net.max_upload_size is not None:
-            if content.net.max_upload_size < objdata["value"].size:
+            if content.net.max_upload_size < objdata.value.size:
                 raise ValueError("file too big")
-        size_new += objdata["value"].size
+        size_new += objdata.value.size
         content.clean()
 
         def save_fn_value():
             content.file.delete(False)
             content.updateId = uuid4()
-            content.file.save("ignored", objdata["value"])
+            content.file.save("ignored", objdata.value)
             content.net.save(
                 update_fields=["bytes_in_use"] if content.net.id else None
             )
@@ -290,7 +306,7 @@ def _update_or_create_content_or_key(
                 )
 
     # cannot change because of special key transformation
-    chash = objdata.get("contentHash")
+    chash = objdata.contentHash
     if chash is not None:
         # either blank or in length of default hash output
         if len(chash) not in (0, len_default_hash):
@@ -306,17 +322,17 @@ def _update_or_create_content_or_key(
     verifiers_ref = set()
     if (
         old_cluster
-        or objdata.get("references") is not None
-        or objdata.get("tags") is not None
+        or objdata.references is not None
+        or objdata.tags is not None
     ):
-        if objdata.get("references") is None:
+        if objdata.references is None:
             refs = (
                 content.references.all()
                 if content.id
                 else ContentReference.objects.none()
             )
         else:
-            refs = objdata["references"]
+            refs = objdata.references
         # no_final_refs final_references => None
         (
             final_references,
@@ -328,7 +344,7 @@ def _update_or_create_content_or_key(
             refs,
             key_hashes_tags,
             get_cached_result(request, authset=authset)["Content"]["objects"],
-            no_final_refs=objdata.get("references") is None,
+            no_final_refs=objdata.references is None,
             early_size_limit=early_op_limit,
         )
         if required_keys and required_keys.isdisjoint(verifiers_ref):
@@ -372,9 +388,9 @@ def _update_or_create_content_or_key(
             and len(key_hashes_ref) < 1
         ):
             raise ValueError(">=1 key references required for content")
-    if objdata.get("actions") is not None:
+    if objdata.actions is not None:
         actions_save_fn = manage_actions_fn(
-            request, content, objdata["actions"], authset=authset
+            request, content, objdata.actions, authset=authset
         )
     else:
 
@@ -443,14 +459,14 @@ def _update_or_create_content_or_key(
 
 def create_key_fn(request, objdata, authset=None):
     """creates or updates public key, creates private key if specified"""
-    key_obj = objdata.get("key")
+    key_obj = objdata.key
     if not key_obj:
         raise ValueError("Requires key")
-    if isinstance(objdata.get("cluster"), str):
-        objdata["cluster"] = (
+    if isinstance(objdata.cluster, str):
+        objdata.cluster = (
             ids_to_results(
                 request,
-                objdata["cluster"],
+                objdata.cluster,
                 Cluster,
                 authset=authset,
                 # create includes move permission
@@ -459,59 +475,59 @@ def create_key_fn(request, objdata, authset=None):
             .filter(markForDestruction=None)
             .first()
         )
-    if not objdata.get("cluster"):
+    if not objdata.cluster:
         raise ValueError("No cluster")
 
     hashes, public, private = _transform_key_into_dataobj(key_obj)
 
-    public["net"] = objdata.get("net")
+    public.net = objdata.net
     if private:
-        private["net"] = objdata.get("net")
+        private.net = objdata.net
     publickey_content = None
-    if objdata["cluster"].id:
+    if objdata.cluster.id:
         publickey_content = Content.objects.filter(
-            cluster=objdata["cluster"],
+            cluster=objdata.cluster,
             type="PublicKey",
             tags__tag__in=map(lambda x: f"key_hash={x}", hashes),
         ).first()
-    publickey_content = publickey_content or Content(
-        cluster=objdata["cluster"]
-    )
+    publickey_content = publickey_content or Content(cluster=objdata.cluster)
     # ensure public key values is not updated
     # note: public has objdata format for _update_or_create_content_or_key
     if publickey_content.id:
-        public.pop("value", None)
-        public.pop("nonce", None)
+        public.value = None
+        public.nonce = None
         if public["actions"]:
             raise ValueError("Key already exists and actions specified")
     # distribute references automagically
-    if objdata.get("references"):
+    if objdata.references:
         # cannot update references of existing public key
         if publickey_content.id:
-            public["references"] = None
+            public.references = None
         else:
-            public["references"] = []
-        for ref in objdata["references"]:
+            public.references = []
+        for ref in objdata.references:
             if ref.group == "key":
                 if private:
-                    private.setdefault("references", []).append(ref)
+                    private.references = list(private.references)
+                    private.references.append(ref)
             elif not publickey_content.id:
-                public["references"].append(ref)
+                public.references.append(ref)
 
     public = _update_or_create_content_or_key(
         request, publickey_content, public, authset, True, []
     )
     if private:
-        private.setdefault("references", []).append(
-            {
-                "target": publickey_content,
-                "group": "public_key",
-                "deleteRecursive": constants.DeleteRecursive.TRUE.value,
-            }
+        private.references = list(private.references or [])
+        private.references.append(
+            ReferenceInput(
+                target=publickey_content,
+                group="public_key",
+                deleteRecursive=constants.DeleteRecursive.TRUE.value,
+            )
         )
         private = _update_or_create_content_or_key(
             request,
-            Content(cluster=objdata["cluster"]),
+            Content(cluster=objdata.cluster),
             private,
             authset,
             True,
@@ -525,8 +541,8 @@ def create_key_fn(request, objdata, authset=None):
 
 
 def create_content_fn(request, objdata, authset=None, required_keys=None):
-    value_obj = objdata.get("value", {})
-    key_obj = objdata.get("key")
+    value_obj = objdata.value
+    key_obj = objdata.key
     if not value_obj and not key_obj:
         raise ValueError("Requires value or key")
     if value_obj and key_obj:
@@ -545,13 +561,12 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
                 }
 
     else:
-        newdata = {
-            "cluster": objdata.get("cluster"),
-            "references": objdata.get("references"),
-            "contentHash": objdata.get("contentHash"),
-            "tags": value_obj.get("tags"),
-            **value_obj,
-        }
+        newdata = ContentMergedInput(
+            cluster=objdata.cluster,
+            references=objdata.references,
+            contentHash=objdata.contentHash,
+            **_value_to_dict(value_obj),
+        )
         content_obj = Content()
         _save_fn = _update_or_create_content_or_key(
             request, content_obj, newdata, authset, False, required_keys or []
@@ -579,32 +594,29 @@ def update_content_fn(
         # can only update public tags and actions, updateId
         is_key = True
         required_keys = []
-        key_obj = objdata.get("key")
-        if not key_obj:
+        if not objdata.key:
             raise ValueError("Cannot transform key to content")
-        if objdata.get("cluster"):
+        if objdata.cluster:
             raise ValueError("Cannot update cluster of key")
 
+        key_obj = ContentKeyInput(**_value_to_dict(objdata.key))
+
+        if not key_obj.publicTags:
+            key_obj.publicTags = content.tags.exclude(
+                tag__startswith="key_hash="
+            ).values_list("tag", flat=True)
+        key_obj.privateTags = None
         hashes, newdata, _private = _transform_key_into_dataobj(
-            {
-                **key_obj,
-                "publicTags": key_obj["publicTags"]
-                if key_obj.get("publicTags") is not None
-                else content.tags.exclude(
-                    tag__startswith="key_hash="
-                ).values_list("tag", flat=True),
-                "privateTags": None,
-            },
+            key_obj,
             publicKeyContent=content,
         )
-        newdata["net"] = objdata.get("net")
+        newdata.net = objdata.net
     elif content.type == "PrivateKey":
         # can only update private tags and actions, updateId
         is_key = True
-        key_obj = objdata.get("key")
-        if not key_obj:
+        if not objdata.key:
             raise ValueError("Cannot transform key to content")
-        if objdata.get("cluster"):
+        if objdata.cluster:
             raise ValueError("Cannot update cluster of key")
         # we don't see it or update it anyway so include all
         # without regard to state
@@ -612,29 +624,29 @@ def update_content_fn(
             type="PublicKey", referencedBy__source=content
         ).first()
 
+        key_obj = ContentKeyInput(**_value_to_dict(objdata.key))
+
+        if not key_obj.privateTags:
+            key_obj.privateTags = content.tags.exclude(
+                tag__startswith="key_hash="
+            ).values_list("tag", flat=True)
+        key_obj.publicTags = None
+
         hashes, _public, newdata = _transform_key_into_dataobj(
-            {
-                **key_obj,
-                "publicTags": None,
-                "privateTags": key_obj["privateTags"]
-                if key_obj.get("privateTags") is not None
-                else content.tags.exclude(
-                    tag__startswith="key_hash="
-                ).values_list("tag", flat=True),
-            },
+            key_obj,
             publicKeyContent=publicKeyContent,
         )
         if not newdata:
             raise ValueError("No data for private key")
-        newdata["net"] = objdata.get("net")
+        newdata.net = objdata.net
     else:
-        newdata = {
-            "cluster": objdata.get("cluster"),
-            "net": objdata.get("net"),
-            "references": objdata.get("references"),
-            "contentHash": objdata.get("contentHash"),
-            **(objdata.get("value") or {}),
-        }
+        newdata = ContentMergedInput(
+            cluster=objdata.cluster,
+            net=objdata.net,
+            references=objdata.references,
+            contentHash=objdata.contentHash,
+            **(_value_to_dict(objdata.value) if objdata.value else {}),
+        )
     func = _update_or_create_content_or_key(
         request, content, newdata, authset, is_key, required_keys or []
     )

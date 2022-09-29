@@ -12,16 +12,21 @@ def pre_clean_content_spec(create: bool, content, result):
     injectedTags = set()
     injectedRefs = {}
     passed = len(result["active_actions"]) == 0
-    if content.get("value"):
-        tags = content["value"].get("tags") or []
-        state = content["value"].get("state")
-        ctype = content["value"].get("type")
+    if content.value:
+        tags = content.value.tags or []
+        state = content.value.state
+        ctype = content.value.type
+        actions = content.value.actions
     else:
-        tags = content["key"].get("privateTags") or []
-        tags.extend(content["key"].get("publicTags") or [])
-        state = content["key"].get("publicState")
+        tags = content.key.privateTags or []
+        tags.extend(content.key.publicTags or [])
+        state = content.key.publicState
         ctype = "PublicKey"
-    actions = content.get("actions")
+        actions = content.key.publicActions
+        if content.key.privateActions:
+            actions = actions or []
+            actions.extend(content.key.privateActions)
+
     if create and not ctype:
         raise ValueError("no type found")
     for action_id in result["active_actions"]:
@@ -84,7 +89,7 @@ def pre_clean_content_spec(create: bool, content, result):
         if action_dict.get("injectedTags"):
             injectedTags.update(action_dict["injectedTags"])
         for ref in action_dict.get("injectedRefs") or []:
-            key = (ref["target"], ref.get("group") or "")
+            key = (ref.target, ref.group or "")
             if key in injectedRefs:
                 continue
             injectedRefs[key] = ref
@@ -92,31 +97,31 @@ def pre_clean_content_spec(create: bool, content, result):
         raise ValueError("not passed")
 
     if injectedTags:
-        if content.get("value"):
-            if content["value"].get("tags") is not None or create:
-                content["value"]["tags"] = chain(tags, injectedTags)
+        if content.value:
+            if content.value.tags is not None or create:
+                content.value.tags = chain(tags, injectedTags)
         else:
-            if content["key"].get("privateTags") is not None or create:
-                content["key"]["privateTags"] = chain(
-                    content["key"].get("privateTags") or [], injectedTags
+            if content.key.privateTags is not None or create:
+                content.key.privateTags = chain(
+                    content.key.privateTags or [], injectedTags
                 )
-            if content["key"].get("publicTags") is not None or create:
-                content["key"]["publicTags"] = chain(
-                    content["key"].get("publicTags") or [], injectedTags
+            if content.key.publicTags is not None or create:
+                content.key.publicTags = chain(
+                    content.key.publicTags or [], injectedTags
                 )
 
     if injectedRefs:
-        if content.get("references") is not None or create:
-            content["references"] = chain(
-                content.get("references") or [], injectedRefs.values()
+        if content.references is not None or create:
+            content.references = chain(
+                content.references or [], injectedRefs.values()
             )
     additionalNets = list(additionalNets.keys())
-    if create and not content.get("net"):
+    if create and not content.net:
         # we identify the net directly by the net id if set by action
         # this bypasses the ownership check
         if additionalNets:
-            content["net"] = Net.objects.get(id=additionalNets[0])
-    content["additionalNets"] = additionalNets
+            content.net = Net.objects.get(id=additionalNets[0])
+    content.additionalNets = additionalNets
     return {
         "freeze": freeze,
         "updateable": updateable,

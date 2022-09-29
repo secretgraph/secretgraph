@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import List, Optional
-from dataclasses import asdict
 import logging
 
 import strawberry
@@ -122,8 +121,6 @@ def update_metadata(
     operation: Optional[MetadataOperations] = MetadataOperations.APPEND,
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
-    if actions:
-        actions = asdict(actions)
 
     if get_cached_permissions(info.context.request, authset=authorization)[
         "manage_update"

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from typing import Optional
-from dataclasses import asdict
 
 import strawberry
 from strawberry.types import Info
@@ -46,22 +45,21 @@ def mutate_cluster(
     updateId: Optional[strawberry.ID] = None,
     authorization: Optional[AuthList] = None,
 ) -> ClusterMutation:
-    cluster = asdict(cluster)
-    if cluster.get("featured") is not None:
+    if cluster.featured is not None:
         if not get_cached_permissions(
             info.context.request, authset=authorization
         )["manage_featured"]:
-            del cluster["featured"]
+            cluster.featured = None
 
-    if cluster.get("groups") is not None:
+    if cluster.groups is not None:
         if get_cached_permissions(info.context.request, authset=authorization)[
             "manage_groups"
         ]:
-            cluster["groups"] = GlobalGroup.objects.filter(
+            cluster.groups = GlobalGroup.objects.filter(
                 name__in=cluster["groups"]
             )
         else:
-            del cluster["groups"]
+            cluster.groups = None
     if id:
         if not updateId:
             raise ValueError("updateId required")
@@ -83,7 +81,7 @@ def mutate_cluster(
             authset=authorization,
         )(transaction.atomic)
     else:
-        cluster["groups"] = GlobalGroupProperty.objects.get_or_create(
+        cluster.groups = GlobalGroupProperty.objects.get_or_create(
             name="default", defaults={}
         )[0].groups.all()
         _cluster_res = create_cluster_fn(
@@ -109,7 +107,6 @@ def mutate_content(
     updateId: Optional[strawberry.ID] = None,
     authorization: Optional[AuthList] = None,
 ) -> ContentMutation:
-    content = asdict(content)
     required_keys = set()
     if id:
         if not updateId:
@@ -125,10 +122,10 @@ def mutate_content(
         if not content_obj:
             raise ValueError()
 
-        if content.get("value"):
-            if content.get("cluster"):
+        if content.value:
+            if content.cluster:
                 clusterObj = fetch_by_id(
-                    Cluster.objects.all(), [content["cluster"]]
+                    Cluster.objects.all(), [content.cluster]
                 ).first()
                 if clusterObj:
                     required_keys = Content.objects.required_keys_full(
@@ -156,7 +153,7 @@ def mutate_content(
     else:
         result = ids_to_results(
             info.context.request,
-            content["cluster"],
+            content.cluster,
             Cluster,
             "create",
             authset=authorization,
@@ -166,7 +163,7 @@ def mutate_content(
             raise ValueError("Cluster for Content not found")
 
         # is a key spec
-        if not content["key"]:
+        if not content.key:
             required_keys = set(
                 Content.objects.required_keys_full(cluster_obj).values_list(
                     "contentHash", flat=True

@@ -41,19 +41,17 @@ def extract_key_hashes(tags):
 
 
 def tags_sanitizer(tag: str):
+    if tag.startswith("id"):
+        logger.warning(
+            "id is an invalid flag/tag, it is a special keyword, ignore"
+        )
+        return False
     if tag == "key_hash":
         raise ValueError("key_hash should be tag not flag")
 
     if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
         raise ResourceLimitExceeded(f"Tag too big ({tag})")
     return True
-
-
-def _tag_value_size(key_val):
-    size = len(key_val[0])
-    if key_val[1]:
-        size += sum(map(len, key_val[1]))
-    return size
 
 
 def transform_tags(
@@ -176,22 +174,22 @@ def transform_references(
                 continue
         else:
             injected_key = None
-            if isinstance(ref["target"], Content):
+            if isinstance(ref.target, Content):
                 # can be also injected key but here is no reason
                 # to add a second relation
-                targetob = ref["target"]
+                targetob = ref.target
             else:
-                if isinstance(ref["target"], int):
-                    q = Q(id=ref["target"])
+                if isinstance(ref.target, int):
+                    q = Q(id=ref.target)
                 else:
                     # the direct way doesn't work
                     # subquery is necessary for chaining operations correctly
                     q = (
-                        Q(flexid=ref["target"])
-                        | Q(flexid_cached=ref["target"])
+                        Q(flexid=ref.target)
+                        | Q(flexid_cached=ref.target)
                         | Q(
                             type="PublicKey",
-                            tags__tag=f"key_hash={ref['target']}",
+                            tags__tag=f"key_hash={ref.target}",
                         )
                     )
 
@@ -205,10 +203,10 @@ def transform_references(
                 refob = ContentReference(
                     source=content,
                     target=targetob,
-                    group=ref.get("group") or "",
-                    extra=ref.get("extra") or "",
+                    group=ref.group or "",
+                    extra=ref.extra or "",
                     deleteRecursive=clean_deleteRecursive(
-                        ref.get("group"), ref.get("deleteRecursive")
+                        ref.group, ref.deleteRecursive
                     ),
                 )
             # injected_ref can only exist if no reference is used
@@ -219,7 +217,7 @@ def transform_references(
                     source=content,
                     target=injected_key,
                     group="key",
-                    extra=ref.get("extra") or "",
+                    extra=ref.extra or "",
                     deleteRecursive=DeleteRecursive.FALSE.value,
                 )
         # first extra tag in same group with same target wins
@@ -334,7 +332,7 @@ def update_metadata_fn(
         _refs = []
         if MetadataOperations.REPLACE:
             _refs = references
-        remrefs = set(map(lambda x: (x["group"], x["target"]), references))
+        remrefs = set(map(lambda x: (x["group"], x.target), references))
         for ref in content.references.all():
             if (ref.group, None) in remrefs:
                 remove_refs_q |= Q(id=ref.id)
