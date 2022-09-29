@@ -16,8 +16,6 @@ from django.core.files.base import ContentFile, File
 from django.conf import settings
 from django.db.models import F, Q
 
-from ...schema.arguments import ReferenceInput
-
 from ....core.exceptions import ResourceLimitExceeded
 
 from ....core import constants
@@ -26,7 +24,7 @@ from ...utils.misc import calculate_hashes, hash_object, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag, Net
 from ._actions import manage_actions_fn
 from ._metadata import transform_references, transform_tags
-from ._arguments import ContentMergedInput, ContentKeyInput
+from ._arguments import ContentMergedInput, ContentKeyInput, ReferenceInput
 
 logger = logging.getLogger(__name__)
 

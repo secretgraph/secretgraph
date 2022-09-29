@@ -8,7 +8,7 @@ from django.test.client import RequestFactory
 from django.urls import reverse
 
 from ...models import Net, Cluster
-from ...actions.update import manage_actions_fn
+from ...actions.update import manage_actions_fn, ActionInput
 
 
 class Command(BaseCommand):
@@ -60,7 +60,7 @@ class Command(BaseCommand):
         save_actions = manage_actions_fn(
             request,
             cluster,
-            [{"value": '{"action": "manage"}', "key": options["token"]}],
+            [ActionInput(value='{"action": "manage"}', key=options["token"])],
             authset=[],
             admin=True,
         )
