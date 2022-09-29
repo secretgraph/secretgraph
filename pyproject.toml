@@ -32,7 +32,7 @@ django = {version = '>=4.0', optional = true}
 channels = {version = ">=4.0b1", optional = true}
 httpx = {version = "*", extras = ["http2"]}
 graphene-protector = {version=">=0.6.3", optional = true}
-strawberry-graphql = {version="*",  optional = true}
+strawberry-graphql = {version="<= 0.133.0",  optional = true}
 strawberry-django-plus = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}

@@ -735,7 +735,7 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.133.1"
+version = "0.133.0"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
@@ -956,7 +956,7 @@ server = ["django", "channels", "graphene-protector", "strawberry-graphql", "str
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <4"
-content-hash = "e13b61acb79e1c725127a44b5111a1cccde3d0485582aebd0c944faf99c636a4"
+content-hash = "66dd998b1a3562efb393c0ae3b477c1a8b8dc6e61ae077abe0a1d4b582335ee1"
 
 [metadata.files]
 anyio = [
@@ -1325,8 +1325,8 @@ strawberry-django-plus = [
     {file = "strawberry_django_plus-1.27-py3-none-any.whl", hash = "sha256:8707b023b09ce0e15004c3b00b6cb27285e3bc24564bc95b61bb8c63a97e0902"},
 ]
 strawberry-graphql = [
-    {file = "strawberry-graphql-0.133.1.tar.gz", hash = "sha256:d55d80c4f41abd26a3c044c04dfcde9b21159bd0f464b31605153f1f2e8ed075"},
-    {file = "strawberry_graphql-0.133.1-py3-none-any.whl", hash = "sha256:66574f88b0a5e00aa7037dad8f480adb4a1cb58246639480d8ac114ccf82fcdb"},
+    {file = "strawberry-graphql-0.133.0.tar.gz", hash = "sha256:e3e2feeac1a111899951ea7a04abd163d3996f23fce34ec05c1b6d74d4d5a52b"},
+    {file = "strawberry_graphql-0.133.0-py3-none-any.whl", hash = "sha256:911ee09c86d66afbecc2873f2dac9974d179e6d439d67083ea399626dd18a344"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry-graphql-django-0.5.1.tar.gz", hash = "sha256:e807492399f1c823c88d82919efb6e5a564edc405f0c72b704beec8d608b5012"},
