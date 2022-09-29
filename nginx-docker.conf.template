@@ -21,7 +21,7 @@ server {
         proxy_redirect off;
         proxy_buffering off;
         # we can upload bigger files
-        client_max_body_size: 0
+        client_max_body_size: 0;
     }
 
     location /static/ {
