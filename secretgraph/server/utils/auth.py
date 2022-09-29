@@ -139,9 +139,13 @@ def retrieve_allowed_objects(request, query, scope="view", authset=None):
         # 3 special
         accesslevel = 0
         for action in actions:
+            action_value = action.value
+            # cryptography doesn't support memoryview
+            if isinstance(action_value, memoryview):
+                action_value = action_value.tobytes()
             action_dict = json.loads(
                 aesgcm.decrypt(
-                    base64.b64decode(action.nonce), action.value, None
+                    base64.b64decode(action.nonce), action_value, None
                 )
             )
             decrypted = ActionHandler.handle_action(

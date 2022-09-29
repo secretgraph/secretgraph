@@ -6,7 +6,7 @@ import secrets
 from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
-from typing import Iterable
+from typing import Iterable, Union
 
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
@@ -385,7 +385,9 @@ class Action(models.Model):
     keyHash: str = models.CharField(max_length=255, db_column="key_hash")
     nonce: str = models.CharField(max_length=255)
     # value returns json with required encrypted aes key
-    value: bytes = models.BinaryField(null=False, blank=False)
+    value: Union[bytes, memoryview] = models.BinaryField(
+        null=False, blank=False
+    )
     start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)
     contentAction: ContentAction = models.OneToOneField(
