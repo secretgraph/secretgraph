@@ -20,6 +20,24 @@ import {
 import { b64toarr, mergeDeleteObjects, utf8encoder } from './misc'
 import * as SetOps from './set'
 
+export function moveHosts({
+    config,
+    update,
+}: {
+    config: Interfaces.ConfigInterface
+    update: { [oldHost: string]: string }
+}): Interfaces.ConfigInterface {
+    const hosts: Interfaces.ConfigInterface['hosts'] = {}
+    for (const [key, value] of Object.entries(config.hosts)) {
+        const newName = update[key] ?? key
+        hosts[newName] = value
+    }
+    return {
+        ...config,
+        hosts,
+    }
+}
+
 export function cleanConfig(
     config: Interfaces.ConfigInterface | null | undefined
 ) {
@@ -321,12 +339,15 @@ export const loadConfig = async (
                     keysResult
                 ),
             ]).text()
+            let foundConfig
             try {
-                return cleanConfig(JSON.parse(text))
+                foundConfig = cleanConfig(JSON.parse(text))
             } catch (e) {
                 console.warn('failed to parse config file', e)
                 return null
             }
+            // TODO: fixup hosts, we have the url
+            return foundConfig
         } catch (exc) {
             console.warn('retrieving private keys failed: ', exc)
         }

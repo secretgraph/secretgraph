@@ -1,4 +1,3 @@
-import strawberry
 from typing import Optional, List
 from strawberry_django_plus import relay, gql
 
@@ -39,7 +38,7 @@ from .mutations import (
 from .subscriptions import subscribe_node_updates, NodeUpdateSubscription
 
 
-@strawberry.type
+@gql.type
 class SecretgraphObject:
     node: Optional[relay.Node] = gql.django.node()
 
@@ -57,12 +56,12 @@ class SecretgraphObject:
     ) -> List[ContentNode]:
         return ContentNode.get_queryset_intern(info, filters)
 
-    config: SecretgraphConfig = strawberry.field(default=SecretgraphConfig())
+    config: SecretgraphConfig = gql.field(default=SecretgraphConfig())
 
 
 @gql.type
 class Query:
-    @strawberry.field
+    @gql.field
     @gql.django.django_resolver
     @staticmethod
     def secretgraph(
@@ -116,6 +115,6 @@ class Mutation:
 
 @gql.type
 class Subscription:
-    subscribeNodeUpdates: NodeUpdateSubscription = strawberry.subscription(
+    subscribeNodeUpdates: NodeUpdateSubscription = gql.subscription(
         resolver=subscribe_node_updates
     )
