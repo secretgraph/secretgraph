@@ -201,7 +201,7 @@ test = ["hypothesis (>=1.11.4,!=3.79.2)", "iso8601", "pretend", "pytest (>=6.2.0
 
 [[package]]
 name = "daphne"
-version = "4.0.0b1"
+version = "4.0.0"
 description = "Django ASGI (HTTP/WebSocket) server"
 category = "dev"
 optional = false
@@ -228,7 +228,7 @@ graph = ["objgraph (>=1.7.2)"]
 
 [[package]]
 name = "Django"
-version = "4.1.1"
+version = "4.1.2"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 category = "main"
 optional = false
@@ -488,7 +488,7 @@ test = ["appdirs (==1.4.4)", "pytest (>=6)", "pytest-cov (>=2.7)", "pytest-mock 
 
 [[package]]
 name = "psycopg2"
-version = "2.9.3"
+version = "2.9.4"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
 category = "main"
 optional = true
@@ -717,7 +717,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "strawberry-django-plus"
-version = "1.27"
+version = "1.28.2"
 description = "Enhanced Strawberry GraphQL integration with Django"
 category = "main"
 optional = false
@@ -725,8 +725,8 @@ python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
 django = ">=3.2"
-strawberry-graphql = ">=0.132.0"
-strawberry-graphql-django = ">=0.5.1"
+strawberry-graphql = ">=0.133.2"
+strawberry-graphql-django = ">=0.5.3"
 typing-extensions = ">=4.2.0"
 
 [package.extras]
@@ -735,7 +735,7 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.133.0"
+version = "0.133.5"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
@@ -849,7 +849,7 @@ twisted = ["twisted (>=20.3.0)", "zope.interface (>=5.2.0)"]
 
 [[package]]
 name = "typing-extensions"
-version = "4.3.0"
+version = "4.4.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
 category = "main"
 optional = false
@@ -956,7 +956,7 @@ server = ["django", "channels", "graphene-protector", "strawberry-graphql", "str
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <4"
-content-hash = "66dd998b1a3562efb393c0ae3b477c1a8b8dc6e61ae077abe0a1d4b582335ee1"
+content-hash = "e13b61acb79e1c725127a44b5111a1cccde3d0485582aebd0c944faf99c636a4"
 
 [metadata.files]
 anyio = [
@@ -1101,16 +1101,16 @@ cryptography = [
     {file = "cryptography-38.0.1.tar.gz", hash = "sha256:1db3d807a14931fa317f96435695d9ec386be7b84b618cc61cfa5d08b0ae33d7"},
 ]
 daphne = [
-    {file = "daphne-4.0.0b1-py3-none-any.whl", hash = "sha256:8f2c61ca6fb146f172ef9662219343aa57316f29d7694b73431d7a8a72653a7c"},
-    {file = "daphne-4.0.0b1.tar.gz", hash = "sha256:6c0e7447c9f4bf9078fd9e5df1aec6ac95cbd89857540e2fa22127e04742c082"},
+    {file = "daphne-4.0.0-py3-none-any.whl", hash = "sha256:a288ece46012b6b719c37150be67c69ebfca0793a8521bf821533bad983179b2"},
+    {file = "daphne-4.0.0.tar.gz", hash = "sha256:cce9afc8f49a4f15d4270b8cfb0e0fe811b770a5cc795474e97e4da287497666"},
 ]
 dill = [
     {file = "dill-0.3.5.1-py2.py3-none-any.whl", hash = "sha256:33501d03270bbe410c72639b350e941882a8b0fd55357580fbc873fba0c59302"},
     {file = "dill-0.3.5.1.tar.gz", hash = "sha256:d75e41f3eff1eee599d738e76ba8f4ad98ea229db8b085318aa2b3333a208c86"},
 ]
 Django = [
-    {file = "Django-4.1.1-py3-none-any.whl", hash = "sha256:acb21fac9275f9972d81c7caf5761a89ec3ea25fe74545dd26b8a48cb3a0203e"},
-    {file = "Django-4.1.1.tar.gz", hash = "sha256:a153ffd5143bf26a877bfae2f4ec736ebd8924a46600ca089ad96b54a1d4e28e"},
+    {file = "Django-4.1.2-py3-none-any.whl", hash = "sha256:26dc24f99c8956374a054bcbf58aab8dc0cad2e6ac82b0fe036b752c00eee793"},
+    {file = "Django-4.1.2.tar.gz", hash = "sha256:b8d843714810ab88d59344507d4447be8b2cf12a49031363b6eed9f1b9b2280f"},
 ]
 django-fast-ratelimit = [
     {file = "django-fast-ratelimit-0.6.1.tar.gz", hash = "sha256:2d0af63ba5c55db657c4483c43465b1abe8c963b9afad4b6a4cd2e820d6d78ed"},
@@ -1240,17 +1240,17 @@ platformdirs = [
     {file = "platformdirs-2.5.2.tar.gz", hash = "sha256:58c8abb07dcb441e6ee4b11d8df0ac856038f944ab98b7be6b27b2a3c7feef19"},
 ]
 psycopg2 = [
-    {file = "psycopg2-2.9.3-cp310-cp310-win32.whl", hash = "sha256:083707a696e5e1c330af2508d8fab36f9700b26621ccbcb538abe22e15485362"},
-    {file = "psycopg2-2.9.3-cp310-cp310-win_amd64.whl", hash = "sha256:d3ca6421b942f60c008f81a3541e8faf6865a28d5a9b48544b0ee4f40cac7fca"},
-    {file = "psycopg2-2.9.3-cp36-cp36m-win32.whl", hash = "sha256:9572e08b50aed176ef6d66f15a21d823bb6f6d23152d35e8451d7d2d18fdac56"},
-    {file = "psycopg2-2.9.3-cp36-cp36m-win_amd64.whl", hash = "sha256:a81e3866f99382dfe8c15a151f1ca5fde5815fde879348fe5a9884a7c092a305"},
-    {file = "psycopg2-2.9.3-cp37-cp37m-win32.whl", hash = "sha256:cb10d44e6694d763fa1078a26f7f6137d69f555a78ec85dc2ef716c37447e4b2"},
-    {file = "psycopg2-2.9.3-cp37-cp37m-win_amd64.whl", hash = "sha256:4295093a6ae3434d33ec6baab4ca5512a5082cc43c0505293087b8a46d108461"},
-    {file = "psycopg2-2.9.3-cp38-cp38-win32.whl", hash = "sha256:34b33e0162cfcaad151f249c2649fd1030010c16f4bbc40a604c1cb77173dcf7"},
-    {file = "psycopg2-2.9.3-cp38-cp38-win_amd64.whl", hash = "sha256:0762c27d018edbcb2d34d51596e4346c983bd27c330218c56c4dc25ef7e819bf"},
-    {file = "psycopg2-2.9.3-cp39-cp39-win32.whl", hash = "sha256:8cf3878353cc04b053822896bc4922b194792df9df2f1ad8da01fb3043602126"},
-    {file = "psycopg2-2.9.3-cp39-cp39-win_amd64.whl", hash = "sha256:06f32425949bd5fe8f625c49f17ebb9784e1e4fe928b7cce72edc36fb68e4c0c"},
-    {file = "psycopg2-2.9.3.tar.gz", hash = "sha256:8e841d1bf3434da985cc5ef13e6f75c8981ced601fd70cc6bf33351b91562981"},
+    {file = "psycopg2-2.9.4-cp310-cp310-win32.whl", hash = "sha256:8de6a9fc5f42fa52f559e65120dcd7502394692490c98fed1221acf0819d7797"},
+    {file = "psycopg2-2.9.4-cp310-cp310-win_amd64.whl", hash = "sha256:1da77c061bdaab450581458932ae5e469cc6e36e0d62f988376e9f513f11cb5c"},
+    {file = "psycopg2-2.9.4-cp36-cp36m-win32.whl", hash = "sha256:a11946bad3557ca254f17357d5a4ed63bdca45163e7a7d2bfb8e695df069cc3a"},
+    {file = "psycopg2-2.9.4-cp36-cp36m-win_amd64.whl", hash = "sha256:46361c054df612c3cc813fdb343733d56543fb93565cff0f8ace422e4da06acb"},
+    {file = "psycopg2-2.9.4-cp37-cp37m-win32.whl", hash = "sha256:aafa96f2da0071d6dd0cbb7633406d99f414b40ab0f918c9d9af7df928a1accb"},
+    {file = "psycopg2-2.9.4-cp37-cp37m-win_amd64.whl", hash = "sha256:aa184d551a767ad25df3b8d22a0a62ef2962e0e374c04f6cbd1204947f540d61"},
+    {file = "psycopg2-2.9.4-cp38-cp38-win32.whl", hash = "sha256:839f9ea8f6098e39966d97fcb8d08548fbc57c523a1e27a1f0609addf40f777c"},
+    {file = "psycopg2-2.9.4-cp38-cp38-win_amd64.whl", hash = "sha256:c7fa041b4acb913f6968fce10169105af5200f296028251d817ab37847c30184"},
+    {file = "psycopg2-2.9.4-cp39-cp39-win32.whl", hash = "sha256:07b90a24d5056687781ddaef0ea172fd951f2f7293f6ffdd03d4f5077801f426"},
+    {file = "psycopg2-2.9.4-cp39-cp39-win_amd64.whl", hash = "sha256:849bd868ae3369932127f0771c08d1109b254f08d48dc42493c3d1b87cb2d308"},
+    {file = "psycopg2-2.9.4.tar.gz", hash = "sha256:d529926254e093a1b669f692a3aa50069bc71faf5b0ecd91686a78f62767d52f"},
 ]
 pyasn1 = [
     {file = "pyasn1-0.4.8-py2.py3-none-any.whl", hash = "sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d"},
@@ -1321,12 +1321,12 @@ sqlparse = [
     {file = "sqlparse-0.4.3.tar.gz", hash = "sha256:69ca804846bb114d2ec380e4360a8a340db83f0ccf3afceeb1404df028f57268"},
 ]
 strawberry-django-plus = [
-    {file = "strawberry-django-plus-1.27.tar.gz", hash = "sha256:39b3130ca5c22e8da1ada4c08f4f11d8a8fb9f9e92d0e436a163a2f0953d1b91"},
-    {file = "strawberry_django_plus-1.27-py3-none-any.whl", hash = "sha256:8707b023b09ce0e15004c3b00b6cb27285e3bc24564bc95b61bb8c63a97e0902"},
+    {file = "strawberry-django-plus-1.28.2.tar.gz", hash = "sha256:ff3d3f389963ad5530431dc91235789373dec55159574fc67c930f46411831b3"},
+    {file = "strawberry_django_plus-1.28.2-py3-none-any.whl", hash = "sha256:789b5cc5a5ed76a083a4b0d7bfaefe079c14ba202be4707c04d0965a528a20ab"},
 ]
 strawberry-graphql = [
-    {file = "strawberry-graphql-0.133.0.tar.gz", hash = "sha256:e3e2feeac1a111899951ea7a04abd163d3996f23fce34ec05c1b6d74d4d5a52b"},
-    {file = "strawberry_graphql-0.133.0-py3-none-any.whl", hash = "sha256:911ee09c86d66afbecc2873f2dac9974d179e6d439d67083ea399626dd18a344"},
+    {file = "strawberry-graphql-0.133.5.tar.gz", hash = "sha256:cd3677916c677b93fa30d4d204f148506e16c7346442da4f94690dcd8ec19fe7"},
+    {file = "strawberry_graphql-0.133.5-py3-none-any.whl", hash = "sha256:8ee3b60376111e769d96f49acd637a96689c750787ba810a27d63f361bf4ba09"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry-graphql-django-0.5.3.tar.gz", hash = "sha256:00297ec673272a6c91d349fad2ce699a5d903f747b4d377dc09eea2a2a777a0f"},
@@ -1363,8 +1363,8 @@ txaio = [
     {file = "txaio-22.2.1.tar.gz", hash = "sha256:2e4582b70f04b2345908254684a984206c0d9b50e3074a24a4c55aba21d24d01"},
 ]
 typing-extensions = [
-    {file = "typing_extensions-4.3.0-py3-none-any.whl", hash = "sha256:25642c956049920a5aa49edcdd6ab1e06d7e5d467fc00e0506c44ac86fbfca02"},
-    {file = "typing_extensions-4.3.0.tar.gz", hash = "sha256:e6d2677a32f47fc7eb2795db1dd15c1f34eff616bcaf2cfb5e997f854fa1c4a6"},
+    {file = "typing_extensions-4.4.0-py3-none-any.whl", hash = "sha256:16fa4864408f655d35ec496218b85f79b3437c829e93320c7c9215ccfd92489e"},
+    {file = "typing_extensions-4.4.0.tar.gz", hash = "sha256:1511434bb92bf8dd198c12b1cc812e800d4181cfcb867674e0f8279cc93087aa"},
 ]
 tzdata = [
     {file = "tzdata-2022.4-py2.py3-none-any.whl", hash = "sha256:74da81ecf2b3887c94e53fc1d466d4362aaf8b26fc87cda18f22004544694583"},

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import Optional, List, Iterable
-import strawberry
 from strawberry.types import Info
 from strawberry_django_plus import relay, gql
+from strawberry_django import field
 from django.conf import settings
 from django.shortcuts import resolve_url
 from django.db.models import QuerySet
@@ -18,7 +18,7 @@ from ...models import (
 # why?: scalars cannot be used in Unions
 
 
-@strawberry.scalar
+@gql.scalar
 class RegisterUrl:
     """
     The `RegisterUrl` scalar type represents can be:
@@ -63,11 +63,6 @@ class GlobalGroupNode(relay.Node):
 
 @gql.type()
 class SecretgraphConfig(relay.Node):
-    @gql.django.field()
-    @staticmethod
-    def groups(info: Info) -> List[GlobalGroupNode]:
-        return GlobalGroup.objects.all()
-
     @classmethod
     def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
         return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
@@ -91,12 +86,18 @@ class SecretgraphConfig(relay.Node):
     ) -> None:
         return [cls()]
 
-    @strawberry.field
+    # FIXME:return to @gql.django.field() whdn the UnsetType issue is solved
+    @field()
+    @staticmethod
+    def groups() -> List[GlobalGroupNode]:
+        return GlobalGroup.objects.all()
+
+    @gql.field()
     @staticmethod
     def hashAlgorithms() -> List[str]:
         return settings.SECRETGRAPH_HASH_ALGORITHMS
 
-    @strawberry.field
+    @gql.field()
     @staticmethod
     def registerUrl() -> RegisterUrl:
         if getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) is not True:
@@ -111,7 +112,7 @@ class SecretgraphConfig(relay.Node):
             return resolve_url(signup_url)
         return True
 
-    @strawberry.field
+    @gql.field()
     @staticmethod
     def loginUrl() -> Optional[str]:
         login_url = getattr(settings, "LOGIN_URL", None)
