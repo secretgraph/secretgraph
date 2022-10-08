@@ -56,6 +56,11 @@ import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
 
+// hack for Suneditor
+const htmlIsEmpty = (value?: string): boolean => {
+    return !value || value == '<p><br></p>' || value == '<p></p>'
+}
+
 const encryptSet = new Set(['name'])
 const ViewWidget = ({
     arrayBuffer,
@@ -345,19 +350,20 @@ const FileIntern = ({
                         hashAlgorithm,
                     })
                     let value: Blob
-                    if (values.htmlInput) {
+                    if (values.plainInput) {
+                        value = new Blob([values.plainInput], {
+                            type: 'text/plain',
+                        })
+                    } else if (values.fileInput) {
+                        value = values.fileInput
+                    } else if (!htmlIsEmpty(values.htmlInput)) {
+                        // html check is hacky, check first the others
                         value = new Blob(
                             [DOMPurify.sanitize(values.htmlInput)],
                             {
                                 type: 'text/html',
                             }
                         )
-                    } else if (values.plainInput) {
-                        value = new Blob([values.plainInput], {
-                            type: 'text/plain',
-                        })
-                    } else if (values.fileInput) {
-                        value = values.fileInput
                     } else {
                         throw Error('no input found')
                     }
@@ -660,8 +666,10 @@ const FileIntern = ({
                                                 value="plain"
                                                 disabled={
                                                     !!(
-                                                        values.plainInput ||
-                                                        values.htmlInput
+                                                        values.fileInput ||
+                                                        !htmlIsEmpty(
+                                                            values.htmlInput
+                                                        )
                                                     )
                                                 }
                                             />
@@ -680,8 +688,10 @@ const FileIntern = ({
                                                 value="video"
                                                 disabled={
                                                     !!(
-                                                        values.htmlInput ||
-                                                        values.fileInput
+                                                        values.plainInput ||
+                                                        !htmlIsEmpty(
+                                                            values.htmlInput
+                                                        )
                                                     )
                                                 }
                                             />
@@ -690,110 +700,126 @@ const FileIntern = ({
                                                 value="audio"
                                                 disabled={
                                                     !!(
-                                                        values.htmlInput ||
-                                                        values.fileInput
+                                                        values.plainInput ||
+                                                        !htmlIsEmpty(
+                                                            values.htmlInput
+                                                        )
                                                     )
                                                 }
                                             />
                                         </TabList>
                                     </Box>
                                     <TabPanel value="plain">
-                                        (!data ? (
-                                        <Field
-                                            component={FormikTextField}
-                                            name="plainInput"
-                                            label="Text"
-                                            fullWidth
-                                            variant="outlined"
-                                            multiline
-                                            minRows={10}
-                                            disabled={
-                                                !!(
-                                                    isSubmitting ||
-                                                    values.htmlInput ||
-                                                    values.fileInput
-                                                )
-                                            }
-                                        />
-                                        ) :(
-                                        <TextFileAdapter
-                                            value={values.fileInput as Blob}
-                                            onChange={(blob) => {
-                                                setFieldValue('fileInput', blob)
-                                                setFieldTouched(
-                                                    'fileInput',
-                                                    true
-                                                )
-                                            }}
-                                            mime={
-                                                (values.fileInput as Blob).type
-                                            }
-                                            disabled={disabled}
-                                        />
-                                        )
+                                        {!data ? (
+                                            <Field
+                                                component={FormikTextField}
+                                                name="plainInput"
+                                                label="Text"
+                                                fullWidth
+                                                variant="outlined"
+                                                multiline
+                                                minRows={10}
+                                                disabled={
+                                                    !!(
+                                                        isSubmitting ||
+                                                        values.htmlInput ||
+                                                        values.fileInput
+                                                    )
+                                                }
+                                            />
+                                        ) : (
+                                            <TextFileAdapter
+                                                value={values.fileInput as Blob}
+                                                onChange={(blob) => {
+                                                    setFieldValue(
+                                                        'fileInput',
+                                                        blob
+                                                    )
+                                                    setFieldTouched(
+                                                        'fileInput',
+                                                        true
+                                                    )
+                                                }}
+                                                mime={
+                                                    (values.fileInput as Blob)
+                                                        .type
+                                                }
+                                                disabled={disabled}
+                                            />
+                                        )}
                                     </TabPanel>
                                     <TabPanel value="html">
-                                        (!data ? (
-                                        <Field name="htmlInput">
-                                            {(formikFieldProps: FieldProps) => {
-                                                return (
-                                                    <SunEditor
-                                                        value={
-                                                            formikFieldProps
-                                                                .meta.value
-                                                        }
-                                                        InputProps={{
-                                                            inputProps: {
-                                                                width: '100%',
-                                                                setOptions: {
-                                                                    minHeight:
-                                                                        '500px',
+                                        {!data ? (
+                                            <Field name="htmlInput">
+                                                {(
+                                                    formikFieldProps: FieldProps
+                                                ) => {
+                                                    return (
+                                                        <SunEditor
+                                                            value={
+                                                                formikFieldProps
+                                                                    .meta.value
+                                                            }
+                                                            InputProps={{
+                                                                inputProps: {
+                                                                    width: '100%',
+                                                                    setOptions:
+                                                                        {
+                                                                            minHeight:
+                                                                                '500px',
+                                                                        },
                                                                 },
-                                                            },
-                                                        }}
-                                                        name="htmlInput"
-                                                        label="Html Text"
-                                                        variant="outlined"
-                                                        minRows={10}
-                                                        onChange={(ev) => {
-                                                            formikFieldProps.form.setFieldValue(
-                                                                'htmlInput',
-                                                                ev.target.value
-                                                            )
-                                                        }}
-                                                        helperText={
-                                                            formikFieldProps
-                                                                .meta.error
-                                                        }
-                                                        error={
-                                                            !!formikFieldProps
-                                                                .meta.error &&
-                                                            !!formikFieldProps
-                                                                .meta.touched
-                                                        }
-                                                        disabled={
-                                                            !!isSubmitting
-                                                        }
-                                                    />
-                                                )
-                                            }}
-                                        </Field>
-                                        ) :(
-                                        <TextFileAdapter
-                                            value={values.fileInput as Blob}
-                                            onChange={(blob) => {
-                                                setFieldValue('fileInput', blob)
-                                                setFieldTouched(
-                                                    'fileInput',
-                                                    true
-                                                )
-                                            }}
-                                            mime={
-                                                (values.fileInput as Blob).type
-                                            }
-                                            disabled={disabled}
-                                        />
-                                        )
+                                                            }}
+                                                            name="htmlInput"
+                                                            label="Html Text"
+                                                            variant="outlined"
+                                                            minRows={10}
+                                                            onChange={(ev) => {
+                                                                formikFieldProps.form.setFieldValue(
+                                                                    'htmlInput',
+                                                                    ev.target
+                                                                        .value
+                                                                )
+                                                            }}
+                                                            helperText={
+                                                                formikFieldProps
+                                                                    .meta.error
+                                                            }
+                                                            error={
+                                                                !!formikFieldProps
+                                                                    .meta
+                                                                    .error &&
+                                                                !!formikFieldProps
+                                                                    .meta
+                                                                    .touched
+                                                            }
+                                                            disabled={
+                                                                !!isSubmitting
+                                                            }
+                                                        />
+                                                    )
+                                                }}
+                                            </Field>
+                                        ) : (
+                                            <TextFileAdapter
+                                                value={values.fileInput as Blob}
+                                                onChange={(blob) => {
+                                                    setFieldValue(
+                                                        'fileInput',
+                                                        blob
+                                                    )
+                                                    setFieldTouched(
+                                                        'fileInput',
+                                                        true
+                                                    )
+                                                }}
+                                                mime={
+                                                    (values.fileInput as Blob)
+                                                        .type
+                                                }
+                                                disabled={disabled}
+                                            />
+                                        )}
                                     </TabPanel>
                                     <TabPanel value="video">
                                         Video, TODO
@@ -1213,7 +1239,7 @@ const CreateFile = () => {
         {
             fetchPolicy: 'cache-and-network',
             variables: {
-                id: mainCtx.cluster || '',
+                id: mainCtx.cluster || Constants.stubCluster,
                 authorization: mainCtx.tokens,
             },
             onError: console.error,

@@ -88,6 +88,7 @@ class SecretgraphConfig(relay.Node):
 
     # FIXME:return to @gql.django.field() whdn the UnsetType issue is solved
     @field()
+    @gql.django.django_resolver
     @staticmethod
     def groups() -> List[GlobalGroupNode]:
         return GlobalGroup.objects.all()

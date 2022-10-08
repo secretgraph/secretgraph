@@ -70,3 +70,6 @@ export const mapEncryptionAlgorithms: {
     'RSA-OAEPpublic': { usages: ['encrypt'] },
     'AES-GCM': { usages: ['encrypt', 'decrypt'] },
 }
+
+export const stubCluster = Buffer.from('Cluster:-1').toString('base64')
+export const stubContent = Buffer.from('stubContent:-1').toString('base64')
