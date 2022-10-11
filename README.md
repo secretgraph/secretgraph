@@ -1,21 +1,64 @@
+# Installation
+
+## Docker
+
+```sh
+docker-compose up -d
+# or
+podman-compose up -d
+```
+
+Note: you should change the SECRET_KEY and ALLOWED_HOSTS via override
+
+It is now ready of running behind reverse proxies.
+
+## Manually (production)
+
+Pre-Requirement: python3 environment
+
+```sh
+# remove not used databases
+# instead of hypercorn you can install any other asgi server
+pip install --no-cache .[server,postgresql,mysql] hypercorn[h3]
+npm install
+npm run build
+python ./manage.py collectstatic --noinput
+# hypercorn or whatever
+hypercorn secretgraph.asgi:application
+```
+
+## debug
+
+```sh
+./tools/debugrun.py
+```
+
 # structure
+
+It is currently a monorepo containing js and python parts
 
 ## django
 
--   constants: contains constants
--   server: server component for raw data. Has some views for non graphql
--   proxy: presents react part to user
--   user: Quota user, some views for editing user
--   tools: user facing tools
--   utils: utilities for implementations
--   schema.py: merged schema
+-   secretgraph.server: server component for raw data. Has some views for non graphql
+-   secretgraph.proxy: presents react part to user
+-   secretgraph.user: Quota user, some views for editing user
+-   secretgraph.settings: settings part
+-   secretgraph.schema: merged schema
+-   secretgraph.urls: urls
+-   secretgraph.asgi: asgi entrypoint (should be used)
+-   secretgraph.wsgi: wsgi entrypoint (legacy)
 
 ## misc
 
--   assets: Client react stuff
+-   secretgraph.tools: user facing tools
+-   secretgraph.core
+    -   constants: contains constants
+    -   utils: misc utils without django requirement
+-   assets: loader for js part
+-   js-packages: js packages for client
 -   tests: tests
 
-# Special
+# API
 
 ## Permissions
 
@@ -25,12 +68,7 @@
 -   update: update contents or clusters (depending on scope)
 -   push: create subcontents via push
 -   view: view contents and or clusters (depending on scope)
-
-## Limited API
-
-This API contains only basic information and no informations like ids.
-It is a fallback API in case a cluster is not allowed to be read by tokens.
-The contents are limited to PublicKey types
+-   auth: one-time view with intent to signal auth event
 
 ## Shortcut creation of keys
 
@@ -147,10 +185,6 @@ idea: unique operation names. It would be nice to have namespaces like for queri
 -   deleteContentOrCluster: mark cluster or content for deletion (in case of cluster also to children)
 -   resetDeletionContentOrCluster: reset deletion mark
 
-# Internal
-
-Describe how internal plugins works
-
 ## includeTypes and excludeTypes
 
 includeTypes is stronger than excludeTypes, it disables excludeTypes
@@ -194,6 +228,14 @@ idea: seperate actions with different concerns.
 -   view: for view actions
 -   fetch: (special group) autodelete contents if all fetch contentActions are used
 
+# Caveats
+
+## Limited API
+
+This API contains only basic information and no informations like ids.
+It is a fallback API in case a cluster is not allowed to be read by tokens.
+The contents are limited to PublicKey types
+
 # FAQ
 
 ## Why two languages?
@@ -203,6 +245,7 @@ idea: seperate actions with different concerns.
 ## Why id for updates
 
 -   fixes problem with lost updates, especially for hot files like config
+-   but metadata can be changed seperately (removing/adding tags/references)
 
 ## Action updates
 
