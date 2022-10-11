@@ -14,7 +14,10 @@ It is now ready of running behind reverse proxies.
 
 ## Manually (production)
 
-Pre-Requirement: python3 environment
+Requirements:
+
+-   python3 environment
+-   npm (and nodejs) (should be at least last lts)
 
 ```sh
 # remove not used databases
