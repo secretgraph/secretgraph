@@ -47,16 +47,20 @@ It is currently a monorepo containing js and python parts
 -   secretgraph.urls: urls
 -   secretgraph.asgi: asgi entrypoint (should be used)
 -   secretgraph.wsgi: wsgi entrypoint (legacy)
+-   tests: tests
 
-## misc
+## python (without django)
 
 -   secretgraph.tools: user facing tools
 -   secretgraph.core
     -   constants: contains constants
     -   utils: misc utils without django requirement
+
+## js part
+
 -   assets: loader for js part
--   js-packages: js packages for client
--   tests: tests
+-   js-packages: js packages
+-   webpack and npm related files
 
 # API
 
