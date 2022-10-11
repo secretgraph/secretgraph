@@ -82,15 +82,24 @@ key refs are assigned to privatekey, the rest to the public key
 -   group "signature": extra holds signature for public key
 -   group "public_key": special, auto generated reference. Links private key with public key
 
-## request
+## graphql api
+
+### Authorization header
+
+-   flexid/global flexid:token: Auth token (only if authorization is not specified)
+
+## contents request api
 
 ### GET or header
 
 -   key=key hash:sharedkey (privatekey way) or key=content id:sharedkey (direct way) : decrypt on the fly with key as crypto key (or X-Key Header)
--   prekey=key hash:encrypted sharedkey/key of private key : opens pw form to decrypt prekey, requires iteration parameter (only GET parameter)
--   iterations=key hash:encrypted sharedkey/key of private key : opens pw form to decrypt prekey (only GET parameter)
 -   token=flexid/global flexid:token: Auth token (or Authorization Header)
 -   key_hash=hash: retrieve keys with hash (or X-KEY-HASH Header)
+
+Not implemented yet
+
+-   prekey=key hash:encrypted sharedkey/key of private key : opens pw form to decrypt prekey, requires iteration parameter (only GET parameter)
+-   iterations=key hash:encrypted sharedkey/key of private key : opens pw form to decrypt prekey (only GET parameter)
 
 ## Special tags
 
