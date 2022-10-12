@@ -245,6 +245,35 @@ idea: seperate actions with different concerns.
 -   view: for view actions
 -   fetch: (special group) autodelete contents if all fetch contentActions are used
 
+# Internal
+
+## Net? Cluster? Contents? References?
+
+Net is an alias for a user or system account. It contains resource tracking and limits.
+Its visibility is limitted to cluster admins and admins.
+Clusters are assigned to a net. They consist of contents and are responsible for permissions
+(Contents can have some limitted permissions).
+Permissions are defined by actions which are a token permission mapping. A special permission is manage. It allows if the right cluster groups attributes are set that admin like abilities are executed by the owner of the token
+They include seeing hidden contents or even delete contents not owned by the user.
+Content permissions are restricted to create subcontents according to a pattern, to update or to view.
+Contents can link to each other (depending on permissions) via references. References can auto destroy the owner if the referenced object is deleted via the DeleteRecursive attribute.
+
+## How does net resource tracking work?
+
+Every user has a net. This net is required to be assigned to Clusters and optional for Contents (if not specified the net of the assigned cluster is used)-
+The net contains a score how many bytes are roughly in use by the user.
+To the amount of bytes contribute the name and description of every cluster as well as the parts of the content:
+
+-   tags
+-   references
+-   value object
+
+If no quota is set, there is no restriction otherwise only size reductions are possible.
+
+Contents can have a different net than the net of the assigned cluster or content.
+This allows messaging without clogging the inbox of the user (e.g. server announcements, advertisments).
+The system cluster (id=0) has no quota (it will be removed after every migration)
+
 # Caveats
 
 ## Limited API
@@ -252,6 +281,15 @@ idea: seperate actions with different concerns.
 This API contains only basic information and no informations like ids.
 It is a fallback API in case a cluster is not allowed to be read by tokens.
 The contents are limited to PublicKey types
+
+## Action updates
+
+-   via json variant of "delete" actions can be deleted
+-   actions are identified either by their hash or id
+
+## JS updating config
+
+-   updateConfig doesn't persist state in browser, use saveConfig for this
 
 # FAQ
 
@@ -264,21 +302,12 @@ now you have a decryption key to the private key, that is very dangerous
 
 ## Why two languages?
 
--   js is not mature enough for web servers. Dependency hell with security holes.
+-   js is not mature enough for web servers. It is a dependency hell with security holes.
 
 ## Why id for updates
 
 -   fixes problem with lost updates, especially for hot files like config
 -   but metadata can be changed seperately (removing/adding tags/references)
-
-## Action updates
-
--   via json variant of "delete" actions can be deleted
--   actions are identified either by their hash or id
-
-# JS
-
--   updateConfig doesn't persist state in browser, use saveConfig for this
 
 # TODO
 
@@ -289,6 +318,8 @@ now you have a decryption key to the private key, that is very dangerous
 -   actions: states
 -   X-Key response: shared key of private key
 -   hash algo should be part of hashes hash?????
+    -   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
+        -   partly solved
 -   implement settings/config
 -   too many queries when selecting node (sidebar is also updated, because updateId?)
 -   modernize ActionDialog, redesign, multi column?
@@ -296,8 +327,6 @@ now you have a decryption key to the private key, that is very dangerous
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   update internal doc section
 -   replace json-editor by ActionConfigurator equivalent
--   use serialized algo name for certificates/tokens? issue: everyone names algorithms different+there are algorithms with parameters
-    -   partly solved
 -   test permissions
 -   disable editing/or prompt for tokens if tokens are missing
 -   find better way to get hash algorithm (python)

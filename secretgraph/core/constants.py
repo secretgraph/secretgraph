@@ -2,9 +2,9 @@ import enum
 
 from rdflib import Namespace
 
-from .typings import State
+from .typings import ContentState
 
-public_states: set[State] = {
+public_states: set[ContentState] = {
     "required",
     "trusted",
     "public",
@@ -24,6 +24,20 @@ class DeleteRecursive(enum.Enum):
 
 DeleteRecursive.valid_values = frozenset(
     map(lambda x: x.value, DeleteRecursive.__members__.values())
+)
+
+
+class ClaimState(enum.Enum):
+    _ignore_ = ["valid_values"]
+    UNVERIFIED = "a"
+    DISPUTED = "b"
+    VERIFIED = "c"
+    VERIFIED_DISPUTED = "d"
+    INDISPUTABLE = "e"
+
+
+ClaimState.valid_values = frozenset(
+    map(lambda x: x.value, ClaimState.__members__.values())
 )
 
 
