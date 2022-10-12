@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Optional, List, Iterable
 from strawberry.types import Info
 from strawberry_django_plus import relay, gql
-from strawberry_django import field
 from django.conf import settings
 from django.shortcuts import resolve_url
 from django.db.models import QuerySet
@@ -86,9 +85,7 @@ class SecretgraphConfig(relay.Node):
     ) -> None:
         return [cls()]
 
-    # FIXME:return to @gql.django.field() whdn the UnsetType issue is solved
-    @field()
-    @gql.django.django_resolver
+    @gql.django.field
     @staticmethod
     def groups() -> List[GlobalGroupNode]:
         return GlobalGroup.objects.all()
