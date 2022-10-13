@@ -98,7 +98,7 @@ def fetch_clusters(
         queryset = queryset.filter(markForDestruction__isnull=not deleted)
 
     if public is not None:
-        queryset = queryset.filter(public=public)
+        queryset = queryset.filter(globalNameRegisteredAt__isnull=not public)
     if featured is not None:
         queryset = queryset.filter(featured=featured)
     if order_by:
@@ -152,7 +152,8 @@ def fetch_contents(
         if public is True:
             if not clusters:
                 result["objects"] = result["objects"].filter(
-                    state__in=constants.public_states, cluster__public=True
+                    state__in=constants.public_states,
+                    cluster__globalNameRegisteredAt__isnull=False,
                 )
             else:
                 result["objects"] = result["objects"].filter(
@@ -165,7 +166,8 @@ def fetch_contents(
     else:
         # only private or public with cluster public
         result["objects"] = result["objects"].filter(
-            ~Q(state__in=constants.public_states) | Q(cluster__public=True)
+            ~Q(state__in=constants.public_states)
+            | Q(cluster__globalNameRegisteredAt__isnull=False)
         )
     if clusters:
         result["objects"] = fetch_by_id(

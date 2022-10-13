@@ -1,4 +1,6 @@
 import { FetchResult, useQuery } from '@apollo/client'
+import LocalPoliceIcon from '@mui/icons-material/LocalPolice'
+import PublicIcon from '@mui/icons-material/Public'
 import Security from '@mui/icons-material/Security'
 import Button from '@mui/material/Button'
 import Grid from '@mui/material/Grid'
@@ -72,7 +74,6 @@ interface ClusterInternProps {
     readonly name: string
     readonly description: string
     readonly featured?: boolean
-    readonly public?: boolean
     url: string
     loading?: boolean
     disabled?: boolean
@@ -124,7 +125,6 @@ const ClusterIntern = ({
                     name: props.name || '',
                     description: props.description || '',
                     featured: !!props.featured,
-                    public: !!props.public,
                 }}
                 onSubmit={async (
                     { actions: actionsNew, name, description, ...values },
@@ -152,7 +152,6 @@ const ClusterIntern = ({
                             name,
                             description,
                             authorization: mainCtx.tokens,
-                            public: values.public,
                             featured: values.featured,
                         })
                     } else {
@@ -188,7 +187,6 @@ const ClusterIntern = ({
                             publicKey,
                             privateKey,
                             privateKeyKey: key,
-                            public: values.public,
                             featured: values.featured,
                         })
                     }
@@ -270,7 +268,7 @@ const ClusterIntern = ({
                                     shareUrl={
                                         new URL(url, window.location.href).href
                                     }
-                                    isPublic={values.public}
+                                    isPublic={values.name.startsWith('@')}
                                     disabled={isSubmitting}
                                 />
                             )}
@@ -287,18 +285,36 @@ const ClusterIntern = ({
                                             handleClose={() => setOpen(false)}
                                             open={open}
                                             isContent={false}
-                                            isPublic={values.public}
+                                            isPublic={values.name.startsWith(
+                                                '@'
+                                            )}
                                         />
                                     )
                                 }}
                             </FieldArray>
                             <Grid container spacing={2}>
+                                <Grid item xs="auto">
+                                    <Tooltip
+                                        title={
+                                            values.name.startsWith('@')
+                                                ? 'public global'
+                                                : 'internal'
+                                        }
+                                    >
+                                        {values.name.startsWith('@') ? (
+                                            <PublicIcon />
+                                        ) : (
+                                            <LocalPoliceIcon />
+                                        )}
+                                    </Tooltip>
+                                </Grid>
                                 <Grid item xs>
                                     <FastField
                                         component={FormikTextField}
                                         name="name"
                                         type="text"
                                         label="Name"
+                                        helperText="Prefix with @ to register a global name"
                                         fullWidth
                                         disabled={disabled || loading}
                                     />
@@ -330,17 +346,7 @@ const ClusterIntern = ({
                                     />
                                 </Grid>
 
-                                <Grid item xs={6}>
-                                    <FastField
-                                        component={FormikCheckboxWithLabel}
-                                        name="public"
-                                        type="checkbox"
-                                        Label={{ label: 'Public' }}
-                                        disabled={disabled || loading}
-                                    />
-                                </Grid>
-
-                                <Grid item xs={6}>
+                                <Grid item xs={12}>
                                     <FastField
                                         component={FormikCheckboxWithLabel}
                                         name="featured"
@@ -503,7 +509,6 @@ const CreateCluster = () => {
                     name: '',
                     description: '',
                     featured: false,
-                    public: false,
                     mapper: {
                         [hashKey]: {
                             type: 'action',

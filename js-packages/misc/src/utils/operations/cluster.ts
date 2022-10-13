@@ -24,7 +24,6 @@ export async function createCluster(options: {
     net?: string
     name?: string
     description?: string
-    public?: boolean
     featured?: boolean
     publicKey: CryptoKey
     privateKey?: CryptoKey
@@ -72,7 +71,6 @@ export async function createCluster(options: {
             nonce: nonce ? await serializeToBase64(nonce) : null,
             actions: options.actions,
             authorization: options.authorization,
-            public: options.public,
             featured: options.featured,
         },
     })
@@ -83,7 +81,6 @@ export async function updateCluster(options: {
     client: ApolloClient<any>
     updateId: string
     actions?: Interfaces.ActionInterface[]
-    public?: boolean
     featured?: boolean
     net?: string
     name?: string
@@ -102,7 +99,6 @@ export async function updateCluster(options: {
             description: options.description,
             actions: options.actions,
             authorization: options.authorization,
-            public: options.public,
             featured: options.featured,
         },
     })
@@ -124,7 +120,6 @@ export async function initializeCluster({
     net?: string
     name?: string
     description?: string
-    public?: boolean
     featured?: boolean
     hashAlgorithm: string
 }) {

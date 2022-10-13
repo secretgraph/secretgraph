@@ -241,7 +241,7 @@ class ContentNode(relay.Node):
                 if not filters.clusters:
                     queryset = queryset.filter(
                         state__in=constants.public_states,
-                        cluster__public=True,
+                        cluster__globalNameRegisteredAt__isnull=False,
                     )
                 else:
                     queryset = queryset.filter(
@@ -252,7 +252,8 @@ class ContentNode(relay.Node):
         else:
             # only private or public with cluster public
             queryset = queryset.filter(
-                ~Q(state__in=constants.public_states) | Q(cluster__public=True)
+                ~Q(state__in=constants.public_states)
+                | Q(cluster__globalNameRegisteredAt__isnull=False)
             )
         if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(

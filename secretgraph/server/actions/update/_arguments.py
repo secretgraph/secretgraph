@@ -96,7 +96,6 @@ class ClusterInput:
     net: Optional[Union[str, Net]] = None
     name: Optional[str] = None
     description: Optional[str] = None
-    public: Optional[bool] = None
     featured: Optional[bool] = None
     actions: Optional[List[ActionInput]] = None
     # has no references so missing reference tag is no problem

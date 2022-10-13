@@ -222,7 +222,7 @@ includeTypes is stronger than excludeTypes, it disables excludeTypes
 
 ## Security concept
 
-The idea is, that data can be stored on limitted trustworthy servers.
+The idea is, that data can be stored on limited trustworthy servers.
 Missing patches should ideally not affect the security
 For this we have two defense mechanism
 
@@ -250,9 +250,9 @@ idea: seperate actions with different concerns.
 ## Net? Cluster? Contents? References?
 
 Net is an alias for a user or system account. It contains resource tracking and limits.
-Its visibility is limitted to cluster admins and admins.
+Its visibility is limited to cluster admins and admins.
 Clusters are assigned to a net. They consist of contents and are responsible for permissions
-(Contents can have some limitted permissions).
+(Contents can have some limited permissions).
 Permissions are defined by actions which are a token permission mapping. A special permission is manage. It allows if the right cluster groups attributes are set that admin like abilities are executed by the owner of the token
 They include seeing hidden contents or even delete contents not owned by the user.
 Content permissions are restricted to create subcontents according to a pattern, to update or to view.

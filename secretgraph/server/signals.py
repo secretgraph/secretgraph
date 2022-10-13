@@ -24,8 +24,7 @@ def initializeDb(sender, **kwargs):
         defaults={
             "id": 0,
             "name": "system",
-            "public": False,
-            "featured": False,
+            "unique": True,
             "net": net,
         },
     )

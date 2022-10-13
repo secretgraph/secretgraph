@@ -75,11 +75,11 @@ class ClusterNode(relay.Node):
             return None
         return self.featured
 
-    @gql.django.field()
+    @gql.django.field(description="Is cluster public/global")
     def public(self) -> Optional[bool]:
         if self.limited:
             return None
-        return self.public
+        return self.globalNameRegisteredAt is None
 
     @gql.django.field()
     def updated(self) -> Optional[datetime]:
@@ -239,7 +239,8 @@ class ClusterNode(relay.Node):
             and filters.public != UseCriteriaPublic.TOKEN
         ):
             queryset = queryset.filter(
-                public=filters.public == UseCriteriaPublic.TRUE
+                globalNameRegisteredAt__isnull=filters.public
+                != UseCriteriaPublic.TRUE
             )
         if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(

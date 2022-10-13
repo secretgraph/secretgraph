@@ -4,6 +4,7 @@ from contextlib import nullcontext
 from uuid import UUID, uuid4
 
 from django.conf import settings
+from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 
 from ...models import Cluster, Net
@@ -19,13 +20,20 @@ len_default_hash = len(hash_object(b""))
 def _update_or_create_cluster(request, cluster, objdata, authset):
     create = not cluster.id
 
-    if getattr(objdata, "public", None) is not None:
-        cluster.public = bool(objdata.public)
-    if getattr(objdata, "featured", None) is not None:
-        cluster.featured = bool(objdata.featured)
-
     if getattr(objdata, "name", None) is not None:
-        cluster.name = objdata.name or ""
+        if cluster.name != objdata.name:
+            if objdata.name in {"system", "@system"}:
+                raise ValueError("Invalid name")
+            cluster.name = objdata.name
+            if cluster.name.startswith("@"):
+                cluster.globalNameRegisteredAt = timezone.now()
+            else:
+                cluster.globalNameRegisteredAt = None
+
+    # not cleaned yet, so maybe globalNameRegisteredAt is incorrect
+    if cluster.name.startswith("@"):
+        if getattr(objdata, "featured", None) is not None:
+            cluster.featured = bool(objdata.featured)
 
     if getattr(objdata, "description", None) is not None:
         cluster.description = objdata.description or ""
@@ -71,6 +79,8 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
         del user
     # cleanup after scope
     del net
+
+    cluster.clean()
 
     def cluster_save_fn():
         cluster.updateId = uuid4()

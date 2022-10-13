@@ -32,7 +32,7 @@ type Cluster implements Node {
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
     filters: ContentFilterSimple!
-  ): ContentNodeConnection!
+  ): ContentConnection!
   deleted: DateTime
   description: String
   featured: Boolean
@@ -40,6 +40,8 @@ type Cluster implements Node {
   """cluster groups: groups for permissions and injected keys"""
   groups: [String!]
   name: String
+
+  """Is cluster public/global"""
   public: Boolean
   updateId: UUID
   updated: DateTime
@@ -95,7 +97,6 @@ input ClusterInput {
   net: ID = null
   name: String = null
   description: String = null
-  public: Boolean = null
   featured: Boolean = null
   actions: [ActionInput!] = null
   key: ContentKeyInput = null
@@ -117,7 +118,7 @@ type Content implements Node {
   deleted: DateTime
   link: String!
   availableActions: [ActionEntry!]!
-  cluster: Cluster!
+  cluster: Cluster
   referencedBy(
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
@@ -233,27 +234,6 @@ input ContentKeyInput {
 type ContentMutation {
   content: Content!
   writeok: Boolean!
-}
-
-"""A connection to a list of items."""
-type ContentNodeConnection {
-  """Pagination data for this connection"""
-  pageInfo: PageInfo!
-
-  """Contains the nodes in this connection"""
-  edges: [ContentNodeEdge!]!
-
-  """Total quantity of existing nodes"""
-  totalCount: Int
-}
-
-"""An edge in a connection."""
-type ContentNodeEdge {
-  """A cursor for use in pagination"""
-  cursor: String!
-
-  """The item at the end of the edge"""
-  node: Content!
 }
 
 type ContentReference implements Node {
@@ -386,9 +366,9 @@ union MarkPayload = MarkMutation | OperationInfo
 
 """An enumeration."""
 enum MetadataOperations {
-  append
-  remove
-  replace
+  APPEND
+  REMOVE
+  REPLACE
 }
 
 type MetadataUpdateMutation {
@@ -628,6 +608,10 @@ type SecretgraphObject {
   ): ContentConnection!
 }
 
+type Subscription {
+  subscribeNodeUpdates(ids: [GlobalID!]!, authorization: [String!] = null): [Node!]!
+}
+
 type TransferMutation {
   content: Content
 }
@@ -640,7 +624,7 @@ input UpdateMetadataInput {
   state: String = null
   tags: [String!] = null
   actions: [ActionInput!] = null
-  operation: MetadataOperations = append
+  operation: MetadataOperations = APPEND
   authorization: [String!] = null
 }
 

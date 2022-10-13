@@ -139,7 +139,6 @@ export const createClusterMutation = gql`
     mutation clusterCreateMutation(
         $name: String
         $description: String
-        $public: Boolean
         $featured: Boolean
         $actions: [ActionInput!]
         $publicKey: Upload!
@@ -155,7 +154,6 @@ export const createClusterMutation = gql`
                     description: $description
                     actions: $actions
                     featured: $featured
-                    public: $public
                     key: {
                         publicKey: $publicKey
                         publicState: "trusted"
@@ -196,7 +194,6 @@ export const updateClusterMutation = gql`
         $updateId: ID!
         $name: String
         $description: String
-        $public: Boolean
         $featured: Boolean
         $actions: [ActionInput!]
         $authorization: [String!]
@@ -210,7 +207,6 @@ export const updateClusterMutation = gql`
                     description: $description
                     actions: $actions
                     featured: $featured
-                    public: $public
                 }
                 authorization: $authorization
             }

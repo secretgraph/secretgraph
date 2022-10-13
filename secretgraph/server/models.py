@@ -25,6 +25,7 @@ from .messages import (
     reference_group_help,
     net_quota_help,
 )
+from .validators import ClusterNameValidator
 from ..core import constants
 
 logger = logging.getLogger(__name__)
@@ -130,15 +131,18 @@ class Cluster(FlexidModel):
         default="",
         null=False,
         blank=True,
+        validators=[ClusterNameValidator],
     )
     description: str = models.TextField(
         default="",
         null=False,
         blank=True,
     )
-    # field for listing public clusters
-    public: bool = models.BooleanField(default=False, blank=True)
-    featured: bool = models.BooleanField(default=False, blank=True)
+
+    globalNameRegisteredAt: dt = models.DateTimeField(null=True, blank=True)
+    # nullable fake column to provide uniqueness to global name
+    unique: bool = models.BooleanField(blank=True, null=True)
+    featured: bool = models.BooleanField(default=False, blank=True, null=False)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(
         blank=True, default=uuid4, db_column="update_id"
@@ -150,6 +154,36 @@ class Cluster(FlexidModel):
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "unique"],
+                name="%(class)s_global_name_unique",
+            ),
+        ]
+
+    def clean(self) -> None:
+        if not self.globalNameRegisteredAt and self.featured:
+            self.featured = False
+
+        if self.globalNameRegisteredAt is not None or self.name in {
+            "system",
+            "@system",
+        }:
+            if not self.unique:
+                self.unique = True
+        else:
+            if self.unique:
+                self.unique = None
+        if self.globalNameRegisteredAt is None and self.name.startswith("@"):
+            raise ValidationError({"globalNameRegisteredAt": "required"})
+        if (
+            self.globalNameRegisteredAt is not None
+            and not self.name.startswith("@")
+        ):
+            self.globalNameRegisteredAt = None
+        return super().clean()
 
 
 class ContentManager(models.Manager):
@@ -237,6 +271,8 @@ class Content(FlexidModel):
                 fields=["contentHash", "cluster_id"], name="unique_content"
             )
         ]
+        # Causes errors, so keep it disabled
+        # order_with_respect_to = "cluster"
 
     def load_pubkey(self):
         """Works only for public keys (special Content)"""

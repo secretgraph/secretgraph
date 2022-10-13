@@ -248,7 +248,9 @@ def retrieve_allowed_objects(request, query, scope="view", authset=None):
             }
         )
         id_subquery = models.Subquery(
-            query.filter(_q | models.Q(public=True)).values("id")
+            query.filter(
+                _q | models.Q(globalNameRegisteredAt__isnull=False)
+            ).values("id")
         )
         id_subquery_without_public = models.Subquery(
             query.filter(_q).values("id")
