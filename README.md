@@ -338,6 +338,8 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO later
 
+-   decide on name: system or @system
+    -   shall both exist and @system is public
 -   cleanup user
 -   support dsa
 -   implement different net resource logic in frontend
