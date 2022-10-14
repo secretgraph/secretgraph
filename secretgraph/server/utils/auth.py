@@ -395,6 +395,19 @@ def check_permission(request, permission, query, authset=None):
     return global_groups.filter(q).exists()
 
 
+def check_default_permission(permission):
+    global_groups = GlobalGroupProperty.objects.get_or_create(
+        name=permission, defaults={}
+    )[0].groups.all()
+    return global_groups.filter(
+        models.Exists(
+            GlobalGroupProperty.objects.filter(
+                groups__id=models.OuterRef("pk"), name="default"
+            )
+        )
+    ).exists()
+
+
 def get_cached_result(
     request,
     *viewResults,

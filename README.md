@@ -67,7 +67,7 @@ It is currently a monorepo containing js and python parts
 
 # API
 
-## Permissions
+## Permissions (cluster)
 
 -   manage: can change and create clusters, full access like admin
 -   create: can add or move contents to cluster TODO: should check permission of cluster it moves from
@@ -76,6 +76,20 @@ It is currently a monorepo containing js and python parts
 -   push: create subcontents via push
 -   view: view contents and or clusters (depending on scope)
 -   auth: one-time view with intent to signal auth event
+
+## Global group properties:
+
+-   default: on cluster creation these groups are added by default except if groups are explicit specified
+-   register_global_name: can register a global cluster name
+-   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
+-   manage_hidden: can see hidden contents
+-   manage_groups: can manage global groups of clusters
+-   manage_deletion: can delete every content or cluster
+-   manage_update: can update every content or cluster (but has still no access to data if encrypted)
+-   auto_hide_local: clusters with a group with this property have their public contents auto hidden if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)
+-   auto_hide_local_update: clusters with a group with this property have their public contents auto hidden after an update if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)
+-   auto_hide_global: clusters with a group with this property have their public contents auto hidden if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)
+-   auto_hide_global_update: clusters with a group with this property have their public contents auto hidden after an update if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)
 
 ## Shortcut creation of keys
 
@@ -314,7 +328,6 @@ now you have a decryption key to the private key, that is very dangerous
 -   move to dataclasses and TypedDicts
     -   nearly complete needs testing and TypedDicts
 -   remove/handle orphan nets (no cluster assigned)
--   document net resource tracking, ClusterGroups
 -   actions: states
 -   X-Key response: shared key of private key
 -   hash algo should be part of hashes hash?????
@@ -339,7 +352,7 @@ now you have a decryption key to the private key, that is very dangerous
 # TODO later
 
 -   decide on name: system or @system
-    -   shall both exist and @system is public
+    -   shall both exist and @system is public?
 -   cleanup user
 -   support dsa
 -   implement different net resource logic in frontend

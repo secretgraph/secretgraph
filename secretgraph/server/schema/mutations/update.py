@@ -20,6 +20,7 @@ from ...utils.auth import (
     ids_to_results,
     get_cached_result,
     get_cached_permissions,
+    check_default_permission,
 )
 from ..arguments import (
     AuthList,
@@ -60,6 +61,14 @@ def mutate_cluster(
             )
         else:
             cluster.groups = None
+
+    if cluster.name is not None and cluster.name.startswith("@"):
+        if not get_cached_permissions(
+            info.context.request, authset=authorization
+        )["register_global_name"] and not check_default_permission(
+            "register_global_name"
+        ):
+            cluster.name = f"+@{cluster.name}"
     if id:
         if not updateId:
             raise ValueError("updateId required")
@@ -108,6 +117,11 @@ def mutate_content(
     authorization: Optional[AuthList] = None,
 ) -> ContentMutation:
     required_keys = set()
+    if content.hidden is not None:
+        if not get_cached_permissions(
+            info.context.request, authset=authorization
+        )["manage_hidden"]:
+            content.hidden = None
     if id:
         if not updateId:
             raise ValueError("updateId required")

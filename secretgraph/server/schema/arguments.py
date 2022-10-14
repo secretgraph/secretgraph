@@ -75,6 +75,7 @@ class ContentValueInput:
 class ContentInput:
     net: Optional[ID] = None
     cluster: Optional[ID] = None
+    hidden: Optional[bool] = None
     # when creating keypair: references are automagically distributed
     key: Optional[ContentKeyInput] = None
     value: Optional[ContentValueInput] = None

@@ -68,6 +68,7 @@ class ReferenceInput:
 class ContentInput:
     net: Optional[str] = None
     cluster: Optional[str] = None
+    hidden: Optional[bool] = None
     # when creating keypair: references are automagically distributed
     key: Optional[ContentKeyInput] = None
     value: Optional[ContentValueInput] = None
@@ -82,6 +83,7 @@ class ContentMergedInput:
     cluster: Optional[Union[str, Cluster]] = None
     references: Optional[List[ReferenceInput]] = None
     contentHash: Optional[str] = None
+    hidden: Optional[bool] = None
     value: Optional[File] = None
     state: Optional[str] = None
     type: Optional[str] = None

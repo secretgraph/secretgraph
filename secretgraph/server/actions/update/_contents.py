@@ -104,6 +104,7 @@ def _transform_key_into_dataobj(
             value=key_obj.publicKey,
             type="PublicKey",
             state=publicState,
+            hidden=False,
             tags=_condMergeKeyTags(
                 hashes_tags, key_obj.publicTags, bool(publicKeyContent)
             ),
@@ -114,6 +115,7 @@ def _transform_key_into_dataobj(
             nonce=key_obj.nonce,
             value=key_obj.privateKey,
             type="PrivateKey",
+            hidden=False,
             state="internal",
             tags=_condMergeKeyTags(
                 hashes_tags, key_obj.privateTags, bool(publicKeyContent)
@@ -214,9 +216,9 @@ def _update_or_create_content_or_key(
         raise ValueError("No type specified")
     elif not is_key and content.type in {"PrivateKey", "PublicKey"}:
         raise ValueError("%s is an invalid type" % content.type)
-    content_state = objdata.state
-    if content_state:
-        content.state = content_state
+    oldstate = "draft" if create else content.state
+    if objdata.state:
+        content.state = objdata.state
     if not content.state:
         raise ValueError("No state specified")
     tags_dict = None
@@ -232,6 +234,29 @@ def _update_or_create_content_or_key(
         size_new += content.size_tags
         if objdata.references is not None:
             key_hashes_tags = set()
+
+    # hidden
+    if objdata.hidden is not None:
+        content.hidden = objdata.hidden
+    elif content.state != "draft":
+        assert is_key is False, "Keys should not be affected by hidden"
+        if content.state == "public":
+            if create or oldstate == "draft" or oldstate == "internal":
+                content.hidden = objdata.cluster.groups.filter(
+                    properties__name="auto_hide_global"
+                    if content.cluster.name.startsWith("@")
+                    else "auto_hide_local"
+                ).exists()
+            elif objdata.cluster.groups.filter(
+                properties__name="auto_hide_global_update"
+                if content.cluster.name.startsWith("@")
+                else "auto_hide_local_update"
+            ).exists():
+                content.hidden = True
+        else:
+            content.hidden = False
+    elif create:
+        content.hidden = False
 
     # if create checked in parent function
     if objdata.value:
@@ -643,6 +668,7 @@ def update_content_fn(
             net=objdata.net,
             references=objdata.references,
             contentHash=objdata.contentHash,
+            hidden=objdata.hidden,
             **(_value_to_dict(objdata.value) if objdata.value else {}),
         )
     func = _update_or_create_content_or_key(
