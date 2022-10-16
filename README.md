@@ -325,6 +325,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
+-   introduce new encrypted tag syntax: encrypted tags are prefixed with ~
 -   move to dataclasses and TypedDicts
     -   nearly complete needs testing and TypedDicts
 -   remove/handle orphan nets (no cluster assigned)
