@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Annotated, Optional, List
 from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
@@ -61,7 +59,9 @@ class ContentNode(relay.Node):
         field_name="markForDestruction"
     )
     link: str
-    limited: gql.Private[bool] = False
+
+    # BUG: with strawberry.lazy this definition shows up as a field and crashes
+    # limited: gql.Private[bool] = False
 
     @gql.django.field()
     def tags(
@@ -102,7 +102,7 @@ class ContentNode(relay.Node):
     @gql.django.field()
     def cluster(
         self: Content, info: Info
-    ) -> Optional[gql.LazyType["ClusterNode", ".clusters"]]:
+    ) -> Optional[Annotated["ClusterNode", gql.lazy(".clusters")]]:
         if self.limited:
             return None
         # authorization often cannot be used, but it is ok, we have cached then

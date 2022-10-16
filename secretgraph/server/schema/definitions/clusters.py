@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Optional, List
+from typing import Optional, List
 from datetime import datetime
 import strawberry
 from strawberry.types import Info
@@ -20,8 +18,11 @@ from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import ActionEntry, ActionMixin
 
 
-if TYPE_CHECKING:
-    from .contents import ContentNode
+#  BUG: you cannot lazy import ContentNode
+from .contents import ContentNode
+
+# if TYPE_CHECKING:
+#    from .contents import ContentNode
 
 
 @gql.input
@@ -67,7 +68,9 @@ class ClusterFilter:
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(relay.Node):
     id_attr = "flexid"
-    limited: gql.Private[bool] = False
+
+    # BUG: with strawberry.lazy this definition shows up as a field and crashes
+    # limited: gql.Private[bool] = False
 
     @gql.django.field()
     def featured(self) -> Optional[bool]:
@@ -136,12 +139,11 @@ class ClusterNode(relay.Node):
             hidden_names
         )
 
+    # BUG: crash when lazy
     @gql.django.connection()
     def contents(
         self, info: Info, filters: ContentFilterSimple
-    ) -> List[
-        strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
-    ]:
+    ) -> List[ContentNode]:
         result = get_cached_result(info.context.request)["Content"]
         queryset: QuerySet = self.contents.filter(hidden=False)
         deleted = filters.deleted
