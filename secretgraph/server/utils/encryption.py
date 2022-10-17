@@ -4,7 +4,6 @@ import os
 import tempfile
 from io import BytesIO
 from typing import Iterable
-import hashlib
 
 from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
@@ -15,7 +14,7 @@ from cryptography.hazmat.primitives.serialization import load_der_private_key
 from django.conf import settings
 from django.db.models import Exists, OuterRef, Q, Subquery, F
 
-from ...core.constants import TransferResult, public_states
+from ...core.constants import TransferResult, public_states, mapHashNames
 from ..models import Content, ContentReference
 
 logger = logging.getLogger(__name__)
@@ -99,9 +98,7 @@ def create_key_maps(contents, keyset):
             )
         else:
             esharedkey = base64.b64decode(split[1])
-            # TODO: find better way to get hash algorithm
-            hash_algo = hashlib.new(split[0])
-            algo = getattr(hashes, hash_algo.name.upper())()
+            algo = mapHashNames[split[0]].algorithm
             p = padding.OAEP(
                 mgf=padding.MGF1(algorithm=algo),
                 algorithm=algo,

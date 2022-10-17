@@ -1,10 +1,9 @@
-import hashlib
 import json
 import os
 from base64 import b64decode, b64encode
 from urllib.parse import urlencode, urljoin
 
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
@@ -96,9 +95,9 @@ class Command(BaseCommand):
                 net.max_upload_size = options["max_upload_size"]
             else:
                 net.reset_max_upload_size()
-        hash_algo = hashlib.new(settings.SECRETGRAPH_HASH_ALGORITHMS[0])
-        hash_algo_name = hash_algo.name
-        hash_algo = getattr(hashes, hash_algo_name.upper())()
+        hash_algo, hash_algo_name = constants.mapHashNames[
+            settings.SECRETGRAPH_HASH_ALGORITHMS[0]
+        ]
         nonce_config = os.urandom(13)
         nonce_privkey = os.urandom(13)
         view_token, view_token_b64, view_token_hash = _gen_key_vars(

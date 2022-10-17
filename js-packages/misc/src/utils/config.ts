@@ -4,6 +4,8 @@ import { saveAs } from 'file-saver'
 
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
+import { b64toarr, utf8encoder } from './encoding'
+import { serializeToBase64 } from './encoding'
 import {
     decryptAESGCM,
     decryptFirstPreKey,
@@ -11,13 +13,9 @@ import {
     decryptRSAOEAP,
     encryptAESGCM,
     encryptPreKey,
-    findWorkingHashAlgorithms,
-    hashObject,
-    serializeToBase64,
-    unserializeToArrayBuffer,
     unserializeToCryptoKey,
 } from './encryption'
-import { b64toarr, mergeDeleteObjects, utf8encoder } from './misc'
+import { mergeDeleteObjects } from './misc'
 import * as SetOps from './set'
 
 export function moveHosts({

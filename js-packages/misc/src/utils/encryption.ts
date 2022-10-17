@@ -1,27 +1,14 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
+import {
+    Base64Error,
+    b64tobuffer,
+    serializeToBase64,
+    unserializeToArrayBuffer,
+    utf8encoder,
+} from './encoding'
+import { hashObject } from './hashing'
 import * as IterableOps from './iterable'
-import { Base64Error, b64tobuffer, utf8encoder } from './misc'
-
-export function findWorkingHashAlgorithms(hashAlgorithms: string[]) {
-    const hashAlgos = []
-    for (const algo of hashAlgorithms) {
-        const mappedName = Constants.mapHashNames[algo]
-        if (mappedName) {
-            hashAlgos.push(mappedName.operationName)
-        }
-    }
-    return hashAlgos
-}
-
-export async function hashObject(
-    obj: Parameters<typeof unserializeToArrayBuffer>[0],
-    hashAlgorithm: string
-) {
-    return await serializeToBase64(
-        crypto.subtle.digest(hashAlgorithm, await unserializeToArrayBuffer(obj))
-    )
-}
 
 export async function toPBKDF2key(
     inp: Interfaces.RawInput | PromiseLike<Interfaces.RawInput>
@@ -122,79 +109,6 @@ export async function toPublicKey(
         true,
         Constants.mapEncryptionAlgorithms[`${params.name}public`].usages
     )
-}
-
-export async function unserializeToArrayBuffer(
-    inp:
-        | Interfaces.RawInput
-        | Interfaces.KeyOutInterface
-        | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
-): Promise<ArrayBuffer> {
-    const _inp = await inp
-    let _result: ArrayBuffer
-    if (typeof _inp === 'string') {
-        _result = b64tobuffer(_inp)
-    } else {
-        let _data
-        const _finp = (_inp as Interfaces.KeyOutInterface).data
-        if (
-            _finp &&
-            (_finp instanceof ArrayBuffer ||
-                (_finp as any).buffer instanceof ArrayBuffer)
-        ) {
-            _data = _finp
-        } else {
-            _data = _inp
-        }
-        if (
-            _data instanceof ArrayBuffer ||
-            (_data as any).buffer instanceof ArrayBuffer
-        ) {
-            _result = _data as ArrayBuffer
-        } else if (_data instanceof Blob) {
-            _result = await (_data as Blob).arrayBuffer()
-        } else if (_data instanceof CryptoKey) {
-            if (!_data.extractable) {
-                throw Error('Cannot extract key (extractable=false)')
-            }
-            switch (_data.type) {
-                case 'public':
-                    // serialize publicKey
-                    _result = await crypto.subtle.exportKey(
-                        'spki' as const,
-                        _data
-                    )
-                    break
-                case 'private':
-                    _result = await crypto.subtle.exportKey(
-                        'pkcs8' as const,
-                        _data
-                    )
-                    break
-                default:
-                    _result = await crypto.subtle.exportKey(
-                        'raw' as const,
-                        _data
-                    )
-            }
-        } else {
-            throw Error(
-                `Invalid input: ${_inp} (${
-                    (_inp as Interfaces.RawInput).constructor
-                })`
-            )
-        }
-    }
-    return _result
-}
-
-export async function serializeToBase64(
-    inp:
-        | Interfaces.RawInput
-        | Interfaces.KeyOutInterface
-        | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
-): Promise<string> {
-    return Buffer.from(await unserializeToArrayBuffer(inp)).toString('base64')
 }
 
 function compareObjects(obj1: any, obj2: any) {

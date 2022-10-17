@@ -16,11 +16,11 @@ import {
     transformActions,
 } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig, saveConfig } from '@secretgraph/misc/utils/config'
+import { serializeToBase64 } from '@secretgraph/misc/utils/encoding'
 import {
     findWorkingHashAlgorithms,
     hashObject,
-    serializeToBase64,
-} from '@secretgraph/misc/utils/encryption'
+} from '@secretgraph/misc/utils/hashing'
 import {
     createCluster,
     updateCluster,

@@ -7,14 +7,9 @@ import {
 import { mapHashNames } from '../../constants'
 import * as Interfaces from '../../interfaces'
 import { authInfoFromConfig, cleanConfig } from '../config'
-import {
-    encryptAESGCM,
-    encryptRSAOEAP,
-    hashObject,
-    serializeToBase64,
-    unserializeToArrayBuffer,
-} from '../encryption'
-import { sortedHash } from '../misc'
+import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
+import { encryptAESGCM, encryptRSAOEAP } from '../encryption'
+import { hashObject, sortedHash } from '../hashing'
 import { createContent } from './content'
 
 export async function createCluster(options: {

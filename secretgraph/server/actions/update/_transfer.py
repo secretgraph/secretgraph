@@ -9,9 +9,12 @@ from email.parser import BytesParser
 from asgiref.sync import sync_to_async
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.hashes import Hash
 from django.db.models import Q
 from django.utils.module_loading import import_string
 from django.conf import settings
+
+from secretgraph.core.utils.hashing import findWorkingHashAlgorithms
 
 from ....core.constants import TransferResult
 from ...utils.conf import get_httpx_params
@@ -149,11 +152,14 @@ async def transfer_value(
                     return TransferResult.ERROR
                 content.nonce = checknonce
             if transfer and verifiers:
-                hashes_remote = [
-                    *map(
-                        set(response.get("X-HASH-ALGORITHMS").split(",")[5]),
+                hashes_remote = list(
+                    map(
+                        lambda x: Hash,
+                        findWorkingHashAlgorithms(
+                            response.get("X-HASH-ALGORITHMS")
+                        ),
                     )
-                ]
+                )
             with content.file.open("wb") as f:
                 for chunk in response.iter_content(512):
                     f.write(chunk)

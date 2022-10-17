@@ -16,6 +16,11 @@ import {
     updateConfig,
 } from '../config'
 import {
+    b64tobuffer,
+    serializeToBase64,
+    unserializeToArrayBuffer,
+} from '../encoding'
+import {
     decryptAESGCM,
     decryptRSAOEAP,
     deparseTag,
@@ -23,16 +28,13 @@ import {
     encryptTag,
     extractTags,
     extractUnencryptedTags,
-    findWorkingHashAlgorithms,
-    serializeToBase64,
-    unserializeToArrayBuffer,
 } from '../encryption'
 import {
     createSignatureReferences,
     encryptSharedKey,
     extractPubKeysReferences,
 } from '../graphql'
-import { b64toarr, b64tobuffer } from '../misc'
+import { findWorkingHashAlgorithms } from '../hashing'
 
 export async function createContent({
     client,

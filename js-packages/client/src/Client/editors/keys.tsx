@@ -36,17 +36,18 @@ import {
     extractPrivKeys,
 } from '@secretgraph/misc/utils/config'
 import {
-    extractTags,
-    extractUnencryptedTags,
-    findWorkingHashAlgorithms,
     serializeToBase64,
     unserializeToArrayBuffer,
+} from '@secretgraph/misc/utils/encoding'
+import {
+    extractUnencryptedTags,
     unserializeToCryptoKey,
 } from '@secretgraph/misc/utils/encryption'
 import {
     extractPubKeysCluster,
     extractPubKeysReferences,
 } from '@secretgraph/misc/utils/graphql'
+import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
     createKeys,
     decryptContentObject,

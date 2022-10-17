@@ -11,6 +11,8 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import httpx
 
+from secretgraph.core.utils.hashing import findWorkingHashAlgorithms
+
 from ..core.utils.graphql import transform_payload
 
 parser = argparse.ArgumentParser()
@@ -137,9 +139,9 @@ def main(argv=None):
     if not result.ok:
         raise
     serverConfig = result.json()["data"]["secretgraphConfig"]
-    hash_algos = serverConfig["hashAlgorithms"]
-    hash_algo = hashlib.new(hash_algos[0])
-    chosen_hash = getattr(hashes, hash_algo.name.upper())()
+    hash_algos = findWorkingHashAlgorithms(serverConfig["hashAlgorithms"])
+    hash_algo = hashlib.new(hash_algos[0].serializedName)
+    chosen_hash = hashes.Hash(hash_algos[0].algorithm)
     prepared_cluster = {
         "publicKey": pub_key_bytes,
         "publicTags": [],

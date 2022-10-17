@@ -4,7 +4,6 @@ import base64
 import logging
 
 import httpx
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, utils
 from django.conf import settings
 from django.db.models import OuterRef, Subquery
@@ -13,6 +12,7 @@ from django.utils.module_loading import import_string
 
 from ...models import ContentTag
 from ...utils.conf import get_httpx_params
+from ....core import constants
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ async def retrieve_signatures(
 def verify_signatures(hashobjects, signatures, contents):
     digest_dict = {}
     for i in hashobjects:
-        chosen_hash_algo = getattr(hashes, i.name.upper())()
+        chosen_hash_algo = constants.mapHashNames[i.name].algorithm
         digest_dict[i.name] -= (
             getattr(i, "finalize", i.digest)(),
             chosen_hash_algo,

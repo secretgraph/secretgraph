@@ -1,11 +1,8 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { RequireAttributes, UnpackPromise } from '../typing'
-import {
-    findWorkingHashAlgorithms,
-    serializeToBase64,
-    unserializeToArrayBuffer,
-} from './encryption'
+import { serializeToBase64, unserializeToArrayBuffer } from './encoding'
+import { findWorkingHashAlgorithms } from './hashing'
 import * as SetOps from './set'
 
 const actionMatcher = /:(.*)/

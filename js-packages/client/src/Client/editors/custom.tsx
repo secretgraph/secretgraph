@@ -24,11 +24,8 @@ import {
 } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { extractPrivKeys } from '@secretgraph/misc/utils/config'
-import {
-    findWorkingHashAlgorithms,
-    serializeToBase64,
-} from '@secretgraph/misc/utils/encryption'
 import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
+import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
     createContent,
     decryptContentObject,

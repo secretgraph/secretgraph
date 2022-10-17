@@ -48,6 +48,8 @@ def tags_sanitizer(tag: str):
         return False
     if tag == "key_hash":
         raise ValueError("key_hash should be tag not flag")
+    if tag.startswith("~") and "=" not in tag:
+        raise ValueError("flags cannot be encrypted")
 
     if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
         raise ResourceLimitExceeded(f"Tag too big ({tag})")

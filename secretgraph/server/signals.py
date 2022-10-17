@@ -2,7 +2,6 @@ from itertools import product, islice
 import uuid
 
 from django.db import transaction, models
-from django.db.models.functions import Length
 from django.db.utils import IntegrityError
 
 from ..core.constants import DeleteRecursive
@@ -125,15 +124,15 @@ def generateFlexid(sender, instance, force=False, **kwargs):
 
 
 def regenerateKeyHash(sender, force=False, **kwargs):
-    from .utils.misc import hash_object, calculate_hashes
+    from .utils.misc import calculate_hashes
     from .models import Content, ContentTag
+    from django.conf import settings
 
     contents = Content.objects.filter(type="PublicKey")
+    current_prefix = f"Key:{settings.SECRETGRAPH_HASH_ALGORITHMS[0]}:"
     # calculate for all old hashes
     if not force:
-        contents = contents.annotate(
-            contentHash_length=Length("contentHash")
-        ).exclude(contentHash_length=len(hash_object(b"")))
+        contents = contents.exclude(contentHash__startswith=current_prefix)
 
     # distinct on contentHash field currently only for postgresql
     for content in contents:

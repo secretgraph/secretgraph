@@ -6,11 +6,10 @@ import {
 
 import { mapHashNames } from '../../constants'
 import * as Interfaces from '../../interfaces'
+import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
 import {
     encryptAESGCM,
     encryptTag,
-    serializeToBase64,
-    unserializeToArrayBuffer,
     unserializeToCryptoKey,
 } from '../encryption'
 import { createSignatureReferences, encryptSharedKey } from '../graphql'

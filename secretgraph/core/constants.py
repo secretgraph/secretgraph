@@ -1,6 +1,8 @@
 import enum
+from dataclasses import dataclass
 
 from rdflib import Namespace
+from cryptography.hazmat.primitives import hashes
 
 from .typings import ContentState
 
@@ -22,7 +24,7 @@ class DeleteRecursive(enum.Enum):
     NO_GROUP = "c"
 
 
-DeleteRecursive.valid_values = frozenset(
+DeleteRecursive.valid_values: frozenset[str] = frozenset(
     map(lambda x: x.value, DeleteRecursive.__members__.values())
 )
 
@@ -36,7 +38,7 @@ class ClaimState(enum.Enum):
     INDISPUTABLE = "e"
 
 
-ClaimState.valid_values = frozenset(
+ClaimState.valid_values: frozenset[str] = frozenset(
     map(lambda x: x.value, ClaimState.__members__.values())
 )
 
@@ -48,7 +50,7 @@ class UseCriteria(enum.Enum):
     IGNORE = "ignore"
 
 
-UseCriteria.valid_values = frozenset(
+UseCriteria.valid_values: frozenset[str] = frozenset(
     map(lambda x: x.value, UseCriteria.__members__.values())
 )
 
@@ -61,7 +63,7 @@ class UseCriteriaPublic(enum.Enum):
     TOKEN = "token"
 
 
-UseCriteriaPublic.valid_values = frozenset(
+UseCriteriaPublic.valid_values: frozenset[str] = frozenset(
     map(lambda x: x.value, UseCriteriaPublic.__members__.values())
 )
 
@@ -73,9 +75,27 @@ class MetadataOperations(enum.Enum):
     REPLACE = "replace"
 
 
-MetadataOperations.valid_values = frozenset(
+MetadataOperations.valid_values: frozenset[str] = frozenset(
     map(lambda x: x.value, MetadataOperations.__members__.values())
 )
+
+
+@dataclass(frozen=True)
+class HashNameItem:
+    algorithm: hashes.HashAlgorithm
+    serializedName: str
+
+
+mapHashNames: dict[str, HashNameItem] = {
+    "sha512": HashNameItem(algorithm=hashes.SHA512(), serializedName="sha512"),
+    "SHA-512": HashNameItem(
+        algorithm=hashes.SHA512(), serializedName="sha512"
+    ),
+    "sha256": HashNameItem(algorithm=hashes.SHA256(), serializedName="sha256"),
+    "SHA-256": HashNameItem(
+        algorithm=hashes.SHA256(), serializedName="sha256"
+    ),
+}
 
 
 class TransferResult(enum.Enum):

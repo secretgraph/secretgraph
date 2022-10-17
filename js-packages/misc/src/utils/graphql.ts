@@ -4,12 +4,8 @@ import { createUploadLink } from 'apollo-upload-client'
 
 import { mapHashNames } from '../constants'
 import * as Interfaces from '../interfaces'
-import {
-    encryptRSAOEAP,
-    serializeToBase64,
-    unserializeToArrayBuffer,
-    unserializeToCryptoKey,
-} from './encryption'
+import { serializeToBase64, unserializeToArrayBuffer } from './encoding'
+import { encryptRSAOEAP, unserializeToCryptoKey } from './encryption'
 
 declare var __DEV__: any
 
@@ -39,12 +35,12 @@ export const createClient = (url: string) => {
                     queryType: true,
                     fields: {
                         clusters: relayStylePagination([
-                            "authorization",
-                            "filters"
+                            'authorization',
+                            'filters',
                         ]),
                         contents: relayStylePagination([
-                            "authorization",
-                            "filters"
+                            'authorization',
+                            'filters',
                         ]),
                     },
                 },

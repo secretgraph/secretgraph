@@ -11,21 +11,18 @@ from email import parser as emailparser
 from email import policy
 from urllib.parse import parse_qs
 
-import requests
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from rdflib import XSD, Graph, Literal, URIRef
-from spkcspider.constants import spkcgraph
-from spkcspider.utils.urls import merge_get_url, replace_action
 
-from spider_messaging.constants import (
+from ..constants import (
     AccessMethod,
     AttestationResult,
     MessageType,
     SendMethod,
 )
-from spider_messaging.exceptions import (
+from ..exceptions import (
     CheckError,
     DestException,
     DestSecurityException,
@@ -34,13 +31,6 @@ from spider_messaging.exceptions import (
     ValidationError,
     WrongRecipient,
 )
-from .attestation import AttestationChecker
-from spider_messaging.utils.graph import (
-    extract_property,
-    get_pages,
-    get_postboxes,
-)
-from spider_messaging.utils.misc import EncryptedFile
 
 logger = logging.getLogger(__name__)
 

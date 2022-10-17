@@ -31,8 +31,8 @@ import {
     extractPrivKeys,
     saveConfig,
 } from '@secretgraph/misc/utils/config'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/encryption'
 import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
+import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
     createContent,
     decryptContentObject,
