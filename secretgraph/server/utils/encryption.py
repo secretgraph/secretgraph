@@ -184,17 +184,19 @@ class ProxyTag:
         self._persist()
         try:
             splitted = self._query[index].tag.split("=", 1)
-        except Exception:
+        except Exception as exc:
+            if index != 0:
+                raise exc
             return False
 
         if len(splitted) == 1:
             return True
-        if not self._key:
+        if not self._key or not splitted[0].startswith("~"):
             return splitted[1]
         try:
             m = base64.b64decode(splitted[1])
-        except Exception:
-            return splitted[1]
+        except Exception as exc:
+            raise IndexError(f"Cannot decrypt index: {index}") from exc
         try:
             decryptor = AESGCM(self._key)
             return decryptor.decrypt(m[:13], m[13:])

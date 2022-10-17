@@ -40,7 +40,7 @@ import {
     unserializeToArrayBuffer,
 } from '@secretgraph/misc/utils/encoding'
 import {
-    extractUnencryptedTags,
+    extractTagsRaw,
     unserializeToCryptoKey,
 } from '@secretgraph/misc/utils/encryption'
 import {
@@ -125,7 +125,7 @@ async function loadKeys({
                 const contentstuff =
                     host && host.contents[data.secretgraph.node.id]
                 results['publicKey'] = {
-                    tags: await extractUnencryptedTags({
+                    tags: await extractTagsRaw({
                         tags: data.secretgraph.node.tags,
                     }),
                     data: await val.arrayBuffer(),

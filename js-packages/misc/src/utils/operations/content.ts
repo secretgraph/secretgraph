@@ -27,7 +27,7 @@ import {
     encryptAESGCM,
     encryptTag,
     extractTags,
-    extractUnencryptedTags,
+    extractTagsRaw,
 } from '../encryption'
 import {
     createSignatureReferences,
@@ -59,7 +59,6 @@ export async function createContent({
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
     authorization: Iterable<string>
-    encryptTags?: Iterable<string>
 }): Promise<FetchResult<any>> {
     const tagsOptions = await Promise.all(tagsIntern)
     const isPublic = Constants.public_states.includes(options.state)
@@ -107,7 +106,6 @@ export async function createContent({
         )
     )
     let tags: string[]
-    const encryptTagsSet = new Set<string>(options.encryptTags)
     if (isPublic) {
         tags = await Promise.all(
             ((await tagsPromise) as (string | PromiseLike<string>)[]).concat(
@@ -122,7 +120,6 @@ export async function createContent({
                     encryptTag({
                         data,
                         key: key as NonNullable<typeof key>,
-                        encrypt: encryptTagsSet,
                     })
                 )
         )
@@ -177,7 +174,6 @@ export async function updateContent({
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
     authorization: Iterable<string>
-    encryptTags?: Iterable<string>
     // only for tag only updates if encryptTags is used
     oldKey?: Interfaces.RawInput
 }): Promise<FetchResult<any>> {
@@ -187,14 +183,10 @@ export async function updateContent({
         ? []
         : null
     const isPublic = state ? Constants.public_states.includes(state) : undefined
-    const encrypt: Set<string> | undefined = options.encryptTags
-        ? new Set(options.encryptTags)
-        : undefined
-
     let sharedKey: ArrayBuffer | undefined
     if (options.value) {
         sharedKey = crypto.getRandomValues(new Uint8Array(32))
-    } else if (tagsOptions && encrypt && encrypt.size > 0) {
+    } else if (tagsOptions && tagsOptions.find((val) => val.startsWith('~'))) {
         if (!options.oldKey) {
             throw Error('Tag only update without oldKey')
         }
@@ -209,7 +201,6 @@ export async function updateContent({
             return encryptTag({
                 key: sharedKey as ArrayBuffer,
                 data: tag,
-                encrypt,
             })
         })
     }
@@ -344,7 +335,7 @@ export async function decryptContentObject({
     if (_node.type == 'PublicKey' || _node.state == 'public') {
         return {
             data: await arrPromise,
-            tags: await extractUnencryptedTags({
+            tags: await extractTagsRaw({
                 tags: nodeData.tags,
             }),
             encryptedTags: new Set(),
@@ -388,7 +379,7 @@ export async function decryptContentObject({
                 nonce: _node.nonce,
                 data: arrPromise,
             })),
-            ...(await extractTags({ key, tags: nodeData.tags, decrypt })),
+            ...(await extractTags({ key, tags: nodeData.tags })),
             updateId: nodeData.updateId,
             nodeData,
         }

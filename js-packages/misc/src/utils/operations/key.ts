@@ -230,7 +230,6 @@ export async function updateKey({
                               return await encryptTag({
                                   key: sharedKey as ArrayBuffer,
                                   data: tagPromise,
-                                  encrypt,
                               })
                           }
                       )

@@ -141,7 +141,6 @@ const InnerCustom = ({
                     net: values.cluster,
                     value,
                     tags: values.tags,
-                    encryptTags: new Set(encryptedTags),
                     privkeys: await Promise.all(Object.values(privkeys)),
                     pubkeys: Object.values(pubkeys),
                     hashAlgorithm,

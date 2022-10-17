@@ -16,15 +16,9 @@ import { elements } from '../editors'
 import { drawerWidth } from '../theme'
 
 // const SideBar = React.lazy(() => import('../components/SideBar'));
-const Login = React.lazy(
-    () => import(/*webpackChunkName: "main-Login" */ './Login')
-)
-const Register = React.lazy(
-    () => import(/*webpackChunkName: "main-Register" */ './Register')
-)
-const Help = React.lazy(
-    () => import(/*webpackChunkName: "main-help" */ './Help')
-)
+const Login = React.lazy(() => import('./Login'))
+const Register = React.lazy(() => import('./Register'))
+const Help = React.lazy(() => import('./Help'))
 
 function MainPage() {
     const theme = useTheme()

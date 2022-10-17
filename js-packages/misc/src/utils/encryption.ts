@@ -498,7 +498,6 @@ export async function derivePW(
 export async function encryptTag(
     options: Interfaces.CryptoGCMInInterface & {
         readonly tag?: string | PromiseLike<string>
-        readonly encrypt?: Set<string>
     }
 ): Promise<string> {
     let tag: string | undefined,
@@ -517,7 +516,7 @@ export async function encryptTag(
         throw Error('missing data')
     }
 
-    if (options.encrypt && options.encrypt.has(tag)) {
+    if (tag.startsWith('~')) {
         const nonce = crypto.getRandomValues(new Uint8Array(13))
         let encrypted
         try {
@@ -562,7 +561,6 @@ export async function encryptTag(
 export async function deparseTag(options: {
     readonly data: Interfaces.RawInput | PromiseLike<Interfaces.RawInput>
     readonly tag?: string | PromiseLike<string>
-    readonly encrypt?: Set<string>
 }): Promise<string> {
     let tag: string | undefined,
         data: Exclude<Interfaces.CryptoGCMInInterface['data'], 'PromiseLike'>
@@ -580,7 +578,7 @@ export async function deparseTag(options: {
         throw Error('missing data')
     }
 
-    if (options.encrypt && options.encrypt.has(tag)) {
+    if (tag.startsWith('~')) {
         try {
             tag = String.fromCharCode(
                 ...new Uint8Array(await unserializeToArrayBuffer(data))
@@ -669,7 +667,7 @@ export async function decryptTag(
     }
 }
 
-export async function extractUnencryptedTags(options: {
+export async function extractTagsRaw(options: {
     readonly tags:
         | PromiseLike<Iterable<string | PromiseLike<string>>>
         | Iterable<string | PromiseLike<string>>
@@ -700,7 +698,6 @@ export async function extractTags(
         readonly tags:
             | PromiseLike<Iterable<string | PromiseLike<string>>>
             | Iterable<string | PromiseLike<string>>
-        readonly decrypt: Set<string>
     }
 ): Promise<{ tags: { [tag: string]: string[] }; encryptedTags: Set<string> }> {
     const tags: { [tag: string]: string[] } = {}
@@ -714,7 +711,7 @@ export async function extractTags(
                 if (!tags[tag]) {
                     tags[tag] = []
                 }
-                if (options.decrypt.has(tag)) {
+                if (tag.startsWith('~')) {
                     try {
                         const val = await decryptTagRaw({
                             key: options.key,
