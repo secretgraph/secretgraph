@@ -718,7 +718,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "strawberry-django-plus"
-version = "1.28.3"
+version = "1.28.4"
 description = "Enhanced Strawberry GraphQL integration with Django"
 category = "main"
 optional = false
@@ -1322,8 +1322,8 @@ sqlparse = [
     {file = "sqlparse-0.4.3.tar.gz", hash = "sha256:69ca804846bb114d2ec380e4360a8a340db83f0ccf3afceeb1404df028f57268"},
 ]
 strawberry-django-plus = [
-    {file = "strawberry_django_plus-1.28.3-py3-none-any.whl", hash = "sha256:7b9d202a07cb4e1614f053b81408916bccfd25578a2aede004691b4431feec93"},
-    {file = "strawberry_django_plus-1.28.3.tar.gz", hash = "sha256:046608104d3aeef98236a3840192db3144c67487a1b024e07f5290e790e426d9"},
+    {file = "strawberry_django_plus-1.28.4-py3-none-any.whl", hash = "sha256:2297dd7ce780cbc190bf475d83622182ef2df32883eea504a0495ff1a274bed3"},
+    {file = "strawberry_django_plus-1.28.4.tar.gz", hash = "sha256:e2fd57ddf97e3b20a94b93a26948b08fa25c67977355eb0aa544bf129ae1097d"},
 ]
 strawberry-graphql = [
     {file = "strawberry_graphql-0.134.3-py3-none-any.whl", hash = "sha256:6d45cb8e1f0d7060784a7d29757f52d6ac4581a5d1b65e15ba69383d29abbb21"},
