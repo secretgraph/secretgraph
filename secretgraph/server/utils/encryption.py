@@ -240,7 +240,7 @@ class ProxyTags:
         return ProxyTag(q, self._decryptor)
 
     def __contains__(self, attr):
-        return len(getattr(self, attr, [])) > 0
+        return len(getattr(self, attr)) > 0
 
 
 def iter_decrypt_contents(
