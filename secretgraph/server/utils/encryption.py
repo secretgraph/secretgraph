@@ -169,12 +169,12 @@ def create_key_maps(contents, keyset):
 
 
 class ProxyTag:
-    _key = None
+    _decryptor = None
     _query = None
 
-    def __init__(self, query, key=None):
+    def __init__(self, query, decryptor=None):
         self._query = query
-        self._key = key
+        self._decryptor = decryptor
 
     def _persist(self):
         if not isinstance(self._query, list):
@@ -182,13 +182,15 @@ class ProxyTag:
 
     def __getitem__(self, index):
         self._persist()
+        # fails if length is exhausted
         try:
             splitted = self._query[index].tag.split("=", 1)
-        except Exception as exc:
+        except IndexError as exc:
             if index != 0:
                 raise exc
             return False
 
+        # is tag
         if len(splitted) == 1:
             return True
         if not self._key or not splitted[0].startswith("~"):
@@ -196,12 +198,23 @@ class ProxyTag:
         try:
             m = base64.b64decode(splitted[1])
         except Exception as exc:
-            raise IndexError(f"Cannot decrypt index: {index}") from exc
+            logger.info(
+                "Cannot decrypt index: %s of content: %s",
+                index,
+                self._query[index].tag.content_id,
+                exc_info=exc,
+            )
+            return None
         try:
-            decryptor = AESGCM(self._key)
-            return decryptor.decrypt(m[:13], m[13:])
+            return self._decryptor.decrypt(m[:13], m[13:])
         except Exception as exc:
-            raise IndexError(f"Cannot decrypt index: {index}") from exc
+            logger.info(
+                "Cannot decrypt index: %s of content: %s",
+                index,
+                self._query[index].tag.content_id,
+                exc_info=exc,
+            )
+            return None
 
     def __len__(self):
         self._persist()
@@ -215,16 +228,19 @@ class ProxyTag:
 
 
 class ProxyTags:
-    _key = None
+    _decryptor = None
     _query = None
 
     def __init__(self, query, key=None):
         self._query = query
-        self._key = key
+        self._decryptor = AESGCM(key) if key else None
 
     def __getattr__(self, attr):
         q = self._query.filter(tag__startswith=attr)
-        return ProxyTag(q, self._key)
+        return ProxyTag(q, self._decryptor)
+
+    def __contains__(self, attr):
+        return len(getattr(self, attr, [])) > 0
 
 
 def iter_decrypt_contents(
