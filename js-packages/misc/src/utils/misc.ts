@@ -68,3 +68,31 @@ export function deepEqual<T>(a: T, b: T) {
         return a === b
     }
 }
+
+export async function retry<T>({
+    action,
+    retryInterval = 5000,
+    maxAttempts = 3,
+}: {
+    action: (attempted: number) => Promise<T> | T
+    retryInterval?: number
+    maxAttempts?: number
+}): Promise<T> {
+    const exceptions = []
+    for (let attempted = 0; attempted < maxAttempts; attempted++) {
+        try {
+            if (attempted > 0) {
+                await sleep(retryInterval)
+            }
+            return await action(attempted)
+        } catch (e) {
+            exceptions.push(e)
+        }
+    }
+
+    throw exceptions
+}
+
+export function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}

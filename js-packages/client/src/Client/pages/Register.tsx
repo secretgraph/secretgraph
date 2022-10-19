@@ -43,6 +43,7 @@ function Register() {
             onSubmit={async ({ url }, { setSubmitting }) => {
                 setOldConfig(config)
                 url = new URL(url, window.location.href).href
+                const slot = 'main'
                 try {
                     const client = createClient(url)
                     const result: any = await client.query({
@@ -65,6 +66,7 @@ function Register() {
                             hosts: {},
                             baseUrl: url,
                             configCluster: '',
+                            slots: [slot],
                         }
                         newConfig.hosts[newConfig.baseUrl] = {
                             clusters: {},
@@ -75,7 +77,7 @@ function Register() {
                             client,
                             config: newConfig,
                             hashAlgorithm: registerContext!.hashAlgorithms[0],
-                            slot: 'main',
+                            slot,
                         })
                         // TODO: handle exceptions and try with login
                         saveConfig(newConfig)

@@ -9,7 +9,7 @@ import * as Interfaces from '../../interfaces'
 import { authInfoFromConfig, cleanConfig } from '../config'
 import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
 import { encryptAESGCM, encryptRSAOEAP } from '../encryption'
-import { hashObject, sortedHash } from '../hashing'
+import { hashObject, hashTagsContentHash, sortedHash } from '../hashing'
 import { createContent } from './content'
 
 export async function createCluster(options: {
@@ -145,7 +145,10 @@ export async function initializeCluster({
                     action: 'view',
                     //for safety reasons include also PublicKey
                     includeTypes: ['PublicKey', 'PrivateKey', 'Config'],
-                    includeTags: [`key_hash=${digestPublicKey}`],
+                    includeTags: [
+                        `key_hash=${digestPublicKey}`,
+                        `slot=${slot}`,
+                    ],
                 }),
                 key: view_keyb64,
             },
@@ -186,9 +189,10 @@ export async function initializeCluster({
     if (!cleanConfig(config)) {
         throw Error('invalid config created')
     }
-    const contentHash = await sortedHash(
-        ['type=Config', `slot=${slot}`],
-        hashAlgorithm
+    const contentHash = await hashTagsContentHash(
+        [`slot=${slot}`],
+        hashAlgorithm,
+        'Config'
     )
 
     const { tokens: authorization } = authInfoFromConfig({

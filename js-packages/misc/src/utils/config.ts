@@ -15,6 +15,7 @@ import {
     encryptPreKey,
     unserializeToCryptoKey,
 } from './encryption'
+import { findWorkingHashAlgorithms, hashTagsContentHash } from './hashing'
 import { mergeDeleteObjects } from './misc'
 import * as SetOps from './set'
 
@@ -51,6 +52,9 @@ export function cleanConfig(
     ) {
         console.error('Errors in config', config)
         return null
+    }
+    if (!config.slots?.length) {
+        config.slots = ['main']
     }
     for (const [key, val] of Object.entries(config.tokens)) {
         if (typeof val == 'string') {
@@ -96,6 +100,7 @@ export async function checkConfigObject(
     if (!authInfo.tokens.length || !cert) {
         return false
     }
+
     const { data } = await client.query({
         query: findConfigQuery,
         variables: {
@@ -103,10 +108,26 @@ export async function checkConfigObject(
             authorization: authInfo.tokens,
         },
     })
-    if (!data || data.secretgraph.contents.edges.length < 1) {
+    const algos = findWorkingHashAlgorithms(
+        data.secretgraph.config.hashAlgorithms
+    )
+    const contentHash = hashTagsContentHash(
+        [`slot=${config}`],
+        algos[0],
+        'Config'
+    )
+    if (!data) {
         return false
     }
-    if (data.secretgraph.contents.edges.length > 1) {
+    const occurences = data.secretgraph.contents.edges.reduce(
+        (prevValue: number, { node: curValue }: any) =>
+            prevValue + curValue.contentHash == contentHash ? 1 : 0,
+        0
+    )
+    if (occurences == 0) {
+        return false
+    }
+    if (occurences > 1) {
         console.error(
             'Too many config objects found',
             data.secretgraph.contents.edges
@@ -868,6 +889,11 @@ export function updateConfig(
                 )
                 newState[key] = res[0]
                 count += res[1]
+                break
+            case 'slots':
+                if (val && val.length) {
+                    newState[key] = val as string[]
+                }
                 break
             default:
                 if (val && (!newState[key] || newState[key] != val)) {

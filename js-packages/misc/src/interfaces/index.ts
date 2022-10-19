@@ -87,6 +87,7 @@ interface BaseConfigInterface<N = never> {
     configCluster: string
     certificates: { [hash: string]: ConfigCertificateValue | N }
     tokens: { [hash: string]: ConfigTokenValue | N }
+    slots: string[]
 }
 
 export interface ConfigInterface extends BaseConfigInterface {

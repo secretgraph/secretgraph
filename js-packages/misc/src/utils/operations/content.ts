@@ -4,6 +4,7 @@ import {
     findConfigQuery,
     updateContentMutation,
 } from '@secretgraph/graphql-queries/content'
+import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 
 import { mapHashNames } from '../../constants'
 import * as Constants from '../../constants'
@@ -28,13 +29,15 @@ import {
     encryptTag,
     extractTags,
     extractTagsRaw,
+    unserializeToCryptoKey,
 } from '../encryption'
 import {
     createSignatureReferences,
     encryptSharedKey,
     extractPubKeysReferences,
 } from '../graphql'
-import { findWorkingHashAlgorithms } from '../hashing'
+import { findWorkingHashAlgorithms, hashTagsContentHash } from '../hashing'
+import { retry } from '../misc'
 
 export async function createContent({
     client,
@@ -389,6 +392,88 @@ export async function decryptContentObject({
     }
 }
 
+async function updateRemoteConfig({
+    update,
+    authInfo,
+    client,
+    slotHash,
+    config,
+    privkeys,
+    pubkeys,
+    node,
+    hashAlgorithm,
+}: {
+    update: Interfaces.ConfigInputInterface
+    client: ApolloClient<any>
+    authInfo: Interfaces.AuthInfoInterface
+    slotHash?: string
+    node?: any
+    config: Interfaces.ConfigInterface
+    privkeys: CryptoKey[]
+    pubkeys: CryptoKey[]
+    hashAlgorithm: string
+}): Promise<[Interfaces.ConfigInterface, number] | false> {
+    if (!node) {
+        const configQueryRes = await client.query({
+            query: findConfigQuery,
+            variables: {
+                cluster: config.configCluster,
+                authorization: authInfo.tokens,
+                configContentHashes: [slotHash],
+            },
+            // but why? should be updated by cache updates (for this no-cache is required in config content updates)
+            fetchPolicy: 'network-only',
+        })
+        if (configQueryRes.errors) {
+            throw configQueryRes.errors
+        }
+        node = configQueryRes.data.secretgraph.contents.edges[0]?.node
+        if (!node) {
+            throw Error('could not find config object')
+        }
+    }
+    const retrieved = await decryptContentObject({
+        nodeData: node,
+        config,
+        blobOrTokens: authInfo.tokens,
+        baseUrl: config.baseUrl,
+    })
+    if (!retrieved) {
+        throw Error('could not retrieve and decode config object')
+    }
+    const foundConfig = JSON.parse(
+        String.fromCharCode(...new Uint8Array(retrieved.data))
+    )
+
+    const [mergedConfig, changes] = updateConfig(foundConfig, update)
+    if (changes == 0) {
+        return [mergedConfig, changes]
+    }
+    if (!cleanConfig(mergedConfig)) {
+        throw Error('invalid merged config')
+    }
+    // updates cache
+    const result = await updateContent({
+        client,
+        id: node.id,
+        updateId: node.updateId,
+        privkeys: Object.values(privkeys),
+        pubkeys: Object.values(pubkeys),
+        state: 'internal',
+        config: mergedConfig,
+        hashAlgorithm,
+        value: new Blob([JSON.stringify(mergedConfig)]),
+        authorization: authInfo.tokens,
+    })
+    if (result.errors) {
+        throw new Error(`Update failed: ${result.errors}`)
+    }
+    if (result.data.updateOrCreateContent.writeok) {
+        return [mergedConfig, changes]
+    }
+    return false
+}
+
 export async function updateConfigRemoteReducer(
     state: Interfaces.ConfigInterface | null,
     {
@@ -396,11 +481,15 @@ export async function updateConfigRemoteReducer(
         authInfo,
         client,
         nullonnoupdate,
+        slots,
+        excludeSlots,
     }: {
         update: Interfaces.ConfigInputInterface | null
         client: ApolloClient<any>
         authInfo?: Interfaces.AuthInfoInterface
         nullonnoupdate?: boolean
+        slots?: Iterable<string>
+        excludeSlots?: Set<string>
     }
 ): Promise<Interfaces.ConfigInterface | null> {
     if (update === null) {
@@ -411,92 +500,103 @@ export async function updateConfigRemoteReducer(
     if (nullonnoupdate && resconf[1] == 0) {
         return null
     }
-    const config = state || resconf[0]
     if (!authInfo) {
         authInfo = authInfoFromConfig({
-            config,
-            url: config.baseUrl,
-            clusters: new Set([config.configCluster]),
+            config: resconf[0],
+            url: resconf[0].baseUrl,
+            clusters: new Set([resconf[0].configCluster]),
             require: new Set(['update', 'manage']),
         })
     }
-    let privkeys = undefined
-    let pubkeys = undefined
+    const serverConfigRes = await client.query({
+        query: serverConfigQuery,
+        fetchPolicy: 'cache-first',
+    })
+    const algos = findWorkingHashAlgorithms(
+        serverConfigRes.data.secretgraph.config.hashAlgorithms
+    )
 
-    while (true) {
-        const configQueryRes = await client.query({
-            query: findConfigQuery,
-            variables: {
-                cluster: config.configCluster,
-                authorization: authInfo.tokens,
-            },
-            // but why? should be updated by cache updates (for this no-cache is required in config content updates)
-            fetchPolicy: 'network-only',
-        })
-        if (configQueryRes.errors) {
-            throw configQueryRes.errors
-        }
-        const node = configQueryRes.data.secretgraph.contents.edges[0]?.node
-        if (!node) {
-            throw Error('could not find config object')
-        }
-        const retrieved = await decryptContentObject({
-            nodeData: node,
-            config,
-            blobOrTokens: authInfo.tokens,
-            baseUrl: config.baseUrl,
-        })
-        if (!retrieved) {
-            throw Error('could not retrieve and decode config object')
-        }
-        const foundConfig = JSON.parse(
-            String.fromCharCode(...new Uint8Array(retrieved.data))
+    let slotHashes = [...(slots ? slots : resconf[0].slots)]
+    if (excludeSlots) {
+        slotHashes = slotHashes.filter(
+            (slot: string) => !excludeSlots.has(slot)
         )
+    }
+    slotHashes = await Promise.all(
+        slotHashes.map((slot: string) =>
+            hashTagsContentHash([`slot=${slot}`], algos[0], 'Config')
+        )
+    )
+    const configQueryRes = await client.query({
+        query: findConfigQuery,
+        variables: {
+            cluster: resconf[0].configCluster,
+            authorization: authInfo.tokens,
+            configContentHashes: slotHashes,
+        },
+        // but why? should be updated by cache updates (for this no-cache is required in config content updates)
+        fetchPolicy: 'network-only',
+    })
+    if (configQueryRes.errors) {
+        throw configQueryRes.errors
+    }
+    const nodes: any[] = configQueryRes.data.secretgraph.contents.edges
+    const mainNodeIndex = nodes.findIndex(
+        (result, index) => nodes[index].node.contentHash == slotHashes[0]
+    )
+    if (mainNodeIndex < 0) {
+        throw Error('could not find main config object')
+    }
 
-        const [mergedConfig, changes] = updateConfig(foundConfig, update)
-        if (changes == 0) {
-            return foundConfig
-        }
-        if (!cleanConfig(mergedConfig)) {
-            throw Error('invalid merged config')
-        }
-        const algos = findWorkingHashAlgorithms(
-            configQueryRes.data.secretgraph.config.hashAlgorithms
+    const privkeys = await Promise.all(
+        Object.values(
+            extractPrivKeys({
+                config: resconf[0],
+                url: resconf[0].baseUrl,
+                hashAlgorithm: algos[0],
+            })
         )
-        privkeys = extractPrivKeys({
-            config: mergedConfig,
-            url: mergedConfig.baseUrl,
-            hashAlgorithm: algos[0],
-            old: privkeys,
-        })
-        pubkeys = extractPubKeysReferences({
-            node,
-            authorization: authInfo.tokens,
-            params: {
-                name: 'RSA-OAEP',
-                hash: algos[0],
-            },
-            old: pubkeys,
-            onlyPubkeys: true,
-        })
-        // updates cache
-        const result = await updateContent({
-            client,
-            id: node.id,
-            updateId: node.updateId,
-            privkeys: Object.values(privkeys),
-            pubkeys: Object.values(pubkeys),
-            state: 'internal',
-            config: mergedConfig,
-            hashAlgorithm: algos[0],
-            value: new Blob([JSON.stringify(mergedConfig)]),
-            authorization: authInfo.tokens,
-        })
-        if (result.errors) {
-            throw new Error(`Update failed: ${configQueryRes.errors}`)
-        }
-        if (result.data.updateOrCreateContent.writeok) {
-            return mergedConfig
-        }
+    )
+    const pubkeys = await Promise.all(
+        privkeys.map((privKey: CryptoKey) =>
+            unserializeToCryptoKey(
+                privKey,
+                {
+                    name: 'RSA-OAEP',
+                    hash: algos[0],
+                },
+                'publicKey'
+            )
+        )
+    )
+    let resultPromises = []
+    for (let { node } of nodes) {
+        resultPromises.push(
+            retry({
+                action: async (attempted: number) => {
+                    let result = await updateRemoteConfig({
+                        update,
+                        config: resconf[0],
+                        authInfo: authInfo as Interfaces.AuthInfoInterface,
+                        client,
+                        privkeys,
+                        pubkeys,
+                        hashAlgorithm: algos[0],
+                        node: attempted == 0 ? node : undefined,
+                    })
+                    if (result === false) {
+                        throw new Error('retry')
+                    }
+                    return result
+                },
+            })
+        )
+    }
+    const results = await Promise.allSettled(resultPromises)
+    let mainResult = results[mainNodeIndex]
+    if (mainResult.status == 'fulfilled') {
+        return mainResult.value[0]
+    } else {
+        throw mainResult.reason
     }
 }
