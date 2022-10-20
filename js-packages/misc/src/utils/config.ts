@@ -458,11 +458,17 @@ export async function exportConfigAsUrl({
     if (!privcert) {
         return Promise.reject('no cert found')
     }
+    const contentHash = hashTagsContentHash(
+        [`slot=${config.slots[0]}`],
+        authInfo.certificateHashes[0].split(':', 1)[0],
+        'Config'
+    )
     const obj = await client.query({
         query: findConfigQuery,
         variables: {
             cluster: config.configCluster,
             authorization: authInfo.tokens,
+            configContentHashes: [contentHash],
             contentKeyHashes: authInfo.certificateHashes.map(
                 (hash) => `key_hash=${hash}`
             ),

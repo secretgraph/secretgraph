@@ -3,6 +3,7 @@ __all__ = ["create_content_fn", "update_content_fn", "create_key_fn"]
 
 import base64
 import logging
+import re
 from contextlib import nullcontext
 from itertools import chain
 from typing import List, Optional
@@ -20,7 +21,7 @@ from ....core.exceptions import ResourceLimitExceeded
 
 from ....core import constants
 from ...utils.auth import ids_to_results, get_cached_result
-from ...utils.misc import calculate_hashes, hash_object, refresh_fields
+from ...utils.misc import calculate_hashes, refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag, Net
 from ._actions import manage_actions_fn
 from ._metadata import transform_references, transform_tags
@@ -28,8 +29,14 @@ from ._arguments import ContentMergedInput, ContentKeyInput, ReferenceInput
 
 logger = logging.getLogger(__name__)
 
-len_default_hash = len(hash_object(b""))
 _emptyset = frozenset()
+_contenthash_algo = re.compile(
+    r"^[^:]*:{}:.+".format(
+        constants.mapHashNames[
+            settings.SECRETGRAPH_HASH_ALGORITHMS[0]
+        ].serializedName
+    )
+)
 
 
 def _condMergeKeyTags(
@@ -332,7 +339,7 @@ def _update_or_create_content_or_key(
     chash = objdata.contentHash
     if chash is not None:
         # either blank or in length of default hash output
-        if len(chash) not in (0, len_default_hash):
+        if not _contenthash_algo.fullmatch(chash):
             raise ValueError("Invalid hashing algorithm used for contentHash")
         if chash == "":
             content.contentHash = None

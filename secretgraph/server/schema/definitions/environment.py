@@ -98,7 +98,7 @@ class SecretgraphConfig(relay.Node):
     @gql.field(description="Maximal results per relay query")
     @staticmethod
     def maxRelayResults() -> int:
-        return settings.STRAWBERRY_DJANGO_RELAY_MAX_RESULTS
+        return getattr(settings, "STRAWBERRY_DJANGO_RELAY_MAX_RESULTS", 100)
 
     @gql.field()
     @staticmethod
