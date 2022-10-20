@@ -129,7 +129,7 @@ export async function checkConfigObject(
     }
     if (occurences > 1) {
         console.error(
-            'Too many config objects found',
+            'Too many config objects with the same slot found',
             data.secretgraph.contents.edges
         )
         return false

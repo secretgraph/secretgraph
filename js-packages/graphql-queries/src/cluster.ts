@@ -73,6 +73,7 @@ export const getClusterConfigurationQuery = gql`
             config {
                 id
                 hashAlgorithms
+                maxRelayResults
                 registerUrl
                 groups {
                     name

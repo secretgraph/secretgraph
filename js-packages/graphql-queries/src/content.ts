@@ -540,6 +540,7 @@ export const getContentConfigurationQuery = gql`
             config {
                 id
                 hashAlgorithms
+                maxRelayResults
                 groups {
                     name
                     injectedKeys {

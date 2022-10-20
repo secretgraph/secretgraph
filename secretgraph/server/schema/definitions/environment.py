@@ -95,6 +95,11 @@ class SecretgraphConfig(relay.Node):
     def hashAlgorithms() -> List[str]:
         return settings.SECRETGRAPH_HASH_ALGORITHMS
 
+    @gql.field(description="Maximal results per relay query")
+    @staticmethod
+    def maxRelayResults() -> int:
+        return settings.STRAWBERRY_DJANGO_RELAY_MAX_RESULTS
+
     @gql.field()
     @staticmethod
     def registerUrl() -> RegisterUrl:

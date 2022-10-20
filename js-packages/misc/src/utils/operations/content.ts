@@ -522,6 +522,15 @@ export async function updateConfigRemoteReducer(
             (slot: string) => !excludeSlots.has(slot)
         )
     }
+    // TODO: fix implementation to handle that case
+    const maxRelayResults: number =
+        serverConfigRes.data.secretgraph.config.maxRelayResults
+    if (slotHashes.length > maxRelayResults) {
+        console.warn(
+            `Too many slots specified, max: ${maxRelayResults}. Cutoff results to maxRelayResults`
+        )
+        slotHashes = slotHashes.slice(0, maxRelayResults)
+    }
     slotHashes = await Promise.all(
         slotHashes.map((slot: string) =>
             hashTagsContentHash([`slot=${slot}`], algos[0], 'Config')

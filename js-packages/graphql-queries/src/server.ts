@@ -6,6 +6,7 @@ export const serverConfigQuery = gql`
             config {
                 id
                 hashAlgorithms
+                maxRelayResults
                 groups {
                     name
                     hidden
