@@ -6,6 +6,7 @@ import { mapHashNames } from '../constants'
 import * as Interfaces from '../interfaces'
 import { serializeToBase64, unserializeToArrayBuffer } from './encoding'
 import { encryptRSAOEAP, unserializeToCryptoKey } from './encryption'
+import { hashKey, hashObject } from './hashing'
 
 declare var __DEV__: any
 
@@ -77,23 +78,10 @@ async function createSignatureReferences_helper(
         hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
         signkey = key as Interfaces.KeyInput
-        // serialize to spki for consistent hash
-        hash = serializeToBase64(
-            crypto.subtle.digest(
-                hashalgo2,
-                await crypto.subtle.exportKey(
-                    'spki' as const,
-                    await unserializeToCryptoKey(
-                        key as Interfaces.KeyInput,
-                        {
-                            name: 'RSA-OAEP',
-                            hash: hashalgo2,
-                        },
-                        'publicKey'
-                    )
-                )
-            )
-        )
+
+        // serialize to spki of publickey for consistent hash
+        const result = await hashKey(signkey, '' + hashalgo)
+        hash = result.hash
     }
 
     return {
@@ -161,32 +149,14 @@ async function encryptSharedKey_helper(
     sharedkey: ArrayBuffer
 ) {
     const _x = await key
-    let pubkey: CryptoKey | Promise<CryptoKey>, hash: string | Promise<string>
+    let pubkey: CryptoKey, hash: string
     if ((_x as any)['hash']) {
         pubkey = (_x as Interfaces.CryptoHashPair).key
         hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
-        const operationName = mapHashNames['' + hashalgo].operationName
-        if (!operationName) {
-            throw new Error(
-                'Invalid hash algorithm/no hash algorithm specified and no CryptoHashPair provided: ' +
-                    hashalgo
-            )
-        }
-        pubkey = unserializeToCryptoKey(
-            key as Interfaces.KeyInput,
-            {
-                name: 'RSA-OAEP',
-                hash: operationName,
-            },
-            'publicKey'
-        )
-        hash = serializeToBase64(
-            crypto.subtle.digest(
-                operationName,
-                await crypto.subtle.exportKey('spki' as const, await pubkey)
-            )
-        )
+        const result = await hashKey(key as Interfaces.KeyInput, '' + hashalgo)
+        pubkey = result.publicKey
+        hash = result.hash
     }
     return {
         encrypted: await encryptRSAOEAP({
@@ -194,7 +164,7 @@ async function encryptSharedKey_helper(
             data: sharedkey,
             hashAlgorithm: hashalgo,
         }).then((data) => serializeToBase64(data.data)),
-        hash: await hash,
+        hash,
     }
 }
 

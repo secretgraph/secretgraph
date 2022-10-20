@@ -19,6 +19,7 @@ import { authInfoFromConfig, saveConfig } from '@secretgraph/misc/utils/config'
 import { serializeToBase64 } from '@secretgraph/misc/utils/encoding'
 import {
     findWorkingHashAlgorithms,
+    hashKey,
     hashObject,
 } from '@secretgraph/misc/utils/hashing'
 import {
@@ -169,15 +170,8 @@ const ClusterIntern = ({
                                 ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
                             )) as Required<CryptoKeyPair>
                         privPromise = serializeToBase64(privateKey)
-                        digestCert = await crypto.subtle
-                            .exportKey('spki' as const, publicKey)
-                            .then((keydata) =>
-                                crypto.subtle
-                                    .digest(hashAlgorithm, keydata)
-                                    .then((data) =>
-                                        Buffer.from(data).toString('base64')
-                                    )
-                            )
+                        digestCert = (await hashKey(publicKey, hashAlgorithm))
+                            .hash
                         clusterResponse = await createCluster({
                             client: itemClient,
                             actions: finishedActions,

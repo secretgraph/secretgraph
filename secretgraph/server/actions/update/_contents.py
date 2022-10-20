@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 _emptyset = frozenset()
 _contenthash_algo = re.compile(
-    r"^[^:]*:{}:.+".format(
+    "[^:]*:{}:.+|".format(
         constants.mapHashNames[
             settings.SECRETGRAPH_HASH_ALGORITHMS[0]
         ].serializedName
@@ -338,9 +338,7 @@ def _update_or_create_content_or_key(
     # cannot change because of special key transformation
     chash = objdata.contentHash
     if chash is not None:
-        # either blank or in length of default hash output
-        if not _contenthash_algo.fullmatch(chash):
-            raise ValueError("Invalid hashing algorithm used for contentHash")
+        # either blank or
         if chash == "":
             content.contentHash = None
         else:
@@ -417,7 +415,7 @@ def _update_or_create_content_or_key(
             and content.state != "public"
             and len(key_hashes_ref) < 1
         ):
-            raise ValueError(">=1 key references required for content")
+            raise ValueError(">=1 key references required for non-key content")
     if objdata.actions is not None:
         actions_save_fn = manage_actions_fn(
             request, content, objdata.actions, authset=authset

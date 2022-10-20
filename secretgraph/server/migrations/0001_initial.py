@@ -187,6 +187,9 @@ class Migration(migrations.Migration):
                         db_column="content_hash",
                         max_length=255,
                         null=True,
+                        validators=[
+                            secretgraph.server.validators.ContentHashValidator
+                        ],
                     ),
                 ),
                 (
@@ -319,7 +322,13 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "keyHash",
-                    models.CharField(db_column="key_hash", max_length=255),
+                    models.CharField(
+                        db_column="key_hash",
+                        max_length=255,
+                        validators=[
+                            secretgraph.server.validators.ActionKeyHashValidator
+                        ],
+                    ),
                 ),
                 ("nonce", models.CharField(max_length=255)),
                 ("value", models.BinaryField()),

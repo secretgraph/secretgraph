@@ -2,7 +2,7 @@ import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { RequireAttributes, UnpackPromise } from '../typing'
 import { serializeToBase64, unserializeToArrayBuffer } from './encoding'
-import { findWorkingHashAlgorithms } from './hashing'
+import { findWorkingHashAlgorithms, hashObject } from './hashing'
 import * as SetOps from './set'
 
 const actionMatcher = /:(.*)/
@@ -138,7 +138,7 @@ export async function generateActionMapper({
             }
         }
     }
-    const updateHashes = []
+    const updateHashOps = []
     for (const t of unknownTokens || []) {
         if (!t) {
             console.debug('unknown tokens contains invalid entry', t)
@@ -146,12 +146,8 @@ export async function generateActionMapper({
         }
         let firstHash: string | undefined = undefined
         for (const halgo of hashalgos) {
-            updateHashes.push(
-                serializeToBase64(
-                    unserializeToArrayBuffer(t).then((val) =>
-                        crypto.subtle.digest(halgo, val)
-                    )
-                ).then((data) => {
+            updateHashOps.push(
+                hashObject(t, halgo).then((data) => {
                     if (!firstHash) {
                         firstHash = data
                         tokenToHash[t] = data
@@ -167,33 +163,29 @@ export async function generateActionMapper({
         let found = false
         if (config.tokens[hash]) {
             found = true
-            updateHashes.push(
-                serializeToBase64(
-                    unserializeToArrayBuffer(config.tokens[hash].data).then(
-                        (val) => crypto.subtle.digest(hashalgos[0], val)
-                    )
-                ).then((data) => {
-                    upgradeHash[hash] = data
-                })
+            updateHashOps.push(
+                hashObject(config.tokens[hash].data, hashalgos[0]).then(
+                    (data) => {
+                        upgradeHash[hash] = data
+                    }
+                )
             )
         }
         if (config.certificates[hash]) {
             found = true
-            updateHashes.push(
-                serializeToBase64(
-                    unserializeToArrayBuffer(
-                        config.certificates[hash].data
-                    ).then((val) => crypto.subtle.digest(hashalgos[0], val))
-                ).then((data) => {
-                    upgradeHash[hash] = data
-                })
+            updateHashOps.push(
+                hashObject(config.certificates[hash].data, hashalgos[0]).then(
+                    (data) => {
+                        upgradeHash[hash] = data
+                    }
+                )
             )
         }
         if (!found) {
             upgradeHash[hash] = hash
         }
     }
-    await Promise.all(updateHashes)
+    await Promise.all(updateHashOps)
 
     const actions: { [newHash: string]: ActionMapperEntry | CertificateEntry } =
         {}
@@ -370,13 +362,7 @@ export async function transformActions({
             }
             // autogenerate newHash if not available
             const newHash =
-                val.newHash ||
-                (await serializeToBase64(
-                    crypto.subtle.digest(
-                        hashAlgorithm,
-                        await unserializeToArrayBuffer(val.data)
-                    )
-                ))
+                val.newHash || (await hashObject(val.data, hashAlgorithm))
             // find mapper value
             const mapperval =
                 mapper && mapper[newHash] ? mapper[newHash] : undefined

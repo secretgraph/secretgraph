@@ -47,7 +47,11 @@ import {
     extractPubKeysCluster,
     extractPubKeysReferences,
 } from '@secretgraph/misc/utils/graphql'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import {
+    findWorkingHashAlgorithms,
+    hashKey,
+    hashObject,
+} from '@secretgraph/misc/utils/hashing'
 import {
     createKeys,
     decryptContentObject,
@@ -242,11 +246,7 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
     )
     return await Promise.all(
         hashAlgorithms.map(async (algo) => {
-            const operationName =
-                Constants.mapHashNames['' + algo].operationName
-            return await serializeToBase64(
-                crypto.subtle.digest(operationName, rawKey)
-            )
+            return await hashObject(rawKey, algo)
         })
     )
 }
@@ -791,15 +791,12 @@ const KeysIntern = ({
                                 {
                                     update: {
                                         certificates: {
-                                            [await serializeToBase64(
-                                                crypto.subtle.digest(
-                                                    hashAlgorithmsWorking[0],
-                                                    await crypto.subtle.exportKey(
-                                                        'spki' as const,
-                                                        pubKey
-                                                    )
+                                            [(
+                                                await hashKey(
+                                                    pubKey,
+                                                    hashAlgorithmsWorking[0]
                                                 )
-                                            )]: privKey
+                                            ).hash]: privKey
                                                 ? {
                                                       data: await serializeToBase64(
                                                           privKey

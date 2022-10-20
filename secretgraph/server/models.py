@@ -25,7 +25,11 @@ from .messages import (
     reference_group_help,
     net_quota_help,
 )
-from .validators import ClusterNameValidator
+from .validators import (
+    ActionKeyHashValidator,
+    ClusterNameValidator,
+    ContentHashValidator,
+)
 from ..core import constants
 
 logger = logging.getLogger(__name__)
@@ -250,7 +254,11 @@ class Content(FlexidModel):
     # unique hash for content, e.g. generated from some tags
     # null if multiple contents are allowed
     contentHash: str = models.CharField(
-        max_length=255, blank=True, null=True, db_column="content_hash"
+        max_length=255,
+        blank=True,
+        null=True,
+        db_column="content_hash",
+        validators=[ContentHashValidator],
     )
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="contents"
@@ -418,7 +426,11 @@ class Action(models.Model):
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="actions"
     )
-    keyHash: str = models.CharField(max_length=255, db_column="key_hash")
+    keyHash: str = models.CharField(
+        max_length=255,
+        db_column="key_hash",
+        validators=[ActionKeyHashValidator],
+    )
     nonce: str = models.CharField(max_length=255)
     # value returns json with required encrypted aes key
     value: Union[bytes, memoryview] = models.BinaryField(

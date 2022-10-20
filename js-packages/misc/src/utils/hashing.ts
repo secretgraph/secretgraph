@@ -1,9 +1,7 @@
 import * as Constants from '../constants'
-import {
-    serializeToBase64,
-    unserializeToArrayBuffer,
-    utf8encoder,
-} from './encoding'
+import * as Interfaces from '../interfaces'
+import { unserializeToArrayBuffer, utf8encoder } from './encoding'
+import { unserializeToCryptoKey } from './encryption'
 
 export function findWorkingHashAlgorithms(hashAlgorithms: string[]) {
     const hashAlgos = []
@@ -30,6 +28,39 @@ export async function hashObject(
                 )}`
         )
 }
+
+export async function hashKey(
+    key: Interfaces.KeyInput,
+    hashAlgorithm: string
+): Promise<{
+    publicKey: CryptoKey
+    hash: string
+}> {
+    const mapItem = Constants.mapHashNames['' + hashAlgorithm]
+    if (!mapItem) {
+        throw new Error(
+            'Invalid hash algorithm/no hash algorithm specified: ' +
+                hashAlgorithm
+        )
+    }
+    const publicKey = await unserializeToCryptoKey(
+        key as Interfaces.KeyInput,
+        {
+            name: 'RSA-OAEP',
+            hash: mapItem.operationName,
+        },
+        'publicKey'
+    )
+    const hash = await hashObject(
+        crypto.subtle.exportKey('spki' as const, publicKey),
+        mapItem.operationName
+    )
+    return {
+        publicKey,
+        hash,
+    }
+}
+
 export async function sortedHash(inp: string[], algo: string): Promise<string> {
     const mappedItem = Constants.mapHashNames[algo]
     return await crypto.subtle

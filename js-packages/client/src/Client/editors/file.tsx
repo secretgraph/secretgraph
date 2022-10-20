@@ -649,311 +649,340 @@ const FileIntern = ({
                                     multiple
                                 />
                             </Grid>
-                            <Grid item xs={12}>
-                                <TabContext value={tab}>
-                                    <Box
-                                        sx={{
-                                            borderBottom: 1,
-                                            borderColor: 'divider',
-                                        }}
-                                    >
-                                        <TabList
-                                            onChange={(ev, val) => setTab(val)}
-                                            aria-label=""
-                                        >
-                                            <Tab
-                                                label="Plain"
-                                                value="plain"
-                                                disabled={
-                                                    !!(
-                                                        values.fileInput ||
-                                                        !htmlIsEmpty(
-                                                            values.htmlInput
-                                                        )
-                                                    )
-                                                }
-                                            />
-                                            <Tab
-                                                label="Website"
-                                                value="html"
-                                                disabled={
-                                                    !!(
-                                                        values.plainInput ||
-                                                        values.fileInput
-                                                    )
-                                                }
-                                            />
-                                            <Tab
-                                                label="Video"
-                                                value="video"
-                                                disabled={
-                                                    !!(
-                                                        values.plainInput ||
-                                                        !htmlIsEmpty(
-                                                            values.htmlInput
-                                                        )
-                                                    )
-                                                }
-                                            />
-                                            <Tab
-                                                label="Audio"
-                                                value="audio"
-                                                disabled={
-                                                    !!(
-                                                        values.plainInput ||
-                                                        !htmlIsEmpty(
-                                                            values.htmlInput
-                                                        )
-                                                    )
-                                                }
-                                            />
-                                        </TabList>
-                                    </Box>
-                                    <TabPanel value="plain">
-                                        {!data ? (
-                                            <Field
-                                                component={FormikTextField}
-                                                name="plainInput"
-                                                label="Text"
-                                                fullWidth
-                                                variant="outlined"
-                                                multiline
-                                                minRows={10}
-                                                disabled={
-                                                    !!(
-                                                        isSubmitting ||
-                                                        values.htmlInput ||
-                                                        values.fileInput
-                                                    )
-                                                }
-                                            />
-                                        ) : (
-                                            <TextFileAdapter
-                                                value={values.fileInput as Blob}
-                                                onChange={(blob) => {
-                                                    setFieldValue(
-                                                        'fileInput',
-                                                        blob
-                                                    )
-                                                    setFieldTouched(
-                                                        'fileInput',
-                                                        true
-                                                    )
+                            {viewOnly ? null : (
+                                <>
+                                    <Grid item xs={12}>
+                                        <TabContext value={tab}>
+                                            <Box
+                                                sx={{
+                                                    borderBottom: 1,
+                                                    borderColor: 'divider',
                                                 }}
-                                                mime={
-                                                    (values.fileInput as Blob)
-                                                        .type
-                                                }
-                                                disabled={disabled}
-                                            />
-                                        )}
-                                    </TabPanel>
-                                    <TabPanel value="html">
-                                        {!data ? (
-                                            <Field name="htmlInput">
-                                                {(
-                                                    formikFieldProps: FieldProps
-                                                ) => {
-                                                    return (
-                                                        <SunEditor
-                                                            value={
-                                                                formikFieldProps
-                                                                    .meta.value
-                                                            }
-                                                            InputProps={{
-                                                                inputProps: {
-                                                                    width: '100%',
-                                                                    setOptions:
-                                                                        {
-                                                                            minHeight:
-                                                                                '500px',
-                                                                        },
-                                                                },
-                                                            }}
-                                                            name="htmlInput"
-                                                            label="Html Text"
-                                                            variant="outlined"
-                                                            minRows={10}
-                                                            onChange={(ev) => {
-                                                                formikFieldProps.form.setFieldValue(
-                                                                    'htmlInput',
-                                                                    ev.target
-                                                                        .value
+                                            >
+                                                <TabList
+                                                    onChange={(ev, val) =>
+                                                        setTab(val)
+                                                    }
+                                                    aria-label=""
+                                                >
+                                                    <Tab
+                                                        label="Plain"
+                                                        value="plain"
+                                                        disabled={
+                                                            !!(
+                                                                values.fileInput ||
+                                                                !htmlIsEmpty(
+                                                                    values.htmlInput
                                                                 )
-                                                            }}
-                                                            helperText={
-                                                                formikFieldProps
-                                                                    .meta.error
-                                                            }
-                                                            error={
-                                                                !!formikFieldProps
-                                                                    .meta
-                                                                    .error &&
-                                                                !!formikFieldProps
-                                                                    .meta
-                                                                    .touched
-                                                            }
-                                                            disabled={
-                                                                !!isSubmitting
-                                                            }
-                                                        />
-                                                    )
-                                                }}
-                                            </Field>
-                                        ) : (
-                                            <TextFileAdapter
-                                                value={values.fileInput as Blob}
-                                                onChange={(blob) => {
-                                                    setFieldValue(
-                                                        'fileInput',
-                                                        blob
-                                                    )
-                                                    setFieldTouched(
-                                                        'fileInput',
-                                                        true
-                                                    )
-                                                }}
-                                                mime={
-                                                    (values.fileInput as Blob)
-                                                        .type
-                                                }
-                                                disabled={disabled}
-                                            />
-                                        )}
-                                    </TabPanel>
-                                    <TabPanel value="video">
-                                        Video, TODO
-                                    </TabPanel>
-                                    <TabPanel value="audio">
-                                        AUdio, TODO
-                                    </TabPanel>
-                                </TabContext>
-                            </Grid>
-                            <Grid item xs={12}>
-                                <Field
-                                    name="fileInput"
-                                    disabled={
-                                        !!(
-                                            isSubmitting ||
-                                            values.plainInput ||
-                                            values.htmlInput
-                                        )
-                                    }
-                                >
-                                    {(formikFieldProps: FieldProps) => {
-                                        return (
-                                            <>
-                                                <UploadButton
-                                                    name="fileInput"
-                                                    onChange={(ev) => {
-                                                        if (
-                                                            ev.target.files &&
-                                                            ev.target.files
-                                                                .length > 0
-                                                        ) {
-                                                            /**setPSelections([
-                                                                ev.target.files[0]
-                                                                    .name,
-                                                            ])*/
-                                                            if (
-                                                                !formikFieldProps
-                                                                    .form
-                                                                    .touched
-                                                                    .name
-                                                            ) {
-                                                                formikFieldProps.form.setFieldValue(
-                                                                    'name',
-                                                                    ev.target
-                                                                        .files[0]
-                                                                        .name
-                                                                )
-                                                            }
-                                                            formikFieldProps.form.setFieldValue(
-                                                                'fileInput',
-                                                                ev.target
-                                                                    .files[0]
                                                             )
-
+                                                        }
+                                                    />
+                                                    <Tab
+                                                        label="Website"
+                                                        value="html"
+                                                        disabled={
+                                                            !!(
+                                                                values.plainInput ||
+                                                                values.fileInput
+                                                            )
+                                                        }
+                                                    />
+                                                    <Tab
+                                                        label="Video"
+                                                        value="video"
+                                                        disabled={
+                                                            !!(
+                                                                values.plainInput ||
+                                                                !htmlIsEmpty(
+                                                                    values.htmlInput
+                                                                )
+                                                            )
+                                                        }
+                                                    />
+                                                    <Tab
+                                                        label="Audio"
+                                                        value="audio"
+                                                        disabled={
+                                                            !!(
+                                                                values.plainInput ||
+                                                                !htmlIsEmpty(
+                                                                    values.htmlInput
+                                                                )
+                                                            )
+                                                        }
+                                                    />
+                                                </TabList>
+                                            </Box>
+                                            <TabPanel value="plain">
+                                                {!data ? (
+                                                    <Field
+                                                        component={
+                                                            FormikTextField
+                                                        }
+                                                        name="plainInput"
+                                                        label="Text"
+                                                        fullWidth
+                                                        variant="outlined"
+                                                        multiline
+                                                        minRows={10}
+                                                        disabled={
+                                                            !!(
+                                                                isSubmitting ||
+                                                                values.htmlInput ||
+                                                                values.fileInput
+                                                            )
+                                                        }
+                                                    />
+                                                ) : (
+                                                    <TextFileAdapter
+                                                        value={
+                                                            values.fileInput as Blob
+                                                        }
+                                                        onChange={(blob) => {
+                                                            setFieldValue(
+                                                                'fileInput',
+                                                                blob
+                                                            )
                                                             setFieldTouched(
                                                                 'fileInput',
                                                                 true
                                                             )
-                                                        } else {
-                                                            formikFieldProps.form.setFieldValue(
+                                                        }}
+                                                        mime={
+                                                            (
+                                                                values.fileInput as Blob
+                                                            ).type
+                                                        }
+                                                        disabled={disabled}
+                                                    />
+                                                )}
+                                            </TabPanel>
+                                            <TabPanel value="html">
+                                                {!data ? (
+                                                    <Field name="htmlInput">
+                                                        {(
+                                                            formikFieldProps: FieldProps
+                                                        ) => {
+                                                            return (
+                                                                <SunEditor
+                                                                    value={
+                                                                        formikFieldProps
+                                                                            .meta
+                                                                            .value
+                                                                    }
+                                                                    InputProps={{
+                                                                        inputProps:
+                                                                            {
+                                                                                width: '100%',
+                                                                                setOptions:
+                                                                                    {
+                                                                                        minHeight:
+                                                                                            '500px',
+                                                                                    },
+                                                                            },
+                                                                    }}
+                                                                    name="htmlInput"
+                                                                    label="Html Text"
+                                                                    variant="outlined"
+                                                                    minRows={10}
+                                                                    onChange={(
+                                                                        ev
+                                                                    ) => {
+                                                                        formikFieldProps.form.setFieldValue(
+                                                                            'htmlInput',
+                                                                            ev
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }}
+                                                                    helperText={
+                                                                        formikFieldProps
+                                                                            .meta
+                                                                            .error
+                                                                    }
+                                                                    error={
+                                                                        !!formikFieldProps
+                                                                            .meta
+                                                                            .error &&
+                                                                        !!formikFieldProps
+                                                                            .meta
+                                                                            .touched
+                                                                    }
+                                                                    disabled={
+                                                                        !!isSubmitting
+                                                                    }
+                                                                />
+                                                            )
+                                                        }}
+                                                    </Field>
+                                                ) : (
+                                                    <TextFileAdapter
+                                                        value={
+                                                            values.fileInput as Blob
+                                                        }
+                                                        onChange={(blob) => {
+                                                            setFieldValue(
                                                                 'fileInput',
-                                                                null
+                                                                blob
                                                             )
                                                             setFieldTouched(
                                                                 'fileInput',
-                                                                false
+                                                                true
                                                             )
+                                                        }}
+                                                        mime={
+                                                            (
+                                                                values.fileInput as Blob
+                                                            ).type
                                                         }
-                                                    }}
-                                                    accept={
-                                                        mainCtx.type == 'Text'
-                                                            ? 'text/*'
-                                                            : undefined
-                                                    }
-                                                >
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        component="span"
-                                                        disabled={
-                                                            !!(
-                                                                isSubmitting ||
-                                                                values.plainInput ||
-                                                                values.htmlInput
-                                                            )
-                                                        }
-                                                    >
-                                                        Upload
-                                                    </Button>
-                                                </UploadButton>
-                                                <Button
-                                                    variant="contained"
-                                                    color="primary"
-                                                    disabled={
-                                                        !!(
-                                                            isSubmitting ||
-                                                            values.plainInput ||
-                                                            values.htmlInput
-                                                        )
-                                                    }
-                                                    onClick={() => {
-                                                        setValues({
-                                                            ...values,
-                                                            fileInput: null,
-                                                        })
-                                                        setFieldTouched(
-                                                            'fileInput',
-                                                            false
-                                                        )
-                                                    }}
-                                                >
-                                                    Clear
-                                                </Button>
-                                                {formikFieldProps.meta
-                                                    .error && (
-                                                    <Typography
-                                                        color={
-                                                            formikFieldProps
-                                                                .meta.touched
-                                                                ? 'error'
-                                                                : undefined
-                                                        }
-                                                    >
-                                                        {
-                                                            formikFieldProps
-                                                                .meta.error
-                                                        }
-                                                    </Typography>
+                                                        disabled={disabled}
+                                                    />
                                                 )}
-                                            </>
-                                        )
-                                    }}
-                                </Field>
-                            </Grid>
+                                            </TabPanel>
+                                            <TabPanel value="video">
+                                                Video, TODO
+                                            </TabPanel>
+                                            <TabPanel value="audio">
+                                                AUdio, TODO
+                                            </TabPanel>
+                                        </TabContext>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Field
+                                            name="fileInput"
+                                            disabled={
+                                                !!(
+                                                    isSubmitting ||
+                                                    values.plainInput ||
+                                                    values.htmlInput
+                                                )
+                                            }
+                                        >
+                                            {(formikFieldProps: FieldProps) => {
+                                                return (
+                                                    <>
+                                                        <UploadButton
+                                                            name="fileInput"
+                                                            onChange={(ev) => {
+                                                                if (
+                                                                    ev.target
+                                                                        .files &&
+                                                                    ev.target
+                                                                        .files
+                                                                        .length >
+                                                                        0
+                                                                ) {
+                                                                    /**setPSelections([
+                                                                ev.target.files[0]
+                                                                    .name,
+                                                            ])*/
+                                                                    if (
+                                                                        !formikFieldProps
+                                                                            .form
+                                                                            .touched
+                                                                            .name
+                                                                    ) {
+                                                                        formikFieldProps.form.setFieldValue(
+                                                                            'name',
+                                                                            ev
+                                                                                .target
+                                                                                .files[0]
+                                                                                .name
+                                                                        )
+                                                                    }
+                                                                    formikFieldProps.form.setFieldValue(
+                                                                        'fileInput',
+                                                                        ev
+                                                                            .target
+                                                                            .files[0]
+                                                                    )
+
+                                                                    setFieldTouched(
+                                                                        'fileInput',
+                                                                        true
+                                                                    )
+                                                                } else {
+                                                                    formikFieldProps.form.setFieldValue(
+                                                                        'fileInput',
+                                                                        null
+                                                                    )
+                                                                    setFieldTouched(
+                                                                        'fileInput',
+                                                                        false
+                                                                    )
+                                                                }
+                                                            }}
+                                                            accept={
+                                                                mainCtx.type ==
+                                                                'Text'
+                                                                    ? 'text/*'
+                                                                    : undefined
+                                                            }
+                                                        >
+                                                            <Button
+                                                                variant="contained"
+                                                                color="primary"
+                                                                component="span"
+                                                                disabled={
+                                                                    !!(
+                                                                        isSubmitting ||
+                                                                        values.plainInput ||
+                                                                        values.htmlInput
+                                                                    )
+                                                                }
+                                                            >
+                                                                Upload
+                                                            </Button>
+                                                        </UploadButton>
+                                                        <Button
+                                                            variant="contained"
+                                                            color="primary"
+                                                            disabled={
+                                                                !!(
+                                                                    isSubmitting ||
+                                                                    values.plainInput ||
+                                                                    values.htmlInput
+                                                                )
+                                                            }
+                                                            onClick={() => {
+                                                                setValues({
+                                                                    ...values,
+                                                                    fileInput:
+                                                                        null,
+                                                                })
+                                                                setFieldTouched(
+                                                                    'fileInput',
+                                                                    false
+                                                                )
+                                                            }}
+                                                        >
+                                                            Clear
+                                                        </Button>
+                                                        {formikFieldProps.meta
+                                                            .error && (
+                                                            <Typography
+                                                                color={
+                                                                    formikFieldProps
+                                                                        .meta
+                                                                        .touched
+                                                                        ? 'error'
+                                                                        : undefined
+                                                                }
+                                                            >
+                                                                {
+                                                                    formikFieldProps
+                                                                        .meta
+                                                                        .error
+                                                                }
+                                                            </Typography>
+                                                        )}
+                                                    </>
+                                                )
+                                            }}
+                                        </Field>
+                                    </Grid>
+                                </>
+                            )}
 
                             <Grid item xs={12}>
                                 {isSubmitting && <LinearProgress />}

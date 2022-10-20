@@ -954,9 +954,7 @@ export async function updateHash(config: ConfigInterface, old?: string) {
     certificates: Object.fromEntries(await Promise.all(Object.entries(config.certificates).map(async([hash, val]) =>{
       let newHash = updateMap.get(hash);
       if (!updateMap.has(hash)){
-        updateMap.set(hash, await serializeToBase64(unserializeToArrayBuffer(val).then((buf) => crypto.subtle.digest(
-          mapHashNames[""+newHash].operationName, buf
-        ))))
+        updateMap.set(hash, await hashObject(val, newHash))
       }
       return [
         updateMap.get(hash),
@@ -966,9 +964,7 @@ export async function updateHash(config: ConfigInterface, old?: string) {
     tokens: Object.fromEntries(await Promise.all(Object.entries(config.tokens).map(async([hash, val]) =>{
       let newHash = updateMap.get(hash);
       if (!updateMap.has(hash)){
-        updateMap.set(hash, await serializeToBase64(unserializeToArrayBuffer(val).then((buf) => crypto.subtle.digest(
-          mapHashNames[""+newHash].operationName, buf
-        ))))
+        updateMap.set(hash, await hashObject(val, newHash))
       }
       return [
         updateMap.get(hash),
