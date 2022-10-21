@@ -267,7 +267,7 @@ For this we have two defense mechanism
 
 ### Groups
 
-idea: seperate actions with different concerns.
+idea: seperate actions on contents with different concerns.
 
 -   "": default
 -   view: for view actions
@@ -275,7 +275,8 @@ idea: seperate actions with different concerns.
 
 ## Config
 
-Config defines slots. Updates will be send to all Configs with a same slot. The first slot is the main slot
+Config defines slots. Config Updates will be send to all Configs with a same slot. The first slot is the main slot.
+Currently there is no way to move items from one config to another
 
 # Internal
 
@@ -340,10 +341,6 @@ now you have a decryption key to the private key, that is very dangerous
 
 -   fixes problem with lost updates, especially for hot files like config
 -   but metadata can be changed seperately (removing/adding tags/references)
-
-## multiple Configs
-
-They are for now completely independent, you only see tokens/keys from your own config
 
 # TODO
 

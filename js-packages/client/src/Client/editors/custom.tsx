@@ -58,13 +58,9 @@ interface CustomInternProps {
     tokens: string[]
     setCluster: (arg: string) => void
     url: string
-    encryptedTags: string[]
-    setEncryptedTags: (arg: string[]) => void
     viewOnly?: boolean
 }
 const InnerCustom = ({
-    encryptedTags,
-    setEncryptedTags,
     setCluster,
     url,
     nodeData,
@@ -175,7 +171,7 @@ const InnerCustom = ({
                                 <Typography>Active Url</Typography>
                                 <Typography>{url}</Typography>
                             </Grid>
-                            <Grid item xs={12} md={4}>
+                            <Grid item xs={12} md={6}>
                                 <FastField
                                     component={SimpleSelect}
                                     name="tags"
@@ -186,7 +182,7 @@ const InnerCustom = ({
                                     multiple
                                 />
                             </Grid>
-                            <Grid item xs={12} md={4}>
+                            <Grid item xs={12} md={6}>
                                 <FastField
                                     component={ClusterSelect}
                                     url={url}
@@ -200,29 +196,6 @@ const InnerCustom = ({
                                             return 'empty'
                                         }
                                         return null
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={12} md={4}>
-                                <Autocomplete
-                                    multiple
-                                    options={encryptedTags}
-                                    renderInput={(params) => {
-                                        return (
-                                            <TextField
-                                                {...params}
-                                                label="Encrypted Tagprefixes"
-                                                fullWidth
-                                                disabled={
-                                                    disabled || isSubmitting
-                                                }
-                                                variant="outlined"
-                                                helperText="Prefixes of the tags which should be encrypted (e.g. ename=, mime=)"
-                                            />
-                                        )
-                                    }}
-                                    onChange={(ev, val) => {
-                                        setEncryptedTags(val)
                                     }}
                                 />
                             </Grid>
@@ -281,10 +254,6 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
           })
         | null
     >(null)
-    const [encryptedTags, setEncryptedTags] = React.useState<string[]>([
-        'ename',
-        'mime',
-    ])
 
     const authorization = React.useMemo(() => {
         const authinfo = authInfoFromConfig({
@@ -365,7 +334,6 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
                 blobOrTokens: authorization,
-                decrypt: new Set(encryptedTags),
             })
             if (res) {
                 setData({
@@ -381,7 +349,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
             }
         }
         f()
-    }, [dataUnfinished, ...encryptedTags])
+    }, [dataUnfinished])
     if (!data) {
         return null
     }
@@ -389,8 +357,6 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         <InnerCustom
             {...data}
             setCluster={setCluster}
-            encryptedTags={encryptedTags}
-            setEncryptedTags={setEncryptedTags}
             disabled={loading}
             viewOnly={viewOnly}
             tokens={authorization}
@@ -490,7 +456,6 @@ const AddCustom = () => {
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
                 blobOrTokens: mainCtx.tokens,
-                decrypt: new Set(encryptedTags),
             })
             if (res) {
                 setData({
@@ -504,7 +469,7 @@ const AddCustom = () => {
             }
         }
         f()
-    }, [dataUnfinished, ...encryptedTags])
+    }, [dataUnfinished])
     if (!data) {
         return null
     }
@@ -512,8 +477,6 @@ const AddCustom = () => {
         <InnerCustom
             {...data}
             setCluster={setCluster}
-            encryptedTags={encryptedTags}
-            setEncryptedTags={setEncryptedTags}
             disabled={loading}
             tokens={authorization}
         />

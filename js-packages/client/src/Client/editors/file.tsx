@@ -38,6 +38,7 @@ import {
     decryptContentObject,
     updateConfigRemoteReducer,
     updateContent,
+    updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
@@ -61,7 +62,6 @@ const htmlIsEmpty = (value?: string): boolean => {
     return !value || value == '<p><br></p>' || value == '<p></p>'
 }
 
-const encryptSet = new Set(['name'])
 const ViewWidget = ({
     arrayBuffer,
     mime: mimeNew,
@@ -229,7 +229,6 @@ interface FileInternProps {
     hashAlgorithms: string[]
     nodeData?: any
     tags?: { [name: string]: string[] }
-    encryptedTags?: Set<string>
     data?: Blob | null
     url: string
     setCluster: (arg: string) => void
@@ -244,7 +243,6 @@ const FileIntern = ({
     mapper,
     url,
     hashAlgorithms,
-    encryptedTags,
     viewOnly,
 }: FileInternProps) => {
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
@@ -263,31 +261,21 @@ const FileIntern = ({
         }).tokens
     }, [config])
     // const [PSelections, setPSelections] = React.useState<string[]>([])
-    let name: string = mainCtx.item || ''
-    const content_hashes = React.useMemo(() => {
-        const host = config.hosts[url]
-
-        return new Set<string>(
-            (nodeData &&
-                host?.contents[nodeData.id]?.hashes &&
-                Object.keys(host.contents[nodeData.id].hashes)) ||
-                []
-        )
-    }, [url, config])
+    let name: string = ''
 
     const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
-    let encryptName = encryptedTags ? encryptedTags.has('name') : true
+    let encryptName = true
     if (tags) {
         if (tags.name && tags.name.length > 0) {
             name = tags.name[0]
+            encryptName = false
+        }
+        if (tags['~name'] && tags['~name'].length > 0) {
+            name = tags['~name'][0]
+            encryptName = true
         }
     }
-    const state =
-        tags?.state &&
-        tags.state.length > 0 &&
-        Constants.contentStates.includes(tags.state[0])
-            ? tags.state[0]
-            : 'internal'
+    const state = nodeData?.state || 'internal'
     if (state == 'public') {
         encryptName = false
     }
@@ -340,15 +328,6 @@ const FileIntern = ({
                     { setSubmitting }
                 ) => {
                     const hashAlgorithm = hashAlgorithms[0]
-                    const {
-                        hashes,
-                        actions: finishedActions,
-                        configUpdate,
-                    } = await transformActions({
-                        actions: actionsNew,
-                        mapper,
-                        hashAlgorithm,
-                    })
                     let value: Blob
                     if (values.plainInput) {
                         value = new Blob([values.plainInput], {
@@ -367,121 +346,47 @@ const FileIntern = ({
                     } else {
                         throw Error('no input found')
                     }
-                    const privkeys = extractPrivKeys({
+                    const res = await updateOrCreateContentWithConfig({
+                        actions: actionsNew,
                         config,
+                        mapper,
+                        cluster: values.cluster,
+                        value,
+                        itemClient,
+                        baseClient,
+                        authorization: mainCtx.tokens,
+                        state: values.state,
+                        type: value.type.startsWith('text/') ? 'Text' : 'File',
+                        tags: [
+                            !values.encryptName || values.state == 'public'
+                                ? `name=${values.name}`
+                                : `~name=${Buffer.from(values.name).toString(
+                                      'base64'
+                                  )}`,
+                            `mime=${value.type}`,
+                        ].concat(
+                            values.keywords.map((val) => `keyword=${val}`)
+                        ),
+                        id: nodeData?.id,
+                        updateId: nodeData?.updateId,
                         url,
                         hashAlgorithm,
-                        clusters: values.cluster
-                            ? new Set([values.cluster])
-                            : undefined,
                     })
-                    let pubkeys: { [hash: string]: Promise<CryptoKey> } = {}
-                    if (values.state != 'public') {
-                        const pubkeysResult = await itemClient.query({
-                            fetchPolicy: 'network-only',
-                            query: getContentConfigurationQuery,
-                            variables: {
-                                authorization: mainCtx.tokens,
-                                id: values.cluster,
-                            },
-                        })
-                        pubkeys = extractPubKeysCluster({
-                            node: pubkeysResult.data.secretgraph.node,
-                            authorization: mainCtx.tokens,
-                            params: {
-                                name: 'RSA-OAEP',
-                                hash: hashAlgorithm,
-                            },
-                        })
-                    }
-
-                    try {
-                        const options = {
-                            client: itemClient,
-                            config,
-                            cluster: values.cluster,
-                            value,
-                            state: values.state,
-                            type: value.type.startsWith('text/')
-                                ? 'Text'
-                                : 'File',
-                            tags: [
-                                !values.encryptName || values.state == 'public'
-                                    ? `name=${values.name}`
-                                    : `~name=${Buffer.from(
-                                          values.name
-                                      ).toString('base64')}`,
-                                `mime=${value.type}`,
-                            ].concat(
-                                values.keywords.map((val) => `keyword=${val}`)
-                            ),
-                            encryptTags: values.encryptName
-                                ? encryptSet
-                                : undefined,
-                            privkeys: await Promise.all(
-                                Object.values(privkeys)
-                            ),
-                            pubkeys: Object.values(pubkeys),
-                            hashAlgorithm,
-                            actions: finishedActions,
-                            authorization: mainCtx.tokens,
-                        }
-                        const result = await (nodeData
-                            ? updateContent({
-                                  ...options,
-                                  net: options.cluster,
-                                  id: nodeData.id,
-                                  updateId: nodeData.updateId,
-                              })
-                            : createContent(options))
-                        const host = config.hosts[url]
-                        const cluster_hashes = new Set(
-                            Object.keys(host?.clusters[values.cluster] || [])
-                        )
-                        const hashesNew: any = {}
-                        for (const entry of Object.entries(hashes)) {
-                            if (
-                                content_hashes.has(entry[0]) ||
-                                !cluster_hashes.has(entry[0])
-                            ) {
-                                hashesNew[entry[0]] = entry[1]
-                            }
-                        }
-                        configUpdate.hosts[url] = {
-                            contents: {
-                                [result.data.updateOrCreateContent.content.id]:
-                                    {
-                                        hashes: hashesNew,
-                                        cluster: values.cluster,
-                                    },
-                            },
-                            clusters: {},
-                        }
-                        const newConfig = await updateConfigRemoteReducer(
-                            config,
-                            {
-                                update: configUpdate,
-                                client: baseClient,
-                                nullonnoupdate: true,
-                            }
-                        )
-                        if (newConfig) {
+                    if (res) {
+                        if (res.config) {
                             const nTokens = authInfoFromConfig({
-                                config: newConfig as Interfaces.ConfigInterface,
+                                config: res.config,
                                 url,
                                 clusters: values.cluster
                                     ? new Set([values.cluster])
                                     : undefined,
                                 require: new Set(['update', 'manage']),
                             }).tokens
-                            saveConfig(newConfig as Interfaces.ConfigInterface)
-                            updateConfig(newConfig, true)
+                            saveConfig(res.config)
+                            updateConfig(res.config, true)
                             updateMainCtx({
-                                item: result.data.updateOrCreateContent.content
-                                    .id,
-                                updateId:
-                                    result.data.updateOrCreateContent.content
-                                        .updateId,
+                                item: res.node.id,
+                                updateId: res.node.updateId,
                                 url,
                                 action: 'update',
                                 tokens: [
@@ -490,17 +395,13 @@ const FileIntern = ({
                             })
                         } else {
                             updateMainCtx({
-                                item: result.data.updateOrCreateContent.content
-                                    .id,
-                                updateId:
-                                    result.data.updateOrCreateContent.content
-                                        .updateId,
+                                item: res.node.id,
+                                updateId: res.node.updateId,
                                 url,
                                 action: 'update',
                             })
                         }
-                    } catch (exc) {
-                        console.error(exc)
+                    } else {
                         setSubmitting(false)
                     }
                 }}
@@ -1121,6 +1022,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         variables: {
             id: mainCtx.item as string,
             authorization: mainCtx.tokens,
+            includeTags: ['name=', '~name=', 'mime='],
         },
         onError: console.error,
     })
@@ -1199,7 +1101,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
                 blobOrTokens: mainCtx.tokens,
-                decrypt: encryptSet,
             })
             if (!obj) {
                 console.error('failed decoding')
@@ -1213,6 +1114,8 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
 
             if (obj.tags.name && obj.tags.name.length > 0) {
                 name = obj.tags.name[0]
+            } else if (obj.tags['~name'] && obj.tags['~name'].length > 0) {
+                name = obj.tags['~name'][0]
             }
             updateOb['title'] = name
             updateMainCtx(updateOb)
@@ -1254,7 +1157,6 @@ const ViewFile = () => {
 const CreateFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
-    const { searchCtx } = React.useContext(Contexts.Search)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [data, setData] = React.useState<{
         mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>

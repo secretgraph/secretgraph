@@ -251,12 +251,12 @@ def _update_or_create_content_or_key(
             if create or oldstate == "draft" or oldstate == "internal":
                 content.hidden = objdata.cluster.groups.filter(
                     properties__name="auto_hide_global"
-                    if content.cluster.name.startsWith("@")
+                    if content.cluster.name.startswith("@")
                     else "auto_hide_local"
                 ).exists()
             elif objdata.cluster.groups.filter(
                 properties__name="auto_hide_global_update"
-                if content.cluster.name.startsWith("@")
+                if content.cluster.name.startswith("@")
                 else "auto_hide_local_update"
             ).exists():
                 content.hidden = True
@@ -274,10 +274,12 @@ def _update_or_create_content_or_key(
         elif isinstance(objdata.nonce, bytes):
             checknonce = objdata.nonce
             objdata.nonce = base64.b64encode(checknonce).decode("ascii")
+        elif not objdata.nonce:
+            checknonce = b""
         else:
             checknonce = base64.b64decode(objdata.nonce)
         # is public key or public? then ignore nonce checks
-        if not is_key and content.state != "public":
+        if not content.type == "PublicKey" and content.state != "public":
             if not checknonce:
                 raise ValueError(
                     "Content must be encrypted and nonce specified"

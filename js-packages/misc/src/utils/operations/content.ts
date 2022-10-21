@@ -2,6 +2,7 @@ import { ApolloClient, FetchResult } from '@apollo/client'
 import {
     createContentMutation,
     findConfigQuery,
+    getContentConfigurationQuery,
     updateContentMutation,
 } from '@secretgraph/graphql-queries/content'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
@@ -9,6 +10,8 @@ import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 import { mapHashNames } from '../../constants'
 import * as Constants from '../../constants'
 import * as Interfaces from '../../interfaces'
+import { UnpackPromise } from '../../typing'
+import { transformActions } from '../action'
 import {
     authInfoFromConfig,
     cleanConfig,
@@ -24,7 +27,6 @@ import {
 import {
     decryptAESGCM,
     decryptRSAOEAP,
-    deparseTag,
     encryptAESGCM,
     encryptTag,
     extractTags,
@@ -34,7 +36,7 @@ import {
 import {
     createSignatureReferences,
     encryptSharedKey,
-    extractPubKeysReferences,
+    extractPubKeysCluster,
 } from '../graphql'
 import { findWorkingHashAlgorithms, hashTagsContentHash } from '../hashing'
 import { retry } from '../misc'
@@ -273,6 +275,7 @@ export async function updateContent({
             id,
             updateId,
             net,
+            state,
             cluster: options.cluster ? options.cluster : undefined,
             references,
             tags: tags ? await Promise.all(tags) : undefined,
@@ -291,7 +294,6 @@ export async function updateContent({
 interface decryptContentObjectInterface
     extends Omit<Interfaces.CryptoGCMOutInterface, 'nonce' | 'key'> {
     tags: { [tag: string]: string[] }
-    encryptedTags: Set<string>
     updateId: string
     nodeData: any
 }
@@ -301,7 +303,6 @@ export async function decryptContentObject({
     nodeData,
     blobOrTokens,
     baseUrl,
-    decrypt = new Set(),
 }: {
     config: Interfaces.ConfigInterface | PromiseLike<Interfaces.ConfigInterface>
     nodeData: any | PromiseLike<any>
@@ -311,7 +312,6 @@ export async function decryptContentObject({
         | string[]
         | PromiseLike<Blob | string | string[]>
     baseUrl?: string
-    decrypt?: Set<string>
 }): Promise<decryptContentObjectInterface | null> {
     let arrPromise: PromiseLike<ArrayBufferLike>
     const _info = await blobOrTokens
@@ -341,7 +341,6 @@ export async function decryptContentObject({
             tags: await extractTagsRaw({
                 tags: nodeData.tags,
             }),
-            encryptedTags: new Set(),
             updateId: nodeData.updateId,
             nodeData,
         }
@@ -382,7 +381,7 @@ export async function decryptContentObject({
                 nonce: _node.nonce,
                 data: arrPromise,
             })),
-            ...(await extractTags({ key, tags: nodeData.tags })),
+            tags: await extractTags({ key, tags: nodeData.tags }),
             updateId: nodeData.updateId,
             nodeData,
         }
@@ -607,5 +606,151 @@ export async function updateConfigRemoteReducer(
         return mainResult.value[0]
     } else {
         throw mainResult.reason
+    }
+}
+
+interface sharedParametersFull {
+    itemClient: ApolloClient<any>
+    baseClient: ApolloClient<any>
+    url: string
+    config: Interfaces.ConfigInterface
+    mapper?: Parameters<typeof transformActions>[0]['mapper']
+    cluster: string
+    state: string
+    actions: Parameters<typeof transformActions>[0]['actions']
+    hashAlgorithm: string
+    authorization: string[]
+}
+type excludedAttrsFull =
+    | 'client'
+    | 'pubkeys'
+    | 'privatekeys'
+    | keyof sharedParametersFull
+
+/**
+ * Helper function implementing the whole content update/create workflow
+ * TODO: typings could be better
+ */
+export async function updateOrCreateContentWithConfig({
+    itemClient,
+    baseClient,
+    net,
+    config,
+    cluster,
+    hashAlgorithm,
+    url,
+    authorization,
+    actions,
+    mapper,
+    state,
+    type,
+    id,
+    updateId,
+    ...options
+}:
+    | Omit<
+          Parameters<typeof updateContent>[0] &
+              Parameters<typeof createContent>[0],
+          excludedAttrsFull
+      > &
+          sharedParametersFull): Promise<
+    | {
+          config: UnpackPromise<ReturnType<typeof updateConfigRemoteReducer>>
+          node: any
+      }
+    | false
+> {
+    const {
+        hashes,
+        actions: finishedActions,
+        configUpdate,
+    } = await transformActions({
+        actions,
+        mapper,
+        hashAlgorithm,
+    })
+
+    const host = config.hosts[url]
+
+    const content_key_or_token_hashes = new Set<string>(
+        (id &&
+            host?.contents[id]?.hashes &&
+            Object.keys(host.contents[id].hashes)) ||
+            []
+    )
+    const cluster_key_or_token_hashes = new Set(
+        Object.keys(host?.clusters[cluster] || [])
+    )
+    const privkeys = extractPrivKeys({
+        config,
+        url,
+        hashAlgorithm,
+        clusters: new Set([cluster]),
+    })
+    let pubkeys: { [hash: string]: Promise<CryptoKey> } = {}
+    if (state != 'public') {
+        const pubkeysResult = await itemClient.query({
+            fetchPolicy: 'network-only',
+            query: getContentConfigurationQuery,
+            variables: {
+                authorization,
+                id: cluster,
+            },
+        })
+        pubkeys = extractPubKeysCluster({
+            node: pubkeysResult.data.secretgraph.node,
+            authorization,
+            params: {
+                name: 'RSA-OAEP',
+                hash: hashAlgorithm,
+            },
+        })
+    }
+
+    try {
+        const noptions = {
+            client: itemClient,
+            config,
+            cluster,
+            privkeys: await Promise.all(Object.values(privkeys)),
+            pubkeys: Object.values(pubkeys),
+            hashAlgorithm,
+            actions: finishedActions,
+            authorization,
+            state,
+            ...options,
+        }
+        const result = await (id
+            ? updateContent({ ...noptions, id, updateId })
+            : createContent({ ...noptions, type }))
+        const hashesNew: any = {}
+        for (const entry of Object.entries(hashes)) {
+            if (
+                content_key_or_token_hashes.has(entry[0]) ||
+                !cluster_key_or_token_hashes.has(entry[0])
+            ) {
+                hashesNew[entry[0]] = entry[1]
+            }
+        }
+        configUpdate.hosts[url] = {
+            contents: {
+                [result.data.updateOrCreateContent.content.id]: {
+                    hashes: hashesNew,
+                    cluster,
+                },
+            },
+            clusters: {},
+        }
+        return {
+            config: await updateConfigRemoteReducer(config, {
+                update: configUpdate,
+                client: baseClient,
+                nullonnoupdate: true,
+            }),
+            node: result.data.updateOrCreateContent.content,
+        }
+    } catch (exc) {
+        console.error(exc)
+        return false
     }
 }

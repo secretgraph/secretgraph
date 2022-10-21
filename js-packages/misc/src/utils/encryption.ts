@@ -596,74 +596,51 @@ export async function deparseTag(options: {
 
 export async function decryptTagRaw(
     options: Interfaces.CryptoGCMInInterface
-): Promise<{ data: ArrayBuffer | string; encrypted: boolean }> {
-    let data
-    const rawData = await options.data
-    try {
-        data = await unserializeToArrayBuffer(rawData)
-    } catch (error) {
-        if (error instanceof Base64Error) {
-            return {
-                data:
-                    rawData instanceof ArrayBuffer
-                        ? String.fromCharCode(...new Uint8Array(rawData))
-                        : (rawData as string),
-                encrypted: false,
-            }
-        } else {
-            throw error
-        }
-    }
+): Promise<ArrayBuffer> {
+    let data = await unserializeToArrayBuffer(options.data)
     if (data.byteLength <= 13) {
-        return {
-            data:
-                rawData instanceof ArrayBuffer
-                    ? String.fromCharCode(...new Uint8Array(rawData))
-                    : (rawData as string),
-            encrypted: false,
-        }
+        throw Error('Invalid nonce length')
     }
-    try {
-        const nonce = new Uint8Array(data.slice(0, 13))
-        const realdata = data.slice(13)
-        return {
-            data: (
-                await decryptAESGCM({
-                    ...options,
-                    data: realdata,
-                    nonce,
-                })
-            ).data,
-            encrypted: true,
-        }
-    } catch (error) {
-        console.debug('decrypting tag failed', error)
-        return {
-            data:
-                rawData instanceof ArrayBuffer
-                    ? String.fromCharCode(...new Uint8Array(rawData))
-                    : (rawData as string),
-            encrypted: false,
-        }
-    }
+    const nonce = new Uint8Array(data.slice(0, 13))
+    const realdata = data.slice(13)
+    return (
+        await decryptAESGCM({
+            ...options,
+            data: realdata,
+            nonce,
+        })
+    ).data
 }
 
 export async function decryptTag(
     options: Omit<Interfaces.CryptoGCMInInterface, 'data'> & {
         readonly data: string | PromiseLike<string>
     }
-): Promise<{ data: string; encrypted: boolean; tag: string }> {
+): Promise<{ data: string; success: boolean; tag: string }> {
     const [_, tag, b64data] = (await options.data).match(
         /^([^=]+?)=(.*)/
     ) as string[]
-    const result = await decryptTagRaw({ ...options, data: b64data })
-    return {
-        ...result,
-        data:
-            result.data instanceof ArrayBuffer
-                ? String.fromCharCode(...new Uint8Array(result.data))
-                : result.data,
-        tag,
+    try {
+        return {
+            data: String.fromCharCode(
+                ...new Uint8Array(
+                    await decryptTagRaw({ ...options, data: b64data })
+                )
+            ),
+            success: true,
+            tag,
+        }
+    } catch (error) {
+        if (error instanceof Base64Error) {
+            console.warn('Error decoding tag, base64 decoding failed', error)
+        } else {
+            console.warn('Error decoding tag', error)
+        }
+        return {
+            data: b64data,
+            success: false,
+            tag,
+        }
     }
 }
 
@@ -699,9 +676,8 @@ export async function extractTags(
             | PromiseLike<Iterable<string | PromiseLike<string>>>
             | Iterable<string | PromiseLike<string>>
     }
-): Promise<{ tags: { [tag: string]: string[] }; encryptedTags: Set<string> }> {
+): Promise<{ [tag: string]: string[] }> {
     const tags: { [tag: string]: string[] } = {}
-    const encryptedTags = new Set<string>()
     await Promise.all(
         IterableOps.map(await options.tags, async (_tag_val) => {
             const tag_val = await _tag_val
@@ -718,15 +694,8 @@ export async function extractTags(
                             data,
                         })
                         tags[tag].push(
-                            val.data instanceof ArrayBuffer
-                                ? String.fromCharCode(
-                                      ...new Uint8Array(val.data)
-                                  )
-                                : val.data
+                            String.fromCharCode(...new Uint8Array(val))
                         )
-                        if (val.encrypted) {
-                            encryptedTags.add(tag)
-                        }
                     } catch (error) {
                         console.error('decrypting tag caused error', tag, error)
                     }
@@ -740,7 +709,7 @@ export async function extractTags(
             }
         })
     )
-    return { tags, encryptedTags }
+    return tags
 }
 
 export async function encryptPreKey({

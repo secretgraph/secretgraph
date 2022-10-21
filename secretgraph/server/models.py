@@ -318,14 +318,14 @@ class Content(FlexidModel):
     @property
     def size_references(self) -> int:
         refs = self.references.annotate(size=Length("extra")).aggregate(
-            size_sum=models.Sum("size")
+            size_sum=models.Sum("size"), count=models.Count("id")
         )
         # include target id size
-        return refs["size_sum"] + refs.count() * 8
+        return refs["size_sum"] + refs["count"] * 8
 
     @property
     def size(self) -> int:
-        size = self.value.size
+        size = self.file.size
         size += self.size_tags
         size += self.size_references
         return size
