@@ -13,6 +13,7 @@ import {
     unserializeToCryptoKey,
 } from '../encryption'
 import { createSignatureReferences, encryptSharedKey } from '../graphql'
+import { map } from '../iterable'
 
 export async function createKeys({
     client,
@@ -39,7 +40,7 @@ export async function createKeys({
     authorization: Iterable<string>
 }): Promise<FetchResult<any>> {
     const nonce = crypto.getRandomValues(new Uint8Array(13))
-    const key = crypto.getRandomValues(new Uint8Array(32))
+    const sharedkey = crypto.getRandomValues(new Uint8Array(32))
     const halgo = mapHashNames[options.hashAlgorithm]
 
     const keyParams = {
@@ -54,7 +55,7 @@ export async function createKeys({
 
     const encryptedPrivateKeyPromise = privateKey
         ? encryptAESGCM({
-              key,
+              key: sharedkey,
               nonce,
               data: unserializeToCryptoKey(privateKey, keyParams, 'privateKey'),
           }).then((data) => new Blob([data.data]))
@@ -66,7 +67,7 @@ export async function createKeys({
 
     const [[specialRef, ...references], privateTags] = await Promise.all(
         encryptSharedKey(
-            key,
+            sharedkey,
             ([publicKey] as Parameters<typeof encryptSharedKey>[1]).concat(
                 pubkeys
             ),
@@ -80,7 +81,24 @@ export async function createKeys({
         halgo.operationName
     )
     if (options.privateTags) {
-        privateTags.push(...(await Promise.all(options.privateTags)))
+        // only private tags can be encrypted
+        privateTags.push(
+            ...(
+                await Promise.all(
+                    map(
+                        options.privateTags,
+                        async (tag: string | Promise<string>) => {
+                            return await encryptTag({
+                                key: sharedkey,
+                                data: tag,
+                            })
+                        }
+                    )
+                )
+            )
+                // filter key= specifications from input options PrivateKey, we set it ourself with an newly generated random
+                .filter((val) => !val.startsWith('key='))
+        )
     }
     const publicTags: string[] = options.publicTags
         ? await Promise.all(options.publicTags)
@@ -92,8 +110,8 @@ export async function createKeys({
         variables: {
             cluster,
             references: references.concat(await signatureReferencesPromise),
-            privateTags,
             publicTags,
+            privateTags,
             publicState,
             nonce: await serializeToBase64(nonce),
             publicKey: new Blob([await unserializeToArrayBuffer(publicKey)]),
@@ -138,33 +156,41 @@ export async function updateKey({
 }): Promise<FetchResult<any>> {
     let references
     const updatedKey = await options.key
-    const privateTags = options.privateTags
+    let privateTags = options.privateTags
         ? await Promise.all(options.privateTags)
         : updatedKey
         ? []
-        : null
-    const publicTags: string[] | null = options.publicTags
+        : undefined
+    const publicTags: string[] | undefined = options.publicTags
         ? await Promise.all(options.publicTags)
-        : null
+        : undefined
     let hasEncrypted: boolean = false
     if (
         privateTags &&
-        privateTags.findIndex(
-            (val) => val.startsWith('~') || val.startsWith('key=')
-        ) >= 0
+        privateTags.findIndex((val) => val.startsWith('~')) >= 0
     ) {
         hasEncrypted = true
     }
     let sharedKey: ArrayBuffer | undefined
     if (updatedKey && updatedKey.type == 'private') {
         sharedKey = crypto.getRandomValues(new Uint8Array(32))
-    } else if (options.privateTags && hasEncrypted) {
+        // remove old encrypted shared key(s)
+        if (privateTags && privateTags.length) {
+            privateTags = privateTags.filter((val) => !val.startsWith('key='))
+        }
+    } else if (privateTags && hasEncrypted) {
         if (!options.oldKey) {
-            throw Error('Tag only update without oldKey')
+            throw Error('Tag only update with encrypted tags needs oldKey')
         }
         sharedKey = await unserializeToArrayBuffer(options.oldKey)
     } else {
         sharedKey = undefined
+        if (
+            privateTags &&
+            privateTags.findIndex((val) => val.startsWith('key=')) < 0
+        ) {
+            throw Error('Tags are missing encrypted shared key (key=)')
+        }
     }
     let completedKey = null
     let nonce = undefined
@@ -227,18 +253,18 @@ export async function updateKey({
             references,
             publicState,
             publicTags,
-            privateTags: privateTags
-                ? await Promise.all(
-                      privateTags.map(
-                          async (tagPromise: string | PromiseLike<string>) => {
+            // only private tags can be encrypted
+            privateTags:
+                privateTags && sharedKey
+                    ? await Promise.all(
+                          privateTags.map(async (tag: string) => {
                               return await encryptTag({
                                   key: sharedKey as ArrayBuffer,
-                                  data: tagPromise,
+                                  data: tag,
                               })
-                          }
+                          })
                       )
-                  )
-                : undefined,
+                    : privateTags,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
             key: completedKey ? new Blob([completedKey.data]) : undefined,
             actions: options.actions ? [...options.actions] : undefined,

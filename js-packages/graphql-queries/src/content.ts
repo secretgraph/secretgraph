@@ -352,7 +352,6 @@ export const keysRetrievalQuery = gql`
                                 target {
                                     link
                                     type
-                                    state
                                     tags(includeTags: ["key_hash="])
                                 }
                             }
@@ -420,6 +419,7 @@ export const contentRetrievalQuery = gql`
                     deleted
                     nonce
                     link
+                    state
                     updateId
                     tags(includeTags: $includeTags)
                     availableActions {
