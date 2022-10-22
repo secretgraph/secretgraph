@@ -145,7 +145,9 @@ Otherwise the shared key could not be changed. This is especially an issue for o
 
 ## encrypted tags
 
-Encrypted tags have the format: ~`key`=`b64encode aesgcm crypto string, first 13 bytes are nonce`
+Encrypted tags have the format: ~`key`=`b64encode aesgcm crypto string`, first 13 bytes are nonce. The key is the sharedkey of the content
+If another cryptography method is used (e.g. key= tag of PrivateKey) then it should be not prefixed and manually encoded/decoded.
+The helper expects a normal string and simply encrypts the string
 
 ## hashing
 

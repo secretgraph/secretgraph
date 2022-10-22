@@ -360,9 +360,7 @@ const FileIntern = ({
                         tags: [
                             !values.encryptName || values.state == 'public'
                                 ? `name=${values.name}`
-                                : `~name=${Buffer.from(values.name).toString(
-                                      'base64'
-                                  )}`,
+                                : `~name=${values.name}`,
                             `mime=${value.type}`,
                         ].concat(
                             values.keywords.map((val) => `keyword=${val}`)

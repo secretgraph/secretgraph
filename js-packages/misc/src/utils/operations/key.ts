@@ -134,8 +134,6 @@ export async function updateKey({
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
     authorization: Iterable<string>
-    encryptTags?: Iterable<string>
-    // only for tag only updates if encryptTags is used
     oldKey?: Interfaces.RawInput
 }): Promise<FetchResult<any>> {
     let references
@@ -148,13 +146,19 @@ export async function updateKey({
     const publicTags: string[] | null = options.publicTags
         ? await Promise.all(options.publicTags)
         : null
-    const encrypt: Set<string> | undefined = options.encryptTags
-        ? new Set(options.encryptTags)
-        : undefined
+    let hasEncrypted: boolean = false
+    if (
+        privateTags &&
+        privateTags.findIndex(
+            (val) => val.startsWith('~') || val.startsWith('key=')
+        ) >= 0
+    ) {
+        hasEncrypted = true
+    }
     let sharedKey: ArrayBuffer | undefined
     if (updatedKey && updatedKey.type == 'private') {
         sharedKey = crypto.getRandomValues(new Uint8Array(32))
-    } else if (options.privateTags && encrypt && encrypt.size > 0) {
+    } else if (options.privateTags && hasEncrypted) {
         if (!options.oldKey) {
             throw Error('Tag only update without oldKey')
         }

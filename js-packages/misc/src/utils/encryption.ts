@@ -496,7 +496,8 @@ export async function derivePW(
 
 // use tag="" for flags
 export async function encryptTag(
-    options: Interfaces.CryptoGCMInInterface & {
+    options: Omit<Interfaces.CryptoGCMInInterface, 'data'> & {
+        readonly data: string | PromiseLike<string>
         readonly tag?: string | PromiseLike<string>
     }
 ): Promise<string> {
@@ -523,7 +524,7 @@ export async function encryptTag(
             encrypted = (
                 await encryptAESGCM({
                     ...options,
-                    data,
+                    data: Buffer.from(data).buffer,
                     nonce,
                 })
             )['data']
@@ -553,9 +554,9 @@ export async function encryptTag(
     }
     if (!tag) {
         // for flags
-        return data as string
+        return data
     }
-    return `${tag}=${data as string}`
+    return `${tag}=${data}`
 }
 
 export async function deparseTag(options: {
