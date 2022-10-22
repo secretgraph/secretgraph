@@ -689,6 +689,7 @@ export async function updateOrCreateContentWithConfig({
     })
     let pubkeys: { [hash: string]: Promise<CryptoKey> } = {}
     if (state != 'public') {
+        // TODO: fetchMore and evaluate fetchPolicy
         const pubkeysResult = await itemClient.query({
             fetchPolicy: 'network-only',
             query: getContentConfigurationQuery,

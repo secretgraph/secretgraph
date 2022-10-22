@@ -1,3 +1,5 @@
+import {} from '@secretgraph/misc/utils/config'
+
 import { useApolloClient, useQuery } from '@apollo/client'
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 import Autocomplete from '@mui/material/Autocomplete'
@@ -15,6 +17,7 @@ import {
     contentRetrievalQuery,
     getContentConfigurationQuery,
 } from '@secretgraph/graphql-queries/content'
+import * as Constants from '@secretgraph/misc/constants'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import {
     ActionInputEntry,
@@ -22,8 +25,10 @@ import {
     generateActionMapper,
     transformActions,
 } from '@secretgraph/misc/utils/action'
-import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import { extractPrivKeys } from '@secretgraph/misc/utils/config'
+import {
+    authInfoFromConfig,
+    extractPrivKeys,
+} from '@secretgraph/misc/utils/config'
 import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
@@ -44,6 +49,7 @@ import * as React from 'react'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
+import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 import { newClusterLabel } from '../messages'
 
@@ -56,12 +62,10 @@ interface CustomInternProps {
     data?: ArrayBuffer | null
     text?: string
     tokens: string[]
-    setCluster: (arg: string) => void
     url: string
     viewOnly?: boolean
 }
 const InnerCustom = ({
-    setCluster,
     url,
     nodeData,
     tags,
@@ -162,7 +166,7 @@ const InnerCustom = ({
         >
             {({ values }) => {
                 React.useEffect(() => {
-                    values.cluster && setCluster(values.cluster)
+                    values.cluster && updateMainCtx({ cluster: values.cluster })
                 }, [values.cluster])
                 return (
                     <Form>
@@ -170,17 +174,6 @@ const InnerCustom = ({
                             <Grid item xs={12}>
                                 <Typography>Active Url</Typography>
                                 <Typography>{url}</Typography>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <FastField
-                                    component={SimpleSelect}
-                                    name="tags"
-                                    disabled={disabled || isSubmitting}
-                                    options={[]}
-                                    label="Tags"
-                                    freeSolo
-                                    multiple
-                                />
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <FastField
@@ -201,6 +194,17 @@ const InnerCustom = ({
                             </Grid>
                             <Grid item xs={12}>
                                 <FastField
+                                    component={SimpleSelect}
+                                    name="tags"
+                                    disabled={disabled || isSubmitting}
+                                    options={[]}
+                                    label="Tags"
+                                    freeSolo
+                                    multiple
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FastField
                                     component={FormikTextField}
                                     name="content"
                                     disabled={disabled || isSubmitting}
@@ -209,6 +213,100 @@ const InnerCustom = ({
                                     fullWidth
                                     variant="outlined"
                                 />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Field
+                                    name="fileInput"
+                                    disabled={!!(isSubmitting || disabled)}
+                                >
+                                    {(formikFieldProps: FieldProps) => {
+                                        return (
+                                            <>
+                                                <UploadButton
+                                                    name="fileInput"
+                                                    onChange={async (ev) => {
+                                                        if (
+                                                            ev.target.files &&
+                                                            ev.target.files
+                                                                .length > 0
+                                                        ) {
+                                                            formikFieldProps.form.setFieldValue(
+                                                                'content',
+                                                                await ev.target.files[0].text()
+                                                            )
+
+                                                            formikFieldProps.form.setFieldTouched(
+                                                                'content',
+                                                                true
+                                                            )
+                                                        } else {
+                                                            formikFieldProps.form.setFieldValue(
+                                                                'content',
+                                                                ''
+                                                            )
+                                                            formikFieldProps.form.setFieldTouched(
+                                                                'content',
+                                                                false
+                                                            )
+                                                        }
+                                                    }}
+                                                >
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        component="span"
+                                                        disabled={
+                                                            !!(
+                                                                isSubmitting ||
+                                                                disabled
+                                                            )
+                                                        }
+                                                    >
+                                                        Upload
+                                                    </Button>
+                                                </UploadButton>
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    disabled={
+                                                        !!(
+                                                            isSubmitting ||
+                                                            disabled
+                                                        )
+                                                    }
+                                                    onClick={() => {
+                                                        formikFieldProps.form.setFieldValue(
+                                                            'content',
+                                                            ''
+                                                        )
+                                                        formikFieldProps.form.setFieldTouched(
+                                                            'content',
+                                                            false
+                                                        )
+                                                    }}
+                                                >
+                                                    Clear
+                                                </Button>
+                                                {formikFieldProps.meta
+                                                    .error && (
+                                                    <Typography
+                                                        color={
+                                                            formikFieldProps
+                                                                .meta.touched
+                                                                ? 'error'
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        {
+                                                            formikFieldProps
+                                                                .meta.error
+                                                        }
+                                                    </Typography>
+                                                )}
+                                            </>
+                                        )
+                                    }}
+                                </Field>
                             </Grid>
                             <Grid item xs={12}>
                                 {isSubmitting && <LinearProgress />}
@@ -239,8 +337,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     const theme = useTheme()
     const client = useApolloClient()
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const { mainCtx } = React.useContext(Contexts.Main)
-    const [cluster, setCluster] = React.useState<string | null>(null)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<
         | (Exclude<
               UnpackPromise<ReturnType<typeof decryptContentObject>>,
@@ -260,7 +357,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
             config,
             url: mainCtx.url as string,
             clusters: new Set([
-                ...(cluster ? [cluster] : []),
+                ...(mainCtx.cluster ? [mainCtx.cluster] : []),
                 ...(data?.nodeData?.cluster ? [data?.nodeData?.cluster] : []),
             ]),
             require: viewOnly ? undefined : new Set(['update', 'manage']),
@@ -289,12 +386,12 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     React.useEffect(() => {
         if (
             dataUnfinished &&
-            dataUnfinished.secretgraph.node.cluster.id != cluster
+            dataUnfinished.secretgraph.node.cluster.id != mainCtx.cluster
         ) {
             loading = true
             refetch()
         }
-    }, [cluster])
+    }, [mainCtx.cluster])
     React.useEffect(() => {
         if (!dataUnfinished) {
             return
@@ -303,11 +400,13 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
             if (!dataUnfinished) {
                 return
             }
-            if (!cluster) {
+            if (!mainCtx.cluster) {
                 if (!dataUnfinished.secretgraph.node.cluster.id) {
                     throw Error('no cluster found')
                 }
-                setCluster(dataUnfinished.secretgraph.node.cluster.id)
+                updateMainCtx({
+                    cluster: dataUnfinished.secretgraph.node.cluster.id,
+                })
             }
             const hashAlgorithm = findWorkingHashAlgorithms(
                 dataUnfinished.secretgraph.config.hashAlgorithms
@@ -356,7 +455,6 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     return (
         <InnerCustom
             {...data}
-            setCluster={setCluster}
             disabled={loading}
             viewOnly={viewOnly}
             tokens={authorization}
@@ -364,19 +462,9 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     )
 }
 const AddCustom = () => {
-    const theme = useTheme()
-    const client = useApolloClient()
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { searchCtx } = React.useContext(Contexts.Search)
-    const [cluster, setCluster] = React.useState<string | null>(
-        searchCtx.cluster
-    )
-    const [encryptedTags, setEncryptedTags] = React.useState<string[]>([
-        'ename',
-        'mime',
-    ])
     const [data, setData] = React.useState<{
         text: string
         key: string
@@ -386,15 +474,15 @@ const AddCustom = () => {
     } | null>(null)
     const tokens = React.useMemo(
         () =>
-            cluster
+            mainCtx.cluster
                 ? authInfoFromConfig({
                       config,
                       url: activeUrl,
-                      clusters: new Set([cluster]),
+                      clusters: new Set([mainCtx.cluster]),
                       require: new Set(['create', 'manage']),
                   }).tokens
                 : [],
-        [config, cluster, activeUrl]
+        [config, mainCtx.cluster, activeUrl]
     )
 
     const authorization = React.useMemo(
@@ -409,17 +497,17 @@ const AddCustom = () => {
     } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
-            id: cluster || '',
+            id: mainCtx.cluster || Constants.stubCluster,
             authorization,
         },
         onError: console.error,
     })
     React.useEffect(() => {
-        if (cluster) {
+        if (mainCtx.cluster) {
             loading = true
             refetch()
         }
-    }, [cluster])
+    }, [mainCtx.cluster])
 
     React.useEffect(() => {
         if (!dataUnfinished) {
@@ -428,12 +516,6 @@ const AddCustom = () => {
         const f = async () => {
             if (!dataUnfinished) {
                 return
-            }
-            if (!cluster) {
-                if (!dataUnfinished.secretgraph.node.cluster.id) {
-                    throw Error('no cluster found')
-                }
-                setCluster(dataUnfinished.secretgraph.node.cluster.id)
             }
             const hashAlgorithms = findWorkingHashAlgorithms(
                 dataUnfinished.secretgraph.config.hashAlgorithms
@@ -473,14 +555,7 @@ const AddCustom = () => {
     if (!data) {
         return null
     }
-    return (
-        <InnerCustom
-            {...data}
-            setCluster={setCluster}
-            disabled={loading}
-            tokens={authorization}
-        />
-    )
+    return <InnerCustom {...data} disabled={loading} tokens={authorization} />
 }
 const ViewCustom = () => {
     // list all tags
