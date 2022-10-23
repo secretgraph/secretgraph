@@ -34,10 +34,7 @@ import {
 import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
-    createContent,
     decryptContentObject,
-    updateConfigRemoteReducer,
-    updateContent,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
 import * as DOMPurify from 'dompurify'

@@ -1,16 +1,13 @@
-import {} from '@secretgraph/misc/utils/config'
-
 import { useApolloClient, useQuery } from '@apollo/client'
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
-import Autocomplete from '@mui/material/Autocomplete'
+import SecurityIcon from '@mui/icons-material/Security'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Grid from '@mui/material/Grid'
+import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import { Theme } from '@mui/material/styles'
 import { useTheme } from '@mui/material/styles'
-import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import {
@@ -25,6 +22,7 @@ import {
     generateActionMapper,
     transformActions,
 } from '@secretgraph/misc/utils/action'
+import { saveConfig } from '@secretgraph/misc/utils/config'
 import {
     authInfoFromConfig,
     extractPrivKeys,
@@ -32,25 +30,20 @@ import {
 import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
-    createContent,
     decryptContentObject,
-    updateContent,
+    updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
-import {
-    FastField,
-    Field,
-    FieldProps,
-    Form,
-    Formik,
-    useFormikContext,
-} from 'formik'
+import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
 
+import ActionsDialog from '../components/ActionsDialog'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
+import StateSelect from '../components/forms/StateSelect'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
+import { mapperToArray } from '../hooks'
 import { newClusterLabel } from '../messages'
 
 interface CustomInternProps {
@@ -59,7 +52,6 @@ interface CustomInternProps {
     hashAlgorithm: string
     nodeData?: any
     tags?: { [name: string]: string[] }
-    data?: ArrayBuffer | null
     text?: string
     tokens: string[]
     url: string
@@ -69,24 +61,41 @@ const InnerCustom = ({
     url,
     nodeData,
     tags,
-    data,
     tokens,
-    text,
+    mapper,
+    text = '',
     disabled,
     hashAlgorithm,
     viewOnly,
 }: CustomInternProps) => {
     disabled = disabled || viewOnly
-    const theme = useTheme()
-    const client = useApolloClient()
-    const { config } = React.useContext(Contexts.InitializedConfig)
+
+    const [open, setOpen] = React.useState(false)
+    const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { isSubmitting, dirty, submitForm } = useFormikContext()
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const { config, updateConfig } = React.useContext(
+        Contexts.InitializedConfig
+    )
+    const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
+
+    const clusterSelectTokens = React.useMemo(() => {
+        return authInfoFromConfig({
+            config,
+            url,
+            require: new Set(['create', 'manage']),
+        }).tokens
+    }, [config])
 
     const initialValues = {
         tags: [] as string[],
-        content: text !== undefined ? text : null,
-        cluster: nodeData.cluster.id,
+        text,
+        state: nodeData?.state || 'internal',
+        type: nodeData?.type || null,
+        actions,
+        cluster:
+            nodeData?.cluster?.id ||
+            (searchCtx.cluster ? searchCtx.cluster : null),
     }
     for (const [prefix, vals] of Object.entries(tags || {})) {
         if (vals.length) {
@@ -100,90 +109,102 @@ const InnerCustom = ({
     return (
         <Formik
             initialValues={initialValues}
-            onSubmit={async (values) => {
-                const value: Blob | undefined = values.content
-                    ? new Blob([values.content])
-                    : undefined
-                const authinfo = authInfoFromConfig({
+            onSubmit={async (values, { setSubmitting }) => {
+                const value = new Blob([values.text])
+                const res = await updateOrCreateContentWithConfig({
+                    actions: values.actions,
                     config,
-                    clusters: new Set([values.cluster, nodeData.cluster.id]),
-                    url,
-                    require: new Set(['update']),
-                })
-                const pubkeysResult = await client.query({
-                    fetchPolicy: 'network-only',
-                    query: getContentConfigurationQuery,
-                    variables: {
-                        authorization: authinfo.tokens,
-                        id: mainCtx.item,
-                    },
-                })
-                //await client.query({                          query: serverConfigQuery,                      })) as any).data.secretgraph.config.hashAlgorithms[0]
-                const privkeys = extractPrivKeys({
-                    config,
-                    url: url,
-                    hashAlgorithm,
-                })
-                const pubkeys = extractPubKeysCluster({
-                    node: pubkeysResult.data.secretgraph.node.cluster,
-                    authorization: authinfo.tokens,
-                    params: {
-                        name: 'RSA-OAEP',
-                        hash: hashAlgorithm,
-                    },
-                })
-                const result = await updateContent({
-                    id: mainCtx.item as string,
-                    updateId: nodeData.updateId,
-                    client,
-                    config,
-                    cluster: values.cluster, // can be null for keeping cluster
-                    net: values.cluster,
+                    mapper,
+                    cluster: values.cluster,
                     value,
+                    itemClient,
+                    baseClient,
+                    authorization: mainCtx.tokens,
+                    state: values.state,
+                    type: values.type,
                     tags: values.tags,
-                    privkeys: await Promise.all(Object.values(privkeys)),
-                    pubkeys: Object.values(pubkeys),
-                    hashAlgorithm,
-                    authorization: authinfo.tokens,
-                })
-                if (result.errors) {
-                    console.error(result.errors)
-                } else if (!result.data.updateOrCreateContent.writeok) {
-                    console.log(
-                        'Write failed because of update, load new version',
-                        result
-                    )
-                }
-
-                updateMainCtx({
-                    item: result.data.updateOrCreateContent.content.id,
-                    updateId:
-                        result.data.updateOrCreateContent.content.updateId,
+                    id: nodeData?.id,
+                    updateId: nodeData?.updateId,
                     url,
-                    action: 'update',
+                    hashAlgorithm,
                 })
+                if (res) {
+                    if (res.config) {
+                        const nTokens = authInfoFromConfig({
+                            config: res.config,
+                            url,
+                            clusters: values.cluster
+                                ? new Set([values.cluster])
+                                : undefined,
+                            require: new Set(['update', 'manage']),
+                        }).tokens
+                        saveConfig(res.config)
+                        updateConfig(res.config, true)
+                        updateMainCtx({
+                            item: res.node.id,
+                            updateId: res.node.updateId,
+                            url,
+                            action: 'update',
+                            tokens: [...new Set(...mainCtx.tokens, ...nTokens)],
+                        })
+                    } else {
+                        updateMainCtx({
+                            item: res.node.id,
+                            updateId: res.node.updateId,
+                            url,
+                            action: 'update',
+                        })
+                    }
+                } else {
+                    setSubmitting(false)
+                }
             }}
         >
-            {({ values }) => {
+            {({ values, isSubmitting, dirty, submitForm }) => {
                 React.useEffect(() => {
                     values.cluster && updateMainCtx({ cluster: values.cluster })
                 }, [values.cluster])
                 return (
                     <Form>
+                        <FieldArray name="actions">
+                            {({ remove, replace, push, form }) => {
+                                return (
+                                    <ActionsDialog
+                                        remove={remove}
+                                        replace={replace}
+                                        push={push}
+                                        form={form}
+                                        disabled={isSubmitting || disabled}
+                                        handleClose={() => setOpen(false)}
+                                        open={open}
+                                        isContent
+                                        isPublic={values.state == 'public'}
+                                    />
+                                )
+                            }}
+                        </FieldArray>
                         <Grid container spacing={2}>
                             <Grid item xs={12}>
                                 <Typography>Active Url</Typography>
                                 <Typography>{url}</Typography>
                             </Grid>
+                            <Grid item xs={12}>
+                                <FastField
+                                    component={SimpleSelect}
+                                    name="type"
+                                    disabled={disabled || isSubmitting}
+                                    options={[]}
+                                    label="Type"
+                                    freeSolo
+                                />
+                            </Grid>
                             <Grid item xs={12} md={6}>
                                 <FastField
-                                    component={ClusterSelect}
-                                    url={url}
-                                    name="cluster"
-                                    disabled={disabled || isSubmitting}
-                                    label="Cluster"
-                                    tokens={tokens}
-                                    firstIfEmpty
+                                    component={StateSelect}
+                                    name="state"
+                                    fullWidth
+                                    label="State"
+                                    disabled={isSubmitting || disabled}
                                     validate={(val: string) => {
                                         if (!val) {
                                             return 'empty'
@@ -192,6 +213,37 @@ const InnerCustom = ({
                                     }}
                                 />
                             </Grid>
+                            <Grid item xs={11} md={5}>
+                                <FastField
+                                    component={ClusterSelect}
+                                    url={url}
+                                    name="cluster"
+                                    disabled={isSubmitting || disabled}
+                                    label="Cluster"
+                                    firstIfEmpty
+                                    tokens={clusterSelectTokens}
+                                    validate={(val: string) => {
+                                        if (!val) {
+                                            return 'empty'
+                                        }
+                                        return null
+                                    }}
+                                />
+                            </Grid>
+                            {viewOnly ? null : (
+                                <Grid item xs="auto">
+                                    <Tooltip title="Actions">
+                                        <span>
+                                            <IconButton
+                                                onClick={() => setOpen(!open)}
+                                                size="large"
+                                            >
+                                                <SecurityIcon />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                </Grid>
+                            )}
                             <Grid item xs={12}>
                                 <FastField
                                     component={SimpleSelect}
@@ -206,7 +258,7 @@ const InnerCustom = ({
                             <Grid item xs={12}>
                                 <FastField
                                     component={FormikTextField}
-                                    name="content"
+                                    name="text"
                                     disabled={disabled || isSubmitting}
                                     label="Content"
                                     multiline
@@ -216,14 +268,14 @@ const InnerCustom = ({
                             </Grid>
                             <Grid item xs={12}>
                                 <Field
-                                    name="fileInput"
+                                    name="text"
                                     disabled={!!(isSubmitting || disabled)}
                                 >
                                     {(formikFieldProps: FieldProps) => {
                                         return (
                                             <>
                                                 <UploadButton
-                                                    name="fileInput"
+                                                    name="textbtn"
                                                     onChange={async (ev) => {
                                                         if (
                                                             ev.target.files &&
@@ -231,21 +283,21 @@ const InnerCustom = ({
                                                                 .length > 0
                                                         ) {
                                                             formikFieldProps.form.setFieldValue(
-                                                                'content',
+                                                                'text',
                                                                 await ev.target.files[0].text()
                                                             )
 
                                                             formikFieldProps.form.setFieldTouched(
-                                                                'content',
+                                                                'text',
                                                                 true
                                                             )
                                                         } else {
                                                             formikFieldProps.form.setFieldValue(
-                                                                'content',
+                                                                'text',
                                                                 ''
                                                             )
                                                             formikFieldProps.form.setFieldTouched(
-                                                                'content',
+                                                                'text',
                                                                 false
                                                             )
                                                         }
@@ -461,12 +513,11 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         />
     )
 }
-const AddCustom = () => {
+const CreateCustom = () => {
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<{
-        text: string
         key: string
         hashAlgorithm: string
         url: string
@@ -517,6 +568,10 @@ const AddCustom = () => {
             if (!dataUnfinished) {
                 return
             }
+            updateMainCtx({
+                deleted: false,
+                updateId: null,
+            })
             const hashAlgorithms = findWorkingHashAlgorithms(
                 dataUnfinished.secretgraph.config.hashAlgorithms
             )
@@ -534,21 +589,12 @@ const AddCustom = () => {
                     : [],
                 hashAlgorithms,
             })
-            const res = await decryptContentObject({
-                config,
-                nodeData: dataUnfinished.secretgraph.node,
-                blobOrTokens: mainCtx.tokens,
+            setData({
+                key: `${new Date().getTime()}`,
+                hashAlgorithm: hashAlgorithms[0],
+                url: activeUrl,
+                mapper: await mapper,
             })
-            if (res) {
-                setData({
-                    ...res,
-                    text: await new Blob([res.data]).text(),
-                    key: `${new Date().getTime()}`,
-                    hashAlgorithm: hashAlgorithms[0],
-                    url: activeUrl,
-                    mapper: await mapper,
-                })
-            }
         }
         f()
     }, [dataUnfinished])
@@ -572,7 +618,7 @@ export default function CustomComponent() {
     } else if (mainCtx.action == 'update' && mainCtx.item) {
         return <EditCustom />
     } else if (mainCtx.action == 'create') {
-        return <AddCustom />
+        return <CreateCustom />
     }
     return null
 }
