@@ -420,6 +420,8 @@ export const contentRetrievalQuery = gql`
                     nonce
                     link
                     state
+                    type
+                    contentHash
                     updateId
                     tags(includeTags: $includeTags)
                     availableActions {

@@ -91,7 +91,8 @@ const InnerCustom = ({
         tags: [] as string[],
         text,
         state: nodeData?.state || 'internal',
-        type: nodeData?.type || null,
+        contentHash: nodeData?.contentHash || '',
+        type: nodeData?.type || '',
         actions,
         cluster:
             nodeData?.cluster?.id ||
@@ -246,6 +247,28 @@ const InnerCustom = ({
                             )}
                             <Grid item xs={12}>
                                 <FastField
+                                    component={FormikTextField}
+                                    name="contentHash"
+                                    disabled={disabled || isSubmitting}
+                                    label="ContentHash"
+                                    fullWidth
+                                    variant="outlined"
+                                    validate={(val: string) => {
+                                        if (
+                                            val &&
+                                            !val.match(
+                                                `^[^:]*:${Constants.mapHashNames[hashAlgorithm].serializedName}:[a-zA-Z0-9+/]+={0,2}$`
+                                            )
+                                        ) {
+                                            return 'invalid ContentHash'
+                                        } else {
+                                            return null
+                                        }
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FastField
                                     component={SimpleSelect}
                                     name="tags"
                                     disabled={disabled || isSubmitting}
@@ -386,8 +409,6 @@ const InnerCustom = ({
 }
 
 const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
-    const theme = useTheme()
-    const client = useApolloClient()
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<
@@ -460,9 +481,9 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                     cluster: dataUnfinished.secretgraph.node.cluster.id,
                 })
             }
-            const hashAlgorithm = findWorkingHashAlgorithms(
+            const hashAlgorithms = findWorkingHashAlgorithms(
                 dataUnfinished.secretgraph.config.hashAlgorithms
-            )[0]
+            )
 
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =
@@ -478,8 +499,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                     contentstuff &&
                         host?.clusters[contentstuff.cluster]?.hashes,
                 ],
-                hashAlgorithms:
-                    dataUnfinished.secretgraph.config.hashAlgorithms,
+                hashAlgorithms,
             })
             const res = await decryptContentObject({
                 config,
@@ -491,9 +511,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                     ...res,
                     text: await new Blob([res.data]).text(),
                     key: `${new Date().getTime()}`,
-                    hashAlgorithm: findWorkingHashAlgorithms(
-                        dataUnfinished.secretgraph.config.hashAlgorithms
-                    )[0],
+                    hashAlgorithm: hashAlgorithms[0],
                     url: mainCtx.url as string,
                     mapper: await mapper,
                 })

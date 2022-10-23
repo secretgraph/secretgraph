@@ -159,6 +159,8 @@ Special domains: Key for keys
 
 key Hashing: algorithm:hash
 
+hash Algorithm in Constants can contain / to specify arguments (convention)
+
 ## Actions
 
 -   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored

@@ -569,6 +569,9 @@ type SecretgraphConfig implements Node {
   id: GlobalID!
   groups: [GlobalGroup!]!
   hashAlgorithms: [String!]!
+
+  """Maximal results per relay query"""
+  maxRelayResults: Int!
   registerUrl: RegisterUrl!
   loginUrl: String
 }
