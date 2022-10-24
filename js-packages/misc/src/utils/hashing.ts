@@ -4,11 +4,12 @@ import { unserializeToArrayBuffer, utf8encoder } from './encoding'
 import { unserializeToCryptoKey } from './encryption'
 
 export function findWorkingHashAlgorithms(hashAlgorithms: string[]) {
-    const hashAlgos = []
+    const hashAlgosSet = new Set<string>()
+    const hashAlgos: string[] = []
     for (const algo of hashAlgorithms) {
         const mappedName = Constants.mapHashNames[algo]
-        if (mappedName) {
-            hashAlgos.push(mappedName.operationName)
+        if (mappedName && !hashAlgosSet.has(mappedName.serializedName)) {
+            hashAlgos.push(mappedName.serializedName)
         }
     }
     return hashAlgos
@@ -61,8 +62,11 @@ export async function hashKey(
     }
 }
 
-export async function sortedHash(inp: string[], algo: string): Promise<string> {
-    const mappedItem = Constants.mapHashNames[algo]
+export async function sortedHash(
+    inp: string[],
+    hashAlgorithm: string
+): Promise<string> {
+    const mappedItem = Constants.mapHashNames[hashAlgorithm]
     return await crypto.subtle
         .digest(
             mappedItem.operationName,
