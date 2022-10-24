@@ -1,4 +1,7 @@
 import { useApolloClient, useQuery } from '@apollo/client'
+import LocalOfferIcon from '@mui/icons-material/LocalOffer'
+import LockIcon from '@mui/icons-material/Lock'
+import MoreIcon from '@mui/icons-material/More'
 import SecurityIcon from '@mui/icons-material/Security'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
@@ -6,10 +9,9 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
-import { Theme } from '@mui/material/styles'
-import { useTheme } from '@mui/material/styles'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import Box from '@mui/system/Box'
 import {
     contentRetrievalQuery,
     getContentConfigurationQuery,
@@ -53,7 +55,6 @@ interface CustomInternProps {
     nodeData?: any
     tags?: { [name: string]: string[] }
     text?: string
-    tokens: string[]
     url: string
     viewOnly?: boolean
 }
@@ -61,7 +62,6 @@ const InnerCustom = ({
     url,
     nodeData,
     tags,
-    tokens,
     mapper,
     text = '',
     disabled,
@@ -107,6 +107,7 @@ const InnerCustom = ({
             initialValues.tags.push(prefix)
         }
     }
+    initialValues.tags.push('')
     return (
         <Formik
             initialValues={initialValues}
@@ -123,7 +124,7 @@ const InnerCustom = ({
                     authorization: mainCtx.tokens,
                     state: values.state,
                     type: values.type,
-                    tags: values.tags,
+                    tags: values.tags.filter((val) => val),
                     id: nodeData?.id,
                     updateId: nodeData?.updateId,
                     url,
@@ -161,10 +162,18 @@ const InnerCustom = ({
                 }
             }}
         >
-            {({ values, isSubmitting, dirty, submitForm }) => {
+            {({ values, isSubmitting, dirty, submitForm, setFieldValue }) => {
                 React.useEffect(() => {
                     values.cluster && updateMainCtx({ cluster: values.cluster })
                 }, [values.cluster])
+                const updateTags = React.useCallback((tags: string[]) => {
+                    const ntags = tags.filter((val) => val)
+                    ntags.sort()
+                    if (ntags[ntags.length - 1] != '') {
+                        ntags.push('')
+                    }
+                    setFieldValue('tags', ntags)
+                }, [])
                 return (
                     <Form>
                         <FieldArray name="actions">
@@ -268,15 +277,90 @@ const InnerCustom = ({
                                 />
                             </Grid>
                             <Grid item xs={12}>
-                                <FastField
-                                    component={SimpleSelect}
-                                    name="tags"
-                                    disabled={disabled || isSubmitting}
-                                    options={[]}
-                                    label="Tags"
-                                    freeSolo
-                                    multiple
-                                />
+                                <Box
+                                    sx={{
+                                        paddingLeft: (theme) =>
+                                            theme.spacing(2),
+                                    }}
+                                >
+                                    <Typography variant="h4">Tags</Typography>
+                                    {values.tags.map(
+                                        (tag: string, index: number) => (
+                                            <FastField
+                                                name={`tags[${index}]`}
+                                                key={index}
+                                            >
+                                                {(
+                                                    formikFieldProps: FieldProps
+                                                ) => {
+                                                    let icon
+                                                    if (
+                                                        formikFieldProps.field.value.startsWith(
+                                                            '~'
+                                                        )
+                                                    ) {
+                                                        icon = <LockIcon />
+                                                    } else if (
+                                                        formikFieldProps.field.value.indexOf(
+                                                            '='
+                                                        ) >= 0
+                                                    ) {
+                                                        icon = <MoreIcon />
+                                                    } else {
+                                                        icon = (
+                                                            <LocalOfferIcon />
+                                                        )
+                                                    }
+                                                    return (
+                                                        <Box
+                                                            sx={{
+                                                                whiteSpace:
+                                                                    'nowrap',
+                                                                verticalAlign:
+                                                                    'center',
+                                                                display:
+                                                                    'inline-block',
+                                                            }}
+                                                        >
+                                                            {icon}
+                                                            <FormikTextField
+                                                                {...formikFieldProps}
+                                                                fullWidth
+                                                                variant="filled"
+                                                                disabled={
+                                                                    disabled ||
+                                                                    isSubmitting
+                                                                }
+                                                                onBlur={(
+                                                                    ev
+                                                                ) => {
+                                                                    updateTags(
+                                                                        values.tags
+                                                                    )
+                                                                    formikFieldProps.field.onBlur(
+                                                                        ev
+                                                                    )
+                                                                }}
+                                                                onKeyUp={(
+                                                                    ev
+                                                                ) => {
+                                                                    if (
+                                                                        ev.code ===
+                                                                        'Enter'
+                                                                    ) {
+                                                                        updateTags(
+                                                                            values.tags
+                                                                        )
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </Box>
+                                                    )
+                                                }}
+                                            </FastField>
+                                        )
+                                    )}
+                                </Box>
                             </Grid>
                             <Grid item xs={12}>
                                 <FastField
@@ -425,19 +509,6 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         | null
     >(null)
 
-    const authorization = React.useMemo(() => {
-        const authinfo = authInfoFromConfig({
-            config,
-            url: mainCtx.url as string,
-            clusters: new Set([
-                ...(mainCtx.cluster ? [mainCtx.cluster] : []),
-                ...(data?.nodeData?.cluster ? [data?.nodeData?.cluster] : []),
-            ]),
-            require: viewOnly ? undefined : new Set(['update', 'manage']),
-        })
-        return [...new Set([...mainCtx.tokens, ...authinfo.tokens])]
-    }, [mainCtx.url, config, mainCtx.tokens])
-
     let {
         data: dataUnfinished,
         loading,
@@ -446,7 +517,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         fetchPolicy: 'cache-and-network',
         variables: {
             id: mainCtx.item as string,
-            authorization,
+            authorization: mainCtx.tokens,
         },
     })
 
@@ -504,7 +575,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
             const res = await decryptContentObject({
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
-                blobOrTokens: authorization,
+                blobOrTokens: mainCtx.tokens,
             })
             if (res) {
                 setData({
@@ -522,14 +593,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     if (!data) {
         return null
     }
-    return (
-        <InnerCustom
-            {...data}
-            disabled={loading}
-            viewOnly={viewOnly}
-            tokens={authorization}
-        />
-    )
+    return <InnerCustom {...data} disabled={loading} viewOnly={viewOnly} />
 }
 const CreateCustom = () => {
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
@@ -554,11 +618,6 @@ const CreateCustom = () => {
         [config, mainCtx.cluster, activeUrl]
     )
 
-    const authorization = React.useMemo(
-        () => [...new Set([...mainCtx.tokens, ...tokens])],
-        [tokens, mainCtx.tokens]
-    )
-
     let {
         data: dataUnfinished,
         refetch,
@@ -567,7 +626,7 @@ const CreateCustom = () => {
         fetchPolicy: 'cache-and-network',
         variables: {
             id: mainCtx.cluster || Constants.stubCluster,
-            authorization,
+            authorization: mainCtx.tokens,
         },
         onError: console.error,
     })
@@ -619,7 +678,7 @@ const CreateCustom = () => {
     if (!data) {
         return null
     }
-    return <InnerCustom {...data} disabled={loading} tokens={authorization} />
+    return <InnerCustom {...data} disabled={loading} />
 }
 const ViewCustom = () => {
     // list all tags
