@@ -166,11 +166,11 @@ tests = ["async-timeout", "coverage (>=4.5,<5.0)", "pytest", "pytest-asyncio", "
 
 [[package]]
 name = "colorama"
-version = "0.4.5"
+version = "0.4.6"
 description = "Cross-platform colored terminal text."
 category = "dev"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 
 [[package]]
 name = "constantly"
@@ -217,11 +217,11 @@ tests = ["django", "hypothesis", "pytest", "pytest-asyncio"]
 
 [[package]]
 name = "dill"
-version = "0.3.5.1"
+version = "0.3.6"
 description = "serialize all of python"
 category = "dev"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*"
+python-versions = ">=3.7"
 
 [package.extras]
 graph = ["objgraph (>=1.7.2)"]
@@ -736,7 +736,7 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.137.0"
+version = "0.137.1"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
@@ -1066,8 +1066,8 @@ channels = [
     {file = "channels-4.0.0.tar.gz", hash = "sha256:0ce53507a7da7b148eaa454526e0e05f7da5e5d1c23440e4886cf146981d8420"},
 ]
 colorama = [
-    {file = "colorama-0.4.5-py2.py3-none-any.whl", hash = "sha256:854bf444933e37f5824ae7bfc1e98d5bce2ebe4160d46b5edf346a89358e99da"},
-    {file = "colorama-0.4.5.tar.gz", hash = "sha256:e6c6b4334fc50988a639d9b98aa429a0b57da6e17b9a44f0451f930b6967b7a4"},
+    {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
+    {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
 constantly = [
     {file = "constantly-15.1.0-py2.py3-none-any.whl", hash = "sha256:dd2fa9d6b1a51a83f0d7dd76293d734046aa176e384bf6e33b7e44880eb37c5d"},
@@ -1106,8 +1106,8 @@ daphne = [
     {file = "daphne-4.0.0.tar.gz", hash = "sha256:cce9afc8f49a4f15d4270b8cfb0e0fe811b770a5cc795474e97e4da287497666"},
 ]
 dill = [
-    {file = "dill-0.3.5.1-py2.py3-none-any.whl", hash = "sha256:33501d03270bbe410c72639b350e941882a8b0fd55357580fbc873fba0c59302"},
-    {file = "dill-0.3.5.1.tar.gz", hash = "sha256:d75e41f3eff1eee599d738e76ba8f4ad98ea229db8b085318aa2b3333a208c86"},
+    {file = "dill-0.3.6-py3-none-any.whl", hash = "sha256:a07ffd2351b8c678dfc4a856a3005f8067aea51d6ba6c700796a4d9e280f39f0"},
+    {file = "dill-0.3.6.tar.gz", hash = "sha256:e5db55f3687856d8fbdab002ed78544e1c4559a130302693d839dfe8f93f2373"},
 ]
 django = [
     {file = "Django-4.1.2-py3-none-any.whl", hash = "sha256:26dc24f99c8956374a054bcbf58aab8dc0cad2e6ac82b0fe036b752c00eee793"},
@@ -1326,8 +1326,8 @@ strawberry-django-plus = [
     {file = "strawberry_django_plus-1.28.5.tar.gz", hash = "sha256:d98238ff716a3055d0f96a84173ed1e13c3a7fd9337a00d6c33322a1b6784756"},
 ]
 strawberry-graphql = [
-    {file = "strawberry_graphql-0.137.0-py3-none-any.whl", hash = "sha256:eecf7e7401f4f9fe4c3a9702d3acef2c9d011a4dd7a9eb629601083183b62655"},
-    {file = "strawberry_graphql-0.137.0.tar.gz", hash = "sha256:9fc044bcd4c56cabb254cf56b80ea708ad7ed229937b6ae5c9cd598b9c8550b4"},
+    {file = "strawberry_graphql-0.137.1-py3-none-any.whl", hash = "sha256:b6ba148a71752218dc2d19d686a45fb650676b9d90f1331802542ef9e5d79ae2"},
+    {file = "strawberry_graphql-0.137.1.tar.gz", hash = "sha256:4b36ef85654d70c22208d99577b287d805bbd9626d93906aa9021967c3d502a9"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry_graphql_django-0.7-py3-none-any.whl", hash = "sha256:ec2124c4922282155370dec5962daf9d639a1ef7508574c3c8cb806711cd1b08"},
