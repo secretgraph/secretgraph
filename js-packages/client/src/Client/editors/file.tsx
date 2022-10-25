@@ -19,19 +19,9 @@ import {
 } from '@secretgraph/graphql-queries/content'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
-import {
-    ActionInputEntry,
-    CertificateInputEntry,
-    generateActionMapper,
-    transformActions,
-} from '@secretgraph/misc/utils/action'
-import {
-    authInfoFromConfig,
-    extractPrivKeys,
-    saveConfig,
-} from '@secretgraph/misc/utils/config'
-import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
+import { UnpackPromise } from '@secretgraph/misc/typing'
+import { generateActionMapper } from '@secretgraph/misc/utils/action'
+import { authInfoFromConfig, saveConfig } from '@secretgraph/misc/utils/config'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
     decryptContentObject,
@@ -48,7 +38,6 @@ import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import StateSelect from '../components/forms/StateSelect'
-import SimpleShareDialog from '../components/share/SimpleShareDialog'
 import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
@@ -1119,7 +1108,9 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 hashAlgorithms,
                 mapper,
                 data: new Blob([obj.data], {
-                    type: obj.tags.mime[0] ?? 'application/octet-stream',
+                    type:
+                        (obj.tags?.mime ? obj.tags.mime[0] : undefined) ??
+                        'application/octet-stream',
                 }),
                 key: `${new Date().getTime()}`,
             })
@@ -1232,10 +1223,11 @@ const CreateFile = () => {
 }
 
 export default function FileComponent() {
-    const { mainCtx } = React.useContext(Contexts.Main)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     return (
         <DecisionFrame
             mainCtx={mainCtx}
+            updateMainCtx={updateMainCtx}
             create={CreateFile}
             view={ViewFile}
             edit={EditFile}

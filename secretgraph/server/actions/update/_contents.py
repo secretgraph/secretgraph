@@ -337,7 +337,6 @@ def _update_or_create_content_or_key(
                     update_fields=["bytes_in_use"] if old_net.id else None
                 )
 
-    # cannot change because of special key transformation
     chash = objdata.contentHash
     if chash is not None:
         # either blank or

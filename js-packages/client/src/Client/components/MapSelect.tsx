@@ -19,7 +19,10 @@ export type MapSelectProps = {
     options: Map<string, any>
 } & Omit<TextFieldProps, 'select' | 'SelectProps' | 'children'>
 
-export default function MapSelect({ options, ...props }: MapSelectProps) {
+export default React.memo(function MapSelect({
+    options,
+    ...props
+}: MapSelectProps) {
     return (
         <TextField
             select
@@ -33,4 +36,4 @@ export default function MapSelect({ options, ...props }: MapSelectProps) {
             {createOptionsIterator(options)}
         </TextField>
     )
-}
+})

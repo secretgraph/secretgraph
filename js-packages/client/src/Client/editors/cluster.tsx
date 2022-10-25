@@ -9,8 +9,9 @@ import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
 import { getClusterQuery } from '@secretgraph/graphql-queries/cluster'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
+import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
+import { UnpackPromise } from '@secretgraph/misc/typing'
 import {
     generateActionMapper,
     transformActions,
@@ -164,7 +165,8 @@ const ClusterIntern = ({
                                     //modulusLength: 8192,
                                     modulusLength: 2048,
                                     publicExponent: new Uint8Array([1, 0, 1]),
-                                    hash: hashAlgorithm,
+                                    hash: Constants.mapHashNames[hashAlgorithm]
+                                        .operationName,
                                 },
                                 true,
                                 ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
@@ -533,10 +535,11 @@ const CreateCluster = () => {
 }
 
 export default function ClusterComponent() {
-    const { mainCtx } = React.useContext(Contexts.Main)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     return (
         <DecisionFrame
             mainCtx={mainCtx}
+            updateMainCtx={updateMainCtx}
             create={CreateCluster}
             view={ViewCluster}
             edit={EditCluster}

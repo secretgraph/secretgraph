@@ -111,7 +111,7 @@ type Content implements Node {
   id: GlobalID!
   nonce: String!
   updated: DateTime!
-  contentHash: String!
+  contentHash: String
   updateId: UUID!
   type: String!
   state: String!

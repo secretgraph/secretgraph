@@ -241,9 +241,10 @@ export function extractPubKeysCluster(props: {
                         'publicKey'
                     )
                 } catch (exc) {
-                    console.log(
+                    console.error(
                         'failed exctracting public key from cluster',
-                        buf
+                        buf,
+                        exc
                     )
                     throw exc
                 }

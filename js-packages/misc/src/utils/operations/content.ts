@@ -703,7 +703,7 @@ export async function updateOrCreateContentWithConfig({
             authorization,
             params: {
                 name: 'RSA-OAEP',
-                hash: hashAlgorithm,
+                hash: Constants.mapHashNames[hashAlgorithm].operationName,
             },
         })
     }

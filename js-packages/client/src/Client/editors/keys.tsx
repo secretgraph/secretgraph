@@ -604,12 +604,12 @@ const KeysIntern = ({
                 }
                 return errors
             }}
-            onSubmit={async (values, { setSubmitting, setValues }) => {
-                setSubmitting(true)
+            onSubmit={async (values, { setSubmitting }) => {
                 try {
                     const keyParams = {
                         name: 'RSA-OAEP',
-                        hash: hashAlgorithmsWorking[0],
+                        hash: Constants.mapHashNames[hashAlgorithmsWorking[0]]
+                            .operationName,
                     }
                     let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
                     let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
@@ -1267,12 +1267,12 @@ export default function KeyComponent() {
         }
     }, [mainCtx.url, mainCtx.item])
     if (barrier) {
-        return null
-        // throw barrier
+        throw barrier
     }
     return (
         <DecisionFrame
             mainCtx={mainCtx}
+            updateMainCtx={updateMainCtx}
             view={ViewKeys}
             edit={EditKeys}
             create={CreateKeys}

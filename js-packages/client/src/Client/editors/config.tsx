@@ -27,10 +27,11 @@ const EditConfig = (props: Props) => {
 }
 
 export default function ConfigComponent() {
-    const { mainCtx } = React.useContext(Contexts.Main)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     return (
         <DecisionFrame
             mainCtx={mainCtx}
+            updateMainCtx={updateMainCtx}
             create={CreateConfig}
             view={ViewConfig}
             edit={EditConfig}

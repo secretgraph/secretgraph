@@ -126,7 +126,7 @@ export async function initializeCluster({
             //modulusLength: 8192,
             modulusLength: 2048,
             publicExponent: new Uint8Array([1, 0, 1]),
-            hash: hashAlgorithm,
+            hash: mapHashNames[hashAlgorithm].operationName,
         },
         true,
         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']

@@ -55,10 +55,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         'custom',
         {
             label: gettext('Custom'),
-            component: React.lazy(
-                () =>
-                    import(/*  webpackChunkName: 'custom-editor' */ './custom')
-            ),
+            component: React.lazy(() => import('./custom')),
         },
     ],
     [

@@ -1,11 +1,10 @@
-import { useApolloClient, useQuery } from '@apollo/client'
-import LocalOfferIcon from '@mui/icons-material/LocalOffer'
+import { useQuery } from '@apollo/client'
+import FlagIcon from '@mui/icons-material/Flag'
 import LockIcon from '@mui/icons-material/Lock'
 import MoreIcon from '@mui/icons-material/More'
 import SecurityIcon from '@mui/icons-material/Security'
+import { InputAdornment } from '@mui/material'
 import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
@@ -17,19 +16,11 @@ import {
     getContentConfigurationQuery,
 } from '@secretgraph/graphql-queries/content'
 import * as Constants from '@secretgraph/misc/constants'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
-import {
-    ActionInputEntry,
-    CertificateInputEntry,
-    generateActionMapper,
-    transformActions,
-} from '@secretgraph/misc/utils/action'
+import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import { saveConfig } from '@secretgraph/misc/utils/config'
-import {
-    authInfoFromConfig,
-    extractPrivKeys,
-} from '@secretgraph/misc/utils/config'
-import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
     decryptContentObject,
@@ -39,6 +30,7 @@ import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
+import DecisionFrame from '../components/DecisionFrame'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
@@ -46,7 +38,6 @@ import StateSelect from '../components/forms/StateSelect'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
-import { newClusterLabel } from '../messages'
 
 interface CustomInternProps {
     disabled?: boolean
@@ -174,6 +165,20 @@ const InnerCustom = ({
                     }
                     setFieldValue('tags', ntags)
                 }, [])
+                const effectTags = values.tags.filter((val) =>
+                    val.match(/^~?name=/)
+                )
+                effectTags.sort()
+                React.useEffect(() => {
+                    let name: string = mainCtx.item || ''
+                    const match = values.tags.find((val) =>
+                        val.match(/^~?name=/)
+                    )
+                    if (match) {
+                        name = match.replace(/^~?name=/, '')
+                    }
+                    updateMainCtx({ title: name })
+                }, [effectTags.join('')])
                 return (
                     <Form>
                         <FieldArray name="actions">
@@ -200,12 +205,13 @@ const InnerCustom = ({
                             </Grid>
                             <Grid item xs={12}>
                                 <FastField
-                                    component={SimpleSelect}
+                                    component={FormikTextField}
                                     name="type"
-                                    disabled={disabled || isSubmitting}
-                                    options={[]}
+                                    fullWidth
+                                    disabled={
+                                        disabled || isSubmitting || !!nodeData
+                                    }
                                     label="Type"
-                                    freeSolo
                                 />
                             </Grid>
                             <Grid item xs={12} md={6}>
@@ -279,8 +285,8 @@ const InnerCustom = ({
                             <Grid item xs={12}>
                                 <Box
                                     sx={{
-                                        paddingLeft: (theme) =>
-                                            theme.spacing(2),
+                                        padding: (theme) =>
+                                            theme.spacing(2, 0, 4, 0),
                                     }}
                                 >
                                     <Typography variant="h4">Tags</Typography>
@@ -293,68 +299,86 @@ const InnerCustom = ({
                                                 {(
                                                     formikFieldProps: FieldProps
                                                 ) => {
-                                                    let icon
+                                                    let icon = null
                                                     if (
                                                         formikFieldProps.field.value.startsWith(
                                                             '~'
                                                         )
                                                     ) {
-                                                        icon = <LockIcon />
+                                                        icon = (
+                                                            <Tooltip title="Encrypted tag">
+                                                                <InputAdornment position="start">
+                                                                    <LockIcon />
+                                                                </InputAdornment>
+                                                            </Tooltip>
+                                                        )
                                                     } else if (
                                                         formikFieldProps.field.value.indexOf(
                                                             '='
                                                         ) >= 0
                                                     ) {
-                                                        icon = <MoreIcon />
-                                                    } else {
                                                         icon = (
-                                                            <LocalOfferIcon />
+                                                            <Tooltip title="Unecrypted Tag">
+                                                                <InputAdornment position="start">
+                                                                    <MoreIcon />
+                                                                </InputAdornment>
+                                                            </Tooltip>
+                                                        )
+                                                    } else if (tag.length > 0) {
+                                                        icon = (
+                                                            <Tooltip title="Flag">
+                                                                <InputAdornment position="start">
+                                                                    <FlagIcon />
+                                                                </InputAdornment>
+                                                            </Tooltip>
                                                         )
                                                     }
                                                     return (
-                                                        <Box
-                                                            sx={{
-                                                                whiteSpace:
-                                                                    'nowrap',
-                                                                verticalAlign:
-                                                                    'center',
-                                                                display:
-                                                                    'inline-block',
+                                                        <FormikTextField
+                                                            {...formikFieldProps}
+                                                            InputProps={{
+                                                                startAdornment:
+                                                                    icon,
                                                             }}
-                                                        >
-                                                            {icon}
-                                                            <FormikTextField
-                                                                {...formikFieldProps}
-                                                                fullWidth
-                                                                variant="filled"
-                                                                disabled={
-                                                                    disabled ||
-                                                                    isSubmitting
-                                                                }
-                                                                onBlur={(
+                                                            sx={{
+                                                                paddingLeft: (
+                                                                    theme
+                                                                ) =>
+                                                                    theme.spacing(
+                                                                        2
+                                                                    ),
+                                                                marginTop: (
+                                                                    theme
+                                                                ) =>
+                                                                    theme.spacing(
+                                                                        2
+                                                                    ),
+                                                            }}
+                                                            fullWidth
+                                                            variant="filled"
+                                                            disabled={
+                                                                disabled ||
+                                                                isSubmitting
+                                                            }
+                                                            onBlur={(ev) => {
+                                                                updateTags(
+                                                                    values.tags
+                                                                )
+                                                                formikFieldProps.field.onBlur(
                                                                     ev
-                                                                ) => {
+                                                                )
+                                                            }}
+                                                            onKeyUp={(ev) => {
+                                                                if (
+                                                                    ev.code ===
+                                                                    'Enter'
+                                                                ) {
                                                                     updateTags(
                                                                         values.tags
                                                                     )
-                                                                    formikFieldProps.field.onBlur(
-                                                                        ev
-                                                                    )
-                                                                }}
-                                                                onKeyUp={(
-                                                                    ev
-                                                                ) => {
-                                                                    if (
-                                                                        ev.code ===
-                                                                        'Enter'
-                                                                    ) {
-                                                                        updateTags(
-                                                                            values.tags
-                                                                        )
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </Box>
+                                                                }
+                                                            }}
+                                                        />
                                                     )
                                                 }}
                                             </FastField>
@@ -369,6 +393,7 @@ const InnerCustom = ({
                                     disabled={disabled || isSubmitting}
                                     label="Content"
                                     multiline
+                                    minRows={5}
                                     fullWidth
                                     variant="outlined"
                                 />
@@ -540,55 +565,75 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
         if (!dataUnfinished) {
             return
         }
+        let active = true
         const f = async () => {
-            if (!dataUnfinished) {
-                return
+            const updateOb: Partial<Interfaces.MainContextInterface> = {
+                //shareUrl: dataUnfinished.secretgraph.node.link,
+                deleted: dataUnfinished.secretgraph.node.deleted || null,
+                updateId: dataUnfinished.secretgraph.node.updateId,
+                tokensPermissions: new Set([
+                    ...mainCtx.tokensPermissions,
+                    ...dataUnfinished.secretgraph.node.availableActions.map(
+                        (val: { keyHash: string; type: string }) => val.type
+                    ),
+                ]),
             }
-            if (!mainCtx.cluster) {
-                if (!dataUnfinished.secretgraph.node.cluster.id) {
-                    throw Error('no cluster found')
-                }
-                updateMainCtx({
-                    cluster: dataUnfinished.secretgraph.node.cluster.id,
-                })
-            }
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
-            )
-
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =
                 host && host.contents[dataUnfinished.secretgraph.node.id]
-            const mapper = generateActionMapper({
+
+            const hashAlgorithms = findWorkingHashAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms
+            )
+            const mapper = await generateActionMapper({
                 config,
-                knownHashesContent: [
-                    dataUnfinished.secretgraph.node.availableActions,
-                    contentstuff?.hashes,
-                ],
                 knownHashesCluster: [
                     dataUnfinished.secretgraph.node.cluster?.availableActions,
                     contentstuff &&
                         host?.clusters[contentstuff.cluster]?.hashes,
                 ],
+                knownHashesContent: [
+                    dataUnfinished.secretgraph.node.availableActions,
+                    contentstuff?.hashes,
+                ],
                 hashAlgorithms,
             })
-            const res = await decryptContentObject({
+            if (!active) {
+                return
+            }
+            const obj = await decryptContentObject({
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
                 blobOrTokens: mainCtx.tokens,
             })
-            if (res) {
-                setData({
-                    ...res,
-                    text: await new Blob([res.data]).text(),
-                    key: `${new Date().getTime()}`,
-                    hashAlgorithm: hashAlgorithms[0],
-                    url: mainCtx.url as string,
-                    mapper: await mapper,
-                })
+            if (!obj) {
+                console.error('failed decoding')
+                return
             }
+            if (!active) {
+                return
+            }
+
+            let name: string = mainCtx.item || ''
+            if (obj.tags.name && obj.tags.name.length > 0) {
+                name = obj.tags.name[0]
+            } else if (obj.tags['~name'] && obj.tags['~name'].length > 0) {
+                name = obj.tags['~name'][0]
+            }
+            updateOb['title'] = name
+            setData({
+                ...obj,
+                text: await new Blob([obj.data]).text(),
+                key: `${new Date().getTime()}`,
+                hashAlgorithm: hashAlgorithms[0],
+                url: mainCtx.url as string,
+                mapper: await mapper,
+            })
         }
         f()
+        return () => {
+            active = false
+        }
     }, [dataUnfinished])
     if (!data) {
         return null
@@ -641,6 +686,7 @@ const CreateCustom = () => {
         if (!dataUnfinished) {
             return
         }
+        let active = true
         const f = async () => {
             if (!dataUnfinished) {
                 return
@@ -655,7 +701,7 @@ const CreateCustom = () => {
 
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
 
-            const mapper = generateActionMapper({
+            const mapper = await generateActionMapper({
                 config,
                 knownHashesCluster: dataUnfinished.secretgraph.node
                     ? [
@@ -666,14 +712,20 @@ const CreateCustom = () => {
                     : [],
                 hashAlgorithms,
             })
+            if (!active) {
+                return
+            }
             setData({
                 key: `${new Date().getTime()}`,
                 hashAlgorithm: hashAlgorithms[0],
                 url: activeUrl,
-                mapper: await mapper,
+                mapper: mapper,
             })
         }
         f()
+        return () => {
+            active = false
+        }
     }, [dataUnfinished])
     if (!data) {
         return null
@@ -681,21 +733,18 @@ const CreateCustom = () => {
     return <InnerCustom {...data} disabled={loading} />
 }
 const ViewCustom = () => {
-    // list all tags
-    // view content if possible
-    // elsewise just download
-
     return <EditCustom viewOnly />
 }
 
 export default function CustomComponent() {
     const { mainCtx } = React.useContext(Contexts.Main)
-    if (mainCtx.action == 'view' && mainCtx.item) {
-        return <ViewCustom />
-    } else if (mainCtx.action == 'update' && mainCtx.item) {
-        return <EditCustom />
-    } else if (mainCtx.action == 'create') {
-        return <CreateCustom />
-    }
-    return null
+    // we cannot provide a fallback to switch to custom because we are in the custom path
+    return (
+        <DecisionFrame
+            mainCtx={mainCtx}
+            create={CreateCustom}
+            view={ViewCustom}
+            edit={EditCustom}
+        />
+    )
 }

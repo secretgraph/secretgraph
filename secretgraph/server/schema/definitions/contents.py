@@ -53,7 +53,7 @@ class ContentNode(relay.Node):
 
     nonce: str
     updated: datetime
-    contentHash: str
+    contentHash: Optional[str]
     updateId: UUID
     type: str
     state: str

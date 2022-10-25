@@ -91,6 +91,10 @@ function ActionBar(props: Props) {
                     '& *': {
                         color: 'white',
                     },
+                    // fixes chrome issues
+                    '& option': {
+                        color: 'black',
+                    },
                 }}
             >
                 {config ? (
