@@ -238,7 +238,19 @@ const FileIntern = ({
         Contexts.InitializedConfig
     )
     const [open, setOpen] = React.useState(false)
-    const [tab, setTab] = React.useState('html')
+    const [tab, setTab] = React.useState(() => {
+        if (!nodeData || data?.type == 'text/html') {
+            return 'html'
+        } else if (data?.type.startsWith('text/')) {
+            return 'plain'
+        } else if (data?.type?.startsWith('audio/')) {
+            return 'audio'
+        } else if (data?.type?.startsWith('video/')) {
+            return 'video'
+        } else {
+            return 'hex'
+        }
+    })
     const clusterSelectTokens = React.useMemo(() => {
         return authInfoFromConfig({
             config,
@@ -596,6 +608,18 @@ const FileIntern = ({
                                                             )
                                                         }
                                                     />
+                                                    <Tab
+                                                        label="Hex"
+                                                        value="hex"
+                                                        disabled={
+                                                            !!(
+                                                                values.plainInput ||
+                                                                !htmlIsEmpty(
+                                                                    values.htmlInput
+                                                                )
+                                                            )
+                                                        }
+                                                    />
                                                 </TabList>
                                             </Box>
                                             <TabPanel value="plain">
@@ -728,7 +752,10 @@ const FileIntern = ({
                                                 Video, TODO
                                             </TabPanel>
                                             <TabPanel value="audio">
-                                                AUdio, TODO
+                                                Audio, TODO
+                                            </TabPanel>
+                                            <TabPanel value="hex">
+                                                Hex, TODO
                                             </TabPanel>
                                         </TabContext>
                                     </Grid>
