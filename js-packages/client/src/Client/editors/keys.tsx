@@ -1267,7 +1267,8 @@ export default function KeyComponent() {
         }
     }, [mainCtx.url, mainCtx.item])
     if (barrier) {
-        throw barrier
+        return null
+        //throw barrier
     }
     return (
         <DecisionFrame
