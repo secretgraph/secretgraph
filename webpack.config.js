@@ -42,7 +42,7 @@ module.exports = (env, options) => {
             errorDetails: true,
         },
         context: __dirname,
-        devtool: options.mode === 'development' ? 'source-map' : false,
+        devtool: options.mode === 'development' ? 'eval-source-map' : false,
         devServer:
             options.mode === 'development'
                 ? {
