@@ -650,19 +650,6 @@ const CreateCustom = () => {
         url: string
         mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     } | null>(null)
-    const tokens = React.useMemo(
-        () =>
-            mainCtx.cluster
-                ? authInfoFromConfig({
-                      config,
-                      url: activeUrl,
-                      clusters: new Set([mainCtx.cluster]),
-                      require: new Set(['create', 'manage']),
-                  }).tokens
-                : [],
-        [config, mainCtx.cluster, activeUrl]
-    )
-
     let {
         data: dataUnfinished,
         refetch,
