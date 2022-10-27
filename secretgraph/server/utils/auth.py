@@ -306,14 +306,15 @@ def fetch_by_id(
     filters = models.Q(flexid_cached__in=flexids) | models.Q(
         flexid__in=flexids
     )
-    if check_content_hash:
-        filters |= models.Q(contentHash__in=flexids)
     if issubclass(query.model, Cluster):
         # name__startswith="@" allows
         # also selecting @system even it is not public
         filters |= (
             models.Q(name_cached__in=flexids) | models.Q(name__in=flexids)
         ) & models.Q(name__startswith="@")
+    else:
+        if check_content_hash:
+            filters |= models.Q(contentHash__in=flexids)
     return query.filter(filters)
 
 

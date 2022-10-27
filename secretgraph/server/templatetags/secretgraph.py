@@ -9,7 +9,7 @@ from django.core.paginator import Paginator
 
 from django.db.models import Q, Subquery
 
-from ..models import Content
+from ..models import Content, Cluster
 from ..utils.auth import get_cached_result, fetch_by_id
 from ..actions.view import (
     fetch_clusters as _fetch_clusters,
@@ -170,11 +170,12 @@ def fetch_contents(
             | Q(cluster__globalNameRegisteredAt__isnull=False)
         )
     if clusters:
-        result["objects"] = fetch_by_id(
-            result["objects"],
-            clusters.split(",") if isinstance(clusters, str) else clusters,
-            prefix="cluster__",
-            limit_ids=None,
+        result["objects"] = result["objects"].filter(
+            cluster_id__in=Subquery(
+                fetch_by_id(
+                    Cluster.objects.all(), clusters, limit_ids=None
+                ).values("id")
+            )
         )
     if order_by:
         result["objects"] = result["objects"].order_by(*order_by)

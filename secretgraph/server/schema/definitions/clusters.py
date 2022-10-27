@@ -274,7 +274,15 @@ class ClusterNode(relay.Node):
             )
 
         if filters.excludeIds is not None:
-            queryset = queryset.exclude(flexid_cached__in=filters.excludeIds)
+            queryset = Q(
+                id__in=Subquery(
+                    fetch_by_id(
+                        Cluster.objects.all(),
+                        filters.excludeIds,
+                        limit_ids=None,
+                    ).values("id")
+                )
+            )
 
         if (
             filters.public != UseCriteriaPublic.IGNORE
