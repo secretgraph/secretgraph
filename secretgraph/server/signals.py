@@ -1,6 +1,7 @@
 from itertools import product, islice
 import uuid
 
+from strawberry_django_plus.relay import to_base64
 from django.db import transaction, models
 from django.db.utils import IntegrityError
 
@@ -22,8 +23,8 @@ def initializeDb(sender, **kwargs):
         id=0,
         defaults={
             "id": 0,
-            "name": "system",
-            "unique": True,
+            "name": "@system",
+            "name_cached": to_base64("Cluster", "@system"),
             "net": net,
         },
     )

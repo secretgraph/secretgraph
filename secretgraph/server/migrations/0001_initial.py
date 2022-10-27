@@ -81,11 +81,17 @@ class Migration(migrations.Migration):
                     models.CharField(
                         blank=True,
                         default="",
-                        max_length=255,
+                        max_length=181,
                         null=False,
                         validators=[
                             secretgraph.server.validators.ClusterNameValidator
                         ],
+                    ),
+                ),
+                (
+                    "name_cached",
+                    models.CharField(
+                        blank=True, max_length=252, null=True, unique=True
                     ),
                 ),
                 (
@@ -102,7 +108,6 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("description", models.TextField(blank=True, default="")),
-                ("unique", models.BooleanField(blank=True, null=True)),
                 ("featured", models.BooleanField(blank=True, default=False)),
                 ("updated", models.DateTimeField(auto_now=True)),
                 (
@@ -526,12 +531,6 @@ class Migration(migrations.Migration):
                     _connector="OR",
                 ),
                 name="action_exist",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="cluster",
-            constraint=models.UniqueConstraint(
-                fields=("name", "unique"), name="cluster_global_name_unique"
             ),
         ),
     ]

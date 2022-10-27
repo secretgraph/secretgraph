@@ -127,6 +127,8 @@ def retrieve_allowed_objects(request, query, scope="view", authset=None):
         q = models.Q(
             contentAction__content__flexid_cached=flexid_raw
         ) | models.Q(cluster__flexid_cached=flexid_raw)
+        if issubclass(query.model, Cluster):
+            q |= models.Q(cluster__name_cached=flexid_raw)
         actions = pre_filtered_actions.filter(q, keyHash__in=keyhashes)
         if not actions:
             continue
@@ -296,7 +298,7 @@ def fetch_by_id(
         flexids = [flexids]
     elif limit_ids:
         flexids = flexids[:limit_ids]
-    assert all(map(lambda x: isinstance(x, (str, relay.GlobalID)), flexids))
+    # assert all(map(lambda x: isinstance(x, (str, relay.GlobalID)), flexids))
     flexids = list(map(str, flexids))
     if not flexids:
         raise ValueError("No id specified")
@@ -305,6 +307,10 @@ def fetch_by_id(
     )
     if check_content_hash:
         filters |= models.Q(contentHash__in=flexids)
+    if issubclass(query.model, Cluster):
+        filters |= models.Q(name_cached__in=flexids) | models.Q(
+            name__in=flexids
+        )
     return query.filter(filters)
 
 

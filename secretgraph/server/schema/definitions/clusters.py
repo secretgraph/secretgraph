@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Iterable, Optional, List
 from datetime import datetime
 import strawberry
 from strawberry.types import Info
@@ -10,7 +10,11 @@ from django.db.models import Subquery, Q, QuerySet, Value
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from ...utils.auth import get_cached_result, get_cached_permissions
+from ...utils.auth import (
+    fetch_by_id,
+    get_cached_result,
+    get_cached_permissions,
+)
 from ...actions.view import fetch_clusters, fetch_contents
 from ...models import (
     Cluster,
@@ -51,10 +55,13 @@ class ClusterFilter:
         default=None,
         description="Use id=xy for excluding clusters with content ids",
     )
-    ids: Optional[List[str]] = None
-    excludeIds: Optional[List[str]] = gql.field(
+    ids: Optional[List[gql.ID]] = gql.field(
         default=None,
-        description="Use for excluding clusters with ids",
+        description="Filter clusters with ids or global name",
+    )
+    excludeIds: Optional[List[gql.ID]] = gql.field(
+        default=None,
+        description="Use for excluding clusters with ids or global names",
     )
     contentHashes: Optional[List[str]] = None
     featured: UseCriteria = UseCriteria.IGNORE
@@ -181,6 +188,41 @@ class ClusterNode(relay.Node):
         )
 
     @classmethod
+    def resolve_node(
+        cls,
+        node_id: str,
+        *,
+        info: Info,
+        required: bool = False,
+    ):
+        result = get_cached_result(info.context)["Cluster"]
+        if node_id.startswith("@"):
+            q = Q(name=node_id, globalNameRegisteredAt__isnull=False)
+        else:
+            q = Q(flexid=node_id)
+        try:
+            result["Cluster"]["objects"].get(q)
+        except (Cluster.DoesNotExist, ValueError) as exc:
+            if required:
+                raise exc
+            return None
+
+    @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: Info,
+        node_ids: Optional[Iterable[str]] = None,
+    ):
+        result = get_cached_result(info.context)["Cluster"]
+        if not node_ids:
+            return result["Cluster"]["objects"]
+        # for allowing specifing global name
+        return fetch_by_id(
+            result["Cluster"]["objects"], node_ids, limit_ids=None
+        )
+
+    @classmethod
     def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
         if root.limited:
             return ""
@@ -191,12 +233,12 @@ class ClusterNode(relay.Node):
         result = get_cached_result(info.context.request)["Cluster"]
         return queryset.filter(id__in=Subquery(result["objects"].values("id")))
 
+    # TODO: merge with get_queryset and update filters
     @classmethod
     def get_queryset_intern(
-        cls, info: Info, filters: ClusterFilter
+        cls, queryset, info: Info, filters: Optional[ClusterFilter] = None
     ) -> QuerySet[Cluster]:
         result = get_cached_result(info.context.request)["Cluster"]
-        queryset = Cluster.objects.all()
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE

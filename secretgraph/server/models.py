@@ -7,6 +7,7 @@ from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
 from typing import Iterable, Union
+from strawberry_django_plus import relay
 
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
@@ -131,11 +132,15 @@ class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
     limited = False
     name: str = models.CharField(
-        max_length=255,
+        max_length=181,
         default="",
         null=False,
         blank=True,
         validators=[ClusterNameValidator],
+    )
+    # provides uniqueness to global name and is a speedup
+    name_cached: str = models.CharField(
+        max_length=252, blank=True, null=True, unique=True
     )
     description: str = models.TextField(
         default="",
@@ -144,8 +149,6 @@ class Cluster(FlexidModel):
     )
 
     globalNameRegisteredAt: dt = models.DateTimeField(null=True, blank=True)
-    # nullable fake column to provide uniqueness to global name
-    unique: bool = models.BooleanField(blank=True, null=True)
     featured: bool = models.BooleanField(default=False, blank=True, null=False)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(
@@ -159,32 +162,22 @@ class Cluster(FlexidModel):
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["name", "unique"],
-                name="%(class)s_global_name_unique",
-            ),
-        ]
-
     def clean(self) -> None:
         if not self.globalNameRegisteredAt and self.featured:
             self.featured = False
 
-        if self.globalNameRegisteredAt is not None or self.name in {
-            "system",
-            "@system",
-        }:
-            if not self.unique:
-                self.unique = True
+        if self.globalNameRegisteredAt is not None or self.name == "@system":
+            cached_name = relay.to_base64("Cluster", self.name)
+            if self.name_cached != cached_name:
+                self.name_cached = cached_name
         else:
-            if self.unique:
-                self.unique = None
+            if self.name_cached:
+                self.name_cached = None
         if self.globalNameRegisteredAt is None and self.name.startswith("@"):
-            raise ValidationError({"globalNameRegisteredAt": "required"})
-        if (
-            self.globalNameRegisteredAt is not None
-            and not self.name.startswith("@")
+            if self.name != "@system":
+                raise ValidationError({"globalNameRegisteredAt": "required"})
+        if self.globalNameRegisteredAt is not None and (
+            not self.name.startswith("@") or self.name == "@system"
         ):
             self.globalNameRegisteredAt = None
         return super().clean()

@@ -348,7 +348,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
--   slot based configs: every config defines slots it receives changes from, first slot
+-   port to real filters
 -   move to dataclasses and TypedDicts
     -   nearly complete needs testing and TypedDicts
 -   remove/handle orphan nets (no cluster assigned)

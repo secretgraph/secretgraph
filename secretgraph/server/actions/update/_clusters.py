@@ -22,7 +22,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
 
     if getattr(objdata, "name", None) is not None:
         if cluster.name != objdata.name:
-            if objdata.name in {"system", "@system"}:
+            if objdata.name == "@system":
                 raise ValueError("Invalid name")
             cluster.name = objdata.name
             if cluster.name.startswith("@"):

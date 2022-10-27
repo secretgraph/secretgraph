@@ -66,11 +66,9 @@ class ContentReferenceNode(relay.Node):
                 ),
                 group=group,
             )
-        except ContentReference.DoesNotExist as exc:
+        except (ContentReference.DoesNotExist, ValueError) as exc:
             if required:
                 raise exc
-            return None
-        except ValueError:
             return None
 
     @classmethod

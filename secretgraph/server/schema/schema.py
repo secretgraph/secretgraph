@@ -7,6 +7,7 @@ from strawberry.types import Info
 
 from .arguments import AuthList
 from ..utils.auth import get_cached_result
+from ..models import Cluster, Content
 from .definitions import (
     ClusterFilter,
     ClusterNode,
@@ -47,14 +48,18 @@ class SecretgraphObject:
     def clusters(
         self, info: Info, filters: ClusterFilter
     ) -> List[ClusterNode]:
-        return ClusterNode.get_queryset_intern(info, filters)
+        return ClusterNode.get_queryset_intern(
+            Cluster.objects.all(), info, filters
+        )
 
     @gql.django.connection()
     @gql.django.django_resolver
     def contents(
         self, info: Info, filters: ContentFilter
     ) -> List[ContentNode]:
-        return ContentNode.get_queryset_intern(info, filters)
+        return ContentNode.get_queryset_intern(
+            Content.objects.all(), info, filters
+        )
 
     config: SecretgraphConfig = gql.field(default=SecretgraphConfig())
 

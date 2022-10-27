@@ -2,6 +2,7 @@ import {
     default as CircularProgress,
     CircularProgressProps,
 } from '@mui/material/CircularProgress'
+import Skeleton from '@mui/material/Skeleton'
 import Typography from '@mui/material/Typography'
 import * as React from 'react'
 
@@ -23,7 +24,7 @@ export const CenteredSpinner = React.forwardRef(
 )
 
 export class CapturingSuspense extends React.PureComponent<
-    { noSuspense?: boolean; children: React.ReactNode },
+    { noSuspense?: boolean; children: React.ReactNode; skeleton?: boolean },
     { error: null | any }
 > {
     constructor(props: any) {
@@ -41,8 +42,17 @@ export class CapturingSuspense extends React.PureComponent<
         if (this.props.noSuspense) {
             return this.props.children
         }
+
         return (
-            <React.Suspense fallback={<CenteredSpinner />}>
+            <React.Suspense
+                fallback={
+                    this.props.skeleton ? (
+                        <Skeleton variant="rectangular" />
+                    ) : (
+                        <CenteredSpinner />
+                    )
+                }
+            >
                 {this.props.children}
             </React.Suspense>
         )

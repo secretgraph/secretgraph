@@ -210,7 +210,7 @@ def fetch_contents(
     noFetch=False,
     minUpdated=None,
     maxUpdated=None,
-) -> QuerySet[Content]:
+) -> ContentFetchQueryset[Content]:
     assert actions is not None, "actions is None"
     assert not isinstance(actions, str), "actions is str"
     if ids:

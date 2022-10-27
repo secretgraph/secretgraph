@@ -5,7 +5,7 @@ from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q, QuerySet
+from django.db.models import Subquery, Q
 
 from ....core import constants
 from ...utils.auth import (
@@ -13,7 +13,7 @@ from ...utils.auth import (
     get_cached_permissions,
     fetch_by_id,
 )
-from ...actions.view import fetch_contents
+from ...actions.view import fetch_contents, ContentFetchQueryset
 from ...models import (
     Content,
     Cluster,
@@ -191,18 +191,23 @@ class ContentNode(relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> QuerySet[Content]:
+    def get_queryset(cls, queryset, info) -> ContentFetchQueryset:
         result = get_cached_result(info.context.request)["Content"]
-        return queryset.filter(id__in=Subquery(result["objects"].values("id")))
+        return ContentFetchQueryset(
+            queryset.filter(
+                id__in=Subquery(result["objects"].values("id"))
+            ).query,
+            actions=result["actions"],
+        )
 
+    # TODO: merge with get_queryset and update filters
     @classmethod
     def get_queryset_intern(
-        cls, info: Info, filters: ContentFilter
-    ) -> QuerySet[Content]:
+        cls, queryset, info: Info, filters: ContentFilter
+    ) -> ContentFetchQueryset:
         result = get_cached_result(
             info.context.request,
         )["Content"]
-        queryset = Content.objects.all()
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
