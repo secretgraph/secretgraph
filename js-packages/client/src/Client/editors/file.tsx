@@ -119,7 +119,7 @@ const ViewWidget = ({
             break
         case 'image':
             inner = (
-                <a href={blobUrlOrText}>
+                <a href={blobUrlOrText} rel="noopener noreferrer">
                     <img
                         src={blobUrlOrText}
                         alt={name}
@@ -137,7 +137,12 @@ const ViewWidget = ({
             </Box>
             {mime.startsWith('text/') ? null : (
                 <Box sx={{ marginBottom: (theme) => theme.spacing(2) }}>
-                    <a href={blobUrlOrText} type={mime} target="_blank">
+                    <a
+                        href={blobUrlOrText}
+                        type={mime}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
                         <CloudDownloadIcon />
                     </a>
                 </Box>
