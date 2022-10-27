@@ -348,6 +348,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
+-   disallow non global ids? Would ease implementation
 -   port to real filters
 -   move to dataclasses and TypedDicts
     -   nearly complete needs testing and TypedDicts
