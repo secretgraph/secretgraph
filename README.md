@@ -353,7 +353,6 @@ now you have a decryption key to the private key, that is very dangerous
     -   nearly complete needs testing and TypedDicts
 -   remove/handle orphan nets (no cluster assigned)
 -   actions: states
--   X-Key response: shared key of private key
 -   implement settings/config
 -   too many queries when selecting node (sidebar is also updated, because updateId?)
 -   modernize ActionDialog, redesign, multi column?
@@ -374,8 +373,6 @@ now you have a decryption key to the private key, that is very dangerous
 
 -   config: create a virtual global merge of all configs to get every token
 -   allow alternate cryptoalgorithms instead of aesgcm for tags (except ChaCha20Poly1305 and AESSIV no good alternatives, and both aren't supported in browser)
--   decide on name: system or @system
-    -   shall both exist and @system is public?
 -   cleanup user
 -   support dsa
 -   implement different net resource logic in frontend

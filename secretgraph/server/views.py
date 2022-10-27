@@ -341,6 +341,12 @@ class ContentView(AllowCORSMixin, FormView):
         response["X-NONCE"] = content.nonce
         if content.contentHash:
             response["X-CONTENT-HASH"] = content.contentHash
+        if content.type == "PrivateKey":
+            response["X-KEY"] = ",".join(
+                content.tags.filter(tag__startswith="key=").values_list(
+                    "tag", flat=True
+                )
+            )
         return response
 
 
