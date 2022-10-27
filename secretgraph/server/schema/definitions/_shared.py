@@ -27,7 +27,7 @@ class ActionMixin:
     def availableActions(self, info: Info) -> List[ActionEntry]:
         name = self.__class__.__name__
         result = get_cached_result(
-            info.context.request, ensureExistance=True
+            info.context.request, ensureInitialized=True
         ).get(name, {})
         # only show some actions if not set
         has_manage = False

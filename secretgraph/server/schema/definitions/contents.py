@@ -5,7 +5,7 @@ from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q
+from django.db.models import Subquery, Q, Exists, OuterRef
 
 from ....core import constants
 from ...utils.auth import (
@@ -103,15 +103,18 @@ class ContentNode(relay.Node):
     def cluster(
         self: Content, info: Info
     ) -> Optional[gql.LazyType["ClusterNode", ".clusters"]]:
+        # we are in the 2nd level, block
         if self.limited:
             return None
-        # authorization often cannot be used, but it is ok, we have cached then
-        res = (
-            get_cached_result(info.context.request)["Cluster"]["objects"]
+        cluster_visible = (
+            get_cached_result(info.context.request, ensureInitialized=True)[
+                "Cluster"
+            ]["objects"]
             .filter(id=self.cluster_id)
-            .first()
+            .exists()
         )
-        if not res:
+        if not cluster_visible:
+            # set cluster to limited (first level)
             self.cluster.limited = True
         return self.cluster
 
@@ -128,7 +131,8 @@ class ContentNode(relay.Node):
         if (
             not isinstance(self, Content)
             or self.limited
-            or self.cluster_id == 1
+            # TODO: maybe relax later
+            or self.cluster_id == 0
         ):
             return ContentReference.objects.none()
         result = get_cached_result(info.context.request)["Content"]
@@ -160,7 +164,8 @@ class ContentNode(relay.Node):
         if (
             not isinstance(self, Content)
             or self.limited
-            or self.cluster_id == 1
+            # TODO: maybe relax later
+            or self.cluster_id == 0
         ):
             return ContentReference.objects.none()
         result = get_cached_result(info.context.request)["Content"]
@@ -192,12 +197,13 @@ class ContentNode(relay.Node):
 
     @classmethod
     def get_queryset(cls, queryset, info) -> ContentFetchQueryset:
-        result = get_cached_result(info.context.request)["Content"]
+        results = get_cached_result(info.context.request)
+
         return ContentFetchQueryset(
             queryset.filter(
-                id__in=Subquery(result["objects"].values("id"))
+                id__in=Subquery(results["Content"]["objects"].values("id"))
             ).query,
-            actions=result["actions"],
+            actions=results["Content"]["actions"],
         )
 
     # TODO: merge with get_queryset and update filters
@@ -205,9 +211,9 @@ class ContentNode(relay.Node):
     def get_queryset_intern(
         cls, queryset, info: Info, filters: ContentFilter
     ) -> ContentFetchQueryset:
-        result = get_cached_result(
+        results = get_cached_result(
             info.context.request,
-        )["Content"]
+        )
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
@@ -232,9 +238,11 @@ class ContentNode(relay.Node):
             queryset = queryset.filter(
                 cluster_id__in=Subquery(
                     fetch_by_id(
-                        Cluster.objects.all(), filters.clusters, limit_ids=None
+                        results["Cluster"]["objects"],
+                        filters.clusters,
+                        limit_ids=None,
                     ).values("id")
-                )
+                ),
             )
 
         if filters.public == UseCriteriaPublic.TOKEN:
@@ -269,7 +277,7 @@ class ContentNode(relay.Node):
 
         queryset = queryset.filter(
             id__in=Subquery(
-                result[
+                results["Content"][
                     "objects_ignore_public"
                     if filters.public == UseCriteriaPublic.TOKEN
                     else "objects"
@@ -279,7 +287,7 @@ class ContentNode(relay.Node):
 
         return fetch_contents(
             queryset,
-            result["actions"],
+            results["Content"]["actions"],
             states=filters.states,
             includeTypes=filters.includeTypes,
             excludeTypes=filters.excludeTypes,

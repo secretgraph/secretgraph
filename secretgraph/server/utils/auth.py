@@ -424,10 +424,10 @@ def get_cached_result(
     authset=None,
     scope="view",
     name="secretgraphResult",
-    ensureExistance=False,
+    ensureInitialized=False,
 ):
     if not getattr(request, name, None):
-        if ensureExistance:
+        if ensureInitialized:
             raise AttributeError("cached query result does not exist")
         setattr(
             request,
@@ -447,14 +447,16 @@ def get_cached_permissions(
     permissions_name="secretgraphPermissions",
     result_name="secretgraphResult",
     authset=None,
-    ensureExistance=False,
+    ensureInitialized=False,
 ):
     if not getattr(request, permissions_name, None):
-        if ensureExistance:
+        if ensureInitialized:
             raise AttributeError("cached permissions does not exist")
         if not authset:
+            # initialize cached results and retrieve authset
             authset = get_cached_result(
-                request, name=result_name, ensureExistance=ensureExistance
+                request,
+                name=result_name,
             )["authset"]
         query = retrieve_allowed_objects(
             request,
