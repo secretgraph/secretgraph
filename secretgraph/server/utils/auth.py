@@ -128,6 +128,7 @@ def retrieve_allowed_objects(request, query, scope="view", authset=None):
             contentAction__content__flexid_cached=flexid_raw
         ) | models.Q(cluster__flexid_cached=flexid_raw)
         if issubclass(query.model, Cluster):
+            # don't block auth with @system
             q |= models.Q(cluster__name_cached=flexid_raw)
         actions = pre_filtered_actions.filter(q, keyHash__in=keyhashes)
         if not actions:
@@ -308,9 +309,9 @@ def fetch_by_id(
     if check_content_hash:
         filters |= models.Q(contentHash__in=flexids)
     if issubclass(query.model, Cluster):
-        filters |= models.Q(name_cached__in=flexids) | models.Q(
-            name__in=flexids
-        )
+        filters |= (
+            models.Q(name_cached__in=flexids) | models.Q(name__in=flexids)
+        ) & models.Q(globalNameRegisteredAt__isnull=False)
     return query.filter(filters)
 
 
