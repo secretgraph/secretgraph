@@ -9,7 +9,7 @@ from ..core.constants import DeleteRecursive
 
 
 def initializeDb(sender, **kwargs):
-    from .models import Net, Cluster, GlobalGroupProperty
+    from .models import Net, Cluster, GlobalGroupProperty, GlobalGroup
     from django.conf import settings
 
     # system net for injected keys cluster and as fallback
@@ -38,11 +38,11 @@ def initializeDb(sender, **kwargs):
                 )[0]
             )
 
-        cluster, created = Cluster.objects.get_or_create(
+        globalgroup, created = GlobalGroup.objects.get_or_create(
             name=group.pop("name"), defaults=group
         )
         if created:
-            cluster.properties.set(properties)
+            globalgroup.properties.set(properties)
 
 
 def deleteContentCb(sender, instance, **kwargs):
