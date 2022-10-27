@@ -5,7 +5,7 @@ from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q, Exists, OuterRef
+from django.db.models import Subquery, Q
 
 from ....core import constants
 from ...utils.auth import (
@@ -16,7 +16,6 @@ from ...utils.auth import (
 from ...actions.view import fetch_contents, ContentFetchQueryset
 from ...models import (
     Content,
-    Cluster,
     ContentReference,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
