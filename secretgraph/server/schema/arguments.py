@@ -82,6 +82,7 @@ class ContentInput:
     references: Optional[List[ReferenceInput]] = None
     contentHash: Optional[str] = None
     additionalNets: strawberry.Private[Optional[Iterable[Net]]] = None
+    allowImmutable: strawberry.Private[bool] = False
 
 
 @strawberry.input

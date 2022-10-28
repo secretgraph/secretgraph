@@ -29,9 +29,10 @@ def delete_content_or_cluster(
 ) -> DeleteContentOrClusterMutation:
     now = timezone.now()
 
-    if "manage_deletion" in get_cached_permissions(
+    manage_deletion = "manage_deletion" in get_cached_permissions(
         info.context.request, authset=authorization
-    ):
+    )
+    if manage_deletion:
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
     else:
@@ -45,11 +46,13 @@ def delete_content_or_cluster(
         contents = results["Content"]["objects"]
         clusters = results["Cluster"]["objects"]
     if when:
-        when_x = max(now + timedelta(minutes=20), when)
-        contents.update(markForDestruction=when_x)
+        when_safe = (
+            when if manage_deletion else max(now + timedelta(minutes=20), when)
+        )
+        contents.update(markForDestruction=when_safe)
         Content.objects.filter(
             cluster_id__in=Subquery(clusters.values("id"))
-        ).update(markForDestruction=when_x)
+        ).update(markForDestruction=when_safe)
         clusters.update(markForDestruction=when)
     else:
         now_plus_x = now + timedelta(minutes=20)

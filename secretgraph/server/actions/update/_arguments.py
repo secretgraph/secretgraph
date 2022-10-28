@@ -69,6 +69,7 @@ class ContentInput:
     net: Optional[str] = None
     cluster: Optional[str] = None
     hidden: Optional[bool] = None
+    allowImmutable: bool = True
     # when creating keypair: references are automagically distributed
     key: Optional[ContentKeyInput] = None
     value: Optional[ContentValueInput] = None
@@ -84,6 +85,7 @@ class ContentMergedInput:
     references: Optional[List[ReferenceInput]] = None
     contentHash: Optional[str] = None
     hidden: Optional[bool] = None
+    allowImmutable: bool = True
     value: Optional[File] = None
     state: Optional[str] = None
     type: Optional[str] = None

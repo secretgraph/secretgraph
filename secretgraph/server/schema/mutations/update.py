@@ -122,6 +122,10 @@ def mutate_content(
             info.context.request, authset=authorization
         ):
             content.hidden = None
+
+    content.allowImmutable = "register_immutable" in get_cached_permissions(
+        info.context.request, authset=authorization
+    )
     if id:
         if not updateId:
             raise ValueError("updateId required")

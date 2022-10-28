@@ -1,8 +1,8 @@
-from django.db.models import Q, Subquery
+from django.db.models import Q, Subquery, Exists, OuterRef
 from strawberry_django_plus import relay
 
 from ....core import constants
-from ...models import Action, Cluster, Content, Net
+from ...models import Action, Cluster, Content, Net, ContentTag
 from ._shared import only_owned_helper
 
 
@@ -16,7 +16,14 @@ class UpdateHandlers:
             return None
 
         if issubclass(sender, Content):
-            excl_filters = Q()
+            excl_filters = Q(
+                Exists(
+                    ContentTag.objects.filter(
+                        content_id=OuterRef("pk"),
+                        tag="immutable",
+                    )
+                )
+            )
             if action_dict["excludeTypes"]:
                 excl_filters |= Q(type__in=action_dict["excludeTypes"])
             for i in action_dict["excludeTags"]:
@@ -125,7 +132,11 @@ class UpdateHandlers:
                     incl_filters_tag |= Q(tags__tag=i[1:])
                 else:
                     incl_filters_tag |= Q(tags__tag__startswith=i)
-            excl_filters = ~excl_filters_tag & ~excl_filters_type
+            excl_filters = (
+                ~Q(tags__tag="immutable")
+                & ~excl_filters_tag
+                & ~excl_filters_type
+            )
             if scope == "update" and action_dict.get("freeze"):
                 excl_filters &= ~Q(
                     action__in=Subquery(group="fetch", used=True).values("id")
@@ -430,6 +441,15 @@ class UpdateHandlers:
         if type_name == "Action":
             excl_filters |= Q(
                 contentAction__content_id__in=action_dict["exclude"]["Content"]
+            )
+        if action == "update" and type_name == "Content":
+            excl_filters |= Q(
+                Exists(
+                    ContentTag.objects.filter(
+                        content_id=OuterRef("pk"),
+                        tag="immutable",
+                    )
+                )
             )
         return {
             "trustedKeys": action_dict.get("trustedKeys", []),

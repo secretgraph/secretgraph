@@ -1,6 +1,5 @@
 __all__ = [
     "transform_tags",
-    "extract_key_hashes",
     "transform_references",
     "update_metadata_fn",
 ]
@@ -11,6 +10,7 @@ import re
 from contextlib import nullcontext
 
 from django.db.models import Q, F
+from django.db.models.functions import Substr
 from django.conf import settings
 
 from ....core.exceptions import ResourceLimitExceeded
@@ -25,21 +25,6 @@ logger = logging.getLogger(__name__)
 len_default_hash = len(hash_object(b""))
 
 
-def extract_key_hashes(tags):
-    key_hashes = set()
-    content_type = None
-    for tag in tags:
-        if isinstance(tag, ContentTag):
-            tag = tag.tag
-        splitted_tag = tag.split("=", 1)
-        if splitted_tag[0] == "key_hash":
-            if len_default_hash == len(splitted_tag[1]):
-                key_hashes.add(splitted_tag[1])
-        elif splitted_tag[0] == "type":
-            content_type = splitted_tag[1]
-    return key_hashes, content_type
-
-
 def tags_sanitizer(tag: str):
     if tag.startswith("id"):
         logger.warning(
@@ -50,6 +35,9 @@ def tags_sanitizer(tag: str):
         raise ValueError("key_hash should be tag not flag")
     if tag.startswith("~") and "=" not in tag:
         raise ValueError("flags cannot be encrypted")
+
+    if tag.startswith("immutable="):
+        raise ValueError("immutable is a flag")
 
     if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
         raise ResourceLimitExceeded(f"Tag too big ({tag})")
@@ -274,6 +262,7 @@ def update_metadata_fn(
     operation=MetadataOperations.APPEND,
     authset=None,
     required_keys=None,
+    allow_immutable=True,
 ):
     operation = operation or MetadataOperations.APPEND
     final_tags = None
@@ -305,6 +294,9 @@ def update_metadata_fn(
             final_tags = []
             for prefix, val in tags_dict.items():
                 if not val:
+                    if prefix == "immutable" and not allow_immutable:
+                        raise ValueError("cannot set immutable")
+                    # can switch tags to flats
                     remove_tags_q |= Q(tag__startswith=prefix)
                     final_tags.append(ContentTag(content=content, tag=prefix))
                 else:
@@ -315,6 +307,7 @@ def update_metadata_fn(
                             ContentTag(content=content, tag=composed)
                         )
         else:
+            # immutable flag can only removed by admins as we filter in handler
             for prefix, val in tags_dict.items():
                 if not val:
                     remove_tags_q &= ~Q(tag__startswith=prefix)
@@ -323,10 +316,12 @@ def update_metadata_fn(
                         composed = "%s=%s" % (prefix, subval)
                         remove_tags_q &= ~Q(tag__startswith=composed)
     else:
-        kl = content.tags.filter(tag__startswith="key_hash=").values_list(
-            "tag", flat=True
+        kl = (
+            content.tags.filter(tag__startswith="key_hash=")
+            .annotate(key_hash=Substr("tag", 10))
+            .values_list("key_hash", flat=True)
         )
-        key_hashes_tags, content_type = extract_key_hashes(kl)
+        key_hashes_tags = set(kl)
 
     if references is None:
         _refs = content.references.all()

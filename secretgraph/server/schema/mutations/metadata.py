@@ -7,23 +7,21 @@ import strawberry
 from strawberry.types import Info
 from strawberry_django_plus import relay
 from django.db import transaction
+from django.db.models import Exists, OuterRef
 from ..shared import MetadataOperations
 
 from ...actions.update import (
     update_metadata_fn,
     manage_actions_fn,
 )
-from ...models import Cluster, Content
+from ...models import Cluster, Content, ContentTag
 from ...signals import generateFlexid
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
     get_cached_permissions,
 )
-from ..arguments import (
-    AuthList,
-    ActionInput,
-)
+from ..arguments import AuthList, ActionInput, ReferenceInput
 
 logger = logging.getLogger(__name__)
 
@@ -117,15 +115,31 @@ def update_metadata(
     ids: List[strawberry.ID],
     state: Optional[str] = None,
     tags: Optional[List[str]] = None,
+    references: Optional[List[ReferenceInput]] = None,
     actions: Optional[List[ActionInput]] = None,
     operation: Optional[MetadataOperations] = MetadataOperations.APPEND,
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
 
-    if "manage_update" in get_cached_permissions(
+    allow_immutable = "register_immutable" in get_cached_permissions(
         info.context.request, authset=authorization
-    ):
-        contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
+    )
+    manage_update = "manage_update" in get_cached_permissions(
+        info.context.request, authset=authorization
+    )
+    if manage_update:
+        contents = fetch_by_id(
+            Content.objects.annotate(
+                has_immutable=Exists(
+                    ContentTag.objects.filter(
+                        content_id=OuterRef("pk"),
+                        tag="immutable",
+                    )
+                )
+            ),
+            ids,
+            limit_ids=None,
+        )
     else:
         result = ids_to_results(
             info.context.request,
@@ -140,10 +154,16 @@ def update_metadata(
             update_metadata_fn(
                 info.context.request,
                 content_obj,
-                state=state,
-                tags=tags,
+                state=state if not content_obj.has_immutable else None,
+                tags=tags
+                if not content_obj.has_immutable or manage_update
+                else None,
+                references=references
+                if not content_obj.has_immutable
+                else None,
                 operation=operation,
                 authset=authorization,
+                allow_immutable=allow_immutable,
             )
         )
         if actions:
