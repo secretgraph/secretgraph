@@ -82,7 +82,7 @@ It is currently a monorepo containing js and python parts
 -   default: on cluster creation these groups are added by default except if groups are explicit specified
 -   register_global_name: can register a global cluster name
 -   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
--   manage_hidden: can see hidden contents
+-   manage_hidden: can see hidden contents, can set hidden state
 -   manage_groups: can manage global groups of clusters
 -   manage_deletion: can delete every content or cluster
 -   manage_update: can update every content or cluster (but has still no access to data if encrypted)
