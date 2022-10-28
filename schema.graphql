@@ -81,10 +81,12 @@ input ClusterFilter {
 
   """Use id=xy for excluding clusters with content ids"""
   excludeTags: [String!] = null
-  ids: [String!] = null
 
-  """Use for excluding clusters with ids"""
-  excludeIds: [String!] = null
+  """Filter clusters with ids or global name"""
+  ids: [ID!] = null
+
+  """Use for excluding clusters with ids or global names"""
+  excludeIds: [ID!] = null
   contentHashes: [String!] = null
   featured: UseCriteria! = IGNORE
   deleted: UseCriteria! = FALSE
@@ -582,6 +584,7 @@ type SecretgraphObject {
     id: GlobalID!
   ): Node
   config: SecretgraphConfig!
+  permissions: [String!]!
   clusters(
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
@@ -627,6 +630,7 @@ input UpdateMetadataInput {
   ids: [ID!]!
   state: String = null
   tags: [String!] = null
+  references: [ReferenceInput!] = null
   actions: [ActionInput!] = null
   operation: MetadataOperations = APPEND
   authorization: [String!] = null

@@ -7,6 +7,7 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django.db.models.expressions
 import django.utils.timezone
+import django.core.validators
 import secretgraph.server.models
 import secretgraph.server.validators
 import uuid
@@ -170,7 +171,14 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "type",
-                    models.CharField(max_length=50, null=False),
+                    models.CharField(
+                        max_length=50,
+                        null=False,
+                        validators=[
+                            secretgraph.server.validators.TypeAndGroupValidator,
+                            django.core.validators.MinLengthValidator(2),
+                        ],
+                    ),
                 ),
                 ("hidden", models.BooleanField(blank=True, default=False)),
                 (
@@ -252,6 +260,9 @@ class Migration(migrations.Migration):
                         default="",
                         help_text="ContentReference group: references are clustered in groups. They are used to signal different functions of the connection",
                         max_length=50,
+                        validators=[
+                            secretgraph.server.validators.TypeAndGroupValidator
+                        ],
                     ),
                 ),
                 ("extra", models.TextField(blank=True, default="")),
@@ -304,6 +315,9 @@ class Migration(migrations.Migration):
                         default="",
                         help_text="ContentAction group: ContentActions are clustered in groups. They are used to signal different functions of the connection",
                         max_length=50,
+                        validators=[
+                            secretgraph.server.validators.TypeAndGroupValidator
+                        ],
                     ),
                 ),
                 (
@@ -374,7 +388,17 @@ class Migration(migrations.Migration):
                         editable=False, primary_key=True, serialize=False
                     ),
                 ),
-                ("name", models.CharField(max_length=50, unique=True)),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=50,
+                        unique=True,
+                        validators=[
+                            secretgraph.server.validators.TypeAndGroupValidator,
+                            django.core.validators.MinLengthValidator(2),
+                        ],
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(

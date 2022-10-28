@@ -13,6 +13,7 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import File
+from django.core.validators import MinLengthValidator
 from django.core.cache import caches
 from django.core.files.storage import default_storage
 from django.db import models
@@ -30,6 +31,7 @@ from .validators import (
     ActionKeyHashValidator,
     ClusterNameValidator,
     ContentHashValidator,
+    TypeAndGroupValidator,
 )
 from ..core import constants
 
@@ -261,7 +263,11 @@ class Content(FlexidModel):
     )
     # group virtual injection group attribute
 
-    type: str = models.CharField(max_length=50, null=False)
+    type: str = models.CharField(
+        max_length=50,
+        null=False,
+        validators=[TypeAndGroupValidator, MinLengthValidator(2)],
+    )
     state: str = models.CharField(max_length=10, null=False)
 
     objects = ContentManager()
@@ -401,6 +407,7 @@ class ContentAction(models.Model):
         default="",
         blank=True,
         help_text=contentaction_group_help,
+        validators=[TypeAndGroupValidator],
     )
 
     class Meta:
@@ -502,6 +509,7 @@ class ContentReference(models.Model):
         null=False,
         blank=True,
         help_text=reference_group_help,
+        validators=[TypeAndGroupValidator],
     )
     extra: str = models.TextField(blank=True, null=False, default="")
 
@@ -564,7 +572,12 @@ class GlobalGroupManager(models.Manager):
 class GlobalGroupProperty(models.Model):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
-    name: str = models.CharField(max_length=50, null=False, unique=True)
+    name: str = models.CharField(
+        max_length=50,
+        null=False,
+        unique=True,
+        validators=[TypeAndGroupValidator, MinLengthValidator(2)],
+    )
 
 
 class GlobalGroupCluster(models.Model):
