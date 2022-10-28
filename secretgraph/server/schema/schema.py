@@ -14,6 +14,7 @@ from .definitions import (
     ContentFilter,
     ContentNode,
     SecretgraphConfig,
+    get_permissions,
 )
 from .mutations import (
     ClusterMutation,
@@ -62,6 +63,7 @@ class SecretgraphObject:
         )
 
     config: SecretgraphConfig = gql.field(default=SecretgraphConfig())
+    permissions: list[str] = gql.field(default=get_permissions)
 
 
 @gql.type

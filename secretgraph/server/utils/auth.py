@@ -15,7 +15,7 @@ from django.utils import timezone
 
 from ...core import constants
 from ..actions.handler import ActionHandler
-from ..models import Action, Cluster, Content, GlobalGroupProperty
+from ..models import Action, Cluster, Content, GlobalGroup, GlobalGroupProperty
 from .misc import calculate_hashes
 
 logger = logging.getLogger(__name__)
@@ -376,16 +376,13 @@ def ids_to_results(
     return results
 
 
-def check_permission(request, permission, query, authset=None):
+def get_permission_q(request, query):
     assert issubclass(query.model, Cluster), (
         "Not a cluster query: %s" % query.model
     )
-    global_groups = GlobalGroupProperty.objects.get_or_create(
-        name=permission, defaults={}
-    )[0].groups.all()
     q = models.Q(clusters__in=query)
     if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
-        global_groups_names = global_groups.filter(
+        global_groups_names = GlobalGroup.objects.filter(
             matchUserGroup=True
         ).values_list("name", flat=True)
         if global_groups_names:
@@ -401,21 +398,23 @@ def check_permission(request, permission, query, authset=None):
                 q |= models.Q(
                     name__in=models.Subquery(user.groups.values("name"))
                 )
+    return q
 
-    return global_groups.filter(q).exists()
 
-
-def check_default_permission(permission):
-    global_groups = GlobalGroupProperty.objects.get_or_create(
-        name=permission, defaults={}
-    )[0].groups.all()
-    return global_groups.filter(
+# cacheable
+def get_default_permissions() -> frozenset[str]:
+    global_groups = GlobalGroup.objects.filter(
         models.Exists(
             GlobalGroupProperty.objects.filter(
-                groups__id=models.OuterRef("pk"), name="default"
+                groups__id=models.OuterRef("id"), name="default"
             )
         )
-    ).exists()
+    )
+    return frozenset(
+        GlobalGroupProperty.objects.filter(
+            groups__in=global_groups
+        ).values_list("name", flat=True)
+    )
 
 
 def get_cached_result(
@@ -448,7 +447,7 @@ def get_cached_permissions(
     result_name="secretgraphResult",
     authset=None,
     ensureInitialized=False,
-):
+) -> frozenset[str]:
     if not getattr(request, permissions_name, None):
         if ensureInitialized:
             raise AttributeError("cached permissions does not exist")
@@ -464,13 +463,17 @@ def get_cached_permissions(
             scope="manage",
             authset=authset,
         )["objects"]
+        global_groups = GlobalGroup.objects.filter(
+            get_permission_q(request, query)
+        )
+        all_props = frozenset(
+            GlobalGroupProperty.objects.filter(
+                groups__in=global_groups
+            ).values_list("name", flat=True)
+        )
         setattr(
             request,
             permissions_name,
-            LazyViewResult(
-                partial(check_permission, query=query),
-                request,
-                authset=authset,
-            ),
+            all_props,
         )
     return getattr(request, permissions_name)

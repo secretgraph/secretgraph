@@ -38,9 +38,9 @@ def regenerate_flexid(
     ids: List[strawberry.ID],
     authorization: Optional[AuthList] = None,
 ) -> RegenerateFlexidMutation:
-    if get_cached_permissions(info.context.request, authset=authorization)[
-        "manage_update"
-    ]:
+    if "manage_update" in get_cached_permissions(
+        info.context.request, authset=authorization
+    ):
         results = {
             "Content": {
                 "objects": fetch_by_id(
@@ -83,14 +83,14 @@ def mark(
     authorization: Optional[AuthList] = None,
 ) -> MarkMutation:
     if featured is not None:
-        if not get_cached_permissions(
+        if "manage_featured" not in get_cached_permissions(
             info.context.request, authset=authorization
-        )["manage_featured"]:
+        ):
             featured = None
     if hidden is not None:
-        if not get_cached_permissions(
+        if "manage_hidden" not in get_cached_permissions(
             info.context.request, authset=authorization
-        )["manage_hidden"]:
+        ):
             hidden = None
     contents = Content.objects.none()
     clusters = Cluster.objects.none()
@@ -122,9 +122,9 @@ def update_metadata(
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
 
-    if get_cached_permissions(info.context.request, authset=authorization)[
-        "manage_update"
-    ]:
+    if "manage_update" in get_cached_permissions(
+        info.context.request, authset=authorization
+    ):
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
     else:
         result = ids_to_results(

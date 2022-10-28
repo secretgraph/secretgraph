@@ -20,7 +20,7 @@ from ...utils.auth import (
     ids_to_results,
     get_cached_result,
     get_cached_permissions,
-    check_default_permission,
+    get_default_permissions,
 )
 from ..arguments import (
     AuthList,
@@ -47,15 +47,15 @@ def mutate_cluster(
     authorization: Optional[AuthList] = None,
 ) -> ClusterMutation:
     if cluster.featured is not None:
-        if not get_cached_permissions(
+        if "manage_featured" not in get_cached_permissions(
             info.context.request, authset=authorization
-        )["manage_featured"]:
+        ):
             cluster.featured = None
 
     if cluster.groups is not None:
-        if get_cached_permissions(info.context.request, authset=authorization)[
-            "manage_groups"
-        ]:
+        if "manage_groups" in get_cached_permissions(
+            info.context.request, authset=authorization
+        ):
             cluster.groups = GlobalGroup.objects.filter(
                 name__in=cluster["groups"]
             )
@@ -63,10 +63,10 @@ def mutate_cluster(
             cluster.groups = None
 
     if cluster.name is not None and cluster.name.startswith("@"):
-        if not get_cached_permissions(
-            info.context.request, authset=authorization
-        )["register_global_name"] and not check_default_permission(
-            "register_global_name"
+        if "register_global_name" not in (
+            get_cached_permissions(
+                info.context.request, authset=authorization
+            ).union(get_default_permissions())
         ):
             cluster.name = f"+@{cluster.name}"
     if id:
@@ -118,9 +118,9 @@ def mutate_content(
 ) -> ContentMutation:
     required_keys = set()
     if content.hidden is not None:
-        if not get_cached_permissions(
+        if "manage_hidden" not in get_cached_permissions(
             info.context.request, authset=authorization
-        )["manage_hidden"]:
+        ):
             content.hidden = None
     if id:
         if not updateId:

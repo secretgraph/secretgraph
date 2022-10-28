@@ -216,9 +216,8 @@ class ContentNode(relay.Node):
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
-            and not get_cached_permissions(info.context.request)[
-                "manage_deletion"
-            ]
+            and "manage_deletion"
+            not in get_cached_permissions(info.context.request)
         ):
             del_result = get_cached_result(
                 info.context.request, scope="delete"
@@ -227,9 +226,9 @@ class ContentNode(relay.Node):
                 id__in=Subquery(del_result["objects"].values("id"))
             )
 
-        if get_cached_permissions(
+        if "manage_hidden" in get_cached_permissions(
             info.context.request,
-        )["manage_hidden"]:
+        ):
             hidden = filters.hidden
         else:
             hidden = UseCriteria.FALSE

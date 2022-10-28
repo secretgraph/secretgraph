@@ -30,9 +30,9 @@ def delete_content_or_cluster(
 ) -> DeleteContentOrClusterMutation:
     now = timezone.now()
 
-    if get_cached_permissions(info.context.request, authset=authorization)[
-        "manage_deletion"
-    ]:
+    if "manage_deletion" in get_cached_permissions(
+        info.context.request, authset=authorization
+    ):
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
     else:
@@ -87,9 +87,9 @@ def reset_deletion_content_or_cluster(
     ids: List[strawberry.ID],
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
-    if get_cached_permissions(info.context.request, authset=authorization)[
-        "manage_deletion"
-    ]:
+    if "manage_deletion" in get_cached_permissions(
+        info.context.request, authset=authorization
+    ):
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
     else:

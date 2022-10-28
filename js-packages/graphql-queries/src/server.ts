@@ -25,3 +25,32 @@ export const serverConfigQuery = gql`
         }
     }
 `
+
+export const serverConfigQueryWithPermissions = gql`
+    query serverSecretgraphConfigWithPermissionsQuery(
+        $authorization: [String!]
+    ) {
+        secretgraph(authorization: $authorization) {
+            permissions
+            config {
+                id
+                hashAlgorithms
+                maxRelayResults
+                groups {
+                    name
+                    hidden
+                    properties {
+                        name
+                        description
+                    }
+                    description
+                    injectedKeys {
+                        link
+                        hash
+                    }
+                }
+                registerUrl
+            }
+        }
+    }
+`

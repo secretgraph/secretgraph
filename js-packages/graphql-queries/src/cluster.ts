@@ -64,44 +64,9 @@ export const clusterFeedQuery = gql`
     }
 `
 
-export const getClusterConfigurationQuery = gql`
-    query clusterGetConfigurationQuery(
-        $id: GlobalID!
-        $authorization: [String!]
-    ) {
-        secretgraph(authorization: $authorization) {
-            config {
-                id
-                hashAlgorithms
-                maxRelayResults
-                registerUrl
-                groups {
-                    name
-                    injectedKeys {
-                        link
-                        hash
-                    }
-                }
-            }
-            node(id: $id) {
-                ... on Cluster {
-                    id
-                    groups
-                    availableActions {
-                        keyHash
-                        type
-                        trustedKeys
-                        allowedTags
-                    }
-                }
-            }
-        }
-    }
-`
-
 // has also description
 export const getClusterQuery = gql`
-    query clusterGetClusterQuery($id: GlobalID!, $authorization: [String!]) {
+    query getClusterQuery($id: GlobalID!, $authorization: [String!]) {
         secretgraph(authorization: $authorization) {
             config {
                 id
@@ -114,6 +79,7 @@ export const getClusterQuery = gql`
                     }
                 }
             }
+            permissions
             node(id: $id) {
                 ... on Cluster {
                     id

@@ -391,6 +391,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO far future
 
+-   more async (needs better django support)
 -   recovery:
     -   save a recovery token in remote identity provider (needs identity provider+ identity editor)
         -   can retrieve it via sms

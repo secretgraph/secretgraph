@@ -60,6 +60,7 @@ export const getNodeType = gql`
                     id
                     public
                     featured
+                    name
                 }
                 ... on Content {
                     id
@@ -67,6 +68,13 @@ export const getNodeType = gql`
                     state
                 }
             }
+        }
+    }
+`
+export const getPermissions = gql`
+    query getPermissionsQuery($authorization: [String!]) {
+        secretgraph(authorization: $authorization) {
+            permissions
         }
     }
 `

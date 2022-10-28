@@ -163,9 +163,8 @@ class ClusterNode(relay.Node):
 
         if (
             deleted != UseCriteria.FALSE
-            and not get_cached_permissions(info.context.request)[
-                "manage_deletion"
-            ]
+            and "manage_deletion"
+            not in get_cached_permissions(info.context.request)
         ):
             del_result = get_cached_result(
                 info.context.request, scope="delete"
@@ -242,9 +241,8 @@ class ClusterNode(relay.Node):
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
-            and not get_cached_permissions(info.context.request)[
-                "manage_deletion"
-            ]
+            and "manage_deletion"
+            not in get_cached_permissions(info.context.request)
         ):
             del_result = get_cached_result(
                 info.context.request, scope="delete"

@@ -8,7 +8,8 @@ import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
 import { getClusterQuery } from '@secretgraph/graphql-queries/cluster'
-import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
+import { getNodeType } from '@secretgraph/graphql-queries/node'
+import { serverConfigQueryWithPermissions } from '@secretgraph/graphql-queries/server'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
@@ -39,18 +40,20 @@ import SimpleShareDialog from '../components/share/SimpleShareDialog'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
 
-async function extractCombinedInfo({
+async function extractInfo({
     config,
     node,
     url,
     tokens,
     hashAlgorithms,
+    permissions,
 }: {
     config: Interfaces.ConfigInterface
     node?: any
     url: string
     tokens: string[]
     hashAlgorithms: string[]
+    permissions: string[]
 }) {
     const known = node && url && config.hosts[url]?.clusters[node.id]?.hashes
     const mapper = await generateActionMapper({
@@ -69,6 +72,7 @@ async function extractCombinedInfo({
         featured: node.featured,
         url,
         hashAlgorithm: hashAlgorithms[0],
+        permissions,
     }
 }
 
@@ -82,6 +86,7 @@ interface ClusterInternProps {
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     hashAlgorithm: string
     viewOnly?: boolean
+    permissions: string[]
 }
 
 const ClusterIntern = ({
@@ -91,6 +96,7 @@ const ClusterIntern = ({
     loading: loadingIntern,
     url,
     viewOnly,
+    permissions,
     ...props
 }: ClusterInternProps) => {
     disabled = disabled || viewOnly
@@ -313,6 +319,33 @@ const ClusterIntern = ({
                                         helperText="Prefix with @ to register a global name"
                                         fullWidth
                                         disabled={disabled || loading}
+                                        validate={async (val: string) => {
+                                            if (
+                                                !val.startsWith('@') ||
+                                                val == props.name
+                                            ) {
+                                                return
+                                            }
+                                            if (
+                                                !permissions.includes(
+                                                    'register_global_name'
+                                                )
+                                            ) {
+                                                return 'no permission'
+                                            }
+                                            const { data } =
+                                                await itemClient.query({
+                                                    query: getNodeType,
+                                                    variables: {
+                                                        id: Buffer.from(
+                                                            `Cluster:${val}`
+                                                        ).toString('base64'),
+                                                    },
+                                                })
+                                            if (data?.secretgraph?.node) {
+                                                return 'Already registered'
+                                            }
+                                        }}
                                     />
                                 </Grid>
 
@@ -348,7 +381,13 @@ const ClusterIntern = ({
                                         name="featured"
                                         type="checkbox"
                                         Label={{ label: 'Featured' }}
-                                        disabled={disabled || loading}
+                                        disabled={
+                                            disabled ||
+                                            loading ||
+                                            !permissions.includes(
+                                                'manage_featured'
+                                            )
+                                        }
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
@@ -381,7 +420,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<
-        | (UnpackPromise<ReturnType<typeof extractCombinedInfo>> & {
+        | (UnpackPromise<ReturnType<typeof extractInfo>> & {
               key: string
           })
         | null
@@ -434,12 +473,13 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             ) {
                 updateOb.deleted = false
             }
-            const newData = await extractCombinedInfo({
+            const newData = await extractInfo({
                 config,
                 node: dataUnfinished.secretgraph.node,
                 url: mainCtx.url as string,
                 tokens: mainCtx.tokens,
                 hashAlgorithms,
+                permissions: dataUnfinished.secretgraph.permissions,
             })
             if (active) {
                 updateMainCtx(updateOb)
@@ -473,9 +513,15 @@ const CreateCluster = () => {
         (Omit<ClusterInternProps, 'disabled' | 'url'> & { key: string }) | null
     >(null)
 
-    let { data: dataUnfinished, loading } = useQuery(serverConfigQuery, {
-        onError: console.error,
-    })
+    let { data: dataUnfinished, loading } = useQuery(
+        serverConfigQueryWithPermissions,
+        {
+            onError: console.error,
+            variables: {
+                authorization: mainCtx.tokens,
+            },
+        }
+    )
     const { key, keyb64 } = React.useMemo(() => {
         const key = crypto.getRandomValues(new Uint8Array(32))
         const keyb64 = Buffer.from(key).toString('base64')
@@ -505,6 +551,7 @@ const CreateCluster = () => {
                     name: '',
                     description: '',
                     featured: false,
+                    permissions: dataUnfinished.secretgraph,
                     mapper: {
                         [hashKey]: {
                             type: 'action',
