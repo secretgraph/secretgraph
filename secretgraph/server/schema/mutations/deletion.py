@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
-from itertools import chain
 from typing import List, Optional
 
 import strawberry
