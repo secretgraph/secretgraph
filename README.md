@@ -81,7 +81,6 @@ It is currently a monorepo containing js and python parts
 
 -   default: on cluster creation these groups are added by default except if groups are explicit specified
 -   register_global_name: can register a global cluster name
--   register_immutable: can set an immutable tag (Content becomes readonly)
 -   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
 -   manage_hidden: can see hidden contents
 -   manage_groups: can manage global groups of clusters

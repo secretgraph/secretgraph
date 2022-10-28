@@ -262,7 +262,6 @@ def update_metadata_fn(
     operation=MetadataOperations.APPEND,
     authset=None,
     required_keys=None,
-    allow_immutable=True,
 ):
     operation = operation or MetadataOperations.APPEND
     final_tags = None
@@ -294,8 +293,6 @@ def update_metadata_fn(
             final_tags = []
             for prefix, val in tags_dict.items():
                 if not val:
-                    if prefix == "immutable" and not allow_immutable:
-                        raise ValueError("cannot set immutable")
                     # can switch tags to flats
                     remove_tags_q |= Q(tag__startswith=prefix)
                     final_tags.append(ContentTag(content=content, tag=prefix))

@@ -401,8 +401,6 @@ def _update_or_create_content_or_key(
         final_tags = []
         for prefix, val in tags_dict.items():
             if not val:
-                if prefix == "immutable" and not objdata.allowImmutable:
-                    raise ValueError("cannot set immutable")
                 final_tags.append(ContentTag(content=content, tag=prefix))
             else:
                 for subval in val:
@@ -512,10 +510,8 @@ def create_key_fn(request, objdata, authset=None):
     hashes, public, private = _transform_key_into_dataobj(key_obj)
 
     public.net = objdata.net
-    public.allowImmutable = objdata.allowImmutable
     if private:
         private.net = objdata.net
-        private.allowImmutable = objdata.allowImmutable
     publickey_content = None
     if objdata.cluster.id:
         publickey_content = Content.objects.filter(
@@ -599,7 +595,6 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
             references=objdata.references,
             contentHash=objdata.contentHash,
             hidden=objdata.hidden,
-            allowImmutable=objdata.allowImmutable,
             **_value_to_dict(value_obj),
         )
         content_obj = Content()
@@ -646,7 +641,6 @@ def update_content_fn(
             publicKeyContent=content,
         )
         newdata.net = objdata.net
-        newdata.allowImmutable = objdata.allowImmutable
     elif content.type == "PrivateKey":
         # can only update private tags and actions, updateId
         is_key = True
@@ -675,7 +669,6 @@ def update_content_fn(
         if not newdata:
             raise ValueError("No data for private key")
         newdata.net = objdata.net
-        newdata.allowImmutable = objdata.allowImmutable
     else:
         newdata = ContentMergedInput(
             cluster=objdata.cluster,
@@ -683,7 +676,6 @@ def update_content_fn(
             references=objdata.references,
             contentHash=objdata.contentHash,
             hidden=objdata.hidden,
-            allowImmutable=objdata.allowImmutable,
             **(_value_to_dict(objdata.value) if objdata.value else {}),
         )
     func = _update_or_create_content_or_key(

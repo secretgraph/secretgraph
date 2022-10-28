@@ -121,9 +121,6 @@ def update_metadata(
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
 
-    allow_immutable = "register_immutable" in get_cached_permissions(
-        info.context.request, authset=authorization
-    )
     manage_update = "manage_update" in get_cached_permissions(
         info.context.request, authset=authorization
     )
@@ -163,7 +160,6 @@ def update_metadata(
                 else None,
                 operation=operation,
                 authset=authorization,
-                allow_immutable=allow_immutable,
             )
         )
         if actions:
