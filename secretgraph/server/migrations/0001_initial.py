@@ -85,7 +85,7 @@ class Migration(migrations.Migration):
                         max_length=181,
                         null=False,
                         validators=[
-                            secretgraph.server.validators.ClusterNameValidator
+                            secretgraph.server.validators.SafeNameValidator
                         ],
                     ),
                 ),
@@ -394,7 +394,7 @@ class Migration(migrations.Migration):
                         max_length=50,
                         unique=True,
                         validators=[
-                            secretgraph.server.validators.TypeAndGroupValidator,
+                            secretgraph.server.validators.SafeNameValidator,
                             django.core.validators.MinLengthValidator(1),
                         ],
                     ),
@@ -410,7 +410,17 @@ class Migration(migrations.Migration):
                         editable=False, primary_key=True, serialize=False
                     ),
                 ),
-                ("name", models.CharField(max_length=50, unique=True)),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=50,
+                        unique=True,
+                        validators=[
+                            secretgraph.server.validators.SafeNameValidator,
+                            django.core.validators.MinLengthValidator(1),
+                        ],
+                    ),
+                ),
                 ("description", models.TextField()),
                 ("hidden", models.BooleanField(blank=True, default=False)),
                 (

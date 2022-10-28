@@ -3,15 +3,15 @@ import re
 from django.utils.deconstruct import deconstructible
 from django.core.validators import RegexValidator
 
-ClusterName_regex = re.compile(r"^(?:\S+ \S)*\S*?$")
+SafeName_regex = re.compile(r"^(?:\S+ \S)*\S*?$")
 
 
 @deconstructible
-class ClusterNameValidator(RegexValidator):
+class SafeNameValidator(RegexValidator):
     def __init__(
         self,
     ) -> None:
-        super().__init__(ClusterName_regex)
+        super().__init__(SafeName_regex)
 
 
 ActionKeyHash_regex = re.compile(r"^[^:\s]+:.+$")

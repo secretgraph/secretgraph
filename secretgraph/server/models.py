@@ -29,7 +29,7 @@ from .messages import (
 )
 from .validators import (
     ActionKeyHashValidator,
-    ClusterNameValidator,
+    SafeNameValidator,
     ContentHashValidator,
     TypeAndGroupValidator,
 )
@@ -138,7 +138,7 @@ class Cluster(FlexidModel):
         default="",
         null=False,
         blank=True,
-        validators=[ClusterNameValidator],
+        validators=[SafeNameValidator],
     )
     # provides uniqueness to global name and is a speedup
     name_cached: str = models.CharField(
@@ -576,7 +576,7 @@ class GlobalGroupProperty(models.Model):
         max_length=50,
         null=False,
         unique=True,
-        validators=[TypeAndGroupValidator, MinLengthValidator(1)],
+        validators=[SafeNameValidator, MinLengthValidator(1)],
     )
 
 
@@ -600,7 +600,12 @@ class GlobalGroupCluster(models.Model):
 class GlobalGroup(models.Model):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
-    name: str = models.CharField(max_length=50, null=False, unique=True)
+    name: str = models.CharField(
+        max_length=50,
+        null=False,
+        unique=True,
+        validators=[SafeNameValidator, MinLengthValidator(1)],
+    )
     description: str = models.TextField()
     # don't show in groups, mutual exclusive to keys
     hidden: bool = models.BooleanField(default=False, blank=True)
