@@ -176,7 +176,7 @@ class Migration(migrations.Migration):
                         null=False,
                         validators=[
                             secretgraph.server.validators.TypeAndGroupValidator,
-                            django.core.validators.MinLengthValidator(2),
+                            django.core.validators.MinLengthValidator(1),
                         ],
                     ),
                 ),
@@ -395,7 +395,7 @@ class Migration(migrations.Migration):
                         unique=True,
                         validators=[
                             secretgraph.server.validators.TypeAndGroupValidator,
-                            django.core.validators.MinLengthValidator(2),
+                            django.core.validators.MinLengthValidator(1),
                         ],
                     ),
                 ),

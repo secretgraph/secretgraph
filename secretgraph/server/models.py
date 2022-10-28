@@ -266,7 +266,7 @@ class Content(FlexidModel):
     type: str = models.CharField(
         max_length=50,
         null=False,
-        validators=[TypeAndGroupValidator, MinLengthValidator(2)],
+        validators=[TypeAndGroupValidator, MinLengthValidator(1)],
     )
     state: str = models.CharField(max_length=10, null=False)
 
@@ -576,7 +576,7 @@ class GlobalGroupProperty(models.Model):
         max_length=50,
         null=False,
         unique=True,
-        validators=[TypeAndGroupValidator, MinLengthValidator(2)],
+        validators=[TypeAndGroupValidator, MinLengthValidator(1)],
     )
 
 
