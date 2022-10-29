@@ -1,11 +1,11 @@
 export function mergeDeleteObjects(
-    oldObj: any,
+    targetObj: any,
     newObj: any,
     objHandler: (a: any, b: any) => [any, number] = mergeDeleteObjects
 ): [any, number] {
     let count = 0
 
-    const copied = oldObj ? Object.assign({}, oldObj) : {}
+    const copied = targetObj ? Object.assign({}, targetObj) : {}
     for (const [key, value] of Object.entries(newObj)) {
         if (!key) {
             continue

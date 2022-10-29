@@ -4,6 +4,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { loadConfig, loadConfigSync } from '@secretgraph/misc/utils/config'
+import { createClient } from '@secretgraph/misc/utils/graphql'
+import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations'
 import * as React from 'react'
 
 import Definitions from './Definitions'
@@ -16,9 +18,14 @@ type Props = {
 
 function Client(props: Props) {
     const [config, setConfig] =
-        React.useState<Interfaces.ConfigInterface | null>(() =>
-            loadConfigSync()
-        )
+        React.useState<Interfaces.ConfigInterface | null>(() => {
+            let [conf, needsUpdate] = loadConfigSync()
+            /**if(res[1]){
+                 *  trigger update
+
+                }*/
+            return conf
+        })
     const [loading, setLoading] = React.useState(() => !config)
     React.useEffect(() => {
         if (config) {
@@ -34,9 +41,17 @@ function Client(props: Props) {
             query.delete('url')
             url.hash = query.toString()
             try {
-                const conf = await loadConfig(url.href)
+                let [conf, needsUpdate] = await loadConfig(url.href)
+                if (conf && active && needsUpdate) {
+                    conf = await updateConfigRemoteReducer(conf, {
+                        update: {},
+                        client: createClient(conf.baseUrl),
+                    })
+                }
                 if (conf && active) {
                     setConfig(conf)
+                }
+                if (needsUpdate) {
                 }
             } finally {
                 if (active) {

@@ -38,10 +38,12 @@ export function moveHosts({
 }
 
 export function cleanConfig(
-    config: Interfaces.ConfigInterface | null | undefined
-) {
+    config: Interfaces.ConfigInterface | null | undefined,
+    domain?: string
+): [Interfaces.ConfigInterface | null, boolean] {
+    let hasChanges = false
     if (!config) {
-        return null
+        return [null, false]
     }
     if (
         !config.baseUrl ||
@@ -51,10 +53,11 @@ export function cleanConfig(
         !config.configCluster
     ) {
         console.error('Errors in config', config)
-        return null
+        return [null, false]
     }
     if (!config.slots?.length) {
         config.slots = ['main']
+        hasChanges = true
     }
     for (const [key, val] of Object.entries(config.tokens)) {
         if (typeof val == 'string') {
@@ -63,6 +66,7 @@ export function cleanConfig(
                 note: '',
                 system: false,
             }
+            hasChanges = true
         }
     }
     for (const [key, val] of Object.entries(config.certificates)) {
@@ -71,6 +75,7 @@ export function cleanConfig(
                 data: val,
                 note: '',
             }
+            hasChanges = true
         }
     }
     for (const host of Object.values(config.hosts)) {
@@ -81,8 +86,80 @@ export function cleanConfig(
             host['contents'] = {}
         }
     }
+    if (domain) {
+        for (const host of [...Object.keys(config.hosts)]) {
+            const nhost = new URL(host, domain).href
+            if (host != nhost) {
+                if (!config.hosts[nhost]) {
+                    config.hosts[nhost] = {
+                        clusters: {},
+                        contents: {},
+                    }
+                }
 
-    return config
+                const new_clusters = mergeDeleteObjects(
+                    config.hosts[nhost].clusters,
+                    config.hosts[host].clusters,
+                    (
+                        oldval: Interfaces.ConfigClusterInterface,
+                        newval: Interfaces.ConfigClusterInterface<null>
+                    ) => {
+                        const newState: Interfaces.ConfigClusterInterface =
+                            oldval
+                                ? oldval
+                                : {
+                                      hashes: {},
+                                  }
+                        if (newval.hashes) {
+                            const res = mergeDeleteObjects(
+                                newState.hashes,
+                                newval.hashes,
+                                (old, newobj) => {
+                                    return [[...new Set(...old, newobj)], 1]
+                                }
+                            )
+                            newState.hashes = res[0]
+                        }
+                        return [newState, 1]
+                    }
+                )[0]
+                config.hosts[nhost].clusters = new_clusters
+                const new_contents = mergeDeleteObjects(
+                    config.hosts[nhost].contents,
+                    config.hosts[host].contents,
+                    (
+                        oldval: Interfaces.ConfigContentInterface,
+                        newval: Interfaces.ConfigContentInterface<null>
+                    ) => {
+                        const newState: Interfaces.ConfigContentInterface =
+                            oldval
+                                ? oldval
+                                : {
+                                      hashes: {},
+                                      cluster: '',
+                                  }
+                        if (newval.hashes) {
+                            newState.hashes = mergeDeleteObjects(
+                                newState.hashes,
+                                newval.hashes
+                            )[0]
+                        }
+                        if (newval.cluster) {
+                            newState.cluster = newval.cluster
+                        }
+                        if (!newState.cluster) {
+                            throw Error('cluster is missing')
+                        }
+                        return [newState, 1]
+                    }
+                )[0]
+                config.hosts[nhost].contents = new_contents
+                delete config.hosts[host]
+                hasChanges = true
+            }
+        }
+    }
+    return [config, hasChanges]
 }
 
 export async function checkConfigObject(
@@ -209,18 +286,18 @@ async function loadConfigUrl_helper(
 
 export function loadConfigSync(
     obj: Storage = window.localStorage
-): Interfaces.ConfigInterface | null {
+): [Interfaces.ConfigInterface | null, boolean] {
     let result = obj.getItem('secretgraphConfig')
     if (!result) {
-        return null
+        return [null, false]
     }
-    return cleanConfig(JSON.parse(result))
+    return cleanConfig(JSON.parse(result), window.location.href)
 }
 
 export const loadConfig = async (
     obj: string | File | Storage = window.localStorage,
     pws?: string[]
-): Promise<Interfaces.ConfigInterface | null> => {
+): Promise<[Interfaces.ConfigInterface | null, boolean]> => {
     if (obj instanceof Storage) {
         return loadConfigSync(obj)
     } else if (obj instanceof File) {
@@ -247,10 +324,11 @@ export const loadConfig = async (
             return cleanConfig(
                 JSON.parse(
                     String.fromCharCode(...new Uint8Array(parsedResult2))
-                )
+                ),
+                window.location.href
             )
         }
-        return cleanConfig(parsedResult)
+        return cleanConfig(parsedResult, window.location.href)
     } else {
         // strip url from prekeys and decrypt
         const url = new URL(obj, window.location.href)
@@ -270,12 +348,15 @@ export const loadConfig = async (
             },
         })
         if (!contentResult.ok) {
-            return null
+            return [null, false]
         }
         let content = await contentResult.blob()
         // try unencrypted
         try {
-            return cleanConfig(JSON.parse(await content.text()))
+            return cleanConfig(
+                JSON.parse(await content.text()),
+                window.location.href
+            )
         } catch (ignore1) {}
         const nonce = contentResult.headers.get('X-NONCE')
         const key_hashes = []
@@ -307,7 +388,7 @@ export const loadConfig = async (
         }
         if (!raw_keys.size) {
             console.debug('no prekeys decrypted')
-            return null
+            return [null, false]
         }
         // try direct way
         try {
@@ -326,7 +407,7 @@ export const loadConfig = async (
         } catch (ignore2) {}
         if (key_hashes.length == 0) {
             console.warn('could not decode result, no key_hashes found', keys)
-            return null
+            return [null, false]
         }
         const keysResponse = await fetch(url, {
             headers: {
@@ -336,7 +417,7 @@ export const loadConfig = async (
         })
         if (!keysResponse.ok) {
             console.error('key response errored', keysResponse.statusText)
-            return null
+            return [null, false]
         }
         let keysResult
         // try walking the private key way
@@ -344,7 +425,7 @@ export const loadConfig = async (
             keysResult = await keysResponse.json()
         } catch (exc) {
             console.error('Invalid response, expected json with keys', exc)
-            return null
+            return [null, false]
         }
 
         try {
@@ -363,14 +444,14 @@ export const loadConfig = async (
                 foundConfig = cleanConfig(JSON.parse(text))
             } catch (e) {
                 console.warn('failed to parse config file', e)
-                return null
+                return [null, false]
             }
             // TODO: fixup hosts, we have the url
             return foundConfig
         } catch (exc) {
             console.warn('retrieving private keys failed: ', exc)
         }
-        return null
+        return [null, false]
     }
 }
 
@@ -911,10 +992,10 @@ export function updateConfig(
         }
     }
     const ret = cleanConfig(newState)
-    if (!ret) {
+    if (!ret[0]) {
         throw Error('invalid merge')
     }
-    return [ret, count]
+    return [ret[0], ret[1] ? count + 1 : count]
 }
 
 export function updateConfigReducer(

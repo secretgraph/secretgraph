@@ -350,6 +350,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
+-   auto-fix non-global hosts in config (would remove)
 -   disallow non global ids? Would ease implementation
 -   port to real filters
 -   move to dataclasses and TypedDicts

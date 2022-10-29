@@ -14,7 +14,6 @@ import { UnpackPromise } from '../../typing'
 import { transformActions } from '../action'
 import {
     authInfoFromConfig,
-    cleanConfig,
     extractPrivKeys,
     findCertCandidatesForRefs,
     updateConfig,
@@ -447,9 +446,6 @@ async function updateRemoteConfig({
     const [mergedConfig, changes] = updateConfig(foundConfig, update)
     if (changes == 0) {
         return [mergedConfig, changes]
-    }
-    if (!cleanConfig(mergedConfig)) {
-        throw Error('invalid merged config')
     }
     // updates cache
     const result = await updateContent({

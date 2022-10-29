@@ -186,7 +186,7 @@ export async function initializeCluster({
         note: 'config token',
         system: true,
     }
-    if (!cleanConfig(config)) {
+    if (!cleanConfig(config)[0]) {
         throw Error('invalid config created')
     }
     const contentHash = await hashTagsContentHash(
