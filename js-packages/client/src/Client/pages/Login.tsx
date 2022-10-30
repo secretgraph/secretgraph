@@ -14,6 +14,7 @@ import {
     saveConfig,
 } from '@secretgraph/misc/utils/config'
 import { createClient } from '@secretgraph/misc/utils/graphql'
+import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations'
 import { Field, Formik } from 'formik'
 import * as React from 'react'
 
@@ -47,7 +48,7 @@ function Login() {
                     if (!file && !url) {
                         return
                     }
-                    const newConfig = await loadConfig(
+                    const [newConfig, needsUpdate] = await loadConfig(
                         file ? file : url,
                         password ? [password] : undefined
                     )
@@ -60,6 +61,12 @@ function Login() {
                         return
                     }
                     const newClient = createClient(newConfig.baseUrl)
+                    if (needsUpdate) {
+                        updateConfigRemoteReducer(null, {
+                            update: newConfig,
+                            client: newClient,
+                        })
+                    }
                     if (!(await checkConfigObject(newClient, newConfig))) {
                         sendMessage({
                             severity: 'error',

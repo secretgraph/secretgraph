@@ -3,7 +3,11 @@ import { ThemeProvider } from '@mui/material/styles'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { loadConfig, loadConfigSync } from '@secretgraph/misc/utils/config'
+import {
+    loadConfig,
+    loadConfigSync,
+    updateConfigReducer,
+} from '@secretgraph/misc/utils/config'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations'
 import * as React from 'react'
@@ -17,15 +21,18 @@ type Props = {
 }
 
 function Client(props: Props) {
-    const [config, setConfig] =
-        React.useState<Interfaces.ConfigInterface | null>(() => {
+    const [config, updateConfig] = React.useReducer(
+        updateConfigReducer,
+        null,
+        () => {
             let [conf, needsUpdate] = loadConfigSync()
             /**if(res[1]){
                  *  trigger update
 
                 }*/
             return conf
-        })
+        }
+    )
     const [loading, setLoading] = React.useState(() => !config)
     React.useEffect(() => {
         if (config) {
@@ -42,16 +49,17 @@ function Client(props: Props) {
             url.hash = query.toString()
             try {
                 let [conf, needsUpdate] = await loadConfig(url.href)
-                if (conf && active && needsUpdate) {
+                if (!conf) {
+                    return
+                }
+                if (active && needsUpdate) {
                     conf = await updateConfigRemoteReducer(conf, {
                         update: {},
                         client: createClient(conf.baseUrl),
                     })
                 }
-                if (conf && active) {
-                    setConfig(conf)
-                }
-                if (needsUpdate) {
+                if (active) {
+                    updateConfig({ update: conf, replace: true })
                 }
             } finally {
                 if (active) {
@@ -72,7 +80,13 @@ function Client(props: Props) {
         <LocalizationProvider dateAdapter={AdapterDateFns}>
             <ThemeProvider theme={themeDefinition}>
                 <CssBaseline />
-                {!loading && <Definitions {...props} config={config} />}
+                {!loading && (
+                    <Definitions
+                        {...props}
+                        config={config}
+                        updateConfig={updateConfig}
+                    />
+                )}
             </ThemeProvider>
         </LocalizationProvider>
     )

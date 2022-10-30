@@ -54,7 +54,8 @@ class Command(BaseCommand):
         )
         parser.add_argument("--quota", default=None, type=int)
         parser.add_argument("--bits", "-b", type=int, default=4096)
-        parser.add_argument("--max_upload_size", default=None, type=int)
+        parser.add_argument("--slots", nargs="+", default=["main"], type=str)
+        parser.add_argument("--max-upload-size", default=None, type=int)
         parser.add_argument("--net", default=None)
         parser.add_argument("--user", default=None)
         parser.add_argument("--name", default="")
@@ -64,11 +65,8 @@ class Command(BaseCommand):
             default="trusted",
             choices=["trusted", "required"],
         )
-        parser.add_argument("domain")
 
     def handle(self, **options):
-        if "://" not in options["domain"]:
-            raise ValueError("Scheme missing")
         if not options["token"]:
             options["token"] = b64encode(os.urandom(32)).decode("ascii")
         if options["net"]:
@@ -128,7 +126,7 @@ class Command(BaseCommand):
             )
         )
 
-        url = urljoin(options["domain"], reverse("graphql-plain"))
+        url = reverse("graphql-plain")
         request = RequestFactory().get(url)
         clusterfn = create_cluster_fn(
             request,
@@ -209,6 +207,7 @@ class Command(BaseCommand):
                             "note": "initial token",
                         },
                     },
+                    "slots": options["slots"],
                     "hosts": {
                         url: {
                             "clusters": {

@@ -18,7 +18,7 @@ class Command(BaseCommand):
         parser.add_argument("--token", default=None, help="Manage token")
         parser.add_argument("--quota", default=None, type=int)
         parser.add_argument("--bits", "-b", type=int, default=4096)
-        parser.add_argument("--max_upload_size", default=None, type=int)
+        parser.add_argument("--max-upload-size", default=None, type=int)
         parser.add_argument("--net", default=None)
         parser.add_argument("--user", default=None)
         parser.add_argument("--name", default="")

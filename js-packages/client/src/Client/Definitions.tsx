@@ -16,7 +16,10 @@ import Main from './pages/Main'
 type Props = {
     defaultPath?: string
     homeUrl?: string
-    config?: Interfaces.ConfigInterface | null
+    config: Interfaces.ConfigInterface | null
+    updateConfig: React.Dispatch<
+        React.ReducerAction<typeof updateConfigReducer>
+    >
 }
 
 function updateState<T>(state: T, update: Partial<T>): T {
@@ -24,7 +27,12 @@ function updateState<T>(state: T, update: Partial<T>): T {
 }
 type updateStateType<T> = (state: T, update: Partial<T>) => T
 
-function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
+function Definitions({
+    defaultPath,
+    homeUrl,
+    config,
+    updateConfig: updateConfigIntern,
+}: Props) {
     const searchInit = new URLSearchParams(window.location.hash.substring(1))
     const [openSidebar, _setOpenSidebar] = React.useState(() => {
         return JSON.parse(sessionStorage.getItem('openSidebar') || 'true')
@@ -34,10 +42,6 @@ function Definitions({ defaultPath, homeUrl, config: initialConfig }: Props) {
         sessionStorage.setItem('openSidebar', JSON.stringify(arg))
         _setOpenSidebar(arg)
     }
-    const [config, updateConfigIntern] = React.useReducer(
-        updateConfigReducer,
-        initialConfig || null
-    )
     const updateConfig = (
         update: Interfaces.ConfigInputInterface | null,
         replace?: boolean
