@@ -62,8 +62,6 @@ export const mapEncryptionAlgorithms: {
     PBKDF2: { usages: ['deriveBits', 'deriveKey'] },
     'RSA-PSSprivate': { usages: ['sign'] },
     'RSA-PSSpublic': { usages: ['verify'] },
-    'RSASSA-PKCS1-v1_5private': { usages: ['sign'] },
-    'RSASSA-PKCS1-v1_5public': { usages: ['verify'] },
     ECDSAprivate: { usages: ['sign', 'deriveKey', 'deriveBits'] },
     ECDSApublic: { usages: ['verify', 'deriveKey', 'deriveBits'] },
     'RSA-OAEPprivate': { usages: ['decrypt'] },
