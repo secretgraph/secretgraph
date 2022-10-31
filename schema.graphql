@@ -45,7 +45,7 @@ type Cluster implements Node {
   public: Boolean
   updateId: UUID
   updated: DateTime
-  user: ID
+  user: String
 }
 
 """A connection to a list of items."""
@@ -70,8 +70,6 @@ type ClusterEdge {
 }
 
 input ClusterFilter {
-  user: ID = null
-
   """Search description and id"""
   search: String = null
   states: [String!] = null

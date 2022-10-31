@@ -7,8 +7,6 @@ from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
 from django.db.models import Subquery, Q, QuerySet, Value
-from django.conf import settings
-from django.contrib.auth import get_user_model
 
 from ...utils.auth import (
     fetch_by_id,
@@ -43,7 +41,6 @@ class ContentFilterSimple:
 
 @gql.input
 class ClusterFilter:
-    user: Optional[strawberry.ID] = None
     search: Optional[str] = gql.field(
         default=None, description="Search description and id"
     )
@@ -106,15 +103,6 @@ class ClusterNode(relay.Node):
             return None
         return self.updateId
 
-    @gql.django.field()
-    def user(self) -> Optional[strawberry.ID]:
-        if self.limited:
-            return None
-        if not hasattr(self.net, "user_id"):
-            return None
-        #
-        return relay.to_base64(get_user_model(), self.net.user_id)
-
     @gql.django.field(only=["id", "cluster_id"])
     def availableActions(self, info: Info) -> List[ActionEntry]:
         if self.limited:
@@ -126,6 +114,13 @@ class ClusterNode(relay.Node):
         if self.limited:
             return None
         return self.name
+
+    @gql.django.field()
+    def user(self) -> Optional[str]:
+        if self.limited:
+            return None
+        #
+        return str(self.net.user)
 
     @gql.django.field()
     def description(self) -> Optional[str]:
@@ -267,19 +262,6 @@ class ClusterNode(relay.Node):
             queryset = queryset.filter(
                 id__in=Subquery(del_result["objects"].values("id"))
             )
-        if filters.user:
-            # users are not supported in this configuration so ignore them
-            user = None
-            if not getattr(settings, "AUTH_USER_MODEL", None) and not getattr(
-                settings, "SECRETGRAPH_BIND_TO_USER", False
-            ):
-                pass
-            else:
-                try:
-                    user = relay.from_base64(filters.user)[1]
-                except Exception:
-                    pass
-                queryset = queryset.filter(user__pk=user)
 
         if filters.search:
             queryset = queryset.filter(
