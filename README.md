@@ -65,6 +65,15 @@ It is currently a monorepo containing js and python parts
 -   js-packages: js packages
 -   webpack and npm related files
 
+# Server Settings
+
+server settings can be done in the standard django way. The derivated settings should import `secretgraph.settings`
+
+Special configuration keys:
+
+-   `SECRETGRAPH_BIND_TO_USER`: require the binding of nets to user accounts
+-   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_BIND_TO_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
+
 # API
 
 ## Permissions (cluster)
@@ -107,7 +116,7 @@ key refs are assigned to privatekey, the rest to the public key
 
 ### Authorization header
 
--   flexid/global flexid:token: Auth token (only if authorization is not specified)
+-   flexid/global flexid:token: Auth token (only if authorization is not specified) or via authorization attribute
 
 ## contents request api
 
@@ -350,7 +359,6 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
--   auto-fix non-global hosts in config (would remove)
 -   disallow non global ids? Would ease implementation
 -   port to real filters
 -   move to dataclasses and TypedDicts

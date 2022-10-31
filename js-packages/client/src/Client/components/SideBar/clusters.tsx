@@ -101,26 +101,29 @@ export default React.memo(function Clusters({
             ret.push(
                 <TreeItem
                     label={
-                        <SidebarTreeItemLabel
-                            title={node.description || undefined}
-                            deleted={node.deleted}
-                            marked
-                            leftIcon={<GroupWorkIcon fontSize="small" />}
+                        <div
+                            onClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                            }}
+                            onDoubleClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                                node && goTo({ ...node, title: node.name })
+                            }}
                         >
-                            {name}
-                        </SidebarTreeItemLabel>
+                            <SidebarTreeItemLabel
+                                title={node.description || undefined}
+                                deleted={node.deleted}
+                                marked
+                                leftIcon={<GroupWorkIcon fontSize="small" />}
+                            >
+                                {name}
+                            </SidebarTreeItemLabel>
+                        </div>
                     }
                     key={`${props.nodeId}-${nodeId}`}
                     nodeId={`${props.nodeId}-${nodeId}`}
-                    onClick={(ev) => {
-                        ev.preventDefault()
-                        ev.stopPropagation()
-                    }}
-                    onDoubleClick={(ev) => {
-                        ev.preventDefault()
-                        ev.stopPropagation()
-                        data?.node && goTo({ ...node, title: node.name })
-                    }}
                 >
                     <SideBarContents
                         goTo={goTo}

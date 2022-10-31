@@ -68,7 +68,7 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
                     raise ValueError("Must be logged in")
                 net = user.secretgraph_net
             elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
-                raise ValueError("Cannot register new cluster")
+                raise ValueError("Cannot register")
         if not net:
             net = Net()
             if user:

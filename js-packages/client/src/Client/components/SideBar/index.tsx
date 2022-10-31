@@ -87,10 +87,14 @@ const SideBarItems = () => {
             tokensPermissions = res.types
         }
         let name = ''
-        for (const tag of node.tags) {
-            if (tag.startsWith('name=')) {
-                name = tag.match(/=(.*)/)[1]
-                break
+        if ((type = 'Cluster')) {
+            name = node.name
+        } else {
+            for (const tag of node.tags) {
+                if (tag.startsWith('name=')) {
+                    name = tag.match(/=(.*)/)[1]
+                    break
+                }
             }
         }
 
@@ -103,7 +107,7 @@ const SideBarItems = () => {
             action: 'view',
             url: activeUrl,
             shareFn: null,
-            title: mainCtx.updateId == node.updateId ? undefined : '',
+            title: mainCtx.updateId == node.updateId ? undefined : name,
             tokens,
             tokensPermissions,
         })

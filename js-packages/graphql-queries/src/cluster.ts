@@ -7,7 +7,7 @@ export const clusterFeedQuery = gql`
         $types: [String!]
         $include: [String!]
         $exclude: [String!]
-        $excludeIds: [String!]
+        $excludeIds: [ID!]
         $deleted: UseCriteria
         $public: UseCriteriaPublic
         $search: String

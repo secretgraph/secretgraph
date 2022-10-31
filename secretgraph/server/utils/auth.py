@@ -448,7 +448,7 @@ def get_cached_permissions(
     authset=None,
     ensureInitialized=False,
 ) -> frozenset[str]:
-    if not getattr(request, permissions_name, None):
+    if getattr(request, permissions_name, None) is None:
         if ensureInitialized:
             raise AttributeError("cached permissions does not exist")
         if not authset:

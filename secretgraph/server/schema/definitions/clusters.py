@@ -186,9 +186,9 @@ class ClusterNode(relay.Node):
             contentHashes=filters.contentHashes,
         )
 
-    @classmethod
-    def resolve_node(
-        cls,
+    @gql.django.django_resolver
+    @staticmethod
+    def _resolve_node(
         node_id: str,
         *,
         info: Info,
@@ -200,11 +200,34 @@ class ClusterNode(relay.Node):
         else:
             q = Q(flexid=node_id)
         try:
-            result["Cluster"]["objects"].get(q)
+            result["objects"].get(q)
         except (Cluster.DoesNotExist, ValueError) as exc:
             if required:
                 raise exc
             return None
+
+    @classmethod
+    def resolve_node(
+        cls,
+        node_id: str,
+        *,
+        info: Info,
+        required: bool = False,
+    ):
+        return cls._resolve_node(node_id, info=info, required=required)
+
+    @gql.django.django_resolver
+    @staticmethod
+    def _resolve_nodes(
+        *,
+        info: Info,
+        node_ids: Optional[Iterable[str]] = None,
+    ):
+        result = get_cached_result(info.context)["Cluster"]
+        if not node_ids:
+            return result["objects"]
+        # for allowing specifing global name
+        return fetch_by_id(result["objects"], node_ids, limit_ids=None)
 
     @classmethod
     def resolve_nodes(
@@ -213,13 +236,7 @@ class ClusterNode(relay.Node):
         info: Info,
         node_ids: Optional[Iterable[str]] = None,
     ):
-        result = get_cached_result(info.context)["Cluster"]
-        if not node_ids:
-            return result["Cluster"]["objects"]
-        # for allowing specifing global name
-        return fetch_by_id(
-            result["Cluster"]["objects"], node_ids, limit_ids=None
-        )
+        return cls._resolve_nodes(info=info, node_ids=node_ids)
 
     @classmethod
     def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:

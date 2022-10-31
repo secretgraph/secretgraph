@@ -2,6 +2,7 @@ import { FetchResult, useQuery } from '@apollo/client'
 import LocalPoliceIcon from '@mui/icons-material/LocalPolice'
 import PublicIcon from '@mui/icons-material/Public'
 import Security from '@mui/icons-material/Security'
+import { InputAdornment } from '@mui/material'
 import Button from '@mui/material/Button'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
@@ -29,7 +30,7 @@ import {
     updateCluster,
     updateConfigRemoteReducer,
 } from '@secretgraph/misc/utils/operations'
-import { FastField, FieldArray, Form, Formik } from 'formik'
+import { FastField, Field, FieldArray, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
@@ -295,24 +296,35 @@ const ClusterIntern = ({
                                 }}
                             </FieldArray>
                             <Grid container spacing={2}>
-                                <Grid item xs="auto">
-                                    <Tooltip
-                                        title={
-                                            values.name.startsWith('@')
-                                                ? 'public global'
-                                                : 'internal'
-                                        }
-                                    >
-                                        {values.name.startsWith('@') ? (
-                                            <PublicIcon />
-                                        ) : (
-                                            <LocalPoliceIcon />
-                                        )}
-                                    </Tooltip>
-                                </Grid>
                                 <Grid item xs>
-                                    <FastField
+                                    <Field
                                         component={FormikTextField}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <Tooltip
+                                                    title={
+                                                        values.name.startsWith(
+                                                            '@'
+                                                        )
+                                                            ? 'public global'
+                                                            : 'internal'
+                                                    }
+                                                >
+                                                    <InputAdornment
+                                                        position="start"
+                                                        disablePointerEvents
+                                                    >
+                                                        {values.name.startsWith(
+                                                            '@'
+                                                        ) ? (
+                                                            <PublicIcon fontSize="medium" />
+                                                        ) : (
+                                                            <LocalPoliceIcon fontSize="medium" />
+                                                        )}
+                                                    </InputAdornment>
+                                                </Tooltip>
+                                            ),
+                                        }}
                                         name="name"
                                         type="text"
                                         label="Name"
@@ -551,7 +563,7 @@ const CreateCluster = () => {
                     name: '',
                     description: '',
                     featured: false,
-                    permissions: dataUnfinished.secretgraph,
+                    permissions: dataUnfinished.secretgraph.permissions,
                     mapper: {
                         [hashKey]: {
                             type: 'action',
@@ -583,10 +595,11 @@ const CreateCluster = () => {
 
 export default function ClusterComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    // not capable yet
+    // updateMainCtx={updateMainCtx}
     return (
         <DecisionFrame
             mainCtx={mainCtx}
-            updateMainCtx={updateMainCtx}
             create={CreateCluster}
             view={ViewCluster}
             edit={EditCluster}

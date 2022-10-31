@@ -243,20 +243,18 @@ class ContentNode(relay.Node):
                 ),
             )
 
+        # only retrievable by tokens ignoring public
+        # this path excludes the public hook which injects public
         if filters.public == UseCriteriaPublic.TOKEN:
             pass
         elif filters.public != UseCriteriaPublic.IGNORE:
             # should only include public contents with public cluster
             # if no clusters are specified (e.g. root query)
             if filters.public == UseCriteriaPublic.TRUE:
+                queryset = queryset.filter(state__in=constants.public_states)
                 if not filters.clusters:
                     queryset = queryset.filter(
-                        state__in=constants.public_states,
                         cluster__globalNameRegisteredAt__isnull=False,
-                    )
-                else:
-                    queryset = queryset.filter(
-                        state__in=constants.public_states
                     )
             else:
                 queryset = queryset.exclude(state__in=constants.public_states)

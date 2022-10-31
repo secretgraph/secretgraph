@@ -6,7 +6,7 @@ from strawberry.types import Info
 
 
 from .arguments import AuthList
-from ..utils.auth import get_cached_result
+from ..utils.auth import get_cached_permissions, get_cached_result
 from ..models import Cluster, Content
 from .definitions import (
     ClusterFilter,
@@ -63,7 +63,7 @@ class SecretgraphObject:
         )
 
     config: SecretgraphConfig = gql.field(default=SecretgraphConfig())
-    permissions: list[str] = gql.field(default=get_permissions)
+    permissions: List[str] = gql.field(resolver=get_permissions)
 
 
 @gql.type
@@ -77,6 +77,7 @@ class Query:
         f = get_cached_result(info.context.request, authset=authorization)
         f["Content"]
         f["Cluster"]
+        get_cached_permissions(info.context.request)
         return SecretgraphObject
 
 
