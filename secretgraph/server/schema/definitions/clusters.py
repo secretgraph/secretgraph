@@ -119,7 +119,8 @@ class ClusterNode(relay.Node):
     def user(self) -> Optional[str]:
         if self.limited:
             return None
-        #
+        if not self.globalNameRegisteredAt:
+            return None
         return str(self.net.user)
 
     @gql.django.field()
