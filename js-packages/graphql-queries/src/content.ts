@@ -571,6 +571,7 @@ export const getContentConfigurationQuery = gql`
                     ) {
                         edges {
                             node {
+                                id
                                 link
                                 type
                                 tags(includeTags: ["key_hash="])
@@ -586,7 +587,6 @@ export const getContentConfigurationQuery = gql`
                         trustedKeys
                         allowedTags
                     }
-                    id
                     nonce
                     link
                     type
@@ -602,11 +602,99 @@ export const getContentConfigurationQuery = gql`
                         ) {
                             edges {
                                 node {
+                                    id
                                     link
                                     type
                                     tags(includeTags: ["key_hash="])
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
+export const getContentReferencesQuery = gql`
+    query contentGetReferencesQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+        $deleted: Boolean
+        $count: Int
+        $cursor: String
+    ) {
+        secretgraph(authorization: $authorization) {
+            node(id: $id) {
+                ... on Content {
+                    id
+                    references(
+                        filters: { deleted: $deleted }
+                        first: $count
+                        after: $cursor
+                    )
+                        @connection(
+                            key: "feedReferences"
+                            filter: ["authorization", "id"]
+                        ) {
+                        edges {
+                            node {
+                                extra
+                                target {
+                                    id
+                                    link
+                                    type
+                                    tags(includeTags: ["name=", "~name="])
+                                }
+                            }
+                        }
+                        pageInfo {
+                            hasNextPage
+                            endCursor
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
+export const getContentReferencedByQuery = gql`
+    query contentGetReferencedByQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+        $deleted: Boolean
+        $count: Int
+        $cursor: String
+    ) {
+        secretgraph(authorization: $authorization) {
+            node(id: $id) {
+                ... on Content {
+                    id
+                    referencedBy(
+                        first: $count
+                        after: $cursor
+                        filters: { deleted: $deleted }
+                    )
+                        @connection(
+                            key: "feedReferencedBy"
+                            filter: ["authorization", "id", "deleted"]
+                        ) {
+                        edges {
+                            node {
+                                extra
+                                target {
+                                    deleted
+                                    id
+                                    link
+                                    type
+                                    tags(includeTags: ["name=", "~name="])
+                                }
+                            }
+                        }
+                        pageInfo {
+                            hasNextPage
+                            endCursor
                         }
                     }
                 }
