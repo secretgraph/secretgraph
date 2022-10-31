@@ -28,7 +28,9 @@ INSTALLED_APPS += [  # noqa F405
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
-SECRETGRAPH_BIND_TO_USER = True
+SECRETGRAPH_BIND_TO_USER = (
+    os.environ.get("BIND_TO_USER", "true").lower() == "true"
+)
 SECRETGRAPH_ALLOW_REGISTER = (
     os.environ.get("ALLOW_REGISTER", "false").lower() == "true"
 )

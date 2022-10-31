@@ -67,12 +67,25 @@ It is currently a monorepo containing js and python parts
 
 # Server Settings
 
+## direct
+
 server settings can be done in the standard django way. The derivated settings should import `secretgraph.settings`
 
 Special configuration keys:
 
 -   `SECRETGRAPH_BIND_TO_USER`: require the binding of nets to user accounts
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_BIND_TO_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
+
+## docker
+
+-   `BIND_TO_USER`: nets need user
+-   `ALLOW_REGISTER`: allow registering new users
+-   `ALLOWED_HOSTS`: listen to hosts (default localhost)
+-   `DB_ENGINE`: db stuff
+-   `DB_USER`: db stuff
+-   `DB_PASSWORD`: db stuff
+-   `DB_HOST`: db stuff
+-   `DB_PORT`: db stuff
 
 # API
 
