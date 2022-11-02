@@ -310,6 +310,7 @@ export const findPublicKeyQuery = gql`
 `
 
 // needs type because this attribute is checked for the extra key tag extractor pass
+// publicKey -> privateKey -> (key tag | references to public keys (have shared key)) and signature references
 export const keysRetrievalQuery = gql`
     query keysRetrievalQuery(
         $id: GlobalID!
@@ -340,11 +341,7 @@ export const keysRetrievalQuery = gql`
                         id
                     }
                     references(
-                        filters: {
-                            groups: ["signature"]
-                            includeTags: $keyhashes
-                            deleted: FALSE
-                        }
+                        filters: { groups: ["signature"], deleted: FALSE }
                     ) {
                         edges {
                             node {
@@ -385,7 +382,6 @@ export const keysRetrievalQuery = gql`
                                                     tags(
                                                         includeTags: [
                                                             "key_hash="
-                                                            "key="
                                                         ]
                                                     )
                                                 }
