@@ -1,4 +1,4 @@
-from django.db.models import Q, Subquery, Exists, OuterRef
+from django.db.models import Q, Exists, OuterRef
 from strawberry_django_plus import relay
 
 from ....core import constants
@@ -88,9 +88,7 @@ class UpdateHandlers:
 
     @staticmethod
     def do_update(action_dict, scope, sender, accesslevel, **kwargs):
-        if action_dict.get("restricted") and scope == "update":
-            ownaccesslevel = 3
-        elif scope == "update":
+        if scope == "update":
             ownaccesslevel = 1
         else:
             ownaccesslevel = 0
@@ -132,15 +130,9 @@ class UpdateHandlers:
                     incl_filters_tag |= Q(tags__tag=i[1:])
                 else:
                     incl_filters_tag |= Q(tags__tag__startswith=i)
-            excl_filters = (
-                ~Q(tags__tag="immutable")
-                & ~excl_filters_tag
-                & ~excl_filters_type
-            )
-            if scope == "update" and action_dict.get("freeze"):
-                excl_filters &= ~Q(
-                    action__in=Subquery(group="fetch", used=True).values("id")
-                )
+            excl_filters = ~excl_filters_tag & ~excl_filters_type
+            if scope == "update":
+                excl_filters &= ~Q(tags__tag="immutable")
             return {
                 "filters": excl_filters
                 & incl_filters_state
@@ -180,8 +172,6 @@ class UpdateHandlers:
         result = {
             "action": "update",
             "contentActionGroup": "update",
-            "restricted": bool(action_dict.get("restricted")),
-            "freeze": bool(action_dict.get("freeze")),
             "nets": None,
             "injectedTags": [],
             "allowedTags": None,
@@ -393,8 +383,6 @@ class UpdateHandlers:
                     "injectedReferences", []
                 ),
                 "updateable": bool(action_dict.get("updateable", True)),
-                # freeze when fetched
-                "freeze": bool(action_dict.get("freeze", False)),
             }
         if (
             scope == "view"
@@ -417,8 +405,6 @@ class UpdateHandlers:
                     "injectedReferences", []
                 ),
                 "updateable": bool(action_dict.get("updateable", True)),
-                # freeze when fetched
-                "freeze": bool(action_dict.get("freeze", False)),
             }
         return None
 

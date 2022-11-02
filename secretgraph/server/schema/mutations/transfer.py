@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import asdict
 import base64
 import logging
 import os
@@ -40,7 +39,6 @@ def mutate_push_content(
     content: PushContentInput,
     authorization: Optional[AuthList] = None,
 ) -> PushContentMutation:
-    content = asdict(content)
     parent_id = content.pop("parent")
     result = ids_to_results(
         info.context.request,
@@ -61,14 +59,12 @@ def mutate_push_content(
     action_key = None
     if cleaned_result["updateable"]:
         action_key = os.urandom(32)
-        content["actions"] = [
+        content.value.actions.append(
             {
                 "key": action_key,
                 "action": "update",
-                "restrict": True,
-                "freeze": cleaned_result["freeze"],
             }
-        ]
+        )
     c = create_content_fn(
         info.context.request,
         content,

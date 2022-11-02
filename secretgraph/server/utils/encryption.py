@@ -253,7 +253,7 @@ def iter_decrypt_contents(
     # copy query
     content_query = (queryset or result["objects"]).all()
     # per default verifiers=None, so that a failed verifications cannot happen
-    content_query.only_direct_fetch_action_trigger = True
+    content_query.only_direct_trigger = True
     content_map, transfer_map = create_key_maps(content_query, decryptset)
 
     # main query, restricted to PublicKeys and decoded contents
@@ -343,7 +343,7 @@ def iter_decrypt_contents(
                                     content.type,
                                 )
                         chunk = nextchunk
-                result["objects"].fetch_action_trigger(content)
+                result["objects"].trigger_view_actions(content)
 
         else:
             # otherwise garbled encrypted output could happen

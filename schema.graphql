@@ -513,13 +513,21 @@ type PageInfo {
 
 input PushContentInput {
   parent: ID!
-  value: ContentValueInput!
+  value: PushContentValueInput!
   net: ID = null
 }
 
 type PushContentMutation {
   content: Content!
   actionKey: String
+}
+
+input PushContentValueInput {
+  value: Upload!
+  state: String = null
+  type: String!
+  nonce: String!
+  tags: [String!]! = []
 }
 
 type Query {

@@ -38,6 +38,8 @@ def tags_sanitizer(tag: str):
 
     if tag.startswith("immutable="):
         raise ValueError("immutable is a flag")
+    if tag.startswith("freeze="):
+        raise ValueError("freeze is a flag")
 
     if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
         raise ResourceLimitExceeded(f"Tag too big ({tag})")
@@ -116,6 +118,10 @@ def transform_tags(
 
     if content_type == "PrivateKey" and not newtags.get("key"):
         raise ValueError("PrivateKey has no key=<foo> tag")
+    # it is not wrong to define both, immutable has higher priority than
+    # freeze and removes it
+    if newtags.get("immutable"):
+        newtags.pop("freeze")
     return newtags, key_hashes, size_new
 
 

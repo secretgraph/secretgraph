@@ -107,7 +107,6 @@ class PushForm(forms.Form):
                 {
                     "key": action_key,
                     "action": "update",
-                    "restrict": True,
                     "freeze": freeze,
                     "form": form,
                 }
