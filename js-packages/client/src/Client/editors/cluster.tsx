@@ -461,6 +461,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             if (!dataUnfinished || !dataUnfinished.secretgraph.node) {
                 if (dataUnfinished) {
                     console.debug(
+                        'not found',
                         dataUnfinished.secretgraph.node,
                         mainCtx.tokens
                     )

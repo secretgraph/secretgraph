@@ -147,26 +147,32 @@ export default React.memo(function SidebarContents({
             return (
                 <TreeItem
                     label={
-                        <SidebarTreeItemLabel
-                            deleted={node.deleted}
-                            marked={mainCtx.item == node.id}
-                            leftIcon={<Icon fontSize="small" />}
+                        <div
+                            onClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                            }}
+                            onDoubleClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                                goTo(node)
+                            }}
                         >
-                            {`${
-                                elements.get(node.type)
-                                    ? elements.get(node.type)?.label
-                                    : node.type
-                            }: ${name ? name : `...${node.id.slice(-48)}`}`}
-                        </SidebarTreeItemLabel>
+                            <SidebarTreeItemLabel
+                                deleted={node.deleted}
+                                marked={mainCtx.item == node.id}
+                                leftIcon={<Icon fontSize="small" />}
+                            >
+                                {`${
+                                    elements.get(node.type)
+                                        ? elements.get(node.type)?.label
+                                        : node.type
+                                }: ${name ? name : `...${node.id.slice(-48)}`}`}
+                            </SidebarTreeItemLabel>
+                        </div>
                     }
                     nodeId={`${props.nodeId}-${nodeId}`}
                     key={nodeId}
-                    onClick={(ev) => ev.preventDefault()}
-                    onDoubleClick={(ev) => {
-                        ev.preventDefault()
-                        ev.stopPropagation()
-                        goTo(node)
-                    }}
                 />
             )
         }
