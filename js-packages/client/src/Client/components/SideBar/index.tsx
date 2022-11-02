@@ -87,7 +87,7 @@ const SideBarItems = () => {
             tokensPermissions = res.types
         }
         let name = ''
-        if ((type = 'Cluster')) {
+        if (type == 'Cluster') {
             name = node.name
         } else {
             for (const tag of node.tags) {
