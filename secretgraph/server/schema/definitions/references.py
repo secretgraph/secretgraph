@@ -55,12 +55,14 @@ class ContentReferenceNode(relay.Node):
                 source__in=fetch_contents(
                     result["objects"],
                     result["actions"],
+                    clustersAreRestricted=True,
                     ids=source,
                     noFetch=True,
                 ),
                 target__in=fetch_contents(
                     result["objects"],
                     result["actions"],
+                    clustersAreRestricted=True,
                     ids=target,
                     noFetch=True,
                 ),
@@ -88,6 +90,7 @@ class ContentReferenceNode(relay.Node):
         return fetch_contents(
             result["objects"].filter(references=self),
             result["actions"],
+            clustersAreRestricted=True,
         ).first()
 
     @gql.django.field
@@ -98,4 +101,5 @@ class ContentReferenceNode(relay.Node):
         return fetch_contents(
             result["objects"].filter(referencedBy=self),
             result["actions"],
+            clustersAreRestricted=True,
         ).first()

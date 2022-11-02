@@ -7,6 +7,7 @@ from django.db.models import Q, QuerySet, Subquery, Exists, OuterRef
 from django.utils import timezone
 
 from ..utils.auth import fetch_by_id
+from ...core.constants import public_states
 from ..models import Cluster, Content, ContentAction, ContentTag
 
 logger = logging.getLogger(__name__)
@@ -231,6 +232,7 @@ def fetch_contents(
     ids=None,
     limit_ids=1,
     states=None,
+    clustersAreRestricted=False,
     includeTypes=None,
     excludeTypes=None,
     includeTags=None,
@@ -284,7 +286,16 @@ def fetch_contents(
             hash_filters = Q(contentHash__in=contentHashes)
         state_filters = Q()
         if states:
-            state_filters = Q(state__in=states)
+            if clustersAreRestricted:
+                state_filters = Q(state__in=states)
+            else:
+                state_filters = Q(
+                    state__in=set(states).difference(public_states)
+                ) | Q(
+                    state__in=public_states.intersection(states),
+                    cluster__globalNameRegisteredAt__isnull=False,
+                )
+
         incl_type_filters = Q()
         excl_type_filters = Q()
         if includeTypes:

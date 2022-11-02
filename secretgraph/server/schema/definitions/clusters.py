@@ -172,6 +172,7 @@ class ClusterNode(relay.Node):
         return fetch_contents(
             queryset.filter(id__in=Subquery(result["objects"].values("id"))),
             result["actions"],
+            hashClusters=True,
             states=filters.states,
             includeTypes=["PublicKey"]
             if self.limited

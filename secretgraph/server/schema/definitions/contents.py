@@ -7,7 +7,7 @@ from uuid import UUID
 from strawberry_django_plus import relay, gql
 from django.db.models import Subquery, Q
 
-from ....core import constants
+from ....core.constants import public_states
 from ...utils.auth import (
     get_cached_result,
     get_cached_permissions,
@@ -144,6 +144,7 @@ class ContentNode(relay.Node):
         filterob["target__in"] = fetch_contents(
             query,
             result["actions"],
+            clustersAreRestricted=True,
             states=filters.states,
             includeTypes=filters.includeTypes,
             excludeTypes=filters.excludeTypes,
@@ -176,6 +177,7 @@ class ContentNode(relay.Node):
         filterob["source__in"] = fetch_contents(
             query,
             result["actions"],
+            clustersAreRestricted=True,
             states=filters.states,
             includeTypes=filters.includeTypes,
             excludeTypes=filters.excludeTypes,
@@ -243,27 +245,20 @@ class ContentNode(relay.Node):
                 ),
             )
 
-        # only retrievable by tokens ignoring public
-        # this path excludes the public hook which injects public
-        if filters.public == UseCriteriaPublic.TOKEN:
-            pass
-        elif filters.public != UseCriteriaPublic.IGNORE:
-            # should only include public contents with public cluster
-            # if no clusters are specified (e.g. root query)
-            if filters.public == UseCriteriaPublic.TRUE:
-                queryset = queryset.filter(state__in=constants.public_states)
-                if not filters.clusters:
-                    queryset = queryset.filter(
-                        cluster__globalNameRegisteredAt__isnull=False,
-                    )
-            else:
-                queryset = queryset.exclude(state__in=constants.public_states)
-        else:
-            # only private or public with cluster public
-            queryset = queryset.filter(
-                ~Q(state__in=constants.public_states)
-                | Q(cluster__globalNameRegisteredAt__isnull=False)
+        if filters.public == UseCriteriaPublic.TRUE:
+            filters.states = list(
+                public_states.intersection(filters.states or public_states)
             )
+        elif filters.public == UseCriteriaPublic.FALSE:
+            # safest way and future proof
+            if filters.states:
+                filters.states = list(
+                    set(filters.states).difference(public_states)
+                )
+            else:
+                # no states, so we can just exclude public states
+                queryset = queryset.exclude(state__in=public_states)
+
         if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
@@ -285,6 +280,7 @@ class ContentNode(relay.Node):
             queryset,
             results["Content"]["actions"],
             states=filters.states,
+            clustersAreRestricted=filters.clusters is not None,
             includeTypes=filters.includeTypes,
             excludeTypes=filters.excludeTypes,
             includeTags=filters.includeTags,

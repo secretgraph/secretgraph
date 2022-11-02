@@ -385,6 +385,7 @@ export const keysRetrievalQuery = gql`
                                                     tags(
                                                         includeTags: [
                                                             "key_hash="
+                                                            "key="
                                                         ]
                                                     )
                                                 }
