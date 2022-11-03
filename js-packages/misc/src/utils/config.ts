@@ -248,6 +248,7 @@ async function loadConfigUrl_helper(
             const blob = await response.blob()
             return await Promise.any(
                 keys.map(async (key) => {
+                    // decrypt private key
                     const privkey = (
                         await decryptAESGCM({
                             data: blob,
@@ -255,6 +256,7 @@ async function loadConfigUrl_helper(
                             nonce,
                         })
                     ).data
+                    // with the private key decrypt shared key
                     return (
                         await decryptRSAOEAP({
                             key: privkey,
