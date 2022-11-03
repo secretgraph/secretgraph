@@ -803,7 +803,10 @@ export function findCertCandidatesForRefs(
                         hashAlgorithm &&
                         config.certificates[`${hashAlgorithm}:${cleanhash}`]
                     ) {
-                        hashes.push({ hash: cleanhash, hashAlgorithm })
+                        hashes.push({
+                            hash: `${hashAlgorithm}:${cleanhash}`,
+                            hashAlgorithm,
+                        })
                     } else if (config.certificates[cleanhash]) {
                         hashes.push({
                             hash: cleanhash,

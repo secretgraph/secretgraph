@@ -273,13 +273,15 @@ class ClusterNode(relay.Node):
             )
 
         if filters.excludeIds is not None:
-            queryset = Q(
-                id__in=Subquery(
-                    fetch_by_id(
-                        Cluster.objects.all(),
-                        filters.excludeIds,
-                        limit_ids=None,
-                    ).values("id")
+            queryset = queryset.exclude(
+                Q(
+                    id__in=Subquery(
+                        fetch_by_id(
+                            Cluster.objects.all(),
+                            filters.excludeIds,
+                            limit_ids=None,
+                        ).values("id")
+                    )
                 )
             )
 

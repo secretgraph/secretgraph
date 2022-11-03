@@ -58,7 +58,7 @@ export default React.memo(function SidebarContents({
     const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     const incl = React.useMemo(() => {
         const ret = searchCtx.include.concat(injectInclude)
-        if (authinfo) {
+        if (authinfo && publicParam == Constants.UseCriteriaPublic.FALSE) {
             ret.push(
                 ...authinfo.certificateHashes.map(
                     (value) => `key_hash=${value}`

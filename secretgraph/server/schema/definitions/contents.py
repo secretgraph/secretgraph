@@ -244,7 +244,6 @@ class ContentNode(relay.Node):
                     ).values("id")
                 ),
             )
-
         if filters.public == UseCriteriaPublic.TRUE:
             filters.states = list(
                 public_states.intersection(filters.states or public_states)

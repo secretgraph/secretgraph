@@ -307,6 +307,7 @@ def fetch_by_id(
         flexid__in=flexids
     )
     if issubclass(query.model, Cluster):
+        # also allow selecting global names
         # name__startswith="@" allows
         # also selecting @system even it is not public
         filters |= (

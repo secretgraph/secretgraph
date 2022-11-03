@@ -128,6 +128,7 @@ export default React.memo(function Clusters({
                     <SideBarContents
                         goTo={goTo}
                         cluster={node.id}
+                        authinfo={authinfo}
                         deleted={node.deleted}
                         public={Constants.UseCriteriaPublic.TRUE}
                         heading
