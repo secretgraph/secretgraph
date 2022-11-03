@@ -322,7 +322,6 @@ export const keysRetrievalQuery = gql`
                 id
                 hashAlgorithms
             }
-            """ public key """
             node(id: $id) {
                 ... on Content {
                     id
@@ -341,7 +340,6 @@ export const keysRetrievalQuery = gql`
                     cluster {
                         id
                     }
-                    """signatures with public key """
                     references(
                         filters: { groups: ["signature"], deleted: FALSE }
                     ) {
@@ -360,7 +358,6 @@ export const keysRetrievalQuery = gql`
                         edges {
                             node {
                                 extra
-                                """ private key """
                                 source {
                                     id
                                     deleted
@@ -369,9 +366,7 @@ export const keysRetrievalQuery = gql`
                                     updateId
                                     state
                                     type
-                                    """ decrypt private key via key= tag """
                                     tags
-                                    """ decrypt private key via references to public key """
                                     references(
                                         filters: {
                                             groups: ["key"]
@@ -435,7 +430,6 @@ export const contentRetrievalQuery = gql`
                     cluster {
                         id
                     }
-                    """signatures """
                     references(
                         filters: {
                             groups: ["key", "signature"]
