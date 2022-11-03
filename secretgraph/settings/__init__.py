@@ -109,8 +109,6 @@ LOGIN_URL = "auth:login"
 LOGIN_REDIRECT_URL = "auth:profile"
 LOGOUT_REDIRECT_URL = "home"
 
-# AUTH_USER_MODEL = 'spider_accounts.SpiderUser'
-
 # required for serverside encryption
 # SECRETGRAPH_INJECT_CLUSTERS = {}
 
