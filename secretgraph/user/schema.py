@@ -24,7 +24,7 @@ class UserNode(relay.Node):
     # def clusters(self) -> List[ClusterNode]:
     #    return se
 
-    id_attr = "username"
+    id_attr = user_model.USERNAME_FIELD
 
 
 @strawberry.input
@@ -98,7 +98,7 @@ class DeleteUserMutation(relay.Node):
         result = retrieve_allowed_objects(
             info.context.request, Cluster.actions.all(), scope="manage"
         )
-        if user.clusters.exclude(
+        if user.net.clusters.exclude(
             id__in=result["objects"].values_list("id", flat=True)
         ):
             raise ValueError("No permission")

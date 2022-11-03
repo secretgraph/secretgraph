@@ -103,6 +103,7 @@ Special configuration keys:
 
 -   default: on cluster creation these groups are added by default except if groups are explicit specified
 -   register_global_name: can register a global cluster name
+-   register_dangerous_actions: can create dangerous actions
 -   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
 -   manage_hidden: can see hidden contents, can set hidden state
 -   manage_groups: can manage global groups of clusters
