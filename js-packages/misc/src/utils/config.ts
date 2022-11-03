@@ -539,7 +539,7 @@ export async function exportConfigAsUrl({
     if (!privcert) {
         return Promise.reject('no cert found')
     }
-    const contentHash = hashTagsContentHash(
+    const contentHash = await hashTagsContentHash(
         [`slot=${config.slots[0]}`],
         authInfo.certificateHashes[0].split(':', 1)[0],
         'Config'

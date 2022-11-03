@@ -371,13 +371,8 @@ now you have a decryption key to the private key, that is very dangerous
 # TODO
 
 -   disallow non global ids? Would ease implementation
--   port to real filters
--   move to dataclasses and TypedDicts
-    -   nearly complete needs testing and TypedDicts
 -   remove/handle orphan nets (no cluster assigned)
--   actions: states
 -   implement settings/config
--   too many queries when selecting node (sidebar is also updated, because updateId?)
 -   modernize ActionDialog, redesign, multi column?
 -   modernize Keys, expose actions
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
@@ -392,6 +387,9 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO later
 
+-   port to real filters
+-   move to dataclasses and TypedDicts
+    -   nearly complete needs testing and TypedDicts
 -   config: create a virtual global merge of all configs to get every token
 -   allow alternate cryptoalgorithms instead of aesgcm for tags (except ChaCha20Poly1305 and AESSIV no good alternatives, and both aren't supported in browser)
 -   cleanup user
