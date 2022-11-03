@@ -10,7 +10,7 @@ from django.db.models import Subquery, Q
 from ....core.constants import public_states
 from ...utils.auth import (
     get_cached_result,
-    get_cached_permissions,
+    get_cached_properties,
     fetch_by_id,
 )
 from ...actions.view import fetch_contents, ContentFetchQueryset
@@ -219,7 +219,7 @@ class ContentNode(relay.Node):
         if (
             deleted != UseCriteria.FALSE
             and "manage_deletion"
-            not in get_cached_permissions(info.context.request)
+            not in get_cached_properties(info.context.request)
         ):
             del_result = get_cached_result(
                 info.context.request, scope="delete"
@@ -228,7 +228,7 @@ class ContentNode(relay.Node):
                 id__in=Subquery(del_result["objects"].values("id"))
             )
 
-        if "manage_hidden" in get_cached_permissions(
+        if "manage_hidden" in get_cached_properties(
             info.context.request,
         ):
             hidden = filters.hidden

@@ -10,7 +10,7 @@ from django.utils import timezone
 from strawberry.types import Info
 
 from ...models import Cluster, Content
-from ...utils.auth import fetch_by_id, get_cached_permissions, ids_to_results
+from ...utils.auth import fetch_by_id, get_cached_properties, ids_to_results
 from ..arguments import AuthList
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ def delete_content_or_cluster(
 ) -> DeleteContentOrClusterMutation:
     now = timezone.now()
 
-    manage_deletion = "manage_deletion" in get_cached_permissions(
+    manage_deletion = "manage_deletion" in get_cached_properties(
         info.context.request, authset=authorization
     )
     if manage_deletion:
@@ -89,7 +89,7 @@ def reset_deletion_content_or_cluster(
     ids: List[strawberry.ID],
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
-    if "manage_deletion" in get_cached_permissions(
+    if "manage_deletion" in get_cached_properties(
         info.context.request, authset=authorization
     ):
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)

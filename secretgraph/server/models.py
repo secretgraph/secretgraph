@@ -562,10 +562,40 @@ class GlobalGroupManager(models.Manager):
             "hidden_groups", self._get_hidden_names
         )
 
+    def _get_default_groups(self):
+        global_groups = GlobalGroup.objects.filter(properties__name="default")
+        return frozenset(global_groups.values_list("name", flat=True))
+
+    def get_default_groups(self):
+        return caches["secretgraph_settings"].get_or_set(
+            "default_properties", self._get_default_groups
+        )
+
     def visible(self, queryset=None):
         if queryset is None:
             queryset = self.get_queryset()
         return queryset.filter(hidden=False)
+
+
+class GlobalGroupPropertyManager(models.Manager):
+    def _get_default_properties(self):
+        global_groups = GlobalGroup.objects.filter(
+            models.Exists(
+                GlobalGroupProperty.objects.filter(
+                    groups__id=models.OuterRef("id"), name="default"
+                )
+            )
+        )
+        return frozenset(
+            GlobalGroupProperty.objects.filter(
+                groups__in=global_groups
+            ).values_list("name", flat=True)
+        )
+
+    def get_default_properties(self):
+        return caches["secretgraph_settings"].get_or_set(
+            "default_properties", self._get_default_properties
+        )
 
 
 # e.g. auto_hide = contents are automatically hidden and manually
@@ -578,6 +608,7 @@ class GlobalGroupProperty(models.Model):
         unique=True,
         validators=[SafeNameValidator, MinLengthValidator(1)],
     )
+    objects = GlobalGroupPropertyManager()
 
 
 class GlobalGroupCluster(models.Model):

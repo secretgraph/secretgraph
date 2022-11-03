@@ -376,7 +376,7 @@ def ids_to_results(
     return results
 
 
-def get_permission_q(request, query):
+def get_properties_q(request, query):
     assert issubclass(query.model, Cluster), (
         "Not a cluster query: %s" % query.model
     )
@@ -399,22 +399,6 @@ def get_permission_q(request, query):
                     name__in=models.Subquery(user.groups.values("name"))
                 )
     return q
-
-
-# cacheable
-def get_default_permissions() -> frozenset[str]:
-    global_groups = GlobalGroup.objects.filter(
-        models.Exists(
-            GlobalGroupProperty.objects.filter(
-                groups__id=models.OuterRef("id"), name="default"
-            )
-        )
-    )
-    return frozenset(
-        GlobalGroupProperty.objects.filter(
-            groups__in=global_groups
-        ).values_list("name", flat=True)
-    )
 
 
 def get_cached_result(
@@ -441,16 +425,16 @@ def get_cached_result(
     return getattr(request, name)
 
 
-def get_cached_permissions(
+def get_cached_properties(
     request,
-    permissions_name="secretgraphPermissions",
+    permissions_name="secretgraphProperties",
     result_name="secretgraphResult",
     authset=None,
     ensureInitialized=False,
 ) -> frozenset[str]:
     if getattr(request, permissions_name, None) is None:
         if ensureInitialized:
-            raise AttributeError("cached permissions does not exist")
+            raise AttributeError("cached properties does not exist")
         if not authset:
             # initialize cached results and retrieve authset
             authset = get_cached_result(
@@ -464,7 +448,7 @@ def get_cached_permissions(
             authset=authset,
         )["objects"]
         global_groups = GlobalGroup.objects.filter(
-            get_permission_q(request, query)
+            get_properties_q(request, query)
         )
         all_props = frozenset(
             GlobalGroupProperty.objects.filter(

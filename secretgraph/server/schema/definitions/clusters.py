@@ -11,7 +11,7 @@ from django.db.models import Subquery, Q, QuerySet, Value
 from ...utils.auth import (
     fetch_by_id,
     get_cached_result,
-    get_cached_permissions,
+    get_cached_properties,
 )
 from ...actions.view import fetch_clusters, fetch_contents
 from ...models import (
@@ -160,7 +160,7 @@ class ClusterNode(relay.Node):
         if (
             deleted != UseCriteria.FALSE
             and "manage_deletion"
-            not in get_cached_permissions(info.context.request)
+            not in get_cached_properties(info.context.request)
         ):
             del_result = get_cached_result(
                 info.context.request, scope="delete"
@@ -256,7 +256,7 @@ class ClusterNode(relay.Node):
         if (
             deleted != UseCriteria.FALSE
             and "manage_deletion"
-            not in get_cached_permissions(info.context.request)
+            not in get_cached_properties(info.context.request)
         ):
             del_result = get_cached_result(
                 info.context.request, scope="delete"

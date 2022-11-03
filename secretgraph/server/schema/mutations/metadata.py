@@ -19,7 +19,7 @@ from ...signals import generateFlexid
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
-    get_cached_permissions,
+    get_cached_properties,
 )
 from ..arguments import AuthList, ActionInput, ReferenceInput
 
@@ -36,7 +36,7 @@ def regenerate_flexid(
     ids: List[strawberry.ID],
     authorization: Optional[AuthList] = None,
 ) -> RegenerateFlexidMutation:
-    if "manage_update" in get_cached_permissions(
+    if "manage_update" in get_cached_properties(
         info.context.request, authset=authorization
     ):
         results = {
@@ -81,12 +81,12 @@ def mark(
     authorization: Optional[AuthList] = None,
 ) -> MarkMutation:
     if featured is not None:
-        if "manage_featured" not in get_cached_permissions(
+        if "manage_featured" not in get_cached_properties(
             info.context.request, authset=authorization
         ):
             featured = None
     if hidden is not None:
-        if "manage_hidden" not in get_cached_permissions(
+        if "manage_hidden" not in get_cached_properties(
             info.context.request, authset=authorization
         ):
             hidden = None
@@ -121,7 +121,7 @@ def update_metadata(
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
 
-    manage_update = "manage_update" in get_cached_permissions(
+    manage_update = "manage_update" in get_cached_properties(
         info.context.request, authset=authorization
     )
     if manage_update:
