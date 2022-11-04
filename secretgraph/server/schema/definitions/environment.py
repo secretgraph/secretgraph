@@ -37,14 +37,13 @@ class InjectedKeyNode:
         return self.contentHash
 
     @classmethod
-    def get_queryset(queryset, info) -> QuerySet[Content]:
-        return queryset.filter(type="PublicKey", injected_for__isnull=False)
+    def get_queryset(cls, queryset, info) -> QuerySet[Content]:
+        return queryset.filter(type="PublicKey", injectedFor__isnull=False)
 
 
 @gql.django.type(GlobalGroupProperty, name="GlobalGroupProperty")
 class GlobalGroupPropertyNode:
     name: str
-    description: str
 
 
 @gql.django.type(GlobalGroup, name="GlobalGroup")
