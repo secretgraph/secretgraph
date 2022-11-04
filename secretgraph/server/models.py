@@ -153,13 +153,9 @@ class Cluster(FlexidModel):
     globalNameRegisteredAt: dt = models.DateTimeField(null=True, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True, null=False)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
-    updateId: UUID = models.UUIDField(
-        blank=True, default=uuid4, db_column="update_id"
-    )
+    updateId: UUID = models.UUIDField(blank=True, default=uuid4)
 
-    markForDestruction: dt = models.DateTimeField(
-        null=True, blank=True, db_column="mark_for_destruction"
-    )
+    markForDestruction: dt = models.DateTimeField(null=True, blank=True)
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
@@ -232,12 +228,8 @@ class ContentManager(models.Manager):
 class Content(FlexidModel):
     limited: bool = False
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
-    updateId: UUID = models.UUIDField(
-        blank=True, default=uuid4, db_column="update_id"
-    )
-    markForDestruction: dt = models.DateTimeField(
-        null=True, blank=True, db_column="mark_for_destruction"
-    )
+    updateId: UUID = models.UUIDField(blank=True, default=uuid4)
+    markForDestruction: dt = models.DateTimeField(null=True, blank=True)
     # doesn't appear in non-admin searches
     hidden: bool = models.BooleanField(blank=True, default=False)
 
@@ -252,7 +244,6 @@ class Content(FlexidModel):
         max_length=255,
         blank=True,
         null=True,
-        db_column="content_hash",
         validators=[ContentHashValidator],
     )
     net: Net = models.ForeignKey(
@@ -428,7 +419,6 @@ class Action(models.Model):
     )
     keyHash: str = models.CharField(
         max_length=255,
-        db_column="key_hash",
         validators=[ActionKeyHashValidator],
     )
     nonce: str = models.CharField(max_length=255)
@@ -444,7 +434,6 @@ class Action(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        db_column="content_action",
     )
 
     class Meta:
@@ -517,7 +506,6 @@ class ContentReference(models.Model):
         blank=True,
         default=constants.DeleteRecursive.TRUE.value,
         null=False,
-        db_column="delete_recursive",
         max_length=1,
         choices=DeleteRecursive.choices,
     )
@@ -640,16 +628,14 @@ class GlobalGroup(models.Model):
     description: str = models.TextField()
     # don't show in groups, mutual exclusive to keys
     hidden: bool = models.BooleanField(default=False, blank=True)
-    matchUserGroup: bool = models.BooleanField(
-        default=False, blank=True, db_column="match_user_group"
-    )
-    clusters: models.QuerySet[Cluster] = models.ManyToManyField(
+    matchUserGroup: bool = models.BooleanField(default=False, blank=True)
+    clusters: models.ManyToManyField[Cluster] = models.ManyToManyField(
         Cluster,
         related_name="groups",
         through="GlobalGroupCluster",
         help_text=cluster_groups_help,
     )
-    injectedKeys: models.QuerySet[Content] = models.ManyToManyField(
+    injectedKeys: models.ManyToManyField[Content] = models.ManyToManyField(
         Content,
         related_name="injectedFor",
         limit_choices_to={
@@ -657,19 +643,14 @@ class GlobalGroup(models.Model):
             "cluster_id": 0,
         },
     )
-    properties: models.QuerySet[GlobalGroupProperty] = models.ManyToManyField(
-        GlobalGroupProperty, related_name="groups"
-    )
+    properties: models.ManyToManyField[
+        GlobalGroupProperty
+    ] = models.ManyToManyField(GlobalGroupProperty, related_name="groups")
 
     objects = GlobalGroupManager()
 
-    class Meta:
-        constraints = [
-            models.CheckConstraint(
-                check=~models.Q(hidden=True, injectedKeys__isnull=False),
-                name="injectedKeysNotHidden",
-                violation_error_message=(
-                    "injectedKeys and hidden are mutual exclusive"
-                ),
-            ),
-        ]
+    def clean(self):
+        if self.hidden and self.injectedKeys.exists():
+            raise ValidationError(
+                {"hidden": "injectedKeys and hidden are mutual exclusive"}
+            )

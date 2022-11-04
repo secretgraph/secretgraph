@@ -37,18 +37,27 @@ def initializeDb(sender, **kwargs):
                     name=prop, defaults={}
                 )[0]
             )
+        # not valid
+        group.pop("clusters", None)
+        injectedKeys = group.pop("injectedKeys", None)
         managed = group.pop("managed", False)
-        if managed:
-            globalgroup, created = GlobalGroup.objects.update_or_create(
-                name=name, defaults={"name": name, **group}
-            )
-            globalgroup.properties.set(properties)
-        else:
-            globalgroup, created = GlobalGroup.objects.get_or_create(
-                name=name, defaults={"name": name, **group}
-            )
-            if created:
-                globalgroup.properties.set(properties)
+        created = not GlobalGroup.objects.filter(name=name).exists()
+        instance = GlobalGroup(**group)
+        instance.name = name
+        instance.clean()
+        GlobalGroup.objects.bulk_create(
+            [instance],
+            ignore_conflicts=not managed,
+            update_conflicts=managed,
+            update_fields=["description", "hidden", "matchUserGroup"],
+            unique_fields=["name"],
+        )
+        if created or managed:
+            instance = GlobalGroup.objects.get(name=name)
+            instance.properties.set(properties)
+            if injectedKeys is not None:
+                # TODO: resolve hashes
+                instance.injectedKeys.set(injectedKeys)
 
 
 def deleteContentCb(sender, instance, **kwargs):

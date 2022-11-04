@@ -113,15 +113,11 @@ class Migration(migrations.Migration):
                 ("updated", models.DateTimeField(auto_now=True)),
                 (
                     "updateId",
-                    models.UUIDField(
-                        blank=True, db_column="update_id", default=uuid.uuid4
-                    ),
+                    models.UUIDField(blank=True, default=uuid.uuid4),
                 ),
                 (
                     "markForDestruction",
-                    models.DateTimeField(
-                        blank=True, db_column="mark_for_destruction", null=True
-                    ),
+                    models.DateTimeField(blank=True, null=True),
                 ),
             ],
             options={
@@ -155,15 +151,11 @@ class Migration(migrations.Migration):
                 ("updated", models.DateTimeField(auto_now=True)),
                 (
                     "updateId",
-                    models.UUIDField(
-                        blank=True, db_column="update_id", default=uuid.uuid4
-                    ),
+                    models.UUIDField(blank=True, default=uuid.uuid4),
                 ),
                 (
                     "markForDestruction",
-                    models.DateTimeField(
-                        blank=True, db_column="mark_for_destruction", null=True
-                    ),
+                    models.DateTimeField(blank=True, null=True),
                 ),
                 (
                     "state",
@@ -197,7 +189,6 @@ class Migration(migrations.Migration):
                     "contentHash",
                     models.CharField(
                         blank=True,
-                        db_column="content_hash",
                         max_length=255,
                         null=True,
                         validators=[
@@ -275,7 +266,6 @@ class Migration(migrations.Migration):
                             ("b", "False"),
                             ("c", "No Group"),
                         ],
-                        db_column="delete_recursive",
                         default="a",
                         max_length=1,
                     ),
@@ -342,7 +332,6 @@ class Migration(migrations.Migration):
                 (
                     "keyHash",
                     models.CharField(
-                        db_column="key_hash",
                         max_length=255,
                         validators=[
                             secretgraph.server.validators.ActionKeyHashValidator
@@ -370,7 +359,6 @@ class Migration(migrations.Migration):
                     "contentAction",
                     models.OneToOneField(
                         blank=True,
-                        db_column="content_action",
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="action",
@@ -425,9 +413,7 @@ class Migration(migrations.Migration):
                 ("hidden", models.BooleanField(blank=True, default=False)),
                 (
                     "matchUserGroup",
-                    models.BooleanField(
-                        blank=True, db_column="match_user_group", default=False
-                    ),
+                    models.BooleanField(blank=True, default=False),
                 ),
                 (
                     "injectedKeys",
@@ -565,18 +551,6 @@ class Migration(migrations.Migration):
                     _connector="OR",
                 ),
                 name="action_exist",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="globalgroup",
-            constraint=models.CheckConstraint(
-                check=models.Q(
-                    ("hidden", True),
-                    ("injectedKeys__isnull", False),
-                    _negated=True,
-                ),
-                name="injectedKeysNotHidden",
-                violation_error_message="injectedKeys and hidden are mutual exclusive",
             ),
         ),
     ]
