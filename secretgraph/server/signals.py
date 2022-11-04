@@ -28,21 +28,27 @@ def initializeDb(sender, **kwargs):
             "net": net,
         },
     )
-    for group in list(getattr(settings, "SECRETGRAPH_DEFAULT_GROUPS", [])):
+    for name, group in settings.SECRETGRAPH_DEFAULT_GROUPS.items():
         group = dict(group)
         properties = []
-        for prop in set(group.pop("properties")):
+        for prop in set(filter(lambda x: x, group.pop("properties", []))):
             properties.append(
                 GlobalGroupProperty.objects.get_or_create(
                     name=prop, defaults={}
                 )[0]
             )
-
-        globalgroup, created = GlobalGroup.objects.get_or_create(
-            name=group.pop("name"), defaults=group
-        )
-        if created:
+        managed = group.pop("managed", False)
+        if managed:
+            globalgroup, created = GlobalGroup.objects.update_or_create(
+                name=name, defaults={"name": name, **group}
+            )
             globalgroup.properties.set(properties)
+        else:
+            globalgroup, created = GlobalGroup.objects.get_or_create(
+                name=name, defaults={"name": name, **group}
+            )
+            if created:
+                globalgroup.properties.set(properties)
 
 
 def deleteContentCb(sender, instance, **kwargs):

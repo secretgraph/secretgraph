@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 LAST_CONFIG_RELOAD_ID = str(time.time())
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
+# See https://docs.djangoproject.com/en/stable/howto/deployment/checklist/
 
 
 ALLOWED_HOSTS = []
@@ -62,7 +62,7 @@ ASGI_APPLICATION = "secretgraph.asgi.application"
 WSGI_APPLICATION = "secretgraph.wsgi.application"
 
 # Password validation
-# https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/stable/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -81,7 +81,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/1.11/topics/i18n/
+# https://docs.djangoproject.com/en/stable/topics/i18n/
 
 LANGUAGE_CODE = "en"
 
@@ -95,7 +95,7 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.0/howto/static-files/
+# https://docs.djangoproject.com/en/stable/howto/static-files/
 
 
 STATIC_ROOT = "static/"
@@ -109,10 +109,8 @@ LOGIN_URL = "auth:login"
 LOGIN_REDIRECT_URL = "auth:profile"
 LOGOUT_REDIRECT_URL = "home"
 
-# required for serverside encryption
-# SECRETGRAPH_INJECT_CLUSTERS = {}
 
-# requests parameter overwrites (for transfers)
+# httpx parameter overwrites (for transfers)
 # note: timeout should be low as ddos is possible elsewise
 # * "hostname.foo": parameter for specific domain
 # * "".foo": parameter for a tld
@@ -136,6 +134,9 @@ SECRETGRAPH_HTTPX_KWARGS_MAP = {
     # }
 }
 
+#  for defining default global groups
+SECRETGRAPH_DEFAULT_GROUPS = {}
+
 # specify hash names from most current to most old
 SECRETGRAPH_HASH_ALGORITHMS = ["sha512"]
 # length of tokens used in file names
@@ -156,6 +157,7 @@ SITE_ID = 1
 CACHES = {
     "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
     # should be local mem cache (default) or dummy cache (for testing)
+    # default expiry of caches is 300 seconds
     "secretgraph_settings": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         "LOCATION": "secretgraph_settings",

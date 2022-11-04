@@ -654,7 +654,7 @@ class GlobalGroup(models.Model):
         related_name="injectedFor",
         limit_choices_to={
             "type": "PublicKey",
-            "cluster_id": 1,
+            "cluster_id": 0,
         },
     )
     properties: models.QuerySet[GlobalGroupProperty] = models.ManyToManyField(
@@ -663,16 +663,13 @@ class GlobalGroup(models.Model):
 
     objects = GlobalGroupManager()
 
-    def clean(self):
-        if self.hidden and self.injectedKeys.exists():
-            raise ValidationError(
-                {"hidden": "injectedKeys and hidden are mutual exclusive"}
-            )
-        if self.injectedKeys.exclude(type="PublicKey").exists():
-            raise ValidationError(
-                {"injectedKeys": "injectedKeys are not keys"}
-            )
-        if self.injectedKeys.exclude(state="public").exists():
-            raise ValidationError(
-                {"injectedKeys": "injectedKeys are not public"}
-            )
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=~models.Q(hidden=True, injectedKeys__isnull=False),
+                name="injectedKeysNotHidden",
+                violation_error_message=(
+                    "injectedKeys and hidden are mutual exclusive"
+                ),
+            ),
+        ]

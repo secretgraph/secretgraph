@@ -32,3 +32,19 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
 SECRETGRAPH_BIND_TO_USER = False
 SECRETGRAPH_ALLOW_REGISTER = True
+
+SECRETGRAPH_DEFAULT_GROUPS["debug"] = {  # noqa F405
+    "properties": ["allow_global_name", "allow_dangerous_actions", "default"],
+    "managed": True,
+}
+SECRETGRAPH_DEFAULT_GROUPS["debug_admin"] = {  # noqa F405
+    "properties": [
+        "allow_global_name",
+        "allow_dangerous_actions",
+        "manage_featured",
+        "manage_hidden",
+        "manage_groups",
+        "manage_deletion",
+        "manage_update",
+    ],
+}

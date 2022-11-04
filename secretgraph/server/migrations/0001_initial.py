@@ -433,7 +433,7 @@ class Migration(migrations.Migration):
                     "injectedKeys",
                     models.ManyToManyField(
                         limit_choices_to={
-                            "cluster_id": 1,
+                            "cluster_id": 0,
                             "type": "PublicKey",
                         },
                         related_name="injectedFor",
@@ -565,6 +565,18 @@ class Migration(migrations.Migration):
                     _connector="OR",
                 ),
                 name="action_exist",
+            ),
+        ),
+        migrations.AddConstraint(
+            model_name="globalgroup",
+            constraint=models.CheckConstraint(
+                check=models.Q(
+                    ("hidden", True),
+                    ("injectedKeys__isnull", False),
+                    _negated=True,
+                ),
+                name="injectedKeysNotHidden",
+                violation_error_message="injectedKeys and hidden are mutual exclusive",
             ),
         ),
     ]

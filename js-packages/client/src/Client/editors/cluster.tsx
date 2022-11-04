@@ -340,7 +340,7 @@ const ClusterIntern = ({
                                             }
                                             if (
                                                 !permissions.includes(
-                                                    'register_global_name'
+                                                    'allow_global_name'
                                                 )
                                             ) {
                                                 return 'no permission'

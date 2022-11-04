@@ -4,7 +4,7 @@ import re
 
 from ...utils.auth import get_cached_properties
 
-_valid_permissions = re.compile(r"^(?:manage_|register_)")
+_valid_permissions = re.compile(r"^(?:manage_|allow_)")
 
 
 def get_permissions(info: Info) -> List[str]:

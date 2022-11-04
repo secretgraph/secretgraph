@@ -102,8 +102,8 @@ Special configuration keys:
 ## Global group properties:
 
 -   default: on cluster creation these groups are added by default except if groups are explicit specified
--   register_global_name: can register a global cluster name
--   register_dangerous_actions: can create dangerous actions
+-   allow_global_name: can register a global cluster name
+-   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
 -   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
 -   manage_hidden: can see hidden contents, can set hidden state
 -   manage_groups: can manage global groups of clusters

@@ -62,7 +62,7 @@ def mutate_cluster(
             cluster.groups = None
 
     if cluster.name is not None and cluster.name.startswith("@"):
-        if "register_global_name" not in (
+        if "allow_global_name" not in (
             get_cached_properties(
                 info.context.request, authset=authorization
             ).union(GlobalGroupProperty.objects.get_default_properties())
