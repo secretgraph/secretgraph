@@ -47,7 +47,7 @@ class ContentReferenceNode(relay.Node):
         info: Info,
         required: bool = False,
     ) -> ContentReferenceNode:
-        result = get_cached_result(info.context)["Content"]
+        result = get_cached_result(info.context.request)["Content"]
         queryset = ContentReference.objects.all()
         try:
             source, target, group = id.node_id.split("|", 2)

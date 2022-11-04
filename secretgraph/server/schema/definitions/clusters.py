@@ -191,13 +191,13 @@ class ClusterNode(relay.Node):
         info: Info,
         required: bool = False,
     ):
-        result = get_cached_result(info.context)["Cluster"]
+        result = get_cached_result(info.context.request)["Cluster"]
         if node_id.startswith("@"):
             q = Q(name=node_id, globalNameRegisteredAt__isnull=False)
         else:
             q = Q(flexid=node_id)
         try:
-            result["objects"].get(q)
+            return result["objects"].get(q)
         except (Cluster.DoesNotExist, ValueError) as exc:
             if required:
                 raise exc
@@ -220,7 +220,7 @@ class ClusterNode(relay.Node):
         info: Info,
         node_ids: Optional[Iterable[str]] = None,
     ):
-        result = get_cached_result(info.context)["Cluster"]
+        result = get_cached_result(info.context.request)["Cluster"]
         if not node_ids:
             return result["objects"]
         # for allowing specifing global name
