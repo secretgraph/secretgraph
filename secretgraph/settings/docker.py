@@ -39,7 +39,7 @@ MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 
 SECRETGRAPH_DEFAULT_GROUPS["docker"] = {  # noqa F405
-    "properties": ["allow_global_name", "allow_dangerous_actions", "default"],
+    "properties": ["allow_dangerous_actions", "default"],
 }
 SECRETGRAPH_DEFAULT_GROUPS["docker_admin"] = {  # noqa F405
     "properties": [
