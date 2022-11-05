@@ -654,3 +654,6 @@ class GlobalGroup(models.Model):
             raise ValidationError(
                 {"hidden": "injectedKeys and hidden are mutual exclusive"}
             )
+
+    def __str__(self) -> str:
+        return self.name

@@ -104,7 +104,6 @@ export default React.memo(function Clusters({
                         <div
                             onClick={(ev) => {
                                 ev.preventDefault()
-                                ev.stopPropagation()
                             }}
                             onDoubleClick={(ev) => {
                                 ev.preventDefault()
@@ -144,7 +143,6 @@ export default React.memo(function Clusters({
                         label="Private"
                         nodeId={`${props.nodeId}-${nodeId}-private`}
                         public={Constants.UseCriteriaPublic.FALSE}
-                        onClick={(ev) => ev.preventDefault()}
                     />
                 </TreeItem>
             )

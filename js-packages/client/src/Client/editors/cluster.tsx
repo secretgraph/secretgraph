@@ -376,7 +376,7 @@ const ClusterIntern = ({
                                 </Grid>
 
                                 <Grid item xs={12}>
-                                    <FastField
+                                    <Field
                                         component={FormikTextField}
                                         name="description"
                                         type="text"
@@ -388,7 +388,7 @@ const ClusterIntern = ({
                                 </Grid>
 
                                 <Grid item xs={12}>
-                                    <FastField
+                                    <Field
                                         component={FormikCheckboxWithLabel}
                                         name="featured"
                                         type="checkbox"

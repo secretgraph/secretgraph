@@ -40,7 +40,6 @@ export const serverConfigQueryWithPermissions = gql`
                     hidden
                     properties {
                         name
-                        description
                     }
                     description
                     injectedKeys {

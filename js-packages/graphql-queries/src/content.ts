@@ -491,11 +491,13 @@ export const findConfigQuery = gql`
                         link
                         tags
                         updateId
+                        contentHash
                         references(filters: { groups: ["key"] }) {
                             edges {
                                 node {
                                     extra
                                     target {
+                                        id
                                         tags(includeTags: ["key_hash="])
                                         contentHash
                                         link

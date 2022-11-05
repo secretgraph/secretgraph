@@ -90,7 +90,7 @@ class ContentNode(relay.Node):
         self: Content,
         info: Info,
         includeAlgorithms: Optional[List[str]] = None,
-    ) -> List["ContentNode"]:
+    ) -> List[gql.LazyType["ContentNode", "."]]:
         # authorization often cannot be used, but it is ok, we have cached then
         result = get_cached_result(info.context.request)["Content"]
         return self.signatures(

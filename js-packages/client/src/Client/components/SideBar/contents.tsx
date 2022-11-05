@@ -150,7 +150,6 @@ export default React.memo(function SidebarContents({
                         <div
                             onClick={(ev) => {
                                 ev.preventDefault()
-                                ev.stopPropagation()
                             }}
                             onDoubleClick={(ev) => {
                                 ev.preventDefault()
