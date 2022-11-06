@@ -71,19 +71,23 @@ class Command(BaseCommand):
             "Injected Keys:",
             ", ".join(
                 map(
-                    lambda x: f"{x.name[5:]} {x.contentHash} {x.description[12:]}",
+                    lambda x: "{} ({}): {}".format(
+                        x.name, x.contentHash, x.description or ""
+                    )
+                    if x.name
+                    else "{}: {}".format(x.contentHash, x.description or ""),
                     global_group.injectedKeys.annotate(
                         name=Subquery(
                             ContentTag.objects.filter(
                                 content_id=OuterRef("id"),
                                 tag__startswith="name=",
-                            ).values("tag")[0]
+                            ).values("tag")[:1]
                         ),
                         description=Subquery(
                             ContentTag.objects.filter(
                                 content_id=OuterRef("id"),
                                 tag__startswith="description=",
-                            ).values("tag")[0]
+                            ).values("tag")[:1]
                         ),
                     ),
                 )

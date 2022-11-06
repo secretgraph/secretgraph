@@ -90,7 +90,7 @@ class ContentNode(relay.Node):
         self: Content,
         info: Info,
         includeAlgorithms: Optional[List[str]] = None,
-    ) -> List[gql.LazyType["ContentNode", "."]]:
+    ) -> List[str]:
         # authorization often cannot be used, but it is ok, we have cached then
         result = get_cached_result(info.context.request)["Content"]
         return self.signatures(
@@ -126,7 +126,7 @@ class ContentNode(relay.Node):
     @gql.django.connection()
     def references(
         self, info: Info, filters: ContentReferenceFilter
-    ) -> List[ContentReferenceNode]:
+    ) -> relay.Connection[ContentReferenceNode]:
         if (
             not isinstance(self, Content)
             or self.limited
@@ -160,7 +160,7 @@ class ContentNode(relay.Node):
     @gql.django.connection()
     def referencedBy(
         self, info: Info, filters: ContentReferenceFilter
-    ) -> List[ContentReferenceNode]:
+    ) -> relay.Connection[ContentReferenceNode]:
         if (
             not isinstance(self, Content)
             or self.limited

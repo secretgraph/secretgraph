@@ -48,7 +48,7 @@ class SecretgraphObject:
     @gql.django.django_resolver
     def clusters(
         self, info: Info, filters: ClusterFilter
-    ) -> List[ClusterNode]:
+    ) -> relay.Connection[ClusterNode]:
         return ClusterNode.get_queryset_intern(
             Cluster.objects.all(), info, filters
         )
@@ -57,7 +57,7 @@ class SecretgraphObject:
     @gql.django.django_resolver
     def contents(
         self, info: Info, filters: ContentFilter
-    ) -> List[ContentNode]:
+    ) -> relay.Connection[ContentNode]:
         return ContentNode.get_queryset_intern(
             Content.objects.all(), info, filters
         )

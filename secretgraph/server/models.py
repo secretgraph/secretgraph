@@ -322,7 +322,7 @@ class Content(FlexidModel):
 
     def signatures(
         self, hashAlgorithms=None, references=None
-    ) -> Iterable[Signature]:
+    ) -> Iterable[str]:
         q = models.Q()
         q2 = models.Q()
         if references:
@@ -339,11 +339,13 @@ class Content(FlexidModel):
             self.tags.filter(q)
             .annotate(signature=Substr("tag", 10))
             .values_list("signature"),
-            references.filter(q2, group="signature").annotate(
+            references.filter(q2, group="signature")
+            .annotate(
                 signature=Concat(
                     "extra", models.Value("="), "target__contentHash"
                 )
-            ),
+            )
+            .values_list("signature"),
         )
 
     def clean(self) -> None:

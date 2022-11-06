@@ -142,7 +142,7 @@ class ClusterNode(relay.Node):
     @gql.django.connection()
     def contents(
         self, info: Info, filters: ContentFilterSimple
-    ) -> List[
+    ) -> relay.Connection[
         strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
     ]:
         result = get_cached_result(info.context.request)["Content"]
