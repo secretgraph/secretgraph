@@ -12,10 +12,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("regex")
+        parser.add_argument("--free-scan", action="store_true")
 
     def handle(
         self,
         regex,
+        free_scan,
         **options,
     ):
         cregex = re.compile(regex)
@@ -29,20 +31,23 @@ class Command(BaseCommand):
                 "    description:", cregex.match(c.description), c.description
             )
         print("Contents:")
+        q = Q(tag__regex=regex)
+        if not free_scan:
+            q &= Q(tag__startswith="name=") | Q(tag__startswith="description=")
+        else:
+            # exclude encrypted contenttags to prevent confusion
+            q &= ~Q(tag__startswith="~")
         for c in Content.objects.annotate(
             found_tags=Subquery(
                 ContentTag.objects.filter(
-                    Q(tag__regex=regex)
-                    & (
-                        Q(tag__startswith="name=")
-                        | Q(tag__startswith="description=")
-                    ),
+                    q,
                     content_id=OuterRef("id"),
                 ).values("tag")
             )
         ).filter(found_tags__isnull=False):
             print("  ", repr(c), sep="")
             print("    found tags:")
+            # TODO: should not happen
             if isinstance(c.found_tags, str):
                 return print(f"      {c.found_tags}")
             else:
