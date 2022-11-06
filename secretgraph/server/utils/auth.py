@@ -60,7 +60,9 @@ class LazyViewResult(object):
             return default
 
 
-def retrieve_allowed_objects(request, query, scope="view", authset=None):
+def retrieve_allowed_objects(
+    request, query, scope="view", authset=None, ignore_restrictions=False
+):
     if isinstance(query, str):
         query = apps.get_model("secretgraph", query).objects.all()
 
@@ -82,17 +84,18 @@ def retrieve_allowed_objects(request, query, scope="view", authset=None):
         ).delete()
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
-    pre_filtered_actions = (
-        Action.objects.select_related("cluster")
-        .filter(start__lte=now)
-        .filter(models.Q(stop__isnull=True) | models.Q(stop__gte=now))
-        .order_by("-start", "-id")
+    pre_filtered_actions = Action.objects.select_related("cluster").order_by(
+        "-start", "-id"
     )
+    if not ignore_restrictions:
+        pre_filtered_actions = pre_filtered_actions.filter(
+            cluster__net__active=True, start__lte=now
+        ).filter(models.Q(stop__isnull=True) | models.Q(stop__gte=now))
     if issubclass(query.model, Content):
         pre_filtered_actions = pre_filtered_actions.filter(
             models.Q(contentAction__isnull=True)
             | models.Q(contentAction__content__in=query)
-        ).select_related("cluster")
+        )
     returnval = {
         "authset": authset,
         "scope": scope,

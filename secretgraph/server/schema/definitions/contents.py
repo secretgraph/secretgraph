@@ -234,6 +234,8 @@ class ContentNode(relay.Node):
             hidden = filters.hidden
         else:
             hidden = UseCriteria.FALSE
+        if hidden != UseCriteria.IGNORE:
+            queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
         if filters.clusters is not None:
             queryset = queryset.filter(
                 cluster_id__in=Subquery(
@@ -262,8 +264,6 @@ class ContentNode(relay.Node):
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
-        if hidden != UseCriteria.IGNORE:
-            queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
 
         queryset = queryset.filter(
             id__in=Subquery(

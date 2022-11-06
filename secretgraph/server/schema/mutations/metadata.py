@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Optional
+from itertools import chain
 import logging
 
 import strawberry
@@ -14,7 +15,7 @@ from ...actions.update import (
     update_metadata_fn,
     manage_actions_fn,
 )
-from ...models import Cluster, Content, ContentTag
+from ...models import Cluster, Content, ContentTag, Net
 from ...signals import generateFlexid
 from ...utils.auth import (
     fetch_by_id,
@@ -63,7 +64,7 @@ def regenerate_flexid(
     for result in results.values():
         for obj in result["objects"]:
             generateFlexid(type(obj), obj, True)
-            updated.append(relay.to_base64(type(obj).__name__, obj.flexid))
+            updated.append(obj.flexid_cached)
     return RegenerateFlexidMutation(updated=updated)
 
 
@@ -78,6 +79,7 @@ def mark(
     ids: List[strawberry.ID],
     hidden: Optional[bool] = None,
     featured: Optional[bool] = None,
+    active: Optional[bool] = None,
     authorization: Optional[AuthList] = None,
 ) -> MarkMutation:
     if featured is not None:
@@ -90,17 +92,31 @@ def mark(
             info.context.request, authset=authorization
         ):
             hidden = None
+    if active is not None:
+        if "manage_active" not in get_cached_properties(
+            info.context.request, authset=authorization
+        ):
+            active = None
     contents = Content.objects.none()
     clusters = Cluster.objects.none()
     if hidden is not None:
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
 
         contents.update(hidden=hidden)
-    if featured is not None:
+    if featured is not None or active is not None:
         clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
-        clusters.update(featured=featured)
+        if featured is not None:
+            clusters.update(featured=featured)
+        if active is not None:
+            Net.objects.filter(
+                Exists(clusters.filter(net_id=OuterRef("id")))
+            ).update(active=active)
+
     return MarkMutation(
-        markChanged=map(lambda x: relay.to_base64("Content", x), contents)
+        markChanged=chain(
+            clusters.values_list("flexid_cached", flat=True),
+            contents.values_list("flexid_cached", flat=True),
+        )
     )
 
 
@@ -174,5 +190,5 @@ def update_metadata(
     contents = []
     with transaction.atomic():
         for f in requests:
-            contents.push(relay.to_base64("Content", f().flexid))
+            contents.push(f().flexid_cached)
     return MetadataUpdateMutation(updated=contents)

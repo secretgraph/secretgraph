@@ -62,6 +62,17 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
         if manage:
             net = manage.first().net
         if not net:
+            if retrieve_allowed_objects(
+                request,
+                Cluster.objects.all(),
+                scope="manage",
+                authset=authset,
+                ignore_restrictions=True,
+            )["objects"].exists():
+                raise ValueError(
+                    "not allowed - net disabled or "
+                    "not in actions time range"
+                )
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
                 user = getattr(request, "user", None)
                 if not user or not user.is_authenticated:

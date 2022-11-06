@@ -19,6 +19,7 @@ INSTALLED_APPS += [  # noqa F405
     "django.contrib.auth",  # required for user
     "django.contrib.contenttypes",  # required for auth
     "secretgraph.server",
+    "secretgraph.user",
 ]
 try:
     import daphne  # noqa: F401

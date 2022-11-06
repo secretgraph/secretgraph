@@ -35,6 +35,7 @@ class Migration(migrations.Migration):
                     "created",
                     models.DateTimeField(auto_now_add=True),
                 ),
+                ("active", models.BooleanField(blank=True, default=True)),
                 (
                     "quota",
                     models.PositiveIntegerField(
