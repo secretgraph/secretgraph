@@ -42,6 +42,7 @@ SECRETGRAPH_DEFAULT_GROUPS["debug_admin"] = {  # noqa F405
     "properties": [
         "allow_global_name",
         "allow_dangerous_actions",
+        "manage_active",
         "manage_featured",
         "manage_hidden",
         "manage_groups",

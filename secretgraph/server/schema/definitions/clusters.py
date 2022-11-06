@@ -133,11 +133,14 @@ class ClusterNode(relay.Node):
     def groups(self, info: Info) -> Optional[List[str]]:
         if self.limited:
             return None
+        names = self.groups.values_list("name", flat=True)
+        # hidden permission allows to see the hidden global groups
+        props = get_cached_properties(info.context.request)
+        if "manage_hidden" in props and "manage_groups" in props:
+            return names
         # remove hidden
         hidden_names = GlobalGroup.objects.get_hidden_names()
-        return set(self.groups.values_list("name", flat=True)).difference(
-            hidden_names
-        )
+        return set(names).difference(hidden_names)
 
     @gql.django.connection()
     def contents(

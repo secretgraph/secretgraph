@@ -47,6 +47,7 @@ SECRETGRAPH_DEFAULT_GROUPS["docker_admin"] = {  # noqa F405
         "allow_global_name",
         "allow_dangerous_actions",
         "manage_featured",
+        "manage_active",
         "manage_hidden",
         "manage_groups",
         "manage_deletion",
