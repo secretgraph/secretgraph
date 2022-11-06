@@ -157,6 +157,7 @@ class Cluster(FlexidModel):
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
+    groups: models.ManyToManyRel["GlobalGroup"]
 
     def clean(self) -> None:
         if not self.globalNameRegisteredAt and self.featured:

@@ -477,15 +477,15 @@ pyparsing = ">=2.0.2,<3.0.5 || >3.0.5"
 
 [[package]]
 name = "platformdirs"
-version = "2.5.2"
-description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+version = "2.5.3"
+description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 
 [package.extras]
-docs = ["furo (>=2021.7.5b38)", "proselint (>=0.10.2)", "sphinx (>=4)", "sphinx-autodoc-typehints (>=1.12)"]
-test = ["appdirs (==1.4.4)", "pytest (>=6)", "pytest-cov (>=2.7)", "pytest-mock (>=3.6)"]
+docs = ["furo (>=2022.9.29)", "proselint (>=0.13)", "sphinx (>=5.3)", "sphinx-autodoc-typehints (>=1.19.4)"]
+test = ["appdirs (==1.4.4)", "pytest (>=7.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
 
 [[package]]
 name = "psycopg2"
@@ -763,7 +763,7 @@ sanic = ["sanic (>=20.12.2,<22.0.0)"]
 
 [[package]]
 name = "strawberry-graphql-django"
-version = "0.7.1"
+version = "0.8"
 description = "Strawberry GraphQL Django extension"
 category = "main"
 optional = false
@@ -771,7 +771,7 @@ python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 Django = ">=3.0"
-strawberry-graphql = ">=0.109.0"
+strawberry-graphql = ">=0.139.0"
 
 [[package]]
 name = "tomli"
@@ -1219,8 +1219,8 @@ packaging = [
     {file = "packaging-21.3.tar.gz", hash = "sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb"},
 ]
 platformdirs = [
-    {file = "platformdirs-2.5.2-py3-none-any.whl", hash = "sha256:027d8e83a2d7de06bbac4e5ef7e023c02b863d7ea5d079477e722bb41ab25788"},
-    {file = "platformdirs-2.5.2.tar.gz", hash = "sha256:58c8abb07dcb441e6ee4b11d8df0ac856038f944ab98b7be6b27b2a3c7feef19"},
+    {file = "platformdirs-2.5.3-py3-none-any.whl", hash = "sha256:0cb405749187a194f444c25c82ef7225232f11564721eabffc6ec70df83b11cb"},
+    {file = "platformdirs-2.5.3.tar.gz", hash = "sha256:6e52c21afff35cb659c6e52d8b4d61b9bd544557180440538f255d9382c8cbe0"},
 ]
 psycopg2 = [
     {file = "psycopg2-2.9.5-cp310-cp310-win32.whl", hash = "sha256:d3ef67e630b0de0779c42912fe2cbae3805ebaba30cda27fea2a3de650a9414f"},
@@ -1312,8 +1312,8 @@ strawberry-graphql = [
     {file = "strawberry_graphql-0.139.0.tar.gz", hash = "sha256:b2ca16701209621831afb05140c847290c111ba4aea8b2e8a2b40cd18526b93b"},
 ]
 strawberry-graphql-django = [
-    {file = "strawberry_graphql_django-0.7.1-py3-none-any.whl", hash = "sha256:0affd3ddcf4e64c4297ebc38315a7eb13ec005f19c409912bbf29c582e22a4de"},
-    {file = "strawberry_graphql_django-0.7.1.tar.gz", hash = "sha256:a80621421d6fa997758f43e04945c41d56def4c63e77bf68908a11b5b4d590a4"},
+    {file = "strawberry_graphql_django-0.8-py3-none-any.whl", hash = "sha256:0e553dbee68efcfc02158ca7f3e9c039bc0ad70e6429a4ad6742e69bde2beb19"},
+    {file = "strawberry_graphql_django-0.8.tar.gz", hash = "sha256:d7373c7d2966062da01323705284187548aed0f78467378a13cc8ce836057d7b"},
 ]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
