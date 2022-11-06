@@ -21,5 +21,6 @@ class SecretGraphUserConfig(AppConfig):
             settings, "SECRETGRAPH_BIND_TO_USER", False
         ):
             usermodel = get_user_model()
-            post_save.connect(syncNetAndUserActiveCb, sender=usermodel)
-            post_save.connect(syncNetAndUserActiveCb, sender=Net)
+            if hasattr(usermodel, "is_active"):
+                post_save.connect(syncNetAndUserActiveCb, sender=usermodel)
+                post_save.connect(syncNetAndUserActiveCb, sender=Net)

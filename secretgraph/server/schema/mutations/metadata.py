@@ -6,7 +6,6 @@ import logging
 
 import strawberry
 from strawberry.types import Info
-from strawberry_django_plus import relay
 from django.db import transaction
 from django.db.models import Exists, OuterRef
 from ..shared import MetadataOperations
@@ -106,7 +105,9 @@ def mark(
     if featured is not None or active is not None:
         clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
         if featured is not None:
-            clusters.update(featured=featured)
+            clusters.filter(globalNameRegisteredAt__isnull=False).update(
+                featured=featured
+            )
         if active is not None:
             Net.objects.filter(
                 Exists(clusters.filter(net_id=OuterRef("id")))

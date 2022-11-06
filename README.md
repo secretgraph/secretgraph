@@ -106,6 +106,7 @@ Special configuration keys:
 -   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
 -   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
 -   manage_hidden: can see hidden contents, can set hidden state
+-   manage_active: can can block and unblock nets (via Cluster ids)
 -   manage_groups: can manage global groups of clusters
 -   manage_deletion: can delete every content or cluster
 -   manage_update: can update every content or cluster (but has still no access to data if encrypted)
@@ -356,7 +357,7 @@ The contents are limited to PublicKey types
 
 The shared key can change, so safest assumption is that the key of the private key stays stable.
 This way you invalidate the access by updating the encryption key of the private key.
-The private key is not meccessary exposed to the user but there are some danger:
+The private key is not neccessary exposed to the user but there are some danger:
 now you have a decryption key to the private key, that is very dangerous
 
 ## Why two languages?
@@ -387,6 +388,8 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO later
 
+-   encrypt Config set with saveConfig/loaded with loadConfigSync via a static key
+    -   via var
 -   port to real filters
 -   move to dataclasses and TypedDicts
     -   nearly complete needs testing and TypedDicts
