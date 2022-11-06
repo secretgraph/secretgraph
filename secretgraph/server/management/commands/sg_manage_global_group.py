@@ -10,7 +10,7 @@ def boolarg(val):
 
 
 class Command(BaseCommand):
-    help = "Create or Update Global Group"
+    help = "List, create or update Global Group(s)"
 
     def add_arguments(self, parser):
         parser.add_argument("name", nargs="?")
