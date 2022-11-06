@@ -38,10 +38,6 @@ from ..core import constants
 logger = logging.getLogger(__name__)
 
 
-class Signature:
-    signature: str
-
-
 def get_content_file_path(instance, filename) -> str:
     cluster_id = instance.cluster_id or instance.cluster.id
     if not cluster_id:
@@ -385,7 +381,13 @@ class Content(FlexidModel):
             raise ValidationError({"nonce": "nonce empty"})
 
     def __repr__(self) -> str:
-        return "<Content: type(%s), flexid(%s)>" % (self.type, self.flexid)
+        if self.hidden:
+            return "<Content: type(%s), flexid(%s), hidden>" % (
+                self.type,
+                self.flexid,
+            )
+        else:
+            return "<Content: type(%s), flexid(%s)>" % (self.type, self.flexid)
 
 
 class ContentAction(models.Model):
@@ -600,6 +602,9 @@ class GlobalGroupProperty(models.Model):
     )
     objects = GlobalGroupPropertyManager()
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class GlobalGroupCluster(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
@@ -657,5 +662,8 @@ class GlobalGroup(models.Model):
                 {"hidden": "injectedKeys and hidden are mutual exclusive"}
             )
 
-    def __str__(self) -> str:
-        return self.name
+    def __repr__(self) -> str:
+        if self.hidden:
+            return "<GlobalGroup: %s, hidden>" % self.name
+        else:
+            return "<GlobalGroup: %s>" % self.name
