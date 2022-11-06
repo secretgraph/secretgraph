@@ -105,9 +105,9 @@ Special configuration keys:
 -   allow_global_name: can register a global cluster name
 -   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
 -   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
--   manage_hidden: can see hidden contents, can set hidden state
+-   manage_hidden: can see hidden contents, can set hidden state, hidden groups of clusters become visible
 -   manage_active: can can block and unblock nets (via Cluster ids)
--   manage_groups: can manage global groups of clusters
+-   manage_groups: can manage global groups of clusters, hidden groups of clusters become visible
 -   manage_deletion: can delete every content or cluster
 -   manage_update: can update every content or cluster (but has still no access to data if encrypted)
 -   auto_hide_local: clusters with a group with this property have their public contents auto hidden if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)

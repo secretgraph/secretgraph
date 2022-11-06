@@ -134,9 +134,12 @@ class ClusterNode(relay.Node):
         if self.limited:
             return None
         names = self.groups.values_list("name", flat=True)
-        # hidden permission allows to see the hidden global groups
+        # permissions allows to see the hidden global groups
+        # manage_hidden: have mod rights,
+        #   so the groups are handy for communication
+        # manage_groups: required for correctly updating groups
         props = get_cached_properties(info.context.request)
-        if "manage_hidden" in props and "manage_groups" in props:
+        if "manage_hidden" in props or "manage_groups" in props:
             return names
         # remove hidden
         hidden_names = GlobalGroup.objects.get_hidden_names()
