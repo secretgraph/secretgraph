@@ -28,25 +28,29 @@ class Command(BaseCommand):
         parser.add_argument("-g", "--groups", nargs="+")
         parser.add_argument("-e", "--exclude-groups", nargs="+")
         parser.add_argument(
-            "--active", type=boolarg, default=None, choices=["true", "false"]
+            "--active",
+            type=boolarg,
+            default=None,
         )
         parser.add_argument(
-            "--hidden", type=boolarg, default=None, choices=["true", "false"]
+            "--hidden",
+            type=boolarg,
+            default=None,
         )
         parser.add_argument(
-            "--featured", type=boolarg, default=None, choices=["true", "false"]
+            "--featured",
+            type=boolarg,
+            default=None,
         )
         parser.add_argument(
             "--change-active",
             type=boolarg,
             default=None,
-            choices=["true", "false"],
         )
         parser.add_argument(
             "--change-hidden",
             type=boolarg,
             default=None,
-            choices=["true", "false"],
         )
         parser.add_argument(
             "--remove-featured",

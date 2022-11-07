@@ -15,14 +15,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("name", nargs="?")
         parser.add_argument("--description", default=None)
-        parser.add_argument(
-            "--hidden", type=boolarg, default=None, choices=["true", "false"]
-        )
+        parser.add_argument("--hidden", type=boolarg, default=None)
         parser.add_argument(
             "--match-user-group",
             type=boolarg,
             default=None,
-            choices=["true", "false"],
         )
         parser.add_argument("--properties", nargs="*", default=None)
 
