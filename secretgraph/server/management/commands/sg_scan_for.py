@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import OuterRef, Exists, Subquery
 from django.db.models import Q
 from ...models import Cluster, Content, ContentTag, GlobalGroup, Net
+from ....core.constants import public_states
 
 
 def boolarg(val):
@@ -20,9 +21,17 @@ class Command(BaseCommand):
             "-l",
             dest="free_tag_scan",
             action="count",
-            help="specify: 0 for name=, description= (default), "
+            help="amount: 0 for name=, description= (default), "
             "1 exclusion of "
             "special tags, > 1 no restriction",
+            default=0,
+        )
+        parser.add_argument(
+            "-p",
+            "--private",
+            action="count",
+            help="amount: 0 only global clusters and their contents (default),"
+            "1 only public clusters and public contents, 2 all",
             default=0,
         )
         parser.add_argument("-g", "--groups", nargs="+")
@@ -67,6 +76,7 @@ class Command(BaseCommand):
         free_tag_scan,
         active,
         hidden,
+        private,
         featured,
         change_active,
         change_hidden,
@@ -75,7 +85,7 @@ class Command(BaseCommand):
         **options,
     ):
         cregex = re.compile(regex)
-        cluster_q = Q(name__regex=regex) | Q(description__regex=regex)
+        cluster_q = Q()
         if active is not None:
             cluster_q &= Q(net__active=active)
         if featured is not None:
@@ -86,16 +96,28 @@ class Command(BaseCommand):
             )
         elif exclude_groups:
             cluster_q &= ~Q(groups__name__in=exclude_groups)
+        # applies to contents and clusters
+        if private == 0:
+            cluster_q &= Q(globalNameRegisteredAt__isnull=False)
 
         print("Cluster:")
         clusters = Cluster.objects.filter(cluster_q)
         groups = None
         if append_groups:
             groups = GlobalGroup.objects.filter(name__in=append_groups)
-        if remove_featured:
-            clusters.update(featured=False)
 
-        for c in clusters:
+        clusters_filtered = clusters.filter(
+            Q(name__regex=regex) | Q(description__regex=regex)
+        )
+        # applies only to clusters
+        if private == 1:
+            clusters_filtered = clusters_filtered.filter(
+                globalNameRegisteredAt__isnull=False
+            )
+
+        if remove_featured:
+            clusters_filtered.update(featured=False)
+        for c in clusters_filtered:
             if groups:
                 c.groups.add(*groups)
             print("  ", repr(c), sep="")
@@ -117,7 +139,7 @@ class Command(BaseCommand):
         if change_active is not None:
             # for synching with user is_active
             for n in Net.objects.filter(
-                Exists(clusters.filter(net_id=OuterRef("id")))
+                Exists(clusters_filtered.filter(net_id=OuterRef("id")))
             ):
                 n.active = change_active
                 n.save(update_fields=["active"])
@@ -125,6 +147,8 @@ class Command(BaseCommand):
         contents_q = Q()
         if hidden is not None:
             contents_q &= Q(hidden=hidden)
+        if private < 2:
+            contents_q &= Q(state__in=public_states)
 
         tag_q = Q(tag__regex=regex)
         if free_tag_scan == 0:
@@ -146,15 +170,17 @@ class Command(BaseCommand):
                     content_id=OuterRef("id"),
                 )
             ),
+            cluster__in=clusters,
         )
+
         for c in contents:
             print("  ", repr(c), sep="")
-            print("    found tags:")
+            print("    matching tags:")
             for t in c.tags.filter(tag_q):
                 print(f"      {t}")
         if change_hidden is not None:
             contents.update(hidden=change_hidden)
             # should also recursivly hide contents
-            Content.objects.filter(
-                cluster_id__in=Subquery(clusters.values("id"))
-            ).update(hidden=change_hidden)
+            Content.objects.filter(cluster__in=clusters_filtered).update(
+                hidden=change_hidden
+            )
