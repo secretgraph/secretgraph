@@ -1,10 +1,13 @@
 import re
+import argparse
 from typing import Optional, cast
 from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand
 from django.utils.timezone import now
 from django.db.models import OuterRef, Exists, Q, QuerySet
+
+from ...utils.auth import fetch_by_id
 from ...models import Cluster, Content, ContentTag, GlobalGroup, Net
 from ....core.constants import public_states
 
@@ -29,7 +32,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         deletion_g = parser.add_mutually_exclusive_group()
-        parser.add_argument("regex")
+        parser.add_argument("--regex")
+        parser.add_argument(
+            "--id", dest="ids", action="extend", nargs="+", default=[]
+        )
+        parser.add_argument("--id-file", type=argparse.FileType("r"))
         parser.add_argument(
             "-l",
             dest="free_tag_scan",
@@ -117,6 +124,8 @@ class Command(BaseCommand):
         self,
         regex,
         groups,
+        ids,
+        id_file,
         exclude_groups,
         free_tag_scan,
         active,
@@ -133,7 +142,11 @@ class Command(BaseCommand):
         scan,
         **options,
     ):
-        cregex = re.compile(regex)
+        if id_file:
+            ids.extend(map(lambda x: x.strip(), id_file.readlines()))
+        cregex = None
+        if regex:
+            cregex = re.compile(regex)
         cluster_q = Q()
         if active is not None:
             cluster_q &= Q(net__active=active)
@@ -155,9 +168,15 @@ class Command(BaseCommand):
             append_groups = GlobalGroup.objects.filter(name__in=append_groups)
 
         if "Cluster" in scan:
-            clusters_filtered = clusters.filter(
-                Q(name__regex=regex) | Q(description__regex=regex)
-            )
+            clusters_filtered = clusters
+            if regex:
+                clusters_filtered = clusters_filtered.filter(
+                    Q(name__regex=regex) | Q(description__regex=regex)
+                )
+            if ids:
+                clusters_filtered = fetch_by_id(
+                    clusters_filtered, ids, limit_ids=None
+                )
             # applies only to clusters
             if private == 1:
                 clusters_filtered = clusters_filtered.filter(
@@ -169,18 +188,23 @@ class Command(BaseCommand):
                 print("  ", repr(c), sep="")
                 print(
                     "    name",
-                    " <match>" if cregex.search(c.name) else "",
+                    " <match>" if cregex and cregex.search(c.name) else "",
                     ": ",
                     c.name,
                     sep="",
                 )
                 print(
                     "    description",
-                    " <match>" if cregex.search(c.description) else "",
+                    " <match>"
+                    if cregex and cregex.search(c.description)
+                    else "",
                     ": ",
                     c.description,
                     sep="",
                 )
+                print("    groups:")
+                for g in c.groups.all():
+                    print(f"      {g.name}")
         else:
             # stub
             clusters_filtered = Cluster.objects.none()
@@ -191,47 +215,58 @@ class Command(BaseCommand):
         if private < 2:
             contents_q &= Q(state__in=public_states)
 
-        tag_q = Q(tag__regex=regex)
-        if free_tag_scan == 0:
-            tag_q &= Q(tag__startswith="name=") | Q(
-                tag__startswith="description="
-            )
-        elif free_tag_scan == 1:
-            # exclude special contenttags to prevent confusion
-            tag_q &= (
-                ~Q(tag__startswith="~")
-                & ~Q(tag__startswith="key=")
-                & ~Q(tag__startswith="key_hash=")
-            )
+        tag_q = None
+        if regex:
+            tag_q = Q(tag__regex=regex)
+            if free_tag_scan == 0:
+                tag_q &= Q(tag__startswith="name=") | Q(
+                    tag__startswith="description="
+                )
+            elif free_tag_scan == 1:
+                # exclude special contenttags to prevent confusion
+                tag_q &= (
+                    ~Q(tag__startswith="~")
+                    & ~Q(tag__startswith="key=")
+                    & ~Q(tag__startswith="key_hash=")
+                )
         if "Content" in scan:
             contents_filtered = Content.objects.prefetch_related(
                 "tags"
             ).filter(
                 contents_q,
-                Exists(
-                    ContentTag.objects.filter(
-                        tag_q,
-                        content_id=OuterRef("id"),
-                    )
-                ),
                 cluster__in=clusters,
             )
+            if ids:
+                contents_filtered = fetch_by_id(
+                    contents_filtered, ids, limit_ids=None
+                )
+            if tag_q:
+                contents_filtered = contents_filtered.filter(
+                    Exists(
+                        ContentTag.objects.filter(
+                            tag_q,
+                            content_id=OuterRef("id"),
+                        )
+                    ),
+                )
 
             print("Contents:")
             for c in contents_filtered:
                 print("  ", repr(c), sep="")
-                print("    matching tags:")
-                for t in c.tags.filter(tag_q):
-                    print(f"      {t}")
+                if tag_q:
+                    print("    matching tags:")
+                    for t in c.tags.filter(tag_q):
+                        print(f"      {t}")
         else:
             # stub
             contents_filtered = Content.objects.none()
+        # only change non system cluster
         clusters_affected = (
             Cluster.objects.filter(
                 Exists(contents_filtered.filter(cluster_id=OuterRef("id")))
             )
-            .union(clusters_filtered)
             .exclude(name="@system")
+            .union(clusters_filtered.exclude(name="@system"))
         )
         if change_active is not None:
             # for synching with user is_active
