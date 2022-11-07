@@ -179,6 +179,14 @@ class Cluster(FlexidModel):
             self.globalNameRegisteredAt = None
         return super().clean()
 
+    def __repr__(self) -> str:
+        return "<Cluster: id(%s), name(%s), flexid(%s)%s>" % (
+            self.id,
+            self.name,
+            self.flexid,
+            ", featured" if self.featured else "",
+        )
+
 
 class ContentManager(models.Manager):
     def required_keys_full(
@@ -384,13 +392,12 @@ class Content(FlexidModel):
             raise ValidationError({"nonce": "nonce empty"})
 
     def __repr__(self) -> str:
-        if self.hidden:
-            return "<Content: type(%s), flexid(%s), hidden>" % (
-                self.type,
-                self.flexid,
-            )
-        else:
-            return "<Content: type(%s), flexid(%s)>" % (self.type, self.flexid)
+        return "<Content: type(%s), state(%s), flexid(%s)%s>" % (
+            self.type,
+            self.state,
+            self.flexid,
+            ", hidden" if self.hidden else "",
+        )
 
 
 class ContentAction(models.Model):
@@ -666,7 +673,7 @@ class GlobalGroup(models.Model):
             )
 
     def __repr__(self) -> str:
-        if self.hidden:
-            return "<GlobalGroup: %s, hidden>" % self.name
-        else:
-            return "<GlobalGroup: %s>" % self.name
+        return "<GlobalGroup: %s%s>" % (
+            self.name,
+            ", hidden" if self.hidden else "",
+        )

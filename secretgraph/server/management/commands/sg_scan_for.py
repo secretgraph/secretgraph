@@ -23,6 +23,7 @@ class Command(BaseCommand):
             help="specify: 0 for name=, description= (default), "
             "1 exclusion of "
             "special tags, > 1 no restriction",
+            default=0,
         )
         parser.add_argument("-g", "--groups", nargs="+")
         parser.add_argument("-e", "--exclude-groups", nargs="+")
@@ -79,7 +80,7 @@ class Command(BaseCommand):
             cluster_q &= Q(
                 groups__name__in=set(groups).difference(exclude_groups or [])
             )
-        else:
+        elif exclude_groups:
             cluster_q &= ~Q(groups__name__in=exclude_groups)
 
         print("Cluster:")
@@ -101,9 +102,19 @@ class Command(BaseCommand):
             if groups:
                 c.groups.add(*groups)
             print("  ", repr(c), sep="")
-            print("    name:", cregex.match(c.name), c.name)
             print(
-                "    description:", cregex.match(c.description), c.description
+                "    name",
+                " <match>" if cregex.search(c.name) else "",
+                ": ",
+                c.name,
+                sep="",
+            )
+            print(
+                "    description",
+                " <match>" if cregex.search(c.description) else "",
+                ": ",
+                c.description,
+                sep="",
             )
         print("Contents:")
         contents_q = Q()
@@ -122,7 +133,7 @@ class Command(BaseCommand):
                 & ~Q(tag__startswith="key=")
                 & ~Q(tag__startswith="key_hash=")
             )
-        contents = Content.objects.select_related("tags").filter(
+        contents = Content.objects.prefetch_related("tags").filter(
             contents_q,
             Exists(
                 ContentTag.objects.filter(
