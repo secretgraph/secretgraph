@@ -1,9 +1,9 @@
 import re
+from typing import Optional, cast
 
 from django.core.management.base import BaseCommand
 
-from django.db.models import OuterRef, Exists, Subquery
-from django.db.models import Q
+from django.db.models import OuterRef, Exists, Q, QuerySet
 from ...models import Cluster, Content, ContentTag, GlobalGroup, Net
 from ....core.constants import public_states
 
@@ -21,21 +21,35 @@ class Command(BaseCommand):
             "-l",
             dest="free_tag_scan",
             action="count",
-            help="amount: 0 for name=, description= (default), "
-            "1 exclusion of "
-            "special tags, > 1 no restriction",
+            help="Removes tag scan protections. "
+            "Can be multiple times specified: "
+            "0 for name=, description= (default), "
+            "1 exclusion of special tags, >=2 no restrictions",
             default=0,
         )
         parser.add_argument(
             "-p",
             "--private",
             action="count",
-            help="amount: 0 only global clusters and their contents (default),"
-            "1 only public clusters and public contents, 2 all",
+            help="Removes privacy protections. "
+            "Can be multiple times specified: "
+            "0 only global clusters and their contents (default), "
+            "1 only public clusters and public contents, >= 2 all",
             default=0,
         )
         parser.add_argument("-g", "--groups", nargs="+")
         parser.add_argument("-e", "--exclude-groups", nargs="+")
+        parser.add_argument(
+            "-s",
+            "--scan",
+            nargs="+",
+            choices=["Content", "Cluster"],
+            default=["Content", "Cluster"],
+            help="Scan limits the regex scan to Model type. "
+            'E.g. "...fooregex -s Cluster --change-active false" '
+            "disables Net only if fooregex was found in Cluster description "
+            "or name and not if it was found in a Tag",
+        )
         parser.add_argument(
             "--active",
             type=boolarg,
@@ -80,8 +94,9 @@ class Command(BaseCommand):
         featured,
         change_active,
         change_hidden,
-        append_groups,
+        append_groups: Optional[list[str]],
         remove_featured,
+        scan,
         **options,
     ):
         cregex = re.compile(regex)
@@ -100,50 +115,42 @@ class Command(BaseCommand):
         if private == 0:
             cluster_q &= Q(globalNameRegisteredAt__isnull=False)
 
-        print("Cluster:")
+        # clusters
         clusters = Cluster.objects.filter(cluster_q)
-        groups = None
         if append_groups:
-            groups = GlobalGroup.objects.filter(name__in=append_groups)
+            append_groups = GlobalGroup.objects.filter(name__in=append_groups)
 
-        clusters_filtered = clusters.filter(
-            Q(name__regex=regex) | Q(description__regex=regex)
-        )
-        # applies only to clusters
-        if private == 1:
-            clusters_filtered = clusters_filtered.filter(
-                globalNameRegisteredAt__isnull=False
+        if "Cluster" in scan:
+            clusters_filtered = clusters.filter(
+                Q(name__regex=regex) | Q(description__regex=regex)
             )
+            # applies only to clusters
+            if private == 1:
+                clusters_filtered = clusters_filtered.filter(
+                    globalNameRegisteredAt__isnull=False
+                )
 
-        if remove_featured:
-            clusters_filtered.update(featured=False)
-        for c in clusters_filtered:
-            if groups:
-                c.groups.add(*groups)
-            print("  ", repr(c), sep="")
-            print(
-                "    name",
-                " <match>" if cregex.search(c.name) else "",
-                ": ",
-                c.name,
-                sep="",
-            )
-            print(
-                "    description",
-                " <match>" if cregex.search(c.description) else "",
-                ": ",
-                c.description,
-                sep="",
-            )
+            print("Cluster:")
+            for c in clusters_filtered:
+                print("  ", repr(c), sep="")
+                print(
+                    "    name",
+                    " <match>" if cregex.search(c.name) else "",
+                    ": ",
+                    c.name,
+                    sep="",
+                )
+                print(
+                    "    description",
+                    " <match>" if cregex.search(c.description) else "",
+                    ": ",
+                    c.description,
+                    sep="",
+                )
+        else:
+            # stub
+            clusters_filtered = Cluster.objects.none()
 
-        if change_active is not None:
-            # for synching with user is_active
-            for n in Net.objects.filter(
-                Exists(clusters_filtered.filter(net_id=OuterRef("id")))
-            ):
-                n.active = change_active
-                n.save(update_fields=["active"])
-        print("Contents:")
         contents_q = Q()
         if hidden is not None:
             contents_q &= Q(hidden=hidden)
@@ -162,25 +169,48 @@ class Command(BaseCommand):
                 & ~Q(tag__startswith="key=")
                 & ~Q(tag__startswith="key_hash=")
             )
-        contents = Content.objects.prefetch_related("tags").filter(
-            contents_q,
-            Exists(
-                ContentTag.objects.filter(
-                    tag_q,
-                    content_id=OuterRef("id"),
-                )
-            ),
-            cluster__in=clusters,
-        )
+        if "Content" in scan:
+            contents_filtered = Content.objects.prefetch_related(
+                "tags"
+            ).filter(
+                contents_q,
+                Exists(
+                    ContentTag.objects.filter(
+                        tag_q,
+                        content_id=OuterRef("id"),
+                    )
+                ),
+                cluster__in=clusters,
+            )
 
-        for c in contents:
-            print("  ", repr(c), sep="")
-            print("    matching tags:")
-            for t in c.tags.filter(tag_q):
-                print(f"      {t}")
+            print("Contents:")
+            for c in contents_filtered:
+                print("  ", repr(c), sep="")
+                print("    matching tags:")
+                for t in c.tags.filter(tag_q):
+                    print(f"      {t}")
+        else:
+            # stub
+            contents_filtered = Content.objects.none()
+        clusters_affected = Cluster.objects.filter(
+            Exists(contents_filtered.filter(cluster_id=OuterRef("id")))
+        ).union(clusters_filtered)
+        if change_active is not None:
+            # for synching with user is_active
+            for n in Net.objects.filter(
+                Exists(clusters_affected.filter(net_id=OuterRef("id")))
+            ):
+                n.active = change_active
+                n.save(update_fields=["active"])
+
+        if remove_featured:
+            clusters_affected.update(featured=False)
         if change_hidden is not None:
-            contents.update(hidden=change_hidden)
+            contents_filtered.update(hidden=change_hidden)
             # should also recursivly hide contents
             Content.objects.filter(cluster__in=clusters_filtered).update(
                 hidden=change_hidden
             )
+        if append_groups:
+            for g in cast(QuerySet[GlobalGroup], append_groups):
+                g.clusters.add(clusters_affected)
