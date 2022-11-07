@@ -465,3 +465,29 @@ def get_cached_properties(
             all_props,
         )
     return getattr(request, permissions_name)
+
+
+def update_cached_properties(
+    request,
+    *,
+    groups=None,
+    properties=None,
+    permissions_name="secretgraphProperties",
+):
+    if getattr(request, permissions_name, None) is None:
+        raise AttributeError("cached properties does not exist")
+    if groups:
+        group_properties = GlobalGroupProperty.objects.filter(
+            groups__in=groups
+        ).values_list("name")
+    else:
+        group_properties = []
+    setattr(
+        request,
+        permissions_name,
+        frozenset(
+            *getattr(request, permissions_name),
+            *group_properties,
+            *(properties or []),
+        ),
+    )

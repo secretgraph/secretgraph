@@ -126,15 +126,11 @@ class SideEffectsHandlers:
     @staticmethod
     def clean_storedUpdate(action_dict, request, content, authset, admin):
         from ...utils.auth import get_cached_properties
-        from ...models import GlobalGroupProperty
 
         if content:
             raise ValueError("storedUpdate cannot be used as contentaction")
-        if (
-            "allow_dangerous_actions"
-            not in GlobalGroupProperty.objects.get_default_properties()
-            and "allow_dangerous_actions"
-            not in get_cached_properties(request, authset=authset)
+        if "allow_dangerous_actions" not in get_cached_properties(
+            request, authset=authset
         ):
             raise ValueError("No permission to register dangerous actions")
         now_plus_x = timezone.now() + td(minutes=20)

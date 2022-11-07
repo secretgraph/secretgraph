@@ -20,6 +20,7 @@ from ...utils.auth import (
     ids_to_results,
     get_cached_result,
     get_cached_properties,
+    update_cached_properties,
 )
 from ..arguments import (
     AuthList,
@@ -63,9 +64,7 @@ def mutate_cluster(
 
     if cluster.name is not None and cluster.name.startswith("@"):
         if "allow_global_name" not in (
-            get_cached_properties(
-                info.context.request, authset=authorization
-            ).union(GlobalGroupProperty.objects.get_default_properties())
+            get_cached_properties(info.context.request, authset=authorization)
         ):
             cluster.name = f"+@{cluster.name}"
     if id:
@@ -89,9 +88,12 @@ def mutate_cluster(
             authset=authorization,
         )(transaction.atomic)
     else:
-        cluster.groups = GlobalGroupProperty.objects.get_or_create(
+        default_groups = GlobalGroupProperty.objects.get_or_create(
             name="default", defaults={}
         )[0].groups.all()
+        cluster.groups.set(default_groups)
+        get_cached_properties(info.context.request, authset=authorization)
+        update_cached_properties(info.context.request, groups=default_groups)
         _cluster_res = create_cluster_fn(
             info.context.request, cluster, authset=authorization
         )(transaction.atomic)
