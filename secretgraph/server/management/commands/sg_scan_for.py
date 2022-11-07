@@ -1,8 +1,9 @@
 import re
 from typing import Optional, cast
+from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand
-
+from django.utils.timezone import now
 from django.db.models import OuterRef, Exists, Q, QuerySet
 from ...models import Cluster, Content, ContentTag, GlobalGroup, Net
 from ....core.constants import public_states
@@ -12,10 +13,22 @@ def boolarg(val):
     return val == "true"
 
 
+def timeformat(val):
+    if val.startswith("+"):
+        return now() + timedelta(seconds=int(val[:1]))
+    elif val == "now":
+        return now() - timedelta(seconds=1)
+    elif val and val != "null":
+        return datetime.fromisoformat(val)
+    else:
+        return None
+
+
 class Command(BaseCommand):
     help = "Scan for regex in user content and clusters e.g. to prevent abuse"
 
     def add_arguments(self, parser):
+        deletion_g = parser.add_mutually_exclusive_group()
         parser.add_argument("regex")
         parser.add_argument(
             "-l",
@@ -76,9 +89,27 @@ class Command(BaseCommand):
             default=None,
         )
         parser.add_argument(
-            "--remove-featured",
-            action="store_true",
-            help="remove featured flag",
+            "--change-featured",
+            type=boolarg,
+            default=None,
+        )
+        parser.add_argument(
+            "--change-public",
+            type=timeformat,
+            nargs="?",
+            default=False,
+        )
+        deletion_g.add_argument(
+            "--change-delete-content",
+            type=timeformat,
+            nargs="?",
+            default=False,
+        )
+        deletion_g.add_argument(
+            "--change-delete-cluster",
+            type=timeformat,
+            nargs="?",
+            default=False,
         )
         parser.add_argument("--append-groups", nargs="+")
 
@@ -94,8 +125,11 @@ class Command(BaseCommand):
         featured,
         change_active,
         change_hidden,
+        change_featured,
+        change_public,
+        change_delete_cluster,
+        change_delete_content,
         append_groups: Optional[list[str]],
-        remove_featured,
         scan,
         **options,
     ):
@@ -192,9 +226,13 @@ class Command(BaseCommand):
         else:
             # stub
             contents_filtered = Content.objects.none()
-        clusters_affected = Cluster.objects.filter(
-            Exists(contents_filtered.filter(cluster_id=OuterRef("id")))
-        ).union(clusters_filtered)
+        clusters_affected = (
+            Cluster.objects.filter(
+                Exists(contents_filtered.filter(cluster_id=OuterRef("id")))
+            )
+            .union(clusters_filtered)
+            .exclude(name="@system")
+        )
         if change_active is not None:
             # for synching with user is_active
             for n in Net.objects.filter(
@@ -203,8 +241,26 @@ class Command(BaseCommand):
                 n.active = change_active
                 n.save(update_fields=["active"])
 
-        if remove_featured:
-            clusters_affected.update(featured=False)
+        if change_featured is not None:
+            if change_featured:
+                clusters_affected.filter(
+                    globalNameRegisteredAt__isnull=False
+                ).update(featured=True)
+            else:
+                clusters_affected.update(featured=False)
+        if change_public is not False:
+            if change_public:
+                clusters_affected.update(globalNameRegisteredAt=change_public)
+            else:
+                clusters_affected.update(
+                    globalNameRegisteredAt=change_public, featured=False
+                )
+        if change_delete_cluster is not False:
+            clusters_affected.update(markForDestruction=change_delete_cluster)
+            contents_filtered.update(markForDestruction=change_delete_content)
+        elif change_delete_content is not False:
+            contents_filtered.update(markForDestruction=change_delete_content)
+
         if change_hidden is not None:
             contents_filtered.update(hidden=change_hidden)
             # should also recursivly hide contents

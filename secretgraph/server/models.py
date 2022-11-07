@@ -148,12 +148,12 @@ class Cluster(FlexidModel):
         blank=True,
     )
 
+    markForDestruction: dt = models.DateTimeField(null=True, blank=True)
     globalNameRegisteredAt: dt = models.DateTimeField(null=True, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True, null=False)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(blank=True, default=uuid4)
 
-    markForDestruction: dt = models.DateTimeField(null=True, blank=True)
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
