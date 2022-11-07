@@ -2,7 +2,7 @@ import re
 
 from django.core.management.base import BaseCommand
 
-from django.db.models import OuterRef, Exists
+from django.db.models import OuterRef, Exists, Subquery
 from django.db.models import Q
 from ...models import Cluster, Content, ContentTag, GlobalGroup, Net
 
@@ -113,6 +113,7 @@ class Command(BaseCommand):
                 c.description,
                 sep="",
             )
+
         if change_active is not None:
             # for synching with user is_active
             for n in Net.objects.filter(
@@ -153,3 +154,7 @@ class Command(BaseCommand):
                 print(f"      {t}")
         if change_hidden is not None:
             contents.update(hidden=change_hidden)
+            # should also recursivly hide contents
+            Content.objects.filter(
+                cluster_id__in=Subquery(clusters.values("id"))
+            ).update(hidden=change_hidden)
