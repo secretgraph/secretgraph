@@ -94,13 +94,6 @@ class Command(BaseCommand):
             groups = GlobalGroup.objects.filter(name__in=append_groups)
         if remove_featured:
             clusters.update(featured=False)
-        if change_active:
-            # for synching with user is_active
-            for n in Net.objects.filter(
-                Exists(clusters.filter(net_id=OuterRef("id")))
-            ):
-                n.active = change_active
-                n.save(update_fields=["active"])
 
         for c in clusters:
             if groups:
@@ -120,6 +113,13 @@ class Command(BaseCommand):
                 c.description,
                 sep="",
             )
+        if change_active is not None:
+            # for synching with user is_active
+            for n in Net.objects.filter(
+                Exists(clusters.filter(net_id=OuterRef("id")))
+            ):
+                n.active = change_active
+                n.save(update_fields=["active"])
         print("Contents:")
         contents_q = Q()
         if hidden is not None:
@@ -146,10 +146,10 @@ class Command(BaseCommand):
                 )
             ),
         )
-        if change_hidden:
-            contents.update(hidden=change_hidden)
         for c in contents:
             print("  ", repr(c), sep="")
             print("    found tags:")
             for t in c.tags.filter(tag_q):
                 print(f"      {t}")
+        if change_hidden is not None:
+            contents.update(hidden=change_hidden)
