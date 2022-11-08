@@ -38,10 +38,11 @@ export default function ClusterSelect<
         AutocompleteValue<string, Multiple, DisableClearable, FreeSolo>
     >) {
     const [inputValue, setInputValue] = React.useState('')
+    const deferredInput = React.useDeferredValue(inputValue)
     const { fetchMore, data, loading } = useQuery(clusterFeedQuery, {
         variables: {
             authorization: tokens,
-            search: inputValue ? inputValue : undefined,
+            search: deferredInput ? deferredInput : undefined,
             public: Constants.UseCriteriaPublic.TOKEN,
         },
     })
@@ -101,8 +102,10 @@ export default function ClusterSelect<
             getOptionLabel={(option) => {
                 return labelMap[option]?.name || option
             }}
-            onInputChange={(event, newInputValue) => {
-                setInputValue(newInputValue)
+            onInputChange={(event, newInputValue, reason) => {
+                if (reason == 'input' && newInputValue != deferredInput) {
+                    setInputValue(newInputValue)
+                }
             }}
             options={ids}
         />

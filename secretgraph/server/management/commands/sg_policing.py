@@ -32,7 +32,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         deletion_g = parser.add_mutually_exclusive_group()
-        parser.add_argument("--regex")
+        parser.add_argument("--regex", "-r")
         parser.add_argument(
             "--id", dest="ids", action="extend", nargs="+", default=[]
         )
@@ -278,8 +278,15 @@ class Command(BaseCommand):
         # only change non system cluster
         # show content of system cluster
         clusters_affected = Cluster.objects.filter(
-            Exists(contents_affected.filter(cluster_id=OuterRef("id")))
-        ).union(clusters_filtered.exclude(name="@system"))
+            Q(Exists(contents_affected.filter(cluster_id=OuterRef("id"))))
+            | Q(
+                Exists(
+                    clusters_filtered.filter(id=OuterRef("id")).exclude(
+                        name="@system"
+                    )
+                )
+            )
+        )
         if change_active is not None:
             # for synching with user is_active
             for n in Net.objects.filter(
