@@ -37,6 +37,7 @@ class Command(BaseCommand):
             "--id", dest="ids", action="extend", nargs="+", default=[]
         )
         parser.add_argument("--id-file", type=argparse.FileType("r"))
+        parser.add_argument("-a", "--all-tags", action="store_true")
         parser.add_argument(
             "-l",
             dest="free_tag_scan",
@@ -130,6 +131,7 @@ class Command(BaseCommand):
         hidden,
         private,
         featured,
+        all_tags,
         change_active,
         change_hidden,
         change_featured,
@@ -228,11 +230,13 @@ class Command(BaseCommand):
                     & ~Q(tag__startswith="key_hash=")
                 )
         if "Content" in scan:
-            contents_filtered = Content.objects.prefetch_related(
-                "tags"
-            ).filter(
-                contents_q,
-                cluster__in=clusters,
+            contents_filtered = (
+                Content.objects.select_related("cluster")
+                .prefetch_related("tags")
+                .filter(
+                    contents_q,
+                    cluster__id__in=clusters.values("id"),
+                )
             )
             if ids:
                 contents_filtered = fetch_by_id(
@@ -251,7 +255,18 @@ class Command(BaseCommand):
             print("Contents:")
             for c in contents_filtered:
                 print("  ", repr(c), sep="")
-                if tag_q:
+                if c.cluster.name == "@system":
+                    print("    <system content>, won't be changed")
+                if all_tags:
+                    print("    tags:")
+                    for t in c.tags.all():
+                        match = (
+                            "<match>"
+                            if cregex and cregex.search(t.tag)
+                            else "<no match>"
+                        )
+                        print(f"      {match} {t}")
+                elif tag_q:
                     print("    matching tags:")
                     for t in c.tags.filter(tag_q):
                         print(f"      {t}")
@@ -298,9 +313,9 @@ class Command(BaseCommand):
         if change_hidden is not None:
             contents_affected.update(hidden=change_hidden)
             # should also recursivly hide contents
-            Content.objects.filter(cluster__in=clusters_affected).update(
-                hidden=change_hidden
-            )
+            Content.objects.filter(
+                cluster__id__in=clusters_affected.values("id")
+            ).update(hidden=change_hidden)
         if append_groups:
             for g in cast(QuerySet[GlobalGroup], append_groups):
                 g.clusters.add(clusters_affected)
