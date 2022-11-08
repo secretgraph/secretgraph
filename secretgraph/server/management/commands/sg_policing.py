@@ -258,14 +258,13 @@ class Command(BaseCommand):
         else:
             # stub
             contents_filtered = Content.objects.none()
+        # without contents of @system
+        contents_affected = contents_filtered.exclude(cluster__name="@system")
         # only change non system cluster
-        clusters_affected = (
-            Cluster.objects.filter(
-                Exists(contents_filtered.filter(cluster_id=OuterRef("id")))
-            )
-            .exclude(name="@system")
-            .union(clusters_filtered.exclude(name="@system"))
-        )
+        # show content of system cluster
+        clusters_affected = Cluster.objects.filter(
+            Exists(contents_affected.filter(cluster_id=OuterRef("id")))
+        ).union(clusters_filtered.exclude(name="@system"))
         if change_active is not None:
             # for synching with user is_active
             for n in Net.objects.filter(
@@ -292,14 +291,14 @@ class Command(BaseCommand):
                 )
         if change_delete_cluster is not False:
             clusters_affected.update(markForDestruction=change_delete_cluster)
-            contents_filtered.update(markForDestruction=change_delete_content)
+            contents_affected.update(markForDestruction=change_delete_content)
         elif change_delete_content is not False:
-            contents_filtered.update(markForDestruction=change_delete_content)
+            contents_affected.update(markForDestruction=change_delete_content)
 
         if change_hidden is not None:
-            contents_filtered.update(hidden=change_hidden)
+            contents_affected.update(hidden=change_hidden)
             # should also recursivly hide contents
-            Content.objects.filter(cluster__in=clusters_filtered).update(
+            Content.objects.filter(cluster__in=clusters_affected).update(
                 hidden=change_hidden
             )
         if append_groups:
