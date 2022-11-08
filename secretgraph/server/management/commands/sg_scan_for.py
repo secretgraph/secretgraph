@@ -102,9 +102,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--change-public",
-            type=timeformat,
-            nargs="?",
-            default=False,
+            type=boolarg,
         )
         deletion_g.add_argument(
             "--change-delete-content",
@@ -283,12 +281,14 @@ class Command(BaseCommand):
                 ).update(featured=True)
             else:
                 clusters_affected.update(featured=False)
-        if change_public is not False:
+        if change_public is not None:
             if change_public:
-                clusters_affected.update(globalNameRegisteredAt=change_public)
+                clusters_affected.filter(
+                    globalNameRegisteredAt__isnull=True
+                ).update(globalNameRegisteredAt=now())
             else:
                 clusters_affected.update(
-                    globalNameRegisteredAt=change_public, featured=False
+                    globalNameRegisteredAt=None, featured=False
                 )
         if change_delete_cluster is not False:
             clusters_affected.update(markForDestruction=change_delete_cluster)
