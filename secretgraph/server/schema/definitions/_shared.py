@@ -25,10 +25,10 @@ class ActionEntry:
 
 class ActionMixin:
     def availableActions(self, info: Info) -> List[ActionEntry]:
-        name = self.__class__.__name__
+        name = self.__class__.__name__.replace("Node", "", 1)
         result = get_cached_result(
             info.context.request, ensureInitialized=True
-        ).get(name, {})
+        )[name]
         # only show some actions if not set
         has_manage = False
         if isinstance(self, Content):
@@ -103,13 +103,12 @@ class ActionMixin:
                         allowedTags=None,
                     )
 
-    @gql.django.field(only=["id", "cluster_id"])
+    @gql.django.field()
     def authOk(self, info: Info) -> bool:
-        name = self.__class__.__name__
-        result = getattr(info.context.request, "secretgraphResult", {}).get(
-            name, {}
-        )
-
+        name = self.__class__.__name__.replace("Node", "", 1)
+        result = get_cached_result(
+            info.context.request, ensureInitialized=True
+        )[name]
         authOk = False
         if isinstance(self, Content):
             # if content: check cluster and content keys

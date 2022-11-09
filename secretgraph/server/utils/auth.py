@@ -420,7 +420,7 @@ def get_cached_result(
 ):
     if not getattr(request, name, None):
         if ensureInitialized:
-            raise AttributeError("cached query result does not exist")
+            raise AttributeError("cached query results does not exist")
         setattr(
             request,
             name,

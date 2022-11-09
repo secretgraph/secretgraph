@@ -196,9 +196,8 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
 
 -   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored
     -   for all action definitions
--   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty:
+-   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty: Should be defined together with view
     -   for Content:
-        -   fetch: autodelete content after viewing
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[\]
@@ -375,6 +374,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
+-   view, update (non contentAction) should inherit manage exclusions
 -   disallow non global ids? Would ease implementation
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config

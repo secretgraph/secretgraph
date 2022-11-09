@@ -8,9 +8,12 @@ from ...models import Cluster, Content
 class ViewHandlers:
     @staticmethod
     def do_auth(action_dict, scope, sender, accesslevel, action, **kwargs):
-        if scope != "auth":
+        if scope != "view":
             return None
-        action.delete()
+        # for beeing able to rollback when an error happens
+        if action.used:
+            action.delete()
+            return None
 
         if issubclass(sender, Content):
             excl_filters_type = Q(type="PrivateKey")
@@ -66,9 +69,7 @@ class ViewHandlers:
     def clean_auth(action_dict, request, content, authset, admin):
         result = {
             "action": "auth",
-            "contentActionGroup": "view"
-            if not action_dict.get("fetch") or not content
-            else "fetch",
+            "contentActionGroup": "view",
             "maxLifetime": td(hours=1),
         }
         if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):

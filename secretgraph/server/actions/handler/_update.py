@@ -446,7 +446,7 @@ class UpdateHandlers:
 
     @staticmethod
     def clean_manage(action_dict, request, content, authset, admin):
-        from ...utils.auth import retrieve_allowed_objects
+        from ...utils.auth import retrieve_allowed_objects, fetch_by_id
 
         if content:
             raise ValueError("manage cannot be used for content")
@@ -481,8 +481,10 @@ class UpdateHandlers:
                 request,
                 klass.objects.filter(keyHash__in=result["exclude"][type_name])
                 if type_name == "Action"
-                else klass.objects.filter(
-                    flexid__in=result["exclude"][type_name]
+                else fetch_by_id(
+                    klass.objects.all(),
+                    result["exclude"][type_name],
+                    limit_ids=None,
                 ),
                 scope="manage",
                 authset=[] if admin else authset,
