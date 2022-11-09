@@ -329,7 +329,7 @@ class Migration(migrations.Migration):
                         editable=False, primary_key=True, serialize=False
                     ),
                 ),
-                ("used", models.BooleanField(blank=True, default=False)),
+                ("used", models.DateTimeField(blank=True, null=True)),
                 (
                     "keyHash",
                     models.CharField(

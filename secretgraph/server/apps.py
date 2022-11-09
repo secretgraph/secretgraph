@@ -19,7 +19,7 @@ from .signals import (
     regenerateKeyHash,
     fillEmptyFlexidsCb,
     initializeDb,
-    rollbackUsedActions,
+    rollbackUsedActionsAndFreeze,
     sweepContentsAndClusters,
 )
 
@@ -74,7 +74,7 @@ class SecretgraphServerConfig(AppConfig):
             dispatch_uid="secretgraph_regenerateKeyHash",
         )
         got_request_exception.connect(
-            rollbackUsedActions,
+            rollbackUsedActionsAndFreeze,
             sender=self,
             dispatch_uid="secretgraph_rollbackUsedActions",
         )
