@@ -4,7 +4,8 @@ import logging
 from datetime import timedelta as td
 from strawberry_django_plus.relay import to_base64
 from django.db import transaction, models
-from django.db.utils import IntegrityError, timezone
+from django.db.utils import IntegrityError
+from django.utils import timezone
 
 
 from ..core.constants import DeleteRecursive
