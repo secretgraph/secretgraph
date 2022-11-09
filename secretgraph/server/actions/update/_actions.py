@@ -113,6 +113,8 @@ def manage_actions_fn(
         actionObj.value = aesgcm.encrypt(
             nonce, json.dumps(action_value).encode("utf-8"), None
         )
+        # reset used
+        actionObj.used = None
         actionObj.start = action.start or timezone.now()
         actionObj.stop = action.stop or None
         if maxLifetime:
