@@ -231,7 +231,7 @@ def rollbackUsedActionsAndFreeze(request, sender=None):
                 pass
 
 
-def sweepContentsAndClusters(request=None, sender=None):
+def sweepContentsAndClusters(request=None, sender=None, ignoreTime=False):
     from .models import Cluster, Content, ContentAction
 
     now = timezone.now()
@@ -252,8 +252,15 @@ def sweepContentsAndClusters(request=None, sender=None):
     )
 
     # cleanup expired Contents
-    Content.objects.filter(markForDestruction__lte=now).delete()
+    Content.objects.filter(
+        models.Q(markForDestruction__isnull=False)
+        if ignoreTime
+        else models.Q(markForDestruction__lte=now)
+    ).delete()
     # cleanup expired Clusters afterward
     Cluster.objects.annotate(models.Count("contents")).filter(
-        markForDestruction__lte=now, contents__count=0
+        models.Q(markForDestruction__isnull=False)
+        if ignoreTime
+        else models.Q(markForDestruction__lte=now),
+        contents__count=0,
     ).delete()

@@ -42,7 +42,7 @@ class ContentFilterSimple:
 @gql.input
 class ClusterFilter:
     search: Optional[str] = gql.field(
-        default=None, description="Search description and id"
+        default=None, description="Search description, id and name"
     )
     states: Optional[List[str]] = None
     includeTypes: Optional[List[str]] = None
