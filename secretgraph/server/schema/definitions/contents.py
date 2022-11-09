@@ -5,7 +5,7 @@ from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q
+from django.db.models import Subquery, Q, QuerySet
 
 from ....core.constants import public_states
 from ...utils.auth import (
@@ -13,7 +13,7 @@ from ...utils.auth import (
     get_cached_properties,
     fetch_by_id,
 )
-from ...actions.view import fetch_contents, ContentFetchQueryset
+from ...actions.view import fetch_contents
 from ...models import (
     Content,
     ContentReference,
@@ -197,21 +197,18 @@ class ContentNode(relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> ContentFetchQueryset:
+    def get_queryset(cls, queryset, info) -> QuerySet[Content]:
         results = get_cached_result(info.context.request)
 
-        return ContentFetchQueryset(
-            queryset.filter(
-                id__in=Subquery(results["Content"]["objects"].values("id"))
-            ).query,
-            actions=results["Content"]["actions"],
+        return queryset.filter(
+            id__in=Subquery(results["Content"]["objects"].values("id"))
         )
 
     # TODO: merge with get_queryset and update filters
     @classmethod
     def get_queryset_intern(
         cls, queryset, info: Info, filters: ContentFilter
-    ) -> ContentFetchQueryset:
+    ) -> QuerySet[Content]:
         results = get_cached_result(
             info.context.request,
         )

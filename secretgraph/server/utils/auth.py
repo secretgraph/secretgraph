@@ -75,13 +75,6 @@ def retrieve_allowed_objects(
         )
     authset = set(islice(authset, 100))
     now = timezone.now()
-    # cleanup expired Contents
-    Content.objects.filter(markForDestruction__lte=now).delete()
-    # cleanup expired Clusters afterward
-    if query.model == Cluster:
-        Cluster.objects.annotate(models.Count("contents")).filter(
-            markForDestruction__lte=now, contents__count=0
-        ).delete()
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
     pre_filtered_actions = Action.objects.select_related("cluster").order_by(
@@ -285,6 +278,18 @@ def retrieve_allowed_objects(
     returnval["actions"] = Action.objects.filter(
         id__in=models.Subquery(returnval["actions"].values("id"))
     ).order_by("-start", "-id")
+    updatedActions = returnval["actions"].filter(
+        id__in=returnval["active_actions"], used__isnull=True
+    )
+    setattr(
+        request,
+        "secretgraphActionsToRollback",
+        getattr(request, "secretgraphActionsToRollback", set()),
+    )
+    request.secretgraphActionsToRollback.update(
+        updatedActions.values_list("id", flat=True)
+    )
+    updatedActions.update(used=now)
     returnval["objects"] = query.filter(id__in=id_subquery)
     returnval["objects_ignore_public"] = query.filter(
         id__in=id_subquery_without_public

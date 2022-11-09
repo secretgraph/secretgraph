@@ -24,7 +24,8 @@ from django.urls import reverse
 from django.views.generic.edit import FormView
 from strawberry.django.views import AsyncGraphQLView
 
-from .actions.view import ContentFetchQueryset
+from .utils.mark import freeze_contents
+
 from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
 from .utils.auth import (
@@ -102,10 +103,8 @@ class ContentView(AllowCORSMixin, FormView):
             # raw interface
             content = None
             try:
-                content = ContentFetchQueryset(
-                    fetch_by_id(self.result["objects"], kwargs["id"]).query,
-                    self.result["actions"],
-                    ttl_hours=24 if "key_hash" in request.GET else 2,
+                content = fetch_by_id(
+                    self.result["objects"], kwargs["id"]
                 ).first()
             finally:
                 if not content:
@@ -161,9 +160,8 @@ class ContentView(AllowCORSMixin, FormView):
         kwargs = super().get_form_kwargs()
         if hasattr(self, "result"):
             try:
-                content = ContentFetchQueryset(
-                    fetch_by_id(self.result["objects"], kwargs["id"]).query,
-                    self.result["actions"],
+                content = fetch_by_id(
+                    self.result["objects"], kwargs["id"]
                 ).first()
             finally:
                 if not content:
@@ -226,13 +224,9 @@ class ContentView(AllowCORSMixin, FormView):
         result = self.result.copy()
         if isinstance(id, (relay.GlobalID, str)):
             id = [id]
-        result["objects"] = ContentFetchQueryset(
-            fetch_by_id(result["objects"], id, limit_ids=limit_ids)
-            .distinct()
-            .query,
-            actions=result["actions"],
-            ttl_hours=2,
-        )
+        result["objects"] = fetch_by_id(
+            result["objects"], id, limit_ids=limit_ids
+        ).distinct()
         if not result["objects"].exists():
             raise Http404()
 
@@ -257,7 +251,10 @@ class ContentView(AllowCORSMixin, FormView):
                     result, decryptset=decryptset
                 ):
                     if seperator is not None:
+                        freeze_contents([content.id], request, update=True)
                         yield seperator
+                    else:
+                        freeze_contents([content.id], request, update=False)
                     # seperate with \0
                     for chunk in content.read_decrypt():
                         yield chunk.replace(b"\0", b"\\0")
@@ -267,13 +264,23 @@ class ContentView(AllowCORSMixin, FormView):
 
     @method_decorator(never_cache)
     def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
-        ret = StreamingHttpResponse(content.read_decrypt())
+        freeze_contents([content.id], request)
+        response = StreamingHttpResponse(content.read_decrypt())
         names = content.tags_proxy.name
         if names and len(names):
-            ret["Content-Disposition"] = 'attachment; filename="{}"'.format(
-                quote(names[0])
-            )
-        return ret
+            # do it according to django
+            try:
+                # check if ascii
+                names[0].encode("ascii")
+                header = 'attachment; filename="{}"'.format(
+                    names[0].replace("\\", "\\\\").replace('"', r"\"")
+                )
+            except UnicodeEncodeError:
+                header = "attachment; filename*=utf-8''{}".format(
+                    quote(names[0])
+                )
+            response["Content-Disposition"] = header
+        return response
 
     @method_decorator(last_modified(calc_content_modified_raw))
     def handle_raw_singlecontent(self, request, content, *args, **kwargs):
@@ -332,9 +339,17 @@ class ContentView(AllowCORSMixin, FormView):
             response = JsonResponse(response)
         else:
             try:
-                response = FileResponse(content.file.open("rb"))
+                name = content.tags.filter(tag__startswith="name=").first()
+                if name:
+                    name = name.tag.split("=", 1)[-1]
+                response = FileResponse(
+                    content.file.open("rb"),
+                    as_attachment=bool(name),
+                    filename=name,
+                )
             except FileNotFoundError as e:
                 raise Http404() from e
+        freeze_contents([content.id], self.request)
         response["X-TYPE"] = content.type
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())

@@ -405,7 +405,6 @@ class ContentAction(models.Model):
     content: Content = models.ForeignKey(
         Content, related_name="actions", on_delete=models.CASCADE
     )
-    used: bool = models.BooleanField(default=False, blank=True)
     group: str = models.CharField(
         max_length=50,
         null=False,
@@ -431,6 +430,7 @@ class Action(models.Model):
     cluster: Cluster = models.ForeignKey(
         Cluster, on_delete=models.CASCADE, related_name="actions"
     )
+    used: dt = models.DateTimeField(null=True, blank=True)
     keyHash: str = models.CharField(
         max_length=255,
         validators=[ActionKeyHashValidator],

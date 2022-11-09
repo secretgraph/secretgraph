@@ -298,7 +298,6 @@ class Migration(migrations.Migration):
                         editable=False, primary_key=True, serialize=False
                     ),
                 ),
-                ("used", models.BooleanField(blank=True, default=False)),
                 (
                     "group",
                     models.CharField(
@@ -330,6 +329,7 @@ class Migration(migrations.Migration):
                         editable=False, primary_key=True, serialize=False
                     ),
                 ),
+                ("used", models.BooleanField(blank=True, default=False)),
                 (
                     "keyHash",
                     models.CharField(

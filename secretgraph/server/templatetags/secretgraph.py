@@ -9,12 +9,13 @@ from django.core.paginator import Paginator
 
 from django.db.models import Q, Subquery
 
+from secretgraph.server.utils.mark import freeze_contents
+
 from ..models import Content, Cluster
 from ..utils.auth import get_cached_result, fetch_by_id
 from ..actions.view import (
     fetch_clusters as _fetch_clusters,
     fetch_contents as _fetch_contents,
-    ContentFetchQueryset,
 )
 from ..utils.encryption import iter_decrypt_contents
 from ...core import constants
@@ -256,9 +257,7 @@ def read_content_sync(
         result = get_cached_result(context.request, authset=authorization)[
             "Content"
         ].copy()
-        result["objects"] = ContentFetchQueryset(
-            fetch_by_id(result["objects"], content)
-        )
+        result["objects"] = fetch_by_id(result["objects"], content)
 
         decryptset = set(
             context.request.headers.get("X-Key", "")
@@ -291,6 +290,7 @@ def read_content_sync(
         if not mime:
             mime = "application/octet-stream"
         if mime.startswith("text/"):
+            freeze_contents([content.id], context["request"], update=True)
             text = content.read_decrypt()
             if mime == "text/html":
                 return clean(text)

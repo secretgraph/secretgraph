@@ -1,5 +1,4 @@
 import { useApolloClient } from '@apollo/client'
-import { findPublicKeyQuery } from '@secretgraph/graphql-queries/content'
 import { getNodeType } from '@secretgraph/graphql-queries/node'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as React from 'react'

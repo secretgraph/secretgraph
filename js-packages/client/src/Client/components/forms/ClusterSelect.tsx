@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client'
+import { ApolloClient, useQuery } from '@apollo/client'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
@@ -17,7 +17,7 @@ export interface ClusterSelectProps<
         SimpleSelectProps<string, Multiple, DisableClearable, FreeSolo>,
         'options' | 'getOptionLabel' | 'loading'
     > {
-    url: string
+    client?: ApolloClient<any>
     firstIfEmpty?: boolean
     tokens: string[]
 }
@@ -29,7 +29,7 @@ export default function ClusterSelect<
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined
 >({
-    url,
+    client,
     firstIfEmpty,
     tokens,
     ...props
@@ -45,6 +45,7 @@ export default function ClusterSelect<
             search: deferredInput ? deferredInput : undefined,
             public: Constants.UseCriteriaPublic.TOKEN,
         },
+        client,
     })
     const { ids, labelMap, disabled } = React.useMemo(() => {
         const ret: {

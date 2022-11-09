@@ -1,11 +1,15 @@
 from itertools import product, islice
 import uuid
-
+import logging
+from datetime import timedelta as td
 from strawberry_django_plus.relay import to_base64
 from django.db import transaction, models
-from django.db.utils import IntegrityError
+from django.db.utils import IntegrityError, timezone
+
 
 from ..core.constants import DeleteRecursive
+
+logger = logging.getLogger(__name__)
 
 
 def initializeDb(sender, **kwargs):
@@ -195,3 +199,60 @@ def fillEmptyFlexidsCb(sender, **kwargs):
         generateFlexid(Cluster, c, False)
     for c in Content.objects.filter(flexid=None):
         generateFlexid(Content, c, False)
+
+
+def rollbackUsedActionsAndFreeze(request, sender=None):
+    from .models import Action, ContentTag, Content
+
+    if getattr(request, "secretgraphActionsToRollback", None):
+        Action.objects.filter(
+            id__in=request.secretgraphActionsToRollback
+        ).update(used=False)
+    if getattr(request, "secretgraphFreezeToRollback", None):
+        for i in range(0, 1000):
+            if i >= 999:
+                logger.error(
+                    "A possible infinite loop was detected, don't unfreeze"
+                )
+            try:
+                with transaction.atomic():
+                    contents = Content.objects.filter(
+                        id__in=request.secretgraphFreezeToRollback
+                    ).select_for_update()
+                    ContentTag.objects.filter(
+                        tag="freeze", content__in=contents
+                    ).delete()
+                    ContentTag.objects.filter(
+                        tag="immutable", content__in=contents
+                    ).update(tag="freeze")
+                break
+            except IntegrityError:
+                pass
+
+
+def sweepContentsAndClusters(request=None, sender=None):
+    from .models import Cluster, Content, ContentAction
+
+    now = timezone.now()
+    cas = ContentAction.objects.filter(group="fetch")
+    cas_trigger = cas.filter(action__used__isnull=False)
+    cas_disarm = cas.filter(action__used__isnull=True)
+    Content.objects.annotate(
+        latest_used=models.Subquery(
+            cas_trigger.order("-used").values("used")[:1],
+            content_id=models.OuterRef("id"),
+        )
+    ).filter(
+        ~models.Exists(cas_disarm),
+        latest_used__isnull=False,
+        content_id=models.OuterRef("id"),
+    ).update(
+        models.F("latest_used") + td(hours=24)
+    )
+
+    # cleanup expired Contents
+    Content.objects.filter(markForDestruction__lte=now).delete()
+    # cleanup expired Clusters afterward
+    Cluster.objects.annotate(models.Count("contents")).filter(
+        markForDestruction__lte=now, contents__count=0
+    ).delete()

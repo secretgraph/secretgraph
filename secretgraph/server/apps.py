@@ -7,6 +7,10 @@ from django.db.models.signals import (
     post_save,
     post_migrate,
 )
+from django.core.signals import (
+    got_request_exception,
+    request_started,
+)
 
 from .signals import (
     deleteContentCb,
@@ -15,6 +19,8 @@ from .signals import (
     regenerateKeyHash,
     fillEmptyFlexidsCb,
     initializeDb,
+    rollbackUsedActions,
+    sweepContentsAndClusters,
 )
 
 
@@ -26,19 +32,54 @@ class SecretgraphServerConfig(AppConfig):
     def ready(self):
         from .models import Content, Cluster
 
-        pre_delete.connect(deleteContentCb, sender=Content)
+        pre_delete.connect(
+            deleteContentCb,
+            sender=Content,
+            dispatch_uid="secretgraph_ContentdeleteContentCb",
+        )
 
         post_delete.connect(
             deleteEncryptedFileCb,
             sender=Content,
+            dispatch_uid="secretgraph_ContentdeleteEncryptedFileCb",
         )
 
-        post_save.connect(generateFlexid, sender=Cluster)
+        post_save.connect(
+            generateFlexid,
+            sender=Cluster,
+            dispatch_uid="secretgraph_ClustergenerateFlexid",
+        )
 
-        post_save.connect(generateFlexid, sender=Content)
+        post_save.connect(
+            generateFlexid,
+            sender=Content,
+            dispatch_uid="secretgraph_ContentgenerateFlexid",
+        )
 
-        post_migrate.connect(initializeDb, sender=self)
+        post_migrate.connect(
+            initializeDb,
+            sender=self,
+            dispatch_uid="secretgraph_initializeDb",
+        )
 
-        post_migrate.connect(fillEmptyFlexidsCb, sender=self)
+        post_migrate.connect(
+            fillEmptyFlexidsCb,
+            sender=self,
+            dispatch_uid="secretgraph_fillEmptyFlexidsCb",
+        )
 
-        post_migrate.connect(regenerateKeyHash, sender=self)
+        post_migrate.connect(
+            regenerateKeyHash,
+            sender=self,
+            dispatch_uid="secretgraph_regenerateKeyHash",
+        )
+        got_request_exception.connect(
+            rollbackUsedActions,
+            sender=self,
+            dispatch_uid="secretgraph_rollbackUsedActions",
+        )
+        request_started.connect(
+            sweepContentsAndClusters,
+            sender=self,
+            dispatch_uid="secretgraph_sweepContentsAndClusters",
+        )
