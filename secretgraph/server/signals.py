@@ -13,7 +13,7 @@ from ..core.constants import DeleteRecursive
 logger = logging.getLogger(__name__)
 
 
-def initializeDb(sender, **kwargs):
+def initializeDb(**kwargs):
     from .models import Net, Cluster, GlobalGroupProperty, GlobalGroup
     from django.conf import settings
 
@@ -144,7 +144,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
                 generateFlexid(Content, c, True)
 
 
-def regenerateKeyHash(sender, force=False, **kwargs):
+def regenerateKeyHash(force=False, **kwargs):
     from .utils.misc import calculate_hashes
     from .models import Content, ContentTag
     from django.conf import settings
@@ -193,7 +193,7 @@ def regenerateKeyHash(sender, force=False, **kwargs):
         ).update(contentHash=chashes[0])
 
 
-def fillEmptyFlexidsCb(sender, **kwargs):
+def fillEmptyFlexidsCb(**kwargs):
     from .models import Cluster, Content
 
     for c in Cluster.objects.filter(flexid=None):
@@ -202,7 +202,7 @@ def fillEmptyFlexidsCb(sender, **kwargs):
         generateFlexid(Content, c, False)
 
 
-def rollbackUsedActionsAndFreeze(request, sender=None):
+def rollbackUsedActionsAndFreeze(request, **kwargs):
     from .models import Action, ContentTag, Content
 
     if getattr(request, "secretgraphActionsToRollback", None):
@@ -231,7 +231,7 @@ def rollbackUsedActionsAndFreeze(request, sender=None):
                 pass
 
 
-def sweepContentsAndClusters(request=None, sender=None, ignoreTime=False):
+def sweepContentsAndClusters(ignoreTime=False, **kwargs):
     from .models import Cluster, Content, ContentAction
 
     now = timezone.now()
