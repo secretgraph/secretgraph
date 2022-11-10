@@ -255,8 +255,12 @@ class ContentView(AllowCORSMixin, FormView):
                         yield seperator
                     else:
                         freeze_contents([content.id], request, update=False)
+                    if hasattr(content, "read_decrypt"):
+                        fob = content.read_decrypt()
+                    else:
+                        fob = content.file.read("r")
                     # seperate with \0
-                    for chunk in content.read_decrypt():
+                    for chunk in fob:
                         yield chunk.replace(b"\0", b"\\0")
                     seperator = b"\0"
 
@@ -265,21 +269,24 @@ class ContentView(AllowCORSMixin, FormView):
     @method_decorator(never_cache)
     def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
         freeze_contents([content.id], request)
-        response = StreamingHttpResponse(content.read_decrypt())
         names = content.tags_proxy.name
-        if names and len(names):
-            # do it according to django
-            try:
-                # check if ascii
-                names[0].encode("ascii")
-                header = 'attachment; filename="{}"'.format(
-                    names[0].replace("\\", "\\\\").replace('"', r"\"")
-                )
-            except UnicodeEncodeError:
-                header = "attachment; filename*=utf-8''{}".format(
-                    quote(names[0])
-                )
-            response["Content-Disposition"] = header
+        if hasattr(content, "read_decrypt"):
+            response = StreamingHttpResponse(content.read_decrypt())
+            if isinstance(names[0], str):
+                # do it according to django
+                try:
+                    # check if ascii
+                    names[0].encode("ascii")
+                    header = 'attachment; filename="{}"'.format(
+                        names[0].replace("\\", "\\\\").replace('"', r"\"")
+                    )
+                except UnicodeEncodeError:
+                    header = "attachment; filename*=utf-8''{}".format(
+                        quote(names[0])
+                    )
+                response["Content-Disposition"] = header
+        else:
+            response = FileResponse(content.file.read("rb"))
         return response
 
     @method_decorator(last_modified(calc_content_modified_raw))

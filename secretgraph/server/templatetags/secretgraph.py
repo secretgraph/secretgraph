@@ -63,6 +63,12 @@ except ImportError:
     clean = escape
 
 
+def _split_comma(inp):
+    if not inp:
+        return inp
+    return inp.split(",") if isinstance(inp, str) else inp
+
+
 register = template.Library()
 
 
@@ -83,6 +89,8 @@ def fetch_clusters(
     public=True,
     deleted=False,
     search=None,
+    ids=None,
+    excludeIds=None,
     includeTags=None,
     excludeTags=None,
     authorization=None,
@@ -103,18 +111,29 @@ def fetch_clusters(
     if featured is not None:
         queryset = queryset.filter(featured=featured)
     if order_by:
-        queryset = queryset.order_by(*order_by)
+        queryset = queryset.order_by(*_split_comma(order_by))
     else:
-        queryset = queryset.order_by("flexid_cached")
+        queryset = queryset.order_by("-updated")
+
+    if excludeIds is not None:
+        queryset = queryset.exclude(
+            Q(
+                id__in=Subquery(
+                    fetch_by_id(
+                        Cluster.objects.all(),
+                        _split_comma(excludeIds),
+                        limit_ids=None,
+                    ).values("id")
+                )
+            )
+        )
     return Paginator(
         _fetch_clusters(
             queryset.distinct(),
-            includeTags=includeTags.split(",")
-            if isinstance(includeTags, str)
-            else includeTags,
-            excludeTags=excludeTags.split(",")
-            if isinstance(excludeTags, str)
-            else excludeTags,
+            ids=_split_comma(ids),
+            limit_ids=None,
+            includeTags=_split_comma(includeTags),
+            excludeTags=_split_comma(excludeTags),
         ),
         page_size,
     ).get_page(page)
@@ -126,9 +145,13 @@ def fetch_contents(
     page=1,
     page_size=20,
     order_by=None,
-    public=True,
+    public=None,
+    featured=None,
     deleted=False,
     clusters=None,
+    states=None,
+    ids=None,
+    excludeIds=None,
     includeTypes=None,
     excludeTypes=None,
     includeTags=None,
@@ -139,62 +162,70 @@ def fetch_contents(
     default_decryptkeys=None,
     authorization=None,
 ):
-    result = get_cached_result(context.request, authset=authorization)[
-        "Content"
-    ].copy()
+    results = get_cached_result(context.request, authset=authorization)
+    result = results["Content"].copy()
 
     if deleted is not None:
         result["objects"] = result["objects"].filter(
             markForDestruction__isnull=not deleted
         )
-    if public is not None:
-        # should only include public contents with public cluster
-        # if no clusters are specified (e.g. root query)
-        if public is True:
-            if not clusters:
-                result["objects"] = result["objects"].filter(
-                    state__in=constants.public_states,
-                    cluster__globalNameRegisteredAt__isnull=False,
-                )
-            else:
-                result["objects"] = result["objects"].filter(
-                    state__in=constants.public_states
-                )
-        else:
-            result["objects"] = result["objects"].exclude(
-                state__in=constants.public_states
-            )
-    else:
-        # only private or public with cluster public
-        result["objects"] = result["objects"].filter(
-            ~Q(state__in=constants.public_states)
-            | Q(cluster__globalNameRegisteredAt__isnull=False)
-        )
+
     if clusters:
         result["objects"] = result["objects"].filter(
             cluster_id__in=Subquery(
                 fetch_by_id(
-                    Cluster.objects.all(), clusters, limit_ids=None
+                    results["Cluster"]["objects"],
+                    _split_comma(clusters),
+                    limit_ids=None,
                 ).values("id")
             )
         )
+    if states:
+        states = _split_comma(states)
+    if featured is not None:
+        result["objects"] = result["objects"].filter(
+            cluster__featured=bool(featured)
+        )
+
+    if public is True:
+        if states:
+            states = constants.public_states.intersection(states)
+        else:
+            states = constants.public_states
+
+    elif public is False:
+        if states:
+            states = set(states).difference(constants.public_states)
+        else:
+            result["objects"] = result["objects"].exclude(
+                state__in=constants.public_states
+            )
+    if excludeIds is not None:
+        result["objects"] = result["objects"].exclude(
+            Q(
+                id__in=Subquery(
+                    fetch_by_id(
+                        Content.objects.all(),
+                        _split_comma(excludeIds),
+                        limit_ids=None,
+                    ).values("id")
+                )
+            )
+        )
     if order_by:
-        result["objects"] = result["objects"].order_by(*order_by)
+        result["objects"] = result["objects"].order_by(*_split_comma(order_by))
+    else:
+        result["objects"] = result["objects"].order_by("-updated")
     result["objects"] = _fetch_contents(
         result["objects"],
-        result["actions"],
-        includeTypes=includeTypes.split(",")
-        if isinstance(includeTypes, str)
-        else includeTypes,
-        excludeTypes=excludeTypes.split(",")
-        if isinstance(excludeTypes, str)
-        else excludeTypes,
-        includeTags=includeTags.split(",")
-        if isinstance(includeTags, str)
-        else includeTags,
-        excludeTags=excludeTags.split(",")
-        if isinstance(excludeTags, str)
-        else excludeTags,
+        ids=_split_comma(ids),
+        limit_ids=None,
+        clustersAreRestricted=bool(clusters),
+        states=states,
+        includeTypes=_split_comma(includeTypes),
+        excludeTypes=_split_comma(excludeTypes),
+        includeTags=_split_comma(includeTags),
+        excludeTags=_split_comma(excludeTags),
     )
 
     if decrypt or default_decryptkeys:
@@ -237,7 +268,7 @@ def fetch_contents(
         return Paginator(result["objects"], page_size).get_page(page)
 
 
-@register.filter(takes_context=True, is_safe=True)
+@register.simple_tag(takes_context=True)
 def read_content_sync(
     context,
     content,
@@ -280,14 +311,22 @@ def read_content_sync(
         "content lacks read_decrypt "
         "(set by iter_decrypt_contents, decrypt flag)"
     )
-    decryptqpart = urlencode({"token": authorization}, doseq=True)
-    if hasattr(content, "read_decrypt") and content.type in {"Text", "File"}:
-        name = content.tags.filter(tag__startswith="name=").first()
-        if name:
-            name = name.tag.split("=")[1]
+    decryptqpart = urlencode(
+        {
+            "token": authorization,
+            "key": content.read_decrypt.key
+            if hasattr(content, "read_decrypt")
+            else None,
+        },
+        doseq=True,
+    )
+    if content.type in {"Text", "File"}:
+        name = content.proxy_tags.name[0]
+        if not isinstance(name, str):
+            name = None
 
-        mime = getattr(content, "read_decrypt_mime", None)
-        if not mime:
+        mime = content.proxy_tags.mime[0]
+        if not mime or not isinstance(mime, str):
             mime = "application/octet-stream"
         if mime.startswith("text/"):
             freeze_contents([content.id], context["request"], update=True)
@@ -315,3 +354,6 @@ def read_content_sync(
         />
     </a>"""
     return f"""<a href="{content.link}?decrypt&{decryptqpart}">Download</a>"""
+
+
+read_content_sync.is_safe = True

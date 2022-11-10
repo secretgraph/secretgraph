@@ -98,7 +98,6 @@ def fetch_clusters(
 
 def fetch_contents(
     query,
-    actions,
     ids=None,
     limit_ids=1,
     states=None,
@@ -111,8 +110,6 @@ def fetch_contents(
     minUpdated=None,
     maxUpdated=None,
 ) -> QuerySet[Content]:
-    assert actions is not None, "actions is None"
-    assert not isinstance(actions, str), "actions is str"
     if ids:
         query = fetch_by_id(
             query, ids, check_content_hash=True, limit_ids=limit_ids

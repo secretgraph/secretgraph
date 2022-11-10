@@ -8,4 +8,5 @@ class WebclientView(TemplateView):
         kwargs["secretgraph_path"] = resolve_url(
             getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql")
         )
+
         return super().get_context_data(**kwargs)

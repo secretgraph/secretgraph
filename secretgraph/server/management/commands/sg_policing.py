@@ -1,6 +1,6 @@
 import re
 import argparse
-from typing import Optional, cast
+from typing import cast
 from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand
@@ -117,7 +117,8 @@ class Command(BaseCommand):
             nargs="?",
             default=False,
         )
-        parser.add_argument("--append-groups", nargs="+")
+        parser.add_argument("--append-groups", nargs="+", default=())
+        parser.add_argument("--remove-groups", nargs="+", default=())
 
     def handle(
         self,
@@ -138,7 +139,8 @@ class Command(BaseCommand):
         change_public,
         change_delete_cluster,
         change_delete_content,
-        append_groups: Optional[list[str]],
+        append_groups: list[str] | tuple[str],
+        remove_groups: list[str] | tuple[str],
         scan,
         **options,
     ):
@@ -165,7 +167,11 @@ class Command(BaseCommand):
         # clusters
         clusters = Cluster.objects.filter(cluster_q)
         if append_groups:
-            append_groups = GlobalGroup.objects.filter(name__in=append_groups)
+            append_groups = GlobalGroup.objects.filter(
+                name__in=set(append_groups).difference(remove_groups)
+            )
+        if remove_groups:
+            remove_groups = GlobalGroup.objects.filter(name__in=remove_groups)
 
         if "Cluster" in scan:
             clusters_filtered = clusters
@@ -328,3 +334,6 @@ class Command(BaseCommand):
         if append_groups:
             for g in cast(QuerySet[GlobalGroup], append_groups):
                 g.clusters.add(clusters_affected)
+        if remove_groups:
+            for g in cast(QuerySet[GlobalGroup], remove_groups):
+                g.clusters.remove(clusters_affected)

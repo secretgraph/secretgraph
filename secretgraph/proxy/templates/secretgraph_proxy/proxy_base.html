@@ -85,7 +85,7 @@
     </header>
     <nav class="sidebar">
         {% for cluster in clusters %}
-            <a href="{% url "secretgraph_proxy:cluster" id=cluster.flexid %}">{{cluster.name|default:cluster.flexid_cached}}</a>
+            <a href="{% url "secretgraph_proxy:cluster" id=cluster.flexid %}" title="{{cluster.description}}">{{cluster.name|default:cluster.flexid_cached}}</a>
         {% endfor %}
     </nav>
     <main>

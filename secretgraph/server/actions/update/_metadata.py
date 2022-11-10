@@ -33,6 +33,8 @@ def tags_sanitizer(tag: str):
         return False
     if tag == "key_hash":
         raise ValueError("key_hash should be tag not flag")
+    if tag.startswith("~key_hash"):
+        raise ValueError("key_hash is unencrypted")
     if tag.startswith("~") and "=" not in tag:
         raise ValueError("flags cannot be encrypted")
 
@@ -86,6 +88,16 @@ def transform_tags(
             s.add(splitted_tag[1])
         elif newtags.setdefault(splitted_tag[0], None) is not None:
             raise ValueError("Tag and Flag name collision")
+        if splitted_tag[0].startswith("~"):
+            if splitted_tag[0][:1] in newtags:
+                raise ValueError(
+                    "encrypted and unencrypted tag/flag collision"
+                )
+        else:
+            if f"~{splitted_tag[0]}" in newtags:
+                raise ValueError(
+                    "encrypted and unencrypted tag/flag collision"
+                )
 
     if operation != MetadataOperations.REMOVE and oldtags:
         for tag in oldtags:

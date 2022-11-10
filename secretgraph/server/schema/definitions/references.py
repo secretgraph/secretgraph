@@ -54,14 +54,12 @@ class ContentReferenceNode(relay.Node):
             return queryset.get(
                 source__in=fetch_contents(
                     result["objects"],
-                    result["actions"],
                     clustersAreRestricted=True,
                     ids=source,
                     noFetch=True,
                 ),
                 target__in=fetch_contents(
                     result["objects"],
-                    result["actions"],
                     clustersAreRestricted=True,
                     ids=target,
                     noFetch=True,
@@ -89,7 +87,6 @@ class ContentReferenceNode(relay.Node):
         result = get_cached_result(info.context.request)["Content"]
         return fetch_contents(
             result["objects"].filter(references=self),
-            result["actions"],
             clustersAreRestricted=True,
         ).first()
 
@@ -100,6 +97,5 @@ class ContentReferenceNode(relay.Node):
         result = get_cached_result(info.context.request)["Content"]
         return fetch_contents(
             result["objects"].filter(referencedBy=self),
-            result["actions"],
             clustersAreRestricted=True,
         ).first()

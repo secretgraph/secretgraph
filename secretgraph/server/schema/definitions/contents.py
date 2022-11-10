@@ -143,7 +143,6 @@ class ContentNode(relay.Node):
 
         filterob["target__in"] = fetch_contents(
             query,
-            result["actions"],
             clustersAreRestricted=True,
             states=filters.states,
             includeTypes=filters.includeTypes,
@@ -176,7 +175,6 @@ class ContentNode(relay.Node):
 
         filterob["source__in"] = fetch_contents(
             query,
-            result["actions"],
             clustersAreRestricted=True,
             states=filters.states,
             includeTypes=filters.includeTypes,
@@ -233,6 +231,10 @@ class ContentNode(relay.Node):
             hidden = UseCriteria.FALSE
         if hidden != UseCriteria.IGNORE:
             queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
+        if filters.featured != UseCriteria.IGNORE:
+            queryset = queryset.filter(
+                cluster__featured=filters.featured == UseCriteria.TRUE
+            )
         if filters.clusters is not None:
             queryset = queryset.filter(
                 cluster_id__in=Subquery(
@@ -274,7 +276,6 @@ class ContentNode(relay.Node):
 
         return fetch_contents(
             queryset,
-            results["Content"]["actions"],
             states=filters.states,
             clustersAreRestricted=filters.clusters is not None,
             includeTypes=filters.includeTypes,

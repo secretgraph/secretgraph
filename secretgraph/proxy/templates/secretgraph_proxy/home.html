@@ -1,1 +1,13 @@
 {% extends "secretgraph_proxy/proxy_base.html" %}
+{% load secretgraph %}
+
+{% block content %}
+Whats up
+{% fetch_contents public=True featured=True order_by="-updated" as contents %}
+{% for content in contents %}
+<div>
+    {% read_content_sync content=content %}
+    <a href="{% url " secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
+</div>
+{% endfor %}
+{% endblock %}

@@ -56,17 +56,7 @@ def _lock_contents(q):
     return Content.objects.filter(q).select_for_update()
 
 
-@sync_to_async(thread_sensitive=True)
-def _complete_transfer(content, hashes_remote, signatures):
-    content.references.filter(group="transfer").delete()
-    content.tags.bulk_create(
-        _generate_transfer_info(content, hashes_remote, signatures),
-        ignore_conflict=True,
-    )
-    content.updateId = uuid4()
-    content.save(update_fields=["updateId"])
-
-
+# can be also used for server to server transfers (transfer=False)
 async def transfer_value(
     content,
     key=None,
@@ -173,7 +163,13 @@ async def transfer_value(
             if not session:
                 s.close()
         if transfer:
-            await _complete_transfer(content, hashes_remote, signatures)
+            await content.references.filter(group="transfer").adelete()
+            await content.tags.abulk_create(
+                _generate_transfer_info(content, hashes_remote, signatures),
+                ignore_conflict=True,
+            )
+            content.updateId = uuid4()
+            await content.asave(update_fields=["updateId"])
     if transfer and verifiers:
         if not verify_signatures(hashes_remote, signatures, verifiers):
             return TransferResult.FAILED_VERIFICATION

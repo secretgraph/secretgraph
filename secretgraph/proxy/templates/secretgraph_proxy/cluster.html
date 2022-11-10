@@ -2,8 +2,12 @@
 {% load secretgraph %}
 
 {% block content %}
-{% fetch_contents public=True as contents %}
+{% fetch_clusters ids=[id] as clusters %}
+Name: {{clusters.0.name}}
+Description: {{clusters.0.description}}
+Contents:
+{% fetch_contents clusters=[id] as contents %}
 {% for content in contents %}
-    <a href="{% url "secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name }}</a>
+    <a href="{% url "secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
 {% endfor %}
 {% endblock %}

@@ -236,7 +236,9 @@ class ProxyTags:
         self._decryptor = AESGCM(key) if key else None
 
     def __getattr__(self, attr):
-        q = self._query.filter(tag__startswith=attr)
+        q = self._query.filter(
+            Q(tag__startswith=attr) | Q(tag__startswith=f"~{attr}=")
+        )
         return ProxyTag(q, self._decryptor)
 
     def __contains__(self, attr):
@@ -345,6 +347,10 @@ def iter_decrypt_contents(
                         chunk = nextchunk
                 result["objects"].trigger_view_actions(content)
 
+            _generator.key = content_map[content.id]
+
+        elif content.state in public_states:
+            content.tags_proxy = ProxyTags(content.tags)
         else:
             # otherwise garbled encrypted output could happen
             logger.warning("content %s could not be decrypted", content.flexid)

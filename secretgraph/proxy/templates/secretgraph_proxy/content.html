@@ -1,0 +1,6 @@
+{% extends "secretgraph_proxy/proxy_base.html" %}
+{% load secretgraph %}
+
+{% block content %}
+{% read_content_sync content=id %}
+{% endblock %}
