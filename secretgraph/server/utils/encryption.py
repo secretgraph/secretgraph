@@ -193,7 +193,7 @@ class ProxyTag:
         # is tag
         if len(splitted) == 1:
             return True
-        if not self._key or not splitted[0].startswith("~"):
+        if not self._decryptor or not splitted[0].startswith("~"):
             return splitted[1]
         try:
             m = base64.b64decode(splitted[1])
@@ -348,6 +348,7 @@ def iter_decrypt_contents(
                 result["objects"].trigger_view_actions(content)
 
             _generator.key = content_map[content.id]
+            content.read_decrypt = _generator
 
         elif content.state in public_states:
             content.tags_proxy = ProxyTags(content.tags)
@@ -356,5 +357,4 @@ def iter_decrypt_contents(
             logger.warning("content %s could not be decrypted", content.flexid)
             continue
 
-        content.read_decrypt = _generator
         yield content

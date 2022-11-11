@@ -16,7 +16,7 @@
             <div class="container">
                 {% read_content_sync content=content %}
             </div>
-            <a href="{% url " secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
+            <a href="{% url "secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
         </div>
         {% endfor %}
     </div>

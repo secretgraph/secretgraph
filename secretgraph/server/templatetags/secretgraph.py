@@ -1,9 +1,10 @@
 from urllib.parse import urlencode
-from contextvars import ContextVar
+import logging
 
 from django import template
 from django.conf import settings
 from django.shortcuts import resolve_url
+from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.core.paginator import Paginator
 
@@ -22,6 +23,14 @@ from ...core import constants
 
 try:
     from bleach import sanitizer
+
+    try:
+        from bleach.css_sanitizer import CSSSanitizer
+
+        css_sanitizer = CSSSanitizer()
+    except ImportError:
+        logging.warning("tinycss2 not found, cannot sanitize css")
+        css_sanitizer = None
 
     _default_allowed_tags = sanitizer.ALLOWED_TAGS + [
         "img",
@@ -43,23 +52,19 @@ try:
         "data",
         "mailto",
     ]
-    cleaner = ContextVar("bleach_cleaner", default=None)
+    cleaner = sanitizer.Cleaner(
+        tags=_default_allowed_tags,
+        attributes=lambda tag, name, value: True,
+        protocols=_default_allowed_protocols,
+        css_sanitizer=css_sanitizer,
+    )
 
     def clean(inp):
-        if not cleaner.get():
-            cleaner.set(
-                sanitizer.Cleaner(
-                    tags=_default_allowed_tags,
-                    attributes=lambda tag, name, value: True,
-                    styles=sanitizer.allowed_css_properties,
-                    protocols=_default_allowed_protocols,
-                )
-            )
 
-        return cleaner.get().clean(inp)
+        return cleaner.clean(inp)
 
 except ImportError:
-
+    logging.warning("bleach not found, fallback to escape")
     clean = escape
 
 
@@ -307,44 +312,52 @@ def read_content_sync(
             None,
         )
     assert isinstance(content, Content), "Can only handle Contents"
-    assert hasattr(content, "read_decrypt"), (
-        "content lacks read_decrypt "
+    assert hasattr(content, "tags_proxy"), (
+        "content lacks tags_proxy "
         "(set by iter_decrypt_contents, decrypt flag)"
     )
+    decryptqpart = {}
+    if authorization:
+        decryptqpart["token"] = authorization
+    if hasattr(content, "read_decrypt"):
+        decryptqpart["key"] = content.read_decrypt.key
+
     decryptqpart = urlencode(
-        {
-            "token": authorization,
-            "key": content.read_decrypt.key
-            if hasattr(content, "read_decrypt")
-            else None,
-        },
+        decryptqpart,
         doseq=True,
     )
     if content.type in {"Text", "File"}:
-        name = content.proxy_tags.name[0]
+        name = content.tags_proxy.name[0]
         if not isinstance(name, str):
             name = None
 
-        mime = content.proxy_tags.mime[0]
+        mime = content.tags_proxy.mime[0]
         if not mime or not isinstance(mime, str):
             mime = "application/octet-stream"
         if mime.startswith("text/"):
             freeze_contents([content.id], context["request"], update=True)
-            text = content.read_decrypt()
+            text = (
+                content.read_decrypt().read().decode("utf8")
+                if hasattr(content, "read_decrypt")
+                else content.file.open("r").read()
+            )
             if mime == "text/html":
-                return clean(text)
+                return mark_safe(clean(text))
             else:
-                return "<pre>{}</pre>".format(escape(text))
+                return mark_safe("<pre>{}</pre>".format(escape(text)))
         elif mime.startswith("audio/") or mime.startswith("video/"):
-            return f"""
+            return mark_safe(
+                f"""
 <video controls>
     <source
         src="{content.link}?decrypt&{decryptqpart}"
         style="width: 100%"
     />
 </video>"""
+            )
         elif mime.startswith("image/"):
-            return f"""
+            return mark_safe(
+                f"""
 <a href="{content.link}?decrypt&{decryptqpart}">
         <img
             loading="lazy"
@@ -353,7 +366,7 @@ def read_content_sync(
             style="width: 100%"
         />
     </a>"""
-    return f"""<a href="{content.link}?decrypt&{decryptqpart}">Download</a>"""
-
-
-read_content_sync.is_safe = True
+            )
+    return mark_safe(
+        f"""<a href="{content.link}?decrypt&{decryptqpart}">Download</a>"""
+    )

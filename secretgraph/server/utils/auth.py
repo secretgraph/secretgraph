@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from strawberry_django_plus import relay
 from functools import reduce, partial
-from itertools import islice
+from itertools import islice, chain
 from operator import or_
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -492,8 +492,10 @@ def update_cached_properties(
         request,
         permissions_name,
         frozenset(
-            *getattr(request, permissions_name),
-            *group_properties,
-            *(properties or []),
+            chain(
+                getattr(request, permissions_name),
+                group_properties,
+                (properties or []),
+            )
         ),
     )

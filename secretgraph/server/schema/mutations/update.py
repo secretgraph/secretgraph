@@ -85,7 +85,7 @@ def mutate_cluster(
         )(transaction.atomic)
     else:
 
-        if cluster.groups is not None:
+        if cluster.groups is None:
             default_groups = GlobalGroupProperty.objects.get_or_create(
                 name="default", defaults={}
             )[0].groups.all()

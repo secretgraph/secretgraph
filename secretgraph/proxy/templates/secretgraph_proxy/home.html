@@ -6,11 +6,15 @@
 {% fetch_contents public=True featured=True order_by="-updated" as contents %}
 {% for content in contents %}
 {% if forloop.first %}
-Whats up
-{% endif %}
 <div>
-    {% read_content_sync content=content %}
-    <a href="{% url " secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
+Whats up
+</div>
+{% endif %}
+<div class="card">
+    <div class="container">
+{% read_content_sync content=content %}
+    </div>
+    <a href="{% url "secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
 </div>
 {% empty %}
 No featured contents found

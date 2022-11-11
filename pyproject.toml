@@ -40,6 +40,7 @@ psycopg2 = {version="*", optional = true}
 django-manifest-loader = {version="*", optional = true}
 django-fast-ratelimit = {version="*", optional = true}
 bleach = {version="*", optional = true}
+tinycss2 = {version="*", optional = true}
 
 
 [tool.poetry.group.test]
@@ -61,6 +62,7 @@ rope = "*"
 django-manifest-loader = "*"
 django-fast-ratelimit = "*"
 bleach = "*"
+tinycss2 = "*"
 
 
 [tool.poetry.extras]
@@ -71,7 +73,11 @@ server = [
     "strawberry-graphql",
     "strawberry-django-plus",
     "django-fast-ratelimit",
-    "django-manifest-loader"
+    "django-manifest-loader",
+]
+proxy = [
+    "bleach",
+    "tinycss2"
 ]
 fastcgi = ["flipflop"]
 postgresql = ["psycopg2"]
