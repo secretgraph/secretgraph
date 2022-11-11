@@ -4,7 +4,7 @@
 {% block content %}
 {% fetch_contents ids=id as contents %}
 <div class="container">
-    <h3>{{contents.0.tags_proxy.name.0|default:""}}</h3>
+    <h2>Name: <span>{{contents.0.tags_proxy.name.0|default:""}}</span></h2>
     {# we need to check permissions #}
     {% fetch_clusters ids=contents.0.cluster.flexid as clusters %}
     {% if clusters %}
@@ -15,7 +15,8 @@
     <br/><div class="container">
         <div>Description: <span>{{contents.0.tags_proxy.description.0|default:""}}</span></div>
     </div>
-    <div class="container">
+    <h4>Content:</h4>
+    <div class="start-container">
         <div class="bg-white">{% read_content_sync contents.0 %}</div>
     </div>
     </div>
