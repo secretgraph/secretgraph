@@ -197,22 +197,20 @@ class ContentManager(models.Manager):
             self.injected_keys(groups=cluster)
         )
 
-    def trusted_keys(self, cluster, /, noannotation=False):
-        return self.get_queryset(noannotation=noannotation).filter(
+    def trusted_keys(self, cluster):
+        return self.get_queryset().filter(
             cluster=cluster,
             state__in=["trusted", "required"],
             type="PublicKey",
         )
 
-    def required_keys(self, cluster, /, noannotation=False):
-        return self.get_queryset(noannotation=noannotation).filter(
+    def required_keys(self, cluster):
+        return self.get_queryset().filter(
             cluster=cluster, state="required", type="PublicKey"
         )
 
-    def injected_keys(self, /, noannotation=False, groups=None, states=None):
-        queryset = self.get_queryset(noannotation=noannotation).filter(
-            cluster_id=0
-        )
+    def injected_keys(self, /, groups=None, states=None):
+        queryset = self.get_queryset().filter(cluster_id=0)
         if not states:
             states = constants.public_states
         queryset = queryset.filter(state__in=states)
@@ -224,12 +222,6 @@ class ContentManager(models.Manager):
             return queryset.filter(injectedFor__name__in=groups)
         else:
             return queryset.filter(injectedFor__isnull=False)
-
-    def get_queryset(self, /, noannotation=False):
-        queryset = super().get_queryset()
-        if noannotation:
-            return queryset
-        return queryset.annotate(groups=models.F("cluster__groups"))
 
 
 class Content(FlexidModel):
@@ -562,15 +554,6 @@ class GlobalGroupManager(models.Manager):
     def get_hidden_names(self):
         return caches["secretgraph_settings"].get_or_set(
             "hidden_groups", self._get_hidden_names
-        )
-
-    def _get_default_groups(self):
-        global_groups = GlobalGroup.objects.filter(properties__name="default")
-        return frozenset(global_groups.values_list("name", flat=True))
-
-    def get_default_groups(self):
-        return caches["secretgraph_settings"].get_or_set(
-            "default_properties", self._get_default_groups
         )
 
     def visible(self, queryset=None):

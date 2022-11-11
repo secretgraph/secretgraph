@@ -68,6 +68,9 @@
     .frame-shifted{
         grid-template-columns: 150px 1fr;
     }
+    .bg-white {
+        background-color: #FFF;
+    }
     .card {
         background-color: #FFF;
         box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
@@ -96,6 +99,31 @@
         min-height: 80vh;
         height: 100%;
     }
+    .gallery {
+        display: grid;
+        grid-template-columns: auto auto auto auto;
+    }
+    .gallery-entry {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .gallery-entry * {
+        max-width: 400px;
+        max-height: 400px;
+    }
+    @media (max-width: 480px) {
+        .gallery {
+            grid-template-columns: auto;
+        }
+    }
+    @media (max-width: 600px) {
+        .gallery {
+            grid-template-columns: auto auto;
+        }
+    }
+
 </style>
 {% endblock %}
 

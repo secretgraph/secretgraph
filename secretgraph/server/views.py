@@ -121,6 +121,7 @@ class ContentView(AllowCORSMixin, FormView):
             .split(",")
         )
         authset.update(request.GET.getlist("token"))
+        authset.discard("")
         # authset can contain: ""
         # why not ids_to_results => uses flexid directly
         self.result = retrieve_allowed_objects(

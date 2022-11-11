@@ -35,12 +35,13 @@ class LazyViewResult(object):
         for r in viewResults:
             self._result_dict[r["objects"].model.__name__] = r
         if self.authset is None:
-            self.authset = (
+            self.authset = set(
                 getattr(request, "headers", {})
                 .get("Authorization", "")
                 .replace(" ", "")
                 .split(",")
             )
+            self.authset.discard("")
 
     def __getitem__(self, item):
         if item == "authset":
@@ -73,6 +74,7 @@ def retrieve_allowed_objects(
             .replace(" ", "")
             .split(",")
         )
+        authset.discard("")
     authset = set(islice(authset, 100))
     now = timezone.now()
     # for sorting. First action is always the most important action

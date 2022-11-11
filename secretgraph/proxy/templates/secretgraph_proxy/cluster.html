@@ -3,22 +3,41 @@
 
 {% block content %}
 {% fetch_clusters ids=id as clusters %}
-<div class="card">
-    <div class="container">
-        <div>Name: <span>{{clusters.0.name}}</span></div>
+<div class="container">
+    <div class="">
+        <h2 class="">Name: <span>{{clusters.0.name|default:""}}</span></h2>
         <div>Description: <span>{{clusters.0.description}}</span></div>
     </div>
-    {% fetch_contents clusters=id as contents %}
+    <h3>Contents:</h3>
+    {% fetch_contents clusters=id excludeTypes="PublicKey,PrivateKey" excludeTags="mime=image/,mime=video/,mime=audio/" as contents %}
     <div class="container">
-        Contents:
         {% for content in contents %}
         <div class="card">
-            <h3 class="header">{{content.tags_proxy.name.0|default:""}}</h3>
+            <h4 class="header">{{content.tags_proxy.name.0|default:""}}</h4>
             <hr/>
+            {% if content.type != "Text" %}
+            <div class="container">
+                <div>Description: <span>{{content.tags_proxy.description.0|default:""}}</span></div>
+            </div>
+            {% endif %}
             <div class="container">
                 {% read_content_sync content=content %}
             </div>
             <a  class="footer" href="{% url "secretgraph_proxy:content" id=content.flexid %}">Open</a>
+        </div>
+        {% endfor %}
+    </div>
+    <h3>Gallery:</h3>
+    {% fetch_contents clusters=id includeTags="mime=image/,mime=video/,mime=audio/" as gallery %}
+    <div class="container gallery">
+        {% for content in gallery %}
+        <div class="card">
+            <h4 class="header">{{content.tags_proxy.name.0|default:""}}</h4>
+            <hr />
+            <div class="gallery-entry">
+                {% read_content_sync content=content %}
+            </div>
+            <a class="footer" href="{% url "secretgraph_proxy:content" id=content.flexid %}">Open</a>
         </div>
         {% endfor %}
     </div>

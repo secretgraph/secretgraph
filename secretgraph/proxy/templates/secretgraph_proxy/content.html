@@ -3,10 +3,21 @@
 
 {% block content %}
 {% fetch_contents ids=id as contents %}
-<div class="card">
-    <h3 class="header">{{contents.0.tags_proxy.name.0|default:""}}</h3><hr />
-    <div class="container expander">
-    {% read_content_sync contents.0 %}
+<div class="container">
+    <h3>{{contents.0.tags_proxy.name.0|default:""}}</h3>
+    {# we need to check permissions #}
+    {% fetch_clusters ids=contents.0.cluster.flexid as clusters %}
+    {% if clusters %}
+        <div>
+            Cluster: <a href="{% url "secretgraph_proxy:cluster" id=contents.0.cluster.flexid %}">{{contents.0.cluster.name}}</a>
+        </div>
+    {% endif %}
+    <br/><div class="container">
+        <div>Description: <span>{{contents.0.tags_proxy.description.0|default:""}}</span></div>
+    </div>
+    <div class="container">
+        <div class="bg-white">{% read_content_sync contents.0 %}</div>
+    </div>
     </div>
 </div>
 {% endblock %}

@@ -38,7 +38,8 @@ class ContentHashValidator(RegexValidator):
         super().__init__(ContentHash_regex)
 
 
-TypeAndGroup_regex = re.compile(r"^[^:\s]*$")
+# comma is used for templatetag seperation, so disallow it here
+TypeAndGroup_regex = re.compile(r"^[^:\s,]*$")
 
 
 @deconstructible

@@ -290,6 +290,7 @@ def read_content_sync(
             .split(",")
         )
         authorization.update(context["request"].GET.getlist("token"))
+        authorization.discard("")
     if isinstance(content, str):
         result = get_cached_result(context.request, authset=authorization)[
             "Content"

@@ -18,6 +18,7 @@ from ....core.exceptions import ResourceLimitExceeded
 from ....core.constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import get_cached_result
 from ...utils.misc import hash_object
+from ...validators import TypeAndGroup_regex
 from ...models import Content, ContentReference, ContentTag
 
 logger = logging.getLogger(__name__)
@@ -26,25 +27,33 @@ len_default_hash = len(hash_object(b""))
 
 
 def tags_sanitizer(tag: str):
+    if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
+        raise ResourceLimitExceeded(f"Tag too big ({tag})")
     if tag.startswith("id"):
         logger.warning(
             "id is an invalid flag/tag, it is a special keyword, ignore"
         )
         return False
+    eq_pos = tag.find("=")
+    if eq_pos == 0:
+        raise ValueError("Cannot start with =")
     if tag == "key_hash":
         raise ValueError("key_hash should be tag not flag")
     if tag.startswith("~key_hash"):
         raise ValueError("key_hash is unencrypted")
-    if tag.startswith("~") and "=" not in tag:
-        raise ValueError("flags cannot be encrypted")
+    if tag.startswith("~") and eq_pos < 0:
+        raise ValueError("flags are not encryptable")
 
     if tag.startswith("immutable="):
         raise ValueError("immutable is a flag")
     if tag.startswith("freeze="):
         raise ValueError("freeze is a flag")
-
-    if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
-        raise ResourceLimitExceeded(f"Tag too big ({tag})")
+    if eq_pos >= 0:
+        if not TypeAndGroup_regex.match(tag, 0, eq_pos):
+            raise ValueError("invalid tag prefix")
+    else:
+        if not TypeAndGroup_regex.match(tag):
+            raise ValueError("invalid flag")
     return True
 
 
