@@ -150,7 +150,6 @@ class ContentNode(relay.Node):
             includeTags=filters.includeTags,
             excludeTags=filters.excludeTags,
             contentHashes=filters.contentHashes,
-            noFetch=True,
         )
         return self.references.filter(
             **filterob,
@@ -182,7 +181,6 @@ class ContentNode(relay.Node):
             includeTags=filters.includeTags,
             excludeTags=filters.excludeTags,
             contentHashes=filters.contentHashes,
-            noFetch=True,
         )
         return self.referencedBy.filter(
             **filterob,

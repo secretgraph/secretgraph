@@ -3,11 +3,22 @@
 
 {% block content %}
 {% fetch_clusters ids=[id] as clusters %}
-Name: {{clusters.0.name}}
-Description: {{clusters.0.description}}
-Contents:
-{% fetch_contents clusters=[id] as contents %}
-{% for content in contents %}
-    <a href="{% url "secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
-{% endfor %}
+<div class="card">
+    <div class="container">
+        <div>Name: <span>{{clusters.0.name}}</span></div>
+        <div>Description: <span>{{clusters.0.description}}</span></div>
+    </div>
+    {% fetch_contents clusters=[id] as contents %}
+    <div class="container">
+        Contents:
+        {% for content in contents %}
+        <div class="card">
+            <div class="container">
+                {% read_content_sync content=content %}
+            </div>
+            <a href="{% url " secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}

@@ -70,7 +70,7 @@ type ClusterEdge {
 }
 
 input ClusterFilter {
-  """Search description and id"""
+  """Search description, id and name"""
   search: String = null
   states: [String!] = null
   includeTypes: [String!] = null
@@ -100,6 +100,7 @@ input ClusterInput {
   featured: Boolean = null
   actions: [ActionInput!] = null
   key: ContentKeyInput = null
+  groups: [String!] = null
 }
 
 type ClusterMutation {
@@ -355,6 +356,7 @@ input MarkInput {
   ids: [ID!]!
   hidden: Boolean = null
   featured: Boolean = null
+  active: Boolean = null
   authorization: [String!] = null
 }
 

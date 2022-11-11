@@ -29,7 +29,7 @@ def freeze_contents(content_ids, request=None, update=False):
                     content_id__in=models.Subquery(
                         ContentAction.objects.filter(
                             group__in=["fetch", "view"],
-                            action__used=True,
+                            action__used__isnull=False,
                             content__in=contents,
                         ).values("content_id")
                     ),

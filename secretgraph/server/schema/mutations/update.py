@@ -14,7 +14,7 @@ from ...actions.update import (
     update_cluster_fn,
     update_content_fn,
 )
-from ...models import Cluster, Content, GlobalGroupProperty, GlobalGroup
+from ...models import Cluster, Content, GlobalGroupProperty
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
@@ -53,13 +53,9 @@ def mutate_cluster(
             cluster.featured = None
 
     if cluster.groups is not None:
-        if "manage_groups" in get_cached_properties(
+        if "manage_groups" not in get_cached_properties(
             info.context.request, authset=authorization
         ):
-            cluster.groups = GlobalGroup.objects.filter(
-                name__in=cluster["groups"]
-            )
-        else:
             cluster.groups = None
 
     if cluster.name is not None and cluster.name.startswith("@"):
@@ -88,12 +84,16 @@ def mutate_cluster(
             authset=authorization,
         )(transaction.atomic)
     else:
-        default_groups = GlobalGroupProperty.objects.get_or_create(
-            name="default", defaults={}
-        )[0].groups.all()
-        cluster.groups.set(default_groups)
-        get_cached_properties(info.context.request, authset=authorization)
-        update_cached_properties(info.context.request, groups=default_groups)
+
+        if cluster.groups is not None:
+            default_groups = GlobalGroupProperty.objects.get_or_create(
+                name="default", defaults={}
+            )[0].groups.all()
+            cluster.groups = default_groups.values_list("name", flat=True)
+            get_cached_properties(info.context.request, authset=authorization)
+            update_cached_properties(
+                info.context.request, groups=default_groups
+            )
         _cluster_res = create_cluster_fn(
             info.context.request, cluster, authset=authorization
         )(transaction.atomic)

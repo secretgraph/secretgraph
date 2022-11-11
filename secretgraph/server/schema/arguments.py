@@ -6,7 +6,7 @@ import strawberry
 from strawberry.scalars import JSON, ID
 
 from .shared import DeleteRecursive
-from ..models import GlobalGroup, Net
+from ..models import Net
 
 
 AuthList = Optional[List[str]]
@@ -113,4 +113,4 @@ class ClusterInput:
     actions: Optional[List[ActionInput]] = None
     # has no references so missing reference tag is no problem
     key: Optional[ContentKeyInput] = None
-    groups: strawberry.Private[Optional[Iterable[GlobalGroup]]] = None
+    groups: Optional[List[str]] = None

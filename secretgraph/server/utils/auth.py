@@ -303,14 +303,15 @@ def fetch_by_id(
     check_content_hash=False,
     limit_ids: Optional[int] = 1,
 ):
-    if isinstance(flexids, (str, relay.GlobalID)):
+    if flexids and isinstance(flexids, (str, relay.GlobalID)):
         flexids = [flexids]
-    elif limit_ids:
+    if limit_ids:
         flexids = flexids[:limit_ids]
+    # speedup in case None or no flexids were specified
+    if not flexids:
+        return query.none()
     # assert all(map(lambda x: isinstance(x, (str, relay.GlobalID)), flexids))
     flexids = list(map(str, flexids))
-    if not flexids:
-        raise ValueError("No id specified")
     filters = models.Q(flexid_cached__in=flexids) | models.Q(
         flexid__in=flexids
     )

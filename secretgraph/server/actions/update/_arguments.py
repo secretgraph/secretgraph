@@ -67,7 +67,7 @@ class ReferenceInput:
 @dataclass
 class ContentInput:
     net: Optional[str] = None
-    cluster: Optional[str] = None
+    cluster: Optional[str | Cluster] = None
     hidden: Optional[bool] = None
     # when creating keypair: references are automagically distributed
     key: Optional[ContentKeyInput] = None

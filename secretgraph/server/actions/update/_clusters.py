@@ -7,7 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 
-from ...models import Cluster, Net
+from ...models import Cluster, Net, GlobalGroup
 from ...utils.auth import ids_to_results, retrieve_allowed_objects
 from ...utils.misc import hash_object
 from ._arguments import ContentInput
@@ -99,7 +99,9 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
             cluster.net.save()
         cluster.save()
         if getattr(objdata, "groups", None) is not None:
-            cluster.groups.set(objdata.groups)
+            cluster.groups.set(
+                GlobalGroup.objects.filter(name__in=objdata.groups)
+            )
 
     # path: actions are specified
     if getattr(objdata, "actions", None) is not None:
@@ -133,17 +135,13 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
 
 
 def create_cluster_fn(request, objdata, authset=None):
-    prebuild = {}
-
     if not getattr(objdata, "actions", None):
         raise ValueError("Actions required")
-    contentdata = {"key": objdata.key}
-    cluster = Cluster(**prebuild)
+    contentdata = ContentInput(key=objdata.key)
+    cluster = Cluster()
     cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset)
-    contentdata["cluster"] = cluster
-    content_fn = create_key_fn(
-        request, ContentInput(**contentdata), authset=authset
-    )
+    contentdata.cluster = cluster
+    content_fn = create_key_fn(request, contentdata, authset=authset)
 
     def save_fn(context=nullcontext):
         if callable(context):

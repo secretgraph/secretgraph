@@ -436,47 +436,13 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
-        migrations.CreateModel(
-            name="GlobalGroupCluster",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        editable=False, primary_key=True, serialize=False
-                    ),
-                ),
-                (
-                    "cluster",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="+",
-                        to="secretgraph.cluster",
-                    ),
-                ),
-                (
-                    "group",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="+",
-                        to="secretgraph.globalgroup",
-                    ),
-                ),
-            ],
-        ),
         migrations.AddField(
             model_name="globalgroup",
             name="clusters",
             field=models.ManyToManyField(
                 help_text="cluster groups: groups for permissions and injected keys",
                 related_name="groups",
-                through="secretgraph.GlobalGroupCluster",
                 to="secretgraph.Cluster",
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="globalgroupcluster",
-            constraint=models.UniqueConstraint(
-                fields=("cluster", "group"), name="globalgroupcluster_unique"
             ),
         ),
         migrations.AddConstraint(

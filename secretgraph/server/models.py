@@ -594,23 +594,6 @@ class GlobalGroupProperty(models.Model):
         return self.name
 
 
-class GlobalGroupCluster(models.Model):
-    id: int = models.BigAutoField(primary_key=True, editable=False)
-    cluster: Cluster = models.ForeignKey(
-        Cluster, on_delete=models.CASCADE, related_name="+"
-    )
-    group: GlobalGroup = models.ForeignKey(
-        "GlobalGroup", on_delete=models.CASCADE, related_name="+"
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["cluster", "group"], name="%(class)s_unique"
-            ),
-        ]
-
-
 class GlobalGroup(models.Model):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
@@ -627,7 +610,6 @@ class GlobalGroup(models.Model):
     clusters: models.ManyToManyField[Cluster] = models.ManyToManyField(
         Cluster,
         related_name="groups",
-        through="GlobalGroupCluster",
         help_text=cluster_groups_help,
     )
     injectedKeys: models.ManyToManyField[Content] = models.ManyToManyField(

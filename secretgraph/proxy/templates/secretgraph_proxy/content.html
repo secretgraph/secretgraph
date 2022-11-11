@@ -2,5 +2,9 @@
 {% load secretgraph %}
 
 {% block content %}
-{% read_content_sync content=id %}
+<div class="card">
+    <div class="container">
+    {% read_content_sync content=id %}
+    </div>
+</div>
 {% endblock %}

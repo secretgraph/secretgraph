@@ -56,13 +56,11 @@ class ContentReferenceNode(relay.Node):
                     result["objects"],
                     clustersAreRestricted=True,
                     ids=source,
-                    noFetch=True,
                 ),
                 target__in=fetch_contents(
                     result["objects"],
                     clustersAreRestricted=True,
                     ids=target,
-                    noFetch=True,
                 ),
                 group=group,
             )
