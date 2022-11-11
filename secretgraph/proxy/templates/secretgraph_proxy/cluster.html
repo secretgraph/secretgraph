@@ -2,21 +2,23 @@
 {% load secretgraph %}
 
 {% block content %}
-{% fetch_clusters ids=[id] as clusters %}
+{% fetch_clusters ids=id as clusters %}
 <div class="card">
     <div class="container">
         <div>Name: <span>{{clusters.0.name}}</span></div>
         <div>Description: <span>{{clusters.0.description}}</span></div>
     </div>
-    {% fetch_contents clusters=[id] as contents %}
+    {% fetch_contents clusters=id as contents %}
     <div class="container">
         Contents:
         {% for content in contents %}
         <div class="card">
+            <h3 class="header">{{content.tags_proxy.name.0|default:""}}</h3>
+            <hr/>
             <div class="container">
                 {% read_content_sync content=content %}
             </div>
-            <a href="{% url "secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
+            <a  class="footer" href="{% url "secretgraph_proxy:content" id=content.flexid %}">Open</a>
         </div>
         {% endfor %}
     </div>

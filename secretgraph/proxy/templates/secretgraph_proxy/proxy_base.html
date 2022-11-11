@@ -7,6 +7,7 @@
     main {
         background-color: #efefef;
         grid-area: main;
+        overflow-y: scroll;
     }
     .logo {
         font-size: 30px;
@@ -77,9 +78,23 @@
     .card:hover {
         box-shadow: 0 6px 10px 0 rgba(0,0,0,0.2);
     }
+    .card .header {
+        padding: 4px 4px 0 4px;
+        display: block;
+    }
+    .card .footer {
+        padding: 0px 4px 4px 4px;
+        display: block;
+    }
 
     .container {
         padding: 2px 16px;
+        display: block;
+    }
+
+    .expander {
+        min-height: 80vh;
+        height: 100%;
     }
 </style>
 {% endblock %}

@@ -2,21 +2,24 @@
 {% load secretgraph %}
 
 {% block content %}
-
+<div class="container">
 {% fetch_contents public=True featured=True order_by="-updated" as contents %}
 {% for content in contents %}
 {% if forloop.first %}
 <div>
-Whats up
+<h1>Whats up</h1>
 </div>
 {% endif %}
-<div class="card">
-    <div class="container">
+<div class="card expander">
+    <h3 class="header">{{content.tags_proxy.name.0|default:""}}</h3>
+    <hr />
+    <div class="container expander">
 {% read_content_sync content=content %}
     </div>
-    <a href="{% url "secretgraph_proxy:content" id=content.flexid %}">{{ content.tags.name.0 }}</a>
+    <a class="footer" href="{% url "secretgraph_proxy:content" id=content.flexid %}">Open</a>
 </div>
 {% empty %}
 No featured contents found
 {% endfor %}
+</div>
 {% endblock %}

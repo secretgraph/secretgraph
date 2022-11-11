@@ -2,9 +2,11 @@
 {% load secretgraph %}
 
 {% block content %}
+{% fetch_contents ids=id as contents %}
 <div class="card">
-    <div class="container">
-    {% read_content_sync content=id %}
+    <h3 class="header">{{contents.0.tags_proxy.name.0|default:""}}</h3><hr />
+    <div class="container expander">
+    {% read_content_sync contents.0 %}
     </div>
 </div>
 {% endblock %}

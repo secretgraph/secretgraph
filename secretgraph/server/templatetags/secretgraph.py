@@ -176,21 +176,18 @@ def fetch_contents(
         )
 
     if clusters:
+        clusters = _split_comma(clusters)
         result["objects"] = result["objects"].filter(
             cluster_id__in=Subquery(
                 fetch_by_id(
                     results["Cluster"]["objects"],
-                    _split_comma(clusters),
+                    clusters,
                     limit_ids=None,
                 ).values("id")
             )
         )
     if states:
         states = _split_comma(states)
-    if featured is not None:
-        result["objects"] = result["objects"].filter(
-            cluster__featured=bool(featured)
-        )
 
     if public is True:
         if states:
@@ -205,6 +202,10 @@ def fetch_contents(
             result["objects"] = result["objects"].exclude(
                 state__in=constants.public_states
             )
+    if featured is not None:
+        result["objects"] = result["objects"].filter(
+            cluster__featured=bool(featured)
+        )
     if excludeIds is not None:
         result["objects"] = result["objects"].exclude(
             Q(
