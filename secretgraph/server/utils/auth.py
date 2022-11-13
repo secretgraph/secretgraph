@@ -15,7 +15,13 @@ from django.utils import timezone
 
 from ...core import constants
 from ..actions.handler import ActionHandler
-from ..models import Action, Cluster, Content, GlobalGroup, GlobalGroupProperty
+from ..models import (
+    Action,
+    Cluster,
+    Content,
+    GlobalGroup,
+    GlobalGroupProperty,
+)
 from .misc import calculate_hashes
 
 logger = logging.getLogger(__name__)
@@ -232,7 +238,16 @@ def retrieve_allowed_objects(
             "actions": actions,
             "_query": _query,
         }
+    # actions
     returnval["active_actions"].update(passive_active_actions)
+    # for sorting. First action is always the most important action
+    # importance is higher by start date, newest (here id)
+    returnval["actions"] = Action.objects.filter(
+        id__in=models.Subquery(returnval["actions"].values("id"))
+    ).order_by("-start", "-id")
+    updatedActions = returnval["actions"].filter(
+        id__in=returnval["active_actions"], used__isnull=True
+    )
 
     # extract subqueries union them
     all_query = reduce(
@@ -275,14 +290,6 @@ def retrieve_allowed_objects(
         assert issubclass(query.model, Action), "invalid type %r" % query.model
         id_subquery = models.Subquery(all_query.values("id"))
         id_subquery_without_public = id_subquery
-    # for sorting. First action is always the most important action
-    # importance is higher by start date, newest (here id)
-    returnval["actions"] = Action.objects.filter(
-        id__in=models.Subquery(returnval["actions"].values("id"))
-    ).order_by("-start", "-id")
-    updatedActions = returnval["actions"].filter(
-        id__in=returnval["active_actions"], used__isnull=True
-    )
     setattr(
         request,
         "secretgraphActionsToRollback",

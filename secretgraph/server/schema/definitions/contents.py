@@ -5,7 +5,7 @@ from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q, QuerySet
+from django.db.models import Subquery, Q, QuerySet, Exists
 
 from ....core.constants import public_states
 from ...utils.auth import (
@@ -105,13 +105,14 @@ class ContentNode(relay.Node):
         # we are in the 2nd level, block
         if self.limited:
             return None
-        cluster_visible = (
-            get_cached_result(info.context.request, ensureInitialized=True)[
-                "Cluster"
-            ]["objects"]
-            .filter(id=self.cluster_id)
-            .exists()
+        results = get_cached_result(
+            info.context.request, ensureInitialized=True
         )
+        if self.state not in public_states:
+            query = results["Cluster"]["objects_ignore_public"]
+        else:
+            query = results["Cluster"]["objects"]
+        cluster_visible = query.filter(id=self.cluster_id).exists()
         if not cluster_visible:
             # set cluster to limited (first level)
             self.cluster.limited = True
