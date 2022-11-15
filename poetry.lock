@@ -477,7 +477,7 @@ pyparsing = ">=2.0.2,<3.0.5 || >3.0.5"
 
 [[package]]
 name = "platformdirs"
-version = "2.5.3"
+version = "2.5.4"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "dev"
 optional = false
@@ -736,7 +736,7 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.142.0"
+version = "0.142.1"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
@@ -1235,8 +1235,8 @@ packaging = [
     {file = "packaging-21.3.tar.gz", hash = "sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb"},
 ]
 platformdirs = [
-    {file = "platformdirs-2.5.3-py3-none-any.whl", hash = "sha256:0cb405749187a194f444c25c82ef7225232f11564721eabffc6ec70df83b11cb"},
-    {file = "platformdirs-2.5.3.tar.gz", hash = "sha256:6e52c21afff35cb659c6e52d8b4d61b9bd544557180440538f255d9382c8cbe0"},
+    {file = "platformdirs-2.5.4-py3-none-any.whl", hash = "sha256:af0276409f9a02373d540bf8480021a048711d572745aef4b7842dad245eba10"},
+    {file = "platformdirs-2.5.4.tar.gz", hash = "sha256:1006647646d80f16130f052404c6b901e80ee4ed6bef6792e1f238a8969106f7"},
 ]
 psycopg2 = [
     {file = "psycopg2-2.9.5-cp310-cp310-win32.whl", hash = "sha256:d3ef67e630b0de0779c42912fe2cbae3805ebaba30cda27fea2a3de650a9414f"},
@@ -1326,8 +1326,8 @@ strawberry-django-plus = [
     {file = "strawberry_django_plus-1.29.tar.gz", hash = "sha256:0daf08fef5474dd0c480c9542e1e43494f460286fdeae416980c89869a82438e"},
 ]
 strawberry-graphql = [
-    {file = "strawberry_graphql-0.142.0-py3-none-any.whl", hash = "sha256:dfbc981644c1406b99a079f7a7e33083dd30d031b9cbacd1c24c1c01fcd4145d"},
-    {file = "strawberry_graphql-0.142.0.tar.gz", hash = "sha256:9cf4b0f3e9f7d430cbcd3901cb4da1c55829751851128669d2582ad42cbe0deb"},
+    {file = "strawberry_graphql-0.142.1-py3-none-any.whl", hash = "sha256:69e8252f19615b45c28fd715194c8635852072661a3e745a9a8b506608a9d46d"},
+    {file = "strawberry_graphql-0.142.1.tar.gz", hash = "sha256:8780a072390c6db1b02108d359116f78bbe4bac0061e35b0f495bf710d43327b"},
 ]
 strawberry-graphql-django = [
     {file = "strawberry_graphql_django-0.8.1-py3-none-any.whl", hash = "sha256:8191b0697f2d78b28b04954e8b803c6a31978ae9ec7e5244e6fe53e5d9ea96fb"},
