@@ -420,6 +420,7 @@ class UpdateHandlers:
 
     @staticmethod
     def do_manage(action_dict, scope, sender, action, **kwargs):
+        # handles Action, Content, Cluster
         type_name = sender.__name__
         excl_filters = Q(id__in=action_dict["exclude"][type_name])
         if type_name != "Cluster":

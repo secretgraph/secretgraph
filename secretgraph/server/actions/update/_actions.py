@@ -35,15 +35,22 @@ def manage_actions_fn(
         content = None
     else:
         raise ValueError("Invalid type")
+    create = not cluster.pk
 
-    allowed_and_existing_actions = (
-        cluster.actions.all() if cluster.id else Action.objects.none()
-    )
-    if not admin and cluster.id:
+    if create:
+        # we have no Actions and so we need no filtering
+        # and the related manager is maybe not initialized
+        # so skip the other code pathes
+        allowed_and_existing_actions = Action.objects.none()
+    elif admin:
+        # we don't need to filter as admin
+        allowed_and_existing_actions = cluster.actions.all()
+    else:
+        # normal code path for existing contents/cluster
         allowed_and_existing_actions = (
             retrieve_allowed_objects(
                 request,
-                allowed_and_existing_actions,
+                cluster.actions.all(),
                 scope="manage",
                 authset=authset,
             )
@@ -135,7 +142,6 @@ def manage_actions_fn(
         else:
             add_actions.append(actionObj)
 
-    create = not cluster.pk
     if None in delete_actions:
         if content:
             delete_q = Q()
