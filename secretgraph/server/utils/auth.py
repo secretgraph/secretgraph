@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from strawberry_django_plus import relay
 from functools import reduce, partial
-from itertools import islice, chain
+from itertools import chain
 from operator import or_
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -74,14 +74,20 @@ def retrieve_allowed_objects(
         query = apps.get_model("secretgraph", query).objects.all()
 
     if authset is None:
-        authset = (
+        authset = set(
             getattr(request, "headers", {})
             .get("Authorization", "")
             .replace(" ", "")
             .split(",")
         )
         authset.discard("")
-    authset = set(islice(authset, 100))
+    elif not isinstance(authset, set):
+        authset = set(authset)
+
+    if len(authset) > 100:
+        raise ValueError(
+            "Too many authorization tokens specified, limit is 100"
+        )
     now = timezone.now()
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
