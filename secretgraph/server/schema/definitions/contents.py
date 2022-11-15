@@ -47,7 +47,7 @@ class ContentFilter:
 
 
 @gql.django.type(Content, name="Content")
-class ContentNode(relay.Node):
+class ContentNode(ActionMixin, relay.Node):
     id_attr = "flexid"
 
     nonce: str
@@ -117,12 +117,6 @@ class ContentNode(relay.Node):
             # set cluster to limited (first level)
             self.cluster.limited = True
         return self.cluster
-
-    @gql.django.field(only=["id", "cluster_id"])
-    def availableActions(self: Content, info: Info) -> List[ActionEntry]:
-        if self.limited:
-            return []
-        return ActionMixin.availableActions(self, info)
 
     @gql.django.connection()
     def references(

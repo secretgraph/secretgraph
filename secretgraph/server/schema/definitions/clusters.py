@@ -69,7 +69,7 @@ class ClusterFilter:
 
 
 @gql.django.type(Cluster, name="Cluster")
-class ClusterNode(relay.Node):
+class ClusterNode(ActionMixin, relay.Node):
     id_attr = "flexid"
     limited: gql.Private[bool] = False
 
@@ -102,12 +102,6 @@ class ClusterNode(relay.Node):
         if self.limited:
             return None
         return self.updateId
-
-    @gql.django.field(only=["id", "cluster_id"])
-    def availableActions(self, info: Info) -> List[ActionEntry]:
-        if self.limited:
-            return []
-        return ActionMixin.availableActions(self, info)
 
     @gql.django.field()
     def name(self) -> Optional[str]:

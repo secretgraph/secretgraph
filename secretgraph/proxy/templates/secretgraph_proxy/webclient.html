@@ -6,10 +6,7 @@
 {% manifest_match '*.css' '<link rel="stylesheet" href="{match}"/>' %}
 {% endblock %}
 {% block head_scripts %}
-{% manifest_match 'runtime.js' '<script src="{match}"></script>' %}
-{% manifest_match 'suneditorstyle.js' '<script src="{match}"></script>' %}
-{% manifest_match '*vendors*.js' '<script defer src="{match}"></script>' %}
-{% manifest_match 'loader.js' '<script defer src="{match}"></script>' %}
+{% manifest_match 'loader.mjs' '<script type="module" src="{match}"></script>' %}
 {% endblock %}
 
 {% block layout %}

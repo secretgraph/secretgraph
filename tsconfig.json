@@ -6,7 +6,7 @@
     "plugins": [
       {
         "name": "ts-graphql-plugin",
-        "schema": "schema.json",
+        "schema": "schema.graphql",
         "tag": "gql"
       }
     ],

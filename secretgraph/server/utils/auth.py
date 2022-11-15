@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 from typing import Optional
-from strawberry_django_plus import relay
+from strawberry_django_plus import relay, gql
 from functools import reduce, partial
 from itertools import chain
 from operator import or_
@@ -65,6 +65,11 @@ class LazyViewResult(object):
             return self.__getitem__(item)
         except KeyError:
             return default
+
+    @gql.django.django_resolver
+    def preinit(self, *fields):
+        for i in fields:
+            self[i]
 
 
 def retrieve_allowed_objects(

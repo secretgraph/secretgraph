@@ -59,12 +59,14 @@ module.exports = (env, options) => {
                       },
                   }
                 : undefined,
+        experiments: {
+            outputModule: true,
+        },
         output: {
             publicPath: 'auto',
-            filename: 'js/[name].[fullhash].js',
-            chunkFilename: 'js/[name].[fullhash].js',
             path: path.resolve(__dirname, './webpack_bundles/'),
             clean: true,
+            module: true,
         },
         watchOptions: {
             ignored: /node_modules/,

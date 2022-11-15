@@ -21,7 +21,10 @@ class ActionEntry:
 
 
 class ActionMixin:
-    def availableActions(self, info: Info) -> List[ActionEntry]:
+    @gql.field()
+    async def availableActions(self, info: Info) -> List[ActionEntry]:
+        if getattr(self, "limited", False):
+            return
         name = self.__class__.__name__.replace("Node", "", 1)
         results = get_cached_result(
             info.context.request, ensureInitialized=True
@@ -67,10 +70,11 @@ class ActionMixin:
                         ),
                     )
         if has_manage:
+            await results.preinit("Action")
             # use results["Action"] for ensuring exclusion of hidden actions
             # this is ensured by having manage in action set
             if isinstance(self, Content):
-                for action in (
+                async for action in (
                     results["Action"]["objects"]
                     .filter(
                         Q(contentAction__isnull=True)
@@ -91,7 +95,7 @@ class ActionMixin:
                         allowedTags=None,
                     )
             else:
-                for action in (
+                async for action in (
                     results["Action"]["objects"]
                     .filter(contentAction__isnull=True, cluster_id=self.id)
                     .exclude(id__in=seen_ids)
@@ -108,7 +112,8 @@ class ActionMixin:
                         allowedTags=None,
                     )
 
-    @gql.django.field()
+    @gql.field()
+    @gql.django.django_resolver
     def authOk(self, info: Info) -> bool:
         name = self.__class__.__name__.replace("Node", "", 1)
         result = get_cached_result(
