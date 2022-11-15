@@ -339,6 +339,11 @@ The system cluster (id=0) has no quota (it will be removed after every migration
 
 # Caveats
 
+## hidden Actions
+
+Actions can be hidden via manage, for preventing leaks:
+get_cached_result\["Actions"\] should be used for user facing output and manipulation
+
 ## Limited API
 
 This API contains only basic information and no informations like ids.
@@ -374,7 +379,6 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
--   view, update (non contentAction) should inherit manage exclusions
 -   disallow non global ids? Would ease implementation
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config

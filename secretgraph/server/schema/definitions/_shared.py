@@ -8,10 +8,7 @@ from django.db.models import Q
 
 from ....core import constants
 from ...utils.auth import get_cached_result
-from ...models import (
-    Action,
-    Content,
-)
+from ...models import Content
 
 
 @strawberry.type
@@ -26,24 +23,26 @@ class ActionEntry:
 class ActionMixin:
     def availableActions(self, info: Info) -> List[ActionEntry]:
         name = self.__class__.__name__.replace("Node", "", 1)
-        result = get_cached_result(
+        results = get_cached_result(
             info.context.request, ensureInitialized=True
-        )[name]
+        )
         # only show some actions if not set
         has_manage = False
         if isinstance(self, Content):
             # if content: check cluster and content keys
             mappers = [
-                result.get("action_info_contents", {}).get(self.id, {}),
-                result.get("action_info_clusters", {}).get(
-                    self.cluster_id, {}
-                ),
+                results[name].get("action_info_contents", {}).get(self.id, {}),
+                results[name]
+                .get("action_info_clusters", {})
+                .get(self.cluster_id, {}),
             ]
         else:
-            mappers = [result.get("action_info_clusters", {}).get(self.id, {})]
+            mappers = [
+                results[name].get("action_info_clusters", {}).get(self.id, {})
+            ]
         # auth included unprotected ids
         seen_ids = set()
-        # don't copy
+        # prevent copy
         for mapper in mappers:
             for key_val in mapper.items():
                 if key_val[0][0] == "manage":
@@ -54,21 +53,25 @@ class ActionMixin:
                         keyHash=key_val[0][1],
                         type=key_val[0][0],
                         trustedKeys=(
-                            result["decrypted"][key_val[1]].get("trustedKeys")
+                            results[name]["decrypted"][key_val[1]].get(
+                                "trustedKeys"
+                            )
                             or []
                         ),
                         allowedTags=(
-                            result["decrypted"][key_val[1]].get("allowedTags")
+                            results[name]["decrypted"][key_val[1]].get(
+                                "allowedTags"
+                            )
                             if key_val[0][0] not in {"view", "auth"}
                             else None
                         ),
                     )
         if has_manage:
+            # use results["Action"] for ensuring exclusion of hidden actions
+            # this is ensured by having manage in action set
             if isinstance(self, Content):
                 for action in (
-                    result.get("Action", {"objects": Action.objects.none()})[
-                        "objects"
-                    ]
+                    results["Action"]["objects"]
                     .filter(
                         Q(contentAction__isnull=True)
                         | Q(contentAction__content_id=self.id),
@@ -80,16 +83,16 @@ class ActionMixin:
                         keyHash=action.keyHash,
                         type="other",
                         trustedKeys=(
-                            result["decrypted"][key_val[1]].get("trustedKeys")
+                            results[name]["decrypted"][key_val[1]].get(
+                                "trustedKeys"
+                            )
                             or []
                         ),
                         allowedTags=None,
                     )
             else:
                 for action in (
-                    result.get("Action", {"objects": Action.objects.none()})[
-                        "objects"
-                    ]
+                    results["Action"]["objects"]
                     .filter(contentAction__isnull=True, cluster_id=self.id)
                     .exclude(id__in=seen_ids)
                 ):
@@ -97,7 +100,9 @@ class ActionMixin:
                         keyHash=action.keyHash,
                         type="other",
                         trustedKeys=(
-                            result["decrypted"][key_val[1]].get("trustedKeys")
+                            results[name]["decrypted"][key_val[1]].get(
+                                "trustedKeys"
+                            )
                             or []
                         ),
                         allowedTags=None,
