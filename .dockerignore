@@ -10,3 +10,4 @@ db.sqlite3
 dist
 secretgraph.egg-info
 js-packages/*/lib
+js-packages/*/tsconfig.tsbuildinfo

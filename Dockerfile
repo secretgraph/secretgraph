@@ -2,7 +2,7 @@ FROM docker.io/python:3
 ENV PYTHONUNBUFFERED=1 DJANGO_SETTINGS_MODULE=secretgraph.settings.docker
 RUN useradd -Mr -G www-data secretgraph
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-RUN mkdir -p /var/secretgraph && chown secretgraph:secretgraph /var/secretgraph
+RUN mkdir -p /var/lib/secretgraph && chown secretgraph:secretgraph /var/lib/secretgraph
 RUN apt-get install -y nodejs && apt-get clean
 COPY . /app
 WORKDIR /app

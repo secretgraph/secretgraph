@@ -65,6 +65,8 @@ module.exports = (env, options) => {
         output: {
             publicPath: 'auto',
             path: path.resolve(__dirname, './webpack_bundles/'),
+            chunkFilename: 'chunks/[name].[fullhash].mjs',
+            filename: '[name].[fullhash].mjs',
             clean: true,
             module: true,
         },
