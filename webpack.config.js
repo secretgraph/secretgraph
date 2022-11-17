@@ -73,6 +73,7 @@ module.exports = (env, options) => {
             loader: './assets/js/loader.tsx',
             serviceworker: {
                 import: './assets/js/serviceworker.ts',
+                filename: '[name].js',
                 chunkLoading: false,
                 runtime: false,
             },

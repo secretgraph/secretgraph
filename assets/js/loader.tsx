@@ -8,12 +8,27 @@ function load() {
     let wrapper = document.getElementById(
         'secretgraph-webclient'
     ) as HTMLElement
-    const defaultPath: string | undefined = wrapper
-        ? wrapper.dataset.graphqlPath
-        : undefined
-    const homeUrl: string | undefined = wrapper
-        ? wrapper.dataset.homeUrl
-        : undefined
+    const defaultPath: string | undefined = wrapper.dataset.graphqlPath
+    const homeUrl: string | undefined = wrapper.dataset.homeUrl
+    const swUrl: string = wrapper.dataset.swUrl as string
+    if ('serviceWorker' in navigator) {
+        // Register a service worker hosted at the root of the
+        // site using the default scope.
+        navigator.serviceWorker.register(swUrl).then(
+            (registration) => {
+                console.log(
+                    'Service worker registration succeeded:',
+                    registration
+                )
+            },
+            /*catch*/ (error) => {
+                console.error(`Service worker registration failed: ${error}`)
+            }
+        )
+    } else {
+        console.warn('Service workers are not supported.')
+    }
+
     const root = ReactDOM.createRoot(wrapper, {
         identifierPrefix: 'webclient',
     })

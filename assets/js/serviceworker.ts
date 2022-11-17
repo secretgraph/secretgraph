@@ -5,11 +5,12 @@ const manifest_path = './manifest.json'
 async function grab_assets(): Promise<string[]> {
     const resp = await fetch(manifest_path)
     if (resp.ok) {
-        const assets: string[] = Object.values(await resp.json())
+        const assets: string[] = Object.values(await resp.json()).map(
+            (val: string) => val.replace('webpack_bundles/', '')
+        )
         if (!assets.includes(manifest_path)) {
             assets.push(manifest_path)
         }
-        console.log('assets', assets)
         return assets
     }
     return [manifest_path]

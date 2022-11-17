@@ -11,5 +11,5 @@
 {% endblock %}
 
 {% block layout %}
-<div id="secretgraph-webclient" data-home-url="{% url 'secretgraph_proxy:home' %}" data-graphql-path="{% secretgraph_path %}"></div>
+<div id="secretgraph-webclient" data-sw-url="{% manifest 'serviceworker.js' %}" data-home-url="{% url 'secretgraph_proxy:home' %}" data-graphql-path="{% secretgraph_path %}"></div>
 {% endblock %}
