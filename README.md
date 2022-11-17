@@ -122,11 +122,17 @@ Special configuration keys:
 ## States:
 
 -   required: Only PublicKey, like trusted+required as encryption target
--   trusted: Only PublicKey, a encryption target
+-   trusted: Only PublicKey, a trusted encryption target. At least one is required. Will be put into the trustedKeys parameter of actions
 -   public: Unencrypted, can be read by everyone
--   protected: Encrypted
--   draft: private state, excempted from autohiding
--   sensitive: excluded by default, except especially requested. For sensitive stuff like medical data or NSFW
+-   protected: Encrypted, only visible with view permission (token)
+-   draft: like protected + excempted from autohiding
+-   sensitive: like protected + excluded by default, except especially requested. For sensitive stuff like medical data or NSFW
+
+## TrustedKeys
+
+Actions auto contain TrustedKeys. They are required+trusted key hashes seen while creating action. Reason behind this is, that as actions are encrypted on server side, an injection of keys is prevented.
+Logic:
+every key used for encryption is either in trustedKeys or signed by a trustedKey
 
 ## Shortcut creation of keys
 
@@ -388,6 +394,9 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
+-   trustedKeys logic. Prevent server-side injection of keys
+    -   Needs much more work especially on gui side
+    -   a better ActionDialog is neccessary
 -   disallow non global ids? Would ease implementation
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config
