@@ -62,7 +62,11 @@ class SecretgraphObject:
             Content.objects.all(), info, filters
         )
 
-    config: SecretgraphConfig = gql.field()
+    @gql.field
+    @staticmethod
+    def config() -> SecretgraphConfig:
+        return SecretgraphConfig()
+
     permissions: List[str] = gql.field(resolver=get_permissions)
 
 

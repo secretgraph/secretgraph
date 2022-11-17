@@ -132,6 +132,7 @@ function Definitions({
     const navClient = React.useMemo(() => {
         return createClient(activeUrl)
     }, [activeUrl, !config])
+    // keeps navClient until baseUrl changes or if initial baseUrl differs from navClient
     const configClient = React.useMemo(() => {
         if (config && config.baseUrl != activeUrl) {
             return createClient(config.baseUrl)
@@ -143,7 +144,7 @@ function Definitions({
             return createClient(mainCtx.url)
         }
         return navClient
-    }, [config ? config.baseUrl : ''])
+    }, [mainCtx.url ? mainCtx.url : ''])
 
     return (
         <Contexts.External.Provider

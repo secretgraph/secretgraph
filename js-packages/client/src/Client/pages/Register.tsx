@@ -173,7 +173,9 @@ function Register() {
                             <div style={{ paddingTop: theme.spacing(1) }}>
                                 {registerContext!.errors.map(
                                     (error: string) => (
-                                        <Alert severity="error">{error}</Alert>
+                                        <Alert severity="error" key={error}>
+                                            {error}
+                                        </Alert>
                                     )
                                 )}
                             </div>

@@ -10,7 +10,6 @@ import * as React from 'react'
 import ActionBar from '../components/ActionBar'
 import HeaderBar from '../components/HeaderBar'
 import { CapturingSuspense } from '../components/misc'
-import SideBar from '../components/SideBar'
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import { drawerWidth } from '../theme'
@@ -18,6 +17,7 @@ import { drawerWidth } from '../theme'
 // const SideBar = React.lazy(() => import('../components/SideBar'));
 const Login = React.lazy(() => import('./Login'))
 const Register = React.lazy(() => import('./Register'))
+const SideBar = React.lazy(() => import('../components/SideBar'))
 const Help = React.lazy(() => import('./Help'))
 
 function MainPage() {
@@ -27,8 +27,9 @@ function MainPage() {
     const { message, sendMessage } = React.useContext(Contexts.Snackbar)
     const { navClient, itemClient } = React.useContext(Contexts.Clients)
     const { open: openSidebar } = React.useContext(Contexts.OpenSidebar)
-    const frameElement = React.useMemo(() => {
+    const [frameElement, hasSidebar] = React.useMemo(() => {
         let FrameElement = null
+        let hasSidebar = true
         switch (mainCtx.action) {
             case 'view':
             case 'create':
@@ -48,19 +49,23 @@ function MainPage() {
                 break
             case 'login':
                 FrameElement = Login
+                hasSidebar = false
                 break
             case 'register':
                 FrameElement = Register
+                hasSidebar = false
                 break
             case 'help':
                 FrameElement = Help
+                hasSidebar = false
                 break
         }
-        return (
+        return [
             <CapturingSuspense>
                 <FrameElement />
-            </CapturingSuspense>
-        )
+            </CapturingSuspense>,
+            hasSidebar,
+        ]
     }, [mainCtx.action, mainCtx.url, mainCtx.type])
     return (
         <Box
@@ -88,9 +93,11 @@ function MainPage() {
                     {message ? message.message : undefined}
                 </Alert>
             </Snackbar>
-            <ApolloProvider client={navClient}>
-                <SideBar />
-            </ApolloProvider>
+            {hasSidebar ? (
+                <ApolloProvider client={navClient}>
+                    <SideBar />
+                </ApolloProvider>
+            ) : null}
             <HeaderBar />
             <Box
                 sx={{

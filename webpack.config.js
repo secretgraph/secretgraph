@@ -59,16 +59,12 @@ module.exports = (env, options) => {
                       },
                   }
                 : undefined,
-        experiments: {
-            outputModule: true,
-        },
         output: {
             publicPath: 'auto',
             path: path.resolve(__dirname, './webpack_bundles/'),
-            chunkFilename: 'chunks/[name].[fullhash].mjs',
-            filename: '[name].[fullhash].mjs',
+            chunkFilename: 'chunks/[name].[fullhash].js',
+            filename: '[name].[fullhash].js',
             clean: true,
-            module: true,
         },
         watchOptions: {
             ignored: /node_modules/,
@@ -133,6 +129,7 @@ module.exports = (env, options) => {
         plugins,
         optimization: {
             chunkIds: 'size',
+            runtimeChunk: 'multiple',
         },
     }
 }

@@ -6,8 +6,8 @@
 {% manifest_match '*.css' '<link rel="stylesheet" href="{match}"/>' %}
 {% endblock %}
 {% block head_scripts %}
-{% manifest_match 'chunks/*.mjs' '<script type="module" src="{match}"></script>' %}
-<script type="module" defer src="{% manifest 'loader.mjs' %}"></script>
+<script async src="{% manifest 'runtime~loader.js' %}"></script>
+<script defer src="{% manifest 'loader.js' %}"></script>
 {% endblock %}
 
 {% block layout %}
