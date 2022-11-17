@@ -105,7 +105,7 @@ Special configuration keys:
 -   allow_global_name: can register a global cluster name
 -   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
 -   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
--   manage_hidden: can see hidden contents, can set hidden state, hidden groups of clusters become visible
+-   manage_hidden: can see hidden contents, can set hidden attribute, hidden groups of clusters become visible
 -   manage_active: can can block and unblock nets (via Cluster ids)
 -   manage_groups: can manage global groups of clusters, hidden groups of clusters become visible
 -   manage_deletion: can delete every content or cluster
@@ -118,6 +118,15 @@ Special configuration keys:
 ## Global group attributes
 
 -   managed (only settings): settings definition of global group is binding
+
+## States:
+
+-   required: Only PublicKey, like trusted+required as encryption target
+-   trusted: Only PublicKey, a encryption target
+-   public: Unencrypted, can be read by everyone
+-   internal: Encrypted
+-   draft: private state, excempted from autohiding
+-   sensitive: excluded by default, except especially requested. For sensitive stuff like medical data or NSFW
 
 ## Shortcut creation of keys
 
@@ -379,6 +388,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
+-   auto exclude sensitive if states not specified
 -   disallow non global ids? Would ease implementation
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config

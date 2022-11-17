@@ -150,7 +150,7 @@ def fetch_contents(
         hash_filters = Q()
         if contentHashes:
             hash_filters = Q(contentHash__in=contentHashes)
-        state_filters = Q()
+        state_filters = ~Q(state="sensitive")
         if states:
             if clustersAreRestricted:
                 state_filters = Q(state__in=states)

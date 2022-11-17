@@ -3,7 +3,9 @@ from typing import Literal, Any, Protocol, runtime_checkable
 from cryptography.hazmat.primitives import serialization
 
 Scope = Literal["manage", "create", "delete", "update", "push", "view"]
-ContentState = Literal["required", "trusted", "public", "internal", "draft"]
+ContentState = Literal[
+    "required", "trusted", "public", "internal", "draft", "sensitive"
+]
 
 
 class NamedHash(type):

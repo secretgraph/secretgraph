@@ -246,9 +246,10 @@ def _update_or_create_content_or_key(
     if objdata.hidden is not None:
         content.hidden = objdata.hidden
     elif content.state != "draft":
+        # drafts are excempted from hidding
         assert is_key is False, "Keys should not be affected by hidden"
         if content.state == "public":
-            if create or oldstate == "draft" or oldstate == "internal":
+            if create or oldstate not in constants.public_states:
                 content.hidden = objdata.cluster.groups.filter(
                     properties__name="auto_hide_global"
                     if content.cluster.name.startswith("@")
