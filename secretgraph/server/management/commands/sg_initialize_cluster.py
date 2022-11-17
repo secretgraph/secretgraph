@@ -236,7 +236,7 @@ class Command(BaseCommand):
                     cluster=cluster,
                     value=ContentValueInput(
                         value=ecnryptedContent,
-                        state="internal",
+                        state="protected",
                         type="Config",
                         nonce=nonce_config,
                         tags=[

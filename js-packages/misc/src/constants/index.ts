@@ -32,8 +32,8 @@ export const protectedActions = new Set<'storedUpdate' | 'auth'>([
     'auth',
 ])
 
-export const contentStates = ['draft', 'internal', 'public']
-export const contentStatesKey = ['internal', 'public', 'required', 'trusted']
+export const contentStates = ['draft', 'protected', 'public']
+export const contentStatesKey = ['protected', 'public', 'required', 'trusted']
 
 export const mapHashNames: {
     [algo: string]: {

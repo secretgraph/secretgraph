@@ -49,7 +49,7 @@ def fetch_clusters(
         hash_filters = Q()
         if contentHashes:
             hash_filters = Q(contentHash__in=contentHashes)
-        state_filters = Q()
+        state_filters = ~Q(state="sensitive")
         if states:
             state_filters = Q(state__in=states)
         incl_type_filters = Q()

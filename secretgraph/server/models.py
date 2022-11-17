@@ -353,7 +353,7 @@ class Content(FlexidModel):
                 {"type": "%s is an invalid type" % self.type}
             )
         if self.type == "PrivateKey":
-            if self.state != "internal":
+            if self.state != "protected":
                 raise ValidationError(
                     {
                         "state": "%s is an invalid state for private key"
@@ -361,7 +361,7 @@ class Content(FlexidModel):
                     }
                 )
         elif self.type == "PublicKey":
-            if self.state not in {"public", "internal", "required", "trusted"}:
+            if self.state not in constants.publickey_states:
                 raise ValidationError(
                     {
                         "state": "%s is an invalid state for public key"
@@ -369,11 +369,11 @@ class Content(FlexidModel):
                     }
                 )
         else:
-            if self.type == "Config" and self.state != "internal":
+            if self.type == "Config" and self.state != "protected":
                 raise ValidationError(
                     {"state": "%s is an invalid state for Config" % self.state}
                 )
-            elif self.state not in {"draft", "public", "internal"}:
+            elif self.state not in constants.nonkey_content_states:
                 raise ValidationError(
                     {
                         "state": "%s is an invalid state for content"

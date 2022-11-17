@@ -454,7 +454,7 @@ async function updateRemoteConfig({
         updateId: node.updateId,
         privkeys: Object.values(privkeys),
         pubkeys: Object.values(pubkeys),
-        state: 'internal',
+        state: 'protected',
         config: mergedConfig,
         hashAlgorithm,
         value: new Blob([JSON.stringify(mergedConfig)]),

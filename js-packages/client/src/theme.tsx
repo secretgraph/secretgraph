@@ -42,11 +42,12 @@ export const theme = responsiveFontSizes(
         },
         contentStates: new Map([
             ['draft', { label: gettext('Draft') }],
-            ['internal', { label: gettext('Internal') }],
+            ['protected', { label: gettext('Protected') }],
+            ['sensitive', { label: gettext('Sensitive') }],
             ['public', { label: gettext('Public') }],
         ]),
         contentStatesKey: new Map([
-            ['internal', { label: gettext('Internal') }],
+            ['protected', { label: gettext('Protected') }],
             ['public', { label: gettext('Public') }],
             ['trusted', { label: gettext('Trusted') }],
             ['required', { label: gettext('Required') }],

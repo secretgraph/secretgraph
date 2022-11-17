@@ -11,6 +11,18 @@ public_states: set[ContentState] = {
     "trusted",
     "public",
 }
+nonkey_content_states: set[ContentState] = {
+    "public",
+    "protected",
+    "sensitive",
+    "draft",
+}
+publickey_states: set[ContentState] = {
+    "public",
+    "protected",
+    "required",
+    "trusted",
+}
 
 
 # set here because ignored names are removed and must be manually set

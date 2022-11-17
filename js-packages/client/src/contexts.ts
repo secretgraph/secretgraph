@@ -6,9 +6,9 @@ import { Context, createContext } from 'react'
 function stubFn() {}
 
 /**export const VisibleStateContext = createContext({
-    visibility: 'default' as 'default' | 'draft' | 'public' | 'internal',
+    visibility: 'default' as 'default' | 'draft' | 'public' | 'protected',
     updateVisibility: (
-        update: 'default' | 'draft' | 'public' | 'internal'
+        update: 'default' | 'draft' | 'public' | 'protected'
     ) => {},
 })*/
 export const Main = createContext<{

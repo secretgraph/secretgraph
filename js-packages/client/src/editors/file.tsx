@@ -278,7 +278,7 @@ const FileIntern = ({
             encryptName = true
         }
     }
-    const state = nodeData?.state || 'internal'
+    const state = nodeData?.state || 'protected'
     if (state == 'public') {
         encryptName = false
     }

@@ -239,7 +239,7 @@ def main(argv=None):
     prepared_content = {
         "cluster": config["configCluster"],
         "type": "Config",
-        "state": "internal",
+        "state": "protected",
         "tags": tags,
         "references": [
             {

@@ -178,7 +178,7 @@ const SideBarItems = () => {
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
-                            states={['internal']}
+                            states={['protected']}
                             label="Private"
                             heading
                             goTo={goTo}

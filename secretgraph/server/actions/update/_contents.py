@@ -123,7 +123,7 @@ def _transform_key_into_dataobj(
             value=key_obj.privateKey,
             type="PrivateKey",
             hidden=False,
-            state="internal",
+            state="protected",
             tags=_condMergeKeyTags(
                 hashes_tags, key_obj.privateTags, bool(publicKeyContent)
             ),

@@ -81,7 +81,7 @@ const InnerCustom = ({
     const initialValues = {
         tags: [] as string[],
         text,
-        state: nodeData?.state || 'internal',
+        state: nodeData?.state || 'protected',
         contentHash: nodeData?.contentHash || '',
         type: nodeData?.type || '',
         actions,

@@ -212,7 +212,7 @@ export async function initializeCluster({
         pubkeys: [publicKey],
         privkeys: [privateKey],
         type: 'Config',
-        state: 'internal',
+        state: 'protected',
         tags: ['name=config.json', `slot=${slot}`],
         contentHash,
         hashAlgorithm,

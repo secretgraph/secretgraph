@@ -307,7 +307,7 @@ const ClusterIntern = ({
                                                             '@'
                                                         )
                                                             ? 'public global'
-                                                            : 'internal'
+                                                            : 'protected'
                                                     }
                                                 >
                                                     <InputAdornment

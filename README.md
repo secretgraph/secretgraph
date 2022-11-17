@@ -124,7 +124,7 @@ Special configuration keys:
 -   required: Only PublicKey, like trusted+required as encryption target
 -   trusted: Only PublicKey, a encryption target
 -   public: Unencrypted, can be read by everyone
--   internal: Encrypted
+-   protected: Encrypted
 -   draft: private state, excempted from autohiding
 -   sensitive: excluded by default, except especially requested. For sensitive stuff like medical data or NSFW
 
@@ -388,7 +388,6 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
--   auto exclude sensitive if states not specified
 -   disallow non global ids? Would ease implementation
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config
