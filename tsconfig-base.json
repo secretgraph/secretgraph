@@ -9,9 +9,5 @@
         "module": "esnext",
         "target": "ES6",
         "moduleResolution": "node",
-        "lib": [
-            "ESNext",
-            "dom"
-        ]
     },
 }

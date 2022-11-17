@@ -2,7 +2,7 @@ import { useApolloClient, useQuery } from '@apollo/client'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import { useTheme } from '@mui/material/styles'
-import * as Contexts from '@secretgraph/client/Client/contexts'
+import * as Contexts from '@secretgraph/client/contexts'
 import * as React from 'react'
 
 type Props = {}

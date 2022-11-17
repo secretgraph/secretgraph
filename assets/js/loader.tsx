@@ -1,6 +1,6 @@
 import '@secretgraph/rdf-editors/editors'
 
-import MainPage from '@secretgraph/client/Client'
+import MainPage from '@secretgraph/client/index'
 import { StrictMode } from 'react'
 import * as ReactDOM from 'react-dom/client'
 

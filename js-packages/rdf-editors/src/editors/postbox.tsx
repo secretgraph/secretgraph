@@ -1,6 +1,6 @@
 import { useApolloClient, useQuery } from '@apollo/client'
 import { useTheme } from '@mui/material/styles'
-import * as Contexts from '@secretgraph/client/Client/contexts'
+import * as Contexts from '@secretgraph/client/contexts'
 import { saveAs } from 'file-saver'
 import * as React from 'react'
 

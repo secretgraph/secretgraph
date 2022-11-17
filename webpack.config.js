@@ -71,8 +71,15 @@ module.exports = (env, options) => {
         },
         entry: {
             loader: './assets/js/loader.tsx',
+            serviceworker: {
+                import: './assets/js/serviceworker.ts',
+                chunkLoading: false,
+                runtime: false,
+            },
             suneditorstyle: {
                 import: './node_modules/suneditor/dist/css/suneditor.min.css',
+                chunkLoading: false,
+                runtime: false,
             },
         },
         module: {
