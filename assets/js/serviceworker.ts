@@ -1,6 +1,7 @@
 const cacheName = 'secretgraph_v1'
 
 const manifest_path = './manifest.json'
+const externals = ['/favicon.ico', manifest_path]
 
 async function grab_assets(): Promise<string[]> {
     const resp = await fetch(manifest_path)
@@ -8,12 +9,14 @@ async function grab_assets(): Promise<string[]> {
         const assets: string[] = Object.values(await resp.json()).map(
             (val: string) => val.replace('webpack_bundles/', '')
         )
-        if (!assets.includes(manifest_path)) {
-            assets.push(manifest_path)
+        for (const ext of externals) {
+            if (!assets.includes(ext)) {
+                assets.push(ext)
+            }
         }
         return assets
     }
-    return [manifest_path]
+    return externals
 }
 
 self.addEventListener('install', async (event: ExtendableEvent) => {
