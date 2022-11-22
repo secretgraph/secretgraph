@@ -8,19 +8,16 @@ import { newClusterLabel } from '../messages'
 
 type Props = {}
 
+const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
+    return <div />
+}
 const ViewConfig = (props: Props) => {
     const theme = useTheme()
 
-    return <div />
+    return <EditConfig viewOnly />
 }
 
 const CreateConfig = (props: Props) => {
-    const theme = useTheme()
-
-    return <div />
-}
-
-const EditConfig = (props: Props) => {
     const theme = useTheme()
 
     return <div />

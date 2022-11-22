@@ -401,7 +401,7 @@ now you have a decryption key to the private key, that is very dangerous
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config
 -   modernize ActionDialog, redesign, multi column?
--   modernize Keys, expose actions
+-   modernize Keys, save actions (they are already shown)
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   update internal doc section
 -   replace json-editor by ActionConfigurator equivalent
@@ -424,7 +424,6 @@ now you have a decryption key to the private key, that is very dangerous
 -   cleanup user
 -   support dsa
 -   implement different net resource logic in frontend
--   move validation logic to validators
 -   use more mainCtx.url instead of passing urls through
 -   ratelimit API access per ip and per flexid
 -   harmonize incl/exclFilter and allowedTags specs (maybe)

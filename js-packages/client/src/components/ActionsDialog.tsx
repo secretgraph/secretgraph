@@ -136,7 +136,7 @@ export default function ActionsDialog({
             }
         }
         return tokens
-    }, [form.values.actions])
+    }, [form.values[fieldname]])
     const [selectedItem, setSelectedItem] = React.useState<
         | { value: ActionInputEntry | CertificateInputEntry; index: number }
         | undefined
@@ -148,7 +148,7 @@ export default function ActionsDialog({
             }
             replace(index, { ...value, delete: true })
         },
-        [form.values.actions]
+        [form.values[fieldname]]
     )
     const { filteredActions, filteredCertificates } = React.useMemo(() => {
         const ret: {
@@ -164,7 +164,7 @@ export default function ActionsDialog({
             filteredActions: [],
             filteredCertificates: [],
         }
-        form.values.actions.forEach((value, index) => {
+        form.values[fieldname].forEach((value, index) => {
             if (value.delete) {
                 return
             }
@@ -183,7 +183,7 @@ export default function ActionsDialog({
             a.value.newHash!.localeCompare(b.value.newHash as string)
         )
         return ret
-    }, [form.values.actions])
+    }, [form.values[fieldname]])
     return (
         <Dialog
             fullWidth={fullWidth}
@@ -291,7 +291,7 @@ export default function ActionsDialog({
                             path={
                                 selectedItem
                                     ? `${fieldname}.${selectedItem.index}.`
-                                    : `${fieldname}.${form.values.actions.length}.`
+                                    : `${fieldname}.${form.values[fieldname].length}.`
                             }
                             isContent={isContent}
                             mode={isPublic ? 'public' : 'default'}
@@ -322,7 +322,7 @@ export default function ActionsDialog({
                 <Button
                     variant="contained"
                     onClick={async (ev) => {
-                        form.values.actions.forEach((val, index) => {
+                        form.values[fieldname].forEach((val, index) => {
                             if (val.update !== undefined)
                                 replace(index, {
                                     ...val,
@@ -333,7 +333,7 @@ export default function ActionsDialog({
                     }}
                     disabled={
                         disabled ||
-                        form.values.actions.every((val) => !val.update)
+                        form.values[fieldname].every((val) => !val.update)
                     }
                 >
                     Accept all updates of actions

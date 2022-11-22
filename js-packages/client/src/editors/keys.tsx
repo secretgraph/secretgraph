@@ -63,6 +63,7 @@ import { saveAs } from 'file-saver'
 import {
     FastField,
     Field,
+    FieldArray,
     FieldProps,
     Form,
     Formik,
@@ -71,6 +72,7 @@ import {
 } from 'formik'
 import * as React from 'react'
 
+import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
@@ -251,21 +253,25 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
     )
 }
 
-function InnerKeys({
+function UpdateKeysForm({
     url,
-    disabled,
     hashAlgorithmsWorking,
-    hashAlgorithmsRaw,
     generateButton,
     canSelectCluster,
+    viewOnly,
+    disabled,
 }: {
     url: string
-    disabled?: boolean
     hashAlgorithmsWorking: string[]
     hashAlgorithmsRaw: string[]
     generateButton?: boolean
+    viewOnly?: boolean
+    disabled?: boolean
     canSelectCluster: boolean
 }) {
+    const [open, setOpen] = React.useState<'none' | 'private' | 'public'>(
+        'none'
+    )
     const {
         submitForm,
         isSubmitting,
@@ -305,6 +311,7 @@ function InnerKeys({
             require: new Set(['create', 'manage']),
         }).tokens
     }, [config])
+    disabled = disabled || viewOnly || isSubmitting
     return (
         <Form>
             <Grid container spacing={2}>
@@ -314,7 +321,7 @@ function InnerKeys({
                         name="name"
                         fullWidth
                         label="Name"
-                        disabled={isSubmitting || disabled}
+                        disabled={disabled}
                     />
                 </Grid>
                 <Grid item xs={12}>
@@ -324,7 +331,7 @@ function InnerKeys({
                         fullWidth
                         multiline
                         label="Description"
-                        disabled={isSubmitting || disabled}
+                        disabled={disabled}
                     />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -342,7 +349,7 @@ function InnerKeys({
                             component={ClusterSelect}
                             url={url}
                             name="cluster"
-                            disabled={isSubmitting || disabled}
+                            disabled={disabled}
                             label="Cluster"
                             firstIfEmpty
                             tokens={clusterSelectTokens}
@@ -353,110 +360,282 @@ function InnerKeys({
                     <Field
                         component={StateSelect}
                         name="state"
-                        disabled={isSubmitting || disabled}
+                        disabled={disabled}
                         label="State"
                         forKey
                         fullWidth
                     />
                 </Grid>
                 <Grid item xs={12}>
-                    <Field
-                        name="publicKey"
-                        component={FormikTextField}
-                        validate={async (val: string) => {
-                            // validate has side effects
-                            // TODO: fix this
-                            if (!val) {
-                                setJoinedHashes('')
-                                return 'empty'
-                            }
-                            return await calcHashes(
-                                val,
-                                hashAlgorithmsWorking
-                            ).then(
-                                (data) => {
-                                    setJoinedHashes(data.join(', '))
-                                    return null
-                                },
-                                (reason) => {
-                                    console.debug(reason)
-                                    return 'Invalid Key'
-                                }
-                            )
-                        }}
-                        fullWidth
-                        label="Public Key"
-                        disabled={isSubmitting || disabled}
-                        multiline
-                        variant="outlined"
-                        required
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <Field
-                        name="privateKey"
-                        validate={(val: string) => {
-                            if (val) {
-                                calcPublicKey(
-                                    val,
-                                    hashAlgorithmsWorking[0]
-                                ).then(
-                                    async (data) => {
-                                        setFieldValue('publicKey', data, true)
-                                        await calcHashes(
-                                            data,
-                                            hashAlgorithmsWorking
-                                        ).then((data) => {
-                                            setJoinedHashes(data.join(', '))
-                                        })
-                                        return null
-                                    },
-                                    (reason) => {
-                                        console.debug(reason)
-                                        return 'Invalid Key'
-                                    }
-                                )
-                            }
+                    <Typography variant="h5">Public Key</Typography>
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            flexWrap: 'nowrap',
+                            alignContent: 'flex-start',
                         }}
                     >
-                        {(formikProps: FieldProps<any>) => {
-                            return (
-                                <FormikTextField
-                                    {...formikProps}
-                                    fullWidth
-                                    label="Private Key"
-                                    disabled={isSubmitting || disabled}
-                                    type={showKey ? 'text' : 'password'}
-                                    multiline={showKey}
-                                    InputProps={{
-                                        endAdornment: (
+                        {viewOnly ? (
+                            <Typography
+                                variant="body2"
+                                style={{
+                                    whiteSpace: 'pre-line',
+                                    wordBreak: 'break-all',
+                                }}
+                            >
+                                {values.publicKey}
+                            </Typography>
+                        ) : (
+                            <Field
+                                name="publicKey"
+                                component={FormikTextField}
+                                validate={async (val: string) => {
+                                    // validate has side effects
+                                    // TODO: fix this
+                                    if (!val) {
+                                        setJoinedHashes('')
+                                        return 'empty'
+                                    }
+                                    return await calcHashes(
+                                        val,
+                                        hashAlgorithmsWorking
+                                    ).then(
+                                        (data) => {
+                                            setJoinedHashes(data.join(', '))
+                                            return null
+                                        },
+                                        (reason) => {
+                                            console.debug(reason)
+                                            return 'Invalid Key'
+                                        }
+                                    )
+                                }}
+                                fullWidth
+                                label="Public Key"
+                                disabled={disabled}
+                                multiline
+                                minRows={4}
+                                variant="outlined"
+                                required
+                            />
+                        )}
+
+                        <FieldArray name="actionsPublicKey">
+                            {({ remove, replace, push, form }) => {
+                                return (
+                                    <ActionsDialog
+                                        remove={remove}
+                                        replace={replace}
+                                        push={push}
+                                        form={form}
+                                        disabled={disabled}
+                                        handleClose={() => setOpen('none')}
+                                        open={open == 'public'}
+                                        isContent
+                                        isPublic={values.state == 'public'}
+                                        fieldname="actionsPublicKey"
+                                    />
+                                )
+                            }}
+                        </FieldArray>
+                    </div>
+                </Grid>
+                <Grid item xs={12}>
+                    <Typography variant="h5">Private Key</Typography>
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            flexWrap: 'nowrap',
+                            alignContent: 'flex-start',
+                        }}
+                    >
+                        {viewOnly ? (
+                            <>
+                                <Typography
+                                    variant="body2"
+                                    style={{
+                                        whiteSpace: 'pre-line',
+                                        wordBreak: 'break-all',
+                                        flexGrow: 1,
+                                    }}
+                                >
+                                    {values.privateKey
+                                        ? showKey
+                                            ? values.privateKey
+                                            : '-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----'
+                                        : '-'}
+                                </Typography>
+                                {values.privateKey && (
+                                    <>
+                                        <div>
                                             <Tooltip
                                                 title={
                                                     showKey ? 'Hide' : 'Show'
                                                 }
                                             >
-                                                <InputAdornment position="end">
-                                                    <IconButton
-                                                        onClick={(event) => {
-                                                            event.preventDefault()
-                                                            event.stopPropagation()
-                                                            toggleShowKey()
-                                                        }}
-                                                    >
-                                                        {showKey ? (
-                                                            <VisibilityIcon />
-                                                        ) : (
-                                                            <VisibilityOffIcon />
-                                                        )}
-                                                    </IconButton>
-                                                </InputAdornment>
+                                                <IconButton
+                                                    onClick={toggleShowKey}
+                                                >
+                                                    {showKey ? (
+                                                        <VisibilityIcon />
+                                                    ) : (
+                                                        <VisibilityOffIcon />
+                                                    )}
+                                                </IconButton>
                                             </Tooltip>
-                                        ),
-                                    }}
-                                />
-                            )
-                        }}
-                    </Field>
+                                        </div>
+                                        <div>
+                                            <Tooltip title="Copy">
+                                                <IconButton
+                                                    onClick={(event) => {
+                                                        if (
+                                                            navigator.clipboard
+                                                        ) {
+                                                            navigator.clipboard.writeText(
+                                                                values.privateKey
+                                                            )
+                                                            event.preventDefault()
+                                                            return false
+                                                        } else {
+                                                            console.log(
+                                                                'clipboard not supported'
+                                                            )
+                                                        }
+                                                    }}
+                                                >
+                                                    <ContentCopyIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </div>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Field
+                                name="privateKey"
+                                validate={(val: string) => {
+                                    if (val) {
+                                        calcPublicKey(
+                                            val,
+                                            hashAlgorithmsWorking[0]
+                                        ).then(
+                                            async (data) => {
+                                                setFieldValue(
+                                                    'publicKey',
+                                                    data,
+                                                    true
+                                                )
+                                                await calcHashes(
+                                                    data,
+                                                    hashAlgorithmsWorking
+                                                ).then((data) => {
+                                                    setJoinedHashes(
+                                                        data.join(', ')
+                                                    )
+                                                })
+                                                return null
+                                            },
+                                            (reason) => {
+                                                console.debug(reason)
+                                                return 'Invalid Key'
+                                            }
+                                        )
+                                    }
+                                }}
+                            >
+                                {(formikProps: FieldProps<any>) => {
+                                    return (
+                                        <FormikTextField
+                                            {...formikProps}
+                                            fullWidth
+                                            label="Private Key"
+                                            disabled={disabled}
+                                            type={showKey ? 'text' : 'password'}
+                                            multiline={showKey}
+                                            minRows={showKey ? 4 : undefined}
+                                            InputProps={{
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <Tooltip
+                                                            title={
+                                                                showKey
+                                                                    ? 'Hide'
+                                                                    : 'Show'
+                                                            }
+                                                        >
+                                                            <IconButton
+                                                                onClick={(
+                                                                    event
+                                                                ) => {
+                                                                    event.preventDefault()
+                                                                    event.stopPropagation()
+                                                                    toggleShowKey()
+                                                                }}
+                                                            >
+                                                                {showKey ? (
+                                                                    <VisibilityIcon />
+                                                                ) : (
+                                                                    <VisibilityOffIcon />
+                                                                )}
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        {formikProps.field
+                                                            .value &&
+                                                        !formikProps.meta
+                                                            .error ? (
+                                                            <Tooltip title="Copy">
+                                                                <IconButton
+                                                                    onClick={(
+                                                                        event
+                                                                    ) => {
+                                                                        if (
+                                                                            navigator.clipboard
+                                                                        ) {
+                                                                            navigator.clipboard.writeText(
+                                                                                values.privateKey
+                                                                            )
+                                                                            event.preventDefault()
+                                                                            return false
+                                                                        } else {
+                                                                            console.log(
+                                                                                'clipboard not supported'
+                                                                            )
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <ContentCopyIcon />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        ) : null}
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                    )
+                                }}
+                            </Field>
+                        )}
+                        <FieldArray name="actionsPrivateKey">
+                            {({ remove, replace, push, form }) => {
+                                return (
+                                    <ActionsDialog
+                                        remove={remove}
+                                        replace={replace}
+                                        push={push}
+                                        form={form}
+                                        disabled={disabled}
+                                        handleClose={() => setOpen('none')}
+                                        open={open == 'private'}
+                                        isContent
+                                        isPublic={values.state == 'public'}
+                                        fieldname="actionsPrivateKey"
+                                    />
+                                )
+                            }}
+                        </FieldArray>
+                    </div>
                 </Grid>
                 {/*<Grid item xs={12}>
                     <Field
@@ -476,16 +655,16 @@ function InnerKeys({
                     <Button
                         variant="contained"
                         color="primary"
-                        disabled={isSubmitting || !dirty}
+                        disabled={disabled || !dirty}
                         onClick={submitForm}
                     >
                         Submit
                     </Button>
-                    {generateButton && (
+                    {generateButton && !viewOnly && (
                         <Button
                             variant="contained"
                             color="primary"
-                            disabled={isSubmitting}
+                            disabled={disabled}
                             onClick={async () => {
                                 const operationName =
                                     Constants.mapHashNames[
@@ -537,7 +716,8 @@ function InnerKeys({
     )
 }
 
-interface KeysInternProps {
+interface KeysUpdateProps {
+    viewOnly?: boolean
     disabled?: boolean
     hashAlgorithmsRaw: string[]
     hashAlgorithmsWorking: string[]
@@ -557,14 +737,16 @@ interface KeysInternProps {
     url: string
 }
 
-const KeysIntern = ({
+const KeysUpdate = ({
     hashAlgorithmsWorking,
     hashAlgorithmsRaw,
     publicKey,
     privateKey,
     setCluster,
     url,
-}: KeysInternProps) => {
+    viewOnly,
+    disabled,
+}: KeysUpdateProps) => {
     const client = useApolloClient()
     const { baseClient } = React.useContext(Contexts.Clients)
     const { searchCtx } = React.useContext(Contexts.Search)
@@ -572,6 +754,13 @@ const KeysIntern = ({
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
+
+    const actionsPublicKey = mapperToArray(publicKey?.mapper || {}, {
+        lockExisting: !!mainCtx.item,
+    })
+    const actionsPrivateKey = mapperToArray(privateKey?.mapper || {}, {
+        lockExisting: !!mainCtx.item,
+    })
     const initialValues = {
         cluster:
             publicKey?.nodeData?.cluster?.id ||
@@ -591,6 +780,8 @@ const KeysIntern = ({
                   privateKey.data
               ).toString('base64')}\n-----END PRIVATE KEY-----`
             : '',
+        actionsPrivateKey,
+        actionsPublicKey,
     }
     return (
         <Formik
@@ -828,12 +1019,13 @@ const KeysIntern = ({
                     values.cluster && setCluster && setCluster(values.cluster)
                 }, [values.cluster, setCluster])
                 return (
-                    <InnerKeys
+                    <UpdateKeysForm
                         hashAlgorithmsRaw={hashAlgorithmsRaw}
                         hashAlgorithmsWorking={hashAlgorithmsWorking}
                         url={url}
                         generateButton={!publicKey}
                         canSelectCluster={!!setCluster}
+                        viewOnly={viewOnly}
                     />
                 )
             }}
@@ -841,200 +1033,7 @@ const KeysIntern = ({
     )
 }
 
-const ViewKeys = () => {
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { config } = React.useContext(Contexts.InitializedConfig)
-    const theme = useTheme()
-    const [showKey, toggleShowKey] = React.useReducer(
-        (state: boolean) => !state,
-        false
-    )
-    const [data, setData] = React.useState<
-        | (UnpackPromise<ReturnType<typeof loadKeys>> & {
-              key: string
-          })
-        | null
-    >(null)
-    const { data: dataUnfinished, refetch } = useQuery(keysRetrievalQuery, {
-        fetchPolicy: 'cache-and-network',
-        nextFetchPolicy: 'network-only',
-        variables: {
-            id: mainCtx.item as string,
-            authorization: mainCtx.tokens,
-        },
-        onError: console.error,
-    })
-    React.useEffect(() => {
-        if (data) {
-            refetch()
-        }
-    }, [mainCtx.updateId])
-
-    React.useEffect(() => {
-        let active = true
-        const f = async () => {
-            if (!dataUnfinished) {
-                return
-            }
-            const updateOb: Partial<Interfaces.MainContextInterface> = {
-                deleted: dataUnfinished.secretgraph.node.deleted,
-                updateId: dataUnfinished.secretgraph.node.updateId,
-            }
-            for (const tag of dataUnfinished.secretgraph.node.tags) {
-                if (tag.startsWith('key_hash=')) {
-                    updateOb['title'] = tag.match(/=(.*)/)[1]
-                    break
-                }
-            }
-            for (const tag of dataUnfinished.secretgraph.node.tags) {
-                if (tag.startsWith('name=')) {
-                    updateOb['title'] = tag.match(/=(.*)/)[1]
-                    break
-                }
-            }
-            const res = await loadKeys({
-                baseUrl: mainCtx.url as string,
-                data: dataUnfinished,
-                config,
-                authorization: mainCtx.tokens,
-            })
-            if (active) {
-                updateMainCtx(updateOb)
-                setData({ ...res, key: `${new Date().getTime()}` })
-            }
-        }
-        f()
-        return () => {
-            active = false
-        }
-    }, [dataUnfinished, config])
-    if (!data) {
-        return null
-    }
-
-    return (
-        <Grid container spacing={2}>
-            <Grid item xs={12}>
-                <Typography variant="h5">Name</Typography>
-                <Typography variant="body2">
-                    {data.publicKey?.tags?.name
-                        ? data.publicKey.tags.name[0]
-                        : ''}
-                </Typography>
-            </Grid>
-            <Grid item xs={12}>
-                <Typography variant="h5">Description</Typography>
-                <Typography variant="body2">
-                    {data.publicKey?.tags?.description
-                        ? data.publicKey.tags.description[0]
-                        : ''}
-                </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-                <Typography variant="h5">Key hashes</Typography>
-                <Typography variant="body2" style={{ wordBreak: 'break-all' }}>
-                    {data.publicKey.tags.key_hash.join(', ')}
-                </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-                <Typography variant="h5">Cluster</Typography>
-                <Typography variant="body2" style={{ wordBreak: 'break-all' }}>
-                    {data.publicKey.nodeData.cluster.id}
-                </Typography>
-            </Grid>
-            <Grid item xs={12}>
-                <Typography variant="h5">State</Typography>
-                <Typography variant="body2" style={{ wordBreak: 'break-all' }}>
-                    {theme.contentStatesKey.get(data.publicKey.nodeData.state)
-                        ?.label || ''}
-                </Typography>
-            </Grid>
-            <Grid item xs={12}>
-                <Typography variant="h5">Public Key</Typography>
-                <Typography
-                    variant="body2"
-                    style={{ whiteSpace: 'pre-line', wordBreak: 'break-all' }}
-                >
-                    {`-----BEGIN PUBLIC KEY-----\n${Buffer.from(
-                        data.publicKey.data
-                    ).toString('base64')}\n-----END PUBLIC KEY-----`}
-                </Typography>
-            </Grid>
-            <Grid item xs={12}>
-                <Typography variant="h5">Private Key</Typography>
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        flexWrap: 'nowrap',
-                        alignContent: 'flex-start',
-                    }}
-                >
-                    <Typography
-                        variant="body2"
-                        style={{
-                            whiteSpace: 'pre-line',
-                            wordBreak: 'break-all',
-                            flexGrow: 1,
-                        }}
-                    >
-                        {data.privateKey
-                            ? `-----BEGIN PRIVATE KEY-----\n${
-                                  showKey
-                                      ? Buffer.from(
-                                            data.privateKey.data
-                                        ).toString('base64')
-                                      : '...'
-                              }\n-----END PRIVATE KEY-----`
-                            : '-'}
-                    </Typography>
-                    {data.privateKey?.data && (
-                        <>
-                            <div>
-                                <Tooltip title={showKey ? 'Hide' : 'Show'}>
-                                    <IconButton onClick={toggleShowKey}>
-                                        {showKey ? (
-                                            <VisibilityIcon />
-                                        ) : (
-                                            <VisibilityOffIcon />
-                                        )}
-                                    </IconButton>
-                                </Tooltip>
-                            </div>
-                            <div>
-                                <Tooltip title="Copy">
-                                    <IconButton
-                                        onClick={(event) => {
-                                            if (navigator.clipboard) {
-                                                navigator.clipboard.writeText(
-                                                    `-----BEGIN PRIVATE KEY-----\n${Buffer.from(
-                                                        data.privateKey!.data
-                                                    ).toString(
-                                                        'base64'
-                                                    )}\n-----END PRIVATE KEY-----`
-                                                )
-                                                event.preventDefault()
-                                                console.log('url copied')
-                                                return false
-                                            } else {
-                                                console.log(
-                                                    'clipboard not supported'
-                                                )
-                                            }
-                                        }}
-                                    >
-                                        <ContentCopyIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </Grid>
-        </Grid>
-    )
-}
-const EditKeys = () => {
+function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [cluster, setCluster] = React.useState<string | null>(null)
@@ -1045,11 +1044,7 @@ const EditKeys = () => {
         | null
     >(null)
 
-    let {
-        refetch,
-        data: dataUnfinished,
-        loading,
-    } = useQuery(keysRetrievalQuery, {
+    const { refetch, data: dataUnfinished } = useQuery(keysRetrievalQuery, {
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
         variables: {
@@ -1060,7 +1055,6 @@ const EditKeys = () => {
     })
     React.useEffect(() => {
         if (dataUnfinished) {
-            loading = true
             refetch()
         }
     }, [mainCtx.updateId, cluster])
@@ -1123,10 +1117,10 @@ const EditKeys = () => {
     }
 
     return (
-        <KeysIntern
+        <KeysUpdate
             {...data}
             url={mainCtx.url as string}
-            disabled={loading}
+            viewOnly={viewOnly}
             setCluster={
                 mainCtx.tokensPermissions.has('manage') ||
                 mainCtx.tokensPermissions.has('delete')
@@ -1137,7 +1131,11 @@ const EditKeys = () => {
     )
 }
 
-const CreateKeys = () => {
+function ViewKeys() {
+    return <EditKeys viewOnly />
+}
+
+function CreateKeys() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { config } = React.useContext(Contexts.InitializedConfig)
@@ -1160,30 +1158,33 @@ const CreateKeys = () => {
     const { data, loading, refetch } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
-            id: mainCtx.cluster || '',
+            id: mainCtx.cluster || Constants.stubCluster,
             authorization,
         },
         onError: console.error,
     })
     React.useEffect(() => {
         if (data) {
-            refetch()
+            refetch({
+                id: mainCtx.cluster || Constants.stubCluster,
+            })
         }
     }, [mainCtx.cluster])
-    const algos = React.useMemo(() => {
+    const algosAndKey = React.useMemo(() => {
         const hashAlgorithmsRaw =
             data?.secretgraph?.config?.hashAlgorithms || []
         return {
+            key: `${new Date().getTime()}`,
             hashAlgorithmsRaw,
             hashAlgorithmsWorking: findWorkingHashAlgorithms(hashAlgorithmsRaw),
         }
     }, [data?.secretgraph?.config?.hashAlgorithms])
     return (
-        <KeysIntern
+        <KeysUpdate
             url={activeUrl}
             setCluster={(cluster: string) => updateMainCtx({ cluster })}
             disabled={loading}
-            {...algos}
+            {...algosAndKey}
         />
     )
 }
