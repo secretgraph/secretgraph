@@ -1,11 +1,5 @@
-import {
-    ApolloClient,
-    ApolloError,
-    ApolloQueryResult,
-    useApolloClient,
-    useQuery,
-} from '@apollo/client'
-import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import { ApolloClient, useApolloClient, useQuery } from '@apollo/client'
+import DownloadIcon from '@mui/icons-material/Download'
 import SecurityIcon from '@mui/icons-material/Security'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
@@ -14,23 +8,17 @@ import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import LinearProgress from '@mui/material/LinearProgress'
-import { Theme } from '@mui/material/styles'
-import { useTheme } from '@mui/material/styles'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import Box from '@mui/system/Box'
 import {
     findPublicKeyQuery,
     getContentConfigurationQuery,
     keysRetrievalQuery,
 } from '@secretgraph/graphql-queries/content'
-import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import {
-    RequireAttributes,
-    UnpackPromise,
-    ValueType,
-} from '@secretgraph/misc/typing'
+import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import {
     authInfoFromConfig,
@@ -65,7 +53,6 @@ import {
     FieldProps,
     Form,
     Formik,
-    FormikValues,
     useFormikContext,
 } from 'formik'
 import * as React from 'react'
@@ -308,7 +295,7 @@ function UpdateKeysForm({
         calcHashes(values.publicKey, hashAlgorithmsWorking).then(
             (data) => {
                 if (active) {
-                    setJoinedHashes(data.join(', '))
+                    setJoinedHashes(data.join('\n'))
                 }
             },
             (reason) => {
@@ -393,16 +380,21 @@ function UpdateKeysForm({
                         disabled={disabled}
                     />
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                    <Typography variant="h5">Key hashes</Typography>
+                <Grid item xs={12}>
+                    <Typography variant="h5" gutterBottom>
+                        Key hashes
+                    </Typography>
                     <Typography
                         variant="body2"
-                        style={{ wordBreak: 'break-all' }}
+                        style={{
+                            wordBreak: 'break-all',
+                            whiteSpace: 'pre-line',
+                        }}
                     >
                         {joinedHashes}
                     </Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12}>
                     {canSelectCluster ? (
                         <Field
                             component={ClusterSelect}
@@ -420,13 +412,15 @@ function UpdateKeysForm({
                         component={StateSelect}
                         name="state"
                         disabled={disabled}
-                        label="State"
+                        label="State of Public Key"
                         forKey
                         fullWidth
                     />
                 </Grid>
                 <Grid item xs={12}>
-                    <Typography variant="h5">Public Key</Typography>
+                    <Typography variant="h5" gutterBottom>
+                        Public Key
+                    </Typography>
                     <div
                         style={{
                             display: 'flex',
@@ -478,17 +472,45 @@ function UpdateKeysForm({
                                 required
                             />
                         )}
-                        <Tooltip title="Public Key Actions">
-                            <span>
-                                <IconButton onClick={() => setOpen('public')}>
-                                    <SecurityIcon />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
+                        <div>
+                            <Tooltip title="Save">
+                                <span>
+                                    <IconButton
+                                        disabled={!values.publicKey}
+                                        onClick={(event) => {
+                                            saveAs(
+                                                new File(
+                                                    [values.publicKey],
+                                                    'pubkey.pem',
+                                                    {
+                                                        type: 'text/plain;charset=utf-8',
+                                                    }
+                                                )
+                                            )
+                                        }}
+                                    >
+                                        <DownloadIcon />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        </div>
+                        <div>
+                            <Tooltip title="Public Key Actions">
+                                <span>
+                                    <IconButton
+                                        onClick={() => setOpen('public')}
+                                    >
+                                        <SecurityIcon />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        </div>
                     </div>
                 </Grid>
                 <Grid item xs={12}>
-                    <Typography variant="h5">Private Key</Typography>
+                    <Typography variant="h5" gutterBottom>
+                        Private Key
+                    </Typography>
                     <div
                         style={{
                             display: 'flex',
@@ -612,25 +634,23 @@ function UpdateKeysForm({
                             </Field>
                         )}
                         <div>
-                            <Tooltip title="Copy">
+                            <Tooltip title="Save">
                                 <span>
                                     <IconButton
                                         disabled={!values.privateKey}
                                         onClick={(event) => {
-                                            if (navigator.clipboard) {
-                                                navigator.clipboard.writeText(
-                                                    values.privateKey
+                                            saveAs(
+                                                new File(
+                                                    [values.privateKey],
+                                                    'privkey.pem',
+                                                    {
+                                                        type: 'text/plain;charset=utf-8',
+                                                    }
                                                 )
-                                                event.preventDefault()
-                                                return false
-                                            } else {
-                                                console.log(
-                                                    'clipboard not supported'
-                                                )
-                                            }
+                                            )
                                         }}
                                     >
-                                        <ContentCopyIcon />
+                                        <DownloadIcon />
                                     </IconButton>
                                 </span>
                             </Tooltip>
@@ -650,10 +670,65 @@ function UpdateKeysForm({
                     </div>
                 </Grid>
                 <Grid item xs={12}>
+                    {generateButton && !viewOnly && (
+                        <Box
+                            sx={{ marginRight: (theme) => theme.spacing(2) }}
+                            component="span"
+                        >
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                disabled={disabled}
+                                onClick={async () => {
+                                    const operationName =
+                                        Constants.mapHashNames[
+                                            hashAlgorithmsWorking[0]
+                                        ].operationName
+                                    const { publicKey, privateKey } =
+                                        (await crypto.subtle.generateKey(
+                                            {
+                                                name: 'RSA-OAEP',
+                                                modulusLength: 4096,
+                                                publicExponent: new Uint8Array([
+                                                    1, 0, 1,
+                                                ]),
+                                                hash: operationName,
+                                            },
+                                            true,
+                                            [
+                                                'wrapKey',
+                                                'unwrapKey',
+                                                'encrypt',
+                                                'decrypt',
+                                            ]
+                                        )) as Required<CryptoKeyPair>
+                                    setValues(
+                                        {
+                                            ...values,
+                                            publicKey: `-----BEGIN PUBLIC KEY-----\n${await serializeToBase64(
+                                                publicKey
+                                            )}\n-----END PUBLIC KEY-----`,
+                                            privateKey: `-----BEGIN PRIVATE KEY-----\n${await serializeToBase64(
+                                                privateKey
+                                            )}\n-----END PRIVATE KEY-----`,
+                                        },
+                                        false
+                                    )
+                                    setErrors({
+                                        ...errors,
+                                        publicKey: undefined,
+                                        privateKey: undefined,
+                                    })
+                                }}
+                            >
+                                Generate
+                            </Button>
+                        </Box>
+                    )}
                     <Field
                         name="signWith"
                         type="checkbox"
-                        Label={{ label: 'Sign updates with Key' }}
+                        Label={{ label: 'Sign updates with Private Key' }}
                         disabled={disabled || !values.privateKey}
                         component={FormikCheckboxWithLabel}
                     />
@@ -681,56 +756,6 @@ function UpdateKeysForm({
                     >
                         Submit
                     </Button>
-                    {generateButton && !viewOnly && (
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            disabled={disabled}
-                            onClick={async () => {
-                                const operationName =
-                                    Constants.mapHashNames[
-                                        hashAlgorithmsWorking[0]
-                                    ].operationName
-                                const { publicKey, privateKey } =
-                                    (await crypto.subtle.generateKey(
-                                        {
-                                            name: 'RSA-OAEP',
-                                            modulusLength: 4096,
-                                            publicExponent: new Uint8Array([
-                                                1, 0, 1,
-                                            ]),
-                                            hash: operationName,
-                                        },
-                                        true,
-                                        [
-                                            'wrapKey',
-                                            'unwrapKey',
-                                            'encrypt',
-                                            'decrypt',
-                                        ]
-                                    )) as Required<CryptoKeyPair>
-                                setValues(
-                                    {
-                                        ...values,
-                                        publicKey: `-----BEGIN PUBLIC KEY-----\n${await serializeToBase64(
-                                            publicKey
-                                        )}\n-----END PUBLIC KEY-----`,
-                                        privateKey: `-----BEGIN PRIVATE KEY-----\n${await serializeToBase64(
-                                            privateKey
-                                        )}\n-----END PRIVATE KEY-----`,
-                                    },
-                                    false
-                                )
-                                setErrors({
-                                    ...errors,
-                                    publicKey: undefined,
-                                    privateKey: undefined,
-                                })
-                            }}
-                        >
-                            Generate
-                        </Button>
-                    )}
                 </Grid>
             </Grid>
         </Form>

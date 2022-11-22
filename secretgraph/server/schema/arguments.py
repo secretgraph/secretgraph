@@ -30,6 +30,7 @@ class ActionInput:
 
 @strawberry.input
 class ContentKeyInput:
+    # there is no privateState as it is always protected
     publicKey: Optional[Upload] = strawberry.field(
         description="Cleartext public key in der format", default=None
     )

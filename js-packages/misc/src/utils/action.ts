@@ -359,7 +359,7 @@ export async function transformActions({
         tokens: {},
         certificates: {},
     }
-    const hashes: Interfaces.ConfigClusterInterface<null>['hashes'] = {}
+    const hashes: Interfaces.ConfigHashesInterface<null> = {}
     await Promise.all(
         actions.map(async (val) => {
             if (val.readonly) {
@@ -461,6 +461,7 @@ export async function transformActions({
     return {
         configUpdate,
         actions: finishedActions,
+        // hashes for updating hosts in configUpdate
         hashes,
     }
 }

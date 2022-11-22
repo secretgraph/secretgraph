@@ -67,14 +67,18 @@ interface ConfigCertificateValue {
     signWith: boolean
 }
 
+export type ConfigHashesInterface<N = never> = {
+    [hash: string]: ConfigHashValue | N
+}
+
 export interface ConfigContentInterface<N = never> {
-    hashes: { [hash: string]: ConfigHashValue | N }
+    hashes: ConfigHashesInterface<N>
     //trusted: string[]
     cluster: string | N
 }
 
 export interface ConfigClusterInterface<N = never> {
-    hashes: { [hash: string]: ConfigHashValue | N }
+    hashes: ConfigHashesInterface<N>
     //trusted: string[]
 }
 
