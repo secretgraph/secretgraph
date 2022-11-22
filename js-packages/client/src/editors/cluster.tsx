@@ -220,6 +220,7 @@ const ClusterIntern = ({
                         configUpdate.certificates[digestCert] = {
                             data: await privPromise,
                             note: 'initial certificate',
+                            signWith: true,
                         }
                     }
 

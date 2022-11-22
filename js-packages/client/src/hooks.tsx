@@ -47,6 +47,7 @@ export function mapperToArray(
                     oldHash: params.oldHash || undefined,
                     note: entry.note,
                     update: entry.hasUpdate,
+                    signWith: entry.signWith,
                     delete: false,
                     readonly: false,
                     locked: true,

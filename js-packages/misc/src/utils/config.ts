@@ -74,6 +74,7 @@ export function cleanConfig(
             config.certificates[key] = {
                 data: val,
                 note: '',
+                signWith: false,
             }
             hasChanges = true
         }
@@ -676,6 +677,8 @@ export function authInfoFromConfig({
     const host = config.hosts[new URL(url, window.location.href).href]
     if (host) {
         if (!props.contents || props.clusters) {
+            //  either the specified clusters or all found in host in case
+            // no contents and clusters are specified
             const clusters = props.clusters
                 ? props.clusters
                 : Object.keys(host.clusters)
@@ -738,11 +741,12 @@ export function authInfoFromConfig({
         }
     }
 
-    // sorted is better for cache
+    // sorted is better for caching
     return {
         certificateHashes: [...certificateHashes].sort(),
         hashes: [...hashes].sort(),
         tokens: [...tokens].sort(),
+        // only informative
         types,
     }
 }
@@ -755,6 +759,7 @@ export function extractPrivKeys({
     readonly config: Interfaces.ConfigInterface
     readonly url: string
     readonly clusters?: Set<string>
+    readonly onlySignKeys?: boolean
     readonly hashAlgorithm: string
     old?: { [hash: string]: Promise<CryptoKey> }
 }): { [hash: string]: Promise<CryptoKey> } {
@@ -767,9 +772,14 @@ export function extractPrivKeys({
         }
         const clusterconf = clusters[id]
         for (const hash in clusterconf.hashes) {
-            if (config.certificates[hash] && !privkeys[hash]) {
+            const certEntry = config.certificates[hash]
+            if (
+                certEntry &&
+                !privkeys[hash] &&
+                (!props.onlySignKeys || certEntry.signWith)
+            ) {
                 privkeys[hash] = unserializeToCryptoKey(
-                    config.certificates[hash].data,
+                    certEntry.data,
                     {
                         name: 'RSA-OAEP',
                         hash: Constants.mapHashNames[props.hashAlgorithm]

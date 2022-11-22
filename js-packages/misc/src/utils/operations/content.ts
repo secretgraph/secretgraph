@@ -3,6 +3,7 @@ import {
     createContentMutation,
     findConfigQuery,
     getContentConfigurationQuery,
+    updateConfigQuery,
     updateContentMutation,
 } from '@secretgraph/graphql-queries/content'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
@@ -407,8 +408,8 @@ async function updateRemoteConfig({
     slotHash?: string
     node?: any
     config: Interfaces.ConfigInterface
-    privkeys: CryptoKey[]
-    pubkeys: CryptoKey[]
+    privkeys: Parameters<typeof encryptSharedKey>[1]
+    pubkeys: Parameters<typeof createSignatureReferences>[1]
     hashAlgorithm: string
 }): Promise<[Interfaces.ConfigInterface, number] | false> {
     if (!node) {
@@ -452,8 +453,8 @@ async function updateRemoteConfig({
         client,
         id: node.id,
         updateId: node.updateId,
-        privkeys: Object.values(privkeys),
-        pubkeys: Object.values(pubkeys),
+        privkeys: privkeys,
+        pubkeys: pubkeys,
         state: 'protected',
         config: mergedConfig,
         hashAlgorithm,
@@ -532,7 +533,7 @@ export async function updateConfigRemoteReducer(
         )
     )
     const configQueryRes = await client.query({
-        query: findConfigQuery,
+        query: updateConfigQuery,
         variables: {
             cluster: resconf[0].configCluster,
             authorization: authInfo.tokens,
@@ -552,26 +553,26 @@ export async function updateConfigRemoteReducer(
         throw Error('could not find main config object')
     }
 
-    const privkeys = await Promise.all(
-        Object.values(
-            extractPrivKeys({
-                config: resconf[0],
-                url: resconf[0].baseUrl,
-                hashAlgorithm: algos[0],
-            })
-        )
-    )
-    const pubkeys = await Promise.all(
-        privkeys.map((privKey: CryptoKey) =>
-            unserializeToCryptoKey(
-                privKey,
-                {
-                    name: 'RSA-OAEP',
-                    hash: algos[0],
-                },
-                'publicKey'
-            )
-        )
+    const privkeys = extractPrivKeys({
+        config: resconf[0],
+        url: resconf[0].baseUrl,
+        hashAlgorithm: algos[0],
+        onlySignKeys: true,
+    })
+
+    const privkeysSign = Object.values(privkeys)
+    //
+    const pubkeys = Object.values(
+        extractPubKeysCluster({
+            node: nodes[mainNodeIndex],
+            source: privkeys,
+            onlySeen: true,
+            authorization: authInfo.tokens,
+            params: {
+                name: 'RSA-OAEP',
+                hash: algos[0],
+            },
+        })
     )
     let resultPromises = []
     for (let { node } of nodes) {
@@ -583,7 +584,7 @@ export async function updateConfigRemoteReducer(
                         config: resconf[0],
                         authInfo: authInfo as Interfaces.AuthInfoInterface,
                         client,
-                        privkeys,
+                        privkeys: privkeysSign,
                         pubkeys,
                         hashAlgorithm: algos[0],
                         node: attempted == 0 ? node : undefined,
@@ -682,6 +683,7 @@ export async function updateOrCreateContentWithConfig({
         url,
         hashAlgorithm,
         clusters: new Set([cluster]),
+        onlySignKeys: true,
     })
     let pubkeys: { [hash: string]: Promise<CryptoKey> } = {}
     if (state != 'public') {
@@ -709,7 +711,7 @@ export async function updateOrCreateContentWithConfig({
             client: itemClient,
             config,
             cluster,
-            privkeys: await Promise.all(Object.values(privkeys)),
+            privkeys: Object.values(privkeys),
             pubkeys: Object.values(pubkeys),
             hashAlgorithm,
             actions: finishedActions,

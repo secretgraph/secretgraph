@@ -105,6 +105,7 @@ interface ActionsDialogProps
     extends Pick<FieldArrayRenderProps, 'remove' | 'replace' | 'push'>,
         Omit<DialogProps, 'children' | 'onClose'> {
     disabled?: boolean
+    title?: string
     isContent: boolean
     isPublic: boolean
     fieldname?: string
@@ -126,6 +127,7 @@ export default function ActionsDialog({
     maxWidth = 'xl',
     fullWidth = true,
     fieldname = 'actions',
+    title = 'Access Control',
     ...dialogProps
 }: ActionsDialogProps) {
     const tokens = React.useMemo(() => {
@@ -191,7 +193,7 @@ export default function ActionsDialog({
             onClose={(ev) => handleClose()}
             {...dialogProps}
         >
-            <DialogTitle>Access Control</DialogTitle>
+            <DialogTitle>{title}</DialogTitle>
             <DialogContent>
                 <div>
                     <TextField label="Search" type="search" />

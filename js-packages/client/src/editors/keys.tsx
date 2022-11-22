@@ -6,6 +6,7 @@ import {
     useQuery,
 } from '@apollo/client'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import SecurityIcon from '@mui/icons-material/Security'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import Button from '@mui/material/Button'
@@ -43,10 +44,7 @@ import {
     extractTagsRaw,
     unserializeToCryptoKey,
 } from '@secretgraph/misc/utils/encryption'
-import {
-    extractPubKeysCluster,
-    extractPubKeysReferences,
-} from '@secretgraph/misc/utils/graphql'
+import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
 import {
     findWorkingHashAlgorithms,
     hashKey,
@@ -74,12 +72,12 @@ import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
+import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
 import ClusterSelect from '../components/forms/ClusterSelect'
 import StateSelect from '../components/forms/StateSelect'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
-import { newClusterLabel } from '../messages'
 
 async function loadKeys({
     data,
@@ -108,6 +106,7 @@ async function loadKeys({
             tags: { [key: string]: string[] }
             data: ArrayBuffer
             nodeData: any
+            signWith: boolean
             mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
         }
     }
@@ -174,14 +173,33 @@ async function loadKeys({
                     }
                     const host = config.hosts[baseUrl]
                     const contentstuff = host && host.contents[nodeData.id]
+                    const clusterstuff =
+                        host &&
+                        nodeData?.cluster?.id &&
+                        host.clusters[nodeData.cluster.id]
                     await unserializeToCryptoKey(
                         val.data,
                         keyParams,
                         'privateKey'
                     )
+                    let certificateInConfig = null
+                    for (const tag of (nodeData?.tags || []) as string[]) {
+                        if (
+                            tag.startsWith('key_hash=') &&
+                            config.certificates[tag.slice(9)]
+                        ) {
+                            certificateInConfig =
+                                config.certificates[tag.slice(9)]
+                            break
+                        }
+                    }
+
                     results['privateKey'] = {
                         data: val.data,
                         tags: val.tags,
+                        signWith: certificateInConfig
+                            ? certificateInConfig.signWith
+                            : false,
                         nodeData: val.nodeData,
                         mapper: await generateActionMapper({
                             knownHashesContent: [
@@ -192,6 +210,7 @@ async function loadKeys({
                                 nodeData?.cluster?.availableActions,
                                 contentstuff &&
                                     host.clusters[contentstuff.cluster]?.hashes,
+                                clusterstuff && clusterstuff.hashes,
                             ],
                             hashAlgorithms: results['hashAlgorithmsWorking'],
                             config,
@@ -292,7 +311,9 @@ function UpdateKeysForm({
                     setJoinedHashes(data.join(', '))
                 }
             },
-            (reason) => {}
+            (reason) => {
+                setJoinedHashes('')
+            }
         )
         return () => {
             active = false
@@ -314,6 +335,44 @@ function UpdateKeysForm({
     disabled = disabled || viewOnly || isSubmitting
     return (
         <Form>
+            <FieldArray name="actionsPrivateKey">
+                {({ remove, replace, push, form }) => {
+                    return (
+                        <ActionsDialog
+                            remove={remove}
+                            replace={replace}
+                            push={push}
+                            form={form}
+                            disabled={disabled}
+                            handleClose={() => setOpen('none')}
+                            open={open == 'private'}
+                            isContent
+                            isPublic={false}
+                            fieldname="actionsPrivateKey"
+                            title="Access Control of Private Key"
+                        />
+                    )
+                }}
+            </FieldArray>
+            <FieldArray name="actionsPublicKey">
+                {({ remove, replace, push, form }) => {
+                    return (
+                        <ActionsDialog
+                            remove={remove}
+                            replace={replace}
+                            push={push}
+                            form={form}
+                            disabled={disabled}
+                            handleClose={() => setOpen('none')}
+                            open={open == 'public'}
+                            isContent
+                            isPublic={values.state == 'public'}
+                            fieldname="actionsPublicKey"
+                            title="Access Control of Public Key"
+                        />
+                    )
+                }}
+            </FieldArray>
             <Grid container spacing={2}>
                 <Grid item xs={12}>
                     <FastField
@@ -412,7 +471,6 @@ function UpdateKeysForm({
                                     )
                                 }}
                                 fullWidth
-                                label="Public Key"
                                 disabled={disabled}
                                 multiline
                                 minRows={4}
@@ -420,25 +478,13 @@ function UpdateKeysForm({
                                 required
                             />
                         )}
-
-                        <FieldArray name="actionsPublicKey">
-                            {({ remove, replace, push, form }) => {
-                                return (
-                                    <ActionsDialog
-                                        remove={remove}
-                                        replace={replace}
-                                        push={push}
-                                        form={form}
-                                        disabled={disabled}
-                                        handleClose={() => setOpen('none')}
-                                        open={open == 'public'}
-                                        isContent
-                                        isPublic={values.state == 'public'}
-                                        fieldname="actionsPublicKey"
-                                    />
-                                )
-                            }}
-                        </FieldArray>
+                        <Tooltip title="Public Key Actions">
+                            <span>
+                                <IconButton onClick={() => setOpen('public')}>
+                                    <SecurityIcon />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
                     </div>
                 </Grid>
                 <Grid item xs={12}>
@@ -486,29 +532,6 @@ function UpdateKeysForm({
                                                 </IconButton>
                                             </Tooltip>
                                         </div>
-                                        <div>
-                                            <Tooltip title="Copy">
-                                                <IconButton
-                                                    onClick={(event) => {
-                                                        if (
-                                                            navigator.clipboard
-                                                        ) {
-                                                            navigator.clipboard.writeText(
-                                                                values.privateKey
-                                                            )
-                                                            event.preventDefault()
-                                                            return false
-                                                        } else {
-                                                            console.log(
-                                                                'clipboard not supported'
-                                                            )
-                                                        }
-                                                    }}
-                                                >
-                                                    <ContentCopyIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </div>
                                     </>
                                 )}
                             </>
@@ -550,7 +573,6 @@ function UpdateKeysForm({
                                         <FormikTextField
                                             {...formikProps}
                                             fullWidth
-                                            label="Private Key"
                                             disabled={disabled}
                                             type={showKey ? 'text' : 'password'}
                                             multiline={showKey}
@@ -581,34 +603,6 @@ function UpdateKeysForm({
                                                                 )}
                                                             </IconButton>
                                                         </Tooltip>
-                                                        {formikProps.field
-                                                            .value &&
-                                                        !formikProps.meta
-                                                            .error ? (
-                                                            <Tooltip title="Copy">
-                                                                <IconButton
-                                                                    onClick={(
-                                                                        event
-                                                                    ) => {
-                                                                        if (
-                                                                            navigator.clipboard
-                                                                        ) {
-                                                                            navigator.clipboard.writeText(
-                                                                                values.privateKey
-                                                                            )
-                                                                            event.preventDefault()
-                                                                            return false
-                                                                        } else {
-                                                                            console.log(
-                                                                                'clipboard not supported'
-                                                                            )
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <ContentCopyIcon />
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                        ) : null}
                                                     </InputAdornment>
                                                 ),
                                             }}
@@ -617,25 +611,52 @@ function UpdateKeysForm({
                                 }}
                             </Field>
                         )}
-                        <FieldArray name="actionsPrivateKey">
-                            {({ remove, replace, push, form }) => {
-                                return (
-                                    <ActionsDialog
-                                        remove={remove}
-                                        replace={replace}
-                                        push={push}
-                                        form={form}
-                                        disabled={disabled}
-                                        handleClose={() => setOpen('none')}
-                                        open={open == 'private'}
-                                        isContent
-                                        isPublic={values.state == 'public'}
-                                        fieldname="actionsPrivateKey"
-                                    />
-                                )
-                            }}
-                        </FieldArray>
+                        <div>
+                            <Tooltip title="Copy">
+                                <span>
+                                    <IconButton
+                                        disabled={!values.privateKey}
+                                        onClick={(event) => {
+                                            if (navigator.clipboard) {
+                                                navigator.clipboard.writeText(
+                                                    values.privateKey
+                                                )
+                                                event.preventDefault()
+                                                return false
+                                            } else {
+                                                console.log(
+                                                    'clipboard not supported'
+                                                )
+                                            }
+                                        }}
+                                    >
+                                        <ContentCopyIcon />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        </div>
+                        <div>
+                            <Tooltip title="Private Key Actions">
+                                <span>
+                                    <IconButton
+                                        onClick={() => setOpen('private')}
+                                        disabled={!values.privateKey}
+                                    >
+                                        <SecurityIcon />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        </div>
                     </div>
+                </Grid>
+                <Grid item xs={12}>
+                    <Field
+                        name="signWith"
+                        type="checkbox"
+                        Label={{ label: 'Sign updates with Key' }}
+                        disabled={disabled || !values.privateKey}
+                        component={FormikCheckboxWithLabel}
+                    />
                 </Grid>
                 {/*<Grid item xs={12}>
                     <Field
@@ -731,6 +752,7 @@ interface KeysUpdateProps {
         tags: { [key: string]: string[] }
         data: ArrayBuffer
         nodeData: any
+        signWith: boolean
         mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     }
     setCluster?: (arg: string) => void
@@ -780,6 +802,7 @@ const KeysUpdate = ({
                   privateKey.data
               ).toString('base64')}\n-----END PRIVATE KEY-----`
             : '',
+        signWith: privateKey ? privateKey.signWith : false,
         actionsPrivateKey,
         actionsPublicKey,
     }
@@ -830,12 +853,15 @@ const KeysUpdate = ({
                         privateKeys = extractPrivKeys({
                             config,
                             url,
+                            onlySignKeys: true,
                             hashAlgorithm: hashAlgorithmsWorking[0],
                         })
                         publicKeys = extractPubKeysCluster({
                             node: pubkeysResult.data.secretgraph.node,
                             authorization: tokensTarget,
                             params: keyParams,
+                            source: privateKeys,
+                            onlySeen: true,
                         })
                     }
                     let privKey = null
@@ -934,9 +960,7 @@ const KeysUpdate = ({
                                 `description=${values.description}`,
                                 `name=${values.name}`,
                             ],
-                            privkeys: await Promise.all(
-                                Object.values(privateKeys)
-                            ),
+                            privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
                             hashAlgorithm: hashAlgorithmsWorking[0],
                             authorization: mainCtx.tokens,
@@ -951,9 +975,7 @@ const KeysUpdate = ({
                                 privateTags: privateKey.nodeData.tags.filter(
                                     (tag: string) => tag.startsWith('key=')
                                 ),
-                                privkeys: await Promise.all(
-                                    Object.values(privateKeys)
-                                ),
+                                privkeys: Object.values(privateKeys),
                                 pubkeys: Object.values(publicKeys),
                                 hashAlgorithm: hashAlgorithmsWorking[0],
                                 authorization: mainCtx.tokens,
@@ -993,6 +1015,7 @@ const KeysUpdate = ({
                                                           privKey
                                                       ),
                                                       note: '',
+                                                      signWith: false,
                                                   }
                                                 : null,
                                         },
@@ -1026,6 +1049,7 @@ const KeysUpdate = ({
                         generateButton={!publicKey}
                         canSelectCluster={!!setCluster}
                         viewOnly={viewOnly}
+                        disabled={disabled}
                     />
                 )
             }}

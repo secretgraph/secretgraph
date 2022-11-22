@@ -64,6 +64,7 @@ interface ConfigTokenValue {
 interface ConfigCertificateValue {
     data: string
     note: string
+    signWith: boolean
 }
 
 export interface ConfigContentInterface<N = never> {

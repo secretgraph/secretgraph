@@ -9,13 +9,15 @@ const actionMatcher = /:(.*)/
 
 export interface CertificateEntry {
     type: 'certificate'
+    signWith: boolean
     newHash: string
     oldHash: null | string
     note: string
     data: string
     hasUpdate: boolean
 }
-export interface ActionMapperEntry extends Omit<CertificateEntry, 'type'> {
+export interface ActionMapperEntry
+    extends Omit<CertificateEntry, 'type' | 'signWith'> {
     type: 'action'
     // name, is cluster (unknown is also false)
     actions: Set<`${string},${'true' | 'false'}`>
@@ -27,6 +29,7 @@ export interface CertificateInputEntry {
     newHash: string
     oldHash?: string
     note: string
+    signWith: boolean
     update?: boolean
     delete?: boolean
     readonly?: boolean
@@ -34,7 +37,7 @@ export interface CertificateInputEntry {
 }
 
 export interface ActionInputEntry
-    extends Omit<CertificateInputEntry, 'type' | 'locked'> {
+    extends Omit<CertificateInputEntry, 'type' | 'locked' | 'signWith'> {
     type: 'action'
     start: Date | ''
     stop: Date | ''
@@ -248,6 +251,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note,
                     data: data.data,
+                    signWith: data.signWith,
                     hasUpdate,
                 }
             } else if (config.certificates[hash]) {
@@ -258,6 +262,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note,
                     data: data.data,
+                    signWith: data.signWith,
                     hasUpdate,
                 }
             }
@@ -447,6 +452,7 @@ export async function transformActions({
                     configUpdate.certificates[activeHash] = {
                         data: val.data,
                         note: val.note,
+                        signWith: val.signWith,
                     }
                 }
             }

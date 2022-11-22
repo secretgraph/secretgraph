@@ -193,6 +193,7 @@ class Command(BaseCommand):
                         publicKey_hash: {
                             "data": privateKey_b64,
                             "note": "initial certificate",
+                            "signWith": True,
                         }
                     },
                     "tokens": {

@@ -175,6 +175,7 @@ export async function initializeCluster({
         // private key is serialized
         data: await serializeToBase64(privateKey),
         note: 'initial certificate',
+        signWith: true,
     }
     config.tokens[digestManageKey] = {
         data: manage_keyb64,

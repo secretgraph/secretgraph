@@ -80,7 +80,7 @@ async function createSignatureReferences_helper(
         signkey = key as Interfaces.KeyInput
 
         // serialize to spki of publickey for consistent hash
-        const result = await hashKey(signkey, '' + hashalgo)
+        const result = await hashKey(signkey, hashalgo)
         hash = result.hash
     }
 
@@ -204,29 +204,34 @@ export function encryptSharedKey(
     }
     return [
         Promise.all(references).then((val) =>
-            val.filter((vl) => vl)
+            val.filter((val) => val)
         ) as Promise<Interfaces.ReferenceInterface[]>,
         Promise.all(tags),
     ]
 }
 
-// onlyPubkeys skips checks which can fail in case of missing tag inclusion
+// onlyPubkeys enforces checks which can fail in case of missing tag inclusion
 // this is the case with the findConfigQuery
 export function extractPubKeysCluster(props: {
     readonly node: any
     readonly authorization: string[]
     readonly params: any
-    old?: { [hash: string]: Promise<CryptoKey> }
+    // can be used to boost speed; in case the key is already available it is used and not downloaded
+    // if not onlySeen is specified, then source is merged
+    readonly source?: { [hash: string]: Promise<CryptoKey> }
     readonly onlyPubkeys?: boolean
+    readonly onlySeen?: boolean
 }): { [hash: string]: Promise<CryptoKey> } {
-    const pubkeys = props.old || {}
+    const pubkeys = Object.assign({}, props.source || {})
     const contents = props.node.cluster
         ? props.node.cluster.contents.edges
         : props.node.contents.edges
+    const seen = new Set<string>()
     for (const { node: keyNode } of contents) {
         if (!props.onlyPubkeys && keyNode.type != 'PublicKey') {
             continue
         }
+        seen.add(keyNode.contentHash)
         if (!pubkeys[keyNode.contentHash]) {
             pubkeys[keyNode.contentHash] = fetch(keyNode.link, {
                 headers: {
@@ -249,25 +254,54 @@ export function extractPubKeysCluster(props: {
                     throw exc
                 }
             })
+        } else {
+            pubkeys[keyNode.contentHash] = unserializeToCryptoKey(
+                pubkeys[keyNode.contentHash],
+                props.params,
+                'publicKey'
+            )
+        }
+    }
+    if (props.onlySeen) {
+        for (const key of Object.keys(pubkeys)) {
+            if (!seen.has(key)) {
+                delete pubkeys[key]
+            }
+        }
+    } else {
+        // we need to convert the rest of source
+        for (const key of Object.keys(pubkeys)) {
+            if (!seen.has(key)) {
+                pubkeys[key] = unserializeToCryptoKey(
+                    pubkeys[key],
+                    props.params,
+                    'publicKey'
+                )
+            }
         }
     }
     return pubkeys
 }
 
+// TODO: rebuild this function, to check signatures
+// another purpose it doesn't serve
 export function extractPubKeysReferences(props: {
     readonly node: any
     readonly authorization: string[]
     readonly params: any
     old?: { [hash: string]: Promise<CryptoKey> }
     readonly onlyPubkeys?: boolean
+    readonly onlySeen?: boolean
 }): { [hash: string]: Promise<CryptoKey> } {
-    const pubkeys = props.old || {}
+    const pubkeys = Object.assign({}, props.old || {})
+    const seen = new Set<string>()
     for (const {
         node: { target: keyNode },
     } of props.node.references.edges) {
         if (!props.onlyPubkeys && keyNode.type == 'PublicKey') {
             continue
         }
+        seen.add(keyNode.contentHash)
         if (!pubkeys[keyNode.contentHash]) {
             pubkeys[keyNode.contentHash] = fetch(keyNode.link, {
                 headers: {
@@ -289,6 +323,19 @@ export function extractPubKeysReferences(props: {
                     throw exc
                 }
             })
+        } else {
+            pubkeys[keyNode.contentHash] = unserializeToCryptoKey(
+                pubkeys[keyNode.contentHash],
+                props.params,
+                'publicKey'
+            )
+        }
+    }
+    if (props.onlySeen) {
+        for (const key of Object.keys(pubkeys)) {
+            if (!seen.has(key)) {
+                delete pubkeys[key]
+            }
         }
     }
     return pubkeys

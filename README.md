@@ -397,7 +397,6 @@ now you have a decryption key to the private key, that is very dangerous
 -   trustedKeys logic. Prevent server-side injection of keys
     -   Needs much more work especially on gui side
     -   a better ActionDialog is neccessary
--   disallow non global ids? Would ease implementation
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config
 -   modernize ActionDialog, redesign, multi column?
@@ -414,6 +413,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO later
 
+-   disallow non global ids? Would ease implementation
 -   encrypt Config set with saveConfig/loaded with loadConfigSync via a static key
     -   via var
 -   port to real filters

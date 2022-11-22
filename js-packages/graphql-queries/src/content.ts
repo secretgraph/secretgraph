@@ -532,6 +532,76 @@ export const findConfigQuery = gql`
     }
 `
 
+export const updateConfigQuery = gql`
+    query contentUpdateConfigQuery(
+        $cluster: ID!
+        $authorization: [String!]
+        $configContentHashes: [String!]
+        $configKeyHashes: [String!]
+    ) {
+        secretgraph(authorization: $authorization) {
+            config {
+                id
+                hashAlgorithms
+            }
+            contents(
+                filters: {
+                    public: FALSE
+                    deleted: FALSE
+                    clusters: [$cluster]
+                    includeTypes: ["Config"]
+                    contentHashes: $configContentHashes
+                    includeTags: $configKeyHashes
+                }
+            )
+                @connection(
+                    key: "configUpdateQuery"
+                    filter: [
+                        "id"
+                        "authorization"
+                        "configContentHashes"
+                        "configKeyHashes"
+                    ]
+                ) {
+                edges {
+                    node {
+                        id
+                        availableActions {
+                            keyHash
+                            type
+                            trustedKeys
+                            allowedTags
+                        }
+                        nonce
+                        link
+                        type
+                        cluster {
+                            id
+                            groups
+                            contents(
+                                filters: {
+                                    includeTypes: ["PublicKey"]
+                                    states: ["required", "trusted"]
+                                    deleted: FALSE
+                                }
+                            ) {
+                                edges {
+                                    node {
+                                        id
+                                        link
+                                        type
+                                        tags(includeTags: ["key_hash="])
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
 export const getContentConfigurationQuery = gql`
     query contentGetConfigurationQuery(
         $id: GlobalID!
