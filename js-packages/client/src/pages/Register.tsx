@@ -10,7 +10,7 @@ import { saveConfig } from '@secretgraph/misc/utils/config'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import { initializeCluster } from '@secretgraph/misc/utils/operations'
-import { Field, Formik } from 'formik'
+import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import FormikTextField from '../components/formik/FormikTextField'
@@ -151,7 +151,7 @@ function Register() {
                     }
                 }, [values.url])
                 return (
-                    <>
+                    <Form>
                         <Typography
                             variant="h5"
                             color="textPrimary"
@@ -228,7 +228,7 @@ function Register() {
                                 Login instead
                             </Button>
                         </div>
-                    </>
+                    </Form>
                 )
             }}
         </Formik>

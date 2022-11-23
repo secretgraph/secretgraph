@@ -33,7 +33,9 @@ server {
 
     location /static/ {
         root /;
-        proxy_set_header X-Accel-Buffering "yes";
+        add_header X-Accel-Buffering "yes";
+        # TODO: a bit broad, be more specific
+        add_header Service-Worker-Allowed "/";
         # 1 week
         expires 168h;
         gzip on;

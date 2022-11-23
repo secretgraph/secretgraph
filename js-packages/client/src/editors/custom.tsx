@@ -5,11 +5,11 @@ import MoreIcon from '@mui/icons-material/More'
 import SecurityIcon from '@mui/icons-material/Security'
 import { InputAdornment } from '@mui/material'
 import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import Grid from '@mui/material/Unstable_Grid2'
 import Box from '@mui/system/Box'
 import {
     contentRetrievalQuery,
@@ -199,11 +199,11 @@ const InnerCustom = ({
                             }}
                         </FieldArray>
                         <Grid container spacing={2}>
-                            <Grid item xs={12}>
+                            <Grid xs={12}>
                                 <Typography>Active Url</Typography>
                                 <Typography>{url}</Typography>
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid xs={12}>
                                 <FastField
                                     component={FormikTextField}
                                     name="type"
@@ -214,53 +214,53 @@ const InnerCustom = ({
                                     label="Type"
                                 />
                             </Grid>
-                            <Grid item xs={12} md={6}>
-                                <FastField
-                                    component={StateSelect}
-                                    name="state"
-                                    fullWidth
-                                    label="State"
-                                    disabled={isSubmitting || disabled}
-                                    validate={(val: string) => {
-                                        if (!val) {
-                                            return 'empty'
-                                        }
-                                        return null
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs={11} md={5}>
-                                <FastField
-                                    component={ClusterSelect}
-                                    url={url}
-                                    name="cluster"
-                                    disabled={isSubmitting || disabled}
-                                    label="Cluster"
-                                    firstIfEmpty
-                                    tokens={clusterSelectTokens}
-                                    validate={(val: string) => {
-                                        if (!val) {
-                                            return 'empty'
-                                        }
-                                        return null
-                                    }}
-                                />
-                            </Grid>
-                            {viewOnly ? null : (
-                                <Grid item xs="auto">
-                                    <Tooltip title="Actions">
-                                        <span>
-                                            <IconButton
-                                                onClick={() => setOpen(!open)}
-                                                size="large"
-                                            >
-                                                <SecurityIcon />
-                                            </IconButton>
-                                        </span>
-                                    </Tooltip>
+                            <Grid container xs>
+                                <Grid xs={12} md={6}>
+                                    <FastField
+                                        component={StateSelect}
+                                        name="state"
+                                        fullWidth
+                                        label="State"
+                                        disabled={isSubmitting || disabled}
+                                        validate={(val: string) => {
+                                            if (!val) {
+                                                return 'empty'
+                                            }
+                                            return null
+                                        }}
+                                    />
                                 </Grid>
-                            )}
-                            <Grid item xs={12}>
+                                <Grid xs={12} md={6}>
+                                    <FastField
+                                        component={ClusterSelect}
+                                        url={url}
+                                        name="cluster"
+                                        disabled={isSubmitting || disabled}
+                                        label="Cluster"
+                                        firstIfEmpty
+                                        tokens={clusterSelectTokens}
+                                        validate={(val: string) => {
+                                            if (!val) {
+                                                return 'empty'
+                                            }
+                                            return null
+                                        }}
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Grid xs="auto">
+                                <Tooltip title="Actions">
+                                    <span>
+                                        <IconButton
+                                            onClick={() => setOpen(!open)}
+                                            size="large"
+                                        >
+                                            <SecurityIcon />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Grid>
+                            <Grid xs={12}>
                                 <FastField
                                     component={FormikTextField}
                                     name="contentHash"
@@ -282,7 +282,7 @@ const InnerCustom = ({
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid xs={12}>
                                 <Box
                                     sx={{
                                         padding: (theme) =>
@@ -386,7 +386,7 @@ const InnerCustom = ({
                                     )}
                                 </Box>
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid xs={12}>
                                 <FastField
                                     component={FormikTextField}
                                     name="text"
@@ -398,7 +398,7 @@ const InnerCustom = ({
                                     variant="outlined"
                                 />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid xs={12}>
                                 <Field
                                     name="text"
                                     disabled={!!(isSubmitting || disabled)}
@@ -492,11 +492,11 @@ const InnerCustom = ({
                                     }}
                                 </Field>
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid xs={12}>
                                 {isSubmitting && <LinearProgress />}
                             </Grid>
                             {!viewOnly && (
-                                <Grid item xs={12}>
+                                <Grid xs={12}>
                                     <Button
                                         variant="contained"
                                         color="primary"

@@ -397,6 +397,10 @@ now you have a decryption key to the private key, that is very dangerous
 -   trustedKeys logic. Prevent server-side injection of keys
     -   Needs much more work especially on gui side
     -   a better ActionDialog is neccessary
+-   transfer logic has problems
+    -   what if public key is not on the target cluster?
+    -   public key can be used to find out correspondants if public
+    -   if not public: how to get the keys? pierce the permission system?
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config
 -   modernize ActionDialog, redesign, multi column?

@@ -9,7 +9,6 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
-import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import List from '@mui/material/List'
@@ -19,6 +18,7 @@ import ListItemText from '@mui/material/ListItemText'
 import Portal from '@mui/material/Portal'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import Grid from '@mui/material/Unstable_Grid2'
 import {
     ActionInputEntry,
     CertificateInputEntry,
@@ -109,10 +109,7 @@ const ActionFields = React.memo(function ActionFields({
             }
         case 'delete':
             if (isContent) {
-                return (
-                    <div>
-                    </div>
-                )
+                return <div></div>
             } else {
                 return (
                     <div>
@@ -231,7 +228,7 @@ export default function ActionConfigurator({
                     ) : null}
 
                     <Grid container>
-                        <Grid item xs={12} sm={6}>
+                        <Grid xs={12} sm={6}>
                             <FastField
                                 name={`${path}start`}
                                 component={FormikDateTimePicker}
@@ -242,7 +239,7 @@ export default function ActionConfigurator({
                                 label="Start"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid xs={12} sm={6}>
                             <FastField
                                 name={`${path}stop`}
                                 component={FormikDateTimePicker}
@@ -314,7 +311,7 @@ export default function ActionConfigurator({
             </div>
             {!locked && (
                 <div>
-                    <Grid container spacing={2}>
+                    <Grid spacing={2} container>
                         <ActionFields
                             action={value.value?.action}
                             path={`${path}value.`}

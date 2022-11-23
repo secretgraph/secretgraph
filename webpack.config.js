@@ -56,6 +56,7 @@ module.exports = (env, options) => {
                           'Access-Control-Allow-Origin': '*',
                           'Access-Control-Allow-Headers':
                               'X-Requested-With, content-type, Authorization',
+                          'Service-Worker-Allowed': '/',
                       },
                   }
                 : undefined,
@@ -79,6 +80,7 @@ module.exports = (env, options) => {
             },
             suneditorstyle: {
                 import: './node_modules/suneditor/dist/css/suneditor.min.css',
+                filename: '[name].js',
                 chunkLoading: false,
                 runtime: false,
             },

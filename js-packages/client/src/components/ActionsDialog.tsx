@@ -7,7 +7,6 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
-import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Table from '@mui/material/Table'
@@ -67,7 +66,7 @@ const HashEntry = React.memo(function HashEntry({
                         disabled || item.value.delete || item.value.readonly
                     }
                     component={FormikCheckBox}
-                    sx={{
+                    style={{
                         display:
                             item.value.update !== undefined
                                 ? undefined
@@ -198,7 +197,7 @@ export default function ActionsDialog({
                 <div>
                     <TextField label="Search" type="search" />
                 </div>
-                <Divider sx={{ marginBottom: '5px', marginTop: '5px' }} />
+                <Divider style={{ marginBottom: '5px', marginTop: '5px' }} />
                 <Stack
                     direction="row"
                     divider={<Divider orientation="vertical" flexItem />}

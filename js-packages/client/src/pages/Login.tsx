@@ -5,7 +5,7 @@ import { Box } from '@mui/material'
 import Button from '@mui/material/Button'
 import FormControl from '@mui/material/FormControl'
 import FormHelperText from '@mui/material/FormHelperText'
-import Grid from '@mui/material/Grid'
+import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
@@ -15,7 +15,7 @@ import {
 } from '@secretgraph/misc/utils/config'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations'
-import { Field, Formik } from 'formik'
+import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import FormikTextField from '../components/formik/FormikTextField'
@@ -129,26 +129,17 @@ function Login() {
                     setNeedsPw(values.url.includes('prekey'))
                 }, [values.url])
                 return (
-                    <Grid container spacing={2}>
-                        <Grid item xs={12}>
+                    <Form>
+                        <Stack spacing={2}>
                             <Typography variant="h5" color="textPrimary">
                                 {importHelp}
                             </Typography>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: 'row' as const,
-                                    alignItems: 'stretch',
-                                }}
+                            <Stack
+                                direction="row"
+                                alignItems="stretch"
+                                spacing={1}
                             >
-                                <FormControl
-                                    sx={{
-                                        padding: (theme) => theme.spacing(0, 1),
-                                        textAlign: 'center' as const,
-                                    }}
-                                >
+                                <FormControl>
                                     <input
                                         disabled={isSubmitting}
                                         style={{ display: 'none' }}
@@ -213,18 +204,10 @@ function Login() {
                                         {importFileLabel}
                                     </FormHelperText>
                                 </FormControl>
-                                <Box
-                                    sx={{
-                                        padding: (theme) => theme.spacing(0, 1),
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    or
-                                </Box>
+                                <Typography textAlign="center">or</Typography>
                                 <FormControl
-                                    sx={{
+                                    style={{
                                         flexGrow: 1,
-                                        padding: (theme) => theme.spacing(0, 1),
                                     }}
                                 >
                                     <Field
@@ -240,57 +223,52 @@ function Login() {
                                         Import from url
                                     </FormHelperText>
                                 </FormControl>
-                            </Box>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControl
-                                style={{
-                                    display: needsPw ? undefined : 'none',
-                                }}
-                            >
-                                <div style={{ display: 'none' }}>
-                                    <input type="password" tabIndex={-1} />
-                                </div>
-                                <Field
-                                    name="password"
-                                    component={FormikTextField}
-                                    variant="outlined"
+                            </Stack>
+                            {needsPw ? (
+                                <FormControl>
+                                    <Field
+                                        name="password"
+                                        component={FormikTextField}
+                                        variant="outlined"
+                                        autoComplete="on"
+                                        disabled={isSubmitting}
+                                        label={passwordLabel}
+                                        inputProps={{
+                                            'aria-describedby':
+                                                'secretgraph-decrypting-help',
+                                        }}
+                                        type="password"
+                                    />
+                                    <FormHelperText id="secretgraph-decrypting-help">
+                                        {decryptingPasswordSettingsHelp}
+                                    </FormHelperText>
+                                </FormControl>
+                            ) : null}
+
+                            <div>
+                                <LoadingButton
+                                    size="small"
+                                    variant="contained"
+                                    color="primary"
+                                    loading={isSubmitting}
+                                    disabled={isSubmitting || !isValid}
+                                    onClick={submitForm}
+                                >
+                                    {importStartLabel}
+                                </LoadingButton>
+                                <Button
+                                    size="small"
+                                    variant="text"
                                     disabled={isSubmitting}
-                                    label={passwordLabel}
-                                    inputProps={{
-                                        'aria-describedby':
-                                            'secretgraph-decrypting-help',
+                                    onClick={() => {
+                                        updateMainCtx({ action: 'register' })
                                     }}
-                                    type="password"
-                                />
-                                <FormHelperText id="secretgraph-decrypting-help">
-                                    {decryptingPasswordSettingsHelp}
-                                </FormHelperText>
-                            </FormControl>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <LoadingButton
-                                size="small"
-                                variant="contained"
-                                color="primary"
-                                loading={isSubmitting}
-                                disabled={isSubmitting || !isValid}
-                                onClick={submitForm}
-                            >
-                                {importStartLabel}
-                            </LoadingButton>
-                            <Button
-                                size="small"
-                                variant="text"
-                                disabled={isSubmitting}
-                                onClick={() => {
-                                    updateMainCtx({ action: 'register' })
-                                }}
-                            >
-                                Register instead
-                            </Button>
-                        </Grid>
-                    </Grid>
+                                >
+                                    Register instead
+                                </Button>
+                            </div>
+                        </Stack>
+                    </Form>
                 )
             }}
         </Formik>

@@ -202,68 +202,71 @@ function OverviewPanel({
     }, [actions])
     return (
         <TabPanel {...props}>
-            <SharePanel url={shareUrl} />
-            <Divider sx={{ marginBottom: '5px', marginTop: '5px' }} />
-            <div>
-                <TextField label="Search" type="search" />
-            </div>
-            <Divider sx={{ marginBottom: '5px', marginTop: '5px' }} />
             <Stack
-                direction="row"
-                divider={<Divider orientation="vertical" flexItem />}
                 spacing={2}
+                divider={<Divider orientation="horizontal" flexItem />}
             >
-                <div style={{ flex: 1 }}>
-                    <TableContainer>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Hash</TableCell>
-                                    <TableCell padding="checkbox">
-                                        Update
-                                    </TableCell>
-                                    <TableCell padding="none"></TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredActions.map((item) => {
-                                    return (
-                                        <HashEntry
-                                            hover
-                                            selected={
-                                                selectedItem?.index ==
-                                                item.index
-                                            }
-                                            key={item.value.newHash}
-                                            disabled={disabled}
-                                            item={item}
-                                            selectItem={setSelectedItem}
-                                        />
-                                    )
-                                })}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                <SharePanel url={shareUrl} />
+                <div>
+                    <TextField label="Search" type="search" />
                 </div>
-                {selectedItem && (
-                    <Formik
-                        initialValues={{}}
-                        onSubmit={async (values, { setSubmitting }) => {
-                            setSubmitting(false)
-                        }}
-                    >
-                        <Form>
-                            <ActionConfigurator
-                                path=""
-                                disabled={disabled}
-                                isContent={isContent}
-                                tokens={tokens}
-                                mode={mode}
-                                value={selectedItem.value}
-                            />
-                        </Form>
-                    </Formik>
-                )}
+                <Stack
+                    direction="row"
+                    divider={<Divider orientation="vertical" flexItem />}
+                    spacing={2}
+                >
+                    <div style={{ flex: 1 }}>
+                        <TableContainer>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Hash</TableCell>
+                                        <TableCell padding="checkbox">
+                                            Update
+                                        </TableCell>
+                                        <TableCell padding="none"></TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {filteredActions.map((item) => {
+                                        return (
+                                            <HashEntry
+                                                hover
+                                                selected={
+                                                    selectedItem?.index ==
+                                                    item.index
+                                                }
+                                                key={item.value.newHash}
+                                                disabled={disabled}
+                                                item={item}
+                                                selectItem={setSelectedItem}
+                                            />
+                                        )
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </div>
+                    {selectedItem && (
+                        <Formik
+                            initialValues={{}}
+                            onSubmit={async (values, { setSubmitting }) => {
+                                setSubmitting(false)
+                            }}
+                        >
+                            <Form>
+                                <ActionConfigurator
+                                    path=""
+                                    disabled={disabled}
+                                    isContent={isContent}
+                                    tokens={tokens}
+                                    mode={mode}
+                                    value={selectedItem.value}
+                                />
+                            </Form>
+                        </Formik>
+                    )}
+                </Stack>
             </Stack>
         </TabPanel>
     )

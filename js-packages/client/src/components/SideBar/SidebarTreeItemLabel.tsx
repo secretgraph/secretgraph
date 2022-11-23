@@ -1,4 +1,3 @@
-import Box from '@mui/material/Box'
 import Tooltip from '@mui/material/Tooltip'
 import * as React from 'react'
 
@@ -24,8 +23,8 @@ export default React.memo(function SidebarTreeItemLabel({
     rightIcon,
 }: SidebarTreeItemLabelProps) {
     let item = (
-        <Box
-            sx={{
+        <div
+            style={{
                 display: 'flex' as const,
                 flexWrap: 'nowrap' as const,
                 flexDirection: 'row' as const,
@@ -37,8 +36,8 @@ export default React.memo(function SidebarTreeItemLabel({
             }}
         >
             {leftIcon}
-            <Box
-                sx={{
+            <div
+                style={{
                     marginLeft: leftIcon ? '4px' : undefined,
                     marginRight: rightIcon ? '4px' : undefined,
                     wordBreak: 'break-all' as const,
@@ -46,9 +45,9 @@ export default React.memo(function SidebarTreeItemLabel({
                 }}
             >
                 {children}
-            </Box>
+            </div>
             {rightIcon}
-        </Box>
+        </div>
     )
     if (title) {
         return <Tooltip title={title}>{item}</Tooltip>

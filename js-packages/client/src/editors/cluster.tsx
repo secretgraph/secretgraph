@@ -4,10 +4,10 @@ import PublicIcon from '@mui/icons-material/Public'
 import Security from '@mui/icons-material/Security'
 import { InputAdornment } from '@mui/material'
 import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
+import Grid from '@mui/material/Unstable_Grid2'
 import { getClusterQuery } from '@secretgraph/graphql-queries/cluster'
 import { getNodeType } from '@secretgraph/graphql-queries/node'
 import { serverConfigQueryWithPermissions } from '@secretgraph/graphql-queries/server'
@@ -297,7 +297,7 @@ const ClusterIntern = ({
                                 }}
                             </FieldArray>
                             <Grid container spacing={2}>
-                                <Grid item xs>
+                                <Grid xs>
                                     <Field
                                         component={FormikTextField}
                                         InputProps={{
@@ -362,7 +362,7 @@ const ClusterIntern = ({
                                     />
                                 </Grid>
 
-                                <Grid item xs="auto">
+                                <Grid xs="auto">
                                     <Tooltip title="Actions">
                                         <span>
                                             <IconButton
@@ -376,7 +376,7 @@ const ClusterIntern = ({
                                     </Tooltip>
                                 </Grid>
 
-                                <Grid item xs={12}>
+                                <Grid xs={12}>
                                     <Field
                                         component={FormikTextField}
                                         name="description"
@@ -388,7 +388,7 @@ const ClusterIntern = ({
                                     />
                                 </Grid>
 
-                                <Grid item xs={12}>
+                                <Grid xs={12}>
                                     <Field
                                         component={FormikCheckboxWithLabel}
                                         name="featured"
@@ -403,11 +403,11 @@ const ClusterIntern = ({
                                         }
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid xs={12}>
                                     {loading && <LinearProgress />}
                                 </Grid>
                                 {viewOnly ? null : (
-                                    <Grid item xs={12}>
+                                    <Grid xs={12}>
                                         <Button
                                             variant="contained"
                                             color="primary"

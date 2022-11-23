@@ -5,14 +5,15 @@ import TabContext from '@mui/lab/TabContext'
 import TabList from '@mui/lab/TabList'
 import TabPanel from '@mui/lab/TabPanel'
 import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
+import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import { Box } from '@mui/system'
+import Grid from '@mui/material/Unstable_Grid2'
+import Box from '@mui/system/Box'
 import {
     contentRetrievalQuery,
     getContentConfigurationQuery,
@@ -459,56 +460,62 @@ const FileIntern = ({
                     }
                     const form = (
                         <Grid container spacing={2}>
-                            <Grid item xs={12} sm={disabled ? 10 : 9}>
-                                <FastField
-                                    component={FormikTextField}
-                                    name="name"
-                                    fullWidth
-                                    label="Name"
-                                    disabled={isSubmitting || disabled}
-                                    validate={(val: string) => {
-                                        if (!val) {
-                                            return 'empty'
-                                        }
-                                        return null
-                                    }}
-                                />
-                            </Grid>
-                            <Grid item xs sm="auto">
-                                <Tooltip title="Encrypt name">
-                                    <span>
-                                        <Field
-                                            name="encryptName"
-                                            component={FormikCheckboxWithLabel}
-                                            Label={{
-                                                label: 'Encrypt',
-                                            }}
-                                            disabled={
-                                                isSubmitting ||
-                                                values.state == 'public' ||
-                                                disabled
+                            <Grid xs={12}>
+                                <Stack
+                                    direction="row"
+                                    justifyContent="start"
+                                    spacing={1}
+                                >
+                                    <FastField
+                                        component={FormikTextField}
+                                        name="name"
+                                        fullWidth
+                                        label="Name"
+                                        disabled={isSubmitting || disabled}
+                                        validate={(val: string) => {
+                                            if (!val) {
+                                                return 'empty'
                                             }
-                                            type="checkbox"
-                                        />
-                                    </span>
-                                </Tooltip>
-                            </Grid>
-                            {viewOnly ? null : (
-                                <Grid item xs="auto">
-                                    <Tooltip title="Actions">
+                                            return null
+                                        }}
+                                    />
+                                    <Tooltip title="Encrypt name">
                                         <span>
-                                            <IconButton
-                                                onClick={() => setOpen(!open)}
-                                                size="large"
-                                            >
-                                                <Security />
-                                            </IconButton>
+                                            <Field
+                                                name="encryptName"
+                                                component={
+                                                    FormikCheckboxWithLabel
+                                                }
+                                                Label={{
+                                                    label: 'Encrypt Name',
+                                                }}
+                                                disabled={
+                                                    isSubmitting ||
+                                                    values.state == 'public' ||
+                                                    disabled
+                                                }
+                                                type="checkbox"
+                                            />
                                         </span>
                                     </Tooltip>
-                                </Grid>
-                            )}
+                                    {viewOnly ? null : (
+                                        <Tooltip title="Actions">
+                                            <span>
+                                                <IconButton
+                                                    onClick={() =>
+                                                        setOpen(!open)
+                                                    }
+                                                    size="large"
+                                                >
+                                                    <Security />
+                                                </IconButton>
+                                            </span>
+                                        </Tooltip>
+                                    )}
+                                </Stack>
+                            </Grid>
 
-                            <Grid item xs={12} md={4}>
+                            <Grid xs={12} md={6}>
                                 <FastField
                                     component={StateSelect}
                                     name="state"
@@ -523,7 +530,7 @@ const FileIntern = ({
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} md={4}>
+                            <Grid xs={12} md={6}>
                                 <FastField
                                     component={ClusterSelect}
                                     url={url}
@@ -540,7 +547,7 @@ const FileIntern = ({
                                     }}
                                 />
                             </Grid>
-                            <Grid item xs={12} md={4}>
+                            <Grid xs={12}>
                                 <FastField
                                     component={SimpleSelect}
                                     name="keywords"
@@ -553,7 +560,7 @@ const FileIntern = ({
                             </Grid>
                             {viewOnly ? null : (
                                 <>
-                                    <Grid item xs={12}>
+                                    <Grid xs={12}>
                                         <TabContext value={tab}>
                                             <Box
                                                 sx={{
@@ -764,7 +771,7 @@ const FileIntern = ({
                                             </TabPanel>
                                         </TabContext>
                                     </Grid>
-                                    <Grid item xs={12}>
+                                    <Grid xs={12}>
                                         <Field
                                             name="fileInput"
                                             disabled={
@@ -778,68 +785,90 @@ const FileIntern = ({
                                             {(formikFieldProps: FieldProps) => {
                                                 return (
                                                     <>
-                                                        <UploadButton
-                                                            name="fileInput"
-                                                            onChange={(ev) => {
-                                                                if (
-                                                                    ev.target
-                                                                        .files &&
-                                                                    ev.target
-                                                                        .files
-                                                                        .length >
-                                                                        0
-                                                                ) {
-                                                                    /**setPSelections([
+                                                        <Stack
+                                                            spacing={1}
+                                                            direction="row"
+                                                        >
+                                                            <UploadButton
+                                                                name="fileInput"
+                                                                onChange={(
+                                                                    ev
+                                                                ) => {
+                                                                    if (
+                                                                        ev
+                                                                            .target
+                                                                            .files &&
+                                                                        ev
+                                                                            .target
+                                                                            .files
+                                                                            .length >
+                                                                            0
+                                                                    ) {
+                                                                        /**setPSelections([
                                                                 ev.target.files[0]
                                                                     .name,
                                                             ])*/
-                                                                    if (
-                                                                        !formikFieldProps
-                                                                            .form
-                                                                            .touched
-                                                                            .name
-                                                                    ) {
+                                                                        if (
+                                                                            !formikFieldProps
+                                                                                .form
+                                                                                .touched
+                                                                                .name
+                                                                        ) {
+                                                                            formikFieldProps.form.setFieldValue(
+                                                                                'name',
+                                                                                ev
+                                                                                    .target
+                                                                                    .files[0]
+                                                                                    .name
+                                                                            )
+                                                                        }
                                                                         formikFieldProps.form.setFieldValue(
-                                                                            'name',
+                                                                            'fileInput',
                                                                             ev
                                                                                 .target
                                                                                 .files[0]
-                                                                                .name
+                                                                        )
+
+                                                                        setFieldTouched(
+                                                                            'fileInput',
+                                                                            true
+                                                                        )
+                                                                    } else {
+                                                                        formikFieldProps.form.setFieldValue(
+                                                                            'fileInput',
+                                                                            null
+                                                                        )
+                                                                        setFieldTouched(
+                                                                            'fileInput',
+                                                                            false
                                                                         )
                                                                     }
-                                                                    formikFieldProps.form.setFieldValue(
-                                                                        'fileInput',
-                                                                        ev
-                                                                            .target
-                                                                            .files[0]
-                                                                    )
-
-                                                                    setFieldTouched(
-                                                                        'fileInput',
-                                                                        true
-                                                                    )
-                                                                } else {
-                                                                    formikFieldProps.form.setFieldValue(
-                                                                        'fileInput',
-                                                                        null
-                                                                    )
-                                                                    setFieldTouched(
-                                                                        'fileInput',
-                                                                        false
-                                                                    )
+                                                                }}
+                                                                accept={
+                                                                    mainCtx.type ==
+                                                                    'Text'
+                                                                        ? 'text/*'
+                                                                        : undefined
                                                                 }
-                                                            }}
-                                                            accept={
-                                                                mainCtx.type ==
-                                                                'Text'
-                                                                    ? 'text/*'
-                                                                    : undefined
-                                                            }
-                                                        >
+                                                            >
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="primary"
+                                                                    component="span"
+                                                                    disabled={
+                                                                        !!(
+                                                                            isSubmitting ||
+                                                                            values.plainInput ||
+                                                                            values.htmlInput
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Upload
+                                                                </Button>
+                                                            </UploadButton>
                                                             <Button
                                                                 variant="contained"
                                                                 color="primary"
-                                                                component="span"
                                                                 disabled={
                                                                     !!(
                                                                         isSubmitting ||
@@ -847,34 +876,22 @@ const FileIntern = ({
                                                                         values.htmlInput
                                                                     )
                                                                 }
+                                                                onClick={() => {
+                                                                    setValues({
+                                                                        ...values,
+                                                                        fileInput:
+                                                                            null,
+                                                                    })
+                                                                    setFieldTouched(
+                                                                        'fileInput',
+                                                                        false
+                                                                    )
+                                                                }}
                                                             >
-                                                                Upload
+                                                                Clear
                                                             </Button>
-                                                        </UploadButton>
-                                                        <Button
-                                                            variant="contained"
-                                                            color="primary"
-                                                            disabled={
-                                                                !!(
-                                                                    isSubmitting ||
-                                                                    values.plainInput ||
-                                                                    values.htmlInput
-                                                                )
-                                                            }
-                                                            onClick={() => {
-                                                                setValues({
-                                                                    ...values,
-                                                                    fileInput:
-                                                                        null,
-                                                                })
-                                                                setFieldTouched(
-                                                                    'fileInput',
-                                                                    false
-                                                                )
-                                                            }}
-                                                        >
-                                                            Clear
-                                                        </Button>
+                                                        </Stack>
+
                                                         {formikFieldProps.meta
                                                             .error && (
                                                             <Typography
@@ -901,10 +918,10 @@ const FileIntern = ({
                                 </>
                             )}
 
-                            <Grid item xs={12}>
+                            <Grid xs={12}>
                                 {isSubmitting && <LinearProgress />}
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid xs={12}>
                                 <Button
                                     variant="contained"
                                     color="primary"
@@ -962,7 +979,6 @@ const FileIntern = ({
                                                 }}
                                             >
                                                 <Grid
-                                                    item
                                                     xs
                                                     style={{
                                                         whiteSpace: 'normal',
@@ -971,7 +987,7 @@ const FileIntern = ({
                                                     {name}
                                                 </Grid>
 
-                                                <Grid item xs="auto">
+                                                <Grid xs="auto">
                                                     <Tooltip title="Actions">
                                                         <span>
                                                             <IconButton

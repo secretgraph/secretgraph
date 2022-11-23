@@ -9,10 +9,11 @@ import { encryptRSAOEAP, unserializeToCryptoKey } from './encryption'
 import { hashKey, hashObject } from './hashing'
 
 declare var __DEV__: any
+const dev = typeof __DEV__ != 'undefined' && __DEV__
 
 export const createClient = (url: string) => {
     return new ApolloClient({
-        connectToDevTools: __DEV__ ?? false,
+        connectToDevTools: dev,
         cache: new InMemoryCache({
             typePolicies: {
                 ActionEntry: {
@@ -52,7 +53,7 @@ export const createClient = (url: string) => {
         }),
         name: 'secretgraph',
         version: '0.1',
-        queryDeduplication: !(__DEV__ ?? false),
+        queryDeduplication: !dev,
         defaultOptions: {
             watchQuery: {
                 fetchPolicy: 'cache-and-network',

@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+    "name": "Secretgraph",
+    "short_name": "Secretgraph",
+    "start_url": "/client",
+    "display": "standalone",
+    "description": "Secretgraph"
+}

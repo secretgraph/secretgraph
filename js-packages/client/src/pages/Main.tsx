@@ -1,5 +1,4 @@
 import { ApolloProvider } from '@apollo/client'
-import { Box } from '@mui/material'
 import Alert from '@mui/material/Alert'
 import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
@@ -68,14 +67,16 @@ function MainPage() {
         ]
     }, [mainCtx.action, mainCtx.url, mainCtx.type])
     return (
-        <Box
-            sx={{
+        <div
+            style={{
                 height: '100vh',
                 display: 'grid',
                 grid: `
                     'sidebar header' min-content
                     'sidebar content' 1fr
-                    / ${config && openSidebar ? drawerWidth : 0} 1fr
+                    / ${
+                        config && openSidebar && hasSidebar ? drawerWidth : 0
+                    } 1fr
                     `,
             }}
         >
@@ -99,8 +100,8 @@ function MainPage() {
                 </ApolloProvider>
             ) : null}
             <HeaderBar />
-            <Box
-                sx={{
+            <div
+                style={{
                     gridArea: 'content',
                     display: 'flex' as const,
                     flexDirection: 'column' as const,
@@ -116,7 +117,7 @@ function MainPage() {
                     <ActionBar />
                     <Paper
                         component="main"
-                        sx={{
+                        style={{
                             minHeight: '200px' as const,
                             flexGrow: 1,
                             padding: theme.spacing(1),
@@ -126,8 +127,8 @@ function MainPage() {
                         {frameElement}
                     </Paper>
                 </ApolloProvider>
-            </Box>
-        </Box>
+            </div>
+        </div>
     )
 }
 

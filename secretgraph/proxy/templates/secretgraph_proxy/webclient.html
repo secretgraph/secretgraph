@@ -1,9 +1,14 @@
 {% extends "secretgraph_proxy/proxy_base.html" %}
 {% load manifest %}
 {% load secretgraph %}
+{% load static %}
 {% block styles %}
 {{block.super}}
 {% manifest_match '*.css' '<link rel="stylesheet" href="{match}"/>' %}
+{% endblock %}
+{% block meta %}
+{{block.super}}
+<link rel="manifest" href="{% static 'secretgraph_proxy/webmanifest.json' %}" />
 {% endblock %}
 {% block head_scripts %}
 <script async src="{% manifest 'runtime~loader.js' %}"></script>

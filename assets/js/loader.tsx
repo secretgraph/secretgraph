@@ -14,17 +14,29 @@ function load() {
     if ('serviceWorker' in navigator) {
         // Register a service worker hosted at the root of the
         // site using the default scope.
-        navigator.serviceWorker.register(swUrl).then(
-            (registration) => {
-                console.log(
-                    'Service worker registration succeeded:',
-                    registration
-                )
-            },
-            /*catch*/ (error) => {
-                console.error(`Service worker registration failed: ${error}`)
-            }
-        )
+        navigator.serviceWorker
+            .register(swUrl, {
+                scope: '/',
+            })
+            .then(
+                (registration) => {
+                    if (registration.installing) {
+                        console.log(
+                            'Service worker registration succeeded:',
+                            registration
+                        )
+                    } else if (registration.waiting) {
+                        console.debug('Service worker installed')
+                    } else if (registration.active) {
+                        console.debug('Service worker active')
+                    }
+                },
+                (error) => {
+                    console.error(
+                        `Service worker registration failed: ${error}`
+                    )
+                }
+            )
     } else {
         console.warn('Service workers are not supported.')
     }

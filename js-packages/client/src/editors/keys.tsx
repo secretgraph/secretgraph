@@ -4,10 +4,10 @@ import SecurityIcon from '@mui/icons-material/Security'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import Button from '@mui/material/Button'
-import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import LinearProgress from '@mui/material/LinearProgress'
+import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/system/Box'
@@ -360,64 +360,54 @@ function UpdateKeysForm({
                     )
                 }}
             </FieldArray>
-            <Grid container spacing={2}>
-                <Grid item xs={12}>
-                    <FastField
-                        component={FormikTextField}
-                        name="name"
-                        fullWidth
-                        label="Name"
-                        disabled={disabled}
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <FastField
-                        component={FormikTextField}
-                        name="description"
-                        fullWidth
-                        multiline
-                        label="Description"
-                        disabled={disabled}
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <Typography variant="h5" gutterBottom>
-                        Key hashes
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        style={{
-                            wordBreak: 'break-all',
-                            whiteSpace: 'pre-line',
-                        }}
-                    >
-                        {joinedHashes}
-                    </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                    {canSelectCluster ? (
-                        <Field
-                            component={ClusterSelect}
-                            url={url}
-                            name="cluster"
-                            disabled={disabled}
-                            label="Cluster"
-                            firstIfEmpty
-                            tokens={clusterSelectTokens}
-                        />
-                    ) : null}
-                </Grid>
-                <Grid item xs={12}>
+            <Stack spacing={2}>
+                <FastField
+                    component={FormikTextField}
+                    name="name"
+                    fullWidth
+                    label="Name"
+                    disabled={disabled}
+                />
+                <FastField
+                    component={FormikTextField}
+                    name="description"
+                    fullWidth
+                    multiline
+                    label="Description"
+                    disabled={disabled}
+                />
+                <Typography variant="h5" gutterBottom>
+                    Key hashes
+                </Typography>
+                <Typography
+                    variant="body2"
+                    style={{
+                        wordBreak: 'break-all',
+                        whiteSpace: 'pre-line',
+                    }}
+                >
+                    {joinedHashes}
+                </Typography>
+                {canSelectCluster ? (
                     <Field
-                        component={StateSelect}
-                        name="state"
+                        component={ClusterSelect}
+                        url={url}
+                        name="cluster"
                         disabled={disabled}
-                        label="State of Public Key"
-                        forKey
-                        fullWidth
+                        label="Cluster"
+                        firstIfEmpty
+                        tokens={clusterSelectTokens}
                     />
-                </Grid>
-                <Grid item xs={12}>
+                ) : null}
+                <Field
+                    component={StateSelect}
+                    name="state"
+                    disabled={disabled}
+                    label="State of Public Key"
+                    forKey
+                    fullWidth
+                />
+                <div>
                     <Typography variant="h5" gutterBottom>
                         Public Key
                     </Typography>
@@ -506,19 +496,12 @@ function UpdateKeysForm({
                             </Tooltip>
                         </div>
                     </div>
-                </Grid>
-                <Grid item xs={12}>
+                </div>
+                <div>
                     <Typography variant="h5" gutterBottom>
                         Private Key
                     </Typography>
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            flexWrap: 'nowrap',
-                            alignContent: 'flex-start',
-                        }}
-                    >
+                    <Stack direction="row" alignContent="flex-start">
                         {viewOnly ? (
                             <>
                                 <Typography
@@ -667,9 +650,9 @@ function UpdateKeysForm({
                                 </span>
                             </Tooltip>
                         </div>
-                    </div>
-                </Grid>
-                <Grid item xs={12}>
+                    </Stack>
+                </div>
+                <div>
                     {generateButton && !viewOnly && (
                         <Box
                             sx={{ marginRight: (theme) => theme.spacing(2) }}
@@ -732,8 +715,8 @@ function UpdateKeysForm({
                         disabled={disabled || !values.privateKey}
                         component={FormikCheckboxWithLabel}
                     />
-                </Grid>
-                {/*<Grid item xs={12}>
+                </div>
+                {/*
                     <Field
                         component={FormikTextField}
                         name="password"
@@ -742,12 +725,9 @@ function UpdateKeysForm({
                         label="Password"
                         disabled={disabled}
                         variant="outlined"
-                    />
-                    </Grid>*/}
-                <Grid item xs={12}>
-                    {isSubmitting && <LinearProgress />}
-                </Grid>
-                <Grid item xs={12}>
+                    />*/}
+                <div>{isSubmitting && <LinearProgress />}</div>
+                <div>
                     <Button
                         variant="contained"
                         color="primary"
@@ -756,8 +736,8 @@ function UpdateKeysForm({
                     >
                         Submit
                     </Button>
-                </Grid>
-            </Grid>
+                </div>
+            </Stack>
         </Form>
     )
 }

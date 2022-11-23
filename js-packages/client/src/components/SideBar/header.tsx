@@ -1,35 +1,23 @@
-import { ApolloClient, useApolloClient } from '@apollo/client'
+import { useApolloClient } from '@apollo/client'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import FilterListIcon from '@mui/icons-material/FilterList'
-import { Box, Grid } from '@mui/material'
-import Autocomplete, {
-    AutocompleteProps,
-    createFilterOptions,
-} from '@mui/material/Autocomplete'
+import Autocomplete, { AutocompleteProps } from '@mui/material/Autocomplete'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
-import Drawer from '@mui/material/Drawer'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import FormGroup from '@mui/material/FormGroup'
-import Hidden from '@mui/material/Hidden'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemIcon from '@mui/material/ListItemIcon'
 import Paper from '@mui/material/Paper'
 import Popover from '@mui/material/Popover'
+import Stack from '@mui/material/Stack'
 import { useTheme } from '@mui/material/styles'
 import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
-import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import {
     deleteNodes,
@@ -103,59 +91,49 @@ function HeaderPopover() {
     const theme = useTheme()
     return (
         <Paper style={{ padding: theme.spacing(2) }}>
-            <Grid container spacing={2}>
-                <Grid item xs={12}>
-                    <Typography align="center" variant="h3">
-                        Filter
-                    </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                    <TagsSelect
-                        label="Include Tags"
-                        value={searchCtx.include}
-                        onChange={(event, value, reason) => {
-                            updateSearchCtx({ include: value })
-                        }}
+            <Stack spacing={2}>
+                <Typography align="center" variant="h3">
+                    Filter
+                </Typography>
+                <TagsSelect
+                    label="Include Tags"
+                    value={searchCtx.include}
+                    onChange={(event, value, reason) => {
+                        updateSearchCtx({ include: value })
+                    }}
+                />
+                <TagsSelect
+                    label="Exclude Tags"
+                    value={searchCtx.exclude}
+                    onChange={(event, value, reason) => {
+                        updateSearchCtx({ exclude: value })
+                    }}
+                />
+                <FormGroup row>
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={searchCtx.deleted}
+                                onChange={(event) => {
+                                    updateSearchCtx({
+                                        deleted: event.target.checked,
+                                    })
+                                }}
+                            />
+                        }
+                        label="Deleted"
                     />
-                </Grid>
-                <Grid item xs={12}>
-                    <TagsSelect
-                        label="Exclude Tags"
-                        value={searchCtx.exclude}
-                        onChange={(event, value, reason) => {
-                            updateSearchCtx({ exclude: value })
-                        }}
-                    />
-                </Grid>
-                <Grid item xs={12}>
-                    <FormGroup row>
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={searchCtx.deleted}
-                                    onChange={(event) => {
-                                        updateSearchCtx({
-                                            deleted: event.target.checked,
-                                        })
-                                    }}
-                                />
-                            }
-                            label="Deleted"
-                        />
-                    </FormGroup>
-                </Grid>
-            </Grid>
+                </FormGroup>
+            </Stack>
         </Paper>
     )
 }
 
 function MainSearchField() {
     const { searchCtx } = React.useContext(Contexts.Search)
-    const theme = useTheme()
     const { activeUrl, setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null)
-    const client = useApolloClient()
     return (
         <>
             <Popover
@@ -168,7 +146,7 @@ function MainSearchField() {
                 <HeaderPopover />
             </Popover>
             <Autocomplete
-                sx={{
+                style={{
                     width: '100%' as const,
                     marginTop: '3px' as const,
                 }}
@@ -336,20 +314,20 @@ export default function SideBarHeader({
 
     return (
         <>
-            <Box
-                sx={{
+            <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="flex-end"
+                spacing={1}
+                style={{
                     // necessary for content to be below app bar
                     minHeight: theme.mixins.toolbar.minHeight,
-                    display: 'flex' as const,
-                    alignItems: 'center' as const,
-                    padding: theme.spacing(0, 1),
-                    justifyContent: 'flex-end' as const,
                 }}
             >
                 {theme.direction === 'rtl' ? <CloseButton /> : null}
                 <MainSearchField />
                 {theme.direction === 'ltr' ? <CloseButton /> : null}
-            </Box>
+            </Stack>
             <div>
                 <Button
                     disabled={!deleteableItems.length}
