@@ -71,7 +71,9 @@ module.exports = (env, options) => {
             ignored: /node_modules/,
         },
         entry: {
-            loader: './assets/js/loader.tsx',
+            loader: {
+                import: './assets/js/loader.tsx',
+            },
             serviceworker: {
                 import: './assets/js/serviceworker.ts',
                 filename: '[name].js',
@@ -139,7 +141,9 @@ module.exports = (env, options) => {
         plugins,
         optimization: {
             chunkIds: 'size',
-            runtimeChunk: 'multiple',
+            runtimeChunk: {
+                name: (entrypoint) => `chunks/runtime~${entrypoint.name}`,
+            },
         },
     }
 }
