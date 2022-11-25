@@ -6,7 +6,7 @@ from strawberry.types import Info
 from strawberry_django_plus import relay, gql
 
 from ...utils.auth import get_cached_result
-from ...actions.view import fetch_contents
+from ...actions.fetch import fetch_contents
 from ...models import (
     ContentReference,
 )

@@ -14,7 +14,7 @@ from secretgraph.server.utils.mark import freeze_contents
 
 from ..models import Content, Cluster
 from ..utils.auth import get_cached_result, fetch_by_id
-from ..actions.view import (
+from ..actions.fetch import (
     fetch_clusters as _fetch_clusters,
     fetch_contents as _fetch_contents,
 )

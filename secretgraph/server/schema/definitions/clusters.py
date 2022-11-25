@@ -13,7 +13,7 @@ from ...utils.auth import (
     get_cached_result,
     get_cached_properties,
 )
-from ...actions.view import fetch_clusters, fetch_contents
+from ...actions.fetch import fetch_clusters, fetch_contents
 from ...models import (
     Cluster,
     GlobalGroup,

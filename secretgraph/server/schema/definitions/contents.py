@@ -13,7 +13,7 @@ from ...utils.auth import (
     get_cached_properties,
     fetch_by_id,
 )
-from ...actions.view import fetch_contents
+from ...actions.fetch import fetch_contents
 from ...models import (
     Content,
     ContentReference,
