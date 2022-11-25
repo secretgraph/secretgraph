@@ -165,6 +165,17 @@ Not implemented yet
 -   prekey=key hash:encrypted sharedkey/key of private key : opens pw form to decrypt prekey, requires iteration parameter (only GET parameter)
 -   iterations=key hash:encrypted sharedkey/key of private key : opens pw form to decrypt prekey (only GET parameter)
 
+### Return Headers
+
+-   X-ID: Id of content (only if single content is returned)
+-   X-TYPE: Type of content (only if single content is returned)
+-   X-CONTENT-HASH: Content hash of content (only if single content with content hash is returned)
+-   X-IS-SIGNED: is verified (only if single, encrypted content is returned)
+-   X-NONCE: nonce (only if single, encrypted content is returned)
+-   X-KEY: encrypting key of private key (only if single, encrypted private key is returned)
+-   X-HASH-ALGORITHMS: comma seperated hash algorithm list
+-   X-GRAPHQL-PATH: path to secretgraph graphql interface
+
 ## decryption for non-secretgraph users
 
 Prequisite: you specified valid tokens (at least 1)

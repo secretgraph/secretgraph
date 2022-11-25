@@ -11,6 +11,7 @@ from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 from django.conf import settings
 from django.db.models import OuterRef, Q, Subquery
+from django.db.models.functions import Substr
 from django.http import (
     FileResponse,
     Http404,
@@ -288,6 +289,10 @@ class ContentView(AllowCORSMixin, FormView):
                 response["Content-Disposition"] = header
         else:
             response = FileResponse(content.file.read("rb"))
+        response["X-ID"] = content.cached_flexid
+        response["X-TYPE"] = content.type
+        if content.contentHash:
+            response["X-CONTENT-HASH"] = content.contentHash
         return response
 
     @method_decorator(last_modified(calc_content_modified_raw))
@@ -358,6 +363,7 @@ class ContentView(AllowCORSMixin, FormView):
             except FileNotFoundError as e:
                 raise Http404() from e
         freeze_contents([content.id], self.request)
+        response["X-ID"] = content.cached_flexid
         response["X-TYPE"] = content.type
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
@@ -366,9 +372,9 @@ class ContentView(AllowCORSMixin, FormView):
             response["X-CONTENT-HASH"] = content.contentHash
         if content.type == "PrivateKey":
             response["X-KEY"] = ",".join(
-                content.tags.filter(tag__startswith="key=").values_list(
-                    "tag", flat=True
-                )
+                content.tags.filter(tag__startswith="key=")
+                .annotate(raw_key=Substr("tag", 5))
+                .values_list("raw_key", flat=True)
             )
         return response
 

@@ -84,11 +84,10 @@ def hashTagsContentHash(
     return "%s:%s" % (domain, sortedHash(inp, hashAlgorithm))
 
 
-def calculateHashes(inp, hashAlgorithms, failhard=False):
-    hashAlgorithms = findWorkingHashAlgorithms(
-        hashAlgorithms, failhard=failhard
-    )
-    assert len(hashAlgorithms) > 0, "no working hash algorithms found"
+def calculateHashesForHashAlgorithms(
+    inp,
+    hashAlgorithms: Iterable[constants.HashNameItem],
+):
     if isinstance(inp, str):
         inp = base64.b64decode(inp)
     if hasattr(inp, "public_key"):
@@ -102,3 +101,11 @@ def calculateHashes(inp, hashAlgorithms, failhard=False):
     for algo in hashAlgorithms:
         hashes.append(_hashObject(inp, algo))
     return hashes
+
+
+def calculateHashes(inp, hashAlgorithms, failhard=False):
+    hashAlgorithms = findWorkingHashAlgorithms(
+        hashAlgorithms, failhard=failhard
+    )
+    assert len(hashAlgorithms) > 0, "no working hash algorithms found"
+    return calculateHashesForHashAlgorithms(inp, hashAlgorithms)

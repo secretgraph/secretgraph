@@ -61,8 +61,9 @@ def transform_payload(query, variables):
     mapper = {}
     newvars = _transform_files(variables, mapper, files)
     # hack for sending multipart
-    if not files:
-        files = {"stub": ("", "content")}
+    # not required?
+    # if not files:
+    #    files = {"stub": ("", "content")}
 
     return {
         "operations": json.dumps({"query": query, "variables": newvars}),
