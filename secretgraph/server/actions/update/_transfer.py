@@ -58,7 +58,7 @@ def _create_transfer_info_content(request, content, signatures):
     references = []
     for key in get_cached_result(request, ensureInitialized=True)["Content"][
         "objects"
-    ].filter(contentHash_in=signatures.keys()):
+    ].filter(contentHash_in=map(lambda x: f"Key:{x}", signatures.keys())):
         seen.add(key)
         references.append(
             ContentReference(
