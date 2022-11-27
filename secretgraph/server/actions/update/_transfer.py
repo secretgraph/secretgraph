@@ -1,6 +1,8 @@
 __all__ = ["transfer_value"]
 
 import base64
+from codecs import ignore_errors
+from inspect import signature
 import json
 import logging
 from uuid import uuid4
@@ -56,6 +58,7 @@ def _generate_transfer_info(content, signatures):
 def _create_transfer_info_content(request, content, signatures):
     seen = set()
     references = []
+    tags = []
     for key in get_cached_result(request, ensureInitialized=True)["Content"][
         "objects"
     ].filter(contentHash_in=map(lambda x: f"Key:{x}", signatures.keys())):
@@ -72,6 +75,11 @@ def _create_transfer_info_content(request, content, signatures):
     for chash in signatures.keys():
         if chash in seen:
             continue
+        signature = signatures[chash]
+        # TODO: fix syntax
+        tags.append(ContentTag(tag=f"signature={signature}"))
+    content.references.bulk_create(references, ignore_errors=True)
+    content.tags.bulk_create(tags, ignore_errors=True)
 
 
 @sync_to_async(thread_sensitive=True)
