@@ -191,8 +191,8 @@ export async function checkConfigObject(
     )
     const contentHash = hashTagsContentHash(
         [`slot=${config}`],
-        algos[0],
-        'Config'
+        'Config',
+        algos[0]
     )
     if (!data) {
         return false
@@ -544,8 +544,8 @@ export async function exportConfigAsUrl({
     }
     const contentHash = await hashTagsContentHash(
         [`slot=${config.slots[0]}`],
-        authInfo.certificateHashes[0].split(':', 1)[0],
-        'Config'
+        'Config',
+        authInfo.certificateHashes[0].split(':', 1)[0]
     )
     const obj = await client.query({
         query: findConfigQuery,

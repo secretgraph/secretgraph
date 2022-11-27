@@ -17,13 +17,13 @@ from ....core.exceptions import ResourceLimitExceeded
 
 from ....core.constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import get_cached_result
-from ...utils.misc import hash_object
+from ...utils.hashing import hashObject
 from ...validators import TypeAndGroup_regex
 from ...models import Content, ContentReference, ContentTag
 
 logger = logging.getLogger(__name__)
 
-len_default_hash = len(hash_object(b""))
+len_default_hash = len(hashObject(b""))
 
 
 def tags_sanitizer(tag: str):

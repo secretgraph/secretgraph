@@ -145,7 +145,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
 
 
 def regenerateKeyHash(force=False, **kwargs):
-    from .utils.misc import calculate_hashes
+    from .utils.hashing import calculateHashes
     from .models import Content, ContentTag
     from django.conf import settings
 
@@ -157,10 +157,11 @@ def regenerateKeyHash(force=False, **kwargs):
 
     # distinct on contentHash field currently only for postgresql
     for content in contents:
-        chashes = calculate_hashes(content.load_pubkey())
+        chashes = calculateHashes(content.load_pubkey())
         until_index = 0
+        strippedContentHash = content.contentHash.removePrefix("Key:")
         for i in chashes:
-            if i == content.contentHash:
+            if i == strippedContentHash:
                 break
             until_index += 1
         assert (
@@ -189,8 +190,9 @@ def regenerateKeyHash(force=False, **kwargs):
             # ignore duplicate key_hash entries
             ContentTag.objects.bulk_create(batch, ignore_conflicts=True)
         Content.objects.filter(
-            contentHash__in=chashes[1:], type="PublicKey"
-        ).update(contentHash=chashes[0])
+            contentHash__in=map(lambda x: f"Key:{x}", chashes[1:]),
+            type="PublicKey",
+        ).update(contentHash=f"Key:{chashes[0]}")
 
 
 def fillEmptyFlexidsCb(**kwargs):

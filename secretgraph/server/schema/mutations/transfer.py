@@ -13,7 +13,7 @@ from django.db import transaction
 
 from ....core.constants import TransferResult
 from ...actions.update import transfer_value, create_content_fn
-from ...models import Content
+from ...models import Content, ContentTag
 from ...utils.auth import (
     ids_to_results,
     get_cached_result,
@@ -95,26 +95,29 @@ def mutate_transfer(
     headers: Optional[JSON] = None,
     authorization: Optional[AuthList] = None,
 ) -> TransferMutation:
-    result = ids_to_results(
+    view_result = get_cached_result(info.context)["Content"]
+    transfer_result = ids_to_results(
         info.context.request, id, Content, "update", authset=authorization
     )["Content"]
-    content_obj = result.objects.first()
-    if not content_obj:
+    transfer_target = transfer_result.objects.first()
+    if not transfer_target:
         raise ValueError()
     if key and url:
         raise ValueError()
-
-    trustedKeys = set()
-    for action_id in result["active_actions"]:
-        action_dict = result["decrypted"][action_id]
-        trustedKeys.update(action_dict.get("trustedKeys"))
-    verifiers = Content.objects.filter(
-        contentHash__in=trustedKeys, type="PublicKey"
+    signer_keys = view_result["objects"].filter(
+        type="PublicKey", referencedBy__source=transfer_target
     )
+    signer_key_hashes = ContentTag.objects.filter(
+        content__in=signer_keys, tag__startswith="key_hash="
+    ).values_list("tag", flat=True)
 
     tres = async_to_sync(
         transfer_value(
-            content_obj, key=key, url=url, headers=headers, verifiers=verifiers
+            transfer_target,
+            key=key,
+            url=url,
+            headers=headers,
+            verifiers=signer_key_hashes,
         )
     )
 
@@ -122,10 +125,10 @@ def mutate_transfer(
         TransferResult.NOTFOUND,
         TransferResult.FAILED_VERIFICATION,
     }:
-        content_obj.delete()
-    elif result == TransferResult.SUCCESS:
+        transfer_target.delete()
+    elif tres == TransferResult.SUCCESS:
         f = get_cached_result(info.context.request, authset=authorization)
         f["Content"]
         f["Cluster"]
-        return TransferMutation(content=content_obj)
+        return TransferMutation(content=transfer_target)
     return TransferMutation(content=None)

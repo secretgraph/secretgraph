@@ -9,12 +9,9 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from ...models import Cluster, Net, GlobalGroup
 from ...utils.auth import ids_to_results, retrieve_allowed_objects
-from ...utils.misc import hash_object
 from ._arguments import ContentInput
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
-
-len_default_hash = len(hash_object(b""))
 
 
 def _update_or_create_cluster(request, cluster, objdata, authset):

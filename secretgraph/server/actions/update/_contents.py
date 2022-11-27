@@ -21,7 +21,10 @@ from ....core.exceptions import ResourceLimitExceeded
 
 from ....core import constants
 from ...utils.auth import ids_to_results, get_cached_result
-from ...utils.misc import calculate_hashes, refresh_fields
+from ...utils.hashing import calculateHashes
+from ...utils.misc import refresh_fields
+
+
 from ...models import Cluster, Content, ContentReference, ContentTag, Net
 from ._actions import manage_actions_fn
 from ._metadata import transform_references, transform_tags
@@ -88,7 +91,7 @@ def _transform_key_into_dataobj(
     if publicKeyContent and has_public_key:
         if publicKeyContent.file.open("rb").read() != key_obj.publicKey:
             raise ValueError("Cannot change public key")
-    hashes = calculate_hashes(key_obj.publicKey)
+    hashes = calculateHashes(key_obj.publicKey)
     hashes_tags = tuple(map(lambda x: f"key_hash={x}", hashes))
     if key_obj.privateKey:
         if not any(
@@ -115,7 +118,7 @@ def _transform_key_into_dataobj(
             tags=_condMergeKeyTags(
                 hashes_tags, key_obj.publicTags, bool(publicKeyContent)
             ),
-            contentHash=hashes[0],
+            contentHash=f"Key:{hashes[0]}",
             actions=key_obj.publicActions,
         ),
         ContentMergedInput(

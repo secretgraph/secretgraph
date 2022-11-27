@@ -529,7 +529,7 @@ export async function updateConfigRemoteReducer(
     }
     slotHashes = await Promise.all(
         slotHashes.map((slot: string) =>
-            hashTagsContentHash([`slot=${slot}`], algos[0], 'Config')
+            hashTagsContentHash([`slot=${slot}`], 'Config', algos[0])
         )
     )
     const configQueryRes = await client.query({

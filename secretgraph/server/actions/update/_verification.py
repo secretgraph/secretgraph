@@ -32,9 +32,11 @@ async def retrieve_signatures(
     if session:
         s = session
     elif inline_domain:
-        s = httpx.AsyncClient(app=import_string(settings.ASGI_APPLICATION))
+        s = httpx.AsyncClient(
+            app=import_string(settings.ASGI_APPLICATION), **params
+        )
     else:
-        s = httpx.AsyncClient()
+        s = httpx.AsyncClient(**params)
     try:
         response = await s.get(
             prepared_url,

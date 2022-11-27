@@ -61,9 +61,9 @@ def hashObject(
 
 
 def hashObjectContentHash(
-    obj: bytes | Iterable[bytes],
-    hashAlgorithm: constants.HashNameItem | str,
+    obj: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
     domain: str,
+    hashAlgorithm: constants.HashNameItem | str,
 ) -> str:
     return "%s:%s" % (domain, hashObject(obj, hashAlgorithm))
 
@@ -77,8 +77,8 @@ def sortedHash(
 
 def hashTagsContentHash(
     inp: Iterable[str],
-    hashAlgorithm: constants.HashNameItem | str,
     domain: str,
+    hashAlgorithm: constants.HashNameItem | str,
 ) -> str:
 
     return "%s:%s" % (domain, sortedHash(inp, hashAlgorithm))

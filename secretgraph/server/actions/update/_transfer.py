@@ -9,24 +9,24 @@ from email.parser import BytesParser
 from asgiref.sync import sync_to_async
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.hashes import Hash
 from django.db.models import Q
 from django.utils.module_loading import import_string
 from django.conf import settings
 
-from secretgraph.core.utils.hashing import findWorkingHashAlgorithms
+from secretgraph.server.utils.auth import get_cached_result
+
 
 from ....core.constants import TransferResult
+from ....core.utils.verification import verify
 from ...utils.conf import get_httpx_params
-from ...utils.misc import AsyncAtomic
-from ...models import Content, ContentTag
+from ...models import Content, ContentReference, ContentTag
 
-from ._verification import retrieve_signatures, verify_signatures
+# from ._verification import retrieve_signatures, verify_signatures
 
 logger = logging.getLogger(__name__)
 
-
-def _generate_transfer_info(content, hashes_remote, signatures):
+"""
+def _generate_transfer_info(content, signatures):
     yield ContentTag(
         content=content,
         tag="signature_hash_algorithms=%s"
@@ -49,23 +49,59 @@ def _generate_transfer_info(content, hashes_remote, signatures):
                 content=content,
                 tag=("key_link=%s=%s" % (remote_key_hash, val["link"])),
             )
+"""
 
 
 @sync_to_async(thread_sensitive=True)
-def _lock_contents(q):
-    return Content.objects.filter(q).select_for_update()
+def _create_transfer_info_content(request, content, signatures):
+    seen = set()
+    references = []
+    for key in get_cached_result(request, ensureInitialized=True)["Content"][
+        "objects"
+    ].filter(contentHash_in=signatures.keys()):
+        seen.add(key)
+        references.append(
+            ContentReference(
+                group="signature",
+                extra=signatures[key.contentHash.split(":", 1)[1]][
+                    "signature"
+                ],
+                target=key,
+            )
+        )
+    for chash in signatures.keys():
+        if chash in seen:
+            continue
+
+
+@sync_to_async(thread_sensitive=True)
+def _lock_content(content):
+    had_immutable = content.tags.filter(tag="immutable").exists()
+    if not had_immutable:
+        content.tags.create(ContentTag(tag="immutable"))
+    had_hide = content.hide
+    if not had_hide:
+        content.hide = True
+        content.save(update_fields=["hide"])
+
+    return had_immutable, had_hide
+
+
+@sync_to_async(thread_sensitive=True)
+def _save_content(content):
+    content.save(update_fields=["hide", "updateId", "nonce"])
 
 
 # can be also used for server to server transfers (transfer=False)
 async def transfer_value(
-    content,
+    content: Content,
     key=None,
     url=None,
     headers=None,
     transfer=True,
     session=None,
     keepalive=None,
-    verifiers=None,
+    key_hashes=None,
 ):
     _headers = {}
     if keepalive is None:
@@ -112,65 +148,63 @@ async def transfer_value(
         s = httpx.AsyncClient(app=import_string(settings.ASGI_APPLICATION))
     else:
         s = httpx.AsyncClient()
+    had_immutable, had_hide = await _lock_content(content)
+    needs_update = True
+
     signatures = None
-    if transfer:
-        # otherwise we can run in deadlock issues if same
-        signatures = await retrieve_signatures(
-            url,
-            headers,
-            session=s,
-            params=params,
-            inline_domain=inline_domain,
-            keepalive=True,
-        )
-    async with AsyncAtomic(None, True, False):
-        blocked_contents = await _lock_contents(q)
-        # 1. lock content, 2. check if content was deleted before updating
-        if not blocked_contents:
+    try:
+        response = await s.get(url, headers=_headers, **params)
+        if response.status_code == 404:
+            return TransferResult.NOTFOUND
+        elif response.status_code != 200:
             return TransferResult.ERROR
-        try:
-            response = await s.get(url, headers=_headers, **params)
-            if response.status_code == 404:
-                return TransferResult.NOTFOUND
-            elif response.status_code != 200:
+        # should be only one nonce
+        checknonce = response.get("X-NONCE", "")
+        if checknonce != "":
+            if len(checknonce) != 20:
+                logger.warning("Invalid nonce (not 13 bytes)")
                 return TransferResult.ERROR
-            # should be only one nonce
-            checknonce = response.get("X-NONCE", "")
-            if checknonce != "":
-                if len(checknonce) != 20:
-                    logger.warning("Invalid nonce (not 13 bytes)")
-                    return TransferResult.ERROR
-                content.nonce = checknonce
-            if transfer and verifiers:
-                hashes_remote = list(
-                    map(
-                        lambda x: Hash,
-                        findWorkingHashAlgorithms(
-                            response.get("X-HASH-ALGORITHMS")
-                        ),
-                    )
+            content.nonce = checknonce
+        if transfer:
+            with content.file.open("wb") as f:
+                signatures, errors = await verify(
+                    session=s,
+                    url=url,
+                    key_hashes=key_hashes,
+                    contentResponse=response,
+                    write_chunk=f.write,
                 )
+            if errors:
+                needs_update = False
+                await Content.objects.filter(id=content.id).adelete()
+                return TransferResult.ERROR
+            elif not signatures:
+                needs_update = False
+                await Content.objects.filter(id=content.id).adelete()
+                return TransferResult.FAILED_VERIFICATION
+            else:
+                await content.references.filter(group="transfer").adelete()
+
+        else:
             with content.file.open("wb") as f:
                 for chunk in response.iter_content(512):
                     f.write(chunk)
                     for i in hashes_remote:
                         i.update(chunk)
-
-        except Exception as exc:
-            logger.error("Error while transferring content", exc_info=exc)
-            return TransferResult.ERROR
-        finally:
-            if not session:
-                s.close()
-        if transfer:
-            await content.references.filter(group="transfer").adelete()
-            await content.tags.abulk_create(
-                _generate_transfer_info(content, hashes_remote, signatures),
-                ignore_conflict=True,
-            )
+    finally:
+        if needs_update:
+            if not had_immutable:
+                await content.tags.filter(tag="immutable").adelete()
+            if not had_hide:
+                content.hide = False
             content.updateId = uuid4()
-            await content.asave(update_fields=["updateId"])
-    if transfer and verifiers:
-        if not verify_signatures(hashes_remote, signatures, verifiers):
-            return TransferResult.FAILED_VERIFICATION
+            await _save_content(content)
+
+        if not session:
+            s.close()
+    # if transfer:
+    #    await content.tags.abulk_create(
+    #        _generate_transfer_info(content, signatures),
+    #        ignore_conflict=True,
+    #    )
     return TransferResult.SUCCESS

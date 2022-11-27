@@ -82,8 +82,8 @@ export async function sortedHash(
 
 export async function hashTagsContentHash(
     inp: string[],
-    hashAlgorithm: string,
-    domain: string
+    domain: string,
+    hashAlgorithm: string
 ): Promise<string> {
     return `${domain}:${await sortedHash(inp, hashAlgorithm)}`
 }

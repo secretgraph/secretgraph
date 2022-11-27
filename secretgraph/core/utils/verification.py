@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives import padding
 import httpx
 
 from ..constants import mapHashNames, HashNameItem
+from ..exceptions import ResourceLimitExceeded
 from .graphql import transform_payload
 from .hashing import (
     findWorkingHashAlgorithms,
@@ -79,7 +80,7 @@ async def _fetch_certificate(
             raise ValueError("invalid key, no hash algorithm matches")
     else:
         calced_hashes = calculateHashesForHashAlgorithms(hashAlgorithms[:1])
-    return calced_hashes, load_der_public_key(keyResponse.content)
+    return calced_hashes, load_der_public_key(keyResponse.content), url
 
 
 async def _verify_helper(
@@ -93,7 +94,11 @@ async def _verify_helper(
     if _verify_signature(
         _hashes_key[1], signatureDigest, signHashAlgorithm, signature
     ):
-        retmap[_hashes_key[0][0]] = _hashes_key[1]
+        retmap[_hashes_key[0][0]] = {
+            "key": _hashes_key[1],
+            "signature": f"{signHashAlgorithm.serializedName}:{signature}",
+            "key_url": _hashes_key[2],
+        }
 
 
 async def verify(
@@ -103,6 +108,7 @@ async def verify(
     key_hashes: Iterable[str] = (),
     exit_first: bool = False,
     size_limit: Optional[int] = None,
+    contentResponse=None,
 ):
     splitted_url = url.split("?", 1)
     qs = {}
@@ -110,12 +116,14 @@ async def verify(
     if len(splitted_url) == 2:
         qs = parse_qs(splitted_url[1])
         authorization = ",".join(qs.get("token") or [])
-    contentResponse = await session.get(
-        splitted_url[0], headers={"Authorization": authorization}
-    )
+    if not contentResponse:
+        contentResponse = await session.get(
+            splitted_url[0], headers={"Authorization": authorization}
+        )
+        contentResponse.raise_for_status()
     if size_limit and "Content-Length" in contentResponse:
         if contentResponse["Content-Length"] > size_limit:
-            raise ValueError("Size limit")
+            raise ResourceLimitExceeded("Size limit")
 
     hashalgorithms = findWorkingHashAlgorithms(
         contentResponse["X-HASH-ALGORITHMS"]
@@ -162,7 +170,7 @@ async def verify(
         async for chunk in contentResponse.aiter_content(512):
             size_counted += len(chunk)
             if size_counted > size_limit:
-                raise ValueError("size limit")
+                raise ResourceLimitExceeded("size limit")
             if write_chunk:
                 write_chunk(chunk)
             for sig in signature_map.values():

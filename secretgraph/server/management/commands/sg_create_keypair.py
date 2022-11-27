@@ -15,7 +15,6 @@ from django.urls import reverse
 
 from ...actions.update import create_key_fn, ContentInput, ContentKeyInput
 from ...models import Net, Cluster
-from ...utils.misc import hash_object
 
 
 def _gen_key_vars_nohash(inp: bytes | str):
@@ -25,11 +24,6 @@ def _gen_key_vars_nohash(inp: bytes | str):
             inp,
         )
     return inp, b64encode(inp).decode("ascii")
-
-
-def _gen_key_vars(inp: bytes | str):
-    ret = _gen_key_vars_nohash(inp)
-    return *ret, hash_object(ret[0])
 
 
 class Command(BaseCommand):

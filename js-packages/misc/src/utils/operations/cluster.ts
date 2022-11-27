@@ -192,8 +192,8 @@ export async function initializeCluster({
     }
     const contentHash = await hashTagsContentHash(
         [`slot=${slot}`],
-        hashAlgorithm,
-        'Config'
+        'Config',
+        hashAlgorithm
     )
 
     const { tokens: authorization } = authInfoFromConfig({

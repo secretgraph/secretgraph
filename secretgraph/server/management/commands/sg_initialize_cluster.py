@@ -27,7 +27,7 @@ from ...actions.update import (
     ContentValueInput,
 )
 from ...models import Net
-from ...utils.misc import hash_object
+from ...utils.hashing import hashTagsContentHash, hashObject
 from ....core import constants
 
 
@@ -42,7 +42,7 @@ def _gen_key_vars_nohash(inp: bytes | str):
 
 def _gen_key_vars(inp: bytes | str):
     ret = _gen_key_vars_nohash(inp)
-    return *ret, hash_object(ret[0])
+    return *ret, hashObject(ret[0])
 
 
 class Command(BaseCommand):
@@ -289,7 +289,10 @@ class Command(BaseCommand):
                             ),
                         ),
                     ],
-                    contentHash=hash_object("type=Config"),
+                    contentHash=hashTagsContentHash(
+                        map(lambda x: f"slot={x}", options["slots"]),
+                        "Config",
+                    ),
                 ),
                 authset=[f"{cluster.flexid_cached}:{manage_key}"],
             )()["content"]

@@ -22,7 +22,7 @@ from ..models import (
     GlobalGroup,
     GlobalGroupProperty,
 )
-from .misc import calculate_hashes
+from .hashing import calculateHashes
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ def retrieve_allowed_objects(
             if not isinstance(action_key, bytes) or len(action_key) != 32:
                 continue
         aesgcm = AESGCM(action_key)
-        keyhashes = calculate_hashes(action_key)
+        keyhashes = calculateHashes(action_key)
 
         q = models.Q(
             contentAction__content__flexid_cached=flexid_raw

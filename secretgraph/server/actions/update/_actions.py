@@ -12,7 +12,8 @@ from django.db.models import Q
 from django.utils import timezone
 
 from ...utils.auth import retrieve_allowed_objects
-from ...utils.misc import hash_object, refresh_fields
+from ...utils.misc import refresh_fields
+from ...utils.hashing import hashObject
 from ...actions.handler import ActionHandler
 from ...models import Action, Content, Cluster, ContentAction
 
@@ -77,7 +78,7 @@ def manage_actions_fn(
         else:
             raise ValueError("No key specified/available")
 
-        action_key_hash = hash_object(action_key)
+        action_key_hash = hashObject(action_key)
         action_value = ActionHandler.clean_action(
             action_value, request=request, authset=authset, content=content
         )
