@@ -109,6 +109,7 @@ async def verify(
     exit_first: bool = False,
     size_limit: Optional[int] = None,
     contentResponse=None,
+    write_finalize=None,
 ):
     splitted_url = url.split("?", 1)
     qs = {}
@@ -125,91 +126,108 @@ async def verify(
         if contentResponse["Content-Length"] > size_limit:
             raise ResourceLimitExceeded("Size limit")
 
-    hashalgorithms = findWorkingHashAlgorithms(
-        contentResponse["X-HASH-ALGORITHMS"]
-    )
-    graphqlurl = urljoin(splitted_url[0], contentResponse["X-GRAPHQL-PATH"])
-    retmap = {}
-    key_hashes = set(map(_clean_keyhash, key_hashes))
-    body, files = transform_payload(
-        contentVerification_query, {"includeTags": list(key_hashes)}
-    )
-    result = (
-        await session.post(
-            graphqlurl,
-            data=body,
-            files=files,
-            headers={"Authorization": authorization},
+    if (
+        "X-GRAPHQL-PATH" in contentResponse
+        and "X-GRAPHQL-PATH" in contentResponse
+    ):
+        hashalgorithms = findWorkingHashAlgorithms(
+            contentResponse["X-HASH-ALGORITHMS"]
         )
-    ).json()
-    ops = []
-    url_map = {}
-    signature_map = {}
-
-    for ref in result["secretgraph"]["node"]["references"]["edges"]:
-        signature = ref["extra"]
-        link = ref["node"]["link"]
-        signature = signature.split(":", 1)
-        signHashAlgorithm = mapHashNames[signature[0]]
-        if signature[0] not in mapHashNames or len(signature) != 2:
-            continue
-        signature_map.setdefault(
-            signHashAlgorithm.serializedName,
-            {
-                "urls": {},
-                "signHashAlgorithm": signHashAlgorithm,
-                "hashCtx": Hash(signHashAlgorithm.algorithm),
-            },
+        graphqlurl = urljoin(
+            splitted_url[0], contentResponse["X-GRAPHQL-PATH"]
         )
-        joined_link = urljoin(splitted_url[0], link)
-        url_map[joined_link] = None
-        signature_map["urls"][joined_link] = signature
-
-    if size_limit and "Content-Length" not in contentResponse:
-        size_counted = 0
-        async for chunk in contentResponse.aiter_content(512):
-            size_counted += len(chunk)
-            if size_counted > size_limit:
-                raise ResourceLimitExceeded("size limit")
-            if write_chunk:
-                write_chunk(chunk)
-            for sig in signature_map.values():
-                sig["hash"].update(chunk)
-
-    else:
-        async for chunk in contentResponse.aiter_content(512):
-            if write_chunk:
-                write_chunk(chunk)
-            for sig in signature_map.values():
-                sig["hash"].update(chunk)
-    for url in url_map.keys():
-        url_map[url] = _fetch_certificate(
-            session=session,
-            url=url,
-            authorization=authorization,
-            key_hashes=key_hashes,
-            hashAlgorithms=hashalgorithms,
+        retmap = {}
+        key_hashes = set(map(_clean_keyhash, key_hashes))
+        body, files = transform_payload(
+            contentVerification_query, {"includeTags": list(key_hashes)}
         )
+        result = (
+            await session.post(
+                graphqlurl,
+                data=body,
+                files=files,
+                headers={"Authorization": authorization},
+            )
+        ).json()
+        ops = []
+        url_map = {}
+        signature_map = {}
 
-    for sig in signature_map.values():
-        signatureDigest = sig["hashCtx"].finalize()
-        for url_signature in sig["urls"].items():
-            ops.append(
-                _verify_helper(
-                    retmap=retmap,
-                    signatureDigest=signatureDigest,
-                    signature=url_signature[1],
-                    hashes_key=url_map[url_signature[0]],
-                    signHashAlgorithm=sig["signHashAlgorithm"],
-                )
+        for ref in result["secretgraph"]["node"]["references"]["edges"]:
+            signature = ref["extra"]
+            link = ref["node"]["link"]
+            signature = signature.split(":", 1)
+            signHashAlgorithm = mapHashNames[signature[0]]
+            if signature[0] not in mapHashNames or len(signature) != 2:
+                continue
+            signature_map.setdefault(
+                signHashAlgorithm.serializedName,
+                {
+                    "urls": {},
+                    "signHashAlgorithm": signHashAlgorithm,
+                    "hashCtx": Hash(signHashAlgorithm.algorithm),
+                },
+            )
+            joined_link = urljoin(splitted_url[0], link)
+            url_map[joined_link] = None
+            signature_map["urls"][joined_link] = signature
+
+        if size_limit and "Content-Length" not in contentResponse:
+            size_counted = 0
+            async for chunk in contentResponse.aiter_content(512):
+                size_counted += len(chunk)
+                if size_counted > size_limit:
+                    raise ResourceLimitExceeded("size limit")
+                if write_chunk:
+                    write_chunk(chunk)
+                for sig in signature_map.values():
+                    sig["hash"].update(chunk)
+            if write_finalize:
+                chunk = write_finalize()
+                size_counted += len(chunk)
+                if size_counted > size_limit:
+                    raise ResourceLimitExceeded("size limit")
+                for sig in signature_map.values():
+                    sig["hash"].update(chunk)
+
+        else:
+            async for chunk in contentResponse.aiter_content(512):
+                if write_chunk:
+                    write_chunk(chunk)
+                for sig in signature_map.values():
+                    sig["hash"].update(chunk)
+            if write_finalize:
+                chunk = write_finalize()
+                for sig in signature_map.values():
+                    sig["hash"].update(chunk)
+        for url in url_map.keys():
+            url_map[url] = _fetch_certificate(
+                session=session,
+                url=url,
+                authorization=authorization,
+                key_hashes=key_hashes,
+                hashAlgorithms=hashalgorithms,
             )
 
-    errors = []
-    for coro in asyncio.as_completed(ops):
-        try:
-            await coro
-            if exit_first:
-                return retmap, list(errors)
-        except Exception as exc:
-            errors.append(exc)
+        for sig in signature_map.values():
+            signatureDigest = sig["hashCtx"].finalize()
+            for url_signature in sig["urls"].items():
+                ops.append(
+                    _verify_helper(
+                        retmap=retmap,
+                        signatureDigest=signatureDigest,
+                        signature=url_signature[1],
+                        hashes_key=url_map[url_signature[0]],
+                        signHashAlgorithm=sig["signHashAlgorithm"],
+                    )
+                )
+
+        errors = []
+        for coro in asyncio.as_completed(ops):
+            try:
+                await coro
+                if exit_first:
+                    return retmap, list(errors)
+            except Exception as exc:
+                errors.append(exc)
     return retmap, list(errors)

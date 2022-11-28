@@ -116,6 +116,7 @@ class TransferResult(enum.Enum):
     NOTFOUND = "notfound"
     ERROR = "error"
     FAILED_VERIFICATION = "failed_verification"
+    RESOURCE_LIMIT_EXCEEDED = "resource_limit_exceeded"
 
 
 SECRETGRAPH = Namespace(

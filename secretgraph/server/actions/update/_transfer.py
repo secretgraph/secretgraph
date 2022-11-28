@@ -1,8 +1,6 @@
 __all__ = ["transfer_value"]
 
 import base64
-from codecs import ignore_errors
-from inspect import signature
 import json
 import logging
 from uuid import uuid4
@@ -11,9 +9,13 @@ from email.parser import BytesParser
 from asgiref.sync import sync_to_async
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from django.db.models import Q
+from django.db.models import Q, F
 from django.utils.module_loading import import_string
 from django.conf import settings
+from secretgraph.core.exceptions import (
+    LockedResourceError,
+    ResourceLimitExceeded,
+)
 
 from secretgraph.server.utils.auth import get_cached_result
 
@@ -21,7 +23,7 @@ from secretgraph.server.utils.auth import get_cached_result
 from ....core.constants import TransferResult
 from ....core.utils.verification import verify
 from ...utils.conf import get_httpx_params
-from ...models import Content, ContentReference, ContentTag
+from ...models import Net, Content, ContentReference, ContentTag
 
 # from ._verification import retrieve_signatures, verify_signatures
 
@@ -55,13 +57,20 @@ def _generate_transfer_info(content, signatures):
 
 
 @sync_to_async(thread_sensitive=True)
-def _create_transfer_info_content(request, content, signatures):
+def _create_info_content(request, content, signatures, admin=False):
     seen = set()
     references = []
     tags = []
-    for key in get_cached_result(request, ensureInitialized=True)["Content"][
-        "objects"
-    ].filter(contentHash_in=map(lambda x: f"Key:{x}", signatures.keys())):
+    if admin:
+        contents = Content.objects.all()
+    else:
+        contents = get_cached_result(request, ensureInitialized=True)[
+            "Content"
+        ]["objects"]
+    for key in contents.filter(
+        type="PublicKey",
+        contentHash_in=map(lambda x: f"Key:{x}", signatures.keys()),
+    ):
         seen.add(key)
         references.append(
             ContentReference(
@@ -76,23 +85,33 @@ def _create_transfer_info_content(request, content, signatures):
         if chash in seen:
             continue
         signature = signatures[chash]
-        # TODO: fix syntax
-        tags.append(ContentTag(tag=f"signature={signature}"))
-    content.references.bulk_create(references, ignore_errors=True)
-    content.tags.bulk_create(tags, ignore_errors=True)
+        tags.append(
+            ContentTag(tag=f"signature={chash}={signature['signature']}")
+        )
+        tags.append(ContentTag(tag=f"key_link={chash}={signature['link']}"))
+    content.references.bulk_create(references, ignore_conflict=True)
+    content.tags.bulk_create(tags, ignore_conflict=True)
 
 
 @sync_to_async(thread_sensitive=True)
-def _lock_content(content):
-    had_immutable = content.tags.filter(tag="immutable").exists()
-    if not had_immutable:
+def _lock_content(content: Content, transfer):
+    if transfer and not content.references.filter(group="transfer").exists():
+        raise ValueError("Not a transfer object")
+
+    try:
         content.tags.create(ContentTag(tag="immutable"))
+    except Exception as exc:
+        raise LockedResourceError("already locked") from exc
     had_hide = content.hide
     if not had_hide:
         content.hide = True
         content.save(update_fields=["hide"])
-
-    return had_immutable, had_hide
+    file_size = 0
+    try:
+        file_size = content.file.size
+    except Exception as exc:
+        logger.warning("Could not determinate file size", exc_info=exc)
+    return had_hide, file_size
 
 
 @sync_to_async(thread_sensitive=True)
@@ -102,6 +121,7 @@ def _save_content(content):
 
 # can be also used for server to server transfers (transfer=False)
 async def transfer_value(
+    request,
     content: Content,
     key=None,
     url=None,
@@ -110,6 +130,8 @@ async def transfer_value(
     session=None,
     keepalive=None,
     key_hashes=None,
+    admin=False,
+    skip_info_creation=False,
 ):
     _headers = {}
     if keepalive is None:
@@ -136,7 +158,6 @@ async def transfer_value(
         except Exception as exc:
             logger.error("Error while decoding url, headers", exc_info=exc)
             return TransferResult.ERROR
-
     if headers:
         if isinstance(headers, str):
             headers = json.loads(headers)
@@ -149,70 +170,92 @@ async def transfer_value(
     q = Q(id=content.id)
     if transfer:
         q &= Q(tags__tag="transfer")
-    hashes_remote = []
     if session:
         s = session
     elif inline_domain:
         s = httpx.AsyncClient(app=import_string(settings.ASGI_APPLICATION))
     else:
         s = httpx.AsyncClient()
-    had_immutable, had_hide = await _lock_content(content)
+
+    # do this basic checks before locking
+    response = await s.get(url, headers=_headers, **params)
+    if response.status_code == 404:
+        return TransferResult.NOTFOUND
+    elif response.status_code != 200:
+        return TransferResult.ERROR
+    # should be only one nonce
+    checknonce = response.get("X-NONCE", "")
+    if checknonce != "":
+        if len(checknonce) != 20:
+            logger.warning("Invalid nonce (not 13 bytes)")
+            return TransferResult.ERROR
+        content.nonce = checknonce
+
+    had_hide, orig_size = await _lock_content(content, transfer)
     needs_update = True
 
     signatures = None
     try:
-        response = await s.get(url, headers=_headers, **params)
-        if response.status_code == 404:
-            return TransferResult.NOTFOUND
-        elif response.status_code != 200:
-            return TransferResult.ERROR
-        # should be only one nonce
-        checknonce = response.get("X-NONCE", "")
-        if checknonce != "":
-            if len(checknonce) != 20:
-                logger.warning("Invalid nonce (not 13 bytes)")
-                return TransferResult.ERROR
-            content.nonce = checknonce
-        if transfer:
-            with content.file.open("wb") as f:
-                signatures, errors = await verify(
-                    session=s,
-                    url=url,
-                    key_hashes=key_hashes,
-                    contentResponse=response,
-                    write_chunk=f.write,
-                )
+        with content.file.open("wb") as f:
+            size_limit = content.net.quota
+            if size_limit:
+                size_limit -= content.net.bytes_in_use
+            signatures, errors = await verify(
+                session=s,
+                url=url,
+                key_hashes=key_hashes,
+                contentResponse=response,
+                write_chunk=f.write,
+                size_limit=size_limit,
+            )
+        if not signatures:
+            # was a secretgraph content and verification failed
             if errors:
-                needs_update = False
+                await Net.objects.filter(id=content.net.id).aupdate(
+                    bytes_in_use=F("bytes_in_use") - orig_size
+                )
                 await Content.objects.filter(id=content.id).adelete()
+                needs_update = False
                 return TransferResult.ERROR
-            elif not signatures:
-                needs_update = False
+            # transfers need correctly signed contents and not arbitary urls
+            if transfer:
+                await Net.objects.filter(id=content.net.id).aupdate(
+                    bytes_in_use=F("bytes_in_use") - orig_size
+                )
                 await Content.objects.filter(id=content.id).adelete()
+                needs_update = False
                 return TransferResult.FAILED_VERIFICATION
-            else:
-                await content.references.filter(group="transfer").adelete()
-
-        else:
-            with content.file.open("wb") as f:
-                for chunk in response.iter_content(512):
-                    f.write(chunk)
-                    for i in hashes_remote:
-                        i.update(chunk)
+        elif transfer:
+            await content.references.filter(group="transfer").adelete()
+    except Exception as exc:
+        # file is maybe partially written, do the best possible:
+        # just remove the content
+        # MAYBE: later we can cache the original content and restore it
+        # in case it is not too big (e.g. url)
+        await Net.objects.filter(id=content.net.id).aupdate(
+            bytes_in_use=F("bytes_in_use") - orig_size
+        )
+        await Content.objects.filter(id=content.id).adelete()
+        needs_update = False
+        if isinstance(exc, ResourceLimitExceeded):
+            return TransferResult.RESOURCE_LIMIT_EXCEEDED
+        return TransferResult.ERROR
     finally:
         if needs_update:
-            if not had_immutable:
+            if await content.tags.filter(tag="freeze").aexists():
+                await content.tags.filter(tag="freeze").adelete()
+            else:
                 await content.tags.filter(tag="immutable").adelete()
             if not had_hide:
                 content.hide = False
             content.updateId = uuid4()
+            await Net.objects.filter(id=content.net.id).aupdate(
+                bytes_in_use=F("bytes_in_use") - orig_size + content.file.size
+            )
             await _save_content(content)
 
         if not session:
             s.close()
-    # if transfer:
-    #    await content.tags.abulk_create(
-    #        _generate_transfer_info(content, signatures),
-    #        ignore_conflict=True,
-    #    )
+    if not skip_info_creation:
+        await _create_info_content(request, content, signatures, admin=admin)
     return TransferResult.SUCCESS
