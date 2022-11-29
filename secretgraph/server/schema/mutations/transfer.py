@@ -119,13 +119,11 @@ def mutate_transfer(
             url=url,
             headers=headers,
             verifiers=signer_key_hashes,
+            delete_failed_verification=True,
         )
     )
 
-    if tres in {
-        TransferResult.NOTFOUND,
-        TransferResult.FAILED_VERIFICATION,
-    }:
+    if tres == TransferResult.NOTFOUND:
         transfer_target.delete()
     elif tres == TransferResult.SUCCESS:
         f = get_cached_result(info.context.request, authset=authorization)

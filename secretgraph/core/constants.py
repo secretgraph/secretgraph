@@ -115,6 +115,7 @@ class TransferResult(enum.Enum):
     SUCCESS = "success"
     NOTFOUND = "notfound"
     ERROR = "error"
+    NONRECOVERABLE_ERROR = "nonrecoverable_error"
     FAILED_VERIFICATION = "failed_verification"
     RESOURCE_LIMIT_EXCEEDED = "resource_limit_exceeded"
 

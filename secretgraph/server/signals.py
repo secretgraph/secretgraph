@@ -108,8 +108,19 @@ def deleteContentCb(sender, instance, **kwargs):
 
 
 def deleteEncryptedFileCb(sender, instance, **kwargs):
+    from .models import Net
+
+    file_size = 0
+    try:
+        file_size = instance.file.size
+    except Exception as exc:
+        logger.warning("Could not determinate file size", exc_info=exc)
     if instance.file:
         instance.file.delete(False)
+    if instance.net_id:
+        Net.objects.filter(id=instance.net_id).update(
+            bytes_in_use=models.F("bytes_in_use") - file_size
+        )
 
 
 def generateFlexid(sender, instance, force=False, **kwargs):
@@ -254,11 +265,12 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
     )
 
     # cleanup expired Contents
-    Content.objects.filter(
+    for c in Content.objects.filter(
         models.Q(markForDestruction__isnull=False)
         if ignoreTime
         else models.Q(markForDestruction__lte=now)
-    ).delete()
+    ):
+        c.delete()
     # cleanup expired Clusters afterward
     Cluster.objects.annotate(models.Count("contents")).filter(
         models.Q(markForDestruction__isnull=False)

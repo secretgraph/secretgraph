@@ -373,7 +373,7 @@ get_cached_result\["Actions"\] should be used for user facing output and manipul
 ## Limited API
 
 This API contains only basic information and no informations like ids.
-It is a fallback API in case a cluster is not allowed to be read by tokens.
+It is a fallback API in case a cluster is not allowed to be read.
 The contents are limited to PublicKey types
 
 ## Action updates
@@ -384,6 +384,11 @@ The contents are limited to PublicKey types
 ## JS updating config
 
 -   updateConfig doesn't persist state in browser, use saveConfig for this
+
+## Content deletion
+
+Content deletion should be done via normal deletion (e.g. delete) where a signal is sent.
+Otherwise files are remaining and the usage is not correctly calculated
 
 # FAQ
 

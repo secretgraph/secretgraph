@@ -9,12 +9,11 @@ from email.parser import BytesParser
 from asgiref.sync import sync_to_async
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from django.db.models import Q, F
+from django.db.models import F
 from django.utils.module_loading import import_string
 from django.conf import settings
 from secretgraph.core.exceptions import (
     LockedResourceError,
-    ResourceLimitExceeded,
 )
 
 from secretgraph.server.utils.auth import get_cached_result
@@ -106,17 +105,17 @@ def _lock_content(content: Content, transfer):
     if not had_hide:
         content.hide = True
         content.save(update_fields=["hide"])
-    file_size = 0
-    try:
-        file_size = content.file.size
-    except Exception as exc:
-        logger.warning("Could not determinate file size", exc_info=exc)
-    return had_hide, file_size
+    return had_hide
 
 
 @sync_to_async(thread_sensitive=True)
 def _save_content(content):
     content.save(update_fields=["hide", "updateId", "nonce"])
+
+
+@sync_to_async(thread_sensitive=True)
+def _delete_content(content):
+    content.delete()
 
 
 # can be also used for server to server transfers (transfer=False)
@@ -130,6 +129,7 @@ async def transfer_value(
     session=None,
     keepalive=None,
     key_hashes=None,
+    delete_failed_verification=True,
     admin=False,
     skip_info_creation=False,
 ):
@@ -166,10 +166,6 @@ async def transfer_value(
     _headers["Connection"] = "Keep-Alive" if keepalive else "close"
 
     params, inline_domain = get_httpx_params(url)
-    # block content while updating file
-    q = Q(id=content.id)
-    if transfer:
-        q &= Q(tags__tag="transfer")
     if session:
         s = session
     elif inline_domain:
@@ -183,65 +179,81 @@ async def transfer_value(
         return TransferResult.NOTFOUND
     elif response.status_code != 200:
         return TransferResult.ERROR
+
+    orig_size = 0
+    try:
+        orig_size = content.file.size
+    except Exception as exc:
+        logger.warning("Could not determinate file size", exc_info=exc)
     # should be only one nonce
     checknonce = response.get("X-NONCE", "")
     if checknonce != "":
         if len(checknonce) != 20:
-            logger.warning("Invalid nonce (not 13 bytes)")
-            return TransferResult.ERROR
-        content.nonce = checknonce
+            logger.error("Invalid nonce (not 13 bytes)")
+            # if transfer, fail, otherwise ignore
+            if transfer:
+                await _delete_content(content)
+                return TransferResult.NONRECOVERABLE_ERROR
+        else:
+            content.nonce = checknonce
+    size_limit = content.net.quota
+    if size_limit is not None:
+        size_limit -= content.net.bytes_in_use
+    # size limit is remaining bytes
+    if content.net.max_upload_size is not None:
+        if size_limit:
+            size_limit = min(content.net.max_upload_size, size_limit)
+        else:
+            size_limit = content.net.max_upload_size
+    if size_limit is not None:
+        if (
+            "Content-Length" not in response
+            or response["Content-Length"] > size_limit
+        ):
+            return TransferResult.RESOURCE_LIMIT_EXCEEDED
 
-    had_hide, orig_size = await _lock_content(content, transfer)
-    needs_update = True
+    had_hide = await _lock_content(content, transfer)
+    destroy_content = False
 
     signatures = None
     try:
         with content.file.open("wb") as f:
-            size_limit = content.net.quota
-            if size_limit:
-                size_limit -= content.net.bytes_in_use
             signatures, errors = await verify(
                 session=s,
-                url=url,
+                url=response,
                 key_hashes=key_hashes,
-                contentResponse=response,
                 write_chunk=f.write,
-                size_limit=size_limit,
             )
         if not signatures:
             # was a secretgraph content and verification failed
             if errors:
-                await Net.objects.filter(id=content.net.id).aupdate(
-                    bytes_in_use=F("bytes_in_use") - orig_size
-                )
-                await Content.objects.filter(id=content.id).adelete()
-                needs_update = False
-                return TransferResult.ERROR
+                if delete_failed_verification:
+                    destroy_content = True
+                return TransferResult.FAILED_VERIFICATION
             # transfers need correctly signed contents and not arbitary urls
             if transfer:
-                await Net.objects.filter(id=content.net.id).aupdate(
-                    bytes_in_use=F("bytes_in_use") - orig_size
-                )
-                await Content.objects.filter(id=content.id).adelete()
-                needs_update = False
+                if delete_failed_verification:
+                    destroy_content = True
                 return TransferResult.FAILED_VERIFICATION
         elif transfer:
             await content.references.filter(group="transfer").adelete()
     except Exception as exc:
+        logger.error("transfer failed", exc_info=exc)
         # file is maybe partially written, do the best possible:
         # just remove the content
         # MAYBE: later we can cache the original content and restore it
         # in case it is not too big (e.g. url)
-        await Net.objects.filter(id=content.net.id).aupdate(
-            bytes_in_use=F("bytes_in_use") - orig_size
-        )
-        await Content.objects.filter(id=content.id).adelete()
-        needs_update = False
-        if isinstance(exc, ResourceLimitExceeded):
-            return TransferResult.RESOURCE_LIMIT_EXCEEDED
-        return TransferResult.ERROR
+        destroy_content = True
+        return TransferResult.NONRECOVERABLE_ERROR
     finally:
-        if needs_update:
+        # first recalculate bytes usage
+        await Net.objects.filter(id=content.net.id).aupdate(
+            bytes_in_use=F("bytes_in_use") - orig_size + content.file.size
+        )
+        if destroy_content:
+            # then delete with the correct amount of bytes
+            _delete_content(content)
+        else:
             if await content.tags.filter(tag="freeze").aexists():
                 await content.tags.filter(tag="freeze").adelete()
             else:
@@ -249,9 +261,6 @@ async def transfer_value(
             if not had_hide:
                 content.hide = False
             content.updateId = uuid4()
-            await Net.objects.filter(id=content.net.id).aupdate(
-                bytes_in_use=F("bytes_in_use") - orig_size + content.file.size
-            )
             await _save_content(content)
 
         if not session:

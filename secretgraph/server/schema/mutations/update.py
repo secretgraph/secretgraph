@@ -7,6 +7,7 @@ import strawberry
 from strawberry.types import Info
 from strawberry_django_plus import relay
 from django.db import transaction
+from django.db.models.functions import Substr
 
 from ...actions.update import (
     create_cluster_fn,
@@ -129,14 +130,12 @@ def mutate_content(
             raise ValueError("updateId required")
         result = ids_to_results(
             info.context.request,
-            str(id),
+            id,
             Content,
             "update",
             authset=authorization,
         )["Content"]
-        content_obj = result["objects"].first()
-        if not content_obj:
-            raise ValueError()
+        content_obj = result["objects"].get()
 
         if content.value:
             if content.cluster:
@@ -152,7 +151,9 @@ def mutate_content(
             else:
                 required_keys = Content.objects.required_keys_full(clusterObj)
             required_keys = set(
-                required_keys.values_list("contentHash", flat=True)
+                required_keys.annotate(
+                    keyHash=Substr("contentHash", 5)
+                ).values_list("keyHash", flat=True)
             )
         pre_clean_content_spec(False, content, result)
 

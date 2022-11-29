@@ -268,11 +268,12 @@ def transform_references(
                     "size (quota or global limit)"
                 )
             if refob.group == "signature":
-                sig_target_hashes.add(targetob.contentHash)
+                sig_target_hashes.add(targetob.contentHash.split(":", 1)[1])
             if refob.group in {"key", "transfer"}:
+                chash = targetob.contentHash.split(":", 1)[1]
                 if refob.group == "key":
-                    encrypt_target_hashes.add(targetob.contentHash)
-                if targetob.contentHash not in key_hashes_tags:
+                    encrypt_target_hashes.add(chash)
+                if chash not in key_hashes_tags:
                     raise ValueError("Key hash not found in tags")
             if not no_final_refs:
                 final_references.append(refob)
@@ -320,7 +321,7 @@ def update_metadata_fn(
             final_tags = []
             for prefix, val in tags_dict.items():
                 if not val:
-                    # can switch tags to flats
+                    # can switch tags to flags
                     remove_tags_q |= Q(tag__startswith=prefix)
                     final_tags.append(ContentTag(content=content, tag=prefix))
                 else:

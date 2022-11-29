@@ -8,7 +8,6 @@ from cryptography.hazmat.primitives import padding
 import httpx
 
 from ..constants import mapHashNames, HashNameItem
-from ..exceptions import ResourceLimitExceeded
 from .graphql import transform_payload
 from .hashing import (
     findWorkingHashAlgorithms,
@@ -103,14 +102,15 @@ async def _verify_helper(
 
 async def verify(
     session: httpx.AsyncClient,
-    url: str,
+    url: str | httpx.Response,
     write_chunk: Optional[Callable[[bytes], None]] = None,
     key_hashes: Iterable[str] = (),
     exit_first: bool = False,
-    size_limit: Optional[int] = None,
-    contentResponse=None,
-    write_finalize=None,
+    write_finalize: Optional[Callable[[], bytes]] = None,
 ):
+    if isinstance(url, httpx.Response):
+        contentResponse = url
+        url = contentResponse.request.url
     splitted_url = url.split("?", 1)
     qs = {}
     authorization = ""
@@ -121,11 +121,7 @@ async def verify(
         contentResponse = await session.get(
             splitted_url[0], headers={"Authorization": authorization}
         )
-        contentResponse.raise_for_status()
-    if size_limit and "Content-Length" in contentResponse:
-        if contentResponse["Content-Length"] > size_limit:
-            raise ResourceLimitExceeded("Size limit")
-
+    contentResponse.raise_for_status()
     if (
         "X-GRAPHQL-PATH" in contentResponse
         and "X-GRAPHQL-PATH" in contentResponse
@@ -172,34 +168,15 @@ async def verify(
             url_map[joined_link] = None
             signature_map["urls"][joined_link] = signature
 
-        if size_limit and "Content-Length" not in contentResponse:
-            size_counted = 0
-            async for chunk in contentResponse.aiter_content(512):
-                size_counted += len(chunk)
-                if size_counted > size_limit:
-                    raise ResourceLimitExceeded("size limit")
-                if write_chunk:
-                    write_chunk(chunk)
-                for sig in signature_map.values():
-                    sig["hash"].update(chunk)
-            if write_finalize:
-                chunk = write_finalize()
-                size_counted += len(chunk)
-                if size_counted > size_limit:
-                    raise ResourceLimitExceeded("size limit")
-                for sig in signature_map.values():
-                    sig["hash"].update(chunk)
-
-        else:
-            async for chunk in contentResponse.aiter_content(512):
-                if write_chunk:
-                    write_chunk(chunk)
-                for sig in signature_map.values():
-                    sig["hash"].update(chunk)
-            if write_finalize:
-                chunk = write_finalize()
-                for sig in signature_map.values():
-                    sig["hash"].update(chunk)
+        async for chunk in contentResponse.aiter_content(512):
+            if write_chunk:
+                write_chunk(chunk)
+            for sig in signature_map.values():
+                sig["hash"].update(chunk)
+        if write_finalize:
+            chunk = write_finalize()
+            for sig in signature_map.values():
+                sig["hash"].update(chunk)
         for url in url_map.keys():
             url_map[url] = _fetch_certificate(
                 session=session,
