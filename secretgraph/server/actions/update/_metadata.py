@@ -77,7 +77,9 @@ def transform_tags(
 
     for tag in tags:
         # otherwise the iterator is exhausted
-        size_new += len(tag)
+        # exclude freeze, immutable from size calculation
+        if tag not in {"freeze", "immutable"}:
+            size_new += len(tag)
         if early_size_limit is not None and size_new > early_size_limit:
             raise ResourceLimitExceeded(
                 "tags specified exceed maximal operation"
@@ -260,7 +262,7 @@ def transform_references(
         # first extra tag in same group  with same target wins
         if refob and (refob.group, refob.target.id) not in deduplicate:
             deduplicate.add((refob.group, refob.target.id))
-            size += len(refob.extra) + 8
+            size += len(refob.extra) + 28
             if len(refob.extra) > settings.SECRETGRAPH_TAG_LIMIT:
                 raise ResourceLimitExceeded("Extra tag of ref too big")
             if early_size_limit is not None and size > early_size_limit:

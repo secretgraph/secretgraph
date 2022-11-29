@@ -299,8 +299,11 @@ class Content(FlexidModel):
 
     @property
     def size_tags(self) -> int:
-        tags = self.tags.annotate(size=Length("tag")).aggregate(
-            size_sum=models.Sum("size")
+        # exclude freeze, immutable from size calculation
+        tags = (
+            self.tags.exclude(tag__in=["freeze", "immutable"])
+            .annotate(size=Length("tag"))
+            .aggregate(size_sum=models.Sum("size"))
         )
         return tags["size_sum"]
 
