@@ -10,6 +10,19 @@ from ...core.utils.hashing import (
 )
 
 
+def getPrefix(domain: Optional[str] = None):
+    assert (
+        len(settings.SECRETGRAPH_HASH_ALGORITHMS) > 0
+    ), "no hash algorithms specified"
+    hashAlgorithm = settings.SECRETGRAPH_HASH_ALGORITHMS[0]
+    if isinstance(hashAlgorithm, str):
+        hashAlgorithm = constants.mapHashNames[hashAlgorithm]
+    if domain:
+        return "%s:%s:" % (domain, hashAlgorithm.serializedName)
+    else:
+        return "%s:" % hashAlgorithm.serializedName
+
+
 def hashObject(
     inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
     hashAlgorithm: Optional[constants.HashNameItem | str] = None,

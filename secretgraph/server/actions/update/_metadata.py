@@ -17,13 +17,13 @@ from ....core.exceptions import ResourceLimitExceeded
 
 from ....core.constants import MetadataOperations, DeleteRecursive
 from ...utils.auth import get_cached_result
-from ...utils.hashing import hashObject
+from ...utils.hashing import getPrefix
 from ...validators import TypeAndGroup_regex
 from ...models import Content, ContentReference, ContentTag
 
 logger = logging.getLogger(__name__)
 
-len_default_hash = len(hashObject(b""))
+default_hash_prefix = getPrefix()
 
 
 def tags_sanitizer(tag: str):
@@ -87,9 +87,7 @@ def transform_tags(
             )
         splitted_tag = tag.split("=", 1)
         if splitted_tag[0] == "key_hash":
-            # TODO: we identify hashes currently via length
-            #       this will maybe change in future
-            if len_default_hash == len(splitted_tag[1]):
+            if splitted_tag[1].startswith(default_hash_prefix):
                 new_had_keyhash = True
                 key_hashes.add(splitted_tag[1])
         if len(splitted_tag) == 2:
@@ -116,9 +114,7 @@ def transform_tags(
             if splitted_tag[0] == "key_hash":
                 if operation == MetadataOperations.REPLACE and new_had_keyhash:
                     continue
-                # TODO: we identify hashes currently via length
-                #       this will maybe change in future
-                if len_default_hash == len(splitted_tag[1]):
+                if splitted_tag[1].startswith(default_hash_prefix):
                     key_hashes.add(splitted_tag[1])
 
             if len(splitted_tag) == 2:
