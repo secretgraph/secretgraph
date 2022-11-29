@@ -309,8 +309,8 @@ class Content(FlexidModel):
         refs = self.references.annotate(size=Length("extra")).aggregate(
             size_sum=models.Sum("size"), count=models.Count("id")
         )
-        # include target id size
-        return refs["size_sum"] + refs["count"] * 8
+        # include target id size and group field
+        return refs["size_sum"] + refs["count"] * 28
 
     @property
     def size(self) -> int:
@@ -398,7 +398,7 @@ class ContentAction(models.Model):
         Content, related_name="actions", on_delete=models.CASCADE
     )
     group: str = models.CharField(
-        max_length=50,
+        max_length=20,
         null=False,
         default="",
         blank=True,
@@ -499,7 +499,7 @@ class ContentReference(models.Model):
         Content, related_name="referencedBy", on_delete=models.CASCADE
     )
     group: str = models.CharField(
-        max_length=50,
+        max_length=20,
         default="",
         null=False,
         blank=True,

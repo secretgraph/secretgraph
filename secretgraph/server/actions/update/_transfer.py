@@ -56,8 +56,7 @@ def _generate_transfer_info(content, signatures):
 
 
 @sync_to_async(thread_sensitive=True)
-def _create_info_content(request, content, signatures, admin=False):
-    seen = set()
+def _create_info_content(request, content: Content, signatures, admin=False):
     references = []
     tags = []
     if admin:
@@ -70,26 +69,33 @@ def _create_info_content(request, content, signatures, admin=False):
         type="PublicKey",
         contentHash_in=map(lambda x: f"Key:{x}", signatures.keys()),
     ):
-        seen.add(key)
+        found_references = True
+        signature = signatures[key.contentHash.split(":", 1)[1]]["signature"]
         references.append(
             ContentReference(
                 group="signature",
-                extra=signatures[key.contentHash.split(":", 1)[1]][
-                    "signature"
-                ],
+                extra=signature,
                 target=key,
             )
         )
-    for chash in signatures.keys():
-        if chash in seen:
-            continue
-        signature = signatures[chash]
-        tags.append(
-            ContentTag(tag=f"signature={chash}={signature['signature']}")
-        )
-        tags.append(ContentTag(tag=f"key_link={chash}={signature['link']}"))
-    content.references.bulk_create(references, ignore_conflict=True)
-    content.tags.bulk_create(tags, ignore_conflict=True)
+    if found_references:
+        size_before = content.size_references
+        content.references.bulk_create(references, ignore_conflict=True)
+        size_diff = content.size_references - size_before
+        content.net.update(bytes_in_use=F("bytes_in_use") + size_diff)
+    else:
+        for chash in signatures.keys():
+            signature = signatures[chash]
+            tags.append(
+                ContentTag(tag=f"signature={chash}={signature['signature']}")
+            )
+            tags.append(
+                ContentTag(tag=f"key_link={chash}={signature['link']}")
+            )
+        size_before = content.size_tags
+        content.tags.bulk_create(tags, ignore_conflict=True)
+        size_diff = content.size_tags - size_before
+        content.net.update(bytes_in_use=F("bytes_in_use") + size_diff)
 
 
 @sync_to_async(thread_sensitive=True)

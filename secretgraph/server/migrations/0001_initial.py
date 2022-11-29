@@ -251,7 +251,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         default="",
                         help_text="ContentReference group: references are clustered in groups. They are used to signal different functions of the connection",
-                        max_length=50,
+                        max_length=20,
                         validators=[
                             secretgraph.server.validators.TypeAndGroupValidator
                         ],
@@ -304,7 +304,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         default="",
                         help_text="ContentAction group: ContentActions are clustered in groups. They are used to signal different functions of the connection",
-                        max_length=50,
+                        max_length=20,
                         validators=[
                             secretgraph.server.validators.TypeAndGroupValidator
                         ],

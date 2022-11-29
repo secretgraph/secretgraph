@@ -244,7 +244,7 @@ def transform_references(
             and (injected_ref.group, injected_ref.target.id) not in deduplicate
         ):
             deduplicate.add((injected_ref.group, injected_ref.target.id))
-            size += len(injected_ref.extra) + 8
+            size += len(injected_ref.extra) + 28
             if len(injected_ref.extra) > settings.SECRETGRAPH_TAG_LIMIT:
                 raise ResourceLimitExceeded("Extra tag of ref too big")
             if early_size_limit is not None and size > early_size_limit:
