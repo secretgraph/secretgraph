@@ -178,6 +178,7 @@ def transform_references(
     sig_target_hashes = set()
     encrypt_target_hashes = set()
     deduplicate = set()
+    is_transfer = False
     injectable_keys = Content.objects.injected_keys()
     size = 0
     for ref in references or []:
@@ -273,11 +274,19 @@ def transform_references(
                 chash = targetob.contentHash.split(":", 1)[1]
                 if refob.group == "key":
                     encrypt_target_hashes.add(chash)
+                else:
+                    is_transfer = True
                 if chash not in key_hashes_tags:
                     raise ValueError("Key hash not found in tags")
             if not no_final_refs:
                 final_references.append(refob)
-    return final_references, encrypt_target_hashes, sig_target_hashes, size
+    return (
+        final_references,
+        encrypt_target_hashes,
+        sig_target_hashes,
+        is_transfer,
+        size,
+    )
 
 
 def update_metadata_fn(
@@ -374,6 +383,7 @@ def update_metadata_fn(
         final_references,
         key_hashes_ref,
         verifiers_ref,
+        is_transfer,
         size_refs_new,
     ) = transform_references(
         content,
@@ -385,6 +395,13 @@ def update_metadata_fn(
     )
     if references is not None:
         size_diff += size_refs_new - content.size_references
+        if (
+            is_transfer
+            and not content.references.filter(group="transfer").exists()
+        ):
+            raise ValueError(
+                "Cannot transform an existing content to a transfer target"
+            )
 
     if required_keys and required_keys.isdisjoint(verifiers_ref):
         raise ValueError("Not signed by required keys")

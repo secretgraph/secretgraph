@@ -371,6 +371,7 @@ def _update_or_create_content_or_key(
             final_references,
             key_hashes_ref,
             verifiers_ref,
+            is_transfer,
             size_refs,
         ) = transform_references(
             content,
@@ -382,6 +383,15 @@ def _update_or_create_content_or_key(
         )
         if required_keys and required_keys.isdisjoint(verifiers_ref):
             raise ValueError("Not signed by required keys")
+        if (
+            not create
+            and is_transfer
+            and not content.references.filter(group="transfer").exists()
+        ):
+            raise ValueError(
+                "Cannot transform an existing content to a transfer target"
+            )
+
         size_new += size_refs
     elif create:
         final_references = []
