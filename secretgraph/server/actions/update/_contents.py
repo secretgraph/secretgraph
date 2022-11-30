@@ -3,10 +3,9 @@ __all__ = ["create_content_fn", "update_content_fn", "create_key_fn"]
 
 import base64
 import logging
-import re
 from contextlib import nullcontext
 from itertools import chain
-from typing import List, Optional
+from typing import Iterable, List, Optional
 from uuid import UUID, uuid4
 from dataclasses import fields
 
@@ -28,18 +27,16 @@ from ...utils.misc import refresh_fields
 from ...models import Cluster, Content, ContentReference, ContentTag, Net
 from ._actions import manage_actions_fn
 from ._metadata import transform_references, transform_tags
-from ._arguments import ContentMergedInput, ContentKeyInput, ReferenceInput
+from ._arguments import (
+    ContentMergedInput,
+    ContentInput,
+    ContentKeyInput,
+    ReferenceInput,
+)
 
 logger = logging.getLogger(__name__)
 
 _emptyset = frozenset()
-_contenthash_algo = re.compile(
-    "[^:]*:{}:.+|".format(
-        constants.mapHashNames[
-            settings.SECRETGRAPH_HASH_ALGORITHMS[0]
-        ].serializedName
-    )
-)
 
 
 def _condMergeKeyTags(
@@ -140,10 +137,10 @@ def _transform_key_into_dataobj(
 
 def _update_or_create_content_or_key(
     request,
-    content,
+    content: Content,
     objdata: ContentMergedInput,
     authset,
-    is_key,
+    is_key: bool,
     required_keys,
 ):
     create = not content.id
@@ -583,7 +580,12 @@ def create_key_fn(request, objdata, authset=None):
     return func
 
 
-def create_content_fn(request, objdata, authset=None, required_keys=None):
+def create_content_fn(
+    request,
+    objdata: ContentInput,
+    authset: Optional[Iterable[str]] = None,
+    required_keys=None,
+):
     value_obj = objdata.value
     key_obj = objdata.key
     if not value_obj and not key_obj:
@@ -626,7 +628,12 @@ def create_content_fn(request, objdata, authset=None, required_keys=None):
 
 
 def update_content_fn(
-    request, content, objdata, updateId, authset=None, required_keys=None
+    request,
+    content: Content,
+    objdata: ContentInput,
+    updateId,
+    authset=None,
+    required_keys=None,
 ):
     assert content.id
     try:

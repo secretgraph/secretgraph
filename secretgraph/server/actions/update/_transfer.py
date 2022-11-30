@@ -1,4 +1,4 @@
-__all__ = ["transfer_value"]
+__all__ = ["sync_transfer_value", "transfer_value"]
 
 import base64
 import json
@@ -6,7 +6,7 @@ import logging
 from uuid import uuid4
 from email.parser import BytesParser
 
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async, async_to_sync
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import F
@@ -24,35 +24,7 @@ from ....core.utils.verification import verify
 from ...utils.conf import get_httpx_params
 from ...models import Net, Content, ContentReference, ContentTag
 
-# from ._verification import retrieve_signatures, verify_signatures
-
 logger = logging.getLogger(__name__)
-
-"""
-def _generate_transfer_info(content, signatures):
-    yield ContentTag(
-        content=content,
-        tag="signature_hash_algorithms=%s"
-        % ",".join(map(lambda x: x.name, hashes_remote)),
-    )
-    for remote_key_hash, val in (signatures or {}).items():
-        yield ContentTag(
-            content=content,
-            tag=(
-                "signature=%s=%s"
-                % (
-                    # = algo=signature=keyhash
-                    val["signature"],
-                    remote_key_hash,
-                )
-            ),
-        )
-        if val.get("link"):
-            yield ContentTag(
-                content=content,
-                tag=("key_link=%s=%s" % (remote_key_hash, val["link"])),
-            )
-"""
 
 
 @sync_to_async(thread_sensitive=True)
@@ -274,3 +246,6 @@ async def transfer_value(
     if not skip_info_creation:
         await _create_info_content(request, content, signatures, admin=admin)
     return TransferResult.SUCCESS
+
+
+sync_transfer_value = async_to_sync(transfer_value)

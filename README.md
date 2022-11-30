@@ -390,6 +390,16 @@ The contents are limited to PublicKey types
 Content deletion should be done via normal deletion (e.g. delete) where a signal is sent.
 Otherwise files are remaining and the usage is not correctly calculated
 
+## Transfer
+
+Transfer can only be started on contents with transfer references. They can only be specified at creation time for security reasons (otherwise it is possible to circumvent the rentention time).
+Transfer contents are deleted when an unrecoverable error happens or the server returns 404
+When a transfer succeeds, signature references are created in case the Publickey is on the server and visible, otherwise a link and a signature tag are created
+
+## Pull / stream in
+
+This is currently not implemented as it needs background workers and has many caveats
+
 # FAQ
 
 ## Why 3party decryption via private key
@@ -457,6 +467,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO far future
 
+-   pull support, "stream in" of content
 -   more async (needs better django support)
 -   recovery:
     -   save a recovery token in remote identity provider (needs identity provider+ identity editor)

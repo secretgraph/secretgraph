@@ -74,18 +74,6 @@ class ContentValueInput:
 
 
 @strawberry.input
-class PushContentValueInput:
-    value: Upload
-    state: Optional[str] = None
-    type: str
-    nonce: str
-    tags: List[str] = strawberry.field(default_factory=list)
-    actions: strawberry.Private[List[ActionInput]] = dataclasses.field(
-        default_factory=list
-    )
-
-
-@strawberry.input
 class ContentInput:
     net: Optional[ID] = None
     cluster: Optional[ID] = None
@@ -99,10 +87,23 @@ class ContentInput:
 
 
 @strawberry.input
+class PushContentValueInput:
+    value: Upload
+    state: Optional[str] = None
+    type: str
+    nonce: str
+    tags: List[str] = strawberry.field(default_factory=list)
+    actions: strawberry.Private[List[ActionInput]] = dataclasses.field(
+        default_factory=list
+    )
+
+
+@strawberry.input
 class PushContentInput:
     parent: ID
     value: PushContentValueInput
     net: Optional[ID] = None
+    additionalNets: strawberry.Private[Optional[Iterable[Net]]] = None
 
 
 @strawberry.input

@@ -168,7 +168,8 @@ async def verify(
             url_map[joined_link] = None
             signature_map["urls"][joined_link] = signature
 
-        async for chunk in contentResponse.aiter_content(512):
+        async for _chunk in contentResponse.aiter_bytes(512):
+            chunk = await _chunk
             if write_chunk:
                 write_chunk(chunk)
             for sig in signature_map.values():

@@ -139,17 +139,20 @@ def mutate_content(
 
         if content.value:
             if content.cluster:
-                clusterObj = fetch_by_id(
+                cluster_obj = fetch_by_id(
                     Cluster.objects.all(), [content.cluster]
                 ).first()
-                if clusterObj:
+                if cluster_obj:
                     required_keys = Content.objects.required_keys_full(
-                        clusterObj
+                        cluster_obj
                     )
                 else:
-                    raise ValueError("cluster not found")
+                    # don't disclose cluster existence
+                    required_keys = ["invalid"]
             else:
-                required_keys = Content.objects.required_keys_full(clusterObj)
+                required_keys = Content.objects.required_keys_full(
+                    content_obj.cluster
+                )
             required_keys = set(
                 required_keys.annotate(
                     keyHash=Substr("contentHash", 5)

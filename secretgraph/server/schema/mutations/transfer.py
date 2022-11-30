@@ -5,23 +5,21 @@ import logging
 import os
 from typing import Optional
 
-from asgiref.sync import async_to_sync
 import strawberry
 from strawberry.scalars import JSON
 from strawberry.types import Info
+from strawberry_django_plus import relay
 from django.db import transaction
 
 from ....core.constants import TransferResult
-from ...actions.update import transfer_value, create_content_fn
+from ...actions.update import sync_transfer_value, create_content_fn
 from ...models import Content, ContentTag
 from ...utils.auth import (
     ids_to_results,
     get_cached_result,
+    retrieve_allowed_objects,
 )
-from ..arguments import (
-    AuthList,
-    PushContentInput,
-)
+from ..arguments import AuthList, PushContentInput
 from ...utils.arguments import pre_clean_content_spec
 from ..definitions import ContentNode
 
@@ -87,7 +85,7 @@ class TransferMutation:
 
 def mutate_transfer(
     info: Info,
-    id: strawberry.ID,
+    id: relay.GlobalID,
     url: Optional[str] = None,
     key: Optional[
         str
@@ -95,15 +93,16 @@ def mutate_transfer(
     headers: Optional[JSON] = None,
     authorization: Optional[AuthList] = None,
 ) -> TransferMutation:
-    view_result = get_cached_result(info.context)["Content"]
+    view_result = retrieve_allowed_objects(
+        info.context, authset=authorization
+    )["Content"]
     transfer_result = ids_to_results(
         info.context.request, id, Content, "update", authset=authorization
     )["Content"]
-    transfer_target = transfer_result.objects.first()
-    if not transfer_target:
-        raise ValueError()
+    transfer_target = transfer_result.objects.get()
     if key and url:
         raise ValueError()
+    # was signed? => restrict to keys
     signer_keys = view_result["objects"].filter(
         type="PublicKey", referencedBy__source=transfer_target
     )
@@ -111,23 +110,71 @@ def mutate_transfer(
         content__in=signer_keys, tag__startswith="key_hash="
     ).values_list("tag", flat=True)
 
-    tres = async_to_sync(
-        transfer_value(
-            info.context.request,
-            transfer_target,
-            key=key,
-            url=url,
-            headers=headers,
-            verifiers=signer_key_hashes,
-            delete_failed_verification=True,
-        )
+    tres = sync_transfer_value(
+        info.context.request,
+        transfer_target,
+        key=key,
+        url=url,
+        headers=headers,
+        verifiers=signer_key_hashes,
+        delete_failed_verification=True,
     )
 
     if tres == TransferResult.NOTFOUND:
         transfer_target.delete()
     elif tres == TransferResult.SUCCESS:
         f = get_cached_result(info.context.request, authset=authorization)
-        f["Content"]
-        f["Cluster"]
+        f.preinit("Content", "Cluster")
+        return TransferMutation(content=transfer_target)
+    return TransferMutation(content=None)
+
+
+@strawberry.type
+class PullMutation:
+
+    content: Optional[ContentNode] = None
+    writeok: bool
+
+
+def mutate_pull(
+    info: Info,
+    id: relay.GlobalID,
+    url: Optional[str] = None,
+    key: Optional[str] = None,  # encrypting key
+    headers: Optional[JSON] = None,
+    authorization: Optional[AuthList] = None,
+) -> TransferMutation:
+    view_result = retrieve_allowed_objects(
+        info.context, authset=authorization
+    )["Content"]
+    transfer_result = ids_to_results(
+        info.context.request, id, Content, "update", authset=authorization
+    )["Content"]
+    transfer_target = transfer_result.objects.get()
+    if key and url:
+        raise ValueError()
+    # was signed? => restrict to keys
+    signer_keys = view_result["objects"].filter(
+        type="PublicKey", referencedBy__source=transfer_target
+    )
+    signer_key_hashes = ContentTag.objects.filter(
+        content__in=signer_keys, tag__startswith="key_hash="
+    ).values_list("tag", flat=True)
+
+    tres = sync_transfer_value(
+        info.context.request,
+        transfer_target,
+        key=key,
+        url=url,
+        headers=headers,
+        verifiers=signer_key_hashes,
+        delete_failed_verification=True,
+    )
+
+    if tres == TransferResult.NOTFOUND:
+        transfer_target.delete()
+    elif tres == TransferResult.SUCCESS:
+        f = get_cached_result(info.context.request, authset=authorization)
+        f.preinit("Content", "Cluster")
         return TransferMutation(content=transfer_target)
     return TransferMutation(content=None)

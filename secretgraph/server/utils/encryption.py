@@ -248,14 +248,12 @@ class ProxyTags:
 def iter_decrypt_contents(
     result, /, *, queryset=None, decryptset=None
 ) -> Iterable[Iterable[str]]:
-    from ..actions.update import transfer_value
+    from ..actions.update import sync_transfer_value
 
     if decryptset is None:
         raise Exception("decryptset is missing")
     # copy query
     content_query = (queryset or result["objects"]).all()
-    # per default verifiers=None, so that a failed verifications cannot happen
-    content_query.only_direct_trigger = True
     content_map, transfer_map = create_key_maps(content_query, decryptset)
 
     # main query, restricted to PublicKeys and decoded contents
@@ -291,7 +289,7 @@ def iter_decrypt_contents(
                 verifiers = None
             else:
                 verifiers = content_query.filter(id__in=verifiers)
-            result = transfer_value(
+            result = sync_transfer_value(
                 content,
                 key=transfer_map[content.id],
                 transfer=True,
