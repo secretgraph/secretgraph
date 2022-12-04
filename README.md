@@ -420,6 +420,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO
 
+-   validationError: use params
 -   trustedKeys logic. Prevent server-side injection of keys
     -   Needs much more work especially on gui side
     -   a better ActionDialog is neccessary

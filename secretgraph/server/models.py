@@ -367,6 +367,16 @@ class Content(FlexidModel):
                         % self.state
                     }
                 )
+            if not self.contentHash or not self.contentHash.startswith("Key:"):
+                raise ValidationError(
+                    {
+                        "contentHash": (
+                            "%(contentHash)s is an invalid"
+                            "contentHash for public key. Needs domain: Key:"
+                        )
+                    },
+                    params={"contentHash": self.contentHash},
+                )
         else:
             if self.type == "Config" and self.state != "protected":
                 raise ValidationError(

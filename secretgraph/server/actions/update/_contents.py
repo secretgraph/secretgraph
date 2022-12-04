@@ -402,7 +402,7 @@ def _update_or_create_content_or_key(
             raise ValueError("requires hash of decryption key as key_hash tag")
         elif (
             content.type == "PublicKey"
-            and content.contentHash not in key_hashes_tags
+            and content.contentHash.removePrefix("Key:") not in key_hashes_tags
         ):
             raise ValueError(
                 ">=1 key_hash info tags required for PublicKey (own hash)"
@@ -497,7 +497,7 @@ def _update_or_create_content_or_key(
     return save_fn
 
 
-def create_key_fn(request, objdata, authset=None):
+def create_key_fn(request, objdata: ContentInput, authset=None):
     """creates or updates public key, creates private key if specified"""
     key_obj = objdata.key
     if not key_obj:

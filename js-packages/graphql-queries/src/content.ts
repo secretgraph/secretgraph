@@ -141,7 +141,6 @@ export const createKeysMutation = gql`
         $publicKey: Upload!
         $privateKey: Upload
         $nonce: String
-        $contentHash: String
         $authorization: [String!]
     ) {
         updateOrCreateContent(
@@ -159,7 +158,6 @@ export const createKeysMutation = gql`
                         publicActions: $publicActions
                         publicState: $publicState
                     }
-                    contentHash: $contentHash
                     references: $references
                 }
                 authorization: $authorization

@@ -33,7 +33,6 @@ export async function createKeys({
     privateTags?: Iterable<string | PromiseLike<string>>
     publicTags?: Iterable<string | PromiseLike<string>>
     publicState?: string
-    contentHash?: string | null
     privateActions?: Iterable<Interfaces.ActionInterface>
     publicActions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
@@ -122,7 +121,6 @@ export async function createKeys({
             publicActions: options.publicActions
                 ? [...options.publicActions]
                 : undefined,
-            contentHash: options.contentHash ? options.contentHash : null,
             authorization: options.authorization,
         },
     })

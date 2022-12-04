@@ -250,7 +250,9 @@ def transform_references(
                     "references exhausts resource limit "
                 )
             # must be target
-            encrypt_target_hashes.add(injected_ref.contentHash)
+            encrypt_target_hashes.add(
+                injected_ref.contentHash.removePrefix("Key:")
+            )
             # is not required to be in tags
             if not no_final_refs:
                 final_references.append(injected_ref)
@@ -267,9 +269,11 @@ def transform_references(
                     "size (quota or global limit)"
                 )
             if refob.group == "signature":
-                sig_target_hashes.add(targetob.contentHash.split(":", 1)[1])
+                sig_target_hashes.add(
+                    targetob.contentHash.removePrefix("Key:")
+                )
             if refob.group in {"key", "transfer"}:
-                chash = targetob.contentHash.split(":", 1)[1]
+                chash = targetob.contentHash.removePrefix("Key:")
                 if refob.group == "key":
                     encrypt_target_hashes.add(chash)
                 else:
@@ -369,7 +373,12 @@ def update_metadata_fn(
             elif (ref.group, ref.target_id) in remrefs:
                 remove_refs_q |= Q(id=ref.id)
                 continue
-            elif (ref.group, ref.target.contentHash) in remrefs:
+            elif (
+                ref.group,
+                ref.target.contentHash.removePrefix("Key:")
+                if ref.target.contentHash
+                else None,
+            ) in remrefs:
                 remove_refs_q |= Q(id=ref.id)
                 continue
             _refs.append(ref)

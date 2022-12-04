@@ -42,7 +42,9 @@ def _create_info_content(request, content: Content, signatures, admin=False):
         contentHash_in=map(lambda x: f"Key:{x}", signatures.keys()),
     ):
         found_references = True
-        signature = signatures[key.contentHash.split(":", 1)[1]]["signature"]
+        signature = signatures[key.contentHash.removePrefix("Key:")][
+            "signature"
+        ]
         references.append(
             ContentReference(
                 group="signature",

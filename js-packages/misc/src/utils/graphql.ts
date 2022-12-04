@@ -232,9 +232,10 @@ export function extractPubKeysCluster(props: {
         if (!props.onlyPubkeys && keyNode.type != 'PublicKey') {
             continue
         }
-        seen.add(keyNode.contentHash)
-        if (!pubkeys[keyNode.contentHash]) {
-            pubkeys[keyNode.contentHash] = fetch(keyNode.link, {
+        const keyHash: string = keyNode.contentHash.replace(/^Key:/, '')
+        seen.add(keyHash)
+        if (!pubkeys[keyHash]) {
+            pubkeys[keyHash] = fetch(keyNode.link, {
                 headers: {
                     Authorization: props.authorization.join(','),
                 },
@@ -256,8 +257,8 @@ export function extractPubKeysCluster(props: {
                 }
             })
         } else {
-            pubkeys[keyNode.contentHash] = unserializeToCryptoKey(
-                pubkeys[keyNode.contentHash],
+            pubkeys[keyHash] = unserializeToCryptoKey(
+                pubkeys[keyHash],
                 props.params,
                 'publicKey'
             )
@@ -302,9 +303,10 @@ export function extractPubKeysReferences(props: {
         if (!props.onlyPubkeys && keyNode.type == 'PublicKey') {
             continue
         }
-        seen.add(keyNode.contentHash)
-        if (!pubkeys[keyNode.contentHash]) {
-            pubkeys[keyNode.contentHash] = fetch(keyNode.link, {
+        const keyHash: string = keyNode.contentHash.replace(/^Key:/, '')
+        seen.add(keyHash)
+        if (!pubkeys[keyHash]) {
+            pubkeys[keyHash] = fetch(keyNode.link, {
                 headers: {
                     Authorization: props.authorization.join(','),
                 },
@@ -325,8 +327,8 @@ export function extractPubKeysReferences(props: {
                 }
             })
         } else {
-            pubkeys[keyNode.contentHash] = unserializeToCryptoKey(
-                pubkeys[keyNode.contentHash],
+            pubkeys[keyHash] = unserializeToCryptoKey(
+                pubkeys[keyHash],
                 props.params,
                 'publicKey'
             )
