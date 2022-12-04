@@ -11,7 +11,7 @@
 <link rel="manifest" href="{% static 'secretgraph_proxy/webmanifest.json' %}" />
 {% endblock %}
 {% block head_scripts %}
-<script async src="{% manifest 'runtime~loader.js' %}"></script>
+<script async src="{% manifest 'chunks/runtime~loader.js' %}"></script>
 <script defer src="{% manifest 'loader.js' %}"></script>
 {% endblock %}
 
