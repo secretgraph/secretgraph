@@ -20,7 +20,6 @@ class ResultObject(TypedDict):
     decrypted: dict
     active_actions: set[str]
     actions: QuerySet
-    action_key_map: dict
     # {id: {(action, hash): id}}  # noqa
     action_info_clusters: AuthActionInfoDict
     action_info_contents: AuthActionInfoDict

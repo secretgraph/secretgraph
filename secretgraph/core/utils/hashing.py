@@ -8,7 +8,7 @@ from ..typings import PrivateCryptoKey, PublicCryptoKey
 
 def findWorkingHashAlgorithms(
     hashAlgorithms: Iterable[str] | str, failhard: bool = False
-):
+) -> list[constants.HashNameItem]:
     working_dict = {}
     if isinstance(hashAlgorithms, str):
         hashAlgorithms = hashAlgorithms.split(",")
@@ -85,9 +85,9 @@ def hashTagsContentHash(
 
 
 def calculateHashesForHashAlgorithms(
-    inp,
+    inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
     hashAlgorithms: Iterable[constants.HashNameItem],
-):
+) -> list[str]:
     if isinstance(inp, str):
         inp = base64.b64decode(inp)
     if hasattr(inp, "public_key"):
@@ -103,7 +103,9 @@ def calculateHashesForHashAlgorithms(
     return hashes
 
 
-def calculateHashes(inp, hashAlgorithms, failhard=False):
+def calculateHashes(
+    inp, hashAlgorithms: Iterable[constants.HashNameItem | str], failhard=False
+) -> list[str]:
     hashAlgorithms = findWorkingHashAlgorithms(
         hashAlgorithms, failhard=failhard
     )

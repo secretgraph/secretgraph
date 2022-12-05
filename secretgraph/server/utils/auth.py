@@ -72,6 +72,34 @@ class LazyViewResult(object):
             self[i]
 
 
+def _parse_token(token):
+    spitem = token.split(":", 1)
+    if len(spitem) != 2:
+        return None, None, None
+
+    flexid_raw, action_key = spitem
+    try:
+        action_key = base64.b64decode(action_key)
+    finally:
+        if not isinstance(action_key, bytes) or len(action_key) != 32:
+            return None, None, None
+    return (
+        flexid_raw,
+        AESGCM(action_key),
+        calculateHashes(action_key),
+    )
+
+
+def _speedup_tokenparsing(request, token) -> tuple[str, AESGCM, list[str]]:
+    if not token:
+        return None, None, None
+    if not hasattr(request, "_secretgraph_token_cache"):
+        setattr(request, "_secretgraph_token_cache", {})
+    if token not in request._secretgraph_token_cache:
+        request._secretgraph_token_cache[token] = _parse_token(token)
+    return request._secretgraph_token_cache[token]
+
+
 def retrieve_allowed_objects(
     request, query, scope="view", authset=None, ignore_restrictions=False
 ):
@@ -115,7 +143,6 @@ def retrieve_allowed_objects(
         "decrypted": {},
         "active_actions": set(),
         "actions": Action.objects.none(),
-        "action_key_map": {},
         # {id: {(action, hash): id}}  # noqa
         "action_info_clusters": {},
         "action_info_contents": {},
@@ -123,21 +150,9 @@ def retrieve_allowed_objects(
     clusters = {}
     passive_active_actions = set()
     for item in authset:
-        # harden against invalid input, e.g. object view produces empty strings
-        if not item:
+        flexid_raw, aesgcm, keyhashes = _speedup_tokenparsing(request, item)
+        if not aesgcm:
             continue
-        spitem = item.split(":", 1)
-        if len(spitem) != 2:
-            continue
-
-        flexid_raw, action_key = spitem
-        try:
-            action_key = base64.b64decode(action_key)
-        finally:
-            if not isinstance(action_key, bytes) or len(action_key) != 32:
-                continue
-        aesgcm = AESGCM(action_key)
-        keyhashes = calculateHashes(action_key)
 
         q = models.Q(
             contentAction__content__flexid_cached=flexid_raw
@@ -225,8 +240,6 @@ def retrieve_allowed_objects(
                 )
 
         returnval["actions"] |= actions
-        for h in keyhashes:
-            returnval["action_key_map"][h] = action_key
         # apply filters to a private query
         if issubclass(query.model, Cluster):
             _query = query.filter(filters & models.Q(id=actions[0].cluster_id))

@@ -50,7 +50,7 @@ def hashTagsContentHash(
 
 def calculateHashes(
     inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
-):
+) -> list[str]:
     return _calculateHashes(
         inp, settings.SECRETGRAPH_HASH_ALGORITHMS, failhard=True
     )
