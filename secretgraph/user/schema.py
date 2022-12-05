@@ -59,7 +59,7 @@ class UserMutation(relay.Node):
         else:
             user = None
             manage = retrieve_allowed_objects(
-                info.context.request, Cluster.actions.all(), scope="manage"
+                info.context.request, Cluster.objects.all(), scope="manage"
             )["objects"].first()
 
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
@@ -96,7 +96,7 @@ class DeleteUserMutation(relay.Node):
         Content.objects.filter(markForDestruction__lte=now).delete()
         user = user_model.objects.get(pk=id.node_id)
         result = retrieve_allowed_objects(
-            info.context.request, Cluster.actions.all(), scope="manage"
+            info.context.request, Cluster.objects.all(), scope="manage"
         )
         if user.net.clusters.exclude(
             id__in=result["objects"].values_list("id", flat=True)

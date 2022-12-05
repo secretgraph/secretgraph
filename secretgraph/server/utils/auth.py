@@ -1,14 +1,13 @@
 import base64
 import json
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Iterable, Optional
 from strawberry_django_plus import relay, gql
 from functools import reduce, partial
 from itertools import chain
 from operator import or_
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from django.apps import apps
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -24,6 +23,10 @@ from ..models import (
 )
 from .hashing import calculateHashes
 
+if TYPE_CHECKING:
+    from ...core import typings
+    from django.http import HttpRequest
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +36,7 @@ _cached_classes = {"Content", "Cluster", "Action"}
 class LazyViewResult(object):
     _result_dict = None
 
-    def __init__(self, fn, request, *viewResults, authset=None):
+    def __init__(self, fn, request: HttpRequest, *viewResults, authset=None):
         self._result_dict = {}
         self.request = request
         self.authset = authset
@@ -72,7 +75,7 @@ class LazyViewResult(object):
             self[i]
 
 
-def _parse_token(token):
+def _parse_token(token: str):
     spitem = token.split(":", 1)
     if len(spitem) != 2:
         return None, None, None
@@ -90,7 +93,9 @@ def _parse_token(token):
     )
 
 
-def _speedup_tokenparsing(request, token) -> tuple[str, AESGCM, list[str]]:
+def _speedup_tokenparsing(
+    request: HttpRequest, token: str
+) -> tuple[str, AESGCM, list[str]]:
     if not token:
         return None, None, None
     if not hasattr(request, "_secretgraph_token_cache"):
@@ -103,11 +108,12 @@ def _speedup_tokenparsing(request, token) -> tuple[str, AESGCM, list[str]]:
 
 
 def retrieve_allowed_objects(
-    request, query, scope="view", authset=None, ignore_restrictions=False
+    request: HttpRequest,
+    query: models.QuerySet,
+    scope: typings.Scope = "view",
+    authset: Iterable[str] | set[str] = None,
+    ignore_restrictions: bool = False,
 ):
-    if isinstance(query, str):
-        query = apps.get_model("secretgraph", query).objects.all()
-
     if authset is None:
         authset = set(
             getattr(request, "headers", {})
@@ -333,11 +339,11 @@ def retrieve_allowed_objects(
 
 
 def fetch_by_id(
-    query,
-    flexids,
+    query: models.QuerySet,
+    flexids: Iterable[str | relay.GlobalID] | str | relay.GlobalID,
     check_content_hash=False,
     limit_ids: Optional[int] = 1,
-):
+) -> models.QuerySet:
     if flexids and isinstance(flexids, (str, relay.GlobalID)):
         flexids = [flexids]
     if limit_ids:

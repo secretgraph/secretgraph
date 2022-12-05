@@ -444,6 +444,7 @@ now you have a decryption key to the private key, that is very dangerous
 
 # TODO later
 
+-   use weakref finalizers to nuke bytes content
 -   disallow non global ids? Would ease implementation
 -   encrypt Config set with saveConfig/loaded with loadConfigSync via a static key
     -   via var
