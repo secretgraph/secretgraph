@@ -10,7 +10,6 @@ from django.db.models import QuerySet
 from ...models import (
     Content,
     GlobalGroup,
-    GlobalGroupProperty,
 )
 
 
@@ -41,11 +40,6 @@ class InjectedKeyNode:
         return queryset.filter(type="PublicKey", injectedFor__isnull=False)
 
 
-@gql.django.type(GlobalGroupProperty, name="GlobalGroupProperty")
-class GlobalGroupPropertyNode:
-    name: str
-
-
 @gql.django.type(GlobalGroup, name="GlobalGroup")
 class GlobalGroupNode(relay.Node):
 
@@ -53,10 +47,13 @@ class GlobalGroupNode(relay.Node):
     description: str
     hidden: bool
     matchUserGroup: str
-    properties: List[GlobalGroupPropertyNode]
     injectedKeys: List[InjectedKeyNode]
 
     id_attr = "name"
+
+    @gql.field()
+    def properties(self) -> list[str]:
+        return self.properties.values_list("name", flat=True)
 
 
 @gql.type()

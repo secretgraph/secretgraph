@@ -2,7 +2,7 @@ import { ApolloClient, FetchResult } from '@apollo/client'
 import {
     createKeysMutation,
     updateKeyMutation,
-} from '@secretgraph/graphql-queries/content'
+} from '@secretgraph/graphql-queries/key'
 
 import { mapHashNames } from '../../constants'
 import * as Interfaces from '../../interfaces'

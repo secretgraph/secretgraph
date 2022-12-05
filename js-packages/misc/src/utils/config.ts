@@ -1,5 +1,5 @@
 import { ApolloClient } from '@apollo/client'
-import { findConfigQuery } from '@secretgraph/graphql-queries/content'
+import { findConfigQuery } from '@secretgraph/graphql-queries/config'
 import { saveAs } from 'file-saver'
 
 import * as Constants from '../constants'

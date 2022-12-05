@@ -11,11 +11,11 @@ import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/system/Box'
+import { getContentConfigurationQuery } from '@secretgraph/graphql-queries/content'
 import {
     findPublicKeyQuery,
-    getContentConfigurationQuery,
     keysRetrievalQuery,
-} from '@secretgraph/graphql-queries/content'
+} from '@secretgraph/graphql-queries/key'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'

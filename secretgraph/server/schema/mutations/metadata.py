@@ -162,9 +162,9 @@ def update_metadata(
             "update",
             authset=authorization,
         )["Content"]
-    requests = []
+    ops = []
     for content_obj in result.objects.all():
-        requests.append(
+        ops.append(
             update_metadata_fn(
                 info.context.request,
                 content_obj,
@@ -180,7 +180,7 @@ def update_metadata(
             )
         )
         if actions:
-            requests.append(
+            ops.append(
                 manage_actions_fn(
                     info.context.request,
                     content_obj,
@@ -190,6 +190,6 @@ def update_metadata(
             )
     contents = []
     with transaction.atomic():
-        for f in requests:
+        for f in ops:
             contents.push(f().flexid_cached)
     return MetadataUpdateMutation(updated=contents)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __all__ = [
     "transform_tags",
     "transform_references",
@@ -5,6 +7,7 @@ __all__ = [
 ]
 
 import logging
+from typing import TYPE_CHECKING, Iterable, Optional
 from uuid import uuid4
 import re
 from contextlib import nullcontext
@@ -20,6 +23,10 @@ from ...utils.auth import get_cached_result
 from ...utils.hashing import getPrefix
 from ...validators import TypeAndGroup_regex
 from ...models import Content, ContentReference, ContentTag
+
+if TYPE_CHECKING:
+    from ....core import typings
+    from ._arguments import ReferenceInput
 
 logger = logging.getLogger(__name__)
 
@@ -295,9 +302,9 @@ def update_metadata_fn(
     request,
     content,
     *,
-    state=None,
-    tags=None,
-    references=None,
+    state: Optional[typings.ContentState] = None,
+    tags: Optional[Iterable[str]] = None,
+    references: Optional[Iterable[ReferenceInput]] = None,
     operation=MetadataOperations.APPEND,
     authset=None,
     required_keys=None,
@@ -365,7 +372,7 @@ def update_metadata_fn(
         _refs = []
         if MetadataOperations.REPLACE:
             _refs = references
-        remrefs = set(map(lambda x: (x["group"], x.target), references))
+        remrefs = set(map(lambda x: (x.group, x.target), references))
         for ref in content.references.all():
             if (ref.group, None) in remrefs:
                 remove_refs_q |= Q(id=ref.id)

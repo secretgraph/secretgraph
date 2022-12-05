@@ -129,105 +129,6 @@ export const createContentMutation = gql`
     }
 `
 
-export const createKeysMutation = gql`
-    mutation contentCreateKeysMutation(
-        $cluster: ID!
-        $publicTags: [String!]!
-        $privateTags: [String!]!
-        $publicActions: [ActionInput!]
-        $privateActions: [ActionInput!]
-        $references: [ReferenceInput!]
-        $publicState: String
-        $publicKey: Upload!
-        $privateKey: Upload
-        $nonce: String
-        $authorization: [String!]
-    ) {
-        updateOrCreateContent(
-            input: {
-                content: {
-                    cluster: $cluster
-                    net: $cluster
-                    key: {
-                        publicKey: $publicKey
-                        privateKey: $privateKey
-                        nonce: $nonce
-                        privateTags: $privateTags
-                        privateActions: $privateActions
-                        publicTags: $publicTags
-                        publicActions: $publicActions
-                        publicState: $publicState
-                    }
-                    references: $references
-                }
-                authorization: $authorization
-            }
-        ) {
-            ... on ContentMutation {
-                content {
-                    id
-                    nonce
-                    link
-                    state
-                    type
-                    updateId
-                }
-                writeok
-            }
-        }
-    }
-`
-export const updateKeyMutation = gql`
-    mutation contentUpdateKeyMutation(
-        $id: GlobalID!
-        $updateId: ID!
-        $net: ID
-        $actions: [ActionInput!]
-        $publicTags: [String!]
-        $publicState: String
-        $privateTags: [String!]
-        $references: [ReferenceInput!]
-        $key: Upload
-        $nonce: String
-        $contentHash: String
-        $authorization: [String!]
-    ) {
-        updateOrCreateContent(
-            input: {
-                id: $id
-                content: {
-                    net: $net
-                    key: {
-                        privateKey: $key
-                        nonce: $nonce
-                        privateTags: $privateTags
-                        publicTags: $publicTags
-                        publicState: $publicState
-                        privateActions: $actions
-                        publicActions: $actions
-                    }
-                    contentHash: $contentHash
-                    references: $references
-                }
-                updateId: $updateId
-                authorization: $authorization
-            }
-        ) {
-            ... on ContentMutation {
-                content {
-                    id
-                    nonce
-                    link
-                    type
-                    state
-                    updateId
-                }
-                writeok
-            }
-        }
-    }
-`
-
 export const updateContentMutation = gql`
     mutation contentUpdateEncryptedMutation(
         $id: GlobalID!
@@ -275,122 +176,6 @@ export const updateContentMutation = gql`
                     updateId
                 }
                 writeok
-            }
-        }
-    }
-`
-
-export const findPublicKeyQuery = gql`
-    query contentFindPublicKeyQuery($id: GlobalID!, $authorization: [String!]) {
-        secretgraph(authorization: $authorization) {
-            node(id: $id) {
-                ... on Content {
-                    id
-                    type
-                    state
-                    references(filters: { groups: ["public_key"] }) {
-                        edges {
-                            node {
-                                target {
-                                    id
-                                    updateId
-                                    link
-                                    type
-                                    state
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-`
-
-// needs type because this attribute is checked for the extra key tag extractor pass
-// publicKey -> privateKey -> (key tag | references to public keys (have shared key)) and signature references
-export const keysRetrievalQuery = gql`
-    query keysRetrievalQuery(
-        $id: GlobalID!
-        $authorization: [String!]
-        $keyhashes: [String!]
-    ) {
-        secretgraph(authorization: $authorization) {
-            config {
-                id
-                hashAlgorithms
-            }
-            node(id: $id) {
-                ... on Content {
-                    id
-                    deleted
-                    link
-                    updateId
-                    state
-                    type
-                    tags
-                    availableActions {
-                        keyHash
-                        type
-                        trustedKeys
-                        allowedTags
-                    }
-                    cluster {
-                        id
-                    }
-                    references(
-                        filters: { groups: ["signature"], deleted: FALSE }
-                    ) {
-                        edges {
-                            node {
-                                extra
-                                target {
-                                    link
-                                    type
-                                    tags(includeTags: ["key_hash="])
-                                }
-                            }
-                        }
-                    }
-                    referencedBy(filters: { groups: ["public_key"] }) {
-                        edges {
-                            node {
-                                extra
-                                source {
-                                    id
-                                    deleted
-                                    link
-                                    nonce
-                                    updateId
-                                    state
-                                    type
-                                    tags
-                                    references(
-                                        filters: {
-                                            groups: ["key"]
-                                            includeTags: $keyhashes
-                                        }
-                                    ) {
-                                        edges {
-                                            node {
-                                                extra
-                                                target {
-                                                    link
-                                                    type
-                                                    tags(
-                                                        includeTags: [
-                                                            "key_hash="
-                                                        ]
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -451,147 +236,41 @@ export const contentRetrievalQuery = gql`
     }
 `
 
-export const findConfigQuery = gql`
-    query contentFindConfigQuery(
-        $cluster: ID!
+export const getContentReferencesQuery = gql`
+    query contentGetReferencesQuery(
+        $id: GlobalID!
         $authorization: [String!]
-        $configContentHashes: [String!]
-        $configKeyHashes: [String!]
+        $deleted: Boolean
+        $count: Int
+        $cursor: String
     ) {
         secretgraph(authorization: $authorization) {
-            config {
-                id
-                hashAlgorithms
-            }
-            contents(
-                filters: {
-                    public: FALSE
-                    deleted: FALSE
-                    clusters: [$cluster]
-                    includeTypes: ["Config"]
-                    contentHashes: $configContentHashes
-                    includeTags: $configKeyHashes
-                }
-            )
-                @connection(
-                    key: "configQuery"
-                    filter: [
-                        "id"
-                        "authorization"
-                        "configContentHashes"
-                        "configKeyHashes"
-                    ]
-                ) {
-                edges {
-                    node {
-                        id
-                        nonce
-                        link
-                        tags
-                        updateId
-                        contentHash
-                        references(filters: { groups: ["key"] }) {
-                            edges {
-                                node {
-                                    extra
-                                    target {
-                                        id
-                                        tags(includeTags: ["key_hash="])
-                                        contentHash
-                                        link
-                                        referencedBy(
-                                            filters: { groups: ["public_key"] }
-                                        ) {
-                                            edges {
-                                                node {
-                                                    extra
-                                                    source {
-                                                        id
-                                                        tags(
-                                                            includeTags: [
-                                                                "key="
-                                                                "key_hash="
-                                                            ]
-                                                        )
-                                                        nonce
-                                                        link
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+            node(id: $id) {
+                ... on Content {
+                    id
+                    references(
+                        filters: { deleted: $deleted }
+                        first: $count
+                        after: $cursor
+                    )
+                        @connection(
+                            key: "feedReferences"
+                            filter: ["authorization", "id"]
+                        ) {
+                        edges {
+                            node {
+                                extra
+                                target {
+                                    id
+                                    link
+                                    type
+                                    tags(includeTags: ["name=", "~name="])
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-`
-
-export const updateConfigQuery = gql`
-    query contentUpdateConfigQuery(
-        $cluster: ID!
-        $authorization: [String!]
-        $configContentHashes: [String!]
-        $configKeyHashes: [String!]
-    ) {
-        secretgraph(authorization: $authorization) {
-            config {
-                id
-                hashAlgorithms
-            }
-            contents(
-                filters: {
-                    public: FALSE
-                    deleted: FALSE
-                    clusters: [$cluster]
-                    includeTypes: ["Config"]
-                    contentHashes: $configContentHashes
-                    includeTags: $configKeyHashes
-                }
-            )
-                @connection(
-                    key: "configUpdateQuery"
-                    filter: [
-                        "id"
-                        "authorization"
-                        "configContentHashes"
-                        "configKeyHashes"
-                    ]
-                ) {
-                edges {
-                    node {
-                        id
-                        availableActions {
-                            keyHash
-                            type
-                            trustedKeys
-                            allowedTags
-                        }
-                        nonce
-                        link
-                        type
-                        cluster {
-                            id
-                            groups
-                            contents(
-                                filters: {
-                                    includeTypes: ["PublicKey"]
-                                    states: ["required", "trusted"]
-                                    deleted: FALSE
-                                }
-                            ) {
-                                edges {
-                                    node {
-                                        id
-                                        link
-                                        type
-                                        tags(includeTags: ["key_hash="])
-                                    }
-                                }
-                            }
+                        pageInfo {
+                            hasNextPage
+                            endCursor
                         }
                     }
                 }
@@ -675,49 +354,6 @@ export const getContentConfigurationQuery = gql`
                                     tags(includeTags: ["key_hash="])
                                 }
                             }
-                        }
-                    }
-                }
-            }
-        }
-    }
-`
-
-export const getContentReferencesQuery = gql`
-    query contentGetReferencesQuery(
-        $id: GlobalID!
-        $authorization: [String!]
-        $deleted: Boolean
-        $count: Int
-        $cursor: String
-    ) {
-        secretgraph(authorization: $authorization) {
-            node(id: $id) {
-                ... on Content {
-                    id
-                    references(
-                        filters: { deleted: $deleted }
-                        first: $count
-                        after: $cursor
-                    )
-                        @connection(
-                            key: "feedReferences"
-                            filter: ["authorization", "id"]
-                        ) {
-                        edges {
-                            node {
-                                extra
-                                target {
-                                    id
-                                    link
-                                    type
-                                    tags(includeTags: ["name=", "~name="])
-                                }
-                            }
-                        }
-                        pageInfo {
-                            hasNextPage
-                            endCursor
                         }
                     }
                 }

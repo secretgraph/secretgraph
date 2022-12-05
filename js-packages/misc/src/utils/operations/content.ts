@@ -1,9 +1,11 @@
 import { ApolloClient, FetchResult } from '@apollo/client'
 import {
-    createContentMutation,
     findConfigQuery,
-    getContentConfigurationQuery,
     updateConfigQuery,
+} from '@secretgraph/graphql-queries/config'
+import {
+    createContentMutation,
+    getContentConfigurationQuery,
     updateContentMutation,
 } from '@secretgraph/graphql-queries/content'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'

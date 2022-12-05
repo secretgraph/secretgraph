@@ -5,7 +5,7 @@ from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q, QuerySet, Exists
+from django.db.models import Subquery, Q, QuerySet
 
 from ....core.constants import public_states
 from ...utils.auth import (
@@ -19,7 +19,7 @@ from ...models import (
     ContentReference,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
-from ._shared import ActionEntry, ActionMixin
+from ._shared import ActionMixin
 from .references import ContentReferenceNode, ContentReferenceFilter
 
 if TYPE_CHECKING:

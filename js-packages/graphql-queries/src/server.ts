@@ -10,9 +10,7 @@ export const serverConfigQuery = gql`
                 groups {
                     name
                     hidden
-                    properties {
-                        name
-                    }
+                    properties
                     description
                     injectedKeys {
                         link
@@ -38,9 +36,7 @@ export const serverConfigQueryWithPermissions = gql`
                 groups {
                     name
                     hidden
-                    properties {
-                        name
-                    }
+                    properties
                     description
                     injectedKeys {
                         link
