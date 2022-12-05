@@ -96,7 +96,9 @@ def _speedup_tokenparsing(request, token) -> tuple[str, AESGCM, list[str]]:
     if not hasattr(request, "_secretgraph_token_cache"):
         setattr(request, "_secretgraph_token_cache", {})
     if token not in request._secretgraph_token_cache:
-        request._secretgraph_token_cache[token] = _parse_token(token)
+        result = _parse_token(token)
+        request._secretgraph_token_cache[token] = result
+        return result
     return request._secretgraph_token_cache[token]
 
 

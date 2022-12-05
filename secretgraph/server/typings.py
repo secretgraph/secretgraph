@@ -7,6 +7,7 @@ from typing import (
 from django.db.models import QuerySet
 
 from ..core.typings import Scope, Action, Hash
+from . import models
 
 AuthActionInfoDict = TypeVar(
     "AuthActionInfoDict", dict[str, dict[tuple[Action, Hash], str]]
@@ -16,7 +17,7 @@ AuthActionInfoDict = TypeVar(
 class ResultObject(TypedDict):
     authset: list[str]
     scope: Scope
-    rejecting_action: Optional[str]
+    rejecting_action: Optional[tuple[models.Action, dict]]
     decrypted: dict
     active_actions: set[str]
     actions: QuerySet
