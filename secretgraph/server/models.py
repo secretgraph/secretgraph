@@ -127,6 +127,21 @@ class Net(models.Model):
             self, "SECRETGRAPH_MAX_UPLOAD"
         )
 
+    def __repr__(self) -> str:
+        userrepr = ""
+        if getattr(settings, "AUTH_USER_MODEL", None) or getattr(
+            settings, "SECRETGRAPH_BIND_TO_USER", False
+        ):
+            userrepr = ", no user assigned"
+            user = getattr(self, "user", None)
+            if user:
+                userrepr = f", user({user!r})"
+        return "<Net: id(%s)%s%s>" % (
+            self.id,
+            userrepr,
+            ", active" if self.active else "",
+        )
+
 
 class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
