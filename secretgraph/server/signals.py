@@ -260,10 +260,10 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
         )
     ).filter(
         ~models.Exists(cas_disarm),
-        latest_used__isnull=False,
+        latest_used__isnull=False,  # no trigger
         content_id=models.OuterRef("id"),
     ).update(
-        models.F("latest_used") + td(hours=24)
+        markForDestruction=models.F("latest_used") + td(hours=24)
     )
 
     # cleanup expired Contents
