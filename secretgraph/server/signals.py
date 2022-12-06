@@ -172,7 +172,7 @@ def regenerateKeyHash(force=False, **kwargs):
     for content in contents:
         chashes = calculateHashes(content.load_pubkey())
         until_index = 0
-        strippedContentHash = content.contentHash.removePrefix("Key:")
+        strippedContentHash = content.contentHash.removeprefix("Key:")
         for i in chashes:
             if i == strippedContentHash:
                 break

@@ -334,7 +334,7 @@ class ContentView(AllowCORSMixin, FormView):
             for ref in refs:
                 if ref.group == "key":
                     response["keys"][
-                        ref.target.contentHash.removePrefix("Key:")
+                        ref.target.contentHash.removeprefix("Key:")
                     ] = {
                         "key": ref.extra,
                         "link": (
@@ -348,7 +348,7 @@ class ContentView(AllowCORSMixin, FormView):
                     }
                 else:
                     response["signatures"][
-                        ref.target.contentHash.removePrefix("Key:")
+                        ref.target.contentHash.removeprefix("Key:")
                     ] = {
                         "signature": ref.extra,
                         "link": ref.target.link,

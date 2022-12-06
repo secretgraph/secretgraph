@@ -12,6 +12,7 @@ from operator import or_
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db import models
 from django.conf import settings
+from django.apps import apps
 from django.utils import timezone
 
 from ...core import constants
@@ -111,7 +112,7 @@ def _speedup_tokenparsing(
 
 def retrieve_allowed_objects(
     request: HttpRequest,
-    query: models.QuerySet,
+    query: models.QuerySet | str,
     scope: typings.Scope = "view",
     authset: Iterable[str] | set[str] = None,
     ignore_restrictions: bool = False,
@@ -131,6 +132,8 @@ def retrieve_allowed_objects(
         raise ValueError(
             "Too many authorization tokens specified, limit is 100"
         )
+    if isinstance(query, str):
+        query = apps.get_model("secretgraph", query).objects.all()
     now = timezone.now()
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)

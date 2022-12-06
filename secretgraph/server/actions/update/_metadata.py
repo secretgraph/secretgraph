@@ -259,7 +259,7 @@ def transform_references(
                 )
             # must be target
             encrypt_target_hashes.add(
-                injected_ref.contentHash.removePrefix("Key:")
+                injected_ref.contentHash.removeprefix("Key:")
             )
             # is not required to be in tags
             if not no_final_refs:
@@ -278,10 +278,10 @@ def transform_references(
                 )
             if refob.group == "signature":
                 sig_target_hashes.add(
-                    targetob.contentHash.removePrefix("Key:")
+                    targetob.contentHash.removeprefix("Key:")
                 )
             if refob.group in {"key", "transfer"}:
-                chash = targetob.contentHash.removePrefix("Key:")
+                chash = targetob.contentHash.removeprefix("Key:")
                 if refob.group == "key":
                     encrypt_target_hashes.add(chash)
                 else:
@@ -383,7 +383,7 @@ def update_metadata_fn(
                 continue
             elif (
                 ref.group,
-                ref.target.contentHash.removePrefix("Key:")
+                ref.target.contentHash.removeprefix("Key:")
                 if ref.target.contentHash
                 else None,
             ) in remrefs:

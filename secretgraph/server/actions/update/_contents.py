@@ -312,7 +312,6 @@ def _update_or_create_content_or_key(
             if content.net.max_upload_size < objdata.value.size:
                 raise ValueError("file too big")
         size_new += objdata.value.size
-        content.clean()
 
         def save_fn_value():
             content.file.delete(False)
@@ -333,6 +332,7 @@ def _update_or_create_content_or_key(
         else:
             content.contentHash = chash
     del chash
+    content.clean()
 
     final_references = None
     key_hashes_ref = set()
@@ -389,7 +389,7 @@ def _update_or_create_content_or_key(
             raise ValueError("requires hash of decryption key as key_hash tag")
         elif (
             content.type == "PublicKey"
-            and content.contentHash.removePrefix("Key:") not in key_hashes_tags
+            and content.contentHash.removeprefix("Key:") not in key_hashes_tags
         ):
             raise ValueError(
                 ">=1 key_hash info tags required for PublicKey (own hash)"
@@ -516,6 +516,7 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
         raise ValueError("No cluster")
 
     hashes, public, private = _transform_key_into_dataobj(key_obj)
+    print(public.contentHash)
 
     public.net = objdata.net
     if private:

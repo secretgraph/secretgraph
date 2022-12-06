@@ -205,8 +205,9 @@ class Cluster(FlexidModel):
         return super().clean()
 
     def __repr__(self) -> str:
-        return "<Cluster: id(%s), name(%s), flexid(%s)%s>" % (
+        return "<Cluster: id(%s), net(%s), name(%s), flexid(%s)%s>" % (
             self.id,
+            getattr(self, "net_id", "?"),
             self.name,
             self.flexid,
             ", featured" if self.featured else "",
@@ -396,11 +397,11 @@ class Content(FlexidModel):
                 raise ValidationError(
                     {
                         "contentHash": (
-                            "%(contentHash)s is an invalid"
+                            "%s is an invalid "
                             "contentHash for public key. Needs domain: Key:"
                         )
-                    },
-                    params={"contentHash": self.contentHash},
+                        % self.contentHash
+                    }
                 )
         else:
             if self.type == "Config" and self.state != "protected":
@@ -418,11 +419,17 @@ class Content(FlexidModel):
             raise ValidationError({"nonce": "nonce empty"})
 
     def __repr__(self) -> str:
-        return "<Content: type(%s), state(%s), flexid(%s)%s>" % (
-            self.type,
-            self.state,
-            self.flexid,
-            ", hidden" if self.hidden else "",
+        return (
+            "<Content: id(%s), cluster(%s), net(%s), type(%s), state(%s), flexid(%s)%s>"  # noqa E501
+            % (
+                self.id,
+                getattr(self, "cluster_id", "?"),
+                getattr(self, "net_id", "?"),
+                self.type,
+                self.state,
+                self.flexid,
+                ", hidden" if self.hidden else "",
+            )
         )
 
 

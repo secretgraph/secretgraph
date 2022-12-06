@@ -1,6 +1,6 @@
 from datetime import timedelta
 from django.core.management.base import BaseCommand
-from django.db.models import Exists, OuterRef, Q, Subquery, F
+from django.db.models import Exists, OuterRef, Q, Subquery
 from django.utils import timezone
 
 from ...models import Action, Net, Cluster
@@ -29,33 +29,42 @@ class Command(BaseCommand):
     def handle(self, **options):
         inactive = timezone.now() - timedelta(weeks=52)
         if "Cluster" in options["what"]:
-            q = Q(contents__isnull=True)
-            if options["inactive"]:
-                q |= Q(last_action_used__isnull=True) | Q(
-                    last_action_used__lt=inactive
-                )
-            orphan_clusters = (
-                Cluster.objects.annotate(
-                    last_used=F("net__last_used"),
-                    last_action_used=Subquery(
-                        Action.objects.filter(cluster_id=OuterRef("id"))
-                        .order_by("-used")
-                        .values("used")[:1]
-                    ),
-                )
-                .filter(q)
-                .exclude(name="@system")
-            )
+            annotated_clusters = Cluster.objects.annotate(
+                last_action_used=Subquery(
+                    Action.objects.filter(cluster_id=OuterRef("id"))
+                    .order_by("-used")
+                    .values("used")[:1]
+                ),
+            ).exclude(name="@system")
+            orphan_clusters = annotated_clusters.filter(contents__isnull=True)
             if orphan_clusters:
                 print("Orphan Clusters:")
                 for c in orphan_clusters:
                     print(
                         "  {!r} inactive since {}".format(
-                            c, c.last_action_used or c.last_used
+                            c, c.last_action_used or c.updated
                         )
                     )
                 if options["delete"]:
                     orphan_clusters.delete()
+            if options["inactive"]:
+                inactive_clusters = annotated_clusters.exclude(
+                    id__in=Subquery(orphan_clusters.values("id"))
+                ).filter(
+                    (
+                        Q(last_action_used__isnull=True)
+                        & Q(created__lt=inactive)
+                    )
+                    | Q(last_action_used__lt=inactive)
+                )
+
+                print("Inactive Clusters:")
+                for c in inactive_clusters:
+                    print(
+                        "  {!r} inactive since {}".format(
+                            c, c.last_action_used or c.updated
+                        )
+                    )
 
         if "Net" in options["what"]:
             q = Q()
