@@ -15,6 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.conf import settings
 from django.db.models import F, Q
+from django.utils.timezone import now
 
 from ....core.exceptions import ResourceLimitExceeded
 
@@ -317,26 +318,12 @@ def _update_or_create_content_or_key(
             content.file.delete(False)
             content.updateId = uuid4()
             content.file.save("ignored", objdata.value)
-            content.net.save(
-                update_fields=["bytes_in_use"] if content.net.id else None
-            )
-            if old_net:
-                old_net.save(
-                    update_fields=["bytes_in_use"] if old_net.id else None
-                )
 
     else:
 
         def save_fn_value():
             content.updateId = uuid4()
             content.save()
-            content.net.save(
-                update_fields=["bytes_in_use"] if content.net.id else None
-            )
-            if old_net:
-                old_net.save(
-                    update_fields=["bytes_in_use"] if old_net.id else None
-                )
 
     chash = objdata.contentHash
     if chash is not None:
@@ -462,6 +449,7 @@ def _update_or_create_content_or_key(
             content.net.bytes_in_use += size_new
         else:
             content.net.bytes_in_use = F("bytes_in_use") + size_new
+        content.net.last_used = now()
 
         if not old_net.id:
             old_net.bytes_in_use -= size_old
@@ -470,6 +458,15 @@ def _update_or_create_content_or_key(
 
     def save_fn():
         save_fn_value()
+        content.net.save(
+            update_fields=["bytes_in_use", "last_used"]
+            if content.net.id
+            else None
+        )
+        # only save a persisted old_net
+        if old_net and old_net.id:
+            # don't update last_used
+            old_net.save(update_fields=["bytes_in_use"])
         if final_tags is not None:
             if create:
                 ContentTag.objects.bulk_create(

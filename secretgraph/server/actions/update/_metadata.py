@@ -14,6 +14,7 @@ from contextlib import nullcontext
 
 from django.db.models import Q, F
 from django.db.models.functions import Substr
+from django.utils.timezone import now
 from django.conf import settings
 
 from ....core.exceptions import ResourceLimitExceeded
@@ -232,7 +233,7 @@ def transform_references(
                         ref.group, ref.deleteRecursive
                     ),
                 )
-            # injected_ref can only exist if no reference is used
+            # injected_ref can only exist if no reference is last_used
             if injected_key and (
                 not targetob or injected_key.id != targetob.id
             ):
@@ -440,6 +441,7 @@ def update_metadata_fn(
         content.net.bytes_in_use += size_diff
     else:
         content.net.bytes_in_use = F("bytes_in_use") + size_diff
+    content.net.last_used = now()
 
     def save_fn(context=nullcontext):
         if callable(context):
@@ -448,7 +450,9 @@ def update_metadata_fn(
             content.updateId = uuid4()
             content.save(update_fields=["updateId"])
             content.net.save(
-                update_fields=["bytes_in_use"] if content.net.id else None
+                update_fields=["bytes_in_use", "last_used"]
+                if content.net.id
+                else None
             )
             if final_tags is not None:
                 if operation in {

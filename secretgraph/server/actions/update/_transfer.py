@@ -9,6 +9,8 @@ from email.parser import BytesParser
 from asgiref.sync import sync_to_async, async_to_sync
 import httpx
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+from django.db.models.functions import Now
 from django.db.models import F
 from django.utils.module_loading import import_string
 from django.conf import settings
@@ -56,7 +58,9 @@ def _create_info_content(request, content: Content, signatures, admin=False):
         size_before = content.size_references
         content.references.bulk_create(references, ignore_conflict=True)
         size_diff = content.size_references - size_before
-        content.net.update(bytes_in_use=F("bytes_in_use") + size_diff)
+        Net.objects.filter(id=content.net_id).update(
+            bytes_in_use=F("bytes_in_use") + size_diff, last_used=Now()
+        )
     else:
         for chash in signatures.keys():
             signature = signatures[chash]
@@ -69,7 +73,9 @@ def _create_info_content(request, content: Content, signatures, admin=False):
         size_before = content.size_tags
         content.tags.bulk_create(tags, ignore_conflict=True)
         size_diff = content.size_tags - size_before
-        content.net.update(bytes_in_use=F("bytes_in_use") + size_diff)
+        Net.objects.filter(id=content.net_id).update(
+            bytes_in_use=F("bytes_in_use") + size_diff, last_used=Now()
+        )
 
 
 @sync_to_async(thread_sensitive=True)
@@ -227,8 +233,9 @@ async def transfer_value(
         return TransferResult.NONRECOVERABLE_ERROR
     finally:
         # first recalculate bytes usage
-        await Net.objects.filter(id=content.net.id).aupdate(
-            bytes_in_use=F("bytes_in_use") - orig_size + content.file.size
+        await Net.objects.filter(id=content.net_id).aupdate(
+            bytes_in_use=F("bytes_in_use") - orig_size + content.file.size,
+            last_used=Now(),
         )
         if destroy_content:
             # then delete with the correct amount of bytes

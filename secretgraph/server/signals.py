@@ -118,6 +118,8 @@ def deleteEncryptedFileCb(sender, instance, **kwargs):
     if instance.file:
         instance.file.delete(False)
     if instance.net_id:
+        # don't update last_used, as it is not an interaction
+        # and can be triggered by everyone
         Net.objects.filter(id=instance.net_id).update(
             bytes_in_use=models.F("bytes_in_use") - file_size
         )
@@ -221,7 +223,7 @@ def rollbackUsedActionsAndFreeze(request, **kwargs):
     if getattr(request, "secretgraphActionsToRollback", None):
         Action.objects.filter(
             id__in=request.secretgraphActionsToRollback
-        ).update(used=False)
+        ).update(used=None)
     if getattr(request, "secretgraphFreezeToRollback", None):
         for i in range(0, 1000):
             if i >= 999:
