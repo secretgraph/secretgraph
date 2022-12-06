@@ -19,7 +19,7 @@ from ...models import (
     GlobalGroup,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
-from ._shared import ActionEntry, ActionMixin
+from ._shared import ActionMixin
 
 
 if TYPE_CHECKING:

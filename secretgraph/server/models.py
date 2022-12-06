@@ -86,8 +86,8 @@ class FlexidModel(models.Model):
 class Net(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     created: dt = models.DateTimeField(auto_now_add=True, editable=False)
-    # bytes_in_use updated
-    last_used: dt = models.DateTimeField(editable=True, default=timezone.now)
+    # content or cluster was updated or created
+    last_used: dt = models.DateTimeField(default=timezone.now)
     # if disabled: like a ban
     active: bool = models.BooleanField(blank=True, default=True, null=False)
     # quota, should be greater than ?? (saving config), can be None to disable
@@ -175,6 +175,11 @@ class Cluster(FlexidModel):
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
     groups: models.ManyToManyRel["GlobalGroup"]
+
+    @property
+    def size(self) -> int:
+        size = len(self.description)
+        return size
 
     def clean(self) -> None:
         if not self.globalNameRegisteredAt and self.featured:

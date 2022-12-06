@@ -5,7 +5,9 @@ from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import F
 from django.core.exceptions import ObjectDoesNotExist
+from ....core.exceptions import ResourceLimitExceeded
 
 from ...models import Cluster, Net, GlobalGroup
 from ...utils.auth import ids_to_results, retrieve_allowed_objects
@@ -14,8 +16,10 @@ from ._actions import manage_actions_fn
 from ._contents import create_key_fn
 
 
-def _update_or_create_cluster(request, cluster, objdata, authset):
+def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     create = not cluster.id
+    size_new = 0
+    size_old = 0
 
     if getattr(objdata, "name", None) is not None:
         if cluster.name != objdata.name:
@@ -33,9 +37,14 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
             cluster.featured = bool(objdata.featured)
 
     if getattr(objdata, "description", None) is not None:
-        cluster.description = objdata.description or ""
+        size_old += len(cluster.description)
+        size_new += len(objdata.description)
+        cluster.description = objdata.description
 
     net = getattr(objdata, "net", None)
+    old_net = None
+    if not create:
+        old_net = cluster.net
     if net:
         if isinstance(net, Net):
             cluster.net = net
@@ -85,16 +94,56 @@ def _update_or_create_cluster(request, cluster, objdata, authset):
             net.reset_max_upload_size()
         cluster.net = net
         del user
+    if old_net == cluster.net:
+        old_net = None
     # cleanup after scope
     del net
 
     cluster.clean()
+    if old_net is None:
+        size_diff = size_new - size_old
+        if (
+            cluster.net.quota is not None
+            and size_diff > 0
+            and cluster.net.bytes_in_use + size_diff > cluster.net.quota
+        ):
+            raise ResourceLimitExceeded("quota exceeded")
+        # still in memory not serialized to db
+        if not cluster.net.id:
+            cluster.net.bytes_in_use += size_diff
+        else:
+            cluster.net.bytes_in_use = F("bytes_in_use") + size_diff
+    else:
+        if (
+            cluster.net.quota is not None
+            and size_new > 0
+            and cluster.net.bytes_in_use + size_new > cluster.net.quota
+        ):
+            raise ResourceLimitExceeded("quota exceeded")
+        # still in memory not serialized to db
+        if not cluster.net.id:
+            cluster.net.bytes_in_use += size_new
+        else:
+            cluster.net.bytes_in_use = F("bytes_in_use") + size_new
+
+        if not old_net.id:
+            old_net.bytes_in_use -= size_old
+        else:
+            old_net.bytes_in_use = F("bytes_in_use") - size_old
+    cluster.net.last_used = timezone.now()
 
     def cluster_save_fn():
         cluster.updateId = uuid4()
-        if not cluster.net.id:
-            cluster.net.save()
         cluster.save()
+        cluster.net.save(
+            update_fields=["bytes_in_use", "last_used"]
+            if cluster.net.id
+            else None
+        )
+        # only save a persisted old_net
+        if old_net and old_net.id:
+            # don't update last_used
+            old_net.save(update_fields=["bytes_in_use"])
         if getattr(objdata, "groups", None) is not None:
             cluster.groups.set(
                 GlobalGroup.objects.filter(name__in=objdata.groups)

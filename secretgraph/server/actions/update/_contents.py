@@ -449,12 +449,12 @@ def _update_or_create_content_or_key(
             content.net.bytes_in_use += size_new
         else:
             content.net.bytes_in_use = F("bytes_in_use") + size_new
-        content.net.last_used = now()
 
         if not old_net.id:
             old_net.bytes_in_use -= size_old
         else:
             old_net.bytes_in_use = F("bytes_in_use") - size_old
+    content.net.last_used = now()
 
     def save_fn():
         save_fn_value()
