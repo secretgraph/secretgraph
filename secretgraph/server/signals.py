@@ -255,7 +255,7 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
     cas_disarm = cas.filter(action__used__isnull=True)
     Content.objects.annotate(
         latest_used=models.Subquery(
-            cas_trigger.order("-used").values("used")[:1],
+            cas_trigger.order_by("-used").values("used")[:1],
             content_id=models.OuterRef("id"),
         )
     ).filter(
