@@ -12,7 +12,7 @@ def get_permissions(info: Info) -> List[str]:
         filter(
             lambda x: _valid_permissions.match(x),
             get_cached_properties(
-                info.context.request, ensureInitialized=True
+                info.context["request"], ensureInitialized=True
             ),
         )
     )

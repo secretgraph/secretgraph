@@ -30,14 +30,14 @@ def delete_content_or_cluster(
     now = timezone.now()
 
     manage_deletion = "manage_deletion" in get_cached_properties(
-        info.context.request, authset=authorization
+        info.context["request"], authset=authorization
     )
     if manage_deletion:
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
     else:
         results = ids_to_results(
-            info.context.request,
+            info.context["request"],
             ids,
             (Content, Cluster),
             "delete",
@@ -90,13 +90,13 @@ def reset_deletion_content_or_cluster(
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
     if "manage_deletion" in get_cached_properties(
-        info.context.request, authset=authorization
+        info.context["request"], authset=authorization
     ):
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
     else:
         results = ids_to_results(
-            info.context.request,
+            info.context["request"],
             ids,
             (Content, Cluster),
             "delete",

@@ -49,7 +49,7 @@ class UserMutation(relay.Node):
             if not user:
                 raise ValueError()
             result = ids_to_results(
-                info.context.request, id, Cluster, "manage"
+                info.context["request"], id, Cluster, "manage"
             )["Cluster"]
             cluster_obj = result["objects"].first()
             if not cluster_obj:
@@ -59,14 +59,14 @@ class UserMutation(relay.Node):
         else:
             user = None
             manage = retrieve_allowed_objects(
-                info.context.request, Cluster.objects.all(), scope="manage"
+                info.context["request"], Cluster.objects.all(), scope="manage"
             )["objects"].first()
 
             if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
                 if manage:
                     admin_user = manage.user
                 if not admin_user:
-                    admin_user = getattr(info.context.request, "user", None)
+                    admin_user = getattr(info.context["request"], "user", None)
                 if not admin_user or not admin_user.is_authenticated:
                     raise ValueError("Must be logged in")
             elif (
@@ -96,7 +96,7 @@ class DeleteUserMutation(relay.Node):
         Content.objects.filter(markForDestruction__lte=now).delete()
         user = user_model.objects.get(pk=id.node_id)
         result = retrieve_allowed_objects(
-            info.context.request, Cluster.objects.all(), scope="manage"
+            info.context["request"], Cluster.objects.all(), scope="manage"
         )
         if user.net.clusters.exclude(
             id__in=result["objects"].values_list("id", flat=True)

@@ -27,7 +27,7 @@ class ActionMixin:
             return
         name = self.__class__.__name__.replace("Node", "", 1)
         results = get_cached_result(
-            info.context.request, ensureInitialized=True
+            info.context["request"], ensureInitialized=True
         )
         # only show some actions if not set
         has_manage = False
@@ -117,7 +117,7 @@ class ActionMixin:
     def authOk(self, info: Info) -> bool:
         name = self.__class__.__name__.replace("Node", "", 1)
         result = get_cached_result(
-            info.context.request, ensureInitialized=True
+            info.context["request"], ensureInitialized=True
         )[name]
         authOk = False
         if isinstance(self, Content):

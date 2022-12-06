@@ -100,7 +100,7 @@ def fetch_clusters(
     excludeTags=None,
     authorization=None,
 ):
-    queryset = get_cached_result(context.request, authset=authorization)[
+    queryset = get_cached_result(context["request"], authset=authorization)[
         "Cluster"
     ]["objects"]
     if search is not None:
@@ -167,7 +167,7 @@ def fetch_contents(
     default_decryptkeys=None,
     authorization=None,
 ):
-    results = get_cached_result(context.request, authset=authorization)
+    results = get_cached_result(context["request"], authset=authorization)
     result = results["Content"].copy()
 
     if deleted is not None:
@@ -238,11 +238,12 @@ def fetch_contents(
         decryptset = set()
         if decrypt:
             decryptset.update(
-                context.request.headers.get("X-Key", "")
+                context["request"]
+                .headers.get("X-Key", "")
                 .replace(" ", "")
                 .split(",")
             )
-            decryptset.update(context.request.GET.getlist("key"))
+            decryptset.update(context["request"].GET.getlist("key"))
         if default_decryptkeys:
             decryptset.update(
                 default_decryptkeys.split(",")
@@ -292,17 +293,18 @@ def read_content_sync(
         authorization.update(context["request"].GET.getlist("token"))
         authorization.discard("")
     if isinstance(content, str):
-        result = get_cached_result(context.request, authset=authorization)[
+        result = get_cached_result(context["request"], authset=authorization)[
             "Content"
         ].copy()
         result["objects"] = fetch_by_id(result["objects"], content)
 
         decryptset = set(
-            context.request.headers.get("X-Key", "")
+            context["request"]
+            .headers.get("X-Key", "")
             .replace(" ", "")
             .split(",")
         )
-        decryptset.update(context.request.GET.getlist("key"))
+        decryptset.update(context["request"].GET.getlist("key"))
         if default_decryptkeys:
             decryptset.update(
                 default_decryptkeys.split(",")

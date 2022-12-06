@@ -47,7 +47,7 @@ class ContentReferenceNode(relay.Node):
         info: Info,
         required: bool = False,
     ) -> ContentReferenceNode:
-        result = get_cached_result(info.context.request)["Content"]
+        result = get_cached_result(info.context["request"])["Content"]
         queryset = ContentReference.objects.all()
         try:
             source, target, group = id.node_id.split("|", 2)
@@ -82,7 +82,7 @@ class ContentReferenceNode(relay.Node):
     def source(
         self, info: Info
     ) -> strawberry.LazyType["ContentNode", ".contents"]:  # noqa F821,F722
-        result = get_cached_result(info.context.request)["Content"]
+        result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
             result["objects"].filter(references=self),
             clustersAreRestricted=True,
@@ -92,7 +92,7 @@ class ContentReferenceNode(relay.Node):
     def target(
         self, info: Info
     ) -> strawberry.LazyType["ContentNode", ".contents"]:  # noqa F821,F722
-        result = get_cached_result(info.context.request)["Content"]
+        result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
             result["objects"].filter(referencedBy=self),
             clustersAreRestricted=True,

@@ -49,26 +49,28 @@ def mutate_cluster(
 ) -> ClusterMutation:
     if cluster.featured is not None:
         if "manage_featured" not in get_cached_properties(
-            info.context.request, authset=authorization
+            info.context["request"], authset=authorization
         ):
             cluster.featured = None
 
     if cluster.groups is not None:
         if "manage_groups" not in get_cached_properties(
-            info.context.request, authset=authorization
+            info.context["request"], authset=authorization
         ):
             cluster.groups = None
 
     if cluster.name is not None and cluster.name.startswith("@"):
         if "allow_global_name" not in (
-            get_cached_properties(info.context.request, authset=authorization)
+            get_cached_properties(
+                info.context["request"], authset=authorization
+            )
         ):
             cluster.name = f"+@{cluster.name}"
     if id:
         if not updateId:
             raise ValueError("updateId required")
         result = ids_to_results(
-            info.context.request,
+            info.context["request"],
             str(id),
             Cluster,
             "update",
@@ -78,7 +80,7 @@ def mutate_cluster(
         if not cluster_obj:
             raise ValueError("No cluster found")
         _cluster_res = update_cluster_fn(
-            info.context.request,
+            info.context["request"],
             cluster_obj,
             cluster,
             updateId,
@@ -91,14 +93,16 @@ def mutate_cluster(
                 name="default", defaults={}
             )[0].groups.all()
             cluster.groups = default_groups.values_list("name", flat=True)
-            get_cached_properties(info.context.request, authset=authorization)
+            get_cached_properties(
+                info.context["request"], authset=authorization
+            )
             update_cached_properties(
-                info.context.request, groups=default_groups
+                info.context["request"], groups=default_groups
             )
         _cluster_res = create_cluster_fn(
-            info.context.request, cluster, authset=authorization
+            info.context["request"], cluster, authset=authorization
         )(transaction.atomic)
-    f = get_cached_result(info.context.request, authset=authorization)
+    f = get_cached_result(info.context["request"], authset=authorization)
     f["Content"]
     f["Cluster"]
     return ClusterMutation(**_cluster_res)
@@ -121,7 +125,7 @@ def mutate_content(
     required_keys = set()
     if content.hidden is not None:
         if "manage_hidden" not in get_cached_properties(
-            info.context.request, authset=authorization
+            info.context["request"], authset=authorization
         ):
             content.hidden = None
 
@@ -129,7 +133,7 @@ def mutate_content(
         if not updateId:
             raise ValueError("updateId required")
         result = ids_to_results(
-            info.context.request,
+            info.context["request"],
             id,
             Content,
             "update",
@@ -162,7 +166,7 @@ def mutate_content(
 
         returnval = ContentMutation(
             **update_content_fn(
-                info.context.request,
+                info.context["request"],
                 content_obj,
                 content,
                 updateId=updateId,
@@ -172,7 +176,7 @@ def mutate_content(
         )
     else:
         result = ids_to_results(
-            info.context.request,
+            info.context["request"],
             content.cluster,
             Cluster,
             "create",
@@ -193,13 +197,13 @@ def mutate_content(
 
         returnval = ContentMutation(
             **create_content_fn(
-                info.context.request,
+                info.context["request"],
                 content,
                 required_keys=required_keys,
                 authset=authorization,
             )(transaction.atomic)
         )
-    f = get_cached_result(info.context.request, authset=authorization)
+    f = get_cached_result(info.context["request"], authset=authorization)
     f["Content"]
     f["Cluster"]
     return returnval

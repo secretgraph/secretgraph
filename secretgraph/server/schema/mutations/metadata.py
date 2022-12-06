@@ -37,7 +37,7 @@ def regenerate_flexid(
     authorization: Optional[AuthList] = None,
 ) -> RegenerateFlexidMutation:
     if "manage_update" in get_cached_properties(
-        info.context.request, authset=authorization
+        info.context["request"], authset=authorization
     ):
         results = {
             "Content": {
@@ -53,7 +53,7 @@ def regenerate_flexid(
         }
     else:
         results = ids_to_results(
-            info.context.request,
+            info.context["request"],
             ids,
             (Content, Cluster),
             "update",
@@ -83,17 +83,17 @@ def mark(
 ) -> MarkMutation:
     if featured is not None:
         if "manage_featured" not in get_cached_properties(
-            info.context.request, authset=authorization
+            info.context["request"], authset=authorization
         ):
             featured = None
     if hidden is not None:
         if "manage_hidden" not in get_cached_properties(
-            info.context.request, authset=authorization
+            info.context["request"], authset=authorization
         ):
             hidden = None
     if active is not None:
         if "manage_active" not in get_cached_properties(
-            info.context.request, authset=authorization
+            info.context["request"], authset=authorization
         ):
             active = None
     contents = Content.objects.none()
@@ -139,7 +139,7 @@ def update_metadata(
 ) -> MetadataUpdateMutation:
 
     manage_update = "manage_update" in get_cached_properties(
-        info.context.request, authset=authorization
+        info.context["request"], authset=authorization
     )
     if manage_update:
         contents = fetch_by_id(
@@ -156,7 +156,7 @@ def update_metadata(
         )
     else:
         result = ids_to_results(
-            info.context.request,
+            info.context["request"],
             ids,
             Content,
             "update",
@@ -166,7 +166,7 @@ def update_metadata(
     for content_obj in result.objects.all():
         ops.append(
             update_metadata_fn(
-                info.context.request,
+                info.context["request"],
                 content_obj,
                 state=state if not content_obj.has_immutable else None,
                 tags=tags
@@ -182,7 +182,7 @@ def update_metadata(
         if actions:
             ops.append(
                 manage_actions_fn(
-                    info.context.request,
+                    info.context["request"],
                     content_obj,
                     actions,
                     authset=authorization,

@@ -39,7 +39,7 @@ def mutate_push_content(
 ) -> PushContentMutation:
     parent_id = content.pop("parent")
     result = ids_to_results(
-        info.context.request,
+        info.context["request"],
         parent_id,
         Content,
         "push",
@@ -64,12 +64,12 @@ def mutate_push_content(
             }
         )
     c = create_content_fn(
-        info.context.request,
+        info.context["request"],
         content,
         required_keys=required_keys,
         authset=authorization,
     )(transaction.atomic)
-    f = get_cached_result(info.context.request, authset=authorization)
+    f = get_cached_result(info.context["request"], authset=authorization)
     f["Content"]
     f["Cluster"]
     return PushContentMutation(
@@ -97,7 +97,7 @@ def mutate_transfer(
         info.context, authset=authorization
     )["Content"]
     transfer_result = ids_to_results(
-        info.context.request, id, Content, "update", authset=authorization
+        info.context["request"], id, Content, "update", authset=authorization
     )["Content"]
     transfer_target = transfer_result.objects.get()
     if key and url:
@@ -111,7 +111,7 @@ def mutate_transfer(
     ).values_list("tag", flat=True)
 
     tres = sync_transfer_value(
-        info.context.request,
+        info.context["request"],
         transfer_target,
         key=key,
         url=url,
@@ -123,7 +123,7 @@ def mutate_transfer(
     if tres == TransferResult.NOTFOUND:
         transfer_target.delete()
     elif tres == TransferResult.SUCCESS:
-        f = get_cached_result(info.context.request, authset=authorization)
+        f = get_cached_result(info.context["request"], authset=authorization)
         f.preinit("Content", "Cluster")
         return TransferMutation(content=transfer_target)
     return TransferMutation(content=None)
@@ -148,7 +148,7 @@ def mutate_pull(
         info.context, authset=authorization
     )["Content"]
     transfer_result = ids_to_results(
-        info.context.request, id, Content, "update", authset=authorization
+        info.context["request"], id, Content, "update", authset=authorization
     )["Content"]
     transfer_target = transfer_result.objects.get()
     if key and url:
@@ -162,7 +162,7 @@ def mutate_pull(
     ).values_list("tag", flat=True)
 
     tres = sync_transfer_value(
-        info.context.request,
+        info.context["request"],
         transfer_target,
         key=key,
         url=url,
@@ -174,7 +174,7 @@ def mutate_pull(
     if tres == TransferResult.NOTFOUND:
         transfer_target.delete()
     elif tres == TransferResult.SUCCESS:
-        f = get_cached_result(info.context.request, authset=authorization)
+        f = get_cached_result(info.context["request"], authset=authorization)
         f.preinit("Content", "Cluster")
         return TransferMutation(content=transfer_target)
     return TransferMutation(content=None)

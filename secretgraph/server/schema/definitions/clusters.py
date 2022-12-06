@@ -132,7 +132,7 @@ class ClusterNode(ActionMixin, relay.Node):
         # manage_hidden: have mod rights,
         #   so the groups are handy for communication
         # manage_groups: required for correctly updating groups
-        props = get_cached_properties(info.context.request)
+        props = get_cached_properties(info.context["request"])
         if "manage_hidden" in props or "manage_groups" in props:
             return names
         # remove hidden
@@ -145,7 +145,7 @@ class ClusterNode(ActionMixin, relay.Node):
     ) -> relay.Connection[
         strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
     ]:
-        result = get_cached_result(info.context.request)["Content"]
+        result = get_cached_result(info.context["request"])["Content"]
         queryset: QuerySet = self.contents.filter(hidden=False)
         deleted = filters.deleted
         if self.limited:
@@ -160,10 +160,10 @@ class ClusterNode(ActionMixin, relay.Node):
         if (
             deleted != UseCriteria.FALSE
             and "manage_deletion"
-            not in get_cached_properties(info.context.request)
+            not in get_cached_properties(info.context["request"])
         ):
             del_result = get_cached_result(
-                info.context.request, scope="delete"
+                info.context["request"], scope="delete"
             )["Content"]
             queryset = queryset.filter(
                 id__in=Subquery(del_result["objects"].values("id"))
@@ -190,7 +190,7 @@ class ClusterNode(ActionMixin, relay.Node):
         info: Info,
         required: bool = False,
     ):
-        result = get_cached_result(info.context.request)["Cluster"]
+        result = get_cached_result(info.context["request"])["Cluster"]
         if node_id.startswith("@"):
             q = Q(name=node_id, globalNameRegisteredAt__isnull=False)
         else:
@@ -219,7 +219,7 @@ class ClusterNode(ActionMixin, relay.Node):
         info: Info,
         node_ids: Optional[Iterable[str]] = None,
     ):
-        result = get_cached_result(info.context.request)["Cluster"]
+        result = get_cached_result(info.context["request"])["Cluster"]
         if not node_ids:
             return result["objects"]
         # for allowing specifing global name
@@ -242,7 +242,7 @@ class ClusterNode(ActionMixin, relay.Node):
 
     @classmethod
     def get_queryset(cls, queryset, info) -> QuerySet[Cluster]:
-        result = get_cached_result(info.context.request)["Cluster"]
+        result = get_cached_result(info.context["request"])["Cluster"]
         return queryset.filter(id__in=Subquery(result["objects"].values("id")))
 
     # TODO: merge with get_queryset and update filters
@@ -250,15 +250,15 @@ class ClusterNode(ActionMixin, relay.Node):
     def get_queryset_intern(
         cls, queryset, info: Info, filters: Optional[ClusterFilter] = None
     ) -> QuerySet[Cluster]:
-        result = get_cached_result(info.context.request)["Cluster"]
+        result = get_cached_result(info.context["request"])["Cluster"]
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
             and "manage_deletion"
-            not in get_cached_properties(info.context.request)
+            not in get_cached_properties(info.context["request"])
         ):
             del_result = get_cached_result(
-                info.context.request, scope="delete"
+                info.context["request"], scope="delete"
             )["Cluster"]
             queryset = queryset.filter(
                 id__in=Subquery(del_result["objects"].values("id"))

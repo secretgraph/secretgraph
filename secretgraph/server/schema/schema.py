@@ -78,12 +78,12 @@ class Query:
     def secretgraph(
         info: Info, authorization: Optional[AuthList] = None
     ) -> SecretgraphObject:
-        get_cached_result(info.context.request, authset=authorization).preinit(
-            "Content", "Cluster"
-        )
+        get_cached_result(
+            info.context["request"], authset=authorization
+        ).preinit("Content", "Cluster")
         # f["Content"]
         # f["Cluster"]
-        get_cached_properties(info.context.request)
+        get_cached_properties(info.context["request"])
         return SecretgraphObject
 
 

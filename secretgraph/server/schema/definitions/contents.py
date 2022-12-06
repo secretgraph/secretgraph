@@ -92,7 +92,7 @@ class ContentNode(ActionMixin, relay.Node):
         includeAlgorithms: Optional[List[str]] = None,
     ) -> List[str]:
         # authorization often cannot be used, but it is ok, we have cached then
-        result = get_cached_result(info.context.request)["Content"]
+        result = get_cached_result(info.context["request"])["Content"]
         return self.signatures(
             includeAlgorithms,
             ContentReference.objects.filter(target__in=result["objects"]),
@@ -106,7 +106,7 @@ class ContentNode(ActionMixin, relay.Node):
         if self.limited:
             return None
         results = get_cached_result(
-            info.context.request, ensureInitialized=True
+            info.context["request"], ensureInitialized=True
         )
         if self.state not in public_states:
             query = results["Cluster"]["objects_ignore_public"]
@@ -129,7 +129,7 @@ class ContentNode(ActionMixin, relay.Node):
             or self.cluster_id == 0
         ):
             return ContentReference.objects.none()
-        result = get_cached_result(info.context.request)["Content"]
+        result = get_cached_result(info.context["request"])["Content"]
         query = result["objects"].exclude(hidden=True)
         filterob = {}
 
@@ -161,7 +161,7 @@ class ContentNode(ActionMixin, relay.Node):
             or self.cluster_id == 0
         ):
             return ContentReference.objects.none()
-        result = get_cached_result(info.context.request)["Content"]
+        result = get_cached_result(info.context["request"])["Content"]
         query = result["objects"].exclude(hidden=True)
         filterob = {}
         if filters.groups is not None:
@@ -189,7 +189,7 @@ class ContentNode(ActionMixin, relay.Node):
 
     @classmethod
     def get_queryset(cls, queryset, info) -> QuerySet[Content]:
-        results = get_cached_result(info.context.request)
+        results = get_cached_result(info.context["request"])
 
         return queryset.filter(
             id__in=Subquery(results["Content"]["objects"].values("id"))
@@ -201,23 +201,23 @@ class ContentNode(ActionMixin, relay.Node):
         cls, queryset, info: Info, filters: ContentFilter
     ) -> QuerySet[Content]:
         results = get_cached_result(
-            info.context.request,
+            info.context["request"],
         )
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
             and "manage_deletion"
-            not in get_cached_properties(info.context.request)
+            not in get_cached_properties(info.context["request"])
         ):
             del_result = get_cached_result(
-                info.context.request, scope="delete"
+                info.context["request"], scope="delete"
             )["Content"]
             queryset = queryset.filter(
                 id__in=Subquery(del_result["objects"].values("id"))
             )
 
         if "manage_hidden" in get_cached_properties(
-            info.context.request,
+            info.context["request"],
         ):
             hidden = filters.hidden
         else:
