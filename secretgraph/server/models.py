@@ -26,6 +26,7 @@ from .messages import (
     cluster_groups_help,
     reference_group_help,
     net_quota_help,
+    last_used_help,
 )
 from .validators import (
     ActionKeyHashValidator,
@@ -86,8 +87,10 @@ class FlexidModel(models.Model):
 class Net(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     created: dt = models.DateTimeField(auto_now_add=True, editable=False)
-    # content or cluster was updated or created
-    last_used: dt = models.DateTimeField(default=timezone.now)
+    # content or cluster was updated or created, deletions are not tracked
+    last_used: dt = models.DateTimeField(
+        default=timezone.now, help_text=last_used_help
+    )
     # if disabled: like a ban
     active: bool = models.BooleanField(blank=True, default=True, null=False)
     # quota, should be greater than ?? (saving config), can be None to disable

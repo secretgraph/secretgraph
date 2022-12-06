@@ -35,7 +35,10 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "last_used",
-                    models.DateTimeField(default=django.utils.timezone.now),
+                    models.DateTimeField(
+                        default=django.utils.timezone.now,
+                        help_text="Last usage of net for creating or updating contents or clusters",
+                    ),
                 ),
                 ("active", models.BooleanField(blank=True, default=True)),
                 (

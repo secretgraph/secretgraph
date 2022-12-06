@@ -8,6 +8,9 @@ tags_tag_label = _("Metadata Tag")
 reference_label = _("Reference")
 
 net_quota_help = _("quota in Bytes, null for no limit")
+last_used_help = _(
+    "Last usage of net for creating or updating contents or clusters"
+)
 
 cluster_groups_help = _(
     "cluster groups: groups for permissions and injected keys"
