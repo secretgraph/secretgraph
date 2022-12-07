@@ -14,6 +14,12 @@ class Command(BaseCommand):
             "--delete", action="store_true", help="Delete Orphans"
         )
         parser.add_argument(
+            "--unused-days",
+            help="How many days inactivity count as unused",
+            type=int,
+            default=365,
+        )
+        parser.add_argument(
             "-w",
             "--what",
             choices=["Cluster", "Net"],
@@ -22,7 +28,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, **options):
-        unused = timezone.now() - timedelta(weeks=52)
+        unused = timezone.now() - timedelta(days=options["unused_days"])
         if "Cluster" in options["what"]:
             annotated_clusters = Cluster.objects.annotate(
                 last_action_used=Subquery(
