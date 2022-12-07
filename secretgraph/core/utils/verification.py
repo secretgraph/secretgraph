@@ -134,8 +134,12 @@ async def verify(
         )
         retmap = {}
         key_hashes = set(map(_clean_keyhash, key_hashes))
+        variables = {}
+        if key_hashes:
+            variables["includeTags"] = list(key_hashes)
         body, files = transform_payload(
-            contentVerification_query, {"includeTags": list(key_hashes)}
+            contentVerification_query,
+            variables,
         )
         result = (
             await session.post(

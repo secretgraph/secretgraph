@@ -4,3 +4,7 @@ class ResourceLimitExceeded(Exception):
 
 class LockedResourceError(Exception):
     """Resource is locked"""
+
+
+class VerificationFailedError(Exception):
+    """Resource verification failed"""

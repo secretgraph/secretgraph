@@ -2,7 +2,6 @@ type ActionEntry {
   keyHash: String!
   type: String!
   allowedTags: [String!]
-  trustedKeys: [String!]!
 }
 
 input ActionInput {
@@ -18,6 +17,7 @@ input ActionInput {
 
 type Cluster implements Node {
   id: GlobalID!
+  authOk: Boolean!
   availableActions: [ActionEntry!]!
   contents(
     """Returns the items in the list that come before the specified cursor."""
@@ -118,6 +118,7 @@ type Content implements Node {
   state: String!
   deleted: DateTime
   link: String!
+  authOk: Boolean!
   availableActions: [ActionEntry!]!
   cluster: Cluster
   referencedBy(
@@ -328,12 +329,8 @@ type GlobalGroup implements Node {
   description: String!
   hidden: Boolean!
   matchUserGroup: String!
-  properties: [GlobalGroupProperty!]!
   injectedKeys: [InjectedKey!]!
-}
-
-type GlobalGroupProperty {
-  name: String!
+  properties: [String!]!
 }
 
 """
@@ -399,7 +396,7 @@ input MutatePushContentInput {
 
 """Input data for `mutateTransfer` mutation"""
 input MutateTransferInput {
-  id: ID!
+  id: GlobalID!
   url: String = null
   key: String = null
   headers: JSON = null
@@ -582,7 +579,6 @@ type SecretgraphObject {
     """The ID of the object."""
     id: GlobalID!
   ): Node
-  config: SecretgraphConfig!
   permissions: [String!]!
   clusters(
     """Returns the items in the list that come before the specified cursor."""
@@ -612,6 +608,7 @@ type SecretgraphObject {
     last: Int = null
     filters: ContentFilter!
   ): ContentConnection!
+  config: SecretgraphConfig!
 }
 
 type Subscription {

@@ -93,7 +93,6 @@ export const getClusterQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        trustedKeys
                         allowedTags
                     }
                 }
@@ -145,7 +144,6 @@ export const createClusterMutation = gql`
                     availableActions {
                         keyHash
                         type
-                        trustedKeys
                         allowedTags
                     }
                 }
@@ -190,7 +188,6 @@ export const updateClusterMutation = gql`
                     availableActions {
                         keyHash
                         type
-                        trustedKeys
                         allowedTags
                     }
                 }

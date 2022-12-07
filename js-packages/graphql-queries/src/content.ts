@@ -207,7 +207,6 @@ export const contentRetrievalQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        trustedKeys
                         allowedTags
                     }
                     cluster {
@@ -304,7 +303,6 @@ export const getContentConfigurationQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        trustedKeys
                         allowedTags
                     }
 
@@ -330,7 +328,6 @@ export const getContentConfigurationQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        trustedKeys
                         allowedTags
                     }
                     nonce

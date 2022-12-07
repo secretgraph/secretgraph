@@ -17,7 +17,6 @@ class ActionEntry:
     keyHash: str
     type: str
     allowedTags: Optional[List[str]]
-    trustedKeys: List[str]
 
 
 class ActionMixin:
@@ -55,12 +54,6 @@ class ActionMixin:
                     yield ActionEntry(
                         keyHash=key_val[0][1],
                         type=key_val[0][0],
-                        trustedKeys=(
-                            results[name]["decrypted"][key_val[1]].get(
-                                "trustedKeys"
-                            )
-                            or []
-                        ),
                         allowedTags=(
                             results[name]["decrypted"][key_val[1]].get(
                                 "allowedTags"
@@ -86,12 +79,6 @@ class ActionMixin:
                     yield ActionEntry(
                         keyHash=action.keyHash,
                         type="other",
-                        trustedKeys=(
-                            results[name]["decrypted"][key_val[1]].get(
-                                "trustedKeys"
-                            )
-                            or []
-                        ),
                         allowedTags=None,
                     )
             else:
@@ -103,12 +90,6 @@ class ActionMixin:
                     yield ActionEntry(
                         keyHash=action.keyHash,
                         type="other",
-                        trustedKeys=(
-                            results[name]["decrypted"][key_val[1]].get(
-                                "trustedKeys"
-                            )
-                            or []
-                        ),
                         allowedTags=None,
                     )
 

@@ -151,7 +151,6 @@ export const keysRetrievalQuery = gql`
                     availableActions {
                         keyHash
                         type
-                        trustedKeys
                         allowedTags
                     }
                     cluster {

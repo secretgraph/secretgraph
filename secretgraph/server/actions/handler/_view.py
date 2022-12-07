@@ -55,13 +55,11 @@ class ViewHandlers:
                 & incl_filters_tag
                 & incl_filters_type,
                 "accesslevel": 3,
-                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         elif issubclass(sender, Cluster):
             return {
                 "filters": Q(),
                 "accesslevel": 3,
-                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         return None
 
@@ -144,13 +142,11 @@ class ViewHandlers:
                 & incl_filters_tag
                 & incl_filters_type,
                 "accesslevel": ownaccesslevel,
-                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         elif issubclass(sender, Cluster):
             return {
                 "filters": Q(),
                 "accesslevel": ownaccesslevel,
-                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         return None
 

@@ -59,7 +59,6 @@ class UpdateHandlers:
             return {
                 "filters": Q(),
                 "accesslevel": ownaccesslevel,
-                "trustedKeys": action_dict.get("trustedKeys", []),
             }
         return None
 
@@ -139,7 +138,6 @@ class UpdateHandlers:
                 & incl_filters_tag
                 & incl_filters_type,
                 "nets": action_dict.get("nets", []),
-                "trustedKeys": action_dict.get("trustedKeys", []),
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
                 # allowedTypes is invalid for update
@@ -154,7 +152,6 @@ class UpdateHandlers:
             # disallow create new content / view cluster
             return {
                 "filters": Q(),
-                "trustedKeys": action_dict.get("trustedKeys", []),
                 "injectedTags": action_dict.get("injectedTags", []),
                 "allowedTags": action_dict.get("allowedTags", None),
                 # allowedTypes is invalid for update
@@ -262,7 +259,6 @@ class UpdateHandlers:
         if scope == "create" and issubclass(sender, (Content, Cluster)):
             return {
                 "action": "create",
-                "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(),
                 "accesslevel": 3,
                 "nets": action_dict.get("nets", []),
@@ -370,7 +366,6 @@ class UpdateHandlers:
         if scope == "push":
             return {
                 "action": "create",
-                "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(),
                 "accesslevel": 3,
                 "nets": action_dict.get("nets", []),
@@ -392,7 +387,6 @@ class UpdateHandlers:
         ):
             return {
                 "action": "push",
-                "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(id=action_dict["id"]),
                 "accesslevel": 0,
                 "nets": action_dict.get("nets", []),
@@ -439,7 +433,6 @@ class UpdateHandlers:
                 )
             )
         return {
-            "trustedKeys": action_dict.get("trustedKeys", []),
             "nets": action_dict.get("nets", []),
             "filters": ~excl_filters,
             "accesslevel": 2,

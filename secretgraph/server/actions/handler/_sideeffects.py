@@ -19,7 +19,6 @@ class SideEffectsHandlers:
         ):
             return {
                 "action": "inject",
-                "trustedKeys": action_dict.get("trustedKeys", []),
                 "filters": Q(),
                 "accesslevel": -1,
                 "allowedTags": action_dict.get("allowedTags", None),

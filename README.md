@@ -122,17 +122,28 @@ Special configuration keys:
 ## States:
 
 -   required: Only PublicKey, like trusted+required as encryption target
--   trusted: Only PublicKey, a trusted encryption target. At least one is required. Will be put into the trustedKeys parameter of actions
+-   trusted: Only PublicKey, a trusted encryption target. At least one is required.
 -   public: Unencrypted, can be read by everyone
 -   protected: Encrypted, only visible with view permission (token)
 -   draft: like protected + excempted from autohiding
 -   sensitive: like protected + excluded by default, except especially requested. For sensitive stuff like medical data or NSFW
 
-## TrustedKeys
+## Trusted Keys
 
-Actions auto contain TrustedKeys. They are required+trusted key hashes seen while creating action. Reason behind this is, that as actions are encrypted on server side, an injection of keys is prevented.
-Logic:
-every key used for encryption is either in trustedKeys or signed by a trustedKey
+### why not in actions anymore
+
+There was an idea to save to save trustedKeys in actions. They could have
+been used as a way to check if some rogue party injects secretly keys.
+But there is a problem: this solution stalls to easily. Old, compromised keys would
+require to recreate every action
+
+### new approach
+
+Seen and trusted keys should be kept client side. Every key has three trust levels
+
+-   1: explicitly trusted
+-   2: transitively trusted (by explicitly trusted key)
+-   3: unverified (even set to trusted on server side)
 
 ## Shortcut creation of keys
 
@@ -421,7 +432,7 @@ now you have a decryption key to the private key, that is very dangerous
 # TODO
 
 -   validationError: use params
--   trustedKeys logic. Prevent server-side injection of keys
+-   trustedKeys logic:
     -   Needs much more work especially on gui side
         -   save trustedKeys in Config
         -   update trustedKeys to keys signed by already trusted keys

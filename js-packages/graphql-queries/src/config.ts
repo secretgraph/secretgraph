@@ -37,7 +37,6 @@ export const updateConfigQuery = gql`
                         availableActions {
                             keyHash
                             type
-                            trustedKeys
                             allowedTags
                         }
                         nonce

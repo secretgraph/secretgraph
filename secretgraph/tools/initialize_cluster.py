@@ -65,7 +65,6 @@ mutation clusterCreateMutation($description: String, $actions: [ActionInput!], $
             availableActions {
                 keyHash
                 type
-                trustedKeys
                 allowedTags
             }
         }

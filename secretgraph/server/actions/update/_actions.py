@@ -9,6 +9,7 @@ from typing import List
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
+from django.db.models.functions import Substr
 from django.utils import timezone
 
 from ...utils.auth import retrieve_allowed_objects
@@ -81,11 +82,6 @@ def manage_actions_fn(
         action_key_hash = hashObject(action_key)
         action_value = ActionHandler.clean_action(
             action_value, request=request, authset=authset, content=content
-        )
-        action_value["trustedKeys"] = list(
-            Content.objects.trusted_keys(cluster).values_list(
-                "contentHash", flat=True
-            )
         )
 
         # create Action object
