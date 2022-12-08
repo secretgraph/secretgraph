@@ -457,12 +457,13 @@ def _update_or_create_content_or_key(
     content.net.last_used = now()
 
     def save_fn():
-        save_fn_value()
+        # first net in case of net is not persisted yet
         content.net.save(
             update_fields=["bytes_in_use", "last_used"]
             if content.net.id
             else None
         )
+        save_fn_value()
         # only save a persisted old_net
         if old_net and old_net.id:
             # don't update last_used

@@ -133,13 +133,14 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     cluster.net.last_used = timezone.now()
 
     def cluster_save_fn():
-        cluster.updateId = uuid4()
-        cluster.save()
+        # first net in case of net is not persisted yet
         cluster.net.save(
             update_fields=["bytes_in_use", "last_used"]
             if cluster.net.id
             else None
         )
+        cluster.updateId = uuid4()
+        cluster.save()
         # only save a persisted old_net
         if old_net and old_net.id:
             # don't update last_used
