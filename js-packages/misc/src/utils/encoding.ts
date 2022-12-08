@@ -1,7 +1,4 @@
-import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
-import * as Hashing from './hashing'
-import * as IterableOps from './iterable'
 
 export const utf8encoder = new TextEncoder()
 export const utf8decoder = new TextDecoder()
