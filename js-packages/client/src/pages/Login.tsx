@@ -8,13 +8,12 @@ import FormHelperText from '@mui/material/FormHelperText'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import * as Interfaces from '@secretgraph/misc/interfaces'
+import { loadConfig, saveConfig } from '@secretgraph/misc/utils/config'
+import { createClient } from '@secretgraph/misc/utils/graphql'
 import {
     checkConfigObject,
-    loadConfig,
-    saveConfig,
-} from '@secretgraph/misc/utils/config'
-import { createClient } from '@secretgraph/misc/utils/graphql'
-import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations'
+    updateConfigRemoteReducer,
+} from '@secretgraph/misc/utils/operations'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 

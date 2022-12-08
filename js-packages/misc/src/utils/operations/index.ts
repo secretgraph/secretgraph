@@ -1,4 +1,5 @@
 export * from './cluster'
 export * from './content'
+export * from './config'
 export * from './key'
 export * from './node'

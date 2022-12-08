@@ -14,7 +14,7 @@ import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import {
     deleteNodes,
     resetDeletionNodes,
-} from '@secretgraph/misc/utils/operations'
+} from '@secretgraph/misc/utils/operations/node'
 import * as SetOps from '@secretgraph/misc/utils/set'
 import * as React from 'react'
 

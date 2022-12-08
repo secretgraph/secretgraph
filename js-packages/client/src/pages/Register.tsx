@@ -9,12 +9,11 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { saveConfig } from '@secretgraph/misc/utils/config'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
-import { initializeCluster } from '@secretgraph/misc/utils/operations'
+import { initializeCluster } from '@secretgraph/misc/utils/operations/cluster'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import FormikTextField from '../components/formik/FormikTextField'
-import { CenteredSpinner } from '../components/misc'
 import * as Contexts from '../contexts'
 import { initializeHelp, registerLabel } from '../messages'
 
