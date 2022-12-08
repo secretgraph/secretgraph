@@ -33,15 +33,14 @@ import {
     encryptTag,
     extractTags,
     extractTagsRaw,
-    unserializeToCryptoKey,
 } from '../encryption'
+import { findWorkingHashAlgorithms, hashTagsContentHash } from '../hashing'
+import { retry } from '../misc'
 import {
     createSignatureReferences,
     encryptSharedKey,
     extractPubKeysCluster,
-} from '../graphql'
-import { findWorkingHashAlgorithms, hashTagsContentHash } from '../hashing'
-import { retry } from '../misc'
+} from '../references'
 
 export async function createContent({
     client,

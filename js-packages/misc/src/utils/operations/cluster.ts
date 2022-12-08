@@ -9,7 +9,7 @@ import * as Interfaces from '../../interfaces'
 import { authInfoFromConfig, cleanConfig } from '../config'
 import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
 import { encryptAESGCM, encryptRSAOEAP } from '../encryption'
-import { hashObject, hashTagsContentHash, sortedHash } from '../hashing'
+import { hashObject, hashTagsContentHash } from '../hashing'
 import { createContent } from './content'
 
 export async function createCluster(options: {

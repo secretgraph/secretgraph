@@ -59,6 +59,10 @@ export function cleanConfig(
         config.slots = ['main']
         hasChanges = true
     }
+    if (!Object.keys(config.trustedKeys || {}).length) {
+        config.trustedKeys = {}
+        hasChanges = true
+    }
     for (const [key, val] of Object.entries(config.tokens)) {
         if (typeof val == 'string') {
             config.tokens[key] = {
@@ -891,6 +895,7 @@ export function updateConfig(
         let res
         const val = update[key]
         switch (key) {
+            case 'trustedKeys':
             case 'certificates':
             case 'tokens':
                 res = mergeDeleteObjects(newState[key], val)

@@ -187,6 +187,7 @@ class Command(BaseCommand):
             if not net.id:
                 net.save()
             cluster = clusterfn()["cluster"]
+            pkey = cluster.contents.get(type="PublicKey")
             configEncoded = json.dumps(
                 {
                     "baseUrl": url,
@@ -196,6 +197,12 @@ class Command(BaseCommand):
                             "data": privateKey_b64,
                             "note": "initial certificate",
                             "signWith": True,
+                        }
+                    },
+                    "trustedKeys": {
+                        publicKey_hash: {
+                            "link": urljoin(url, pkey.link),
+                            "level": 1,
                         }
                     },
                     "tokens": {

@@ -32,7 +32,6 @@ import {
     extractTagsRaw,
     unserializeToCryptoKey,
 } from '@secretgraph/misc/utils/encryption'
-import { extractPubKeysCluster } from '@secretgraph/misc/utils/graphql'
 import {
     findWorkingHashAlgorithms,
     hashKey,
@@ -45,6 +44,7 @@ import {
     updateConfigRemoteReducer,
     updateKey,
 } from '@secretgraph/misc/utils/operations'
+import { extractPubKeysCluster } from '@secretgraph/misc/utils/references'
 import { saveAs } from 'file-saver'
 import {
     FastField,

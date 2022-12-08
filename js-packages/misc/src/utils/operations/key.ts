@@ -12,8 +12,8 @@ import {
     encryptTag,
     unserializeToCryptoKey,
 } from '../encryption'
-import { createSignatureReferences, encryptSharedKey } from '../graphql'
 import { map } from '../iterable'
+import { createSignatureReferences, encryptSharedKey } from '../references'
 
 export async function createKeys({
     client,

@@ -67,6 +67,7 @@ function Register() {
                             baseUrl: url,
                             configCluster: '',
                             slots: [slot],
+                            trustedKeys: {},
                         }
                         newConfig.hosts[newConfig.baseUrl] = {
                             clusters: {},

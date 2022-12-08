@@ -11,7 +11,7 @@ from ....core.exceptions import ResourceLimitExceeded
 
 from ...models import Cluster, Net, GlobalGroup
 from ...utils.auth import ids_to_results, retrieve_allowed_objects
-from ._arguments import ContentInput
+from ._arguments import ContentInput, ClusterInput
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
 
@@ -180,14 +180,16 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     return save_fn
 
 
-def create_cluster_fn(request, objdata, authset=None):
+def create_cluster_fn(request, objdata: ClusterInput, authset=None):
     if not getattr(objdata, "actions", None):
         raise ValueError("Actions required")
-    contentdata = ContentInput(key=objdata.key)
     cluster = Cluster()
     cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset)
-    contentdata.cluster = cluster
-    content_fn = create_key_fn(request, contentdata, authset=authset)
+    content_fn = None
+    if objdata.key:
+        contentdata = ContentInput(key=objdata.key)
+        contentdata.cluster = cluster
+        content_fn = create_key_fn(request, contentdata, authset=authset)
 
     def save_fn(context=nullcontext):
         if callable(context):
@@ -195,7 +197,8 @@ def create_cluster_fn(request, objdata, authset=None):
         with context:
             cluster = cluster_fn()
             # refresh_fields(add_actions, "cluster")
-            content_fn()
+            if content_fn:
+                content_fn()
             return {"cluster": cluster, "writeok": True}
 
     return save_fn

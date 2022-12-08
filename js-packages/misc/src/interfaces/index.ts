@@ -56,6 +56,12 @@ export interface ReferenceInterface {
 
 type ConfigHashValue = string[]
 
+interface TrustedKeyValue {
+    link: string
+    note: string
+    level: 1 | 2
+}
+
 interface ConfigTokenValue {
     data: string
     note: string
@@ -92,6 +98,7 @@ interface BaseConfigInterface<N = never> {
     configCluster: string
     certificates: { [hash: string]: ConfigCertificateValue | N }
     tokens: { [hash: string]: ConfigTokenValue | N }
+    trustedKeys: { [hash: string]: TrustedKeyValue | N }
     slots: string[]
 }
 
