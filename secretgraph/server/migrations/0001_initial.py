@@ -149,6 +149,12 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    "downloadId",
+                    models.CharField(
+                        blank=True, max_length=36, null=True, unique=True
+                    ),
+                ),
+                (
                     "flexid_cached",
                     models.CharField(
                         blank=True, max_length=80, null=True, unique=True

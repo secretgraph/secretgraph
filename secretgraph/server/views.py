@@ -5,7 +5,6 @@ import logging
 
 from urllib.parse import quote
 
-from strawberry_django_plus import relay
 from django.views.decorators.http import last_modified
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
@@ -20,7 +19,7 @@ from django.http import (
     JsonResponse,
     StreamingHttpResponse,
 )
-from django.shortcuts import resolve_url
+from django.shortcuts import resolve_url, get_object_or_404
 from django.urls import reverse
 from django.views.generic.edit import FormView
 from strawberry.django.views import AsyncGraphQLView
@@ -30,7 +29,6 @@ from .utils.mark import freeze_contents
 from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
 from .utils.auth import (
-    fetch_by_id,
     get_cached_result,
     retrieve_allowed_objects,
 )
@@ -89,7 +87,6 @@ class ContentView(AllowCORSMixin, FormView):
         )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
-        # why not ids_to_results => uses flexid directly
         self.result = get_cached_result(request, authset=authset)["Content"]
         if request.GET.get("key") or request.headers.get("X-Key"):
             if self.action != "view":
@@ -102,14 +99,7 @@ class ContentView(AllowCORSMixin, FormView):
             response = self.render_to_response(self.get_context_data())
         else:
             # raw interface
-            content = None
-            try:
-                content = fetch_by_id(
-                    self.result["objects"], kwargs["id"]
-                ).first()
-            finally:
-                if not content:
-                    raise Http404()
+            content = get_object_or_404(self.result["objects"], downloadId=id)
             response = self.handle_raw_singlecontent(
                 request, content, *args, **kwargs
             )
@@ -161,13 +151,7 @@ class ContentView(AllowCORSMixin, FormView):
         """Return the keyword arguments for instantiating the form."""
         kwargs = super().get_form_kwargs()
         if hasattr(self, "result"):
-            try:
-                content = fetch_by_id(
-                    self.result["objects"], kwargs["id"]
-                ).first()
-            finally:
-                if not content:
-                    raise Http404()
+            content = get_object_or_404(self.result["objects"], downloadId=id)
             kwargs.update(
                 {
                     "result": self.result,
@@ -224,11 +208,7 @@ class ContentView(AllowCORSMixin, FormView):
         """
         # shallow copy initialization of result
         result = self.result.copy()
-        if isinstance(id, (relay.GlobalID, str)):
-            id = [id]
-        result["objects"] = fetch_by_id(
-            result["objects"], id, limit_ids=limit_ids
-        ).distinct()
+        result["objects"] = result["objects"].filter(downloadId=id).distinct()
         if not result["objects"].exists():
             raise Http404()
 
@@ -289,7 +269,6 @@ class ContentView(AllowCORSMixin, FormView):
                 response["Content-Disposition"] = header
         else:
             response = FileResponse(content.file.read("rb"))
-        response["X-ID"] = content.cached_flexid
         response["X-TYPE"] = content.type
         if content.contentHash:
             response["X-CONTENT-HASH"] = content.contentHash
@@ -315,14 +294,14 @@ class ContentView(AllowCORSMixin, FormView):
             refs = (
                 refs.filter(q)
                 .annotate(
-                    privkey_flexid=Subquery(
+                    privkey_downloadId=Subquery(
                         # private keys in result set, empty if no permission
                         self.result["objects"]
                         .filter(
                             type="PrivateKey",
                             references__target__referencedBy=OuterRef("pk"),
                         )
-                        .values("flexid")[:1]
+                        .values("downloadId")[:1]
                     )
                 )
                 .order_by("-group", "id")
@@ -338,10 +317,10 @@ class ContentView(AllowCORSMixin, FormView):
                     ] = {
                         "key": ref.extra,
                         "link": (
-                            ref.privkey_flexid
+                            ref.privkey_downloadId
                             and reverse(
                                 "secretgraph:contents",
-                                kwargs={"id": ref.privkey_flexid},
+                                kwargs={"id": ref.privkey_downloadId},
                             )
                         )
                         or "",
@@ -367,7 +346,6 @@ class ContentView(AllowCORSMixin, FormView):
             except FileNotFoundError as e:
                 raise Http404() from e
         freeze_contents([content.id], self.request)
-        response["X-ID"] = content.cached_flexid
         response["X-TYPE"] = content.type
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())

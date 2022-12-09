@@ -129,9 +129,9 @@ def generateFlexid(sender, instance, force=False, **kwargs):
     from strawberry_django_plus.relay import to_base64
     from .models import Cluster, Content
 
-    if not instance.flexid or not instance.flexid_cached or force:
-        for i in range(0, 1000):
-            if i >= 999:
+    if force or not instance.flexid or not instance.flexid_cached:
+        for i in range(0, 100):
+            if i >= 99:
                 raise ValueError("A possible infinite loop was detected")
             instance.flexid = str(uuid.uuid4())
             instance.flexid_cached = to_base64(
@@ -139,7 +139,9 @@ def generateFlexid(sender, instance, force=False, **kwargs):
             )
             try:
                 with transaction.atomic():
-                    instance.save(update_fields=["flexid", "flexid_cached"])
+                    instance.save(
+                        update_fields=["flexid", "downloadId", "flexid_cached"]
+                    )
                 break
             except IntegrityError:
                 pass
@@ -155,6 +157,26 @@ def generateFlexid(sender, instance, force=False, **kwargs):
         if issubclass(sender, Cluster) and force:
             for c in instance.contents.all():
                 generateFlexid(Content, c, True)
+
+    if issubclass(sender, Content):
+        if force or not instance.downloadId:
+            for i in range(0, 100):
+                if i >= 99:
+                    raise ValueError("A possible infinite loop was detected")
+
+                instance.downloadId = str(uuid.uuid4())
+                try:
+                    with transaction.atomic():
+                        instance.save(
+                            update_fields=[
+                                "flexid",
+                                "downloadId",
+                                "flexid_cached",
+                            ]
+                        )
+                    break
+                except IntegrityError:
+                    pass
 
 
 def regenerateKeyHash(force=False, **kwargs):

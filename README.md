@@ -178,7 +178,7 @@ Not implemented yet
 
 ### Return Headers
 
--   X-ID: Id of content (only if single content is returned)
+-   X-ID: Id of content (removed as it can leak infos)
 -   X-TYPE: Type of content (only if single content is returned)
 -   X-CONTENT-HASH: Content hash of content (only if single content with content hash is returned)
 -   X-IS-SIGNED: is verified (only if single, encrypted content is returned)

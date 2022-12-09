@@ -140,7 +140,7 @@ SECRETGRAPH_DEFAULT_GROUPS = {}
 # specify hash names from most current to most old
 SECRETGRAPH_HASH_ALGORITHMS = ["sha512"]
 # length of tokens used in file names
-SECRETGRAPH_FILETOKEN_LENGTH = 100
+SECRETGRAPH_FILETOKEN_LENGTH = 50
 # how many chars can tags/refs have per operation
 SECRETGRAPH_OPERATION_SIZE_LIMIT = 500000
 SECRETGRAPH_TAG_LIMIT = 8000

@@ -159,8 +159,9 @@ def retrieve_allowed_objects(
         # {id: {(action, hash): id}}  # noqa
         "action_info_clusters": {},
         "action_info_contents": {},
+        "accesslevel": 0,
     }
-    clusters = {}
+    query_composing = {}
     passive_active_actions = set()
     seen = set()
     for item in authset:
@@ -267,20 +268,18 @@ def retrieve_allowed_objects(
             _query = query.filter(
                 filters & models.Q(cluster_id=actions[0].cluster_id)
             )
-        if actions[0].cluster.flexid in clusters:
-            oldval = clusters[actions[0].cluster.flexid]
+        if returnval["accesslevel"] < accesslevel:
+            returnval["accesslevel"] = accesslevel
+        if actions[0].cluster.flexid in query_composing:
+            oldval = query_composing[actions[0].cluster.flexid]
             if oldval["accesslevel"] > accesslevel:
                 continue
             elif oldval["accesslevel"] == accesslevel:
-                oldval["filters"] |= filters
-                oldval["actions"] |= actions
-                oldval["_query"] |= _query
+                oldval["query"] |= _query
                 continue
-        clusters[actions[0].cluster.flexid] = {
-            "filters": filters,
+        query_composing[actions[0].cluster.flexid] = {
             "accesslevel": accesslevel,
-            "actions": actions,
-            "_query": _query,
+            "query": _query,
         }
     # actions
     returnval["active_actions"].update(passive_active_actions)
@@ -296,9 +295,10 @@ def retrieve_allowed_objects(
     # extract subqueries union them
     all_query = reduce(
         or_,
-        map(lambda x: x.pop("_query"), clusters.values()),
+        map(lambda x: x["query"], query_composing.values()),
         query.none(),
     )
+    del query_composing
 
     if issubclass(query.model, Cluster):
         _q = models.Q(

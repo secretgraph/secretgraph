@@ -53,7 +53,7 @@ def get_content_file_path(instance, filename) -> str:
                 str(cluster_id),
                 "%s.store"
                 % secrets.token_urlsafe(
-                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH", 100)
+                    getattr(settings, "SECRETGRAPH_FILETOKEN_LENGTH", 50)
                 ),
             )
         )
@@ -254,6 +254,9 @@ class Content(FlexidModel):
     limited: bool = False
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(blank=True, default=uuid4)
+    downloadId: str = models.CharField(
+        max_length=36, blank=True, null=True, unique=True
+    )
     markForDestruction: dt = models.DateTimeField(null=True, blank=True)
     # doesn't appear in non-admin searches
     hidden: bool = models.BooleanField(blank=True, default=False)
@@ -321,7 +324,7 @@ class Content(FlexidModel):
     @property
     def link(self) -> str:
         # path to raw view
-        return reverse("secretgraph:contents", kwargs={"id": self.flexid})
+        return reverse("secretgraph:contents", kwargs={"id": self.downloadId})
 
     @property
     def size_tags(self) -> int:
