@@ -50,17 +50,22 @@ class ActionMixin:
                 if key_val[0][0] == "manage":
                     has_manage = True
                 if key_val[0][0] not in constants.protectedActions:
-                    seen_ids.add(key_val[1])
+                    seen_ids.update(key_val[1])
+                    allowedTags = None
+                    if key_val[0][0] not in {"view", "auth"}:
+                        for action_id in key_val[1]:
+                            _tags = results[name]["decrypted"][action_id].get(
+                                "allowedTags"
+                            )
+                            if _tags is not None:
+                                if allowedTags is None:
+                                    allowedTags = list()
+                                allowedTags.extend(_tags)
+
                     yield ActionEntry(
                         keyHash=key_val[0][1],
                         type=key_val[0][0],
-                        allowedTags=(
-                            results[name]["decrypted"][key_val[1]].get(
-                                "allowedTags"
-                            )
-                            if key_val[0][0] not in {"view", "auth"}
-                            else None
-                        ),
+                        allowedTags=allowedTags,
                     )
         if has_manage:
             await results.preinit("Action")

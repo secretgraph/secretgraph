@@ -267,18 +267,6 @@ def iter_decrypt_contents(
                 source=OuterRef("pk"), group="transfer"
             )
         ),
-        active_action_ids=Subquery(
-            result["actions"]
-            .filter(
-                Q(contentAction__content_id=OuterRef("id"))
-                | Q(contentAction=None),
-                id__in=[
-                    *result.get("action_info_contents", {}).keys(),
-                    *result.get("action_info_clusters", {}).keys(),
-                ],
-            )
-            .values("id")
-        ),
     )
 
     for content in query:

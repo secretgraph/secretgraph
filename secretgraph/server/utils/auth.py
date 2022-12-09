@@ -162,17 +162,23 @@ def retrieve_allowed_objects(
     }
     clusters = {}
     passive_active_actions = set()
+    seen = set()
     for item in authset:
-        flexid_raw, aesgcm, keyhashes = _speedup_tokenparsing(request, item)
+        flexid_cached, aesgcm, keyhashes = _speedup_tokenparsing(request, item)
         if not aesgcm:
             continue
+        # flexid_cached can be changed, so a token is checked twice
+        # this prevents this case
+        if keyhashes[0] in seen:
+            continue
+        seen.add(keyhashes[0])
 
         q = models.Q(
-            contentAction__content__flexid_cached=flexid_raw
-        ) | models.Q(cluster__flexid_cached=flexid_raw)
+            contentAction__content__flexid_cached=flexid_cached
+        ) | models.Q(cluster__flexid_cached=flexid_cached)
         if issubclass(query.model, Cluster):
             # don't block auth with @system
-            q |= models.Q(cluster__name_cached=flexid_raw)
+            q |= models.Q(cluster__name_cached=flexid_cached)
         actions = pre_filtered_actions.filter(q, keyHash__in=keyhashes)
         if not actions:
             continue
@@ -210,11 +216,11 @@ def retrieve_allowed_objects(
                 returnval["objects"] = query.none()
                 return returnval
             if action.contentAction:
-                action_info_dict = returnval[
+                action_info_dict_ref = returnval[
                     "action_info_contents"
                 ].setdefault(action.contentAction.content_id, {})
             else:
-                action_info_dict = returnval[
+                action_info_dict_ref = returnval[
                     "action_info_clusters"
                 ].setdefault(action.cluster_id, {})
             returnval["decrypted"].setdefault(action.id, decrypted)
@@ -224,16 +230,16 @@ def retrieve_allowed_objects(
                 accesslevel = newaccesslevel
                 filters = decrypted.get("filters", models.Q())
 
-                action_info_dict[
+                action_info_dict_ref[
                     (action_dict["action"], action.keyHash)
-                ] = action.id
+                ] = [action.id]
                 returnval["active_actions"] = set()
             elif accesslevel == newaccesslevel:
                 filters &= decrypted.get("filters", models.Q())
-                action_info_dict.setdefault(
+                action_info_dict_ref.setdefault(
                     (action_dict["action"], action.keyHash),
-                    action.id,
-                )
+                    [],
+                ).append(action.id)
             if accesslevel <= newaccesslevel:
 
                 if issubclass(query.model, Content):
@@ -254,6 +260,7 @@ def retrieve_allowed_objects(
 
         returnval["actions"] |= actions
         # apply filters to a private query
+        # filters are applied per keyHash
         if issubclass(query.model, Cluster):
             _query = query.filter(filters & models.Q(id=actions[0].cluster_id))
         else:

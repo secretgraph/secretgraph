@@ -10,7 +10,7 @@ from ..core.typings import Scope, Action, Hash
 from . import models
 
 AuthActionInfoDict = TypeVar(
-    "AuthActionInfoDict", dict[str, dict[tuple[Action, Hash], str]]
+    "AuthActionInfoDict", dict[str, dict[tuple[Action, Hash], list[str]]]
 )
 
 
