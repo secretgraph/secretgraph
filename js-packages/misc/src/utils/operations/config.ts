@@ -4,28 +4,25 @@ import {
     updateConfigQuery,
 } from '@secretgraph/graphql-queries/config'
 import { getContentConfigurationQuery } from '@secretgraph/graphql-queries/content'
+import { trustedKeysRetrieval } from '@secretgraph/graphql-queries/key'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 
 import * as Constants from '../../constants'
 import * as Interfaces from '../../interfaces'
-import { UnpackPromise } from '../../typing'
+import { UnpackPromise, ValueType } from '../../typing'
 import { transformActions } from '../action'
+import { authInfoFromConfig, extractPrivKeys, updateConfig } from '../config'
+import { b64toarr } from '../encoding'
 import {
-    authInfoFromConfig,
-    cleanConfig,
-    extractPrivKeys,
-    updateConfig,
-} from '../config'
-import { b64toarr, serializeToBase64, utf8encoder } from '../encoding'
-import {
-    decryptAESGCM,
-    decryptFirstPreKey,
-    decryptPreKeys,
     decryptRSAOEAP,
-    encryptAESGCM,
     encryptPreKey,
+    unserializeToCryptoKey,
 } from '../encryption'
-import { findWorkingHashAlgorithms, hashTagsContentHash } from '../hashing'
+import {
+    findWorkingHashAlgorithms,
+    hashObject,
+    hashTagsContentHash,
+} from '../hashing'
 import { retry } from '../misc'
 import {
     createSignatureReferences,
@@ -78,7 +75,7 @@ async function updateRemoteConfig({
         nodeData: node,
         config,
         blobOrTokens: authInfo.tokens,
-        baseUrl: config.baseUrl,
+        itemDomain: config.baseUrl,
     })
     if (!retrieved) {
         throw Error('could not retrieve and decode config object')
@@ -585,4 +582,179 @@ export async function updateOrCreateContentWithConfig({
         console.error(exc)
         return false
     }
+}
+
+export async function updateTrustedKeys({
+    config,
+    itemClient,
+    baseClient,
+    itemDomain,
+    authorization,
+    hashAlgorithm,
+    clusters,
+    states = ['trusted', 'required'],
+    signWithIsTrusted = true,
+}: {
+    itemClient: ApolloClient<any>
+    baseClient: ApolloClient<any>
+    itemDomain?: string
+    config: Interfaces.ConfigInterface
+    clusters: string
+    hashAlgorithm: string
+    authorization: string[]
+    states?: string[]
+    signWithIsTrusted?: boolean
+}) {
+    const { data } = await itemClient.query({
+        query: trustedKeysRetrieval,
+        variables: {
+            clusters,
+            authorization,
+            states,
+        },
+        fetchPolicy: 'network-only',
+    })
+
+    const trustedKeysWithNodes: {
+        [key: string]:
+            | (ValueType<Interfaces.ConfigInterface['trustedKeys']> & {
+                  nodes: any[]
+                  key: CryptoKey
+              })
+            | null
+    } = {}
+    const linksToHash: { [link: string]: string } = {}
+    // TODO fetch all trusted keys
+
+    let ops: Promise<any>[] = []
+
+    for (const { node } of data.secretgraph.contents.edges) {
+        const fn = async () => {
+            const link = new URL(node.link, itemDomain)
+            const response = await fetch(link)
+            if (!response.ok) {
+                return
+            }
+            if (response.headers.get('X-TYPE') != 'PublicKey') {
+                await response.body?.cancel()
+                return
+            }
+            const keyBlob = await response.blob()
+            const hash = await hashObject(keyBlob, hashAlgorithm)
+            if (trustedKeysWithNodes[hash]) {
+                // duplicate and not null
+                if (
+                    !Constants.trusted_states.has(
+                        '' + response.headers.get('X-STATE')
+                    )
+                ) {
+                    trustedKeysWithNodes[hash]!.links.push(link.href)
+                    trustedKeysWithNodes[hash]!.nodes.push(node)
+                }
+                return
+            }
+            if (config.trustedKeys[hash]) {
+                if (
+                    !Constants.trusted_states.has(
+                        '' + response.headers.get('X-STATE')
+                    )
+                ) {
+                    trustedKeysWithNodes[hash] = null
+                } else {
+                    linksToHash[link.href] = hash
+                    let level = config.trustedKeys[hash].level
+                    if (
+                        signWithIsTrusted &&
+                        config.certificates[hash]?.signWith
+                    ) {
+                        level = 1
+                    }
+                    trustedKeysWithNodes[hash] = {
+                        ...config.trustedKeys[hash],
+                        level,
+                        key: await unserializeToCryptoKey(keyBlob, 'publickey'),
+                        nodes: [node],
+                        links: [...config.trustedKeys[hash].links, link.href],
+                    }
+                }
+            } else if (
+                Constants.trusted_states.has(
+                    '' + response.headers.get('X-STATE')
+                )
+            ) {
+                linksToHash[link.href] = hash
+                let level: 1 | 2 | 3 = 3
+                if (signWithIsTrusted && config.certificates[hash]?.signWith) {
+                    level = 1
+                }
+                trustedKeysWithNodes[hash] = {
+                    level,
+                    note: '',
+                    key: await unserializeToCryptoKey(keyBlob, 'publickey'),
+                    nodes: [node],
+                    links: [link.href],
+                }
+            }
+        }
+        ops.push(fn())
+    }
+    await Promise.all(ops)
+    ops = []
+
+    const trustedKeys: Interfaces.ConfigInputInterface['trustedKeys'] = {}
+
+    for (const [key, value] of Object.entries(trustedKeysWithNodes)) {
+        const fn = async () => {
+            if (value === null) {
+                trustedKeys[key] = value
+                return
+            }
+            if (value.level == 1) {
+                trustedKeys[key] = {
+                    level: value.level,
+                    note: value.note,
+                    links: value.links,
+                }
+                return
+            }
+            for (const keynode of value.nodes) {
+                for (const { node } of keynode.references.edges) {
+                    const target = node.target
+                    const signature = node.extra
+                    const foundHash =
+                        linksToHash[new URL(target.link, itemDomain).href]
+                    if (!foundHash) {
+                        // TODO: load key and check if in config
+                        continue
+                    }
+                    if (
+                        (trustedKeysWithNodes[foundHash] &&
+                            trustedKeysWithNodes[foundHash]!.level <= 2) ||
+                        (config.trustedKeys[foundHash] &&
+                            config.trustedKeys[foundHash]!.level <= 2)
+                    ) {
+                        // TODO: check full path
+                        // verifySignature()
+                        if (true) {
+                            trustedKeys[key] = {
+                                level: 2,
+                                note: value.note,
+                                links: value.links,
+                            }
+                        }
+                    }
+                }
+            }
+            trustedKeys[key] = null
+        }
+        ops.push(fn())
+    }
+    await Promise.all(ops)
+
+    return await updateConfigRemoteReducer(config, {
+        update: {
+            trustedKeys,
+        },
+        client: baseClient,
+    })
 }

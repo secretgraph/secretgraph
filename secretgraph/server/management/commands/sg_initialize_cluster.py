@@ -201,7 +201,7 @@ class Command(BaseCommand):
                     },
                     "trustedKeys": {
                         publicKey_hash: {
-                            "link": urljoin(url, pkey.link),
+                            "links": [urljoin(url, pkey.link)],
                             "level": 1,
                         }
                     },

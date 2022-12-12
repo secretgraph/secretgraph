@@ -146,6 +146,20 @@ export const createClusterMutation = gql`
                         type
                         allowedTags
                     }
+                    contents(
+                        filters: {
+                            public: TRUE
+                            deleted: FALSE
+                            includeTypes: ["PublicKey"]
+                        }
+                    ) {
+                        edges {
+                            node {
+                                id
+                                link
+                            }
+                        }
+                    }
                 }
                 writeok
             }

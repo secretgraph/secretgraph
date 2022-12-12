@@ -13,7 +13,8 @@ export const validNotLoggedInActions = new Set<MainContextInterface['action']>([
     'help',
 ])
 
-export const public_states = ['required', 'trusted', 'public']
+export const public_states = new Set(['required', 'trusted', 'public'])
+export const trusted_states = new Set(['required', 'trusted'])
 
 export const UseCriteria = {
     TRUE: 'TRUE' as const,

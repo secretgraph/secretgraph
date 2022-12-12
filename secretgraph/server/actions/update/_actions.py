@@ -9,7 +9,6 @@ from typing import List
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
-from django.db.models.functions import Substr
 from django.utils import timezone
 
 from ...utils.auth import retrieve_allowed_objects

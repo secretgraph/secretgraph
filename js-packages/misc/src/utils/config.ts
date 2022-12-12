@@ -21,15 +21,42 @@ export function moveHosts({
 }: {
     config: Interfaces.ConfigInterface
     update: { [oldHost: string]: string }
-}): Interfaces.ConfigInterface {
+}): Interfaces.ConfigInputInterface {
+    const domains: { [key: string]: string } = {}
+    for (const [key, value] of Object.entries(update)) {
+        domains[new URL(key).host] = new URL(value).host
+    }
     const hosts: Interfaces.ConfigInterface['hosts'] = {}
     for (const [key, value] of Object.entries(config.hosts)) {
-        const newName = update[key] ?? key
-        hosts[newName] = value
+        if (update[key]) {
+            hosts[update[key]] = value
+        }
+    }
+    const trustedKeys: Interfaces.ConfigInterface['trustedKeys'] = {}
+    for (const [key, value] of Object.entries(config.trustedKeys)) {
+        let hasUpdate = false
+        let links: string[] = []
+        for (const link of value.links) {
+            const linkUrl = new URL(link)
+            linkUrl.host = domains[linkUrl.host] ?? linkUrl.host
+            const nlink = linkUrl.href
+            // deduplicate
+            if (link != nlink || links.includes(nlink)) {
+                hasUpdate = true
+            }
+            links.push(nlink)
+        }
+        if (hasUpdate) {
+            trustedKeys[key] = {
+                ...value,
+                links,
+            }
+        }
     }
     return {
         ...config,
         hosts,
+        trustedKeys,
     }
 }
 
@@ -88,6 +115,11 @@ export function cleanConfig(
         }
     }
     if (domain) {
+        const nBaseurl = new URL(config.baseUrl, domain).href
+        if (nBaseurl != config.baseUrl) {
+            hasChanges = true
+            config.baseUrl = nBaseurl
+        }
         for (const host of [...Object.keys(config.hosts)]) {
             const nhost = new URL(host, domain).href
             if (host != nhost) {
@@ -157,6 +189,23 @@ export function cleanConfig(
                 config.hosts[nhost].contents = new_contents
                 delete config.hosts[host]
                 hasChanges = true
+            }
+        }
+
+        for (const value of Object.values(config.trustedKeys)) {
+            let hasUpdate = false
+            let links: string[] = []
+            for (const link of value.links) {
+                const nlink = new URL(link, domain).href
+                // deduplicate
+                if (link != nlink || links.includes(nlink)) {
+                    hasChanges = true
+                    hasUpdate = true
+                }
+                links.push(nlink)
+            }
+            if (hasUpdate) {
+                value.links = links
             }
         }
     }

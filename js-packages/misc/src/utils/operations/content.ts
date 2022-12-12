@@ -48,7 +48,7 @@ export async function createContent({
     authorization: Iterable<string>
 }): Promise<FetchResult<any>> {
     const tagsOptions = await Promise.all(tagsIntern)
-    const isPublic = Constants.public_states.includes(options.state)
+    const isPublic = Constants.public_states.has(options.state)
     let nonce: Uint8Array | undefined, key: Uint8Array | undefined
     if (isPublic) {
         nonce = undefined
@@ -169,7 +169,7 @@ export async function updateContent({
         : options.value
         ? []
         : null
-    const isPublic = state ? Constants.public_states.includes(state) : undefined
+    const isPublic = state ? Constants.public_states.has(state) : undefined
     let sharedKey: ArrayBuffer | undefined
     if (options.value) {
         sharedKey = crypto.getRandomValues(new Uint8Array(32))
@@ -284,7 +284,7 @@ export async function decryptContentObject({
     config: _config,
     nodeData,
     blobOrTokens,
-    baseUrl,
+    itemDomain,
 }: {
     config: Interfaces.ConfigInterface | PromiseLike<Interfaces.ConfigInterface>
     nodeData: any | PromiseLike<any>
@@ -293,7 +293,7 @@ export async function decryptContentObject({
         | string
         | string[]
         | PromiseLike<Blob | string | string[]>
-    baseUrl?: string
+    itemDomain?: string
 }): Promise<decryptContentObjectInterface | null> {
     let arrPromise: PromiseLike<ArrayBufferLike>
     const _info = await blobOrTokens
@@ -307,14 +307,11 @@ export async function decryptContentObject({
     } else if (typeof _info == 'string') {
         arrPromise = Promise.resolve(b64tobuffer(_info))
     } else {
-        arrPromise = fetch(
-            new URL(_node.link, baseUrl || config.baseUrl).href,
-            {
-                headers: {
-                    Authorization: _info.join(','),
-                },
-            }
-        ).then((result) => result.arrayBuffer())
+        arrPromise = fetch(new URL(_node.link, itemDomain).href, {
+            headers: {
+                Authorization: _info.join(','),
+            },
+        }).then((result) => result.arrayBuffer())
     }
     // skip decryption as always unencrypted
     if (_node.type == 'PublicKey' || _node.state == 'public') {

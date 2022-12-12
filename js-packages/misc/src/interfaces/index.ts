@@ -57,9 +57,10 @@ export interface ReferenceInterface {
 type ConfigHashValue = string[]
 
 interface TrustedKeyValue {
-    link: string
+    links: string[]
     note: string
-    level: 1 | 2
+    // level 3 hashes are stripped from config but allow them here
+    level: 1 | 2 | 3
 }
 
 interface ConfigTokenValue {

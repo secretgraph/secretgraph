@@ -187,6 +187,15 @@ export async function initializeCluster({
         note: 'config token',
         system: true,
     }
+    const keyUrl = new URL(
+        clusterResponse.data.contents.edges[0].node.link,
+        config['baseUrl']
+    )
+    config.trustedKeys[digestPublicKey] = {
+        links: [`${keyUrl}`],
+        level: 1,
+        note: 'initial key',
+    }
     if (!cleanConfig(config)[0]) {
         throw Error('invalid config created')
     }

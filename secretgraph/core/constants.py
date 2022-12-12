@@ -32,18 +32,20 @@ protectedActions = {"storedUpdate", "auth"}
 
 class DeleteRecursive(enum.Enum):
     _ignore_ = ["valid_values"]
+    valid_values: frozenset[str]
     TRUE = "a"
     FALSE = "b"
     NO_GROUP = "c"
 
 
-DeleteRecursive.valid_values: frozenset[str] = frozenset(
+DeleteRecursive.valid_values = frozenset(
     map(lambda x: x.value, DeleteRecursive.__members__.values())
 )
 
 
 class ClaimState(enum.Enum):
     _ignore_ = ["valid_values"]
+    valid_values: frozenset[str]
     UNVERIFIED = "a"
     DISPUTED = "b"
     VERIFIED = "c"
@@ -51,44 +53,47 @@ class ClaimState(enum.Enum):
     INDISPUTABLE = "e"
 
 
-ClaimState.valid_values: frozenset[str] = frozenset(
+ClaimState.valid_values = frozenset(
     map(lambda x: x.value, ClaimState.__members__.values())
 )
 
 
 class UseCriteria(enum.Enum):
     _ignore_ = ["valid_values"]
+    valid_values: frozenset[str]
     TRUE = "true"
     FALSE = "false"
     IGNORE = "ignore"
 
 
-UseCriteria.valid_values: frozenset[str] = frozenset(
+UseCriteria.valid_values = frozenset(
     map(lambda x: x.value, UseCriteria.__members__.values())
 )
 
 
 class UseCriteriaPublic(enum.Enum):
     _ignore_ = ["valid_values"]
+    valid_values: frozenset[str]
     TRUE = "true"
     FALSE = "false"
     IGNORE = "ignore"
     TOKEN = "token"
 
 
-UseCriteriaPublic.valid_values: frozenset[str] = frozenset(
+UseCriteriaPublic.valid_values = frozenset(
     map(lambda x: x.value, UseCriteriaPublic.__members__.values())
 )
 
 
 class MetadataOperations(enum.Enum):
     _ignore_ = ["valid_values"]
+    valid_values: frozenset[str]
     APPEND = "append"
     REMOVE = "remove"
     REPLACE = "replace"
 
 
-MetadataOperations.valid_values: frozenset[str] = frozenset(
+MetadataOperations.valid_values = frozenset(
     map(lambda x: x.value, MetadataOperations.__members__.values())
 )
 
