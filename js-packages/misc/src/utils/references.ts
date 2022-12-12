@@ -80,13 +80,13 @@ export function extractPubKeysCluster(props: {
 
 // TODO: rebuild this function, to check signatures
 // another purpose it doesn't serve
-export function extractPubKeysReferences(props: {
+export function verifyContent(props: {
     readonly node: any
-    readonly authorization: string[]
     readonly params: any
     old?: { [hash: string]: Promise<CryptoKey> }
     readonly onlyPubkeys?: boolean
     readonly onlySeen?: boolean
+    itemDomain: string
 }): { [hash: string]: Promise<CryptoKey> } {
     const pubkeys = Object.assign({}, props.old || {})
     const seen = new Set<string>()
@@ -99,11 +99,9 @@ export function extractPubKeysReferences(props: {
         const keyHash: string = keyNode.contentHash.replace(/^Key:/, '')
         seen.add(keyHash)
         if (!pubkeys[keyHash]) {
-            pubkeys[keyHash] = fetch(keyNode.link, {
-                headers: {
-                    Authorization: props.authorization.join(','),
-                },
-            }).then(async (result) => {
+            pubkeys[keyHash] = fetch(
+                new URL(keyNode.link, props.itemDomain)
+            ).then(async (result) => {
                 const buf = await result.arrayBuffer()
                 try {
                     return await unserializeToCryptoKey(

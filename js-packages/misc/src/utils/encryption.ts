@@ -350,6 +350,39 @@ export async function decryptRSAOEAP(
     }
 }
 
+export async function verifySignature(
+    key: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>,
+    signature: string,
+    data:
+        | Interfaces.RawInput
+        | Interfaces.KeyOutInterface
+        | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
+) {
+    const split = signature.split(':')
+    if (split.length != 2) {
+        return false
+    }
+
+    const hashalgo2 = Constants.mapHashNames[split[0]].operationName
+    const hashalgo2_len = Constants.mapHashNames[split[0]].length
+    return await crypto.subtle.verify(
+        {
+            name: 'RSA-PSS',
+            saltLength: hashalgo2_len / 8,
+        },
+        await unserializeToCryptoKey(
+            key,
+            {
+                name: 'RSA-PSS',
+                hash: hashalgo2,
+            },
+            'publicKey'
+        ),
+        Buffer.from(split[1], 'base64').buffer,
+        await unserializeToArrayBuffer(data)
+    )
+}
+
 export async function encryptAESGCM(
     options:
         | Interfaces.CryptoGCMInInterface

@@ -195,6 +195,7 @@ export async function initializeCluster({
         links: [`${keyUrl}`],
         level: 1,
         note: 'initial key',
+        lastChecked: Math.floor(Date.now() / 1000),
     }
     if (!cleanConfig(config)[0]) {
         throw Error('invalid config created')

@@ -1,5 +1,6 @@
 import json
 import os
+from time import time
 from base64 import b64decode, b64encode
 from urllib.parse import urlencode, urljoin
 
@@ -203,6 +204,8 @@ class Command(BaseCommand):
                         publicKey_hash: {
                             "links": [urljoin(url, pkey.link)],
                             "level": 1,
+                            "note": "",
+                            "lastChecked": int(time()),
                         }
                     },
                     "tokens": {

@@ -17,6 +17,7 @@ import {
     decryptRSAOEAP,
     encryptPreKey,
     unserializeToCryptoKey,
+    verifySignature,
 } from '../encryption'
 import {
     findWorkingHashAlgorithms,
@@ -584,6 +585,70 @@ export async function updateOrCreateContentWithConfig({
     }
 }
 
+async function updateTrust({
+    map,
+    itemDomain,
+    linksToHash,
+}: {
+    map: {
+        [key: string]:
+            | (ValueType<Interfaces.ConfigInterface['trustedKeys']> & {
+                  nodes: any[]
+                  blob: Blob
+                  key: CryptoKey
+              })
+            | null
+    }
+    linksToHash: { [link: string]: string }
+    itemDomain?: string
+}) {
+    let currentLevel = 1
+    let hadUpdate: boolean = true
+    let keys = new Set(Object.keys(map))
+    while (hadUpdate) {
+        hadUpdate = false
+        for (const key of [...keys]) {
+            const value = map[key]
+            if (!value) {
+                keys.delete(key)
+                continue
+            }
+            if (value.level == currentLevel) {
+                keys.delete(key)
+                for (const keynode of value.nodes) {
+                    for (const { node } of keynode.referencedBy.edges) {
+                        const source = node.source
+                        const signature = node.signature
+                        const sourceLink = new URL(source.link, itemDomain).href
+                        let foundHash = linksToHash[sourceLink]
+                        if (!foundHash) {
+                            continue
+                        }
+                        const sourceOb = map[foundHash]
+                        if (sourceOb && sourceOb.level > 2) {
+                            try {
+                                if (
+                                    await verifySignature(
+                                        value.key,
+                                        signature,
+                                        sourceOb.blob
+                                    )
+                                ) {
+                                    sourceOb.level = 2
+                                    hadUpdate = true
+                                }
+                            } catch (exc) {
+                                console.debug('Bad signature:', exc)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        currentLevel = 2
+    }
+}
+
 export async function updateTrustedKeys({
     config,
     itemClient,
@@ -619,6 +684,7 @@ export async function updateTrustedKeys({
         [key: string]:
             | (ValueType<Interfaces.ConfigInterface['trustedKeys']> & {
                   nodes: any[]
+                  blob: Blob
                   key: CryptoKey
               })
             | null
@@ -673,8 +739,10 @@ export async function updateTrustedKeys({
                         ...config.trustedKeys[hash],
                         level,
                         key: await unserializeToCryptoKey(keyBlob, 'publickey'),
+                        blob: keyBlob,
                         nodes: [node],
                         links: [...config.trustedKeys[hash].links, link.href],
+                        lastChecked: Math.floor(Date.now() / 1000),
                     }
                 }
             } else if (
@@ -691,15 +759,17 @@ export async function updateTrustedKeys({
                     level,
                     note: '',
                     key: await unserializeToCryptoKey(keyBlob, 'publickey'),
+                    blob: keyBlob,
                     nodes: [node],
                     links: [link.href],
+                    lastChecked: Math.floor(Date.now() / 1000),
                 }
             }
         }
         ops.push(fn())
     }
     await Promise.all(ops)
-    ops = []
+    await updateTrust({ map: trustedKeysWithNodes, itemDomain, linksToHash })
 
     const trustedKeys: Interfaces.ConfigInputInterface['trustedKeys'] = {}
 
@@ -709,41 +779,14 @@ export async function updateTrustedKeys({
                 trustedKeys[key] = value
                 return
             }
-            if (value.level == 1) {
+            if (value.level <= 2) {
                 trustedKeys[key] = {
                     level: value.level,
                     note: value.note,
                     links: value.links,
+                    lastChecked: value.lastChecked,
                 }
                 return
-            }
-            for (const keynode of value.nodes) {
-                for (const { node } of keynode.references.edges) {
-                    const target = node.target
-                    const signature = node.extra
-                    const foundHash =
-                        linksToHash[new URL(target.link, itemDomain).href]
-                    if (!foundHash) {
-                        // TODO: load key and check if in config
-                        continue
-                    }
-                    if (
-                        (trustedKeysWithNodes[foundHash] &&
-                            trustedKeysWithNodes[foundHash]!.level <= 2) ||
-                        (config.trustedKeys[foundHash] &&
-                            config.trustedKeys[foundHash]!.level <= 2)
-                    ) {
-                        // TODO: check full path
-                        // verifySignature()
-                        if (true) {
-                            trustedKeys[key] = {
-                                level: 2,
-                                note: value.note,
-                                links: value.links,
-                            }
-                        }
-                    }
-                }
             }
             trustedKeys[key] = null
         }

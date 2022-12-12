@@ -244,20 +244,21 @@ export const trustedKeysRetrieval = gql`
                         id
                         link
                         tags(includeTags: ["key_hash="])
-                        contentHash
-                        references(
+                        referencedBy(
                             filters: {
                                 groups: ["signature"]
-                                includeTags: $keyHashes
+                                types: ["PublicKey"]
+                                public: TRUE
+                                deleted: FALSE
+                                states: $states
                             }
                         ) {
                             edges {
                                 node {
                                     extra
-                                    target {
+                                    source {
                                         id
                                         tags(includeTags: ["key_hash="])
-                                        contentHash
                                         link
                                     }
                                 }

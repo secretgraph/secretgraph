@@ -61,6 +61,7 @@ interface TrustedKeyValue {
     note: string
     // level 3 hashes are stripped from config but allow them here
     level: 1 | 2 | 3
+    lastChecked: number
 }
 
 interface ConfigTokenValue {

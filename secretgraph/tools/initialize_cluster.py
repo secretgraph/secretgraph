@@ -5,6 +5,8 @@ import base64
 import hashlib
 import json
 import argparse
+from time import time
+from urllib.parse import urljoin
 
 from cryptography.hazmat.primitives.asymmetric import rsa, dsa, padding, utils
 from cryptography.hazmat.primitives import serialization, hashes
@@ -67,6 +69,19 @@ mutation clusterCreateMutation($description: String, $actions: [ActionInput!], $
                 type
                 allowedTags
             }
+            contents(
+                filters: {
+                    public: TRUE
+                    deleted: FALSE
+                    includeTypes: ["PublicKey"]
+                }
+            ) {
+                edges {
+                    node {
+                        link
+                    }
+                }
+            }
         }
         writeok
     }
@@ -91,6 +106,7 @@ mutation contentConfigMutation($cluster: ID!, $tags: [String!], $references: [Re
       }
     ) {
         content {
+            id
             nonce
             link
         }
@@ -180,9 +196,19 @@ def main(argv=None):
     # config format by standard client
     config = {
         "certificates": {
-            certhash_b64: base64.b64encode(priv_key_bytes).decode("ascii")
+            certhash_b64: {
+                "data": base64.b64encode(priv_key_bytes).decode("ascii"),
+                "note": "initial key",
+                "signWith": True,
+            }
         },
-        "tokens": {action_key_hash: action_key_b64},
+        "tokens": {
+            action_key_hash: {
+                "data": action_key_b64,
+                "system": False,
+                "note": "",
+            }
+        },
         "hosts": {
             argv.url: {
                 "hashAlgorithms": hash_algos,
@@ -193,6 +219,22 @@ def main(argv=None):
                         }
                     }
                 },
+            }
+        },
+        "trustedKeys": {
+            certhash_b64: {
+                "links": [
+                    urljoin(
+                        argv.url,
+                        # public key
+                        jsob["updateOrCreateCluster"]["cluster"]["contents"][
+                            "edges"
+                        ][0]["node"].link,
+                    )
+                ],
+                "level": 1,
+                "note": "",
+                "lastChecked": int(time()),
             }
         },
         "baseUrl": argv.url,
