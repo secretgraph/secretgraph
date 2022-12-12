@@ -163,16 +163,10 @@ def retrieve_allowed_objects(
     }
     query_composing = {}
     passive_active_actions = set()
-    seen = set()
     for item in authset:
         flexid_cached, aesgcm, keyhashes = _speedup_tokenparsing(request, item)
         if not aesgcm:
             continue
-        # flexid_cached can be changed, so a token is checked twice
-        # this prevents this case
-        if keyhashes[0] in seen:
-            continue
-        seen.add(keyhashes[0])
 
         q = models.Q(
             contentAction__content__flexid_cached=flexid_cached
@@ -180,7 +174,10 @@ def retrieve_allowed_objects(
         if issubclass(query.model, Cluster):
             # don't block auth with @system
             q |= models.Q(cluster__name_cached=flexid_cached)
-        actions = pre_filtered_actions.filter(q, keyHash__in=keyhashes)
+        # execute every action only once
+        actions = pre_filtered_actions.filter(
+            q, keyHash__in=keyhashes
+        ).exclude(id__in=returnval["decrypted"].keys())
         if not actions:
             continue
 
