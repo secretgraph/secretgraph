@@ -1,7 +1,11 @@
 import { mapHashNames } from '../constants'
 import * as Interfaces from '../interfaces'
 import { serializeToBase64, unserializeToArrayBuffer } from './encoding'
-import { encryptRSAOEAP, unserializeToCryptoKey } from './encryption'
+import {
+    encryptRSAOEAP,
+    unserializeToCryptoKey,
+    verifySignature,
+} from './encryption'
 import { hashKey } from './hashing'
 
 // onlyPubkeys enforces checks which can fail in case of missing tag inclusion
@@ -78,61 +82,65 @@ export function extractPubKeysCluster(props: {
     return pubkeys
 }
 
-// TODO: rebuild this function, to check signatures
-// another purpose it doesn't serve
-export function verifyContent(props: {
+export async function verifyContent({
+    config,
+    content,
+    existing,
+    ...props
+}: {
     readonly node: any
-    readonly params: any
-    old?: { [hash: string]: Promise<CryptoKey> }
+    existing?: { [hash: string]: Promise<CryptoKey> }
+    readonly config: Interfaces.ConfigInterface
     readonly onlyPubkeys?: boolean
-    readonly onlySeen?: boolean
-    itemDomain: string
-}): { [hash: string]: Promise<CryptoKey> } {
-    const pubkeys = Object.assign({}, props.old || {})
-    const seen = new Set<string>()
-    for (const {
-        node: { target: keyNode },
-    } of props.node.references.edges) {
-        if (!props.onlyPubkeys && keyNode.type == 'PublicKey') {
+    readonly itemDomain: string
+    readonly content: Blob
+}): Promise<number> {
+    // level is inverted 1 is max, 3 is lowest, 4 is helper for unverified
+    let maxLevel = 4
+    const ops = []
+    for (const { node } of props.node.references.edges) {
+        if (!props.onlyPubkeys && node.target.type == 'PublicKey') {
             continue
         }
-        const keyHash: string = keyNode.contentHash.replace(/^Key:/, '')
-        seen.add(keyHash)
-        if (!pubkeys[keyHash]) {
-            pubkeys[keyHash] = fetch(
-                new URL(keyNode.link, props.itemDomain)
-            ).then(async (result) => {
-                const buf = await result.arrayBuffer()
-                try {
-                    return await unserializeToCryptoKey(
-                        buf,
-                        props.params,
-                        'publicKey'
-                    )
-                } catch (exc) {
-                    console.log(
-                        'failed exctracting public key from reference',
-                        buf
-                    )
-                    throw exc
+        const keyHash: string = node.target.contentHash.replace(/^Key:/, '')
+        const signature = node.extra
+        let level = 3
+        if (config.trustedKeys[keyHash]) {
+            level = config.trustedKeys[keyHash].level
+        }
+        if (!existing || !existing[keyHash]) {
+            const fn = async () => {
+                const result = await fetch(
+                    new URL(node.target.link, props.itemDomain)
+                )
+                if (!result.ok) {
+                    return
                 }
-            })
-        } else {
-            pubkeys[keyHash] = unserializeToCryptoKey(
-                pubkeys[keyHash],
-                props.params,
-                'publicKey'
-            )
-        }
-    }
-    if (props.onlySeen) {
-        for (const key of Object.keys(pubkeys)) {
-            if (!seen.has(key)) {
-                delete pubkeys[key]
+                const pubKeyBlob = await result.arrayBuffer()
+                if (await verifySignature(pubKeyBlob, signature, content)) {
+                    // level is inverted
+                    if (maxLevel > level) {
+                        maxLevel = level
+                    }
+                }
             }
+            ops.push(fn())
+        } else {
+            const fn = async () => {
+                if (
+                    await verifySignature(existing[keyHash], signature, content)
+                ) {
+                    // level is inverted
+                    if (maxLevel > level) {
+                        maxLevel = level
+                    }
+                }
+            }
+            ops.push(fn())
         }
     }
-    return pubkeys
+    await Promise.allSettled(ops)
+    return maxLevel
 }
 
 async function createSignatureReferences_helper(
