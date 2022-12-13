@@ -148,7 +148,7 @@ export const createClusterMutation = gql`
                     }
                     contents(
                         filters: {
-                            public: TRUE
+                            states: ["trusted", "required", "public"]
                             deleted: FALSE
                             includeTypes: ["PublicKey"]
                         }

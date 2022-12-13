@@ -1104,6 +1104,8 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                         (val: { keyHash: string; type: string }) => val.type
                     ),
                 ]),
+                readonly:
+                    dataUnfinished.secretgraph.node.tags.includes('immutable'),
             }
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =

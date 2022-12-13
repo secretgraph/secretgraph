@@ -39,7 +39,11 @@ function ActionBar(props: Props) {
         if (SetOps.hasIntersection(mainCtx.tokensPermissions, _update_set)) {
             return mainCtx.tokens
         }
-        if (!config || (!mainCtx.cluster && !mainCtx.item)) {
+        if (
+            !config ||
+            (!mainCtx.cluster && !mainCtx.item) ||
+            mainCtx.readonly
+        ) {
             return []
         }
         return authInfoFromConfig({
@@ -52,7 +56,7 @@ function ActionBar(props: Props) {
                     : undefined,
             clusters: mainCtx.cluster ? new Set([mainCtx.cluster]) : undefined,
         }).tokens
-    }, [mainCtx.tokens, mainCtx.tokensPermissions])
+    }, [mainCtx.tokens, mainCtx.readonly, mainCtx.tokensPermissions])
 
     const createTokens = React.useMemo(() => {
         if (SetOps.hasIntersection(mainCtx.tokensPermissions, _create_set)) {
@@ -103,7 +107,12 @@ function ActionBar(props: Props) {
                             title={mainCtx.action === 'view' ? 'Edit' : 'View'}
                             arrow
                             style={{
-                                display: mainCtx.item ? undefined : 'none',
+                                display:
+                                    mainCtx.item &&
+                                    (mainCtx.action !== 'view' ||
+                                        !mainCtx.readonly)
+                                        ? undefined
+                                        : 'none',
                             }}
                         >
                             <span>
@@ -221,7 +230,7 @@ function ActionBar(props: Props) {
                                 <MapSelect
                                     sx={{
                                         color: 'white',
-                                        direction: 'rtl' as const,
+                                        direction: 'rtl',
                                         verticalAlign: 'middle !important',
                                         '& .MuiInputBase-root': {
                                             color: 'white !important',
@@ -263,7 +272,8 @@ function ActionBar(props: Props) {
                                 <IconButton
                                     style={{
                                         display:
-                                            mainCtx.action == 'create'
+                                            mainCtx.action == 'create' ||
+                                            mainCtx.readonly
                                                 ? 'none'
                                                 : undefined,
                                     }}

@@ -17,6 +17,9 @@ export const Main = createContext<{
 }>({
     mainCtx: {
         action: 'login',
+        securityLevel: 4,
+        securityWarningActive: true,
+        readonly: true,
         title: '',
         item: null,
         cluster: null,

@@ -54,7 +54,7 @@ export interface ReferenceInterface {
     deleteRecursive?: 'NO_GROUP' | 'TRUE' | 'FALSE'
 }
 
-type ConfigHashValue = string[]
+type ConfigHashValue<N = string> = N[]
 
 interface TrustedKeyValue {
     links: string[]
@@ -75,17 +75,17 @@ interface ConfigCertificateValue {
     signWith: boolean
 }
 
-export type ConfigHashesInterface<N = never> = {
-    [hash: string]: ConfigHashValue | N
+export type ConfigHashesInterface<N = never, T = string> = {
+    [hash: string]: ConfigHashValue<T> | N
 }
 
-export interface ConfigContentInterface<N = never> {
+export interface ConfigContentInterface<N = never, T = string> {
     hashes: ConfigHashesInterface<N>
     //trusted: string[]
     cluster: string | N
 }
 
-export interface ConfigClusterInterface<N = never> {
+export interface ConfigClusterInterface<N = never, T = string> {
     hashes: ConfigHashesInterface<N>
     //trusted: string[]
 }
@@ -100,7 +100,6 @@ interface BaseConfigInterface<N = never> {
     configCluster: string
     certificates: { [hash: string]: ConfigCertificateValue | N }
     tokens: { [hash: string]: ConfigTokenValue | N }
-    trustedKeys: { [hash: string]: TrustedKeyValue | N }
     slots: string[]
 }
 
@@ -111,6 +110,7 @@ export interface ConfigInterface extends BaseConfigInterface {
             ConfigContentInterface
         >
     }
+    trustedKeys: { [hash: string]: TrustedKeyValue }
 }
 
 export interface ConfigInputInterface
@@ -123,14 +123,25 @@ export interface ConfigInputInterface
             >
         > | null
     }
+    trustedKeys?: { [hash: string]: Partial<TrustedKeyValue> | null }
 }
 
 export interface SecretgraphEventInterface {
     pingCreate?: boolean
 }
 
+// undefined means here: don't touch
 export interface MainContextInterface {
     action: 'login' | 'register' | 'create' | 'view' | 'update' | 'help'
+    securityLevel: 1 | 2 | 2 | 4 | null
+    // a warning is shown above the content if level 3, 4
+    // in level 3 it requests for an update of trusted keys
+    // in level 4 it is a modal and must be accepted to continue
+    // should be initial active
+    securityWarningActive: boolean
+    // is content editable, must be initially set to true
+    // optional for create (item=null), maybe becomes mandatory
+    readonly: boolean
     updateId: null | string
     title: string
     // Content

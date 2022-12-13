@@ -1,12 +1,31 @@
+import { isNotEq } from './set'
+
+export class InvalidMergeError extends Error {}
+
+export function compareArray(a: any[], b: any[]) {
+    if (a.length != b.length) {
+        return false
+    }
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] != b[i]) {
+            return false
+        }
+    }
+    return true
+}
+
 export function mergeDeleteObjects(
     targetObj: any,
-    newObj: any,
-    objHandler: (a: any, b: any) => [any, number] = mergeDeleteObjects
+    update: any,
+    objHandler: (
+        a: any,
+        b: any
+    ) => [any, number] | undefined = mergeDeleteObjects
 ): [any, number] {
     let count = 0
 
     const copied = targetObj ? Object.assign({}, targetObj) : {}
-    for (const [key, value] of Object.entries(newObj)) {
+    for (const [key, value] of Object.entries(update)) {
         if (!key) {
             continue
         }
@@ -17,8 +36,10 @@ export function mergeDeleteObjects(
             }
         } else if (typeof value === 'object') {
             const ret = objHandler(copied[key], value)
-            copied[key] = ret[0]
-            count += ret[1]
+            if (ret) {
+                copied[key] = ret[0]
+                count += ret[1]
+            }
         } else if (value !== undefined) {
             if (copied[key] != value) {
                 copied[key] = value
@@ -27,6 +48,62 @@ export function mergeDeleteObjects(
         }
     }
     return [copied, count]
+}
+
+export function mergeDeleteObjectsReplace(
+    targetObj: any,
+    update: any,
+    objHandler: (
+        a: any,
+        b: any
+    ) => [any, number] | undefined = mergeDeleteObjectsReplace
+): [any, number] {
+    return mergeDeleteObjects(targetObj, update, (a: any, b: any) => {
+        if (b instanceof Array) {
+            if (!a || !compareArray(a, b)) {
+                return [b, 1]
+            }
+        } else if (b instanceof Set) {
+            if (!a || isNotEq(a, b)) {
+                return [b, 1]
+            }
+        } else {
+            return objHandler(a, b)
+        }
+    })
+}
+
+export function multiAssign(
+    target: any,
+    update: any,
+    keys: string[],
+    ignoreNull: boolean = false
+): [any, number] {
+    let count = 0
+
+    for (const key of keys) {
+        const value = update[key]
+        if (value !== undefined && (!ignoreNull || value !== null)) {
+            if (
+                target[key] instanceof Array &&
+                !compareArray(value, target[key])
+            ) {
+                count += 1
+                target[key] = value
+            } else if (
+                target[key] instanceof Set &&
+                isNotEq(value, target[key])
+            ) {
+                count += 1
+                target[key] = value
+            } else if (value !== target[key]) {
+                count += 1
+                target[key] = value
+            }
+        }
+    }
+
+    return [target, count]
 }
 
 export function deepEqual<T>(a: T, b: T) {

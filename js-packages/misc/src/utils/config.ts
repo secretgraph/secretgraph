@@ -12,7 +12,14 @@ import {
     encryptPreKey,
     unserializeToCryptoKey,
 } from './encryption'
-import { mergeDeleteObjects } from './misc'
+import { hashObject } from './hashing'
+import {
+    InvalidMergeError,
+    compareArray,
+    mergeDeleteObjects,
+    mergeDeleteObjectsReplace,
+    multiAssign,
+} from './misc'
 import * as SetOps from './set'
 
 export function moveHosts({
@@ -452,10 +459,79 @@ export function updateConfig(
         let res
         const val = update[key]
         switch (key) {
-            case 'trustedKeys':
-            case 'certificates':
             case 'tokens':
-                res = mergeDeleteObjects(newState[key], val)
+                res = mergeDeleteObjects(
+                    newState[key],
+                    val,
+                    // replace if not undefined, we do this atomic
+                    (old, update) => {
+                        if (update.note === undefined) {
+                            update.note = ''
+                        }
+                        if (update.system === undefined) {
+                            update.system = false
+                        }
+                        if (!update.data) {
+                            throw new InvalidMergeError('tokens entry invalid')
+                        }
+                        return [update, 1]
+                    }
+                )
+                newState[key] = res[0]
+                count += res[1]
+                break
+            case 'certificates':
+                res = mergeDeleteObjects(
+                    newState[key],
+                    val,
+                    // replace if not undefined, we do this atomic
+                    (old, update) => {
+                        if (update.note === undefined) {
+                            update.note = ''
+                        }
+                        if (update.signWith === undefined) {
+                            update.signWith = false
+                        }
+                        if (!update.data) {
+                            throw new InvalidMergeError(
+                                'certificates entry invalid'
+                            )
+                        }
+                        return [update, 1]
+                    }
+                )
+                newState[key] = res[0]
+                count += res[1]
+                break
+            case 'trustedKeys':
+                res = mergeDeleteObjects(
+                    newState[key],
+                    val,
+                    (
+                        oldval: Interfaces.ConfigInterface['trustedKeys'][string],
+                        update: NonNullable<
+                            NonNullable<
+                                Interfaces.ConfigInputInterface['trustedKeys']
+                            >[string]
+                        >
+                    ) => {
+                        const [newState, count] = mergeDeleteObjectsReplace(
+                            oldval,
+                            update
+                        )
+                        if (
+                            newState.note === undefined ||
+                            newState.links === undefined ||
+                            newState.level === undefined ||
+                            newState.lastChecked === undefined
+                        ) {
+                            throw new InvalidMergeError(
+                                'trustedKeys value incomplete: ' + newState
+                            )
+                        }
+                        return [newState, count]
+                    }
+                )
                 newState[key] = res[0]
                 count += res[1]
                 break
@@ -485,7 +561,7 @@ export function updateConfig(
                                 newval.clusters,
                                 (
                                     oldval: Interfaces.ConfigClusterInterface,
-                                    newval: Interfaces.ConfigClusterInterface<null>
+                                    update: Interfaces.ConfigClusterInterface<undefined>
                                 ) => {
                                     count = 0
                                     const newState: Interfaces.ConfigClusterInterface =
@@ -494,12 +570,24 @@ export function updateConfig(
                                             : {
                                                   hashes: {},
                                               }
-                                    if (newval.hashes) {
+
+                                    if (update.hashes) {
                                         const res = mergeDeleteObjects(
                                             newState.hashes,
-                                            newval.hashes,
+                                            update.hashes,
                                             // replace if not undefined, we have arrays
                                             (old, newobj) => {
+                                                if (
+                                                    !(newobj instanceof Array)
+                                                ) {
+                                                    throw new InvalidMergeError(
+                                                        'hashes not an array'
+                                                    )
+                                                }
+                                                newobj.sort()
+                                                if (compareArray(old, newobj)) {
+                                                    return undefined
+                                                }
                                                 return [newobj, 1]
                                             }
                                         )
@@ -518,7 +606,7 @@ export function updateConfig(
                                 newval.contents,
                                 (
                                     oldval: Interfaces.ConfigContentInterface,
-                                    newval: Interfaces.ConfigContentInterface<null>
+                                    update: Interfaces.ConfigContentInterface<undefined>
                                 ) => {
                                     let count = 0
                                     const newState: Interfaces.ConfigContentInterface =
@@ -528,16 +616,31 @@ export function updateConfig(
                                                   hashes: {},
                                                   cluster: '',
                                               }
-                                    if (newval.hashes) {
+                                    if (update.hashes) {
                                         const res = mergeDeleteObjects(
                                             newState.hashes,
-                                            newval.hashes
+                                            update.hashes,
+                                            // replace if not undefined, we have arrays
+                                            (old, newobj) => {
+                                                if (
+                                                    !(newobj instanceof Array)
+                                                ) {
+                                                    throw new InvalidMergeError(
+                                                        'hashes not an array'
+                                                    )
+                                                }
+                                                newobj.sort()
+                                                if (compareArray(old, newobj)) {
+                                                    return undefined
+                                                }
+                                                return [newobj, 1]
+                                            }
                                         )
                                         newState.hashes = res[0]
                                         count += res[1]
                                     }
-                                    if (newval.cluster) {
-                                        newState.cluster = newval.cluster
+                                    if (update.cluster) {
+                                        newState.cluster = update.cluster
                                     }
                                     if (!newState.cluster) {
                                         throw Error('cluster is missing')
@@ -895,6 +998,71 @@ export async function exportConfig(
         return newConfig
     }
     saveAs(new File([newConfig], name, { type: 'text/plain;charset=utf-8' }))
+}
+
+export async function pruneOldTrustedKeys({
+    config,
+    key_hashes,
+    lastChecked,
+    validateHash = true,
+}: {
+    config: Interfaces.ConfigInterface
+    key_hashes?: Set<string>
+    lastChecked?: number
+    validateHash?: boolean
+}): Promise<Interfaces.ConfigInputInterface['trustedKeys']> {
+    const ret: Interfaces.ConfigInputInterface['trustedKeys'] = {}
+    const ops: Promise<any>[] = []
+    const keys = key_hashes ? key_hashes : Object.keys(config.trustedKeys)
+    const now = Math.floor(Date.now() / 1000)
+    for (const key of keys) {
+        const value = config.trustedKeys[key]
+        if (!value) {
+            continue
+        }
+        if (lastChecked && value.lastChecked >= lastChecked) {
+            continue
+        }
+        const splitted = key.split(':')
+        if (splitted.length != 2 || !Constants.mapHashNames[splitted[0]]) {
+            ret[key] = null
+            continue
+        }
+        const fn = async function () {
+            const workingLinks = []
+            for (const link of value.links) {
+                const response = await fetch(link, { credentials: 'omit' })
+                if (!response.ok) {
+                    // could be temporary
+                    if (response.status >= 500 && response.status < 600) {
+                        workingLinks.push(link)
+                    }
+                    continue
+                }
+                if (
+                    !Constants.trusted_states.has(
+                        '' + response.headers.get('X-STATE')
+                    )
+                ) {
+                    continue
+                }
+                if (validateHash) {
+                    if (await hashObject(response.blob(), splitted[0])) {
+                        workingLinks.push(link)
+                    }
+                } else {
+                    workingLinks.push(link)
+                    await response.body?.cancel()
+                }
+            }
+            if (workingLinks.length) {
+                ret[key] = { links: workingLinks }
+            }
+        }
+    }
+
+    await Promise.all(ops)
+    return ret
 }
 // update host specific or find a way to find missing refs
 /**

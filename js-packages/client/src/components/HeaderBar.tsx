@@ -76,6 +76,9 @@ export default React.memo(function HeaderBar() {
         // type is kept
         updateMainCtx({
             action: 'login',
+            readonly: true,
+            securityLevel: null,
+            securityWarningActive: true,
             title: '',
             item: null,
             updateId: null,

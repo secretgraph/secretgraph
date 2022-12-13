@@ -188,7 +188,7 @@ export async function initializeCluster({
         system: true,
     }
     const keyUrl = new URL(
-        clusterResponse.data.contents.edges[0].node.link,
+        clusterResult.cluster.contents.edges[0].node.link,
         config['baseUrl']
     )
     config.trustedKeys[digestPublicKey] = {

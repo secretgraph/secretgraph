@@ -71,7 +71,7 @@ mutation clusterCreateMutation($description: String, $actions: [ActionInput!], $
             }
             contents(
                 filters: {
-                    public: TRUE
+                    states: ["trusted", "required", "public"]
                     deleted: FALSE
                     includeTypes: ["PublicKey"]
                 }

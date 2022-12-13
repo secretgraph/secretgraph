@@ -690,14 +690,13 @@ export async function updateTrustedKeys({
             | null
     } = {}
     const linksToHash: { [link: string]: string } = {}
-    // TODO fetch all trusted keys
 
     let ops: Promise<any>[] = []
 
     for (const { node } of data.secretgraph.contents.edges) {
         const fn = async () => {
             const link = new URL(node.link, itemDomain)
-            const response = await fetch(link)
+            const response = await fetch(link, { credentials: 'omit' })
             if (!response.ok) {
                 return
             }

@@ -479,6 +479,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 deleted: dataUnfinished.secretgraph.node.deleted || null,
                 updateId: dataUnfinished.secretgraph.node.updateId,
                 cluster: dataUnfinished.secretgraph.node.id,
+                readonly: false,
             }
             if (
                 dataUnfinished.secretgraph.node.id == config.configCluster &&

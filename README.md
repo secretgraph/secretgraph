@@ -139,11 +139,12 @@ require to recreate every action
 
 ### new approach
 
-Seen and trusted keys should be kept client side. Every key has three trust levels
+Seen and trusted keys should be kept client side. Every key and content has four trust levels
 
 -   1: explicitly trusted
 -   2: transitively trusted (by explicitly trusted key)
--   3: unverified (even set to trusted on server side)
+-   3: unverified (even set to be trusted on server side)
+-   4: no signatures/only broken signatures
 
 ## Shortcut creation of keys
 
@@ -434,15 +435,10 @@ now you have a decryption key to the private key, that is very dangerous
 -   validationError: use params
 -   trustedKeys logic:
     -   Needs much more work especially on gui side
-        -   save trustedKeys in Config
         -   update trustedKeys to keys signed by already trusted keys
         -   global, with optional name, link/id
         -   if signature isn't found or named key could not be retrieved, it means it is revoked, remove orphans in this case
     -   a better ActionDialog is neccessary
--   transfer logic has problems
-    -   what if public key is not on the target cluster?
-    -   public key can be used to find out correspondants if public
-    -   if not public: how to get the keys? pierce the permission system?
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config
 -   modernize ActionDialog, redesign, multi column?

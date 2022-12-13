@@ -73,8 +73,10 @@ class LazyViewResult(object):
             return default
 
     @gql.django.django_resolver
-    def preinit(self, *fields):
+    def preinit(self, *fields, refresh=False):
         for i in fields:
+            if refresh and i in self._result_dict:
+                del self._result_dict[i]
             self[i]
 
 

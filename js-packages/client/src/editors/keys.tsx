@@ -1106,6 +1106,8 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
                         (val: { keyHash: string; type: string }) => val.type
                     ),
                 ]),
+                readonly:
+                    dataUnfinished.secretgraph.node.tags.includes('immutable'),
             }
             for (const tag of dataUnfinished.secretgraph.node.tags) {
                 if (tag.startsWith('key_hash=')) {

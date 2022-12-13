@@ -139,9 +139,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
             )
             try:
                 with transaction.atomic():
-                    instance.save(
-                        update_fields=["flexid", "downloadId", "flexid_cached"]
-                    )
+                    instance.save(update_fields=["flexid", "flexid_cached"])
                 break
             except IntegrityError:
                 pass
@@ -169,9 +167,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
                     with transaction.atomic():
                         instance.save(
                             update_fields=[
-                                "flexid",
                                 "downloadId",
-                                "flexid_cached",
                             ]
                         )
                     break

@@ -64,6 +64,9 @@ function Definitions({
         const ctx: Interfaces.MainContextInterface = {
             action,
             title: '',
+            securityLevel: null,
+            securityWarningActive: true,
+            readonly: true,
             item: query.get('item'),
             updateId: null,
             url: query.get('url') || activeUrl,
