@@ -113,6 +113,7 @@ const SideBarItems = () => {
             title: mainCtx.updateId == node.updateId ? undefined : name,
             tokens,
             tokensPermissions,
+            cloneData: null,
         })
     }
 

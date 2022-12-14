@@ -1041,8 +1041,11 @@ const KeysUpdate = ({
         >
             {({ values }) => {
                 React.useEffect(() => {
-                    values.cluster && setCluster && setCluster(values.cluster)
-                }, [values.cluster, setCluster])
+                    updateMainCtx({
+                        cloneData: values,
+                        cluster: values.cluster,
+                    })
+                }, [values])
                 return (
                     <UpdateKeysForm
                         hashAlgorithmsRaw={hashAlgorithmsRaw}

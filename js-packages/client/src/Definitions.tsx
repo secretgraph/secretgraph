@@ -76,6 +76,12 @@ function Definitions({
             tokens: [],
             tokensPermissions: new Set(),
             cluster: null,
+            cloneData: null,
+        }
+        if (ctx.action == 'clone' && window.opener?.cloneData) {
+            console.log('sdkdslk', window.opener!.cloneData)
+            ctx.action = 'create'
+            ctx.cloneData = window.opener!.cloneData
         }
         if (!config && ctx.action == 'login') {
             if (query.has('prekey') || query.has('token') || query.has('key')) {

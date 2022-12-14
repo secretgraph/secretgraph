@@ -132,7 +132,14 @@ export interface SecretgraphEventInterface {
 
 // undefined means here: don't touch
 export interface MainContextInterface {
-    action: 'login' | 'register' | 'create' | 'view' | 'update' | 'help'
+    action:
+        | 'clone'
+        | 'login'
+        | 'register'
+        | 'create'
+        | 'view'
+        | 'update'
+        | 'help'
     securityLevel: 1 | 2 | 2 | 4 | null
     // a warning is shown above the content if level 3, 4
     // in level 3 it requests for an update of trusted keys
@@ -155,6 +162,7 @@ export interface MainContextInterface {
     deleted: Date | null | false
     tokens: string[]
     tokensPermissions: Set<string>
+    cloneData: null | { [key: string]: any }
 }
 
 export interface SearchContextInterface {

@@ -256,6 +256,7 @@ function ActionBar(props: Props) {
                                                 searchCtx.cluster ||
                                                 config.configCluster,
                                             tokens: createTokens,
+                                            cloneData: null,
                                         })
                                     }}
                                     value={mainCtx.type || undefined}
@@ -267,13 +268,13 @@ function ActionBar(props: Props) {
                                 />
                             </span>
                         </Tooltip>
-                        <Tooltip title="Clone type">
+                        <Tooltip title="Clone">
                             <span>
                                 <IconButton
                                     style={{
                                         display:
-                                            mainCtx.action == 'create' ||
-                                            mainCtx.readonly
+                                            mainCtx.cloneData === null ||
+                                            !mainCtx.type
                                                 ? 'none'
                                                 : undefined,
                                     }}
@@ -281,20 +282,27 @@ function ActionBar(props: Props) {
                                     aria-label="create"
                                     disabled={!createTokens.length}
                                     onClick={(event) => {
-                                        updateMainCtx({
-                                            action: 'create',
-                                            title: '',
-                                            item: null,
-                                            url: activeUrl,
-                                            updateId: null,
-                                            shareFn: null,
-                                            deleted: null,
-                                            type: mainCtx.type,
-                                            cluster:
-                                                searchCtx.cluster ||
-                                                config.configCluster,
-                                            tokens: createTokens,
-                                        })
+                                        const cloneQuery = new URLSearchParams()
+                                        if (mainCtx.url) {
+                                            cloneQuery.append(
+                                                'url',
+                                                mainCtx.url
+                                            )
+                                        }
+                                        cloneQuery.append('action', 'clone')
+                                        cloneQuery.append(
+                                            'type',
+                                            mainCtx.type as string
+                                        )
+                                        ;(window as any).cloneData =
+                                            mainCtx.cloneData
+                                        const url = new URL(
+                                            window.location.href
+                                        )
+                                        url.hash = `${cloneQuery}`
+                                        console.log('actionbar', url)
+                                        // we have the opener
+                                        window.open(`${url}`, '_blank')
                                     }}
                                     size="large"
                                 >

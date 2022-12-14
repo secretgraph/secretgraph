@@ -31,6 +31,7 @@ export const Main = createContext<{
         // use tokens and permissions for saving items related tokens and permissions
         tokens: [],
         tokensPermissions: new Set(),
+        cloneData: null,
     },
     updateMainCtx: stubFn,
 })

@@ -6,6 +6,7 @@ export const validActions = new Set<MainContextInterface['action']>([
     'view',
     'update',
     'help',
+    'clone',
 ])
 export const validNotLoggedInActions = new Set<MainContextInterface['action']>([
     'login',

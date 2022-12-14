@@ -223,7 +223,6 @@ interface FileInternProps {
     tags?: { [name: string]: string[] }
     data?: Blob | null
     url: string
-    setCluster: (arg: string) => void
 }
 
 const FileIntern = ({
@@ -231,7 +230,6 @@ const FileIntern = ({
     nodeData,
     tags,
     data,
-    setCluster,
     mapper,
     url,
     hashAlgorithms,
@@ -265,10 +263,11 @@ const FileIntern = ({
         }).tokens
     }, [config])
     // const [PSelections, setPSelections] = React.useState<string[]>([])
-    let name: string = ''
+    let name: string = (mainCtx.cloneData && mainCtx.cloneData.name) || ''
 
     const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
-    let encryptName = true
+    let encryptName =
+        (mainCtx.cloneData && mainCtx.cloneData.encryptName) || true
     if (tags) {
         if (tags.name && tags.name.length > 0) {
             name = tags.name[0]
@@ -279,7 +278,10 @@ const FileIntern = ({
             encryptName = true
         }
     }
-    const state = nodeData?.state || 'protected'
+    const state =
+        nodeData?.state ||
+        (mainCtx.cloneData && mainCtx.cloneData.state) ||
+        'protected'
     if (state == 'public') {
         encryptName = false
     }
@@ -287,20 +289,43 @@ const FileIntern = ({
     return (
         <>
             <Formik
-                initialValues={{
-                    plainInput: '',
-                    htmlInput: '',
-                    // when viewing existing data: fileInput is used
-                    fileInput: data ? data : null,
-                    state,
-                    name,
-                    encryptName,
-                    keywords: tags?.keywords || [],
-                    cluster:
-                        nodeData?.cluster?.id ||
-                        (searchCtx.cluster ? searchCtx.cluster : null),
-                    actions,
-                }}
+                initialValues={
+                    {
+                        plainInput:
+                            (mainCtx.cloneData &&
+                                mainCtx.cloneData.plainInput) ||
+                            '',
+                        htmlInput:
+                            (mainCtx.cloneData &&
+                                mainCtx.cloneData.htmlInput) ||
+                            '',
+                        // when viewing existing data: fileInput is used
+                        fileInput: data
+                            ? data
+                            : (mainCtx.cloneData &&
+                                  mainCtx.cloneData.fileInput) ||
+                              null,
+                        state,
+                        name,
+                        encryptName,
+                        keywords:
+                            tags?.keywords ||
+                            (mainCtx.cloneData && mainCtx.cloneData.keywords) ||
+                            [],
+                        cluster: mainCtx.cluster || '',
+                        actions,
+                    } as {
+                        plainInput: string
+                        htmlInput: string
+                        fileInput: Blob | File | null
+                        state: string
+                        name: string
+                        encryptName: boolean
+                        keywords: string[]
+                        cluster: string
+                        actions: typeof actions
+                    }
+                }
                 validate={(values) => {
                     const errors: Partial<{
                         [key in keyof typeof values]: string
@@ -418,13 +443,22 @@ const FileIntern = ({
                     touched,
                     setFieldValue,
                 }) => {
+                    let updateCloneData = true
                     React.useEffect(() => {
-                        values.cluster && setCluster(values.cluster)
-                    }, [values.cluster])
-                    React.useEffect(() => {
-                        values.state == 'public' &&
+                        if (values.state == 'public') {
                             setFieldValue('encryptName', false)
+                            // will be rerendered
+                            updateCloneData = false
+                        }
                     }, [values.state])
+                    React.useEffect(() => {
+                        if (updateCloneData) {
+                            updateMainCtx({
+                                cloneData: values,
+                                cluster: values.cluster,
+                            })
+                        }
+                    }, [values])
                     let preview = null
                     if (values.plainInput) {
                         preview = (
@@ -1179,7 +1213,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         <FileIntern
             {...data}
             url={mainCtx.url as string}
-            setCluster={(cluster: string) => updateMainCtx({ cluster })}
             disabled={loading || viewOnly}
             viewOnly={viewOnly}
         />
@@ -1263,13 +1296,7 @@ const CreateFile = () => {
         return null
     }
 
-    return (
-        <FileIntern
-            url={activeUrl}
-            setCluster={(cluster: string) => updateMainCtx({ cluster })}
-            {...data}
-        />
-    )
+    return <FileIntern url={activeUrl} {...data} />
 }
 
 export default function FileComponent() {

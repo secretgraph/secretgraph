@@ -58,6 +58,8 @@ function MainPage() {
                 FrameElement = Help
                 hasSidebar = false
                 break
+            case 'clone':
+                throw new Error('should not enter this code path')
         }
         return [
             <CapturingSuspense>

@@ -78,9 +78,9 @@ async function extractInfo({
 }
 
 interface ClusterInternProps {
-    readonly name: string
-    readonly description: string
-    readonly featured?: boolean
+    name: string
+    description: string
+    featured: boolean
     url: string
     loading?: boolean
     disabled?: boolean
@@ -131,8 +131,8 @@ const ClusterIntern = ({
             <Formik
                 initialValues={{
                     actions,
-                    name: props.name || '',
-                    description: props.description || '',
+                    name: props.name,
+                    description: props.description,
                     featured: !!props.featured,
                 }}
                 onSubmit={async (
@@ -264,6 +264,9 @@ const ClusterIntern = ({
             >
                 {({ submitForm, isSubmitting, values, dirty }) => {
                     const loading = !!(isSubmitting || loadingIntern)
+                    React.useEffect(() => {
+                        updateMainCtx({ cloneData: values })
+                    }, [values])
                     return (
                         <Form>
                             {mainCtx.item && (
@@ -562,7 +565,9 @@ const CreateCluster = () => {
 
             const hashKey = await hashObject(key, hashAlgorithms[0])
             if (active) {
-                setData({
+                const data: Omit<ClusterInternProps, 'disabled' | 'url'> & {
+                    key: string
+                } = {
                     name: '',
                     description: '',
                     featured: false,
@@ -581,7 +586,14 @@ const CreateCluster = () => {
                     },
                     hashAlgorithm: hashAlgorithms[0],
                     key: `${new Date().getTime()}`,
-                })
+                }
+                console.log(window.opener?.cloneData, mainCtx.cloneData)
+                if (mainCtx.cloneData) {
+                    data.name = mainCtx.cloneData.name
+                    data.description = mainCtx.cloneData.description
+                    data.featured = mainCtx.cloneData.featured
+                }
+                setData(data)
             }
         }
         f()
