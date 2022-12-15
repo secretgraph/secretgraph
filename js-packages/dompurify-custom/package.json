@@ -1,0 +1,22 @@
+{
+    "name": "@secretgraph/dompurify-custom",
+    "version": "0.1.0",
+    "description": "",
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "dompurify": "*"
+    },
+    "devDependencies": {
+        "typescript": "*",
+        "@types/dompurify": "*"
+    },
+    "exports": {
+        "./": "./lib/"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/secretgraph/secretgraph.git",
+        "directory": "js-packages/dompurify-custom"
+    }
+}

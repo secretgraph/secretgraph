@@ -20,6 +20,7 @@
         "./js-packages/graphql-queries/src/*"
       ],
       "@secretgraph/misc/*": ["./js-packages/misc/src/*"],
+      "@secretgraph/dompurify-custom/*": ["./js-packages/dompurify-custom/src/*"],
       "@secretgraph/client/*": [
         "./js-packages/client/src/*"
       ],
@@ -40,6 +41,9 @@
     },
     {
       "path": "./js-packages/misc/tsconfig.json"
+    },
+    {
+      "path": "./js-packages/dompurify-custom/tsconfig.json"
     },
     {
       "path": "./js-packages/client/tsconfig.json"

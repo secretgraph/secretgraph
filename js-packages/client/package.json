@@ -6,6 +6,7 @@
     "license": "MIT",
     "dependencies": {
         "@secretgraph/misc": "*",
+        "@secretgraph/dompurify-custom": "*",
         "@secretgraph/graphql-queries": "*",
         "@apollo/client": "*",
         "graphql-ws": "*",
@@ -28,7 +29,6 @@
     "devDependencies": {
         "typescript": "*",
         "@types/react": "*",
-        "@types/dompurify": "*",
         "@types/file-saver": "*",
         "@types/webpack-env": "*"
     },

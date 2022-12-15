@@ -14,6 +14,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Unstable_Grid2'
 import Box from '@mui/system/Box'
+import DOMPurify from '@secretgraph/dompurify-custom/index'
 import {
     contentRetrievalQuery,
     getContentConfigurationQuery,
@@ -28,7 +29,6 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
-import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
 
