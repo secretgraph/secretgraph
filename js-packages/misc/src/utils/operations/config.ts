@@ -493,6 +493,7 @@ export async function updateOrCreateContentWithConfig({
           node: any
       }
     | false
+    | null
 > {
     const {
         hashes,
@@ -559,6 +560,9 @@ export async function updateOrCreateContentWithConfig({
         const result = await (id
             ? updateContent({ ...noptions, id, updateId })
             : createContent({ ...noptions, type }))
+        if (!result.data.updateOrCreateContent.writeok) {
+            return null
+        }
         const hashesNew: any = {}
         for (const entry of Object.entries(hashes)) {
             if (
