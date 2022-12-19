@@ -423,12 +423,20 @@ now you have a decryption key to the private key, that is very dangerous
 
 ## Why two languages?
 
--   js is not mature enough for web servers. It is a dependency hell with security holes.
+JS is not mature enough for web servers. It is a dependency hell with security holes.
 
 ## Why id for updates
 
 -   fixes problem with lost updates, especially for hot files like config
 -   but metadata can be changed seperately (removing/adding tags/references)
+
+## Why RSA and not ecdsa
+
+Currently you cannot encrypt data asymmetrically with ecdsa, etc... only with RSA.
+At least there are no algorithms in the standard libraries.
+
+Note: in js there is a speciality: you specify the hash algorithm while importing/generating a key
+not while the operation
 
 # TODO
 

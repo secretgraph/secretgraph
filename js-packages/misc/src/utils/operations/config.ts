@@ -310,6 +310,7 @@ export async function updateConfigRemoteReducer(
         nullonnoupdate,
         slots,
         excludeSlots,
+        ignoreId,
     }: {
         update: Interfaces.ConfigInputInterface | null
         client: ApolloClient<any>
@@ -317,6 +318,8 @@ export async function updateConfigRemoteReducer(
         nullonnoupdate?: boolean
         slots?: Iterable<string>
         excludeSlots?: Set<string>
+        // allow updating config objects with updateOrCreateContentWithConfig
+        ignoreId?: string
     }
 ): Promise<Interfaces.ConfigInterface | null> {
     if (update === null) {
@@ -407,6 +410,9 @@ export async function updateConfigRemoteReducer(
     )
     let resultPromises = []
     for (let { node } of nodes) {
+        if (ignoreId && ignoreId == node.id) {
+            continue
+        }
         resultPromises.push(
             retry({
                 action: async (attempted: number) => {
@@ -576,6 +582,8 @@ export async function updateOrCreateContentWithConfig({
                 update: configUpdate,
                 client: baseClient,
                 nullonnoupdate: true,
+                // allow updating config objects with updateOrCreateContentWithConfig
+                ignoreId: result.data.updateOrCreateContent.content.id,
             }),
             node: result.data.updateOrCreateContent.content,
         }

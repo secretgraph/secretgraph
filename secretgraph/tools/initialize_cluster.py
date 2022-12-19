@@ -8,7 +8,7 @@ import argparse
 from time import time
 from urllib.parse import urljoin
 
-from cryptography.hazmat.primitives.asymmetric import rsa, dsa, padding, utils
+from cryptography.hazmat.primitives.asymmetric import rsa, padding, utils
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import httpx
@@ -21,7 +21,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("url")
 parser.add_argument("--public", action="store_true")
 parser.add_argument("--bits", "-b", type=int, default=4096)
-parser.add_argument("--algo", "-t", choices=["rsa", "dsa"], default="rsa")
 
 serverConfigQuery_query = """
 query serverSecretgraphConfigQuery {
@@ -126,14 +125,9 @@ def main(argv=None):
     action_key = os.urandom(32)
     action_key_b64 = base64.b64encode(action_key).decode("ascii")
     config_shared_key = os.urandom(32)
-    if argv.algo == "rsa":
-        priv_key = rsa.generate_private_key(
-            public_exponent=65537, key_size=argv.bits
-        )
-    elif argv.algo == "dsa":
-        priv_key = dsa.generate_private_key(
-            public_exponent=65537, key_size=argv.bits
-        )
+    priv_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=argv.bits
+    )
     pub_key = priv_key.public_key()
     pub_key_bytes = pub_key.public_bytes(
         encoding=serialization.Encoding.DER,
