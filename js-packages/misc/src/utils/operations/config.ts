@@ -339,7 +339,7 @@ export async function updateConfigRemoteReducer(
         query: serverConfigQuery,
         fetchPolicy: 'cache-first',
     })
-    const algos = findWorkingHashAlgorithms(
+    const hashAlgorithms = findWorkingHashAlgorithms(
         serverConfigRes.data.secretgraph.config.hashAlgorithms
     )
 
@@ -360,7 +360,7 @@ export async function updateConfigRemoteReducer(
     }
     slotHashes = await Promise.all(
         slotHashes.map((slot: string) =>
-            hashTagsContentHash([`slot=${slot}`], 'Config', algos[0])
+            hashTagsContentHash([`slot=${slot}`], 'Config', hashAlgorithms[0])
         )
     )
     const configQueryRes = await client.query({
@@ -387,7 +387,7 @@ export async function updateConfigRemoteReducer(
     const privkeys = extractPrivKeys({
         config: resconf[0],
         url: resconf[0].baseUrl,
-        hashAlgorithm: algos[0],
+        hashAlgorithm: hashAlgorithms[0],
         onlySignKeys: true,
     })
 
@@ -401,7 +401,7 @@ export async function updateConfigRemoteReducer(
             authorization: authInfo.tokens,
             params: {
                 name: 'RSA-OAEP',
-                hash: algos[0],
+                hash: hashAlgorithms[0],
             },
         })
     )
@@ -417,7 +417,7 @@ export async function updateConfigRemoteReducer(
                         client,
                         privkeys: privkeysSign,
                         pubkeys,
-                        hashAlgorithm: algos[0],
+                        hashAlgorithm: hashAlgorithms[0],
                         node: attempted == 0 ? node : undefined,
                     })
                     if (result === false) {
@@ -532,7 +532,7 @@ export async function updateOrCreateContentWithConfig({
             authorization,
             params: {
                 name: 'RSA-OAEP',
-                hash: Constants.mapHashNames[hashAlgorithm].operationName,
+                hash: hashAlgorithm,
             },
         })
     }

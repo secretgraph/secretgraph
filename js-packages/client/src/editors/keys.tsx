@@ -100,8 +100,7 @@ async function loadKeys({
 
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames[results['hashAlgorithmsWorking'][0]]
-            .operationName,
+        hash: results['hashAlgorithmsWorking'][0],
     }
     requests.push(
         fetch(new URL(data.secretgraph.node.link, baseUrl).href, {
@@ -215,7 +214,6 @@ async function loadKeys({
 async function calcPublicKey(key: string, hashAlgorithm: string) {
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames[hashAlgorithm].operationName,
     }
     // can fail, fail wanted
     const matchedPrivKey = (
@@ -238,7 +236,6 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
     }
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames['' + hashAlgorithms[0]].operationName,
     }
     // can fail, fail wanted
     const matchedPubKey = (
@@ -824,8 +821,7 @@ const KeysUpdate = ({
                 try {
                     const keyParams = {
                         name: 'RSA-OAEP',
-                        hash: Constants.mapHashNames[hashAlgorithmsWorking[0]]
-                            .operationName,
+                        hash: hashAlgorithmsWorking[0],
                     }
                     let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
                     let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}

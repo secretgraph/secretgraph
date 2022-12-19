@@ -350,8 +350,7 @@ export function extractPrivKeys({
                     certEntry.data,
                     {
                         name: 'RSA-OAEP',
-                        hash: Constants.mapHashNames[props.hashAlgorithm]
-                            .operationName,
+                        hash: props.hashAlgorithm,
                     },
                     'privateKey'
                 )

@@ -253,7 +253,7 @@ export async function encryptRSAOEAP(
     }
     const key = await unserializeToCryptoKey(_options.key, {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames['' + hashalgo].operationName,
+        hash: Constants.mapHashNames[hashalgo as string].operationName,
     })
     return {
         data: await crypto.subtle.encrypt(
@@ -263,7 +263,7 @@ export async function encryptRSAOEAP(
             key,
             await unserializeToArrayBuffer(_options.data)
         ),
-        hashAlgorithm: hashalgo as string,
+        hashAlgorithm: Constants.mapHashNames[hashalgo as string].operationName,
         key,
     }
 }

@@ -48,7 +48,6 @@ export async function hashKey(
         key as Interfaces.KeyInput,
         {
             name: 'RSA-OAEP',
-            hash: mapItem.operationName,
         },
         'publicKey'
     )
