@@ -225,7 +225,7 @@ interface FileInternProps {
     url: string
 }
 
-const FileIntern = ({
+function InnerFile({
     disabled,
     nodeData,
     tags,
@@ -234,10 +234,9 @@ const FileIntern = ({
     url,
     hashAlgorithms,
     viewOnly,
-}: FileInternProps) => {
+}: FileInternProps) {
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { searchCtx } = React.useContext(Contexts.Search)
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
@@ -1210,7 +1209,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         return null
     }
     return (
-        <FileIntern
+        <InnerFile
             {...data}
             url={mainCtx.url as string}
             disabled={loading || viewOnly}
@@ -1296,7 +1295,7 @@ const CreateFile = () => {
         return null
     }
 
-    return <FileIntern url={activeUrl} {...data} />
+    return <InnerFile url={activeUrl} {...data} />
 }
 
 export default function FileComponent() {

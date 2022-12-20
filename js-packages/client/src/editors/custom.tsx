@@ -39,7 +39,7 @@ import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
 
-interface CustomInternProps {
+interface InnerCustomProps {
     disabled?: boolean
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     hashAlgorithm: string
@@ -58,7 +58,7 @@ const InnerCustom = ({
     disabled,
     hashAlgorithm,
     viewOnly,
-}: CustomInternProps) => {
+}: InnerCustomProps) => {
     disabled = disabled || viewOnly
 
     const [open, setOpen] = React.useState(false)

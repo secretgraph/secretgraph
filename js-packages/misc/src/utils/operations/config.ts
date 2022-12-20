@@ -443,7 +443,7 @@ export async function updateConfigRemoteReducer(
     }
 }
 
-interface sharedParametersFull {
+interface updateOrCreateContentWithConfigSharedParams {
     itemClient: ApolloClient<any>
     baseClient: ApolloClient<any>
     url: string
@@ -455,11 +455,24 @@ interface sharedParametersFull {
     hashAlgorithm: string
     authorization: string[]
 }
-type excludedAttrsFull =
+
+type updateOrCreateContentWithConfigReplacedParams =
     | 'client'
     | 'pubkeys'
     | 'privatekeys'
-    | keyof sharedParametersFull
+    | keyof updateOrCreateContentWithConfigSharedParams
+
+type updateOrCreateContentWithConfigParams = Omit<
+    | (Parameters<typeof updateContent>[0] & {
+          type?: string
+      })
+    | (Parameters<typeof createContent>[0] & {
+          id?: string
+          updateId?: string
+      }),
+    updateOrCreateContentWithConfigReplacedParams
+> &
+    updateOrCreateContentWithConfigSharedParams
 
 /**
  * Helper function implementing the whole content update/create workflow
@@ -480,20 +493,17 @@ export async function updateOrCreateContentWithConfig({
     type,
     id,
     updateId,
+    value,
     ...options
-}:
-    | Omit<
-          Parameters<typeof updateContent>[0] &
-              Parameters<typeof createContent>[0],
-          excludedAttrsFull
-      > &
-          sharedParametersFull): Promise<
+}: updateOrCreateContentWithConfigParams): Promise<
     | {
-          config: UnpackPromise<ReturnType<typeof updateConfigRemoteReducer>>
+          config: Interfaces.ConfigInterface | null
+          configUpdate: Interfaces.ConfigInputInterface | null
           node: any
+          writeok: boolean
+          configok: boolean
       }
     | false
-    | null
 > {
     const {
         hashes,
@@ -544,6 +554,7 @@ export async function updateOrCreateContentWithConfig({
         })
     }
 
+    let result
     try {
         const noptions = {
             client: itemClient,
@@ -555,14 +566,37 @@ export async function updateOrCreateContentWithConfig({
             actions: finishedActions,
             authorization,
             state,
-            ...options,
         }
-        const result = await (id
-            ? updateContent({ ...noptions, id, updateId })
-            : createContent({ ...noptions, type }))
+        if (id) {
+            result = await updateContent({
+                ...noptions,
+                ...options,
+                value,
+                id,
+                updateId: updateId as string,
+            })
+        } else {
+            result = await createContent({
+                ...noptions,
+                ...(options as Required<typeof options>),
+                value: value as NonNullable<typeof value>,
+                type: type as string,
+            })
+        }
         if (!result.data.updateOrCreateContent.writeok) {
-            return null
+            return {
+                config: null,
+                configUpdate: null,
+                node: result.data.updateOrCreateContent.node,
+                writeok: false,
+                configok: false,
+            }
         }
+    } catch (exc) {
+        console.error('updating/creating content failed', exc)
+        return false
+    }
+    try {
         const hashesNew: any = {}
         for (const entry of Object.entries(hashes)) {
             if (
@@ -590,10 +624,19 @@ export async function updateOrCreateContentWithConfig({
                 ignoreId: result.data.updateOrCreateContent.content.id,
             }),
             node: result.data.updateOrCreateContent.content,
+            writeok: true,
+            configok: true,
+            configUpdate,
         }
     } catch (exc) {
-        console.error(exc)
-        return false
+        console.error('updating config failed', exc)
+        return {
+            config: null,
+            node: result.data.updateOrCreateContent.node,
+            writeok: true,
+            configok: false,
+            configUpdate,
+        }
     }
 }
 
