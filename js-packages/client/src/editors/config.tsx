@@ -17,7 +17,6 @@ import {
     updateConfig as updateConfigOb,
 } from '@secretgraph/misc/utils/config'
 import {
-    calculateHashes,
     findWorkingHashAlgorithms,
     hashTagsContentHash,
 } from '@secretgraph/misc/utils/hashing'
@@ -31,11 +30,10 @@ import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
-import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
+import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
-import { newClusterLabel } from '../messages'
 
 interface InnerConfigProps {
     disabled?: boolean
@@ -54,7 +52,6 @@ function InnerConfig({
     mapper,
     url,
     hashAlgorithm,
-    tags,
     config: thisConfig,
     viewOnly,
 }: InnerConfigProps) {
@@ -66,16 +63,9 @@ function InnerConfig({
         Contexts.InitializedConfig
     )
     const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
-    const clusterSelectTokens = React.useMemo(() => {
-        return authInfoFromConfig({
-            config,
-            url,
-            require: new Set(['create', 'manage']),
-        }).tokens
-    }, [config])
 
     const initialValues = {
-        slots: tags?.slot || [],
+        slots: thisConfig?.slots || [],
         actions,
         cluster: mainCtx.cluster || '',
     }
@@ -124,6 +114,7 @@ function InnerConfig({
                                   hashAlgorithm
                               )
                             : undefined,
+                        tags: ['name=config.json', `slot=${slots[0]}`],
                         itemClient,
                         baseClient,
                         authorization: mainCtx.tokens,
@@ -222,13 +213,12 @@ function InnerConfig({
                                     </Grid>
                                     <Grid xs={12} md={6}>
                                         <FastField
-                                            component={ClusterSelect}
+                                            component={ClusterSelectViaUrl}
                                             url={url}
                                             name="cluster"
                                             disabled={isSubmitting || disabled}
                                             label="Cluster"
                                             firstIfEmpty
-                                            tokens={clusterSelectTokens}
                                             validate={(val: string) => {
                                                 if (!val) {
                                                     return 'empty'

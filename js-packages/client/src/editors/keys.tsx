@@ -19,10 +19,14 @@ import {
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
-import { generateActionMapper } from '@secretgraph/misc/utils/action'
+import {
+    generateActionMapper,
+    transformActions,
+} from '@secretgraph/misc/utils/action'
 import {
     authInfoFromConfig,
     extractPrivKeys,
+    mergeUpdates,
 } from '@secretgraph/misc/utils/config'
 import {
     serializeToBase64,
@@ -58,8 +62,8 @@ import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
-import ClusterSelect from '../components/forms/ClusterSelect'
 import StateSelect from '../components/forms/StateSelect'
+import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
 
@@ -277,42 +281,45 @@ function UpdateKeysForm({
         isSubmitting,
         setValues,
         setFieldValue,
+        setFieldError,
         errors,
         setErrors,
         values,
         dirty,
     } = useFormikContext<any>()
-    const [joinedHashes, setJoinedHashes] = React.useState('loading')
-    const { config } = React.useContext(Contexts.InitializedConfig)
+    const [joinedHashes, setJoinedHashes] = React.useState<string>('loading')
     React.useEffect(() => {
         let active = true
-        calcHashes(values.publicKey, hashAlgorithmsWorking).then(
-            (data) => {
-                if (active) {
-                    setJoinedHashes(data.join('\n'))
-                }
-            },
-            (reason) => {
+        async function fn() {
+            if (!values.publicKey) {
                 setJoinedHashes('')
+                setFieldError('publicKey', 'Empty')
             }
-        )
+            await calcHashes(values.publicKey, hashAlgorithmsWorking).then(
+                (data) => {
+                    if (!active) return
+                    setJoinedHashes(data.join(', '))
+                    setFieldError('publicKey', undefined)
+                },
+                (reason) => {
+                    if (!active) return
+                    console.debug(reason)
+                    setJoinedHashes('')
+                    setFieldError('publicKey', 'Invalid Key')
+                }
+            )
+        }
+        fn()
         return () => {
             active = false
         }
-    }, [])
+    }, [values.publicKey])
 
     const [showKey, toggleShowKey] = React.useReducer(
         (state: boolean) => !state,
         false
     )
 
-    const clusterSelectTokens = React.useMemo(() => {
-        return authInfoFromConfig({
-            config,
-            url,
-            require: new Set(['create', 'manage']),
-        }).tokens
-    }, [config])
     disabled = disabled || viewOnly || isSubmitting
     return (
         <Form>
@@ -384,13 +391,12 @@ function UpdateKeysForm({
                 </Typography>
                 {canSelectCluster ? (
                     <Field
-                        component={ClusterSelect}
+                        component={ClusterSelectViaUrl}
                         url={url}
                         name="cluster"
                         disabled={disabled}
                         label="Cluster"
                         firstIfEmpty
-                        tokens={clusterSelectTokens}
                     />
                 ) : null}
                 <Field
@@ -427,27 +433,6 @@ function UpdateKeysForm({
                             <Field
                                 name="publicKey"
                                 component={FormikTextField}
-                                validate={async (val: string) => {
-                                    // validate has side effects
-                                    // TODO: fix this
-                                    if (!val) {
-                                        setJoinedHashes('')
-                                        return 'empty'
-                                    }
-                                    return await calcHashes(
-                                        val,
-                                        hashAlgorithmsWorking
-                                    ).then(
-                                        (data) => {
-                                            setJoinedHashes(data.join(', '))
-                                            return null
-                                        },
-                                        (reason) => {
-                                            console.debug(reason)
-                                            return 'Invalid Key'
-                                        }
-                                    )
-                                }}
                                 fullWidth
                                 disabled={disabled}
                                 multiline
@@ -808,17 +793,17 @@ const KeysUpdate = ({
     return (
         <Formik
             initialValues={initialValues}
-            validate={(values) => {
-                const errors: Partial<{
-                    [key in keyof typeof values]: string
-                }> = {}
-                if (!values.publicKey) {
-                    errors['publicKey'] = 'empty'
-                }
-                return errors
-            }}
             onSubmit={async (values, { setSubmitting }) => {
                 try {
+                    const {
+                        hashes: hashesPublicKey,
+                        actions: finishedActionsPublicKey,
+                        configUpdate: configUpdatePublicKey,
+                    } = await transformActions({
+                        actions: values.actionsPrivateKey,
+                        mapper: privateKey?.mapper,
+                        hashAlgorithm: hashAlgorithmsWorking[0],
+                    })
                     const keyParams = {
                         name: 'RSA-OAEP',
                         hash: hashAlgorithmsWorking[0],
@@ -885,6 +870,22 @@ const KeysUpdate = ({
                         })
                     }
 
+                    const {
+                        hashes: hashesPrivateKey,
+                        actions: finishedActionsPrivateKey,
+                        configUpdate: configUpdatePrivateKey,
+                    } = privKey
+                        ? await transformActions({
+                              actions: values.actionsPrivateKey,
+                              mapper: privateKey?.mapper,
+                              hashAlgorithm: hashAlgorithmsWorking[0],
+                          })
+                        : {
+                              hashes: [],
+                              actions: [],
+                              configUpdate: {},
+                          }
+
                     // can fail, is wanted to crash
                     const matchedPubKey = (
                         values.publicKey.match(
@@ -939,6 +940,8 @@ const KeysUpdate = ({
                             privateKey: privKey || undefined,
                             privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
+                            publicActions: finishedActionsPublicKey,
+                            privateActions: finishedActionsPrivateKey,
                             hashAlgorithm: hashAlgorithmsWorking[0],
                             authorization: tokensTarget,
                         })
@@ -960,6 +963,8 @@ const KeysUpdate = ({
                             ],
                             privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
+                            actions: finishedActionsPublicKey,
+
                             hashAlgorithm: hashAlgorithmsWorking[0],
                             authorization: mainCtx.tokens,
                         })
@@ -975,6 +980,7 @@ const KeysUpdate = ({
                                 ),
                                 privkeys: Object.values(privateKeys),
                                 pubkeys: Object.values(publicKeys),
+                                actions: finishedActionsPrivateKey,
                                 hashAlgorithm: hashAlgorithmsWorking[0],
                                 authorization: mainCtx.tokens,
                             })
@@ -989,44 +995,42 @@ const KeysUpdate = ({
                                     `description=${values.description}`,
                                     `name=${values.name}`,
                                 ],
+                                privateActions: finishedActionsPrivateKey,
                                 privkeys: Object.values(privateKeys),
                                 pubkeys: Object.values(publicKeys),
                                 hashAlgorithm: hashAlgorithmsWorking[0],
                                 authorization: mainCtx.tokens,
                             })
                         }
-
-                        if (privKey || privateKey) {
-                            const configNew = await updateConfigRemoteReducer(
-                                config,
-                                {
-                                    update: {
-                                        certificates: {
-                                            [(
-                                                await hashKey(
-                                                    pubKey,
-                                                    hashAlgorithmsWorking[0]
-                                                )
-                                            ).hash]: privKey
-                                                ? {
-                                                      data: await serializeToBase64(
-                                                          privKey
-                                                      ),
-                                                      note: '',
-                                                      signWith: false,
-                                                  }
-                                                : null,
-                                        },
-                                    },
-                                    client: baseClient,
-                                }
-                            )
-                            updateConfig(configNew, true)
-                        }
                         updateMainCtx({
                             updateId:
                                 newData.updateOrCreateContent.content.updateId,
                         })
+                    }
+                    const configUpdate = mergeUpdates(
+                        configUpdatePrivateKey,
+                        configUpdatePublicKey
+                    )
+
+                    if (privKey || privateKey) {
+                        configUpdate.certificates = {
+                            [(await hashKey(pubKey, hashAlgorithmsWorking[0]))
+                                .hash]: privKey
+                                ? {
+                                      data: await serializeToBase64(privKey),
+                                      note: '',
+                                      signWith: false,
+                                  }
+                                : null,
+                        }
+                    }
+                    const configNew = await updateConfigRemoteReducer(config, {
+                        update: configUpdate,
+                        client: baseClient,
+                        nullonnoupdate: true,
+                    })
+                    if (configNew) {
+                        updateConfig(configNew, true)
                     }
                 } catch (exc) {
                     console.error(exc)

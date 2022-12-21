@@ -450,7 +450,6 @@ not while the operation
 -   remove/handle orphan nets (no cluster assigned)
 -   implement settings/config
 -   modernize ActionDialog, redesign, multi column?
--   modernize Keys, save actions (they are already shown)
 -   implement shareFn and ShareDialog, Config has Special ShareDialog
 -   update internal doc section
 -   replace json-editor by ActionConfigurator equivalent

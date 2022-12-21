@@ -444,6 +444,127 @@ export function findCertCandidatesForRefs(
     return found
 }
 
+export function mergeUpdates(
+    ...updates: Interfaces.ConfigInputInterface[]
+): Interfaces.ConfigInputInterface {
+    const merged: Interfaces.ConfigInputInterface = {}
+    for (const update of updates) {
+        for (const key of Object.keys(
+            update
+        ) as (keyof Interfaces.ConfigInterface)[]) {
+            let res
+            const val = update[key]
+            switch (key) {
+                case 'tokens':
+                    merged[key] = mergeDeleteObjects(merged[key], val)[0]
+                    break
+                case 'certificates':
+                    merged[key] = mergeDeleteObjects(merged[key], val)[0]
+                    break
+                case 'trustedKeys':
+                    merged[key] = mergeDeleteObjects(
+                        merged[key],
+                        val,
+                        mergeDeleteObjectsReplace
+                    )[0]
+                    break
+                case 'hosts':
+                    merged[key] = mergeDeleteObjects(
+                        merged[key],
+                        update[key],
+                        (
+                            mergedval: Interfaces.ConfigInterface['hosts'][string],
+                            newval: NonNullable<
+                                NonNullable<
+                                    Interfaces.ConfigInputInterface['hosts']
+                                >[string]
+                            >
+                        ) => {
+                            if (newval.clusters) {
+                                mergedval.clusters = mergeDeleteObjects(
+                                    mergedval.clusters,
+                                    newval.clusters,
+                                    (
+                                        mergedval: Interfaces.ConfigClusterInterface,
+                                        update: Interfaces.ConfigClusterInterface<undefined>
+                                    ) => {
+                                        if (update.hashes) {
+                                            mergedval.hashes =
+                                                mergeDeleteObjects(
+                                                    mergedval.hashes,
+                                                    update.hashes,
+                                                    (old, newobj) => {
+                                                        return [
+                                                            [
+                                                                ...new Set([
+                                                                    ...old,
+                                                                    newobj,
+                                                                ]),
+                                                            ],
+                                                            1,
+                                                        ]
+                                                    }
+                                                )[0]
+                                        }
+                                        return [mergedval, 1]
+                                    }
+                                )[0]
+                            }
+                            if (newval.contents) {
+                                mergedval.contents = mergeDeleteObjects(
+                                    mergedval.contents,
+                                    newval.contents,
+                                    (
+                                        mergedval: Interfaces.ConfigContentInterface,
+                                        update: Interfaces.ConfigContentInterface<undefined>
+                                    ) => {
+                                        if (update.hashes) {
+                                            mergedval.hashes =
+                                                mergeDeleteObjects(
+                                                    mergedval.hashes,
+                                                    update.hashes,
+                                                    (old, newobj) => {
+                                                        return [
+                                                            [
+                                                                ...new Set([
+                                                                    ...old,
+                                                                    newobj,
+                                                                ]),
+                                                            ],
+                                                            1,
+                                                        ]
+                                                    }
+                                                )[0]
+                                        }
+                                        if (update.cluster) {
+                                            mergedval.cluster = update.cluster
+                                        }
+                                        return [mergedval, 1]
+                                    }
+                                )[0]
+                            }
+                            return [mergedval, 1]
+                        }
+                    )[0]
+                    break
+                case 'slots':
+                    if (val && val.length) {
+                        merged[key] = val as string[]
+                    }
+                    break
+                default:
+                    if (val && (!merged[key] || merged[key] != val)) {
+                        merged[key] =
+                            val as Interfaces.ConfigInputInterface[typeof key]
+                    }
+                    break
+            }
+        }
+    }
+
+    return merged
+}
+
 export function updateConfig(
     old: Interfaces.ConfigInterface | null,
     update: Interfaces.ConfigInputInterface
@@ -459,23 +580,18 @@ export function updateConfig(
         const val = update[key]
         switch (key) {
             case 'tokens':
-                res = mergeDeleteObjects(
-                    newState[key],
-                    val,
-                    // replace if not undefined, we do this atomic
-                    (old, update) => {
-                        if (update.note === undefined) {
-                            update.note = ''
-                        }
-                        if (update.system === undefined) {
-                            update.system = false
-                        }
-                        if (!update.data) {
-                            throw new InvalidMergeError('tokens entry invalid')
-                        }
-                        return [update, 1]
+                res = mergeDeleteObjects(newState[key], val, (old, update) => {
+                    if (update.note === undefined) {
+                        update.note = ''
                     }
-                )
+                    if (update.system === undefined) {
+                        update.system = false
+                    }
+                    if (!update.data) {
+                        throw new InvalidMergeError('tokens entry invalid')
+                    }
+                    return [update, 1]
+                })
                 newState[key] = res[0]
                 count += res[1]
                 break
@@ -657,8 +773,13 @@ export function updateConfig(
                 count += res[1]
                 break
             case 'slots':
-                if (val && val.length) {
+                if (
+                    val &&
+                    val.length &&
+                    !compareArray(val as string[], newState[key])
+                ) {
                     newState[key] = val as string[]
+                    count++
                 }
                 break
             default:

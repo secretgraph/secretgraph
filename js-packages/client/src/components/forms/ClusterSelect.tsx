@@ -2,11 +2,9 @@ import { ApolloClient, useQuery } from '@apollo/client'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
-import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
-import { InitializedConfig } from '../../contexts'
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
 export interface ClusterSelectProps<
@@ -82,7 +80,7 @@ export default function ClusterSelect<
         }
         return ret
     }, [data])
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
         if (
             !firstIfEmpty ||
             ids.length == 0 ||

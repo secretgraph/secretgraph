@@ -32,9 +32,8 @@ import * as React from 'react'
 import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikTextField from '../components/formik/FormikTextField'
-import ClusterSelect from '../components/forms/ClusterSelect'
-import SimpleSelect from '../components/forms/SimpleSelect'
 import StateSelect from '../components/forms/StateSelect'
+import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
@@ -69,14 +68,6 @@ const InnerCustom = ({
         Contexts.InitializedConfig
     )
     const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
-
-    const clusterSelectTokens = React.useMemo(() => {
-        return authInfoFromConfig({
-            config,
-            url,
-            require: new Set(['create', 'manage']),
-        }).tokens
-    }, [config])
 
     const initialValues = {
         tags: [] as string[],
@@ -232,13 +223,12 @@ const InnerCustom = ({
                                 </Grid>
                                 <Grid xs={12} md={6}>
                                     <FastField
-                                        component={ClusterSelect}
+                                        component={ClusterSelectViaUrl}
                                         url={url}
                                         name="cluster"
                                         disabled={isSubmitting || disabled}
                                         label="Cluster"
                                         firstIfEmpty
-                                        tokens={clusterSelectTokens}
                                         validate={(val: string) => {
                                             if (!val) {
                                                 return 'empty'

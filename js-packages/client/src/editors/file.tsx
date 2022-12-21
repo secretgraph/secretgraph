@@ -36,9 +36,9 @@ import ActionsDialog from '../components/ActionsDialog'
 import DecisionFrame from '../components/DecisionFrame'
 import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
-import ClusterSelect from '../components/forms/ClusterSelect'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import StateSelect from '../components/forms/StateSelect'
+import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
@@ -254,13 +254,6 @@ function InnerFile({
             return 'hex'
         }
     })
-    const clusterSelectTokens = React.useMemo(() => {
-        return authInfoFromConfig({
-            config,
-            url,
-            require: new Set(['create', 'manage']),
-        }).tokens
-    }, [config])
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     let name: string = (mainCtx.cloneData && mainCtx.cloneData.name) || ''
 
@@ -565,13 +558,12 @@ function InnerFile({
                             </Grid>
                             <Grid xs={12} md={6}>
                                 <FastField
-                                    component={ClusterSelect}
+                                    component={ClusterSelectViaUrl}
                                     url={url}
                                     name="cluster"
                                     disabled={isSubmitting || disabled}
                                     label="Cluster"
                                     firstIfEmpty
-                                    tokens={clusterSelectTokens}
                                     validate={(val: string) => {
                                         if (!val) {
                                             return 'empty'
