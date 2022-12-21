@@ -1,6 +1,8 @@
 import { useQuery } from '@apollo/client'
 import SecurityIcon from '@mui/icons-material/Security'
+import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
+import LinearProgress from '@mui/material/LinearProgress'
 import { Theme } from '@mui/material/styles'
 import { useTheme } from '@mui/material/styles'
 import Tooltip from '@mui/material/Tooltip'
@@ -106,7 +108,9 @@ function InnerConfig({
                         config,
                         mapper,
                         cluster: values.cluster,
-                        value: JSON.stringify(mergedConfig),
+                        value: changes
+                            ? JSON.stringify(mergedConfig)
+                            : undefined,
                         contentHash: !nodeData
                             ? await hashTagsContentHash(
                                   [`slot=${slots[0]}`],
@@ -163,6 +167,7 @@ function InnerConfig({
                     values,
                     isSubmitting,
                     dirty,
+                    touched,
                     submitForm,
                     setFieldValue,
                 }) => {
@@ -239,6 +244,19 @@ function InnerConfig({
                                             </IconButton>
                                         </span>
                                     </Tooltip>
+                                </Grid>
+                                <Grid xs={12}>
+                                    {isSubmitting && <LinearProgress />}
+                                </Grid>
+                                <Grid xs={12}>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        disabled={isSubmitting || !dirty}
+                                        onClick={submitForm}
+                                    >
+                                        Submit
+                                    </Button>
                                 </Grid>
                             </Grid>
                         </Form>

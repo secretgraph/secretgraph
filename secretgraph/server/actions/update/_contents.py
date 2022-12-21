@@ -517,7 +517,6 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
         raise ValueError("No cluster")
 
     hashes, public, private = _transform_key_into_dataobj(key_obj)
-    print(public.contentHash)
 
     public.net = objdata.net
     if private:
