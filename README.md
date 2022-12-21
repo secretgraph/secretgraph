@@ -441,16 +441,15 @@ not while the operation
 # TODO
 
 -   validationError: use params
--   trustedKeys logic:
+-   trustedKeys logic (partly done):
     -   Needs much more work especially on gui side
         -   update trustedKeys to keys signed by already trusted keys
         -   global, with optional name, link/id
         -   if signature isn't found or named key could not be retrieved, it means it is revoked, remove orphans in this case
     -   a better ActionDialog is neccessary
--   remove/handle orphan nets (no cluster assigned)
--   implement settings/config
+-   implement settings/config (partly done)
 -   modernize ActionDialog, redesign, multi column?
--   implement shareFn and ShareDialog, Config has Special ShareDialog
+-   implement shareFn and ShareDialog, Config has a special ShareDialog
 -   update internal doc section
 -   replace json-editor by ActionConfigurator equivalent
 -   test permissions
@@ -472,7 +471,6 @@ not while the operation
 -   config: create a virtual global merge of all configs to get every token
 -   allow alternate cryptoalgorithms instead of aesgcm for tags (except ChaCha20Poly1305 and AESSIV no good alternatives, and both aren't supported in browser)
 -   cleanup user
--   support dsa
 -   implement different net resource logic in frontend
 -   use more mainCtx.url instead of passing urls through
 -   ratelimit API access per ip and per flexid
