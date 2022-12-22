@@ -2,8 +2,6 @@ from django.urls import path
 from django.views.generic import TemplateView
 from django.views.decorators.cache import cache_control
 
-from secretgraph.server.urls import urlpatterns as urlpatterns_server
-
 app_name = "secretgraph_proxy"
 
 
@@ -16,14 +14,14 @@ urlpatterns = [
         name="home",
     ),
     path(
-        "cluster/<slug:id>/",
+        "pcluster/<slug:id>/",
         TemplateView.as_view(
             template_name="secretgraph_proxy/cluster.html",
         ),
         name="cluster",
     ),
     path(
-        "content/<slug:id>/",
+        "pcontent/<slug:id>/",
         TemplateView.as_view(
             template_name="secretgraph_proxy/content.html",
         ),
@@ -38,5 +36,4 @@ urlpatterns = [
         ),
         name="client",
     ),
-    *urlpatterns_server,
 ]

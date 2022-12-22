@@ -215,13 +215,22 @@ class Cluster(FlexidModel):
 
 
 class ContentManager(models.Manager):
-    def required_keys_full(
-        self,
-        cluster,
-    ):
-        return self.required_keys(cluster).union(
-            self.injected_keys(groups=cluster)
-        )
+    def _get_q_required_keys(self, cluster):
+        return models.Q(cluster=cluster, state="required", type="PublicKey")
+
+    def _get_q_injected_keys(self, /, groups=None, states=None):
+        q = models.Q(cluster_id=0)
+        if not states:
+            states = constants.public_states
+        q &= models.Q(state__in=states)
+        if isinstance(groups, (Cluster, Content)):
+            groups = models.Subquery(groups.groups.values("name"))
+        if groups:
+            if isinstance(groups, str):
+                groups = [groups]
+            return q & models.Q(injectedFor__name__in=groups)
+        else:
+            return q & models.Q(injectedFor__isnull=False)
 
     def trusted_keys(self, cluster):
         return self.get_queryset().filter(
@@ -230,24 +239,22 @@ class ContentManager(models.Manager):
             type="PublicKey",
         )
 
-    def required_keys(self, cluster):
+    def injected_keys(self, /, groups=None, states=None):
         return self.get_queryset().filter(
-            cluster=cluster, state="required", type="PublicKey"
+            self._get_q_injected_keys(groups, states)
         )
 
-    def injected_keys(self, /, groups=None, states=None):
-        queryset = self.get_queryset().filter(cluster_id=0)
-        if not states:
-            states = constants.public_states
-        queryset = queryset.filter(state__in=states)
-        if isinstance(groups, (Cluster, Content)):
-            groups = models.Subquery(groups.groups.values("name"))
-        if groups:
-            if isinstance(groups, str):
-                groups = [groups]
-            return queryset.filter(injectedFor__name__in=groups)
-        else:
-            return queryset.filter(injectedFor__isnull=False)
+    def required_keys(self, cluster):
+        return self.get_queryset().filter(self._get_q_required_keys(cluster))
+
+    def required_keys_full(
+        self,
+        cluster,
+    ):
+        # union would prevent many features like annotate
+        return self.get_queryset().filter(
+            self._get_q_required_keys(cluster) | self._get_q_injected_keys()
+        )
 
 
 class Content(FlexidModel):

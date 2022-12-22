@@ -450,14 +450,12 @@ not while the operation
 -   implement settings/config (partly done)
 -   modernize ActionDialog, redesign, multi column?
 -   implement shareFn and ShareDialog, Config has a special ShareDialog
--   update internal doc section
--   replace json-editor by ActionConfigurator equivalent
 -   test permissions
--   disable editing/or prompt for tokens if tokens are missing
+-   way to inject tokens
+-   way to import private key in config
 -   edge-serverside encryption
 -   cleanup js structure, harmonize naming
--   updateId in form
--   prekey implement form
+    -   issue: hashAlgorithm is sometimes directly fed to importKey
 
 # TODO later
 
@@ -482,6 +480,11 @@ not while the operation
 -   implement form with send for Message
 -   if type=Message switch strings to Inbox, Send
 -   find way how Messages sent can be differed from messages received
+-   forms:
+    -   updateId in form
+    -   prekey implement form
+    -   replace json-editor by ActionConfigurator equivalent
+    -   CustomElements for supporting translations
 
 # TODO far future
 
