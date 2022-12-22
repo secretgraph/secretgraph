@@ -67,7 +67,7 @@ export async function toPublicKey(
             throw Error('Algorithm not supported: ' + params.name)
         }
         return await crypto.subtle.importKey(
-            'raw' as const,
+            'raw',
             await unserializeToArrayBuffer(_inp as Interfaces.RawInput),
             params,
             true,
@@ -185,7 +185,7 @@ export async function unserializeToCryptoKey(
         }
         try {
             _result = await crypto.subtle.importKey(
-                'pkcs8' as const,
+                'pkcs8',
                 _data,
                 params,
                 true,
@@ -206,7 +206,7 @@ export async function unserializeToCryptoKey(
                 try {
                     // serialize publicKey
                     _result = await crypto.subtle.importKey(
-                        'spki' as const,
+                        'spki',
                         _data,
                         params,
                         true,

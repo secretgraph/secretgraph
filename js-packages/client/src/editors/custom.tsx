@@ -76,9 +76,7 @@ const InnerCustom = ({
         contentHash: nodeData?.contentHash || '',
         type: nodeData?.type || '',
         actions,
-        cluster:
-            nodeData?.cluster?.id ||
-            (searchCtx.cluster ? searchCtx.cluster : null),
+        cluster: mainCtx.cluster,
     }
     for (const [prefix, vals] of Object.entries(tags || {})) {
         if (vals.length) {
@@ -94,6 +92,9 @@ const InnerCustom = ({
         <Formik
             initialValues={initialValues}
             onSubmit={async (values, { setSubmitting }) => {
+                if (!values.cluster) {
+                    throw Error('Cluster not set')
+                }
                 const value = new Blob([values.text])
                 const res = await updateOrCreateContentWithConfig({
                     actions: values.actions,
@@ -595,6 +596,7 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
                 blobOrTokens: mainCtx.tokens,
+                itemDomain: mainCtx.url || '/',
             })
             if (!obj) {
                 console.error('failed decoding')

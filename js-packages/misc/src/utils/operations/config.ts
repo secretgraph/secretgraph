@@ -402,10 +402,7 @@ export async function updateConfigRemoteReducer(
             source: privkeys,
             onlySeen: true,
             authorization: authInfo.tokens,
-            params: {
-                name: 'RSA-OAEP',
-                hash: hashAlgorithms[0],
-            },
+            hashAlgorithm: hashAlgorithms[0],
         })
     )
     let resultPromises = []
@@ -505,6 +502,13 @@ export async function updateOrCreateContentWithConfig({
       }
     | false
 > {
+    const mapItem = Constants.mapHashNames['' + hashAlgorithm]
+    if (!mapItem) {
+        throw new Error(
+            'Invalid hash algorithm/no hash algorithm specified: ' +
+                hashAlgorithm
+        )
+    }
     const {
         hashes,
         actions: finishedActions,
@@ -529,7 +533,7 @@ export async function updateOrCreateContentWithConfig({
     const privkeys = extractPrivKeys({
         config,
         url,
-        hashAlgorithm,
+        hashAlgorithm: mapItem.operationName,
         clusters: new Set([cluster]),
         onlySignKeys: true,
     })
@@ -547,10 +551,7 @@ export async function updateOrCreateContentWithConfig({
         pubkeys = extractPubKeysCluster({
             node: pubkeysResult.data.secretgraph.node,
             authorization,
-            params: {
-                name: 'RSA-OAEP',
-                hash: hashAlgorithm,
-            },
+            hashAlgorithm: hashAlgorithm,
         })
     }
 

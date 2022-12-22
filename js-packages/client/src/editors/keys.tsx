@@ -152,6 +152,7 @@ async function loadKeys({
                 config,
                 nodeData,
                 blobOrTokens: authorization,
+                itemDomain: baseUrl,
             }).then(
                 async (val) => {
                     //console.log(val, config, nodeData, authorization)
@@ -755,7 +756,6 @@ const KeysUpdate = ({
 }: KeysUpdateProps) => {
     const client = useApolloClient()
     const { baseClient } = React.useContext(Contexts.Clients)
-    const { searchCtx } = React.useContext(Contexts.Search)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
@@ -768,9 +768,7 @@ const KeysUpdate = ({
         lockExisting: !!mainCtx.item,
     })
     const initialValues = {
-        cluster:
-            publicKey?.nodeData?.cluster?.id ||
-            (searchCtx.cluster ? searchCtx.cluster : null),
+        cluster: mainCtx.cluster,
         state: publicKey?.nodeData?.state,
         name: publicKey?.tags?.name ? publicKey.tags.name[0] : '',
         description: publicKey?.tags?.description
@@ -795,6 +793,9 @@ const KeysUpdate = ({
             initialValues={initialValues}
             onSubmit={async (values, { setSubmitting }) => {
                 try {
+                    if (!values.cluster) {
+                        throw Error('Cluster not set')
+                    }
                     const {
                         hashes: hashesPublicKey,
                         actions: finishedActionsPublicKey,
@@ -806,7 +807,8 @@ const KeysUpdate = ({
                     })
                     const keyParams = {
                         name: 'RSA-OAEP',
-                        hash: hashAlgorithmsWorking[0],
+                        hash: Constants.mapHashNames[hashAlgorithmsWorking[0]]
+                            .operationName,
                     }
                     let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
                     let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
@@ -842,7 +844,7 @@ const KeysUpdate = ({
                         publicKeys = extractPubKeysCluster({
                             node: pubkeysResult.data.secretgraph.node,
                             authorization: tokensTarget,
-                            params: keyParams,
+                            hashAlgorithm: keyParams.hash,
                             source: privateKeys,
                             onlySeen: true,
                         })

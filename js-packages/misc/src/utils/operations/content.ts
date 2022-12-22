@@ -293,7 +293,7 @@ export async function decryptContentObject({
         | string
         | string[]
         | PromiseLike<Blob | string | string[]>
-    itemDomain?: string
+    itemDomain: string
 }): Promise<decryptContentObjectInterface | null> {
     let arrPromise: PromiseLike<ArrayBufferLike>
     const _info = await blobOrTokens
@@ -307,11 +307,16 @@ export async function decryptContentObject({
     } else if (typeof _info == 'string') {
         arrPromise = Promise.resolve(b64tobuffer(_info))
     } else {
-        arrPromise = fetch(new URL(_node.link, itemDomain).href, {
+        arrPromise = fetch(new URL(_node.link, itemDomain), {
             headers: {
                 Authorization: _info.join(','),
             },
-        }).then((result) => result.arrayBuffer())
+        }).then(async (result) => {
+            if (!result.ok) {
+                throw new Error('Could not fetch content')
+            }
+            return await result.arrayBuffer()
+        })
     }
     // skip decryption as always unencrypted
     if (_node.type == 'PublicKey' || _node.state == 'public') {

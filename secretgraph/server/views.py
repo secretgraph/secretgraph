@@ -99,7 +99,9 @@ class ContentView(AllowCORSMixin, FormView):
             response = self.render_to_response(self.get_context_data())
         else:
             # raw interface
-            content = get_object_or_404(self.result["objects"], downloadId=id)
+            content = get_object_or_404(
+                self.result["objects"], downloadId=kwargs["id"]
+            )
             response = self.handle_raw_singlecontent(
                 request, content, *args, **kwargs
             )
@@ -117,7 +119,7 @@ class ContentView(AllowCORSMixin, FormView):
         # why not ids_to_results => uses flexid directly
         self.result = retrieve_allowed_objects(
             request,
-            Content.objects.filter(flexid=kwargs["id"]),
+            Content.objects.filter(downloadId=kwargs["id"]),
             scope=self.action,
             authset=authset,
         )
@@ -151,7 +153,9 @@ class ContentView(AllowCORSMixin, FormView):
         """Return the keyword arguments for instantiating the form."""
         kwargs = super().get_form_kwargs()
         if hasattr(self, "result"):
-            content = get_object_or_404(self.result["objects"], downloadId=id)
+            content = get_object_or_404(
+                self.result["objects"], downloadId=kwargs["id"]
+            )
             kwargs.update(
                 {
                     "result": self.result,

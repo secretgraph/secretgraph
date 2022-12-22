@@ -69,7 +69,7 @@ function InnerConfig({
     const initialValues = {
         slots: thisConfig?.slots || [],
         actions,
-        cluster: mainCtx.cluster || '',
+        cluster: mainCtx.cluster || null,
     }
 
     return (
@@ -80,6 +80,9 @@ function InnerConfig({
                     { actions: actionsNew, slots, ...values },
                     { setSubmitting }
                 ) => {
+                    if (!values.cluster) {
+                        throw Error('Cluster not set')
+                    }
                     const retrieved = await decryptContentObject({
                         nodeData,
                         config,
@@ -355,6 +358,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
                 blobOrTokens: mainCtx.tokens,
+                itemDomain: mainCtx.url || '/',
             })
             if (!obj) {
                 console.error('failed decoding')

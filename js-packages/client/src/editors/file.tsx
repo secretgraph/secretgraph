@@ -304,7 +304,7 @@ function InnerFile({
                             tags?.keywords ||
                             (mainCtx.cloneData && mainCtx.cloneData.keywords) ||
                             [],
-                        cluster: mainCtx.cluster || '',
+                        cluster: mainCtx.cluster,
                         actions,
                     } as {
                         plainInput: string
@@ -366,6 +366,9 @@ function InnerFile({
                         )
                     } else {
                         throw Error('no input found')
+                    }
+                    if (!values.cluster) {
+                        throw Error('Cluster not set')
                     }
                     const res = await updateOrCreateContentWithConfig({
                         actions: actionsNew,
@@ -1160,6 +1163,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 config,
                 nodeData: dataUnfinished.secretgraph.node,
                 blobOrTokens: mainCtx.tokens,
+                itemDomain: mainCtx.url || '/',
             })
             if (!obj) {
                 console.error('failed decoding')

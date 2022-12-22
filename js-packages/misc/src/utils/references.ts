@@ -13,13 +13,20 @@ import { hashKey } from './hashing'
 export function extractPubKeysCluster(props: {
     readonly node: any
     readonly authorization: string[]
-    readonly params: any
+    readonly hashAlgorithm: string
     // can be used to boost speed; in case the key is already available it is used and not downloaded
     // if not onlySeen is specified, then source is merged
     readonly source?: { [hash: string]: Promise<CryptoKey> }
     readonly onlyPubkeys?: boolean
     readonly onlySeen?: boolean
 }): { [hash: string]: Promise<CryptoKey> } {
+    const mapItem = mapHashNames['' + props.hashAlgorithm]
+    if (!mapItem) {
+        throw new Error(
+            'Invalid hash algorithm/no hash algorithm specified: ' +
+                props.hashAlgorithm
+        )
+    }
     const pubkeys = Object.assign({}, props.source || {})
     const contents = props.node.cluster
         ? props.node.cluster.contents.edges
@@ -29,10 +36,21 @@ export function extractPubKeysCluster(props: {
         if (!props.onlyPubkeys && keyNode.type != 'PublicKey') {
             continue
         }
-        const keyHash: string = keyNode.contentHash.replace(/^Key:/, '')
-        seen.add(keyHash)
-        if (!pubkeys[keyHash]) {
-            pubkeys[keyHash] = fetch(keyNode.link, {
+        let mainKeyHash: string | undefined = undefined
+        for (const tag of keyNode.tags as string[]) {
+            if (tag.startsWith('key_hash=')) {
+                const key_hash = tag.replace(/^key_hash=/, '')
+                if (key_hash.startsWith(mapItem.serializedName)) {
+                    mainKeyHash = key_hash
+                }
+                seen.add(key_hash)
+            }
+        }
+        if (!mainKeyHash) {
+            continue
+        }
+        if (!pubkeys[mainKeyHash]) {
+            pubkeys[mainKeyHash] = fetch(keyNode.link, {
                 headers: {
                     Authorization: props.authorization.join(','),
                 },
@@ -41,7 +59,10 @@ export function extractPubKeysCluster(props: {
                 try {
                     return await unserializeToCryptoKey(
                         buf,
-                        props.params,
+                        {
+                            name: 'RSA-OAEP',
+                            hash: mapItem.operationName,
+                        },
                         'publicKey'
                     )
                 } catch (exc) {
@@ -54,9 +75,12 @@ export function extractPubKeysCluster(props: {
                 }
             })
         } else {
-            pubkeys[keyHash] = unserializeToCryptoKey(
-                pubkeys[keyHash],
-                props.params,
+            pubkeys[mainKeyHash] = unserializeToCryptoKey(
+                pubkeys[mainKeyHash],
+                {
+                    name: 'RSA-OAEP',
+                    hash: mapItem.operationName,
+                },
                 'publicKey'
             )
         }
@@ -73,7 +97,10 @@ export function extractPubKeysCluster(props: {
             if (!seen.has(key)) {
                 pubkeys[key] = unserializeToCryptoKey(
                     pubkeys[key],
-                    props.params,
+                    {
+                        name: 'RSA-OAEP',
+                        hash: mapItem.operationName,
+                    },
                     'publicKey'
                 )
             }
