@@ -102,7 +102,7 @@ module.exports = (env, options) => {
                                     : 'react-jsx',
                         },
                         getCustomTransformers: () => ({
-                            // before: [tsgqlPlugin.getTransformer({})],
+                            before: [tsgqlPlugin.getTransformer({})],
                         }),
                     },
                 },
