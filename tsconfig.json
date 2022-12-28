@@ -13,8 +13,12 @@
         "name": "ts-graphql-plugin",
         "schema": "schema.graphql",
         "tag": "gql",
-        "localSchemaExtensions": ["local-extensions.graphql"]
-
+        "localSchemaExtensions": ["local-extensions.graphql"],
+        "typegen": {
+          "addons": [
+            "ts-graphql-plugin/addons/typed-query-document"
+          ]
+        }
       }
     ],
     "paths": {

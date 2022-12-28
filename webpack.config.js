@@ -5,12 +5,7 @@ const { WebpackManifestPlugin } = require('webpack-manifest-plugin')
 const TsGraphQLPlugin = require('ts-graphql-plugin/webpack')
 
 module.exports = (env, options) => {
-    const tsgqlPlugin = new TsGraphQLPlugin({
-        tsconfigPath: path.resolve(
-            __dirname,
-            './js-packages/graphql-queries/tsconfig.json'
-        ),
-    })
+    const tsgqlPlugin = new TsGraphQLPlugin({})
 
     const plugins = [
         new WebpackManifestPlugin({
