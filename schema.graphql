@@ -358,7 +358,7 @@ input MarkInput {
 }
 
 type MarkMutation {
-  markChanged: [ID!]!
+  updated: [GlobalID!]!
 }
 
 """An enumeration."""
@@ -369,7 +369,7 @@ enum MetadataOperations {
 }
 
 type MetadataUpdateMutation {
-  updated: [ID!]!
+  updated: [GlobalID!]!
 }
 
 """Input data for `mutateCluster` mutation"""
@@ -543,7 +543,7 @@ input RegenerateFlexidInput {
 }
 
 type RegenerateFlexidMutation {
-  updated: [ID!]!
+  updated: [GlobalID!]!
 }
 
 union RegenerateFlexidPayload = RegenerateFlexidMutation | OperationInfo
@@ -557,7 +557,7 @@ input ResetDeletionContentOrClusterInput {
 }
 
 type ResetDeletionContentOrClusterMutation {
-  restored: [ID!]!
+  restored: [GlobalID!]!
 }
 
 union ResetDeletionContentOrClusterPayload = ResetDeletionContentOrClusterMutation | OperationInfo
@@ -627,7 +627,7 @@ union UpdateMarksPayload = MarkMutation | OperationInfo
 
 """Input data for `updateMetadata` mutation"""
 input UpdateMetadataInput {
-  ids: [ID!]!
+  ids: [GlobalID!]!
   state: String = null
   tags: [String!] = null
   references: [ReferenceInput!] = null

@@ -8,6 +8,7 @@ import strawberry
 from django.db.models import Q, Subquery
 from django.utils import timezone
 from strawberry.types import Info
+from strawberry_django_plus import relay
 
 from ...models import Cluster, Content
 from ...utils.auth import fetch_by_id, get_cached_properties, ids_to_results
@@ -23,7 +24,7 @@ class DeleteContentOrClusterMutation:
 
 def delete_content_or_cluster(
     info: Info,
-    ids: List[strawberry.ID],
+    ids: List[strawberry.ID],  # ID or cluster global name
     when: Optional[datetime] = None,
     authorization: Optional[AuthList] = None,
 ) -> DeleteContentOrClusterMutation:
@@ -34,7 +35,9 @@ def delete_content_or_cluster(
     )
     if manage_deletion:
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
-        clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
+        clusters = fetch_by_id(
+            Cluster.objects.all(), ids, limit_ids=None, check_short_name=True
+        )
     else:
         results = ids_to_results(
             info.context["request"],
@@ -81,12 +84,12 @@ def delete_content_or_cluster(
 
 @strawberry.type
 class ResetDeletionContentOrClusterMutation:
-    restored: List[strawberry.ID]
+    restored: List[relay.GlobalID]
 
 
 def reset_deletion_content_or_cluster(
     info: Info,
-    ids: List[strawberry.ID],
+    ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
     if "manage_deletion" in get_cached_properties(

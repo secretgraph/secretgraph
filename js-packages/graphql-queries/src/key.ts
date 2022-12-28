@@ -247,8 +247,7 @@ export const trustedKeysRetrieval = gql`
                         referencedBy(
                             filters: {
                                 groups: ["signature"]
-                                types: ["PublicKey"]
-                                public: TRUE
+                                includeTypes: ["PublicKey"]
                                 deleted: FALSE
                                 states: $states
                             }

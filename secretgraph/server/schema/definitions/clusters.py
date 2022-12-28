@@ -223,7 +223,13 @@ class ClusterNode(ActionMixin, relay.Node):
         if not node_ids:
             return result["objects"]
         # for allowing specifing global name
-        return fetch_by_id(result["objects"], node_ids, limit_ids=None)
+        return fetch_by_id(
+            result["objects"],
+            node_ids,
+            limit_ids=None,
+            check_short_id=True,
+            check_short_name=True,
+        )
 
     @classmethod
     def resolve_nodes(
@@ -279,6 +285,8 @@ class ClusterNode(ActionMixin, relay.Node):
                             Cluster.objects.all(),
                             filters.excludeIds,
                             limit_ids=None,
+                            check_short_id=True,
+                            check_short_name=True,
                         ).values("id")
                     )
                 )

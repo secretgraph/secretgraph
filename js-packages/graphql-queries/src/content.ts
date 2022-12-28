@@ -239,7 +239,7 @@ export const getContentReferencesQuery = gql`
     query contentGetReferencesQuery(
         $id: GlobalID!
         $authorization: [String!]
-        $deleted: Boolean
+        $deleted: UseCriteria
         $count: Int
         $cursor: String
     ) {
@@ -363,7 +363,7 @@ export const getContentReferencedByQuery = gql`
     query contentGetReferencedByQuery(
         $id: GlobalID!
         $authorization: [String!]
-        $deleted: Boolean
+        $deleted: UseCriteria
         $count: Int
         $cursor: String
     ) {

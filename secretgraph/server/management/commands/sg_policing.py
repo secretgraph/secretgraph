@@ -181,7 +181,11 @@ class Command(BaseCommand):
                 )
             if ids:
                 clusters_filtered = fetch_by_id(
-                    clusters_filtered, ids, limit_ids=None
+                    clusters_filtered,
+                    ids,
+                    limit_ids=None,
+                    check_short_id=True,
+                    check_short_name=True,
                 )
             # applies only to clusters
             if private == 1:
@@ -246,7 +250,11 @@ class Command(BaseCommand):
             )
             if ids:
                 contents_filtered = fetch_by_id(
-                    contents_filtered, ids, limit_ids=None
+                    contents_filtered,
+                    ids,
+                    limit_ids=None,
+                    check_short_id=True,
+                    check_short_name=True,
                 )
             if tag_q:
                 contents_filtered = contents_filtered.filter(

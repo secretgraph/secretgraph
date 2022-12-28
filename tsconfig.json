@@ -12,7 +12,9 @@
       {
         "name": "ts-graphql-plugin",
         "schema": "schema.graphql",
-        "tag": "gql"
+        "tag": "gql",
+        "localSchemaExtensions": ["local-extensions.graphql"]
+
       }
     ],
     "paths": {

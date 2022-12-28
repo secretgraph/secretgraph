@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+from itertools import islice
 from typing import TYPE_CHECKING, Iterable, Optional
 from strawberry_django_plus import relay, gql
 from functools import reduce, partial
@@ -352,36 +353,49 @@ def retrieve_allowed_objects(
 def fetch_by_id(
     query: models.QuerySet,
     flexids: Iterable[str | relay.GlobalID] | str | relay.GlobalID,
-    check_content_hash=False,
+    /,
+    check_long=True,  # can be set to false in case of only short names and ids
+    check_short_id=False,
+    check_short_name=False,
     limit_ids: Optional[int] = 1,
 ) -> models.QuerySet:
     if flexids and isinstance(flexids, (str, relay.GlobalID)):
         flexids = [flexids]
-    if limit_ids:
-        flexids = flexids[:limit_ids]
     # speedup in case None or no flexids were specified
     if not flexids:
         return query.none()
     # assert all(map(lambda x: isinstance(x, (str, relay.GlobalID)), flexids))
+    if limit_ids:
+        flexids = islice(flexids, limit_ids)
     flexids = list(map(str, flexids))
-    filters = models.Q(flexid_cached__in=flexids) | models.Q(
-        flexid__in=flexids
-    )
+    # empty list => shortcut
+    if not flexids:
+        return query.none()
+    filters = models.Q()
+    if check_long:
+        filters |= models.Q(flexid_cached__in=flexids)
+    if check_short_id:
+        filters |= models.Q(flexid__in=flexids)
     if issubclass(query.model, Cluster):
         # also allow selecting global names
         # name__startswith="@" allows
         # also selecting @system even it is not public
-        filters |= (
-            models.Q(name_cached__in=flexids) | models.Q(name__in=flexids)
-        ) & models.Q(name__startswith="@")
-    else:
-        if check_content_hash:
-            filters |= models.Q(contentHash__in=flexids)
+        _q = models.Q()
+        if check_long:
+            _q |= models.Q(name_cached__in=flexids)
+        if check_short_name:
+            _q |= models.Q(name__in=flexids)
+        filters |= _q & models.Q(name__startswith="@")
     return query.filter(filters)
 
 
 def ids_to_results(
-    request, ids, klasses, scope="view", authset=None, initialize_missing=True
+    request,
+    ids,
+    klasses,
+    scope="view",
+    authset=None,
+    initialize_missing=True,
 ):
     klasses_d = {}
     if not isinstance(klasses, tuple):
@@ -394,11 +408,15 @@ def ids_to_results(
     flexid_d = {}
     for id in ids:
         if isinstance(id, str):
-            type_name, flexid = relay.from_base64(id)
+            if id.startswith("@"):
+                type_name, flexid = "Cluster", id
+            else:
+                type_name, flexid = relay.from_base64(id)
         elif isinstance(id, relay.GlobalID):
             type_name, flexid = id.type_name, id.node_id
         elif isinstance(id, klasses):
             flexid = id.flexid
+            # FIXME: can be incorrect
             type_name = type(id).__name__
         else:
             raise ValueError(
@@ -423,13 +441,25 @@ def ids_to_results(
             results[type_name] = get_cached_result(request, authset=authset)[
                 type_name
             ].copy()
-            results[type_name]["objects"] = results[type_name][
-                "objects"
-            ].filter(flexid__in=flexids)
+            results[type_name]["objects"] = fetch_by_id(
+                results[type_name]["objects"],
+                flexids,
+                check_long=False,
+                check_short_id=True,
+                check_short_name=True,
+                limit_ids=None,
+            )
         else:
             results[type_name] = retrieve_allowed_objects(
                 request,
-                klass.objects.filter(flexid__in=flexids)
+                fetch_by_id(
+                    klass.objects.all(),
+                    flexids,
+                    check_long=False,
+                    check_short_id=True,
+                    check_short_name=True,
+                    limit_ids=None,
+                )
                 if flexids
                 else klass.objects.none(),
                 scope=scope,

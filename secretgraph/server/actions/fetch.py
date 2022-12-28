@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def fetch_clusters(
     query,
-    ids=None,
+    ids=None,  # relaxed id check
     limit_ids: Optional[int] = 1,
     states=None,
     includeTypes=None,
@@ -25,7 +25,13 @@ def fetch_clusters(
     maxUpdated=None,
 ) -> QuerySet[Cluster]:
     if ids:
-        query = fetch_by_id(query, ids, limit_ids=limit_ids)
+        query = fetch_by_id(
+            query,
+            ids,
+            limit_ids=limit_ids,
+            check_short_id=True,
+            check_short_name=True,
+        )
 
     if (
         includeTags
@@ -98,7 +104,7 @@ def fetch_clusters(
 
 def fetch_contents(
     query,
-    ids=None,
+    ids=None,  # relaxed id check
     limit_ids=1,
     states=None,
     clustersAreRestricted=False,
@@ -112,7 +118,10 @@ def fetch_contents(
 ) -> QuerySet[Content]:
     if ids:
         query = fetch_by_id(
-            query, ids, check_content_hash=True, limit_ids=limit_ids
+            query,
+            ids,
+            check_short_id=True,
+            limit_ids=limit_ids,
         )
     if (
         includeTags

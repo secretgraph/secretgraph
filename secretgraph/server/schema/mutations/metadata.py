@@ -6,6 +6,7 @@ import logging
 
 import strawberry
 from strawberry.types import Info
+from strawberry_django_plus import relay
 from django.db import transaction
 from django.db.models import Exists, OuterRef
 from ..shared import MetadataOperations
@@ -28,12 +29,12 @@ logger = logging.getLogger(__name__)
 
 @strawberry.type
 class RegenerateFlexidMutation:
-    updated: List[strawberry.ID]
+    updated: List[relay.GlobalID]
 
 
 def regenerate_flexid(
     info: Info,
-    ids: List[strawberry.ID],
+    ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> RegenerateFlexidMutation:
     if "manage_update" in get_cached_properties(
@@ -47,7 +48,10 @@ def regenerate_flexid(
             },
             "Cluster": {
                 "objects": fetch_by_id(
-                    Cluster.objects.all(), ids, limit_ids=None
+                    Cluster.objects.all(),
+                    ids,
+                    limit_ids=None,
+                    check_short_name=True,
                 )
             },
         }
@@ -70,12 +74,12 @@ def regenerate_flexid(
 # only admin/moderator
 @strawberry.type
 class MarkMutation:
-    markChanged: List[strawberry.ID]
+    updated: List[relay.GlobalID]
 
 
 def mark(
     info,
-    ids: List[strawberry.ID],
+    ids: List[strawberry.ID],  # ID or cluster global name
     hidden: Optional[bool] = None,
     featured: Optional[bool] = None,
     active: Optional[bool] = None,
@@ -103,7 +107,9 @@ def mark(
 
         contents.update(hidden=hidden)
     if featured is not None or active is not None:
-        clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
+        clusters = fetch_by_id(
+            Cluster.objects.all(), ids, limit_ids=None, check_short_name=True
+        )
         if featured is not None:
             clusters.filter(globalNameRegisteredAt__isnull=False).update(
                 featured=featured
@@ -114,7 +120,7 @@ def mark(
             ).update(active=active)
 
     return MarkMutation(
-        markChanged=chain(
+        updated=chain(
             clusters.values_list("flexid_cached", flat=True),
             contents.values_list("flexid_cached", flat=True),
         )
@@ -123,13 +129,12 @@ def mark(
 
 @strawberry.type
 class MetadataUpdateMutation:
-
-    updated: List[strawberry.ID]
+    updated: List[relay.GlobalID]
 
 
 def update_metadata(
     info: Info,
-    ids: List[strawberry.ID],
+    ids: List[relay.GlobalID],
     state: Optional[str] = None,
     tags: Optional[List[str]] = None,
     references: Optional[List[ReferenceInput]] = None,

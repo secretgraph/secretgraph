@@ -5,6 +5,19 @@
     "rootDir": "src",
     "baseUrl": "src",
     "composite": true,
+    "plugins": [
+      {
+        "name": "ts-graphql-plugin",
+        "tag": "gql",
+        "schema": "../../schema.graphql",
+        "localSchemaExtensions": ["local-extensions.graphql"],
+        "typegen": {
+          "addons": [
+            "ts-graphql-plugin/addons/typed-query-document"
+          ]
+        }
+      }
+    ],
     "lib": [
       "ESNext",
     ],

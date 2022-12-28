@@ -143,7 +143,10 @@ def mutate_content(
         if content.value:
             if content.cluster:
                 cluster_obj = fetch_by_id(
-                    Cluster.objects.all(), [content.cluster]
+                    Cluster.objects.all(),
+                    [content.cluster],
+                    check_short_id=True,
+                    check_short_name=True,
                 ).first()
                 if cluster_obj:
                     required_keys = Content.objects.required_keys_full(

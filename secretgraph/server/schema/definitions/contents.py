@@ -235,6 +235,8 @@ class ContentNode(ActionMixin, relay.Node):
                         results["Cluster"]["objects"],
                         filters.clusters,
                         limit_ids=None,
+                        check_short_id=True,
+                        check_short_name=True,
                     ).values("id")
                 ),
             )

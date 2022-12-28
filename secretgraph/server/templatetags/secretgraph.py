@@ -128,6 +128,8 @@ def fetch_clusters(
                         Cluster.objects.all(),
                         _split_comma(excludeIds),
                         limit_ids=None,
+                        check_short_id=True,
+                        check_short_name=True,
                     ).values("id")
                 )
             )
@@ -183,6 +185,8 @@ def fetch_contents(
                     results["Cluster"]["objects"],
                     clusters,
                     limit_ids=None,
+                    check_short_id=True,
+                    check_short_name=True,
                 ).values("id")
             )
         )
@@ -214,6 +218,7 @@ def fetch_contents(
                         Content.objects.all(),
                         _split_comma(excludeIds),
                         limit_ids=None,
+                        check_short_id=True,
                     ).values("id")
                 )
             )
