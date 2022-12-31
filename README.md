@@ -440,7 +440,6 @@ not while the operation
 
 # TODO
 
--   last action used in orphans is wrong (only the first time an action is used is marked), use file_accessed instead
 -   validationError: use params
 -   trustedKeys logic (partly done):
     -   Needs much more work especially on gui side

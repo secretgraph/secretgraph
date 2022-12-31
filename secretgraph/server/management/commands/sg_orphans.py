@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Exists, OuterRef, Q, Subquery
 from django.utils import timezone
 
-from ...models import Action, Net, Cluster
+from ...models import Content, Net, Cluster
 
 
 class Command(BaseCommand):
@@ -31,16 +31,26 @@ class Command(BaseCommand):
         unused = timezone.now() - timedelta(days=options["unused_days"])
         if "Cluster" in options["what"]:
             annotated_clusters = Cluster.objects.annotate(
-                last_action_used=Subquery(
-                    Action.objects.filter(cluster_id=OuterRef("id"))
-                    .order_by("-used")
-                    .values("used")[:1]
+                last_content_accessed=Subquery(
+                    Content.objects.filter(cluster_id=OuterRef("id"))
+                    .order_by("-file_accessed")
+                    .values("file_accessed")[:1]
+                ),
+                last_content_updated=Subquery(
+                    Content.objects.filter(cluster_id=OuterRef("id"))
+                    .order_by("-updated")
+                    .values("updated")[:1]
                 ),
             ).exclude(name="@system")
             q_orphan = Q(contents__isnull=True)
-            q_unused = (
-                Q(last_action_used__isnull=True) & Q(updated__lt=unused)
-            ) | Q(last_action_used__lt=unused)
+            q_unused = Q(
+                last_content_accessed__isnull=True,
+                last_content_updated__isnull=True,
+                updated__lt=unused,
+            ) | Q(
+                last_content_accessed__lt=unused,
+                last_content_updated__lt=unused,
+            )
             orphan_and_unused_clusters = annotated_clusters.filter(
                 q_orphan, q_unused
             )
@@ -53,11 +63,7 @@ class Command(BaseCommand):
                     "no interaction for some time):"
                 )
                 for c in orphan_and_unused_clusters:
-                    print(
-                        "  {!r} unused since {}".format(
-                            c, c.last_action_used or c.updated
-                        )
-                    )
+                    print("  {!r} unused since {}".format(c, c.updated))
                     if options["delete"]:
                         orphan_and_unused_clusters.delete()
             if orphan_clusters:
@@ -67,11 +73,7 @@ class Command(BaseCommand):
                     )
                 )
                 for c in orphan_clusters:
-                    print(
-                        "  {!r} unused since {}".format(
-                            c, c.last_action_used or c.updated
-                        )
-                    )
+                    print("  {!r} unused since {}".format(c, c.updated))
             unused_clusters = annotated_clusters.filter(q_unused).exclude(
                 id__in=Subquery(orphan_and_unused_clusters.values("id"))
             )
@@ -82,29 +84,30 @@ class Command(BaseCommand):
                     )
                 )
                 for c in unused_clusters:
-                    print(
-                        "  {!r} unused since {}".format(
-                            c, c.last_action_used or c.updated
-                        )
-                    )
+                    latest = c.last_content_accessed
+                    if not latest or latest < c.last_content_updated:
+                        latest = c.last_content_updated
+                    if not latest:
+                        latest = c.updated
+                    print("  {!r} unused since {}".format(c, latest))
 
         if "Net" in options["what"]:
             # negative query, what scores for inactivity
-            q = (
-                Q(last_action_used__isnull=False)
-                & Q(last_action_used__lt=unused)
-            ) | (Q(last_action_used__isnull=True) & Q(last_used__lt=unused))
-            # can contain contents with other nets
-            # CLARIFY: but they are still updated via actions
-            # MAYBE: move last_Action_used check behind a switch
+            q = Q(
+                last_content_accessed__isnull=False,
+                last_content_accessed__lt=unused,
+            ) | Q(last_action_used__isnull=True, last_used__lt=unused)
+            # can contain contents from other nets
             vivid_clusters = Cluster.objects.filter(
                 Q(contents__updated__gte=unused)
+                | Q(contents__file_accessed__gte=unused)
+                | Q(updated__gte=unused)
             )
             annotated_nets = Net.objects.annotate(
-                last_action_used=Subquery(
-                    Action.objects.filter(cluster__net_id=OuterRef("id"))
-                    .order_by("-used")
-                    .values("used")[:1]
+                last_content_accessed=Subquery(
+                    Content.objects.filter(net_id=OuterRef("id"))
+                    .order_by("-file_accessed")
+                    .values("file_accessed")[:1]
                 ),
                 # last_used contains latest content and cluster update
             ).exclude(id=0)
@@ -119,8 +122,11 @@ class Command(BaseCommand):
                 )
                 for c in orphan_and_unused_nets:
                     latest = c.last_used
-                    if c.last_action_used and c.last_action_used > latest:
-                        latest = c.last_action_used
+                    if (
+                        c.last_content_accessed
+                        and latest < c.last_content_accessed
+                    ):
+                        latest = c.last_content_accessed
                     print("  {!r} unused since {}".format(c, latest))
                 if options["delete"]:
                     orphan_and_unused_nets.delete()
