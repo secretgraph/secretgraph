@@ -273,6 +273,8 @@ class Content(FlexidModel):
     )
     # can decrypt = correct key
     file: File = models.FileField(upload_to=get_content_file_path)
+    # internal field for orphan calculation and storage priorization
+    file_accessed: dt = models.DateTimeField(null=True)
     # unique hash for content, e.g. generated from some tags
     # null if multiple contents are allowed
     contentHash: str = models.CharField(

@@ -24,7 +24,7 @@ from django.urls import reverse
 from django.views.generic.edit import FormView
 from strawberry.django.views import AsyncGraphQLView
 
-from .utils.mark import freeze_contents
+from .utils.mark import freeze_contents, update_file_accessed
 
 from .forms import PreKeyForm, PushForm, UpdateForm
 from .models import Content
@@ -220,37 +220,14 @@ class ContentView(AllowCORSMixin, FormView):
             request.headers.get("X-Key", "").replace(" ", "").split(",")
         )
         decryptset.update(self.request.GET.getlist("key"))
-        if id and len(id) == 1:
-            try:
-                iterator = iter_decrypt_contents(result, decryptset=decryptset)
-                content = next(iterator)
-            except StopIteration:
-                return HttpResponse("Missing key", status=400)
-            return self.handle_decrypt_singlecontent(
-                request, content, *args, **kwargs
-            )
-        else:
-
-            def gen():
-                seperator = None
-                for content in iter_decrypt_contents(
-                    result, decryptset=decryptset
-                ):
-                    if seperator is not None:
-                        freeze_contents([content.id], request, update=True)
-                        yield seperator
-                    else:
-                        freeze_contents([content.id], request, update=False)
-                    if hasattr(content, "read_decrypt"):
-                        fob = content.read_decrypt()
-                    else:
-                        fob = content.file.read("r")
-                    # seperate with \0
-                    for chunk in fob:
-                        yield chunk.replace(b"\0", b"\\0")
-                    seperator = b"\0"
-
-            return StreamingHttpResponse(gen())
+        try:
+            iterator = iter_decrypt_contents(result, decryptset=decryptset)
+            content = next(iterator)
+        except StopIteration:
+            return HttpResponse("Missing key", status=400)
+        return self.handle_decrypt_singlecontent(
+            request, content, *args, **kwargs
+        )
 
     @method_decorator(never_cache)
     def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
@@ -347,6 +324,7 @@ class ContentView(AllowCORSMixin, FormView):
                     as_attachment=bool(name),
                     filename=name,
                 )
+                update_file_accessed([content.id])
             except FileNotFoundError as e:
                 raise Http404() from e
         freeze_contents([content.id], self.request)

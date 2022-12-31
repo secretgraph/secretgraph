@@ -198,6 +198,10 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    "file_accessed",
+                    models.DateTimeField(null=True),
+                ),
+                (
                     "contentHash",
                     models.CharField(
                         blank=True,

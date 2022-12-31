@@ -1,8 +1,15 @@
 import logging
 from django.db import IntegrityError, transaction, models
+from django.utils import timezone
 from ..models import Content, ContentTag, ContentAction
 
 logger = logging.getLogger(__name__)
+
+
+def update_file_accessed(content_ids, now=None):
+    if not now:
+        now = timezone.now()
+    Content.objects.filter(id__in=content_ids).update(file_accessed=now)
 
 
 def freeze_contents(content_ids, request=None, update=False):

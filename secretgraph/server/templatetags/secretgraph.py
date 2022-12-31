@@ -10,7 +10,7 @@ from django.core.paginator import Paginator
 
 from django.db.models import Q, Subquery
 
-from secretgraph.server.utils.mark import freeze_contents
+from secretgraph.server.utils.mark import freeze_contents, update_file_accessed
 
 from ..models import Content, Cluster
 from ..utils.auth import get_cached_result, fetch_by_id
@@ -344,6 +344,7 @@ def read_content_sync(
         if not mime or not isinstance(mime, str):
             mime = "application/octet-stream"
         if mime.startswith("text/"):
+            update_file_accessed([content.id])
             freeze_contents([content.id], context["request"], update=True)
             text = (
                 content.read_decrypt().read().decode("utf8")

@@ -272,28 +272,38 @@ def iter_decrypt_contents(
     for content in query:
         # check  if content should be transfered
         if content.id in transfer_map:
-            verifiers = Content.objects.trusted_keys()
-            if not verifiers:
-                verifiers = None
-            else:
-                verifiers = content_query.filter(id__in=verifiers)
-            result = sync_transfer_value(
-                content,
-                key=transfer_map[content.id],
-                transfer=True,
-                verifiers=verifiers,
-            )
-            # transfer failed
-            if result in {
-                TransferResult.NOTFOUND,
-                TransferResult.FAILED_VERIFICATION,
-            }:
-                content.delete()
-                continue
-            elif result != TransferResult.SUCCESS:
-                continue
+
+            def _start_transfer():
+                verifiers = Content.objects.trusted_keys()
+                if not verifiers:
+                    verifiers = None
+                else:
+                    verifiers = content_query.filter(id__in=verifiers)
+                result = sync_transfer_value(
+                    content,
+                    key=transfer_map[content.id],
+                    transfer=True,
+                    verifiers=verifiers,
+                )
+                # transfer failed
+                if result in {
+                    TransferResult.NOTFOUND,
+                    TransferResult.FAILED_VERIFICATION,
+                }:
+                    content.start_transfer = None
+                    content.delete()
+                    return False
+                elif result != TransferResult.SUCCESS:
+                    return False
+                content.start_transfer = None
+                return True
+
+            content.start_transfer = _start_transfer
+
         elif content.is_transfer:
             continue
+        else:
+            content.start_transfer = None
 
         # we can decrypt content now (transfers are also completed)
         if content.id in content_map:
@@ -312,6 +322,9 @@ def iter_decrypt_contents(
             )
 
             def _generator():
+                if content.start_transfer:
+                    if not content.start_transfer():
+                        return
                 with content.file.open() as fileob:
                     chunk = fileob.read(512)
                     nextchunk = None
