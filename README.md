@@ -75,12 +75,14 @@ Special configuration keys:
 
 -   `SECRETGRAPH_BIND_TO_USER`: require the binding of nets to user accounts
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_BIND_TO_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
+-   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends)
 
 ## docker
 
 -   `BIND_TO_USER`: nets need user
 -   `ALLOW_REGISTER`: allow registering new users
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
+-   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends
 -   `DB_ENGINE`: db stuff
 -   `DB_USER`: db stuff
 -   `DB_PASSWORD`: db stuff
@@ -179,12 +181,17 @@ Not implemented yet
 
 ### Return Headers
 
+Removed headers
+
 -   X-ID: Id of content (removed as it can leak infos)
--   X-TYPE: Type of content (only if single content is returned)
--   X-CONTENT-HASH: Content hash of content (only if single content with content hash is returned)
--   X-IS-SIGNED: is verified (only if single, encrypted content is returned)
--   X-NONCE: nonce (only if single, encrypted content is returned)
--   X-KEY: encrypting key of private key (only if single, encrypted private key is returned)
+-   X-CONTENT-HASH: Content hash of content (removed as it can leak infos)
+
+By design only one content is returned
+
+-   X-TYPE: Type of content
+-   X-IS-SIGNED: is verified
+-   X-NONCE: nonce
+-   X-KEY: encrypting key of private key (only if encrypted private key is returned)
 -   X-HASH-ALGORITHMS: comma seperated hash algorithm list
 -   X-GRAPHQL-PATH: path to secretgraph graphql interface
 
@@ -439,6 +446,10 @@ This needs some work and is not as proofen like RSA. There are also some concern
 Note: in js there is a speciality: you specify the hash algorithm while importing/generating a key
 not while the operation
 
+## how to optimize performance
+
+By design
+
 # TODO
 
 -   validationError: use params
@@ -449,7 +460,7 @@ not while the operation
 -   modernize ActionDialog, redesign, multi column?
 -   implement shareFn and ShareDialog, Config has a special ShareDialog
 -   test permissions
--   way to inject tokens
+-   way to inject tokens (as user)
 -   way to import private key in config
 -   edge-serverside encryption
 -   cleanup js structure, harmonize naming

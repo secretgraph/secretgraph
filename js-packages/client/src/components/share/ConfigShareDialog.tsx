@@ -1,4 +1,5 @@
 import { DialogActions, DialogContent } from '@mui/material'
+import Autocomplete from '@mui/material/Autocomplete'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -6,12 +7,21 @@ import FormControl from '@mui/material/FormControl'
 import FormHelperText from '@mui/material/FormHelperText'
 import Link from '@mui/material/Link'
 import TextField from '@mui/material/TextField'
-import { exportConfig } from '@secretgraph/misc/utils/config'
+import * as Interfaces from '@secretgraph/misc/interfaces'
+import { exportConfig, updateConfig } from '@secretgraph/misc/utils/config'
+import {
+    createContent,
+    updateCluster,
+} from '@secretgraph/misc/utils/operations'
 import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
-import { encryptingPasswordSettingsHelp, passwordLabel } from '../../messages'
+import {
+    encryptingPasswordSettingsHelp,
+    passwordLabel,
+    slotSelectionHelp,
+} from '../../messages'
 
 export default React.memo(function ConfigShareDialog({
     open,
@@ -20,20 +30,24 @@ export default React.memo(function ConfigShareDialog({
     open: boolean
     closeFn: () => void
 }) {
+    const { config } = React.useContext(Contexts.Config)
+    const [slot, setSlot] = React.useState((config?.slots || [null])[0])
     const [password, setPassword] = React.useState('')
     const [exportUrl, setExportUrl] = React.useState('')
     const [loadingExport, setLoadingExport] = React.useState(false)
     const [typing, setTyping] = React.useState(false)
-    const { config } = React.useContext(Contexts.Config)
     const deferredPw = React.useDeferredValue(password)
     const { baseClient } = React.useContext(Contexts.Clients)
+    React.useEffect(() => {
+        setSlot((config?.slots || [null])[0])
+    }, [config])
     React.useEffect(() => {
         if (!config || !open) {
             return
         }
         let active = true
         const f = async () => {
-            if (!active) {
+            if (!active || !slot) {
                 return
             }
             setTyping(true)
@@ -42,6 +56,7 @@ export default React.memo(function ConfigShareDialog({
                 _exportUrl = await exportConfigAsUrl({
                     client: baseClient,
                     config,
+                    slot,
                     pw: deferredPw,
                     iterations: 100000,
                     types: ['privatekey'],
@@ -113,6 +128,34 @@ export default React.memo(function ConfigShareDialog({
                     />
                     <FormHelperText id="secretgraph-export-pw-help">
                         {encryptingPasswordSettingsHelp}
+                    </FormHelperText>
+                </FormControl>
+                <FormControl>
+                    <Autocomplete
+                        fullWidth={true}
+                        disabled={loadingExport}
+                        value={slot}
+                        onChange={async (ev, value: string | null, reason) => {
+                            setSlot(value)
+                        }}
+                        options={config!.slots}
+                        renderInput={(params) => {
+                            return (
+                                <TextField
+                                    {...params}
+                                    InputProps={{
+                                        'aria-describedby':
+                                            'secretgraph-export-slot-help',
+                                    }}
+                                    label={'Slots'}
+                                    fullWidth
+                                    variant="outlined"
+                                />
+                            )
+                        }}
+                    />
+                    <FormHelperText id="secretgraph-export-slot-help">
+                        {slotSelectionHelp}
                     </FormHelperText>
                 </FormControl>
                 <div

@@ -32,7 +32,6 @@ export async function createContent({
     ...options
 }: {
     client: ApolloClient<any>
-    config: Interfaces.ConfigInterface
     cluster: string
     net?: string
     type: string
@@ -148,7 +147,6 @@ export async function updateContent({
     id: string
     updateId: string
     client: ApolloClient<any>
-    config: Interfaces.ConfigInterface
     cluster?: string
     net?: string
     state?: string

@@ -97,7 +97,6 @@ async function updateRemoteConfig({
         privkeys: privkeys,
         pubkeys: pubkeys,
         state: 'protected',
-        config: mergedConfig,
         hashAlgorithm,
         value: new Blob([JSON.stringify(mergedConfig)]),
         authorization: authInfo.tokens,
@@ -167,11 +166,13 @@ export async function exportConfigAsUrl({
     client,
     config,
     pw,
+    slot,
     iterations = 100000,
     types = ['direct', 'privatekey'],
 }: {
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
+    slot: string
     pw?: string
     iterations: number
     types: ('direct' | 'privatekey')[]
@@ -192,8 +193,11 @@ export async function exportConfigAsUrl({
     if (!privcert) {
         return Promise.reject('no cert found')
     }
+    if (!config.slots.includes(slot)) {
+        return Promise.reject('invalid slot')
+    }
     const contentHash = await hashTagsContentHash(
-        [`slot=${config.slots[0]}`],
+        [`slot=${slot}`],
         'Config',
         authInfo.certificateHashes[0].split(':', 1)[0]
     )

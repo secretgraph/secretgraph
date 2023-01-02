@@ -217,7 +217,6 @@ export async function initializeCluster({
     }
     const { data: contentResult } = await createContent({
         client,
-        config,
         cluster: clusterResult.cluster['id'],
         value: new Blob([JSON.stringify(config)]),
         pubkeys: [publicKey],

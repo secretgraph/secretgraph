@@ -35,6 +35,9 @@ SECRETGRAPH_BIND_TO_USER = (
 SECRETGRAPH_ALLOW_REGISTER = (
     os.environ.get("ALLOW_REGISTER", "false").lower() == "true"
 )
+SECRETGRAPH_CACHE_DECRYPTED = (
+    os.environ.get("CACHE_DECRYPTED", "false").lower() == "true"
+)
 
 MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")

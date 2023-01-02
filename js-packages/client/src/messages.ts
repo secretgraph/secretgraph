@@ -16,5 +16,6 @@ export const decryptingPasswordSettingsHelp = gettext(
 export const encryptingPasswordSettingsHelp = gettext(
     'Enter password for encrypting generated settings. Leave empty for no encryption.'
 )
+export const slotSelectionHelp = gettext('Select config slot')
 
 export const newClusterLabel = gettext('New Cluster')

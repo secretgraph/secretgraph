@@ -69,6 +69,28 @@ export const getNodeType = gql`
         }
     }
 `
+
+export const addActionsMutation = gql`
+    mutation nodeAddActionsMutation(
+        $id: [GlobalID!]
+        $actions: [ActionInput!]
+        $authorization: [String!]
+    ) {
+        updateMetadata(
+            input: {
+                ids: [$id]
+                actions: $actions
+                operation: APPEND
+                authorization: $authorization
+            }
+        ) {
+            ... on MetadataUpdateMutation {
+                updated
+            }
+        }
+    }
+`
+
 export const getPermissions = gql`
     query getPermissionsQuery($authorization: [String!]) {
         secretgraph(authorization: $authorization) {

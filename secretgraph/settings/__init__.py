@@ -150,9 +150,6 @@ GRAPHENE_PROTECTOR_DEPTH_LIMIT = 20
 
 RATELIMIT_KEY_HASH = "sha512"
 
-# for sites
-SITE_ID = 1
-
 
 CACHES = {
     "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},

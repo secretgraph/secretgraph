@@ -6,8 +6,8 @@ import logging
 from urllib.parse import quote
 
 from django.views.decorators.http import last_modified
-from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
+from django.utils.cache import add_never_cache_headers
 from django.conf import settings
 from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Substr
@@ -33,6 +33,7 @@ from .utils.auth import (
     retrieve_allowed_objects,
 )
 from .utils.encryption import iter_decrypt_contents
+from ..core import constants
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,15 @@ def calc_content_modified_raw(request, content, *args, **kwargs):
     if "key_hash" in request.GET or request.headers.get("X-KEY-HASH", ""):
         return None
     return content.updated
+
+
+def calc_content_modified_decrypted(request, content, *args, **kwargs):
+    if (
+        not getattr(settings, "SECRETGRAPH_CACHE_DECRYPTED", False)
+        and content.state not in constants.public_states
+    ):
+        return None
+    return calc_content_modified_raw(request, content, *args, **kwargs)
 
 
 class ContentView(AllowCORSMixin, FormView):
@@ -225,11 +235,17 @@ class ContentView(AllowCORSMixin, FormView):
             content = next(iterator)
         except StopIteration:
             return HttpResponse("Missing key", status=400)
-        return self.handle_decrypt_singlecontent(
+        response = self.handle_decrypt_singlecontent(
             request, content, *args, **kwargs
         )
+        if (
+            not getattr(settings, "SECRETGRAPH_CACHE_DECRYPTED", False)
+            and content.state not in constants.public_states
+        ):
+            add_never_cache_headers(response)
+        return response
 
-    @method_decorator(never_cache)
+    @method_decorator(last_modified(calc_content_modified_decrypted))
     def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
         freeze_contents([content.id], request)
         names = content.tags_proxy.name
@@ -251,8 +267,6 @@ class ContentView(AllowCORSMixin, FormView):
         else:
             response = FileResponse(content.file.read("rb"))
         response["X-TYPE"] = content.type
-        if content.contentHash:
-            response["X-CONTENT-HASH"] = content.contentHash
         return response
 
     @method_decorator(last_modified(calc_content_modified_raw))
@@ -332,8 +346,6 @@ class ContentView(AllowCORSMixin, FormView):
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
-        if content.contentHash:
-            response["X-CONTENT-HASH"] = content.contentHash
         if content.type == "PrivateKey":
             response["X-KEY"] = ",".join(
                 content.tags.filter(tag__startswith="key=")
