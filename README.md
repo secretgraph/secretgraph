@@ -448,7 +448,10 @@ not while the operation
 
 ## how to optimize performance
 
-By design
+By design decrypted contents are excluded from caching (optionally they can be included).
+It is expected that secretgraph runs behind a reverse proxy which cares for caching (for optimal performance) or
+the client (e.g. a browser) understands the cache directives.
+By default the included nginx can be used (it has no cache activated).
 
 # TODO
 
