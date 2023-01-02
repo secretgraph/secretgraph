@@ -6,38 +6,66 @@ import ratelimit
 
 
 class RatelimitMutations(Extension):
+    rate = "100/2s"
+
     def on_executing_start(self):
         execution_context = self.execution_context
         if execution_context.operation_type == OperationType.MUTATION:
             r = ratelimit.get_ratelimit(
                 group="graphql_update",
                 key="ip",
-                rate="50/s",
-                action=ratelimit.Action.INCREASE,
-            )
-            if r.request_limit >= 1:
-                self.execution_context.result = GraphQLExecutionResult(
-                    data=None,
-                    errors=[GraphQLError("Too many updates from ip")],
-                )
-
-
-class RatelimitNonMutations(Extension):
-    def on_executing_start(self):
-        execution_context = self.execution_context
-        if execution_context.operation_type != OperationType.MUTATION:
-            r = ratelimit.get_ratelimit(
-                group="graphql_view",
-                key="ip",
-                rate="4000/s",
-                action=ratelimit.Action.INCREASE,
+                rate=self.rate,
+                action=ratelimit.Action.PEEK,
             )
             if r.request_limit >= 1:
                 self.execution_context.result = GraphQLExecutionResult(
                     data=None,
                     errors=[
                         GraphQLError(
-                            "Too many query/subscription requests from ip"
+                            "Too many updates from ip, wait some time"
                         )
                     ],
                 )
+
+    def on_executing_end(self):
+        data = self.execution_context.data
+
+        if data and any(
+            map(lambda x: x.get("writeok", None) is False, data.values())
+        ):
+            return
+        ratelimit.get_ratelimit(
+            group="graphql_update",
+            key="ip",
+            rate=self.rate,
+            action=ratelimit.Action.INCREASE,
+        )
+
+
+class RatelimitErrors(Extension):
+    rate = "20/4m"
+
+    def on_executing_start(self):
+        r = ratelimit.get_ratelimit(
+            group="graphql_errors",
+            key="ip",
+            rate=self.rate,
+            action=ratelimit.Action.PEEK,
+        )
+        if r.request_limit >= 1:
+            self.execution_context.result = GraphQLExecutionResult(
+                data=None,
+                errors=[
+                    GraphQLError("Too many errors from ip, wait some time")
+                ],
+            )
+
+    def on_executing_end(self):
+        if not self.execution_context.errors:
+            return
+        ratelimit.get_ratelimit(
+            group="graphql_errors",
+            key="ip",
+            rate=self.rate,
+            action=ratelimit.Action.INCREASE,
+        )

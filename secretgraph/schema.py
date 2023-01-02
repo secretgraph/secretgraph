@@ -10,7 +10,7 @@ from .server.schema import (
 )
 from .server.strawberry_extensions import (
     RatelimitMutations,
-    RatelimitNonMutations,
+    RatelimitErrors,
 )
 
 # from .user.schema import Query as UserQuery
@@ -31,5 +31,5 @@ schema = strawberry.Schema(
     query=Query,
     mutation=Mutation,
     subscription=ServerSubscription,
-    extensions=[RatelimitMutations, RatelimitNonMutations],
+    extensions=[RatelimitMutations, RatelimitErrors],
 )

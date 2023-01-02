@@ -5,13 +5,15 @@ from io import BytesIO, IOBase
 import httpx
 
 
-def repeatOperation(operation, start=None, retries=math.inf, session=None):
+def repeatOperation(
+    operation, writeokKey, start=None, retries=math.inf, session=None
+):
     if not session:
         session = httpx.AsyncClient()
     counter = 0
     obj = start
     result = operation(obj, counter=counter, session=session)
-    while result["writeok"] is False and counter < retries:
+    while result[writeokKey]["writeok"] is False and counter < retries:
         counter += 1
         obj = result
         result = operation(obj, counter=counter, session=session)
