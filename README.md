@@ -430,10 +430,11 @@ JS is not mature enough for web servers. It is a dependency hell with security h
 -   fixes problem with lost updates, especially for hot files like config
 -   but metadata can be changed seperately (removing/adding tags/references)
 
-## Why RSA and not ecdsa
+## Why RSA and how to support Ecdh later
 
-Currently you cannot encrypt data asymmetrically with ecdsa, etc... only with RSA.
-At least there are no algorithms in the standard libraries.
+Curently only RSA can encrypt arbitary data; in this case the shared key.
+For ecdh the shared key must be encrypted with the derivated key of the shared key of an new generated private key and the known public key.
+This needs some work and is not as proofen like RSA. There are also some concerns of weakened curves. So maybe later in case they support post quantum encryption.
 
 Note: in js there is a speciality: you specify the hash algorithm while importing/generating a key
 not while the operation
@@ -443,9 +444,6 @@ not while the operation
 -   validationError: use params
 -   trustedKeys logic (partly done):
     -   Needs much more work especially on gui side
-        -   update trustedKeys to keys signed by already trusted keys
-        -   global, with optional name, link/id
-        -   if signature isn't found or named key could not be retrieved, it means it is revoked, remove orphans in this case
     -   a better ActionDialog is neccessary
 -   implement settings/config (partly done)
 -   modernize ActionDialog, redesign, multi column?
@@ -459,6 +457,7 @@ not while the operation
 
 # TODO later
 
+-   split sign keys / trusted keys
 -   use weakref finalizers to nuke bytes content
 -   disallow non global ids? Would ease implementation
 -   encrypt Config set with saveConfig/loaded with loadConfigSync via a static key
@@ -488,6 +487,7 @@ not while the operation
 
 # TODO far future
 
+-   post quantum crypto (library support is very bad)
 -   pull support, "stream in" of content
 -   more async (needs better django support)
 -   recovery:

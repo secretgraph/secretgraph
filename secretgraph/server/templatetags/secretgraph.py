@@ -52,7 +52,7 @@ try:
         "data",
         "mailto",
     ]
-    cleaner = sanitizer.Cleaner(
+    cleach_cleaner = sanitizer.Cleaner(
         tags=_default_allowed_tags,
         attributes=lambda tag, name, value: True,
         protocols=_default_allowed_protocols,
@@ -61,10 +61,11 @@ try:
 
     def clean(inp):
 
-        return cleaner.clean(inp)
+        return cleach_cleaner.clean(inp)
 
 except ImportError:
     logging.warning("bleach not found, fallback to escape")
+    cleach_cleaner = None
     clean = escape
 
 
@@ -287,6 +288,8 @@ def read_content_sync(
     authorization=None,
     # provide default decrypt keys
     default_decryptkeys=None,
+    # use bleach/escape for text contents which can be inlined
+    inline_text=True if cleach_cleaner else False,
 ):
     if not authorization:
         authorization = set(
@@ -344,6 +347,13 @@ def read_content_sync(
         if not mime or not isinstance(mime, str):
             mime = "application/octet-stream"
         if mime.startswith("text/"):
+            if not inline_text or getattr(content, "start_transfer", None):
+                return mark_safe(
+                    f"""
+<iframe sandbox src="{content.link}?decrypt&{decryptqpart}">
+    iframes not supported
+</iframe>"""
+                )
             update_file_accessed([content.id])
             freeze_contents([content.id], context["request"], update=True)
             text = (
