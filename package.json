@@ -26,7 +26,8 @@
         "watch:prod": "webpack --watch --mode production",
         "watch:dev": "webpack --watch --mode development",
         "build:dev": "webpack --mode development --progress",
-        "build": "webpack --mode production --progress"
+        "build": "webpack --mode production --progress",
+        "validate_schema": "ts-graphql-plugin validate"
     },
     "prettier": {
         "trailingComma": "es5",

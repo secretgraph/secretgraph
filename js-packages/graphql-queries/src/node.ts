@@ -72,13 +72,13 @@ export const getNodeType = gql`
 
 export const addActionsMutation = gql`
     mutation nodeAddActionsMutation(
-        $id: [GlobalID!]
+        $ids: [GlobalID!]!
         $actions: [ActionInput!]
         $authorization: [String!]
     ) {
         updateMetadata(
             input: {
-                ids: [$id]
+                ids: $ids
                 actions: $actions
                 operation: APPEND
                 authorization: $authorization

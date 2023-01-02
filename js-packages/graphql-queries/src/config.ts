@@ -42,6 +42,8 @@ export const updateConfigQuery = gql`
                         nonce
                         link
                         type
+                        tags(includeTags: ["slot=", "key_hash="])
+                        contentHash
                         cluster {
                             id
                             groups

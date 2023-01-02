@@ -402,7 +402,7 @@ export async function updateConfigRemoteReducer(
     //
     const pubkeys = Object.values(
         extractPubKeysCluster({
-            node: nodes[mainNodeIndex],
+            node: nodes[mainNodeIndex].node,
             source: privkeys,
             onlySeen: true,
             authorization: authInfo.tokens,

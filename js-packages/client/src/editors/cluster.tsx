@@ -587,7 +587,6 @@ const CreateCluster = () => {
                     hashAlgorithm: hashAlgorithms[0],
                     key: `${new Date().getTime()}`,
                 }
-                console.log(window.opener?.cloneData, mainCtx.cloneData)
                 if (mainCtx.cloneData) {
                     data.name = mainCtx.cloneData.name
                     data.description = mainCtx.cloneData.description

@@ -700,7 +700,10 @@ export function updateConfig(
                                                     )
                                                 }
                                                 newobj.sort()
-                                                if (compareArray(old, newobj)) {
+                                                if (
+                                                    old &&
+                                                    compareArray(old, newobj)
+                                                ) {
                                                     return undefined
                                                 }
                                                 return [newobj, 1]
@@ -745,7 +748,10 @@ export function updateConfig(
                                                     )
                                                 }
                                                 newobj.sort()
-                                                if (compareArray(old, newobj)) {
+                                                if (
+                                                    old &&
+                                                    compareArray(old, newobj)
+                                                ) {
                                                     return undefined
                                                 }
                                                 return [newobj, 1]
