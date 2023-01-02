@@ -8,6 +8,10 @@ from .server.schema import (
     Mutation as ServerMutation,
     Subscription as ServerSubscription,
 )
+from .server.strawberry_extensions import (
+    RatelimitMutations,
+    RatelimitNonMutations,
+)
 
 # from .user.schema import Query as UserQuery
 # from .user.schema import Mutation as UserMutation
@@ -24,5 +28,8 @@ class Mutation(ServerMutation):
 
 
 schema = strawberry.Schema(
-    query=Query, mutation=Mutation, subscription=ServerSubscription
+    query=Query,
+    mutation=Mutation,
+    subscription=ServerSubscription,
+    extensions=[RatelimitMutations, RatelimitNonMutations],
 )

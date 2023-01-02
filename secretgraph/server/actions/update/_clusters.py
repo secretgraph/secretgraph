@@ -3,6 +3,7 @@ __all__ = ["create_cluster_fn", "update_cluster_fn"]
 from contextlib import nullcontext
 from uuid import UUID, uuid4
 
+import ratelimit
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import F
@@ -87,6 +88,20 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
                 raise ValueError("Cannot register")
         if not net:
+
+            if not user:
+                r = ratelimit.get_ratelimit(
+                    key="ip",
+                    rate="5/m",
+                    request=request,
+                    group="create_net",
+                    action=ratelimit.Action.INCREASE,
+                )
+                if r.request_limit >= 1:
+                    raise ratelimit.RatelimitExceeded(
+                        r,
+                        "too many tries to register anonymous cluster from ip",
+                    )
             net = Net()
             if user:
                 net.user = user
