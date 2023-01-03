@@ -79,7 +79,6 @@ function Definitions({
             cloneData: null,
         }
         if (ctx.action == 'clone' && window.opener?.cloneData) {
-            console.log('sdkdslk', window.opener!.cloneData)
             ctx.action = 'create'
             ctx.cloneData = window.opener!.cloneData
         }

@@ -334,8 +334,14 @@ export function extractPrivKeys({
     const privkeys = Object.assign({}, props.source || {})
     const urlob = new URL(url, window.location.href)
     const clusters = config.hosts[urlob.href].clusters
-    const hashAlgorithm =
-        Constants.mapHashNames[props.hashAlgorithm].operationName
+
+    const mapItem = Constants.mapHashNames['' + props.hashAlgorithm]
+    if (!mapItem) {
+        throw new Error(
+            'Invalid hash algorithm/no hash algorithm specified: ' +
+                props.hashAlgorithm
+        )
+    }
     for (const id in clusters) {
         if (props.clusters && !props.clusters.has(id)) {
             continue
@@ -352,7 +358,7 @@ export function extractPrivKeys({
                     certEntry.data,
                     {
                         name: 'RSA-OAEP',
-                        hash: hashAlgorithm,
+                        hash: mapItem.operationName,
                     },
                     'privateKey'
                 )

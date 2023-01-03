@@ -96,6 +96,7 @@ async function updateRemoteConfig({
         updateId: node.updateId,
         privkeys: privkeys,
         pubkeys: pubkeys,
+        tags: ['name=config.json', `slot=${mergedConfig.slots[0]}`],
         state: 'protected',
         hashAlgorithm,
         value: new Blob([JSON.stringify(mergedConfig)]),
@@ -426,6 +427,7 @@ export async function updateConfigRemoteReducer(
                         privkeys: privkeysSign,
                         pubkeys,
                         hashAlgorithm: hashAlgorithms[0],
+                        slotHash: node.contentHash,
                         node: attempted == 0 ? node : undefined,
                     })
                     if (result === false) {
@@ -507,13 +509,6 @@ export async function updateOrCreateContentWithConfig({
       }
     | false
 > {
-    const mapItem = Constants.mapHashNames['' + hashAlgorithm]
-    if (!mapItem) {
-        throw new Error(
-            'Invalid hash algorithm/no hash algorithm specified: ' +
-                hashAlgorithm
-        )
-    }
     const {
         hashes,
         actions: finishedActions,
@@ -538,7 +533,7 @@ export async function updateOrCreateContentWithConfig({
     const privkeys = extractPrivKeys({
         config,
         url,
-        hashAlgorithm: mapItem.operationName,
+        hashAlgorithm,
         clusters: new Set([cluster]),
         onlySignKeys: true,
     })

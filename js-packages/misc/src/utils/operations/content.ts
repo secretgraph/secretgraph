@@ -192,9 +192,6 @@ export async function updateContent({
     let encryptedContent = null
     let nonce = undefined
     if (options.value) {
-        if (!tagsOptions || !tagsOptions.length) {
-            throw Error('No tags provided')
-        }
         if (isPublic) {
             encryptedContent = await unserializeToArrayBuffer(options.value)
 
