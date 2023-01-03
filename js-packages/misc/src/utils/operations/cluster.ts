@@ -107,6 +107,8 @@ export async function initializeCluster({
     description,
     net,
     slot,
+    noteCertificate,
+    noteToken,
     ...options
 }: {
     client: ApolloClient<any>
@@ -117,6 +119,8 @@ export async function initializeCluster({
     description?: string
     featured?: boolean
     hashAlgorithm: string
+    noteToken: string
+    noteCertificate: string
 }) {
     const manage_key = crypto.getRandomValues(new Uint8Array(32))
     const view_key = crypto.getRandomValues(new Uint8Array(32))
@@ -174,12 +178,12 @@ export async function initializeCluster({
     config['certificates'][digestPublicKey] = {
         // private key is serialized
         data: await serializeToBase64(privateKey),
-        note: 'initial certificate',
+        note: noteCertificate,
         signWith: true,
     }
     config.tokens[digestManageKey] = {
         data: manage_keyb64,
-        note: 'initial token',
+        note: noteToken,
         system: false,
     }
     config.tokens[digestViewKey] = {
@@ -194,7 +198,7 @@ export async function initializeCluster({
     config.trustedKeys[digestPublicKey] = {
         links: [`${keyUrl}`],
         level: 1,
-        note: 'initial key',
+        note: 'created by user',
         lastChecked: Math.floor(Date.now() / 1000),
     }
     if (!cleanConfig(config)[0]) {

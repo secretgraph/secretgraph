@@ -78,6 +78,8 @@ function Register() {
                             config: newConfig,
                             hashAlgorithm: registerContext!.hashAlgorithms[0],
                             slot,
+                            noteCertificate: 'initial certificate',
+                            noteToken: 'initial token',
                         })
                         // TODO: handle exceptions and try with login
                         saveConfig(newConfig)

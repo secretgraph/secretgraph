@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client'
 
+// references required for decrypting and verifying
 export const updateConfigQuery = gql`
     query contentUpdateConfigQuery(
         $cluster: ID!
@@ -44,6 +45,24 @@ export const updateConfigQuery = gql`
                         type
                         tags(includeTags: ["slot=", "key_hash="])
                         contentHash
+
+                        references(
+                            filters: {
+                                groups: ["key", "signature"]
+                                includeTags: $configKeyHashes
+                            }
+                        ) {
+                            edges {
+                                node {
+                                    extra
+                                    target {
+                                        link
+                                        type
+                                        tags(includeTags: ["key_hash="])
+                                    }
+                                }
+                            }
+                        }
                         cluster {
                             id
                             groups

@@ -219,7 +219,7 @@ const ClusterIntern = ({
                         ] = []
                         configUpdate.certificates[digestCert] = {
                             data: await privPromise,
-                            note: 'initial certificate',
+                            note: `certificate of ${newNode.id}`,
                             signWith: true,
                         }
                     }
