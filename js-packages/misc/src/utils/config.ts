@@ -329,9 +329,9 @@ export function extractPrivKeys({
     readonly clusters?: Set<string>
     readonly onlySignKeys?: boolean
     readonly hashAlgorithm: string
-    old?: { [hash: string]: Promise<CryptoKey> }
+    source?: { [hash: string]: Promise<CryptoKey> }
 }): { [hash: string]: Promise<CryptoKey> } {
-    const privkeys = props.old || {}
+    const privkeys = Object.assign({}, props.source || {})
     const urlob = new URL(url, window.location.href)
     const clusters = config.hosts[urlob.href].clusters
     for (const id in clusters) {

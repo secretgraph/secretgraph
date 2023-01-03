@@ -10,6 +10,7 @@
         "@secretgraph/graphql-queries": "*",
         "@apollo/client": "*",
         "graphql-ws": "*",
+        "qrcode.react": "*",
         "graphql": "*",
         "dompurify": "*",
         "file-saver": "*",

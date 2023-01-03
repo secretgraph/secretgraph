@@ -413,14 +413,14 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-fast-ratelimit"
-version = "0.6.1"
+version = "0.6.2"
 description = "Fast ratelimit implementation with django caches"
 category = "main"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django-fast-ratelimit-0.6.1.tar.gz", hash = "sha256:2d0af63ba5c55db657c4483c43465b1abe8c963b9afad4b6a4cd2e820d6d78ed"},
-    {file = "django_fast_ratelimit-0.6.1-py3-none-any.whl", hash = "sha256:a3d21eba504c3c3a8cc6d0e53484b0157bb1b6ad196e331701b4c34479aae0c5"},
+    {file = "django_fast_ratelimit-0.6.2-py3-none-any.whl", hash = "sha256:e8ca1d10baa555e1a18213d192de448a5ddd2902b208d0654fc700993a33d894"},
+    {file = "django_fast_ratelimit-0.6.2.tar.gz", hash = "sha256:15c0679b85010259bf08fb8571537e4b81740280796bd1f4811ef54afbe43cfa"},
 ]
 
 [package.dependencies]
@@ -564,14 +564,14 @@ socks = ["socksio (>=1.0.0,<2.0.0)"]
 
 [[package]]
 name = "httpx"
-version = "0.23.1"
+version = "0.23.2"
 description = "The next generation HTTP client."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "httpx-0.23.1-py3-none-any.whl", hash = "sha256:0b9b1f0ee18b9978d637b0776bfd7f54e2ca278e063e3586d8f01cda89e042a8"},
-    {file = "httpx-0.23.1.tar.gz", hash = "sha256:202ae15319be24efe9a8bd4ed4360e68fde7b38bcc2ce87088d416f026667d19"},
+    {file = "httpx-0.23.2-py3-none-any.whl", hash = "sha256:106cded342a44e443060fab70ef327139248c61939e77d73964560c8d8b57069"},
+    {file = "httpx-0.23.2.tar.gz", hash = "sha256:e824a6fa18ffaa6423c6f3a32d5096fc15bd8dff43663a223f06242fc69451a8"},
 ]
 
 [package.dependencies]

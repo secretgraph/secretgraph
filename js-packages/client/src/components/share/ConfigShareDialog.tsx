@@ -1,4 +1,4 @@
-import { DialogActions, DialogContent } from '@mui/material'
+import { DialogActions, DialogContent, Theme } from '@mui/material'
 import Autocomplete from '@mui/material/Autocomplete'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
@@ -7,6 +7,8 @@ import FormControl from '@mui/material/FormControl'
 import FormHelperText from '@mui/material/FormHelperText'
 import Link from '@mui/material/Link'
 import TextField from '@mui/material/TextField'
+import Grid from '@mui/material/Unstable_Grid2'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { exportConfig, updateConfig } from '@secretgraph/misc/utils/config'
 import {
@@ -14,6 +16,7 @@ import {
     updateCluster,
 } from '@secretgraph/misc/utils/operations'
 import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
+import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
@@ -37,6 +40,8 @@ export default React.memo(function ConfigShareDialog({
     const [loadingExport, setLoadingExport] = React.useState(false)
     const [typing, setTyping] = React.useState(false)
     const deferredPw = React.useDeferredValue(password)
+    const isMedium = useMediaQuery((theme: Theme) => theme.breakpoints.up('md'))
+    const isBig = useMediaQuery((theme: Theme) => theme.breakpoints.up('xl'))
     const { baseClient } = React.useContext(Contexts.Clients)
     React.useEffect(() => {
         setSlot((config?.slots || [null])[0])
@@ -109,71 +114,112 @@ export default React.memo(function ConfigShareDialog({
         >
             <DialogTitle id="export-dialog-title">Export</DialogTitle>
             <DialogContent>
-                <FormControl>
-                    <div style={{ display: 'none' }}>
-                        <input type="password" tabIndex={-1} />
-                    </div>
-                    <TextField
-                        fullWidth={true}
-                        disabled={loadingExport}
-                        value={password}
-                        onChange={(ev) => setPassword(ev.target.value)}
-                        variant="outlined"
-                        label={passwordLabel}
-                        inputProps={{
-                            'aria-describedby': 'secretgraph-export-pw-help',
-                            autoComplete: 'new-password',
-                        }}
-                        type="password"
-                    />
-                    <FormHelperText id="secretgraph-export-pw-help">
-                        {encryptingPasswordSettingsHelp}
-                    </FormHelperText>
-                </FormControl>
-                <FormControl>
-                    <Autocomplete
-                        fullWidth={true}
-                        disabled={loadingExport}
-                        value={slot}
-                        onChange={async (ev, value: string | null, reason) => {
-                            setSlot(value)
-                        }}
-                        options={config!.slots}
-                        renderInput={(params) => {
-                            return (
+                <Grid container spacing={2}>
+                    <Grid xs={12} md={6}>
+                        <div>
+                            <FormControl>
+                                <div style={{ display: 'none' }}>
+                                    <input type="password" tabIndex={-1} />
+                                </div>
                                 <TextField
-                                    {...params}
-                                    InputProps={{
-                                        'aria-describedby':
-                                            'secretgraph-export-slot-help',
-                                    }}
-                                    label={'Slots'}
-                                    fullWidth
+                                    fullWidth={true}
+                                    disabled={loadingExport}
+                                    value={password}
+                                    onChange={(ev) =>
+                                        setPassword(ev.target.value)
+                                    }
                                     variant="outlined"
+                                    label={passwordLabel}
+                                    inputProps={{
+                                        'aria-describedby':
+                                            'secretgraph-export-pw-help',
+                                        autoComplete: 'new-password',
+                                    }}
+                                    type="password"
                                 />
-                            )
-                        }}
-                    />
-                    <FormHelperText id="secretgraph-export-slot-help">
-                        {slotSelectionHelp}
-                    </FormHelperText>
-                </FormControl>
-                <div
-                    style={{
-                        visibility: typing ? 'hidden' : 'visible',
-                    }}
-                >
-                    <div>
-                        <Link
-                            href={exportUrl}
-                            sx={{ wordBreak: 'break-all' }}
-                            onClick={copySettingsUrl}
+                                <FormHelperText id="secretgraph-export-pw-help">
+                                    {encryptingPasswordSettingsHelp}
+                                </FormHelperText>
+                            </FormControl>
+                        </div>
+                        <div>
+                            <FormControl>
+                                <Autocomplete
+                                    fullWidth={true}
+                                    disabled={loadingExport}
+                                    value={slot}
+                                    onChange={async (
+                                        ev,
+                                        value: string | null,
+                                        reason
+                                    ) => {
+                                        setSlot(value)
+                                    }}
+                                    options={config?.slots || []}
+                                    renderInput={(params) => {
+                                        return (
+                                            <TextField
+                                                {...params}
+                                                InputProps={{
+                                                    'aria-describedby':
+                                                        'secretgraph-export-slot-help',
+                                                }}
+                                                fullWidth
+                                                variant="outlined"
+                                            />
+                                        )
+                                    }}
+                                />
+                                <FormHelperText id="secretgraph-export-slot-help">
+                                    {slotSelectionHelp}
+                                </FormHelperText>
+                            </FormControl>
+                        </div>
+                        {isMedium ? (
+                            <div
+                                style={{
+                                    visibility: typing ? 'hidden' : 'visible',
+                                }}
+                            >
+                                <Link
+                                    href={exportUrl}
+                                    sx={{ wordBreak: 'break-all' }}
+                                    onClick={copySettingsUrl}
+                                >
+                                    {exportUrl}
+                                </Link>
+                            </div>
+                        ) : null}
+                    </Grid>
+                    <Grid xs={12} md={6}>
+                        <QRCodeSVG
+                            value={exportUrl}
+                            width="100%"
+                            height="100%"
+                            style={{
+                                maxHeight: '70vh',
+                                visibility: typing ? 'hidden' : 'visible',
+                            }}
+                            level={isBig ? 'Q' : isMedium ? 'M' : 'L'}
+                        />
+                    </Grid>
+                    {isMedium ? null : (
+                        <Grid
+                            xs={12}
+                            style={{
+                                visibility: typing ? 'hidden' : 'visible',
+                            }}
                         >
-                            {exportUrl}
-                        </Link>
-                    </div>
-                    <div></div>
-                </div>
+                            <Link
+                                href={exportUrl}
+                                sx={{ wordBreak: 'break-all' }}
+                                onClick={copySettingsUrl}
+                            >
+                                {exportUrl}
+                            </Link>
+                        </Grid>
+                    )}
+                </Grid>
             </DialogContent>
             <DialogActions>
                 <Button onClick={closeFn} color="secondary">

@@ -383,7 +383,8 @@ export async function updateConfigRemoteReducer(
     if (configQueryRes.errors) {
         throw configQueryRes.errors
     }
-    const nodes: any[] = configQueryRes.data.secretgraph.contents.edges
+    const nodes: { node: any }[] =
+        configQueryRes.data.secretgraph.contents.edges
     const mainNodeIndex = nodes.findIndex(
         (result, index) => nodes[index].node.contentHash == slotHashes[0]
     )
