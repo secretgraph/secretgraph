@@ -232,6 +232,7 @@ export async function unserializeToCryptoKey(
                     params,
                     _data,
                     Constants.mapEncryptionAlgorithms[`${params.name}public`],
+                    exc,
                     exc.stack
                 )
                 throw Error('Not a PrivateKey')

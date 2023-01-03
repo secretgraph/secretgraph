@@ -59,7 +59,7 @@ async function updateRemoteConfig({
             variables: {
                 cluster: config.configCluster,
                 authorization: authInfo.tokens,
-                configContentHashes: [slotHash],
+                configContentHashes: slotHash ? [slotHash] : undefined,
             },
             // but why? should be updated by cache updates (for this no-cache is required in config content updates)
             fetchPolicy: 'network-only',

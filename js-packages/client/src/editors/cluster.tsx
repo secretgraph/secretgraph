@@ -223,12 +223,19 @@ const ClusterIntern = ({
                             signWith: true,
                         }
                     }
+                    let newConfig
 
-                    const newConfig = await updateConfigRemoteReducer(config, {
-                        update: configUpdate,
-                        client: baseClient,
-                        nullonnoupdate: true,
-                    })
+                    try {
+                        newConfig = await updateConfigRemoteReducer(config, {
+                            update: configUpdate,
+                            client: baseClient,
+                            nullonnoupdate: true,
+                        })
+                    } catch (error) {
+                        console.error('failed updating config', error)
+                        setSubmitting(false)
+                        return
+                    }
                     const nTokens = newConfig
                         ? authInfoFromConfig({
                               config: newConfig,
@@ -254,11 +261,6 @@ const ClusterIntern = ({
                             clusterResponse.data.updateOrCreateCluster.cluster
                                 .updateId,
                         tokens: [...mainCtx.tokens, ...nTokens],
-                    })
-                    updateSearchCtx({
-                        cluster:
-                            clusterResponse.data.updateOrCreateCluster.cluster
-                                .id,
                     })
                 }}
             >
