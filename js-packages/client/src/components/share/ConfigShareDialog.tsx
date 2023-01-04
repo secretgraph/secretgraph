@@ -48,6 +48,7 @@ export default React.memo(function ConfigShareDialog({
         setSlot((config?.slots || [null])[0])
     }, [config])
     React.useEffect(() => {
+        setShow(false)
         if (!config || !open) {
             return
         }
@@ -57,7 +58,6 @@ export default React.memo(function ConfigShareDialog({
                 return
             }
             setTyping(true)
-            setShow(false)
             let _exportUrl
             try {
                 _exportUrl = await exportConfigAsUrl({
