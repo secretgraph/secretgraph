@@ -155,7 +155,10 @@ export function cleanConfig(
                                 newState.hashes,
                                 newval.hashes,
                                 (old, newobj) => {
-                                    return [[...new Set(...old, newobj)], 1]
+                                    if (!old) {
+                                        return [[...new Set(newobj)], 1]
+                                    }
+                                    return [[...new Set(...old, ...newobj)], 1]
                                 }
                             )
                             newState.hashes = res[0]
@@ -181,7 +184,13 @@ export function cleanConfig(
                         if (newval.hashes) {
                             newState.hashes = mergeDeleteObjects(
                                 newState.hashes,
-                                newval.hashes
+                                newval.hashes,
+                                (old, newobj) => {
+                                    if (!old) {
+                                        return [[...new Set(newobj)], 1]
+                                    }
+                                    return [[...new Set(...old, ...newobj)], 1]
+                                }
                             )[0]
                         }
                         if (newval.cluster) {
