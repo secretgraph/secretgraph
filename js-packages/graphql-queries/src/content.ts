@@ -107,9 +107,9 @@ export const createContentMutation = gql`
                         value: $value
                         nonce: $nonce
                         actions: $actions
+                        references: $references
                     }
                     contentHash: $contentHash
-                    references: $references
                 }
                 authorization: $authorization
             }
@@ -158,9 +158,9 @@ export const updateContentMutation = gql`
                         type: $type
                         state: $state
                         actions: $actions
+                        references: $references
                     }
                     contentHash: $contentHash
-                    references: $references
                 }
                 updateId: $updateId
                 authorization: $authorization

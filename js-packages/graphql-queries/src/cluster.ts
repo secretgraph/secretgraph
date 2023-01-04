@@ -120,14 +120,16 @@ export const createClusterMutation = gql`
                     description: $description
                     actions: $actions
                     featured: $featured
-                    key: {
-                        publicKey: $publicKey
-                        publicState: "trusted"
-                        privateKey: $privateKey
-                        privateTags: $privateTags
-                        publicTags: ["name=initial key"]
-                        nonce: $nonce
-                    }
+                    keys: [
+                        {
+                            publicKey: $publicKey
+                            publicState: "trusted"
+                            privateKey: $privateKey
+                            privateTags: $privateTags
+                            publicTags: ["name=initial key"]
+                            nonce: $nonce
+                        }
+                    ]
                 }
                 authorization: $authorization
             }

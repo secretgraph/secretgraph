@@ -19,7 +19,7 @@ from django.http import (
     JsonResponse,
     StreamingHttpResponse,
 )
-from django.shortcuts import resolve_url, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.views.generic.edit import FormView
 from strawberry.django.views import AsyncGraphQLView
@@ -33,31 +33,14 @@ from .utils.auth import (
     retrieve_allowed_objects,
 )
 from .utils.encryption import iter_decrypt_contents
+from .view_decorators import (
+    no_opener,
+    add_cors_headers,
+    add_secretgraph_headers,
+)
 from ..core import constants
 
 logger = logging.getLogger(__name__)
-
-
-class AllowCORSMixin(object):
-    def add_cors_headers(self, response):
-        response["Access-Control-Allow-Origin"] = "*"
-        if self.request.method == "OPTIONS":
-            # copy from allow
-            response["Access-Control-Allow-Methods"] = response["Allow"]
-
-    def dispatch(self, request, *args, **kwargs):
-        response = super().dispatch(request, *args, **kwargs)
-        self.add_cors_headers(response)
-        return response
-
-
-class AsyncAllowCORSMixin(AllowCORSMixin):
-    async def dispatch(self, request, *args, **kwargs):
-        response = await super(AllowCORSMixin, self).dispatch(
-            request, *args, **kwargs
-        )
-        self.add_cors_headers(response)
-        return response
 
 
 def calc_content_modified_raw(request, content, *args, **kwargs):
@@ -75,19 +58,15 @@ def calc_content_modified_decrypted(request, content, *args, **kwargs):
     return calc_content_modified_raw(request, content, *args, **kwargs)
 
 
-class ContentView(AllowCORSMixin, FormView):
+class ContentView(FormView):
     template_name = "secretgraph/content_form.html"
     action = "view"
 
+    @method_decorator(no_opener)
+    @method_decorator(add_cors_headers)
+    @method_decorator(add_secretgraph_headers)
     def dispatch(self, request, *args, **kwargs):
-        response = super().dispatch(request, *args, **kwargs)
-        response["X-HASH-ALGORITHMS"] = ",".join(
-            settings.SECRETGRAPH_HASH_ALGORITHMS
-        )
-        response["X-GRAPHQL-PATH"] = resolve_url(
-            getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql")
-        )
-        return response
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         authset = set(
@@ -202,7 +181,7 @@ class ContentView(AllowCORSMixin, FormView):
             response = HttpResponse(201)
         return response
 
-    def handle_decrypt(self, request, id, *args, limit_ids=100, **kwargs):
+    def handle_decrypt(self, request, id, *args, **kwargs):
         """
         space efficient join of one or more documents, decrypted
         In case of multiple documents the \\0 is escaped and the documents with
@@ -265,8 +244,14 @@ class ContentView(AllowCORSMixin, FormView):
                         quote(names[0])
                     )
                 response["Content-Disposition"] = header
+            response["X-Robots-Tag"] = "noindex,nofollow"
         else:
             response = FileResponse(content.file.read("rb"))
+            if content.cluster.featured:
+                response["X-Robots-Tag"] = "index,follow"
+            else:
+                response["X-Robots-Tag"] = "index,nofollow"
+
         update_file_accessed([content.id])
         response["X-TYPE"] = content.type
         return response
@@ -348,6 +333,7 @@ class ContentView(AllowCORSMixin, FormView):
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
+        response["X-Robots-Tag"] = "noindex,nofollow"
         if content.type == "PrivateKey":
             response["X-KEY"] = ",".join(
                 content.tags.filter(tag__startswith="key=")
@@ -357,15 +343,15 @@ class ContentView(AllowCORSMixin, FormView):
         return response
 
 
-class CORSFileUploadGraphQLView(AsyncAllowCORSMixin, AsyncGraphQLView):
-    pass
-    # def dispatch(self, request, *args, **kwargs):
-    #    if settings.DEBUG and "operations" in request.POST:
-    #        operations = json.loads(request.POST.get("operations", "{}"))
-    #        logger.debug(
-    #            "operations:\n%s\nmap:\n%s\nFILES:\n%s",
-    #            pprint.pformat(operations),
-    #            pprint.pformat(json.loads(request.POST.get("map", "{}"))),
-    #            pprint.pformat(request.FILES),
-    #        )
-    #    return super().dispatch(request, *args, **kwargs)
+class CORSFileUploadGraphQLView(AsyncGraphQLView):
+    @method_decorator(add_cors_headers)
+    async def dispatch(self, request, *args, **kwargs):
+        # if settings.DEBUG and "operations" in request.POST:
+        #     operations = json.loads(request.POST.get("operations", "{}"))
+        #     logger.debug(
+        #            "operations:\n%s\nmap:\n%s\nFILES:\n%s",
+        #            pprint.pformat(operations),
+        #            pprint.pformat(json.loads(request.POST.get("map", "{}"))),
+        #            pprint.pformat(request.FILES),
+        #     )
+        return await super().dispatch(request, *args, **kwargs)

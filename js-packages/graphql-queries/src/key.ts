@@ -3,6 +3,7 @@ import { gql } from '@apollo/client'
 export const createKeysMutation = gql`
     mutation contentCreateKeysMutation(
         $cluster: ID!
+        $net: ID
         $publicTags: [String!]!
         $privateTags: [String!]!
         $publicActions: [ActionInput!]
@@ -18,7 +19,7 @@ export const createKeysMutation = gql`
             input: {
                 content: {
                     cluster: $cluster
-                    net: $cluster
+                    net: $net
                     key: {
                         publicKey: $publicKey
                         privateKey: $privateKey
@@ -28,8 +29,8 @@ export const createKeysMutation = gql`
                         publicTags: $publicTags
                         publicActions: $publicActions
                         publicState: $publicState
+                        references: $references
                     }
-                    references: $references
                 }
                 authorization: $authorization
             }
@@ -76,9 +77,9 @@ export const updateKeyMutation = gql`
                         publicState: $publicState
                         privateActions: $actions
                         publicActions: $actions
+                        references: $references
                     }
                     contentHash: $contentHash
-                    references: $references
                 }
                 updateId: $updateId
                 authorization: $authorization

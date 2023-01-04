@@ -88,7 +88,7 @@ def _transform_key_into_dataobj(
         raise ValueError("Invalid public key") from exc
     if publicKeyContent and has_public_key:
         if publicKeyContent.file.open("rb").read() != key_obj.publicKey:
-            raise ValueError("Cannot change public key")
+            raise ValueError("Cannot change public key content")
     hashes = calculateHashes(key_obj.publicKey)
     hashes_tags = tuple(map(lambda x: f"key_hash={x}", hashes))
     if key_obj.privateKey:
@@ -112,6 +112,8 @@ def _transform_key_into_dataobj(
     # distribute references automagically
     if key_obj.references:
         for ref in key_obj.references:
+            if ref.group == "public_key":
+                continue
             if ref.group == "key":
                 if privateReferences is None:
                     privateReferences = []

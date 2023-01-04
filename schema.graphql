@@ -99,7 +99,11 @@ input ClusterInput {
   description: String = null
   featured: Boolean = null
   actions: [ActionInput!] = null
-  key: ContentKeyInput = null
+
+  """
+  add up to two keys initially;note: if out of resources even the cluster is reverted
+  """
+  keys: [ContentKeyInput!]
   groups: [String!] = null
 }
 
@@ -210,7 +214,6 @@ input ContentInput {
   hidden: Boolean = null
   key: ContentKeyInput = null
   value: ContentValueInput = null
-  references: [ReferenceInput!] = null
   contentHash: String = null
 }
 
@@ -228,6 +231,9 @@ input ContentKeyInput {
   publicTags: [String!] = null
   privateActions: [ActionInput!] = null
   publicActions: [ActionInput!] = null
+
+  """automagically distributed between PublicKey and PrivateKey"""
+  references: [ReferenceInput!] = null
 
   """Nonce for private key (base64, 13 bytes)"""
   nonce: String = null
@@ -291,6 +297,7 @@ input ContentValueInput {
   nonce: String = null
   tags: [String!] = null
   actions: [ActionInput!] = null
+  references: [ReferenceInput!] = null
 }
 
 """Date with time (isoformat)"""

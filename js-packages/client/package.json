@@ -6,7 +6,6 @@
     "license": "MIT",
     "dependencies": {
         "@secretgraph/misc": "*",
-        "@secretgraph/dompurify-custom": "*",
         "@secretgraph/graphql-queries": "*",
         "@apollo/client": "*",
         "graphql-ws": "*",

@@ -58,7 +58,9 @@ class ContentKeyInput:
     privateActions: Optional[List[ActionInput]] = None
     publicActions: Optional[List[ActionInput]] = None
     references: Optional[List[ReferenceInput]] = strawberry.field(
-        description="automagically distributed between PublicKey and PrivateKey",
+        description=(
+            "automagically distributed between PublicKey and PrivateKey"
+        ),
         default=None,
     )
     nonce: Optional[str] = strawberry.field(
