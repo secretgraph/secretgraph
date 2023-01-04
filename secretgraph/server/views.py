@@ -199,6 +199,13 @@ class ContentView(FormView):
         Yields:
             chunks
         """
+        if getattr(
+            settings, "SECRETGRAPH_DISABLE_SERVERSIDE_DECRYPTION", False
+        ):
+            return HttpResponse(
+                reason="Disabled functionality", status_code=503
+            )
+
         # shallow copy initialization of result
         result = self.result.copy()
         result["objects"] = result["objects"].filter(downloadId=id).distinct()

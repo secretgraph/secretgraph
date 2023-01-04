@@ -38,6 +38,9 @@ SECRETGRAPH_ALLOW_REGISTER = (
 SECRETGRAPH_CACHE_DECRYPTED = (
     os.environ.get("CACHE_DECRYPTED", "false").lower() == "true"
 )
+SECRETGRAPH_DISABLE_SERVERSIDE_DECRYPTION = (
+    os.environ.get("DISABLE_SERVERSIDE_DECRYPTION", "false").lower() == "true"
+)
 
 MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")

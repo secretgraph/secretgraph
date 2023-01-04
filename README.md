@@ -75,14 +75,16 @@ Special configuration keys:
 
 -   `SECRETGRAPH_BIND_TO_USER`: require the binding of nets to user accounts
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_BIND_TO_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
--   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends)
+-   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
+-   `DISABLE_SERVERSIDE_DECRYPTION`: disable possibility to decrypt serverside, alternative to `SECRETGRAPH_CACHE_DECRYPTED`in case severside decryption is not required or the server is too slow
 
 ## docker
 
 -   `BIND_TO_USER`: nets need user
 -   `ALLOW_REGISTER`: allow registering new users
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
--   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends
+-   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of fast . Only useful if server side decryption is required.
+-   `DISABLE_SERVERSIDE_DECRYPTION`: disable decrypting serverside, alternative to `CACHE_DECRYPTED`in case severside decryption is not required or the server is too weak or resource abuse
 -   `DB_ENGINE`: db stuff
 -   `DB_USER`: db stuff
 -   `DB_PASSWORD`: db stuff
