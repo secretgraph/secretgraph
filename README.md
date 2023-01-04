@@ -455,7 +455,8 @@ By default the included nginx can be used (it has no cache activated).
 
 # TODO
 
--   move references, split keys in signing/encrypting
+-   export config as file should honor slots
+-   split keys in signing/encrypting
 -   validationError: use params
 -   trustedKeys logic (partly done):
     -   Needs much more work especially on gui side
