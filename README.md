@@ -76,7 +76,7 @@ Special configuration keys:
 -   `SECRETGRAPH_BIND_TO_USER`: require the binding of nets to user accounts
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_BIND_TO_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
--   `DISABLE_SERVERSIDE_DECRYPTION`: disable possibility to decrypt serverside, alternative to `SECRETGRAPH_CACHE_DECRYPTED`in case severside decryption is not required or the server is too slow
+-   `SECRETGRAPH_DISABLE_SERVERSIDE_DECRYPTION`: disable possibility to decrypt serverside, alternative to `SECRETGRAPH_CACHE_DECRYPTED`in case severside decryption is not required or the server is too slow
 
 ## docker
 
@@ -312,7 +312,8 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
 
 ## Operations (Mutations)
 
-idea: unique operation names. It would be nice to have namespaces like for queries
+reason behind this cumbersome operation names:
+itt would be nice to have namespaces like for queries
 
 -   updateOrCreateContent: what it says
 -   updateOrCreateCluster: what it says, can create keys
@@ -334,6 +335,8 @@ For this we have two defense mechanism
 
 -   e2e Data encryption for preventing server leaks
 -   with tokens (keys for servers) encrypted auth informations to prevent forgery by server and having an access control
+
+Server side decryption is an alternative, less secure way to access data. It is only required for reading the contents on plain websites without client (secretgraph.proxy).
 
 ## ContentActions
 
@@ -454,6 +457,9 @@ By design decrypted contents are excluded from caching (optionally they can be i
 It is expected that secretgraph runs behind a reverse proxy which cares for caching (for optimal performance) or
 the client (e.g. a browser) understands the cache directives.
 By default the included nginx can be used (it has no cache activated).
+
+The best way to have a good performance is to avoid serverside decryption (decrypt get parameter). And in case someone abuses it, to simply disable it. The client is not affected (urls are parsed internally so the decrypt get parameter is neglectable).
+Note: the decrypt parameter is required for some proxy stuff (serving media or other non text files) and transfers
 
 # TODO
 
