@@ -55,13 +55,16 @@ def create_key_maps(contents, keyset):
     for keyspec in keyset:
         if not keyspec:
             continue
-        keyspec = keyspec.split(":", 1)
+        # we have the format hashalgo:hash:key, so use rsplit
+        keyspec = keyspec.rsplit(":", 1)
         if len(keyspec) == 2:
             _key = base64.b64decode(keyspec[1])
             # is hash
-            key_map_key[f"key_hash={keyspec[0]}"] = _key
-            # is flexid or global id
-            key_map_id[keyspec[0]] = _key
+            if ":" in keyspec[0]:
+                key_map_key[f"key_hash={keyspec[0]}"] = _key
+            else:
+                # is flexid or global id
+                key_map_id[keyspec[0]] = _key
 
     reference_query = ContentReference.objects.filter(
         Q(group="key") | Q(group="transfer"), source__in=contents
@@ -255,7 +258,6 @@ def iter_decrypt_contents(
     # copy query
     content_query = (queryset or result["objects"]).all()
     content_map, transfer_map = create_key_maps(content_query, decryptset)
-
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(
         Q(type="PublicKey")
@@ -331,9 +333,12 @@ def iter_decrypt_contents(
                     while chunk:
                         nextchunk = fileob.read(512)
                         assert isinstance(chunk, bytes)
-                        if nextchunk:
+                        if nextchunk and len(nextchunk) > 16:
                             yield decryptor.update(chunk)
                         else:
+                            if nextchunk:
+                                chunk += nextchunk
+                                nextchunk = None
                             yield decryptor.update(chunk[:-16])
                             try:
                                 yield decryptor.finalize_with_tag(chunk[-16:])
@@ -344,7 +349,6 @@ def iter_decrypt_contents(
                                     content.type,
                                 )
                         chunk = nextchunk
-                result["objects"].trigger_view_actions(content)
 
             _generator.key = content_map[content.id]
             content.read_decrypt = _generator

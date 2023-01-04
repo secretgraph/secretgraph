@@ -230,6 +230,7 @@ class ContentView(AllowCORSMixin, FormView):
             request.headers.get("X-Key", "").replace(" ", "").split(",")
         )
         decryptset.update(self.request.GET.getlist("key"))
+        decryptset.discard("")
         try:
             iterator = iter_decrypt_contents(result, decryptset=decryptset)
             content = next(iterator)
@@ -266,6 +267,7 @@ class ContentView(AllowCORSMixin, FormView):
                 response["Content-Disposition"] = header
         else:
             response = FileResponse(content.file.read("rb"))
+        update_file_accessed([content.id])
         response["X-TYPE"] = content.type
         return response
 
