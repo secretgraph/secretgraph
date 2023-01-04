@@ -73,6 +73,11 @@ class LazyViewResult(object):
         except KeyError:
             return default
 
+    def refresh(self, *fields):
+        for i in fields:
+            if i in self._result_dict:
+                del self._result_dict[i]
+
     @gql.django.django_resolver
     def preinit(self, *fields, refresh=False):
         for i in fields:
@@ -500,7 +505,7 @@ def get_cached_result(
     scope="view",
     name="secretgraphResult",
     ensureInitialized=False,
-):
+) -> LazyViewResult:
     if not getattr(request, name, None):
         if ensureInitialized:
             raise AttributeError("cached query results does not exist")

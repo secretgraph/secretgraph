@@ -11,7 +11,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from ....core.exceptions import ResourceLimitExceeded
 
 from ...models import Cluster, Net, GlobalGroup
-from ...utils.auth import ids_to_results, retrieve_allowed_objects
+from ...utils.auth import (
+    ids_to_results,
+    retrieve_allowed_objects,
+    get_cached_result,
+)
 from ._arguments import ContentInput, ClusterInput
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
@@ -201,11 +205,13 @@ def create_cluster_fn(request, objdata: ClusterInput, authset=None):
         raise ValueError("Actions required")
     cluster = Cluster()
     cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset)
-    content_fn = None
-    if objdata.key:
-        contentdata = ContentInput(key=objdata.key)
-        contentdata.cluster = cluster
-        content_fn = create_key_fn(request, contentdata, authset=authset)
+    content_fns = []
+    if objdata.keys:
+        for key_ob in objdata.keys[:2]:
+            contentdata = ContentInput(key=key_ob, cluster=cluster)
+            content_fns.append(
+                create_key_fn(request, contentdata, authset=authset)
+            )
 
     def save_fn(context=nullcontext):
         if callable(context):
@@ -213,8 +219,10 @@ def create_cluster_fn(request, objdata: ClusterInput, authset=None):
         with context:
             cluster = cluster_fn()
             # refresh_fields(add_actions, "cluster")
-            if content_fn:
-                content_fn()
+            result_cache = get_cached_result(request, authset=authset)
+            for fn in content_fns:
+                fn()
+                result_cache.refresh("Content")
             return {"cluster": cluster, "writeok": True}
 
     return save_fn

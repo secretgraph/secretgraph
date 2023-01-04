@@ -29,6 +29,16 @@ class ActionInput:
 
 
 @strawberry.input
+class ReferenceInput:
+    target: ID = strawberry.field(
+        description="Can be node id, direct id of content or hash of key",
+    )
+    extra: Optional[str] = None
+    group: Optional[str] = None
+    deleteRecursive: Optional[DeleteRecursive] = None
+
+
+@strawberry.input
 class ContentKeyInput:
     # there is no privateState as it is always protected
     publicKey: Optional[Upload] = strawberry.field(
@@ -47,20 +57,14 @@ class ContentKeyInput:
     )
     privateActions: Optional[List[ActionInput]] = None
     publicActions: Optional[List[ActionInput]] = None
+    references: Optional[List[ReferenceInput]] = strawberry.field(
+        description="automagically distributed between PublicKey and PrivateKey",
+        default=None,
+    )
     nonce: Optional[str] = strawberry.field(
         description="Nonce for private key (base64, 13 bytes)", default=None
     )
     publicState: Optional[str] = None
-
-
-@strawberry.input
-class ReferenceInput:
-    target: ID = strawberry.field(
-        description="Can be node id, direct id of content or hash of key",
-    )
-    extra: Optional[str] = None
-    group: Optional[str] = None
-    deleteRecursive: Optional[DeleteRecursive] = None
 
 
 @strawberry.input
@@ -71,6 +75,7 @@ class ContentValueInput:
     nonce: Optional[str] = None
     tags: Optional[List[str]] = None
     actions: Optional[List[ActionInput]] = None
+    references: Optional[List[ReferenceInput]] = None
 
 
 @strawberry.input
@@ -81,7 +86,6 @@ class ContentInput:
     # when creating keypair: references are automagically distributed
     key: Optional[ContentKeyInput] = None
     value: Optional[ContentValueInput] = None
-    references: Optional[List[ReferenceInput]] = None
     contentHash: Optional[str] = None
     additionalNets: strawberry.Private[Optional[Iterable[Net]]] = None
 
@@ -113,6 +117,8 @@ class ClusterInput:
     description: Optional[str] = None
     featured: Optional[bool] = None
     actions: Optional[List[ActionInput]] = None
-    # has no references so missing reference tag is no problem
-    key: Optional[ContentKeyInput] = None
+    keys: Optional[List[ContentKeyInput]] = strawberry.field(
+        description="add up to two keys initially;"
+        "note: if out of resources even the cluster is reverted"
+    )
     groups: Optional[List[str]] = None

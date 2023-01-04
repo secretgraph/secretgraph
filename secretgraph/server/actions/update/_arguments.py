@@ -22,6 +22,14 @@ class ActionInput:
 
 
 @dataclass
+class ReferenceInput:
+    target: Union[str, int, ContentReference, Content]
+    extra: Optional[str] = None
+    group: Optional[str] = None
+    deleteRecursive: Optional[DeleteRecursive] = None
+
+
+@dataclass
 class ActionInputStrict(ActionInput):
     value: dict
 
@@ -36,6 +44,7 @@ class ContentKeyInput:
     privateActions: Optional[List[ActionInput]] = None
     publicActions: Optional[List[ActionInput]] = None
     nonce: Optional[Union[str, bytes]] = None
+    references: Optional[List[ReferenceInput]] = None
     publicState: Optional[str] = None
 
 
@@ -53,15 +62,8 @@ class ContentValueInput:
     type: Optional[str] = None
     nonce: Optional[str] = None
     tags: Optional[List[str]] = None
+    references: Optional[List[ReferenceInput]] = None
     actions: Optional[List[ActionInput]] = None
-
-
-@dataclass
-class ReferenceInput:
-    target: Union[str, int, ContentReference, Content]
-    extra: Optional[str] = None
-    group: Optional[str] = None
-    deleteRecursive: Optional[DeleteRecursive] = None
 
 
 @dataclass
@@ -72,7 +74,6 @@ class ContentInput:
     # when creating keypair: references are automagically distributed
     key: Optional[ContentKeyInput] = None
     value: Optional[ContentValueInput] = None
-    references: Optional[List[ReferenceInput]] = None
     contentHash: Optional[str] = None
     additionalNets: Optional[Union[list[Net], tuple[Net]]] = None
 
@@ -101,4 +102,4 @@ class ClusterInput:
     featured: Optional[bool] = None
     actions: Optional[List[ActionInput]] = None
     # has no references so missing reference tag is no problem
-    key: Optional[ContentKeyInput] = None
+    keys: Optional[List[ContentKeyInput]] = None

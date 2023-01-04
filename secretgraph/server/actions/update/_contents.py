@@ -106,6 +106,21 @@ def _transform_key_into_dataobj(
         else:
             publicState = "public"
 
+    publicReferences = None
+    privateReferences = None
+
+    # distribute references automagically
+    if key_obj.references:
+        for ref in key_obj.references:
+            if ref.group == "key":
+                if privateReferences is None:
+                    privateReferences = []
+                privateReferences.append(ref)
+            else:
+                if publicReferences is None:
+                    publicReferences = []
+                publicReferences.append(ref)
+
     return (
         hashes,
         ContentMergedInput(
@@ -118,6 +133,7 @@ def _transform_key_into_dataobj(
             ),
             contentHash=f"Key:{hashes[0]}",
             actions=key_obj.publicActions,
+            references=publicReferences,
         ),
         ContentMergedInput(
             nonce=key_obj.nonce,
@@ -130,6 +146,7 @@ def _transform_key_into_dataobj(
             ),
             contentHash=None,
             actions=key_obj.privateActions,
+            privateReferences=privateReferences,
         )
         if key_obj.privateKey
         else None,
@@ -537,20 +554,6 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
         if public["actions"]:
             raise ValueError("Key already exists and actions specified")
     # distribute references automagically
-    if objdata.references:
-        # cannot update references of existing public key
-        if publickey_content.id:
-            public.references = None
-        else:
-            public.references = []
-        for ref in objdata.references:
-            if ref.group == "key":
-                if private:
-                    private.references = list(private.references)
-                    private.references.append(ref)
-            elif not publickey_content.id:
-                public.references.append(ref)
-
     public = _update_or_create_content_or_key(
         request, publickey_content, public, authset, True, []
     )
@@ -606,7 +609,6 @@ def create_content_fn(
     else:
         newdata = ContentMergedInput(
             cluster=objdata.cluster,
-            references=objdata.references,
             contentHash=objdata.contentHash,
             hidden=objdata.hidden,
             **_value_to_dict(value_obj),
@@ -687,12 +689,20 @@ def update_content_fn(
         )
         if not newdata:
             raise ValueError("No data for private key")
+
+        if newdata.references is not None and publicKeyContent:
+            newdata.references.append(
+                ReferenceInput(
+                    target=publicKeyContent,
+                    group="public_key",
+                    deleteRecursive=constants.DeleteRecursive.TRUE.value,
+                )
+            )
         newdata.net = objdata.net
     else:
         newdata = ContentMergedInput(
             cluster=objdata.cluster,
             net=objdata.net,
-            references=objdata.references,
             contentHash=objdata.contentHash,
             hidden=objdata.hidden,
             **(_value_to_dict(objdata.value) if objdata.value else {}),
