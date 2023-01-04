@@ -12,7 +12,6 @@
     ],
     "paths": {
       "@secretgraph/misc/*": ["../../misc/src/*"],
-      "@secretgraph/dompurify-custom/*": ["../../dompurify-custom/src/*"],
       "@secretgraph/graphql-queries/*": [
         "../../graphql-queries/src/*"
       ]
@@ -21,9 +20,6 @@
   "references": [
     {
       "path": "../graphql-queries/tsconfig.json"
-    },
-    {
-      "path": "../dompurify-custom/tsconfig.json"
     },
     {
       "path": "../misc/tsconfig.json"

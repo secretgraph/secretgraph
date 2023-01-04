@@ -39,6 +39,7 @@ export default React.memo(function ConfigShareDialog({
     const [exportUrl, setExportUrl] = React.useState('')
     const [loadingExport, setLoadingExport] = React.useState(false)
     const [typing, setTyping] = React.useState(false)
+    const [show, setShow] = React.useState(false)
     const deferredPw = React.useDeferredValue(password)
     const isMedium = useMediaQuery((theme: Theme) => theme.breakpoints.up('md'))
     const isBig = useMediaQuery((theme: Theme) => theme.breakpoints.up('xl'))
@@ -56,6 +57,7 @@ export default React.memo(function ConfigShareDialog({
                 return
             }
             setTyping(true)
+            setShow(false)
             let _exportUrl
             try {
                 _exportUrl = await exportConfigAsUrl({
@@ -175,10 +177,18 @@ export default React.memo(function ConfigShareDialog({
                                 </FormHelperText>
                             </FormControl>
                         </div>
+
+                        <Button
+                            onClick={() => setShow(!show)}
+                            disabled={typing}
+                        >
+                            {!show ? 'Show' : 'Hide'}
+                        </Button>
                         {isMedium ? (
                             <div
                                 style={{
-                                    visibility: typing ? 'hidden' : 'visible',
+                                    visibility:
+                                        typing || !show ? 'hidden' : 'visible',
                                 }}
                             >
                                 <Link
@@ -198,7 +208,8 @@ export default React.memo(function ConfigShareDialog({
                             height="100%"
                             style={{
                                 maxHeight: '70vh',
-                                visibility: typing ? 'hidden' : 'visible',
+                                visibility:
+                                    typing || !show ? 'hidden' : 'visible',
                             }}
                             level={isBig ? 'Q' : isMedium ? 'M' : 'L'}
                         />
@@ -207,7 +218,8 @@ export default React.memo(function ConfigShareDialog({
                         <Grid
                             xs={12}
                             style={{
-                                visibility: typing ? 'hidden' : 'visible',
+                                visibility:
+                                    typing || !show ? 'hidden' : 'visible',
                             }}
                         >
                             <Link

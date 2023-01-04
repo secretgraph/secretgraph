@@ -29,6 +29,7 @@
     "devDependencies": {
         "typescript": "*",
         "@types/react": "*",
+        "@types/dompurify": "*",
         "@types/file-saver": "*",
         "@types/webpack-env": "*"
     },

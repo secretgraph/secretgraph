@@ -148,7 +148,7 @@ def _transform_key_into_dataobj(
             ),
             contentHash=None,
             actions=key_obj.privateActions,
-            privateReferences=privateReferences,
+            references=privateReferences,
         )
         if key_obj.privateKey
         else None,

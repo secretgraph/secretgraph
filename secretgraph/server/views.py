@@ -218,10 +218,9 @@ class ContentView(FormView):
         response = self.handle_decrypt_singlecontent(
             request, content, *args, **kwargs
         )
-        if (
-            not getattr(settings, "SECRETGRAPH_CACHE_DECRYPTED", False)
-            and content.state not in constants.public_states
-        ):
+        if not getattr(
+            settings, "SECRETGRAPH_CACHE_DECRYPTED", False
+        ) and hasattr(content, "read_decrypt"):
             add_never_cache_headers(response)
         return response
 
