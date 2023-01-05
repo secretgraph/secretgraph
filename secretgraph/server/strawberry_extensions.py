@@ -1,5 +1,6 @@
 from strawberry.extensions import Extension
-from strawberry.types.graphql import OperationType, ExecutionContext
+from strawberry.types import ExecutionContext
+from strawberry.types.graphql import OperationType
 from graphql import ExecutionResult as GraphQLExecutionResult
 from graphql.error.graphql_error import GraphQLError
 import ratelimit
