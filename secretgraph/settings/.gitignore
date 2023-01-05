@@ -1,6 +1,7 @@
 *
 !.gitignore
 !__init__.py
+!default.py
 !debug.py
 !withclient.py
 !docker.py

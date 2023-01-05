@@ -42,6 +42,20 @@ SECRETGRAPH_DISABLE_SERVERSIDE_DECRYPTION = (
     os.environ.get("DISABLE_SERVERSIDE_DECRYPTION", "false").lower() == "true"
 )
 
+
+def _get_ratelimit(key: str):
+    rl = os.environ.get(f"RATELIMIT_{key}", None)
+    if not rl:
+        return
+    if rl.lower() == "none":
+        rl = None
+    SECRETGRAPH_RATELIMITS[key] = rl  # noqa F405
+
+
+for key in SECRETGRAPH_RATELIMITS.keys():  # noqa F405
+    _get_ratelimit(key)
+
+
 MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 

@@ -1,4 +1,4 @@
-from secretgraph.settings import *  # noqa: F403, F401
+from secretgraph.settings.default import *  # noqa: F403, F401
 
 INSTALLED_APPS += ["manifest_loader", "secretgraph.proxy"]  # noqa F405
 

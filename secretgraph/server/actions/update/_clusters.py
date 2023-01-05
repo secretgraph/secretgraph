@@ -94,18 +94,22 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
         if not net:
 
             if not user:
-                r = ratelimit.get_ratelimit(
-                    key="ip",
-                    rate="5/m",
-                    request=request,
-                    group="create_net",
-                    action=ratelimit.Action.INCREASE,
+                rate = settings.SECRETGRAPH_RATELIMITS.get(
+                    "ANONYMOUS_REGISTER"
                 )
-                if r.request_limit >= 1:
-                    raise ratelimit.RatelimitExceeded(
-                        r,
-                        "too many tries to register anonymous cluster from ip",
+                if rate:
+                    r = ratelimit.get_ratelimit(
+                        key="ip",
+                        rate=rate,
+                        request=request,
+                        group="anonymous_register",
+                        action=ratelimit.Action.INCREASE,
                     )
+                    if r.request_limit >= 1:
+                        raise ratelimit.RatelimitExceeded(
+                            r,
+                            "too many attaempts to register from ip",
+                        )
             net = Net()
             if user:
                 net.user = user

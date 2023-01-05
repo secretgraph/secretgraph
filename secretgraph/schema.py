@@ -1,6 +1,5 @@
 import strawberry
 from strawberry_django_plus import relay
-from django.conf import settings
 
 # from graphene_protector.django.strawberry import Schema
 
@@ -28,13 +27,9 @@ class Mutation(ServerMutation):
     pass
 
 
-extensions = [RatelimitMutations]
-if not settings.DEBUG:
-    extensions.append(RatelimitErrors)
-
 schema = strawberry.Schema(
     query=Query,
     mutation=Mutation,
     subscription=ServerSubscription,
-    extensions=extensions,
+    extensions=[RatelimitMutations, RatelimitErrors],
 )
