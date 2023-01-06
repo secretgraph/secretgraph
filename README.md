@@ -76,9 +76,9 @@ Special configuration keys:
 -   `SECRETGRAPH_BIND_TO_USER`: require the binding of nets to user accounts
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_BIND_TO_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
--   `SECRETGRAPH_DISABLE_SERVERSIDE_DECRYPTION`: disable possibility to decrypt serverside, alternative to `SECRETGRAPH_CACHE_DECRYPTED`in case severside decryption is not required or the server is too slow
 -   `SECRETGRAPH_RATELIMITS`: required, set ratelimits for `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE`
     note: `GRAPHQL_ERRORS` is disabled in case `DEBUG` is on
+    note: in case serverside decryption should be disabled set a ratelimit of "0/s" or (0, 1)
 
 ## docker
 
@@ -86,7 +86,6 @@ Special configuration keys:
 -   `ALLOW_REGISTER`: allow registering new users
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
 -   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of fast . Only useful if server side decryption is required.
--   `DISABLE_SERVERSIDE_DECRYPTION`: disable decrypting serverside, alternative to `CACHE_DECRYPTED`in case severside decryption is not required or the server is too weak or resource abuse
 -   `RATELIMIT_*` where as keys `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE` are defined: set ratelimits or remove the default with the special key: `none`
 -   `DB_ENGINE`: db stuff
 -   `DB_USER`: db stuff
@@ -339,7 +338,7 @@ For this we have two defense mechanism
 -   e2e Data encryption for preventing server leaks
 -   with tokens (keys for servers) encrypted auth informations to prevent forgery by server and having an access control
 
-Server side decryption is an alternative, less secure way to access data. It is only required for reading the contents on plain websites without client (secretgraph.proxy).
+Server side decryption is an alternative, less secure way to access data. It is required for reading the contents on plain websites without client (e.g. secretgraph.proxy).
 
 ## ContentActions
 
@@ -461,7 +460,7 @@ It is expected that secretgraph runs behind a reverse proxy which cares for cach
 the client (e.g. a browser) understands the cache directives.
 By default the included nginx can be used (it has no cache activated).
 
-The best way to have a good performance is to avoid serverside decryption (decrypt get parameter). And in case someone abuses it for e.g. DDOS, to disable it. The client is not affected (urls are parsed internally so the decrypt get parameter is neglectable).
+The best way to have a good performance is to avoid serverside decryption (decrypt get parameter). And in case someone abuses it for e.g. DDOS, to set a ratelimit or disable it via a ratelimit of "0/s". The client is not affected (urls are parsed internally so the shown decrypt get parameter is neglectable).
 Note: the decrypt parameter is required for some proxy stuff (serving media or other non text files) and transfers
 
 # TODO

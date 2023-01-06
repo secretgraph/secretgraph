@@ -8,7 +8,3 @@ class LockedResourceError(Exception):
 
 class VerificationFailedError(Exception):
     """Resource verification failed"""
-
-
-class NotSupported(Exception):
-    """Resource verification failed"""

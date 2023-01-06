@@ -20,7 +20,6 @@ from ..actions.fetch import (
 )
 from ..utils.encryption import iter_decrypt_contents
 from ...core import constants
-from ...core.exceptions import NotSupported
 
 try:
     from bleach import sanitizer
@@ -351,10 +350,6 @@ def read_content_sync(
             mime = "application/octet-stream"
         if mime.startswith("text/"):
             if not inline_text or getattr(content, "start_transfer", None):
-                if getattr(settings, "DISABLE_SERVERSIDE_DECRYPTION", False):
-                    raise NotSupported(
-                        "disabled by DISABLE_SERVERSIDE_DECRYPTION"
-                    )
                 return mark_safe(
                     f"""
 <iframe sandbox src="{content.link}?decrypt&{decryptqpart}">
@@ -373,8 +368,6 @@ def read_content_sync(
             else:
                 return mark_safe("<pre>{}</pre>".format(escape(text)))
         elif mime.startswith("audio/") or mime.startswith("video/"):
-            if getattr(settings, "DISABLE_SERVERSIDE_DECRYPTION", False):
-                raise NotSupported("disabled by DISABLE_SERVERSIDE_DECRYPTION")
             return mark_safe(
                 f"""
 <video controls>
@@ -385,8 +378,6 @@ def read_content_sync(
 </video>"""
             )
         elif mime.startswith("image/"):
-            if getattr(settings, "DISABLE_SERVERSIDE_DECRYPTION", False):
-                raise NotSupported("disabled by DISABLE_SERVERSIDE_DECRYPTION")
             return mark_safe(
                 f"""
 <a href="{content.link}?decrypt&{decryptqpart}">
@@ -398,8 +389,6 @@ def read_content_sync(
         />
     </a>"""
             )
-    if getattr(settings, "DISABLE_SERVERSIDE_DECRYPTION", False):
-        raise NotSupported("disabled by DISABLE_SERVERSIDE_DECRYPTION")
     return mark_safe(
         f"""<a href="{content.link}?decrypt&{decryptqpart}">Download</a>"""
     )

@@ -68,6 +68,9 @@ class ContentView(FormView):
     @method_decorator(add_cors_headers)
     @method_decorator(add_secretgraph_headers)
     def dispatch(self, request, *args, **kwargs):
+        self.serverside_decryption_rate = settings.SECRETGRAPH_RATELIMITS.get(
+            "DECRYPT_SERVERSIDE"
+        )
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
@@ -201,17 +204,16 @@ class ContentView(FormView):
         Yields:
             chunks
         """
-        if getattr(
-            settings, "SECRETGRAPH_DISABLE_SERVERSIDE_DECRYPTION", False
-        ):
+        content = get_object_or_404(self.result["objects"], downloadId=id)
+        try:
+            response = self.handle_decrypt_singlecontent(
+                request, content, *args, **kwargs
+            )
+        except ratelimit.DISABLED:
             return HttpResponse(
                 reason="Disabled functionality", status_code=503
             )
-        content = get_object_or_404(self.result["objects"], downloadId=id)
 
-        response = self.handle_decrypt_singlecontent(
-            request, content, *args, **kwargs
-        )
         if (
             not getattr(settings, "SECRETGRAPH_CACHE_DECRYPTED", False)
             and content
@@ -221,13 +223,12 @@ class ContentView(FormView):
 
     @method_decorator(last_modified(calc_content_modified_decrypted))
     def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
-        rate = settings.SECRETGRAPH_RATELIMITS.get("DECRYPT_SERVERSIDE")
-        if rate:
+        if self.serverside_decryption_rate:
             r = ratelimit.get_ratelimit(
                 group="serverside_decryption",
                 key="ip",
                 request=request,
-                rate=rate,
+                rate=self.serverside_decryption_rate,
                 action=ratelimit.Action.INCREASE,
             )
             if r.request_limit >= 1:
