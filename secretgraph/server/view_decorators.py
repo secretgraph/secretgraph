@@ -7,7 +7,12 @@ def no_opener(view_func):
     Decorator that adds headers to a response so it
     doesn't add an opener attribute to cross-origins
     """
-    if iscoroutinefunction(view_func):
+    fntocheck = view_func
+    if hasattr(fntocheck, "func"):
+        fntocheck = fntocheck.func
+    if hasattr(fntocheck, "__func__"):
+        fntocheck = fntocheck.__func__
+    if iscoroutinefunction(fntocheck):
 
         @wraps(view_func)
         async def _wrapped_view_func(request, *args, **kwargs):
@@ -54,7 +59,12 @@ def add_secretgraph_headers(view_func):
             getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql")
         )
 
-    if iscoroutinefunction(view_func):
+    fntocheck = view_func
+    if hasattr(fntocheck, "func"):
+        fntocheck = fntocheck.func
+    if hasattr(fntocheck, "__func__"):
+        fntocheck = fntocheck.__func__
+    if iscoroutinefunction(fntocheck):
 
         @wraps(view_func)
         async def _wrapped_view_func(request, *args, **kwargs):
@@ -96,7 +106,13 @@ def _patch_cors_headers(request, response):
 
 def add_cors_headers(view_func):
 
-    if iscoroutinefunction(view_func):
+    fntocheck = view_func
+    if hasattr(fntocheck, "func"):
+        fntocheck = fntocheck.func
+    if hasattr(fntocheck, "__func__"):
+        fntocheck = fntocheck.__func__
+
+    if iscoroutinefunction(fntocheck):
 
         @wraps(view_func)
         async def _wrapped_view_func(request, *args, **kwargs):

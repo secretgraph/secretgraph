@@ -24,6 +24,8 @@ from django.urls import reverse
 from django.views.generic.edit import FormView
 from strawberry.django.views import AsyncGraphQLView
 
+import ratelimit
+
 from .utils.mark import freeze_contents, update_file_accessed
 
 from .forms import PreKeyForm, PushForm, UpdateForm
@@ -205,12 +207,37 @@ class ContentView(FormView):
             return HttpResponse(
                 reason="Disabled functionality", status_code=503
             )
+        content = get_object_or_404(self.result["objects"], downloadId=id)
+
+        response = self.handle_decrypt_singlecontent(
+            request, content, *args, **kwargs
+        )
+        if (
+            not getattr(settings, "SECRETGRAPH_CACHE_DECRYPTED", False)
+            and content
+        ):
+            add_never_cache_headers(response)
+        return response
+
+    @method_decorator(last_modified(calc_content_modified_decrypted))
+    def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
+        rate = settings.SECRETGRAPH_RATELIMITS.get("DECRYPT_SERVERSIDE")
+        if rate:
+            r = ratelimit.get_ratelimit(
+                group="serverside_decryption",
+                key="ip",
+                request=request,
+                rate=rate,
+                action=ratelimit.Action.INCREASE,
+            )
+            if r.request_limit >= 1:
+                raise ratelimit.RatelimitExceeded(
+                    "Ratelimit for server side decryptions exceeded"
+                )
 
         # shallow copy initialization of result
         result = self.result.copy()
-        result["objects"] = result["objects"].filter(downloadId=id).distinct()
-        if not result["objects"].exists():
-            raise Http404()
+        result["objects"] = result["objects"].filter(id=content.id)
 
         decryptset = set(
             request.headers.get("X-Key", "").replace(" ", "").split(",")
@@ -222,17 +249,6 @@ class ContentView(FormView):
             content = next(iterator)
         except StopIteration:
             return HttpResponse("Missing key", status=400)
-        response = self.handle_decrypt_singlecontent(
-            request, content, *args, **kwargs
-        )
-        if not getattr(
-            settings, "SECRETGRAPH_CACHE_DECRYPTED", False
-        ) and hasattr(content, "read_decrypt"):
-            add_never_cache_headers(response)
-        return response
-
-    @method_decorator(last_modified(calc_content_modified_decrypted))
-    def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
         freeze_contents([content.id], request)
         names = content.tags_proxy.name
         if hasattr(content, "read_decrypt"):

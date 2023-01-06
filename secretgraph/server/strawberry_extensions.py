@@ -27,7 +27,9 @@ class RatelimitMutations(Extension):
                 key="ip",
                 rate=self.rate,
                 action=ratelimit.Action.PEEK,
+                include_reset=True,
             )
+
             if r.request_limit >= 1:
                 self.execution_context.result = GraphQLExecutionResult(
                     data=None,
@@ -37,6 +39,8 @@ class RatelimitMutations(Extension):
                         )
                     ],
                 )
+            else:
+                execution_context.context["request"].ratelimit = r
 
     def on_executing_end(self):
         if not self.rate:
@@ -75,6 +79,7 @@ class RatelimitErrors(Extension):
             request=execution_context.context["request"],
             rate=self.rate,
             action=ratelimit.Action.PEEK,
+            include_reset=True,
         )
         if r.request_limit >= 1:
             self.execution_context.result = GraphQLExecutionResult(
@@ -83,6 +88,8 @@ class RatelimitErrors(Extension):
                     GraphQLError("Too many errors from ip, wait some time")
                 ],
             )
+        else:
+            execution_context.context["request"].ratelimit = r
 
     def on_executing_end(self):
         if not self.rate:

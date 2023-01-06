@@ -77,7 +77,7 @@ Special configuration keys:
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_BIND_TO_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
 -   `SECRETGRAPH_DISABLE_SERVERSIDE_DECRYPTION`: disable possibility to decrypt serverside, alternative to `SECRETGRAPH_CACHE_DECRYPTED`in case severside decryption is not required or the server is too slow
--   `SECRETGRAPH_RATELIMITS`: required, set ratelimits for `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`
+-   `SECRETGRAPH_RATELIMITS`: required, set ratelimits for `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE`
     note: `GRAPHQL_ERRORS` is disabled in case `DEBUG` is on
 
 ## docker
@@ -87,7 +87,7 @@ Special configuration keys:
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
 -   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of fast . Only useful if server side decryption is required.
 -   `DISABLE_SERVERSIDE_DECRYPTION`: disable decrypting serverside, alternative to `CACHE_DECRYPTED`in case severside decryption is not required or the server is too weak or resource abuse
--   `RATELIMIT_*` where as keys `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER` are defined: set ratelimits or remove the default with the special key: `none`
+-   `RATELIMIT_*` where as keys `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE` are defined: set ratelimits or remove the default with the special key: `none`
 -   `DB_ENGINE`: db stuff
 -   `DB_USER`: db stuff
 -   `DB_PASSWORD`: db stuff
