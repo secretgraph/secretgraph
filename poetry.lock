@@ -38,19 +38,19 @@ tests = ["mypy (>=0.800)", "pytest", "pytest-asyncio"]
 
 [[package]]
 name = "astroid"
-version = "2.12.13"
+version = "2.13.2"
 description = "An abstract syntax tree for Python with inference support."
 category = "dev"
 optional = false
 python-versions = ">=3.7.2"
 files = [
-    {file = "astroid-2.12.13-py3-none-any.whl", hash = "sha256:10e0ad5f7b79c435179d0d0f0df69998c4eef4597534aae44910db060baeb907"},
-    {file = "astroid-2.12.13.tar.gz", hash = "sha256:1493fe8bd3dfd73dc35bd53c9d5b6e49ead98497c47b2307662556a5692d29d7"},
+    {file = "astroid-2.13.2-py3-none-any.whl", hash = "sha256:8f6a8d40c4ad161d6fc419545ae4b2f275ed86d1c989c97825772120842ee0d2"},
+    {file = "astroid-2.13.2.tar.gz", hash = "sha256:3bc7834720e1a24ca797fd785d77efb14f7a28ee8e635ef040b6e2d80ccb3303"},
 ]
 
 [package.dependencies]
 lazy-object-proxy = ">=1.4.0"
-typing-extensions = {version = ">=3.10", markers = "python_version < \"3.10\""}
+typing-extensions = ">=4.0.0"
 wrapt = [
     {version = ">=1.11,<2", markers = "python_version < \"3.11\""},
     {version = ">=1.14,<2", markers = "python_version >= \"3.11\""},
@@ -163,6 +163,18 @@ css = ["tinycss2 (>=1.1.0,<1.2)"]
 dev = ["Sphinx (==4.3.2)", "black (==22.3.0)", "build (==0.8.0)", "flake8 (==4.0.1)", "hashin (==0.17.0)", "mypy (==0.961)", "pip-tools (==6.6.2)", "pytest (==7.1.2)", "tox (==3.25.0)", "twine (==4.0.1)", "wheel (==0.37.1)"]
 
 [[package]]
+name = "cachetools"
+version = "5.2.1"
+description = "Extensible memoizing collections and decorators"
+category = "dev"
+optional = false
+python-versions = "~=3.7"
+files = [
+    {file = "cachetools-5.2.1-py3-none-any.whl", hash = "sha256:8462eebf3a6c15d25430a8c27c56ac61340b2ecf60c9ce57afc2b97e450e47da"},
+    {file = "cachetools-5.2.1.tar.gz", hash = "sha256:5991bc0e08a1319bb618d3195ca5b6bc76646a49c21d55962977197b301cc1fe"},
+]
+
+[[package]]
 name = "certifi"
 version = "2022.12.7"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -271,6 +283,18 @@ Django = ">=3.2"
 [package.extras]
 daphne = ["daphne (>=4.0.0)"]
 tests = ["async-timeout", "coverage (>=4.5,<5.0)", "pytest", "pytest-asyncio", "pytest-django"]
+
+[[package]]
+name = "chardet"
+version = "5.1.0"
+description = "Universal encoding detector for Python 3"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "chardet-5.1.0-py3-none-any.whl", hash = "sha256:362777fb014af596ad31334fde1e8c327dfdb076e1960d1694662d46a6917ab9"},
+    {file = "chardet-5.1.0.tar.gz", hash = "sha256:0d62712b956bc154f85fb0a266e2a3c5913c2967e00348701b32411d6def31e5"},
+]
 
 [[package]]
 name = "colorama"
@@ -391,6 +415,18 @@ files = [
 graph = ["objgraph (>=1.7.2)"]
 
 [[package]]
+name = "distlib"
+version = "0.3.6"
+description = "Distribution utilities"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "distlib-0.3.6-py2.py3-none-any.whl", hash = "sha256:f35c4b692542ca110de7ef0bea44d73981caeb34ca0b9b6b2e6d7790dda8f80e"},
+    {file = "distlib-0.3.6.tar.gz", hash = "sha256:14bad2d9b04d3a36127ac97f30b12a19268f211063d8f8ee4f47108896e11b46"},
+]
+
+[[package]]
 name = "django"
 version = "4.1.5"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
@@ -413,21 +449,18 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-fast-ratelimit"
-version = "0.9.0"
+version = "0.9.1"
 description = "Fast ratelimit implementation with django caches"
 category = "main"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django_fast_ratelimit-0.9.0-py3-none-any.whl", hash = "sha256:b59ae98dc33b55501de45daef8879ee826bc7f29b0990a08923748d7f6903d1a"},
-    {file = "django_fast_ratelimit-0.9.0.tar.gz", hash = "sha256:d5f8fd6443cabe61c126cccff0506302978b74d2ceb152569f50ea57e7b10905"},
+    {file = "django_fast_ratelimit-0.9.1-py3-none-any.whl", hash = "sha256:d6cb404939eef3714de36ed3290dc3bfe64c038c4b38bc1b664e613bfee80eab"},
+    {file = "django_fast_ratelimit-0.9.1.tar.gz", hash = "sha256:efa8539f429e74361393c5ab0f73a5a19b1b71fa4cdb35a57030ef63dc52454a"},
 ]
 
 [package.dependencies]
 django = ">=3.0"
-
-[package.extras]
-test = ["tox"]
 
 [[package]]
 name = "django-manifest-loader"
@@ -460,6 +493,22 @@ files = [
 webtest = ">=1.3.3"
 
 [[package]]
+name = "filelock"
+version = "3.9.0"
+description = "A platform independent file lock."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "filelock-3.9.0-py3-none-any.whl", hash = "sha256:f58d535af89bb9ad5cd4df046f741f8553a418c01a7856bf0d173bbc9f6bd16d"},
+    {file = "filelock-3.9.0.tar.gz", hash = "sha256:7b319f24340b51f55a2bf7a12ac0755a9b03e718311dac567a0f4f7fabd2f5de"},
+]
+
+[package.extras]
+docs = ["furo (>=2022.12.7)", "sphinx (>=5.3)", "sphinx-autodoc-typehints (>=1.19.5)"]
+testing = ["covdefaults (>=2.2.2)", "coverage (>=7.0.1)", "pytest (>=7.2)", "pytest-cov (>=4)", "pytest-timeout (>=2.1)"]
+
+[[package]]
 name = "flipflop"
 version = "1.0"
 description = "FastCGI wrapper for WSGI applications"
@@ -472,21 +521,21 @@ files = [
 
 [[package]]
 name = "graphene-protector"
-version = "0.6.3"
+version = "0.7.3"
 description = "Protects graphene, graphql or strawberry against malicious queries"
 category = "main"
 optional = false
-python-versions = ">=3.7,<4"
+python-versions = ">=3.8,<4"
 files = [
-    {file = "graphene-protector-0.6.3.tar.gz", hash = "sha256:0177ef56f8eaa1176059ded0f8eb43508d7e6c07bac27da0a65512822a2d653c"},
-    {file = "graphene_protector-0.6.3-py3-none-any.whl", hash = "sha256:089ea3c0bf0ab266a4224cfb124a4543f3083ca37d99111d64f7b446142b1186"},
+    {file = "graphene_protector-0.7.3-py3-none-any.whl", hash = "sha256:d956709e215fa59ae3cbf51d142c98ff5471af6bcf59dec4ad3fc55a3297970f"},
+    {file = "graphene_protector-0.7.3.tar.gz", hash = "sha256:daccf7b62371ba40f5e9b30a847f7988753d7b0419e117a1f2cff9eeeb816a6b"},
 ]
 
 [package.dependencies]
-graphql-core = ">=2"
+graphql-core = ">=3"
 
 [package.extras]
-optional = ["graphene (>=2)", "graphene-django", "strawberry-graphql", "strawberry-graphql-django"]
+optional = ["graphene (>=3)", "graphene-django (>=3)", "strawberry-graphql (>=0.92)", "strawberry-graphql-django"]
 
 [[package]]
 name = "graphql-core"
@@ -812,14 +861,14 @@ files = [
 
 [[package]]
 name = "packaging"
-version = "22.0"
+version = "23.0"
 description = "Core utilities for Python packages"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "packaging-22.0-py3-none-any.whl", hash = "sha256:957e2148ba0e1a3b282772e791ef1d8083648bc131c8ab0c1feba110ce1146c3"},
-    {file = "packaging-22.0.tar.gz", hash = "sha256:2198ec20bd4c017b8f9717e00f0c8714076fc2fd93816750ab48e2c41de2cfd3"},
+    {file = "packaging-23.0-py3-none-any.whl", hash = "sha256:714ac14496c3e68c99c29b00845f7a2b85f3bb6f1078fd9f72fd20f0570002b2"},
+    {file = "packaging-23.0.tar.gz", hash = "sha256:b6ad297f8907de0fa2fe1ccbd26fdaf387f5f47c7275fedf8cce89f99446cf97"},
 ]
 
 [[package]]
@@ -837,6 +886,22 @@ files = [
 [package.extras]
 docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx (>=5.3)", "sphinx-autodoc-typehints (>=1.19.5)"]
 test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest (>=7.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
+
+[[package]]
+name = "pluggy"
+version = "1.0.0"
+description = "plugin and hook calling mechanisms for python"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "pluggy-1.0.0-py2.py3-none-any.whl", hash = "sha256:74134bbf457f031a36d68416e1509f34bd5ccc019f0bcc952c7b909d06b37bd3"},
+    {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
+]
+
+[package.extras]
+dev = ["pre-commit", "tox"]
+testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "psycopg2"
@@ -980,6 +1045,26 @@ files = [
 diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
+name = "pyproject-api"
+version = "1.4.0"
+description = "API to interact with the python pyproject.toml based projects"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pyproject_api-1.4.0-py3-none-any.whl", hash = "sha256:c34226297781efdd1ba4dfb74ce21076d9a8360e2125ea31803c1a02c76b2460"},
+    {file = "pyproject_api-1.4.0.tar.gz", hash = "sha256:ac85c1f82e0291dbae5a7739dbb9a990e11ee4034c9b5599ea714f07a24ecd71"},
+]
+
+[package.dependencies]
+packaging = ">=21.3"
+tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
+
+[package.extras]
+docs = ["furo (>=2022.9.29)", "sphinx (>=5.3)", "sphinx-autodoc-typehints (>=1.19.5)"]
+testing = ["covdefaults (>=2.2.2)", "importlib-metadata (>=5.1)", "pytest (>=7.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)", "virtualenv (>=20.17)", "wheel (>=0.38.4)"]
+
+[[package]]
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
@@ -1112,14 +1197,14 @@ idna2008 = ["idna"]
 
 [[package]]
 name = "rich"
-version = "13.0.0"
+version = "13.0.1"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 category = "dev"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "rich-13.0.0-py3-none-any.whl", hash = "sha256:12b1d77ee7edf251b741531323f0d990f5f570a4e7c054d0bfb59fb7981ad977"},
-    {file = "rich-13.0.0.tar.gz", hash = "sha256:3aa9eba7219b8c575c6494446a59f702552efe1aa261e7eeb95548fa586e1950"},
+    {file = "rich-13.0.1-py3-none-any.whl", hash = "sha256:41fe1d05f433b0f4724cda8345219213d2bfa472ef56b2f64f415b5b94d51b04"},
+    {file = "rich-13.0.1.tar.gz", hash = "sha256:25f83363f636995627a99f6e4abc52ed0970ebbd544960cc63cbb43aaac3d6f0"},
 ]
 
 [package.dependencies]
@@ -1354,6 +1439,34 @@ files = [
 ]
 
 [[package]]
+name = "tox"
+version = "4.2.6"
+description = "tox is a generic virtualenv management and test command line tool"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tox-4.2.6-py3-none-any.whl", hash = "sha256:fb79b3e4b788491949576a9c80c2d56419eac994567c3591e24bb2788b5901d0"},
+    {file = "tox-4.2.6.tar.gz", hash = "sha256:ecf224a4f3a318adcdd71aa8fe15ffd31f14afd6a9845a43ffd63950a7325538"},
+]
+
+[package.dependencies]
+cachetools = ">=5.2"
+chardet = ">=5.1"
+colorama = ">=0.4.6"
+filelock = ">=3.9"
+packaging = ">=22"
+platformdirs = ">=2.6.2"
+pluggy = ">=1"
+pyproject-api = ">=1.2.1"
+tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
+virtualenv = ">=20.17.1"
+
+[package.extras]
+docs = ["furo (>=2022.12.7)", "sphinx (>=6)", "sphinx-argparse-cli (>=1.10)", "sphinx-autodoc-typehints (>=1.19.5)", "sphinx-copybutton (>=0.5.1)", "sphinx-inline-tabs (>=2022.1.2b11)", "sphinxcontrib-towncrier (>=0.2.1a0)", "towncrier (>=22.12)"]
+testing = ["build[virtualenv] (>=0.9)", "covdefaults (>=2.2.2)", "devpi-process (>=0.3)", "diff-cover (>=7.3)", "distlib (>=0.3.6)", "flaky (>=3.7)", "hatch-vcs (>=0.3)", "hatchling (>=1.12)", "psutil (>=5.9.4)", "pytest (>=7.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)", "pytest-xdist (>=3.1)", "re-assert (>=1.1)", "time-machine (>=2.8.2)"]
+
+[[package]]
 name = "twisted"
 version = "22.10.0"
 description = "An asynchronous networking framework written in Python"
@@ -1473,6 +1586,27 @@ files = [
     {file = "tzdata-2022.7-py2.py3-none-any.whl", hash = "sha256:2b88858b0e3120792a3c0635c23daf36a7d7eeeca657c323da299d2094402a0d"},
     {file = "tzdata-2022.7.tar.gz", hash = "sha256:fe5f866eddd8b96e9fcba978f8e503c909b19ea7efda11e52e39494bad3a7bfa"},
 ]
+
+[[package]]
+name = "virtualenv"
+version = "20.17.1"
+description = "Virtual Python Environment builder"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "virtualenv-20.17.1-py3-none-any.whl", hash = "sha256:ce3b1684d6e1a20a3e5ed36795a97dfc6af29bc3970ca8dab93e11ac6094b3c4"},
+    {file = "virtualenv-20.17.1.tar.gz", hash = "sha256:f8b927684efc6f1cc206c9db297a570ab9ad0e51c16fa9e45487d36d1905c058"},
+]
+
+[package.dependencies]
+distlib = ">=0.3.6,<1"
+filelock = ">=3.4.1,<4"
+platformdirs = ">=2.4,<3"
+
+[package.extras]
+docs = ["proselint (>=0.13)", "sphinx (>=5.3)", "sphinx-argparse (>=0.3.2)", "sphinx-rtd-theme (>=1)", "towncrier (>=22.8)"]
+testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7)", "packaging (>=21.3)", "pytest (>=7.0.1)", "pytest-env (>=0.6.2)", "pytest-freezegun (>=0.4.2)", "pytest-mock (>=3.6.1)", "pytest-randomly (>=3.10.3)", "pytest-timeout (>=2.1)"]
 
 [[package]]
 name = "waitress"
@@ -1692,4 +1826,4 @@ server = ["django", "channels", "graphene-protector", "strawberry-graphql", "str
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <4"
-content-hash = "7ddce4acfbe9444b70cbb195c7b04fac71f497aad9fd76295ad2091fd0cb8cfd"
+content-hash = "cb1e440490f67ecec263f8cdbf4f7ba03a249af82e0278c650bfffb554756804"

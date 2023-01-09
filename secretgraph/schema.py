@@ -1,7 +1,7 @@
 import strawberry
 from strawberry_django_plus import relay
 
-# from graphene_protector.django.strawberry import Schema
+from graphene_protector.django.strawberry import Schema
 
 from .server.schema import (
     Query as ServerQuery,
@@ -27,7 +27,7 @@ class Mutation(ServerMutation):
     pass
 
 
-schema = strawberry.Schema(
+schema = Schema(
     query=Query,
     mutation=Mutation,
     subscription=ServerSubscription,
