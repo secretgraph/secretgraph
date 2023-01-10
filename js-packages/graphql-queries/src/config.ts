@@ -6,7 +6,7 @@ export const updateConfigQuery = gql`
         $cluster: ID!
         $authorization: [String!]
         $configContentHashes: [String!]
-        $configKeyHashes: [String!]
+        $configTags: [String!]
     ) {
         secretgraph(authorization: $authorization) {
             config {
@@ -20,7 +20,7 @@ export const updateConfigQuery = gql`
                     clusters: [$cluster]
                     includeTypes: ["Config"]
                     contentHashes: $configContentHashes
-                    includeTags: $configKeyHashes
+                    includeTags: $configTags
                 }
             )
                 @connection(
@@ -29,7 +29,7 @@ export const updateConfigQuery = gql`
                         "id"
                         "authorization"
                         "configContentHashes"
-                        "configKeyHashes"
+                        "configTags"
                     ]
                 ) {
                 edges {
@@ -49,7 +49,7 @@ export const updateConfigQuery = gql`
                         references(
                             filters: {
                                 groups: ["key", "signature"]
-                                includeTags: $configKeyHashes
+                                includeTags: $configTags
                             }
                         ) {
                             edges {
@@ -95,7 +95,7 @@ export const findConfigQuery = gql`
         $cluster: ID!
         $authorization: [String!]
         $configContentHashes: [String!]
-        $configKeyHashes: [String!]
+        $configTags: [String!]
     ) {
         secretgraph(authorization: $authorization) {
             config {
@@ -109,7 +109,7 @@ export const findConfigQuery = gql`
                     clusters: [$cluster]
                     includeTypes: ["Config"]
                     contentHashes: $configContentHashes
-                    includeTags: $configKeyHashes
+                    includeTags: $configTags
                 }
             )
                 @connection(
@@ -118,7 +118,7 @@ export const findConfigQuery = gql`
                         "cluster"
                         "authorization"
                         "configContentHashes"
-                        "configKeyHashes"
+                        "configTags"
                     ]
                 ) {
                 edges {

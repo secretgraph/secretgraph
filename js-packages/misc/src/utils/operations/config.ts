@@ -11,7 +11,12 @@ import * as Constants from '../../constants'
 import * as Interfaces from '../../interfaces'
 import { UnpackPromise, ValueType } from '../../typing'
 import { transformActions } from '../action'
-import { authInfoFromConfig, extractPrivKeys, updateConfig } from '../config'
+import {
+    authInfoFromConfig,
+    cleanConfig,
+    extractPrivKeys,
+    updateConfig,
+} from '../config'
 import { b64toarr } from '../encoding'
 import {
     decryptRSAOEAP,
@@ -31,6 +36,59 @@ import {
     extractPubKeysCluster,
 } from '../references'
 import { createContent, decryptContentObject, updateContent } from './content'
+
+export async function loadConfigFromSlot({
+    client,
+    slot,
+    config,
+}: {
+    client: ApolloClient<any>
+    slot: string
+    config: Interfaces.ConfigInterface
+}): Promise<Interfaces.ConfigInterface> {
+    const authInfo = authInfoFromConfig({
+        config,
+        url: config.baseUrl,
+        clusters: new Set([config.configCluster]),
+        // only view action is allowed here as manage can do damage without decryption
+        require: new Set(['view']),
+        // only use token named config token
+        search: 'config token',
+    })
+    const configQueryRes = await client.query({
+        query: findConfigQuery,
+        variables: {
+            cluster: config.configCluster,
+            authorization: authInfo.tokens,
+            configTags: [`slot=${slot}`],
+        },
+        // but why? should be updated by cache updates (for this no-cache is required in config content updates)
+        fetchPolicy: 'network-only',
+    })
+    if (configQueryRes.errors) {
+        throw configQueryRes.errors
+    }
+    let node = configQueryRes.data.secretgraph.contents.edges[0]?.node
+    if (!node) {
+        throw Error('could not find config object')
+    }
+    const retrieved = await decryptContentObject({
+        nodeData: node,
+        config,
+        blobOrTokens: authInfo.tokens,
+        itemDomain: config.baseUrl,
+    })
+    if (!retrieved) {
+        throw Error('could not retrieve and decode config object')
+    }
+    const loadedConfig = cleanConfig(
+        JSON.parse(String.fromCharCode(...new Uint8Array(retrieved.data)))
+    )[0]
+    if (!loadedConfig) {
+        throw Error('Invalid config')
+    }
+    return loadedConfig
+}
 
 async function updateRemoteConfig({
     update,
@@ -130,6 +188,7 @@ export async function checkConfigObject(
     const { data } = await client.query({
         query: findConfigQuery,
         variables: {
+            configTags: [`slot=${config.slots[0]}`],
             cluster: config.configCluster,
             authorization: authInfo.tokens,
         },
@@ -197,20 +256,12 @@ export async function exportConfigAsUrl({
     if (!config.slots.includes(slot)) {
         return Promise.reject('invalid slot')
     }
-    const contentHash = await hashTagsContentHash(
-        [`slot=${slot}`],
-        'Config',
-        authInfo.certificateHashes[0].split(':', 1)[0]
-    )
     const obj = await client.query({
         query: findConfigQuery,
         variables: {
             cluster: config.configCluster,
             authorization: authInfo.tokens,
-            configContentHashes: [contentHash],
-            contentKeyHashes: authInfo.certificateHashes.map(
-                (hash) => `key_hash=${hash}`
-            ),
+            configTags: [`slot=${slot}`],
         },
     })
     for (const { node: configContent } of obj.data.secretgraph.contents.edges) {

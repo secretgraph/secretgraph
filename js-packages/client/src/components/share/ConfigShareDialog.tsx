@@ -15,7 +15,10 @@ import {
     createContent,
     updateCluster,
 } from '@secretgraph/misc/utils/operations'
-import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
+import {
+    exportConfigAsUrl,
+    loadConfigFromSlot,
+} from '@secretgraph/misc/utils/operations/config'
 import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
 
@@ -86,11 +89,19 @@ export default React.memo(function ConfigShareDialog({
     }, [deferredPw, open])
 
     const exportSettingsFile = async () => {
-        if (!config) return
+        if (!config || !slot) return
         setLoadingExport(true)
+        let configToExport = config
+        if (configToExport.slots[0] != slot) {
+            configToExport = await loadConfigFromSlot({
+                client: baseClient,
+                config,
+                slot,
+            })
+        }
         try {
             await exportConfig(
-                config,
+                configToExport,
                 password,
                 100000,
                 'secretgraph_settings.json'
