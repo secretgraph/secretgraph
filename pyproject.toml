@@ -31,7 +31,7 @@ certifi = "*"
 django = {version = '>=4.1', optional = true}
 channels = {version = ">=4.0", optional = true}
 httpx = {version = "*", extras = ["http2"]}
-graphene-protector = {version=">=0.7.2", optional = true}
+graphene-protector = {version=">=0.8.0", optional = true}
 strawberry-graphql = {version=">=0.145",  optional = true}
 strawberry-django-plus = {version="*", optional = true}
 flipflop = {version="*", optional = true}

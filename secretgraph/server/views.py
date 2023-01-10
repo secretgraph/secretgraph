@@ -1,13 +1,8 @@
-import base64
 import json
 import logging
-
-
 from urllib.parse import quote
 
-from django.views.decorators.http import last_modified
-from django.utils.decorators import method_decorator
-from django.utils.cache import add_never_cache_headers
+import ratelimit
 from django.conf import settings
 from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Substr
@@ -15,32 +10,26 @@ from django.http import (
     FileResponse,
     Http404,
     HttpResponse,
-    HttpResponseRedirect,
     JsonResponse,
     StreamingHttpResponse,
 )
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.views.generic.edit import FormView
+from django.utils.cache import add_never_cache_headers
+from django.utils.decorators import method_decorator
+from django.views.decorators.http import last_modified
+from django.views.generic import View
 from strawberry.django.views import AsyncGraphQLView
 
-import ratelimit
-
-from .utils.mark import freeze_contents, update_file_accessed
-
-from .forms import PreKeyForm, PushForm, UpdateForm
-from .models import Content
-from .utils.auth import (
-    get_cached_result,
-    retrieve_allowed_objects,
-)
+from ..core import constants
+from .utils.auth import get_cached_result
 from .utils.encryption import iter_decrypt_contents
+from .utils.mark import freeze_contents, update_file_accessed
 from .view_decorators import (
-    no_opener,
     add_cors_headers,
     add_secretgraph_headers,
+    no_opener,
 )
-from ..core import constants
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +49,7 @@ def calc_content_modified_decrypted(request, content, *args, **kwargs):
     return calc_content_modified_raw(request, content, *args, **kwargs)
 
 
-class ContentView(FormView):
+class ContentView(View):
     template_name = "secretgraph/content_form.html"
     action = "view"
 
@@ -99,91 +88,6 @@ class ContentView(FormView):
             response = self.handle_raw_singlecontent(
                 request, content, *args, **kwargs
             )
-        return response
-
-    def post(self, request, *args, **kwargs):
-        authset = set(
-            request.headers.get("Authorization", "")
-            .replace(" ", "")
-            .split(",")
-        )
-        authset.update(request.GET.getlist("token"))
-        authset.discard("")
-        # authset can contain: ""
-        # why not ids_to_results => uses flexid directly
-        self.result = retrieve_allowed_objects(
-            request,
-            Content.objects.filter(downloadId=kwargs["id"]),
-            scope=self.action,
-            authset=authset,
-        )
-        return super().post(request, *args, **kwargs)
-
-    def put(self, request, *args, **kwargs):
-        # initialize POST dict also for PUT method
-        # delete cache
-        for attr in ("_post", "_files"):
-            try:
-                delattr(request, attr)
-            except AttributeError:
-                pass
-        oldmethod = request.method
-        request.method = "POST"
-        # trigger cache
-        request.POST
-        # reset method
-        request.method = oldmethod
-        return super().put(request, *args, **kwargs)
-
-    def get_form_class(self):
-        if "prekey" in self.request.GET:
-            return PreKeyForm
-        elif self.request.method == "PUT" or "put" in self.request.GET:
-            return UpdateForm
-        else:
-            return PushForm
-
-    def get_form_kwargs(self):
-        """Return the keyword arguments for instantiating the form."""
-        kwargs = super().get_form_kwargs()
-        if hasattr(self, "result"):
-            content = get_object_or_404(
-                self.result["objects"], downloadId=kwargs["id"]
-            )
-            kwargs.update(
-                {
-                    "result": self.result,
-                    "instance": content,
-                    "request": self.request,
-                }
-            )
-        return kwargs
-
-    def form_invalid(self, form):
-        response = self.render_to_response(self.get_context_data(form=form))
-        return response
-
-    def form_valid(self, form):
-        """If the form is valid, redirect to the supplied URL."""
-        c, key = form.save()
-        if key:
-            response = HttpResponseRedirect(
-                "%s?token=%s"
-                % (
-                    reverse(
-                        "secretgraph:contents-update", kwargs={"id": c.id}
-                    ),
-                    "token=".join(
-                        [
-                            "%s:%s"
-                            % (c.cluster.flexid, base64.b64encode(key)),
-                            *self.result["authset"],
-                        ]
-                    ),
-                )
-            )
-        else:
-            response = HttpResponse(201)
         return response
 
     def handle_decrypt(self, request, id, *args, **kwargs):

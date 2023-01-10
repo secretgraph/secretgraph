@@ -521,14 +521,14 @@ files = [
 
 [[package]]
 name = "graphene-protector"
-version = "0.7.3"
+version = "0.8.0"
 description = "Protects graphene, graphql or strawberry against malicious queries"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4"
 files = [
-    {file = "graphene_protector-0.7.3-py3-none-any.whl", hash = "sha256:d956709e215fa59ae3cbf51d142c98ff5471af6bcf59dec4ad3fc55a3297970f"},
-    {file = "graphene_protector-0.7.3.tar.gz", hash = "sha256:daccf7b62371ba40f5e9b30a847f7988753d7b0419e117a1f2cff9eeeb816a6b"},
+    {file = "graphene_protector-0.8.0-py3-none-any.whl", hash = "sha256:38e6770ec61dae1bfb4030a7b0fbf9da72e6c9708791684b53b4375cf0361b2e"},
+    {file = "graphene_protector-0.8.0.tar.gz", hash = "sha256:6ac63f5eda204212e6670c0bea263401da73848327393d4673586c005e3e840e"},
 ]
 
 [package.dependencies]
@@ -982,14 +982,14 @@ plugins = ["importlib-metadata"]
 
 [[package]]
 name = "pylint"
-version = "2.15.9"
+version = "2.15.10"
 description = "python code static checker"
 category = "dev"
 optional = false
 python-versions = ">=3.7.2"
 files = [
-    {file = "pylint-2.15.9-py3-none-any.whl", hash = "sha256:349c8cd36aede4d50a0754a8c0218b43323d13d5d88f4b2952ddfe3e169681eb"},
-    {file = "pylint-2.15.9.tar.gz", hash = "sha256:18783cca3cfee5b83c6c5d10b3cdb66c6594520ffae61890858fe8d932e1c6b4"},
+    {file = "pylint-2.15.10-py3-none-any.whl", hash = "sha256:9df0d07e8948a1c3ffa3b6e2d7e6e63d9fb457c5da5b961ed63106594780cc7e"},
+    {file = "pylint-2.15.10.tar.gz", hash = "sha256:b3dc5ef7d33858f297ac0d06cc73862f01e4f2e74025ec3eff347ce0bc60baf5"},
 ]
 
 [package.dependencies]
@@ -1347,14 +1347,14 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.151.2"
+version = "0.151.3"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql-0.151.2-py3-none-any.whl", hash = "sha256:0e7df5314cc781f164fcc37d4058f73d1ba1111b72ee3334ee70002332b6ca28"},
-    {file = "strawberry_graphql-0.151.2.tar.gz", hash = "sha256:89a334a6392a7c628c3da6a891427d18a9583a19b8ccf3989cbda38faf81034c"},
+    {file = "strawberry_graphql-0.151.3-py3-none-any.whl", hash = "sha256:ad15542a0fc1d4790e6d0d42ef702ab8a51b18c885b3261b35dec90d3408a334"},
+    {file = "strawberry_graphql-0.151.3.tar.gz", hash = "sha256:c8f4dc2b33776a7d99f22c9a04b1e2b5f88c26a13907c512d75ccb3e588ce0d3"},
 ]
 
 [package.dependencies]
@@ -1826,4 +1826,4 @@ server = ["django", "channels", "graphene-protector", "strawberry-graphql", "str
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <4"
-content-hash = "cb1e440490f67ecec263f8cdbf4f7ba03a249af82e0278c650bfffb554756804"
+content-hash = "ac2dac74c8a319c871758a411294cc4b078411a5a61cd1f2b122f3af5f1124cc"

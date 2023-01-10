@@ -465,7 +465,8 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
--   export config as file should honor slots
+-   add config password, a client side password which must be entered to access configs
+    save it in the config itself
 -   split keys in signing/encrypting
 -   validationError: use params
 -   trustedKeys logic (partly done):
@@ -505,11 +506,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 -   implement form with send for Message
 -   if type=Message switch strings to Inbox, Send
 -   find way how Messages sent can be differed from messages received
--   forms:
-    -   updateId in form
-    -   prekey implement form
-    -   replace json-editor by ActionConfigurator equivalent
-    -   CustomElements for supporting translations
+-   add prekey form and calculate everything client side
 
 # TODO far future
 
