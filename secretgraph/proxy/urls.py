@@ -3,6 +3,8 @@ from django.views.generic import TemplateView
 from django.views.decorators.cache import cache_control
 from secretgraph.server.view_decorators import no_opener
 
+from .views import WebmanifestView
+
 app_name = "secretgraph_proxy"
 
 
@@ -42,5 +44,10 @@ urlpatterns = [
             )
         ),
         name="client",
+    ),
+    path(
+        "webmanifest.json",
+        cache_control(max_age=604800)(WebmanifestView.as_view()),
+        name="webmanifest.json",
     ),
 ]

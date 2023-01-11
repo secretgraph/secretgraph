@@ -221,7 +221,7 @@ Otherwise the shared key could not be changed. This is especially an issue for o
 -   freeze: cannot change content after viewing/fetching (use of ContentAction group fetch/view), freeze will be transformed to immutable
 -   immutable: cannot change content. Deletion only possible for manage permission
     -   to remove this flag manage_update permission is required and can only done via metadata update
-    -   immutable does not prevent action metadata updates
+    -   immutable does not prevent action updates (via metadata update)
 
 ## encrypted tags
 
@@ -474,17 +474,21 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
     -   a better ActionDialog is neccessary
 -   implement settings/config (partly done)
 -   modernize ActionDialog, redesign, multi column?
--   implement shareFn and ShareDialog, Config has a special ShareDialog
+-   implement shareFn and ShareDialog, Config has a special ShareDialog (partly done)
 -   test permissions
 -   way to inject tokens (as user)
 -   way to import private key in config
--   edge-serverside encryption
 -   cleanup js structure, harmonize naming
     -   issue: hashAlgorithm is sometimes directly fed to importKey
 
 # TODO later
 
--   split sign keys / trusted keys
+-   edge-serverside encryption
+    -   custom components
+    -   python proxy decryptor
+    -   maybe: encrypt via python proxy (for e.g. push forms)
+-   investigate if on_request_start of strawberry extensions can replace the django signal logic
+    -   maybe async signals are then already possible, use them instead
 -   use weakref finalizers to nuke bytes content
 -   disallow non global ids? Would ease implementation
 -   encrypt Config set with saveConfig/loaded with loadConfigSync via a static key

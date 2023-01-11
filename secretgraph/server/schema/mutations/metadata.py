@@ -8,7 +8,7 @@ import strawberry
 from strawberry.types import Info
 from strawberry_django_plus import relay
 from django.db import transaction
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Value
 from ..shared import MetadataOperations
 
 from ...actions.update import (
@@ -147,7 +147,7 @@ def update_metadata(
         info.context["request"], authset=authorization
     )
     if manage_update:
-        contents = fetch_by_id(
+        objects = fetch_by_id(
             Content.objects.annotate(
                 has_immutable=Exists(
                     ContentTag.objects.filter(
@@ -167,8 +167,10 @@ def update_metadata(
             "update",
             authset=authorization,
         )["Content"]
+        # immutable are excluded
+        objects = result["objects"].annotate(has_immutable=Value(False))
     ops = []
-    for content_obj in result.objects.all():
+    for content_obj in objects:
         ops.append(
             update_metadata_fn(
                 info.context["request"],
@@ -193,8 +195,8 @@ def update_metadata(
                     authset=authorization,
                 )
             )
-    contents = []
+    updated = []
     with transaction.atomic():
         for f in ops:
-            contents.push(f().flexid_cached)
-    return MetadataUpdateMutation(updated=contents)
+            updated.push(f().flexid_cached)
+    return MetadataUpdateMutation(updated=updated)
