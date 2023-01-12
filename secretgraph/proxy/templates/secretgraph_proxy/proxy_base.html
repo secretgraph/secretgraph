@@ -1,5 +1,10 @@
 {% extends "secretgraph/base.html" %}
 {% load secretgraph %}
+{% block meta %}
+{{block.super}}
+<link rel="apple-touch-icon" sizes="192x192" href="{% static 'secretgraph/favicon-192x192.png' %}">
+<meta name="theme-color" content="#1976d2" />
+{% endblock %}
 {% block styles %}
 {{block.super}}
 <style>
