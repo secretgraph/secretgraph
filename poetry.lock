@@ -449,14 +449,14 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-fast-ratelimit"
-version = "0.10.0"
+version = "0.10.2"
 description = "Fast ratelimit implementation with django caches"
 category = "main"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django_fast_ratelimit-0.10.0-py3-none-any.whl", hash = "sha256:cc455dc224b5013188b02ab7f0d3fc02ac954481dbdb271a73bf3b20a8f6b319"},
-    {file = "django_fast_ratelimit-0.10.0.tar.gz", hash = "sha256:7e867fb16da07860c981ede20c300563404e08618b0d743ba6ed2165d1c4c809"},
+    {file = "django_fast_ratelimit-0.10.2-py3-none-any.whl", hash = "sha256:d16f4f0e396921b721ef4c9f03b3be8bff26cb86f08b116cd554ce5c6033d50e"},
+    {file = "django_fast_ratelimit-0.10.2.tar.gz", hash = "sha256:40d27f12552dd0a2e8af8ea1837778295b43471df8a70b4f9883c0ffd3500d95"},
 ]
 
 [package.dependencies]
@@ -1381,14 +1381,14 @@ sanic = ["sanic (>=20.12.2)"]
 
 [[package]]
 name = "strawberry-graphql-django"
-version = "0.8.2"
+version = "0.9"
 description = "Strawberry GraphQL Django extension"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql_django-0.8.2-py3-none-any.whl", hash = "sha256:cc0717bd12b4b60af043cac4a7108c0ae4625c72a45dee99bd99e8952698a4c1"},
-    {file = "strawberry_graphql_django-0.8.2.tar.gz", hash = "sha256:c9ce9de5d3d7a2eacf01ed312d147390fde00a6646a64e2f32896003431ca205"},
+    {file = "strawberry_graphql_django-0.9-py3-none-any.whl", hash = "sha256:d82f65cb3813e49786b2246c0ecb3c7e6efef06f2a7d3a4bd7ce1cf2b6c20608"},
+    {file = "strawberry_graphql_django-0.9.tar.gz", hash = "sha256:148c5aa99ecf67f826e87205dd26be4f9cd34fc0e221fb9c811656d2bf69d441"},
 ]
 
 [package.dependencies]
