@@ -101,6 +101,9 @@ interface BaseConfigInterface<N = never> {
     certificates: { [hash: string]: ConfigCertificateValue | N }
     tokens: { [hash: string]: ConfigTokenValue | N }
     slots: string[]
+    // later
+    //configLockPreKey: string
+    //configSecurityQuestion: [string, string]
 }
 
 export interface ConfigInterface extends BaseConfigInterface {

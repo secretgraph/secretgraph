@@ -463,15 +463,28 @@ export async function updateConfigRemoteReducer(
         })
     )
     let resultPromises = []
-    for (let { node } of nodes) {
-        if (ignoreId && ignoreId == node.id) {
+    const slotUpdate: Interfaces.ConfigInputInterface = {}
+    let slotUpdateEmpty = true
+    for (const key of Object.keys(update)) {
+        if (!Constants.privateConfigKeys.has(key)) {
+            ;(slotUpdate as any)[key] = (update as any)[key]
+            slotUpdateEmpty = false
+        }
+    }
+    for (let index = 0; index < nodes.length; index++) {
+        let node = nodes[index].node
+        if (
+            (ignoreId && ignoreId == node.id) ||
+            (slotUpdateEmpty && index == mainNodeIndex)
+        ) {
+            resultPromises.push(Promise.resolve<[null, number]>([null, 0]))
             continue
         }
         resultPromises.push(
             retry({
                 action: async (attempted: number) => {
                     let result = await updateRemoteConfig({
-                        update,
+                        update: index == mainNodeIndex ? update : slotUpdate,
                         config: resconf[0],
                         authInfo: authInfo as Interfaces.AuthInfoInterface,
                         client,

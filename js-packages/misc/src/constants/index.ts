@@ -73,3 +73,8 @@ export const mapEncryptionAlgorithms: {
 
 export const stubCluster = Buffer.from('Cluster:-1').toString('base64')
 export const stubContent = Buffer.from('stubContent:-1').toString('base64')
+export const privateConfigKeys = new Set([
+    'slots',
+    'configLockPreKey',
+    'configSecurityQuestion',
+])

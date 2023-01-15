@@ -465,7 +465,9 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
--   add config password, a client side password which must be entered to access configs
+-   add config security question, a client side password which must be entered to access configs
+    save it in the config itself
+-   add config lockPrekey for locking config
     save it in the config itself
 -   split keys in signing/encrypting
 -   validationError: use params
