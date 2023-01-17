@@ -475,7 +475,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
     -   Needs much more work especially on gui side
     -   a better ActionDialog is neccessary
 -   implement settings/config (partly done)
--   modernize ActionDialog, redesign, multi column?
+-   modernize ActionDialog, redesign, multi column? Move partly to shareDialog?
 -   implement shareFn and ShareDialog, Config has a special ShareDialog (partly done)
 -   test permissions
 -   way to inject tokens (as user)
@@ -485,6 +485,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO later
 
+-   time restrictions (time ranges, block e.g. requests from 1 to 3 at weekdays)
 -   edge-serverside encryption
     -   custom components
     -   python proxy decryptor

@@ -33,7 +33,7 @@ class SideEffectsHandlers:
         return None
 
     @staticmethod
-    def clean_inject(action_dict, request, content, authset, admin):
+    def clean_inject(action_dict, request, content, admin):
         result = {
             "id": content.id if content and content.id else None,
             "injectedTags": [],
@@ -60,8 +60,8 @@ class SideEffectsHandlers:
                 references.keys(),
                 request=request,
                 fields=("flexid", "id"),
-                authset=authset,
                 admin=admin,
+                scope="view",
             ):
                 deleteRecursive = references[_flexid].get(
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
@@ -123,13 +123,13 @@ class SideEffectsHandlers:
         return None
 
     @staticmethod
-    def clean_storedUpdate(action_dict, request, content, authset, admin):
+    def clean_storedUpdate(action_dict, request, content, admin):
         from ...utils.auth import get_cached_properties
 
         if content:
             raise ValueError("storedUpdate cannot be used as contentaction")
         if "allow_dangerous_actions" not in get_cached_properties(
-            request, authset=authset
+            request, authset=request.secretgraphCleanResult.authset
         ):
             raise ValueError("No permission to register dangerous actions")
         now_plus_x = timezone.now() + td(minutes=20)
@@ -158,9 +158,9 @@ class SideEffectsHandlers:
                     result["delete"][type_name],
                     request,
                     check_field="keyHash" if type_name == "Action" else None,
-                    authset=authset,
                     only_first_field=True,
                     admin=admin,
+                    scope="delete",
                 )
             )
 
@@ -198,8 +198,8 @@ class SideEffectsHandlers:
                 fields=(
                     ("id", "id") if type_name == "Action" else ("flexid", "id")
                 ),
-                authset=authset,
                 admin=admin,
+                scope="manage" if isinstance(klass, Action) else "update",
             ):
                 if _id in _del_sets[type_name]:
                     continue

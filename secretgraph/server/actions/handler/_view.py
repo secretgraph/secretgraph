@@ -3,9 +3,42 @@ from datetime import timedelta as td
 from django.db.models import Q
 
 from ...models import Cluster, Content
+from ._shared import get_forbidden_content_ids
 
 
 class ViewHandlers:
+    @staticmethod
+    def _clean_view_or_auth(action_dict, request, content, admin):
+        result = {
+            "action": "view",
+            "contentActionGroup": "view",
+        }
+        if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
+            raise ValueError(
+                "Either includeTypes or excludeTypes should be specified"
+            )
+        if content:
+            # ignore tags if specified for a content
+            result["excludeTags"] = []
+            result["includeTags"] = []
+            result["states"] = []
+            result["includeTypes"] = []
+            result["excludeTypes"] = []
+            result["excludeIds"] = []
+        else:
+            result["excludeIds"] = list(get_forbidden_content_ids(request))
+            exclude_tags = action_dict.get("excludeTags", [])
+            result["excludeTags"] = list(map(str, exclude_tags))
+            include_tags = action_dict.get("includeTags", [])
+            result["includeTags"] = list(map(str, include_tags))
+            states = action_dict.get("states", [])
+            result["states"] = list(map(str, states))
+            exclude_types = action_dict.get("excludeTypes", [])
+            result["excludeTypes"] = list(map(str, exclude_types))
+            include_types = action_dict.get("includeTypes", [])
+            result["includeTypes"] = list(map(str, include_types))
+        return result
+
     @staticmethod
     def do_auth(action_dict, scope, sender, accesslevel, action, **kwargs):
         if scope != "view":
@@ -48,9 +81,12 @@ class ViewHandlers:
                 else:
                     incl_filters_tag |= Q(tags__tag__startswith=i)
 
+            excl_filters = excl_filters_tag | excl_filters_type
+
+            if action_dict.get("excludeIds"):
+                excl_filters |= Q(id__in=action_dict["excludeIds"])
             return {
-                "filters": ~excl_filters_type
-                & ~excl_filters_tag
+                "filters": ~excl_filters
                 & incl_filters_state
                 & incl_filters_tag
                 & incl_filters_type,
@@ -63,35 +99,11 @@ class ViewHandlers:
             }
         return None
 
-    @staticmethod
-    def clean_auth(action_dict, request, content, authset, admin):
-        result = {
-            "action": "auth",
-            "contentActionGroup": "view",
-            "maxLifetime": td(hours=1),
-        }
-        if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
-            raise ValueError(
-                "Either includeTypes or excludeTypes should be specified"
-            )
-        if content:
-            # ignore tags if specified for a content
-            result["excludeTags"] = []
-            result["includeTags"] = []
-            result["states"] = []
-            result["includeTypes"] = []
-            result["excludeTypes"] = []
-        else:
-            exclude_tags = action_dict.get("excludeTags", [])
-            result["excludeTags"] = list(map(str, exclude_tags))
-            include_tags = action_dict.get("includeTags", [])
-            result["includeTags"] = list(map(str, include_tags))
-            states = action_dict.get("states", [])
-            result["states"] = list(map(str, states))
-            exclude_types = action_dict.get("excludeTypes", [])
-            result["excludeTypes"] = list(map(str, exclude_types))
-            include_types = action_dict.get("includeTypes", [])
-            result["includeTypes"] = list(map(str, include_types))
+    @classmethod
+    def clean_auth(cls, action_dict, request, content, admin):
+        result = cls._clean_view_or_auth(action_dict, request, content, admin)
+        result["action"] = "auth"
+        result["maxLifetime"] = td(hours=1)
         return result
 
     @staticmethod
@@ -134,10 +146,12 @@ class ViewHandlers:
                     incl_filters_tag |= Q(tags__tag=i[1:])
                 else:
                     incl_filters_tag |= Q(tags__tag__startswith=i)
+            excl_filters = excl_filters_type | excl_filters_tag
+            if action_dict.get("excludeIds"):
+                excl_filters |= Q(id__in=action_dict["excludeIds"])
 
             return {
-                "filters": ~excl_filters_type
-                & ~excl_filters_tag
+                "filters": ~excl_filters
                 & incl_filters_state
                 & incl_filters_tag
                 & incl_filters_type,
@@ -150,34 +164,9 @@ class ViewHandlers:
             }
         return None
 
-    @staticmethod
-    def clean_view(action_dict, request, content, authset, admin):
-        result = {
-            "action": "view",
-            "contentActionGroup": "view"
-            if not action_dict.get("fetch") or not content
-            else "fetch",
-        }
-        if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
-            raise ValueError(
-                "Either includeTypes or excludeTypes should be specified"
-            )
-        if content:
-            # ignore tags if specified for a content
-            result["excludeTags"] = []
-            result["includeTags"] = []
-            result["states"] = []
-            result["includeTypes"] = []
-            result["excludeTypes"] = []
-        else:
-            exclude_tags = action_dict.get("excludeTags", [])
-            result["excludeTags"] = list(map(str, exclude_tags))
-            include_tags = action_dict.get("includeTags", [])
-            result["includeTags"] = list(map(str, include_tags))
-            states = action_dict.get("states", [])
-            result["states"] = list(map(str, states))
-            exclude_types = action_dict.get("excludeTypes", [])
-            result["excludeTypes"] = list(map(str, exclude_types))
-            include_types = action_dict.get("includeTypes", [])
-            result["includeTypes"] = list(map(str, include_types))
+    @classmethod
+    def clean_view(cls, action_dict, request, content, admin):
+        result = cls._clean_view_or_auth(action_dict, request, content, admin)
+        if action_dict.get("fetch"):
+            result["contentActionGroup"] = "fetch"
         return result

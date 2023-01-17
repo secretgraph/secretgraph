@@ -118,11 +118,55 @@ def _speedup_tokenparsing(
     return request._secretgraph_token_cache[token]
 
 
-def retrieve_allowed_objects(
+def stub_retrieve_allowed_objects(
     request: HttpRequest,
     query: models.QuerySet | str,
     scope: typings.Scope = "view",
     authset: Iterable[str] | set[str] = None,
+    query_call: str = "all",
+):
+    if authset is None:
+        authset = set(
+            getattr(request, "headers", {})
+            .get("Authorization", "")
+            .replace(" ", "")
+            .split(",")
+        )
+        authset.discard("")
+    elif not isinstance(authset, set):
+        authset = set(authset)
+
+    if len(authset) > 100:
+        raise ValueError(
+            "Too many authorization tokens specified, limit is 100"
+        )
+
+    if isinstance(query, str):
+        query = getattr(
+            apps.get_model("secretgraph", query).objects, query_call
+        )()
+
+    return {
+        "authset": authset,
+        "scope": scope,
+        "rejecting_action": None,
+        "decrypted": {},
+        "active_actions": set(),
+        "actions": Action.objects.none(),
+        # {id: {(action, hash): id}}  # noqa
+        "action_info_clusters": {},
+        "action_info_contents": {},
+        "accesslevel": 0,
+        "objects": query,
+        "objects_ignore_public": query,
+    }
+
+
+def retrieve_allowed_objects(
+    request: HttpRequest,
+    query: models.QuerySet | str,
+    scope: typings.Scope = "view",
+    authset: Optional[Iterable[str] | set[str]] = None,
     ignore_restrictions: bool = False,
 ):
     if authset is None:
@@ -505,6 +549,7 @@ def get_cached_result(
     scope="view",
     name="secretgraphResult",
     ensureInitialized=False,
+    stub: Optional[str] = None,
 ) -> LazyViewResult:
     if not getattr(request, name, None):
         if ensureInitialized:
@@ -513,7 +558,11 @@ def get_cached_result(
             request,
             name,
             LazyViewResult(
-                partial(retrieve_allowed_objects, scope=scope),
+                partial(
+                    stub_retrieve_allowed_objects, scope=scope, query_call=stub
+                )
+                if stub
+                else partial(retrieve_allowed_objects, scope=scope),
                 request,
                 *viewResults,
                 authset=authset,

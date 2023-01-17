@@ -11,7 +11,11 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
 from django.utils import timezone
 
-from ...utils.auth import retrieve_allowed_objects
+from ...utils.auth import (
+    retrieve_allowed_objects,
+    stub_retrieve_allowed_objects,
+    get_cached_result,
+)
 from ...utils.misc import refresh_fields
 from ...utils.hashing import hashObject
 from ...actions.handler import ActionHandler
@@ -42,20 +46,42 @@ def manage_actions_fn(
         # we have no Actions and so we need no filtering
         # and the related manager is maybe not initialized
         # so skip the other code pathes
-        allowed_and_existing_actions = Action.objects.none()
+        allowed_and_existing_actions = get_cached_result(
+            request,
+            scope="manage",
+            name="secretgraphCleanResult",
+            authset=authset,
+            stub="none",
+        )["Action"]["objects"]
     elif admin:
         # we don't need to filter as admin
-        allowed_and_existing_actions = cluster.actions.all()
+        allowed_and_existing_actions = get_cached_result(
+            request,
+            stub_retrieve_allowed_objects(
+                request,
+                cluster.actions.all(),
+                scope="manage",
+                authset=authset,
+            ),
+            scope="manage",
+            name="secretgraphCleanResult",
+            authset=authset,
+            stub="all",
+        )["Action"]["objects"]
     else:
         # normal code path for existing contents/cluster
-        allowed_and_existing_actions = (
+        allowed_and_existing_actions = get_cached_result(
+            request,
             retrieve_allowed_objects(
                 request,
                 cluster.actions.all(),
                 scope="manage",
                 authset=authset,
-            )
-        )["objects"]
+            ),
+            scope="manage",
+            name="secretgraphCleanResult",
+            authset=authset,
+        )["Action"]["objects"]
     for action in actionlist:
         # if already decoded by e.g. graphql
         if action.value == "delete":
@@ -80,7 +106,9 @@ def manage_actions_fn(
 
         action_key_hash = hashObject(action_key)
         action_value = ActionHandler.clean_action(
-            action_value, request=request, authset=authset, content=content
+            action_value,
+            request=request,
+            content=content,
         )
 
         # create Action object

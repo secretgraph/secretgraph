@@ -3,7 +3,7 @@ from strawberry_django_plus import relay
 
 from ....core import constants
 from ...models import Action, Cluster, Content, Net, ContentTag
-from ._shared import only_owned_helper
+from ._shared import only_owned_helper, get_forbidden_content_ids
 
 
 class UpdateHandlers:
@@ -24,6 +24,8 @@ class UpdateHandlers:
                     )
                 )
             )
+            if action_dict.get("excludeIds"):
+                excl_filters |= Q(id__in=action_dict["excludeIds"])
             if action_dict["excludeTypes"]:
                 excl_filters |= Q(type__in=action_dict["excludeTypes"])
             for i in action_dict["excludeTags"]:
@@ -63,7 +65,8 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def clean_delete(action_dict, request, content, authset, admin):
+    def clean_delete(action_dict, request, content, admin):
+
         result = {"action": "delete", "contentActionGroup": "delete"}
         if content:
             # ignore tags if specified for a content
@@ -72,7 +75,9 @@ class UpdateHandlers:
             result["states"] = []
             result["includeTypes"] = []
             result["excludeTypes"] = []
+            result["excludeIds"] = []
         else:
+            result["excludeIds"] = list(get_forbidden_content_ids(request))
             exclude_tags = action_dict.get("excludeTags", [])
             result["excludeTags"] = list(map(str, exclude_tags))
             include_tags = action_dict.get("includeTags", [])
@@ -129,11 +134,14 @@ class UpdateHandlers:
                     incl_filters_tag |= Q(tags__tag=i[1:])
                 else:
                     incl_filters_tag |= Q(tags__tag__startswith=i)
-            excl_filters = ~excl_filters_tag & ~excl_filters_type
+            excl_filters = excl_filters_tag | excl_filters_type
+
+            if action_dict.get("excludeIds"):
+                excl_filters |= Q(id__in=action_dict["excludeIds"])
             if scope == "update":
-                excl_filters &= ~Q(tags__tag="immutable")
+                excl_filters |= ~Q(tags__tag="immutable")
             return {
-                "filters": excl_filters
+                "filters": ~excl_filters
                 & incl_filters_state
                 & incl_filters_tag
                 & incl_filters_type,
@@ -165,7 +173,8 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def clean_update(action_dict, request, content, authset, admin):
+    def clean_update(action_dict, request, content, admin):
+
         result = {
             "action": "update",
             "contentActionGroup": "update",
@@ -187,7 +196,9 @@ class UpdateHandlers:
             result["states"] = []
             result["includeTypes"] = []
             result["excludeTypes"] = []
+            result["excludeIds"] = []
         else:
+            result["excludeIds"] = list(get_forbidden_content_ids(request))
             exclude_tags = action_dict.get("excludeTags", [])
             result["excludeTags"] = list(map(str, exclude_tags))
             include_tags = action_dict.get("includeTags", [])
@@ -214,7 +225,6 @@ class UpdateHandlers:
                 request,
                 scope="create",
                 fields=("id",),
-                authset=authset,
                 admin=admin,
             )
             action_dict["nets"] = Net.objects.filter(
@@ -231,7 +241,6 @@ class UpdateHandlers:
                 references.keys(),
                 request,
                 fields=("flexid", "id"),
-                authset=authset,
             ):
                 deleteRecursive = references[_flexid].get(
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
@@ -274,7 +283,7 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def _clean_create_or_push(action_dict, request, content, authset, admin):
+    def _clean_create_or_push(action_dict, request, content, admin):
         result = {
             "id": content.id if content and content.id else None,
             "injectedTags": [],
@@ -309,7 +318,6 @@ class UpdateHandlers:
                 request,
                 scope="create",
                 fields=("id",),
-                authset=authset,
                 admin=admin,
             )
             action_dict["nets"] = Net.objects.filter(
@@ -326,8 +334,8 @@ class UpdateHandlers:
                 references.keys(),
                 request,
                 fields=("flexid", "id"),
-                authset=authset,
                 admin=admin,
+                scope="view",
             ):
                 deleteRecursive = references[_flexid].get(
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
@@ -352,11 +360,11 @@ class UpdateHandlers:
         return result
 
     @classmethod
-    def clean_create(cls, action_dict, request, content, authset, admin):
+    def clean_create(cls, action_dict, request, content, admin):
         if content:
             raise ValueError("create invalid for content")
         result = cls._clean_create_or_push(
-            action_dict, request, content=content, authset=authset, admin=admin
+            action_dict, request, content=content, admin=admin
         )
         result["action"] = "create"
         return result
@@ -403,11 +411,11 @@ class UpdateHandlers:
         return None
 
     @classmethod
-    def clean_push(cls, action_dict, request, content, authset, admin):
+    def clean_push(cls, action_dict, request, content, admin):
         if not content:
             raise ValueError("push invalid for content")
         result = cls._clean_create_or_push(
-            action_dict, request, content=content, authset=authset, admin=admin
+            action_dict, request, content=content, admin=admin
         )
         result["action"] = "push"
         return result
@@ -439,8 +447,8 @@ class UpdateHandlers:
         }
 
     @staticmethod
-    def clean_manage(action_dict, request, content, authset, admin):
-        from ...utils.auth import retrieve_allowed_objects, fetch_by_id
+    def clean_manage(action_dict, request, content, admin):
+        from ...utils.auth import get_cached_result, fetch_by_id
 
         if content:
             raise ValueError("manage cannot be used for content")
@@ -457,7 +465,6 @@ class UpdateHandlers:
                 request,
                 scope="create",
                 fields=("id",),
-                authset=authset,
                 admin=admin,
             )
             action_dict["nets"] = Net.objects.filter(
@@ -468,24 +475,33 @@ class UpdateHandlers:
         for idtuple in action_dict.get("exclude") or []:
             type_name, id = relay.from_base64(idtuple)
             result["exclude"][type_name].append(id)
-        for klass in [Cluster, Content, Action]:
+        res_action = get_cached_result(
+            request,
+            scope="manage",
+            name="secretgraphCleanResult",
+            ensureInitialized=True,
+        )["Action"]
+        for klass in [Content, Action]:
             type_name = klass.__name__
-            # for passing down exclude info
-            r = retrieve_allowed_objects(
-                request,
-                klass.objects.filter(keyHash__in=result["exclude"][type_name])
-                if type_name == "Action"
-                else fetch_by_id(
-                    klass.objects.all(),
-                    result["exclude"][type_name],
-                    limit_ids=None,
-                ),
-                scope="manage",
-                authset=[] if admin else authset,
-            )
-            s = set(r["objects"].values_list("id", flat=True))
-            # now add exclude infos of authset
-            for action in r["decrypted"]:
+            if isinstance(klass, Action):
+                objs = res_action["objects"].filter(
+                    keyHash__in=result["exclude"][type_name]
+                )
+            else:
+                r = get_cached_result(
+                    request,
+                    scope="manage",
+                    name="secretgraphCleanResult",
+                    ensureInitialized=True,
+                )[type_name]
+                objs = fetch_by_id(
+                    r["objects"], result["exclude"][type_name], limit_ids=None
+                )
+
+            s = set(objs.values_list("id", flat=True))
+            # now add exclude infos (if not admin)
+            # note: manage always resolves, so this is valid
+            for action in res_action["decrypted"]:
                 if action["action"] == "manage":
                     s.update(action["exclude"].get(type_name, []))
             result["exclude"][type_name] = list(s)
