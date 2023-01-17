@@ -76,6 +76,6 @@ export const stubContent = Buffer.from('stubContent:-1').toString('base64')
 export const privateConfigKeys = new Set([
     'slots',
     'certificates',
-    'configLockPreKey',
+    'configLockUrl',
     'configSecurityQuestion',
 ])

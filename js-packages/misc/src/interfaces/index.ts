@@ -34,9 +34,9 @@ export interface CryptoGCMOutInterface extends KeyOutInterface {
 
 export interface PWInterface {
     readonly pw: NonKeyInput | PromiseLike<NonKeyInput>
-    readonly salt: NonKeyInput | PromiseLike<NonKeyInput>
+    readonly salt?: NonKeyInput | PromiseLike<NonKeyInput>
     readonly iterations: number | string | PromiseLike<number | string>
-    readonly hashAlgorithm?: string | PromiseLike<string>
+    readonly hashAlgorithm: string | PromiseLike<string>
 }
 
 export interface ActionInterface {
@@ -101,9 +101,8 @@ interface BaseConfigInterface<N = never> {
     certificates: { [hash: string]: ConfigCertificateValue | N }
     tokens: { [hash: string]: ConfigTokenValue | N }
     slots: string[]
-    // later
-    //configLockPreKey: string
-    //configSecurityQuestion: [string, string]
+    configLockUrl: string
+    configSecurityQuestion: [string, string]
 }
 
 export interface ConfigInterface extends BaseConfigInterface {

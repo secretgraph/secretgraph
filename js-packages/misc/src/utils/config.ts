@@ -8,6 +8,8 @@ import {
     decryptFirstPreKey,
     decryptPreKeys,
     decryptRSAOEAP,
+    deriveClientPW,
+    derivePW,
     encryptAESGCM,
     encryptPreKey,
     unserializeToCryptoKey,
@@ -66,6 +68,12 @@ export function moveHosts({
         trustedKeys,
     }
 }
+const defaultIterations = 100000
+const defaultAnswer = await deriveClientPW({
+    pw: '42',
+    iterations: defaultIterations,
+    hashAlgorithm: 'sha512',
+})
 
 export function cleanConfig(
     config: Interfaces.ConfigInterface | null | undefined,
@@ -87,6 +95,18 @@ export function cleanConfig(
     }
     if (!config.slots?.length) {
         config.slots = ['main']
+        hasChanges = true
+    }
+    if (!config.configLockUrl) {
+        config.configLockUrl = ''
+        hasChanges = true
+    }
+
+    if (!config.configSecurityQuestion?.length) {
+        config.configSecurityQuestion = [
+            'The answer to life, the universe, and everything ("The Hitchhiker\'s Guide to the Galaxy").',
+            defaultAnswer,
+        ]
         hasChanges = true
     }
     if (!Object.keys(config.trustedKeys || {}).length) {
@@ -569,6 +589,12 @@ export function mergeUpdates(
                         merged[key] = val as string[]
                     }
                     break
+                case 'configSecurityQuestion':
+                    if (val && val.length == 2) {
+                        merged[key] = val as [string, string]
+                    }
+                    break
+
                 default:
                     if (val && (!merged[key] || merged[key] != val)) {
                         merged[key] =
@@ -802,6 +828,16 @@ export function updateConfig(
                     !compareArray(val as string[], newState[key])
                 ) {
                     newState[key] = val as string[]
+                    count++
+                }
+                break
+            case 'configSecurityQuestion':
+                if (
+                    val &&
+                    val.length == 2 &&
+                    !compareArray(val as [string, string], newState[key])
+                ) {
+                    newState[key] = val as [string, string]
                     count++
                 }
                 break

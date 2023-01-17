@@ -467,8 +467,10 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 -   add config security question, a client side password which must be entered to access configs
     save it in the config itself
--   add config lockPrekey for locking config
+    replace stub
+-   add config lockUrl for locking config
     save it in the config itself
+    maybe: allow it to be used as a start_url (for apple devices)
 -   split keys in signing/encrypting
 -   validationError: use params
 -   trustedKeys logic (partly done):

@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { saveConfig } from '@secretgraph/misc/utils/config'
+import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import { initializeCluster } from '@secretgraph/misc/utils/operations/cluster'
@@ -39,7 +40,7 @@ function Register() {
 
     return (
         <Formik
-            onSubmit={async ({ url }, { setSubmitting }) => {
+            onSubmit={async ({ url, securityQuestion }, { setSubmitting }) => {
                 setOldConfig(config)
                 url = new URL(url, window.location.href).href
                 const slot = 'main'
@@ -66,6 +67,15 @@ function Register() {
                             baseUrl: url,
                             configCluster: '',
                             slots: [slot],
+                            configSecurityQuestion: [
+                                securityQuestion[0],
+                                await deriveClientPW({
+                                    pw: securityQuestion[1],
+                                    hashAlgorithm: 'sha512',
+                                    iterations: 1000000,
+                                }),
+                            ],
+                            configLockUrl: '',
                             trustedKeys: {},
                         }
                         newConfig.hosts[newConfig.baseUrl] = {
@@ -103,7 +113,13 @@ function Register() {
                     setSubmitting(false)
                 }
             }}
-            initialValues={{ url: defaultPath }}
+            initialValues={{
+                url: defaultPath,
+                securityQuestion: [
+                    'The answer to life, the universe, and everything',
+                    '42',
+                ],
+            }}
         >
             {({ submitForm, isSubmitting, isValid, values }) => {
                 React.useEffect(() => {

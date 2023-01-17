@@ -503,13 +503,24 @@ export async function decryptAESGCM(
 
 export async function derivePW(
     options: Interfaces.PWInterface | PromiseLike<Interfaces.PWInterface>
-): Promise<{ data: ArrayBuffer; key: CryptoKey }> {
+): Promise<{
+    data: ArrayBuffer
+    salt: ArrayBuffer
+    hashAlgorithm: string
+    iterations: number
+}> {
     const _options = await options
     const key = await toPBKDF2key(_options.pw)
-    const salt = await unserializeToArrayBuffer(_options.salt)
+    let salt: ArrayBuffer
+    if (_options.salt) {
+        salt = await unserializeToArrayBuffer(_options.salt)
+    } else {
+        salt = crypto.getRandomValues(new Uint8Array(13))
+    }
     const iterations = parseInt('' + (await _options.iterations))
     const _hashalgo = await _options.hashAlgorithm
-    if (!Constants.mapHashNames['' + _hashalgo]) {
+    const hashItem = Constants.mapHashNames['' + _hashalgo]
+    if (!hashItem) {
         throw Error('hashalgorithm not supported: ' + _hashalgo)
     }
 
@@ -517,15 +528,52 @@ export async function derivePW(
         data: await crypto.subtle.deriveBits(
             {
                 name: 'PBKDF2',
-                salt: salt,
-                iterations: iterations,
-                hash: Constants.mapHashNames['' + _hashalgo].operationName,
+                salt,
+                iterations,
+                hash: hashItem.operationName,
             },
             key,
             256 // cap at 256 for AESGCM compatibility
         ),
-        key,
+        salt,
+        hashAlgorithm: hashItem.serializedName,
+        iterations,
     }
+}
+export async function deriveClientPW(
+    options: Interfaces.PWInterface | PromiseLike<Interfaces.PWInterface>
+): Promise<string> {
+    const data = await derivePW(options)
+    return `${data.iterations}:${data.hashAlgorithm}:${Buffer.concat([
+        new Uint8Array(data.salt),
+        new Uint8Array(data.data),
+    ]).toString('base64')}`
+}
+
+export async function compareClientPw(
+    pw: string,
+    compareWith: string
+): Promise<boolean> {
+    const split = compareWith.split(':')
+    if (split.length != 3) {
+        return false
+    }
+    const saltedData = Buffer.from(split[2], 'base64')
+    const salt = saltedData.subarray(0, 13)
+    const data = saltedData.subarray(13)
+    if (
+        (
+            await derivePW({
+                salt,
+                pw,
+                hashAlgorithm: split[1],
+                iterations: split[0],
+            })
+        ).data == data
+    ) {
+        return true
+    }
+    return false
 }
 
 // use tag="" for flags
@@ -758,15 +806,20 @@ export async function encryptPreKey({
     hashAlgorithm: string
     iterations: number
 }) {
-    const nonce = crypto.getRandomValues(new Uint8Array(13))
-    const key = (await derivePW({ pw, salt: nonce, hashAlgorithm, iterations }))
-        .data
+    const { data: key, salt: nonce } = await derivePW({
+        pw,
+        hashAlgorithm,
+        iterations,
+    })
     const { data } = await encryptAESGCM({
         nonce,
         key,
         data: prekey,
     })
-    const ret = Buffer.concat([nonce, new Uint8Array(data)]).toString('base64')
+    const ret = Buffer.concat([
+        new Uint8Array(nonce),
+        new Uint8Array(data),
+    ]).toString('base64')
     if (ret.length <= 23) {
         throw new EmptyKeyError('prekey is too short <= 3 bytes')
     }
