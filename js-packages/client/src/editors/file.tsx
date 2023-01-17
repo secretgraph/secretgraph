@@ -5,6 +5,8 @@ import TabContext from '@mui/lab/TabContext'
 import TabList from '@mui/lab/TabList'
 import TabPanel from '@mui/lab/TabPanel'
 import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
+import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
@@ -148,6 +150,36 @@ const ViewWidget = ({
                     </a>
                 </Box>
             )}
+        </>
+    )
+}
+
+const Recorder = function Recorder() {
+    const [useAudio, setUseAudio] = React.useState(true)
+    const [useVideo, setUseVideo] = React.useState(true)
+    const [recording, setRecording] = React.useState(false)
+
+    return (
+        <>
+            <Box />
+            <Stack direction="row">
+                <FormControlLabel
+                    control={<Checkbox disabled={recording} />}
+                    onChange={(ev, checked) => setUseAudio(checked)}
+                    label="audio"
+                />
+                <FormControlLabel
+                    control={<Checkbox disabled={recording} />}
+                    onChange={(ev, checked) => setUseVideo(checked)}
+                    label="video"
+                />
+            </Stack>
+
+            <Stack direction="row">
+                <Button disabled={recording}>Start Recording</Button>
+                <Button disabled={!recording}>Pause Recording</Button>
+                <Button disabled={!recording}>Stop Recording</Button>
+            </Stack>
         </>
     )
 }
@@ -622,32 +654,8 @@ function InnerFile({
                                                         }
                                                     />
                                                     <Tab
-                                                        label="Video"
-                                                        value="video"
-                                                        disabled={
-                                                            !!(
-                                                                values.plainInput ||
-                                                                !htmlIsEmpty(
-                                                                    values.htmlInput
-                                                                )
-                                                            )
-                                                        }
-                                                    />
-                                                    <Tab
-                                                        label="Audio"
-                                                        value="audio"
-                                                        disabled={
-                                                            !!(
-                                                                values.plainInput ||
-                                                                !htmlIsEmpty(
-                                                                    values.htmlInput
-                                                                )
-                                                            )
-                                                        }
-                                                    />
-                                                    <Tab
-                                                        label="Hex"
-                                                        value="hex"
+                                                        label="Record"
+                                                        value="record"
                                                         disabled={
                                                             !!(
                                                                 values.plainInput ||
@@ -785,14 +793,8 @@ function InnerFile({
                                                     />
                                                 )}
                                             </TabPanel>
-                                            <TabPanel value="video">
-                                                Video, TODO
-                                            </TabPanel>
-                                            <TabPanel value="audio">
-                                                Audio, TODO
-                                            </TabPanel>
-                                            <TabPanel value="hex">
-                                                Hex, TODO
+                                            <TabPanel value="record">
+                                                <Recorder />
                                             </TabPanel>
                                         </TabContext>
                                     </Grid>
