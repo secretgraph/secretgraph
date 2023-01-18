@@ -2,6 +2,7 @@ import { ApolloQueryResult } from '@apollo/client'
 import LoadingButton from '@mui/lab/LoadingButton'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
+import Stack from '@mui/material/Stack'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
@@ -178,91 +179,103 @@ function Register() {
                         >
                             {initializeHelp}
                         </Typography>
-                        <Field
-                            name="url"
-                            component={FormikTextField}
-                            disabled={isSubmitting}
-                            fullWidth
-                            variant="outlined"
-                            label="Provider"
-                        />
-
-                        {registerContext?.errors?.length ? (
-                            <div style={{ paddingTop: theme.spacing(1) }}>
-                                {registerContext!.errors.map(
-                                    (error: string) => (
-                                        <Alert severity="error" key={error}>
-                                            {error}
-                                        </Alert>
-                                    )
-                                )}
-                            </div>
-                        ) : undefined}
-                        <Field
-                            name="securityQuestion[0]"
-                            component={FormikTextField}
-                            disabled={isSubmitting}
-                            fullWidth
-                            variant="outlined"
-                            label="Security Question"
-                        />
-                        <Field
-                            name="securityQuestion[1]"
-                            component={FormikTextField}
-                            disabled={isSubmitting}
-                            fullWidth
-                            variant="outlined"
-                            label="Security Question Answer"
-                        />
-
-                        {typeof registerContext?.registerUrl === 'string' &&
-                        !registerContext?.errors?.length ? (
-                            <iframe
-                                style={{
-                                    border: '1px solid red;',
-                                    height: '100%',
-                                    width: '100%',
-                                    display: 'block',
-                                    paddingTop: theme.spacing(1),
-                                }}
-                                src={registerContext?.registerUrl}
-                            ></iframe>
-                        ) : undefined}
-
-                        <div style={{ paddingTop: theme.spacing(1) }}>
-                            <LoadingButton
-                                size="small"
-                                variant="contained"
-                                color="secondary"
-                                onClick={submitForm}
-                                style={{
-                                    visibility:
-                                        typeof registerContext?.registerUrl ===
-                                        'string'
-                                            ? 'hidden'
-                                            : undefined,
-                                }}
-                                disabled={
-                                    !registerContext ||
-                                    isSubmitting ||
-                                    !isValid ||
-                                    !!registerContext?.errors?.length
-                                }
-                                loading={isSubmitting || !registerContext}
-                            >
-                                {registerLabel}
-                            </LoadingButton>
-                            <Button
-                                size="small"
-                                variant="text"
+                        <Stack spacing={1}>
+                            <Field
+                                name="url"
+                                component={FormikTextField}
                                 disabled={isSubmitting}
-                                onClick={() => {
-                                    updateMainCtx({ action: 'login' })
-                                }}
-                            >
-                                Login instead
-                            </Button>
-                        </div>
+                                fullWidth
+                                variant="outlined"
+                                label="Provider"
+                            />
+
+                            {registerContext?.errors?.length ? (
+                                <div style={{ paddingTop: theme.spacing(1) }}>
+                                    {registerContext!.errors.map(
+                                        (error: string) => (
+                                            <Alert severity="error" key={error}>
+                                                {error}
+                                            </Alert>
+                                        )
+                                    )}
+                                </div>
+                            ) : undefined}
+                            <Field
+                                name="securityQuestion[0]"
+                                component={FormikTextField}
+                                disabled={isSubmitting}
+                                fullWidth
+                                variant="outlined"
+                                label="Security Question"
+                            />
+                            <Field
+                                name="securityQuestion[1]"
+                                component={FormikTextField}
+                                disabled={isSubmitting}
+                                fullWidth
+                                variant="outlined"
+                                label="Security Question Answer"
+                            />
+
+                            {typeof registerContext?.registerUrl === 'string' &&
+                            !registerContext?.errors?.length ? (
+                                <div>
+                                    <Typography
+                                        variant="h5"
+                                        color="textPrimary"
+                                        gutterBottom
+                                        paragraph
+                                    >
+                                        Manual login required
+                                    </Typography>
+                                    <iframe
+                                        style={{
+                                            border: '1px solid red;',
+                                            height: '100%',
+                                            width: '100%',
+                                            display: 'block',
+                                            paddingTop: theme.spacing(1),
+                                        }}
+                                        src={registerContext?.registerUrl}
+                                    ></iframe>
+                                </div>
+                            ) : undefined}
+
+                            <div>
+                                <LoadingButton
+                                    size="small"
+                                    variant="contained"
+                                    color="secondary"
+                                    onClick={submitForm}
+                                    style={{
+                                        visibility:
+                                            typeof registerContext?.registerUrl ===
+                                            'string'
+                                                ? 'hidden'
+                                                : undefined,
+                                    }}
+                                    disabled={
+                                        !registerContext ||
+                                        isSubmitting ||
+                                        !isValid ||
+                                        !!registerContext?.errors?.length
+                                    }
+                                    loading={isSubmitting || !registerContext}
+                                >
+                                    {registerLabel}
+                                </LoadingButton>
+                                <Button
+                                    size="small"
+                                    variant="text"
+                                    disabled={isSubmitting}
+                                    onClick={() => {
+                                        updateMainCtx({ action: 'login' })
+                                    }}
+                                >
+                                    Login instead
+                                </Button>
+                            </div>
+                        </Stack>
                     </Form>
                 )
             }}
