@@ -68,12 +68,9 @@ export function moveHosts({
         trustedKeys,
     }
 }
-const defaultIterations = 100000
-const defaultAnswer = await deriveClientPW({
-    pw: '42',
-    iterations: defaultIterations,
-    hashAlgorithm: 'sha512',
-})
+// 42
+const defaultAnswer =
+    '100000:sha512:ZXJ3ODl1ZWFzOWZ1YQvIwGlbtmuPDhAdsfaSIQw97sSGb3dFexOvBRQFhtTB5u6kn8Wq0UJNnE7VayHOE4sFOMdKzux0CKDSX85D73w='
 
 export function cleanConfig(
     config: Interfaces.ConfigInterface | null | undefined,

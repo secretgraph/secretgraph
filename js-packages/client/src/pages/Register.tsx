@@ -198,6 +198,23 @@ function Register() {
                                 )}
                             </div>
                         ) : undefined}
+                        <Field
+                            name="securityQuestion[0]"
+                            component={FormikTextField}
+                            disabled={isSubmitting}
+                            fullWidth
+                            variant="outlined"
+                            label="Security Question"
+                        />
+                        <Field
+                            name="securityQuestion[1]"
+                            component={FormikTextField}
+                            disabled={isSubmitting}
+                            fullWidth
+                            variant="outlined"
+                            label="Security Question Answer"
+                        />
+
                         {typeof registerContext?.registerUrl === 'string' &&
                         !registerContext?.errors?.length ? (
                             <iframe
