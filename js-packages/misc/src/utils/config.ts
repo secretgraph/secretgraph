@@ -70,7 +70,7 @@ export function moveHosts({
 }
 // 42
 const defaultAnswer =
-    '100000:sha512:ZXJ3ODl1ZWFzOWZ1YQvIwGlbtmuPDhAdsfaSIQw97sSGb3dFexOvBRQFhtTB5u6kn8Wq0UJNnE7VayHOE4sFOMdKzux0CKDSX85D73w='
+    '100000:sha256:ZXJ3ODl1ZWFzOWZ1YfdN+sw3wksxdTRbr4qHZXuvt3rAPxpVye+9jnfJ+xjL'
 
 export function cleanConfig(
     config: Interfaces.ConfigInterface | null | undefined,
