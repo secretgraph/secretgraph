@@ -19,6 +19,7 @@ import {
     exportConfigAsUrl,
     loadConfigFromSlot,
 } from '@secretgraph/misc/utils/operations/config'
+import ConfigProtected from 'components/ConfigProtected'
 import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
 
@@ -127,6 +128,7 @@ export default React.memo(function ConfigShareDialog({
         >
             <DialogTitle id="export-dialog-title">Export</DialogTitle>
             <DialogContent>
+                <ConfigProtected></ConfigProtected>
                 <Grid container spacing={2}>
                     <Grid xs={12} md={6}>
                         <div>
