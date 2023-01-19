@@ -15,6 +15,7 @@ import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import {
     authInfoFromConfig,
+    cleanConfig,
     saveConfig,
     updateConfig as updateConfigOb,
 } from '@secretgraph/misc/utils/config'
@@ -27,6 +28,7 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
+import ConfigProtected from 'components/ConfigProtected'
 import { FastField, FieldArray, Form, Formik } from 'formik'
 import * as React from 'react'
 
@@ -44,7 +46,8 @@ interface InnerConfigProps {
     hashAlgorithm: string
     nodeData?: any
     tags?: { [name: string]: string[] }
-    config?: Interfaces.ConfigInterface
+    // TODO: make config optional and initialize new config or add stub in add
+    config: Interfaces.ConfigInterface
     url: string
 }
 
@@ -83,27 +86,13 @@ function InnerConfig({
                     if (!values.cluster) {
                         throw Error('Cluster not set')
                     }
-                    const retrieved = await decryptContentObject({
-                        nodeData,
-                        config,
-                        blobOrTokens: mainCtx.tokens,
-                        itemDomain: url,
-                    })
-                    if (!retrieved) {
-                        throw Error(
-                            'could not retrieve and decode config object'
-                        )
-                    }
-                    const foundConfig = JSON.parse(
-                        String.fromCharCode(...new Uint8Array(retrieved.data))
-                    )
                     const update: Interfaces.ConfigInputInterface = {}
                     if (!compareArray(initialValues.slots, slots)) {
                         update['slots'] = slots
                     }
 
                     const [mergedConfig, changes] = updateConfigOb(
-                        foundConfig,
+                        thisConfig,
                         update
                     )
                     const res = await updateOrCreateContentWithConfig({
@@ -274,11 +263,14 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<
-        | (Exclude<
-              UnpackPromise<ReturnType<typeof decryptContentObject>>,
-              null
+        | (Omit<
+              Exclude<
+                  UnpackPromise<ReturnType<typeof decryptContentObject>>,
+                  null
+              >,
+              'data'
           > & {
-              text: string
+              config: Interfaces.ConfigInterface
               key: string
               hashAlgorithm: string
               url: string
@@ -364,6 +356,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                 console.error('failed decoding')
                 return
             }
+            const { data, ...obj2 } = obj
             if (!active) {
                 return
             }
@@ -375,9 +368,13 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                 name = obj.tags['~name'][0]
             }
             updateOb['title'] = name
+            let thisConfig = JSON.parse(await new Blob([data]).text())
+            if (!cleanConfig(thisConfig)[0]) {
+                throw Error('Invalid config')
+            }
             setData({
-                ...obj,
-                text: await new Blob([obj.data]).text(),
+                ...obj2,
+                config: thisConfig,
                 key: `${new Date().getTime()}`,
                 hashAlgorithm: hashAlgorithms[0],
                 url: mainCtx.url as string,
@@ -405,12 +402,14 @@ const CreateConfig = () => {
 export default function ConfigComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     return (
-        <DecisionFrame
-            mainCtx={mainCtx}
-            updateMainCtx={updateMainCtx}
-            create={CreateConfig}
-            view={ViewConfig}
-            edit={EditConfig}
-        />
+        <ConfigProtected>
+            <DecisionFrame
+                mainCtx={mainCtx}
+                updateMainCtx={updateMainCtx}
+                create={CreateConfig}
+                view={ViewConfig}
+                edit={EditConfig}
+            />
+        </ConfigProtected>
     )
 }
