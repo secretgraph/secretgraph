@@ -151,7 +151,8 @@ SECRETGRAPH_RATELIMITS = {
     "DECRYPT_SERVERSIDE": None,
 }
 
-GRAPHENE_PROTECTOR_DEPTH_LIMIT = 10
+# at least 15 or so, we have very deep queries
+GRAPHENE_PROTECTOR_DEPTH_LIMIT = 20
 # complexity is here no problem, so set it extremely high
 GRAPHENE_PROTECTOR_COMPLEXITY_LIMIT = 1000
 

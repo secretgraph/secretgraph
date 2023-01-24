@@ -32,7 +32,7 @@ try:
         logging.warning("tinycss2 not found, cannot sanitize css")
         css_sanitizer = None
 
-    _default_allowed_tags = sanitizer.ALLOWED_TAGS + [
+    _default_allowed_tags = sanitizer.ALLOWED_TAGS | {
         "img",
         "p",
         "br",
@@ -47,11 +47,11 @@ try:
         "audio",
         "source",
         "video",
-    ]
-    _default_allowed_protocols = sanitizer.ALLOWED_PROTOCOLS + [
+    }
+    _default_allowed_protocols = sanitizer.ALLOWED_PROTOCOLS | {
         "data",
         "mailto",
-    ]
+    }
     cleach_cleaner = sanitizer.Cleaner(
         tags=_default_allowed_tags,
         attributes=lambda tag, name, value: True,

@@ -28,11 +28,11 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
-import ConfigProtected from 'components/ConfigProtected'
 import { FastField, FieldArray, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
+import ConfigProtected from '../components/ConfigProtected'
 import DecisionFrame from '../components/DecisionFrame'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'

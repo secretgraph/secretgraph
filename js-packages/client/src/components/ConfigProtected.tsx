@@ -8,10 +8,14 @@ import * as React from 'react'
 import * as Contexts from '../contexts'
 import { passwordLabel } from '../messages'
 
-export default React.memo(function ConfigProtected({
+export default function ConfigProtected({
     children,
     disarmed = false,
-}: React.PropsWithChildren<{ disarmed?: boolean }>) {
+    wrapper: Wrapper = undefined,
+}: React.PropsWithChildren<{
+    disarmed?: boolean
+    wrapper?: any
+}>) {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [password, setPassword] = React.useState('')
     const [pwOk, setPwOk] = React.useState(false)
@@ -30,7 +34,6 @@ export default React.memo(function ConfigProtected({
             if (active && _isPwOk) {
                 setPwOk(true)
             }
-            setPwOk(false)
         }
         f()
         return () => {
@@ -41,7 +44,7 @@ export default React.memo(function ConfigProtected({
         return <>{children}</>
     }
     if (!pwOk) {
-        return (
+        const inner = (
             <Stack spacing={1}>
                 <Typography>{config.configSecurityQuestion[0]}</Typography>
                 <FormControl>
@@ -52,11 +55,16 @@ export default React.memo(function ConfigProtected({
                         variant="outlined"
                         label="Answer"
                         type="password"
+                        autoComplete="on"
                     />
                 </FormControl>
             </Stack>
         )
+        if (!Wrapper) {
+            return inner
+        }
+        return <Wrapper>{inner}</Wrapper>
     } else {
         return <>{children}</>
     }
-})
+}

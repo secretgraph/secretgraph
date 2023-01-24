@@ -562,17 +562,20 @@ export async function compareClientPw(
     const salt = saltedData.subarray(0, 13)
     const data = saltedData.subarray(13)
     if (
-        (
-            await derivePW({
-                salt,
-                pw,
-                hashAlgorithm: split[1],
-                iterations: split[0],
-            })
-        ).data == data
+        Buffer.from(
+            (
+                await derivePW({
+                    salt,
+                    pw,
+                    hashAlgorithm: split[1],
+                    iterations: split[0],
+                })
+            ).data
+        ).equals(data)
     ) {
         return true
     }
+    console.log(2)
     return false
 }
 
