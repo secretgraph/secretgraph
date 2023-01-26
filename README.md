@@ -465,6 +465,9 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
+-   move settings export dialog to only settings
+-   PushedArticle
+-   ChannelStore for push input and as foreign data safe
 -   add config security question, a client side password which must be entered to access configs
     save it in the config itself
     replace stub

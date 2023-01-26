@@ -28,6 +28,7 @@ export const Main = createContext<{
         type: '',
         shareFn: null,
         deleted: null,
+        openDialog: null,
         // use tokens and permissions for saving items related tokens and permissions
         tokens: [],
         tokensPermissions: new Set(),
@@ -79,14 +80,6 @@ export const External = createContext<{
 }>({ defaultPath: '', loginUrl: '' })
 
 export const OpenSidebar = createContext<{
-    open: boolean
-    setOpen: (arg: boolean) => void
-}>({
-    open: false,
-    setOpen: stubFn,
-})
-
-export const OpenConfigShare = createContext<{
     open: boolean
     setOpen: (arg: boolean) => void
 }>({

@@ -8,6 +8,8 @@ import MenuItem from '@mui/material/MenuItem'
 import { useTheme } from '@mui/material/styles'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
+import { findConfigIdQuery } from '@secretgraph/graphql-queries/config'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
@@ -20,8 +22,6 @@ export default React.memo(function HeaderBar() {
     const theme = useTheme()
     const { open, setOpen } = React.useContext(Contexts.OpenSidebar)
     const [menuOpen, setMenuOpen] = React.useState(false)
-    const { open: openConfigShare, setOpen: setOpenConfigShare } =
-        React.useContext(Contexts.OpenConfigShare)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     const { homeUrl } = React.useContext(Contexts.External)
@@ -67,6 +67,62 @@ export default React.memo(function HeaderBar() {
             break
         default:
             throw Error(`Invalid type: ${mainCtx.action}`)
+    }
+
+    const openConfig = async () => {
+        setMenuOpen(false)
+        updateMainCtx({
+            action: 'view',
+            item: null,
+            type: 'Config',
+            openDialog: null,
+        })
+        if (!config) {
+            return
+        }
+        const authInfo = authInfoFromConfig({
+            config,
+            url: config.baseUrl,
+            clusters: new Set([config.configCluster]),
+        })
+
+        const { data } = await baseClient.query({
+            query: findConfigIdQuery,
+            variables: {
+                configTags: `slot=${config.slots[0]}`,
+                authorization: authInfo.tokens,
+                cluster: config.configCluster,
+            },
+        })
+        if (!data) {
+            console.info('Error retrieving data')
+            return
+        }
+        const nodes = data.secretgraph.contents.edges
+        if (!nodes.length) {
+            console.warn('Config not found')
+            return
+        }
+        const node = nodes[0].node
+
+        updateMainCtx({
+            item: node.id,
+            securityLevel: null,
+            securityWarningActive: true,
+            readonly: true,
+            cluster: null,
+            updateId: node.updateId,
+            type: 'Config',
+            deleted: false,
+            action: 'view',
+            url: config.baseUrl,
+            shareFn: null,
+            openDialog: null,
+            title: 'Config',
+            tokens: authInfo.tokens,
+            tokensPermissions: authInfo.types,
+            cloneData: null,
+        })
     }
 
     const logout = () => {
@@ -124,12 +180,6 @@ export default React.memo(function HeaderBar() {
                 }),
             }}
         >
-            <ConfigShareDialog
-                open={openConfigShare}
-                closeFn={() => {
-                    setOpenConfigShare(false)
-                }}
-            />
             <Toolbar>
                 {sidebarButton}
                 <Typography
@@ -171,18 +221,9 @@ export default React.memo(function HeaderBar() {
                 >
                     <MenuItem
                         style={{ display: !config ? 'none' : undefined }}
-                        onClick={() => setMenuOpen(false)}
+                        onClick={openConfig}
                     >
                         Settings
-                    </MenuItem>
-                    <MenuItem
-                        style={{ display: !config ? 'none' : undefined }}
-                        onClick={() => {
-                            setMenuOpen(false)
-                            setOpenConfigShare(true)
-                        }}
-                    >
-                        Export Settings
                     </MenuItem>
                     <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
                     <MenuItem

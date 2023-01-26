@@ -37,7 +37,6 @@ function Definitions({
     const [openSidebar, _setOpenSidebar] = React.useState(() => {
         return JSON.parse(sessionStorage.getItem('openSidebar') || 'true')
     })
-    const [openConfigShare, setOpenConfigShare] = React.useState(false)
     function setOpenSidebar(arg: boolean) {
         sessionStorage.setItem('openSidebar', JSON.stringify(arg))
         _setOpenSidebar(arg)
@@ -72,6 +71,7 @@ function Definitions({
             url: query.get('url') || activeUrl,
             type: query.get('type') || 'Cluster',
             shareFn: null,
+            openDialog: null,
             deleted: null,
             tokens: [],
             tokensPermissions: new Set(),
@@ -190,21 +190,14 @@ function Definitions({
                                 <Contexts.Config.Provider
                                     value={{ config, updateConfig }}
                                 >
-                                    <Contexts.OpenConfigShare.Provider
+                                    <Contexts.Snackbar.Provider
                                         value={{
-                                            open: openConfigShare,
-                                            setOpen: setOpenConfigShare,
+                                            message,
+                                            sendMessage,
                                         }}
                                     >
-                                        <Contexts.Snackbar.Provider
-                                            value={{
-                                                message,
-                                                sendMessage,
-                                            }}
-                                        >
-                                            <Main />
-                                        </Contexts.Snackbar.Provider>
-                                    </Contexts.OpenConfigShare.Provider>
+                                        <Main />
+                                    </Contexts.Snackbar.Provider>
                                 </Contexts.Config.Provider>
                             </Contexts.Search.Provider>
                         </Contexts.Main.Provider>

@@ -175,7 +175,10 @@ export function cleanConfig(
                                     if (!old) {
                                         return [[...new Set(newobj)], 1]
                                     }
-                                    return [[...new Set(...old, ...newobj)], 1]
+                                    return [
+                                        [...new Set([...old, ...newobj])],
+                                        1,
+                                    ]
                                 }
                             )
                             newState.hashes = res[0]
@@ -206,7 +209,10 @@ export function cleanConfig(
                                     if (!old) {
                                         return [[...new Set(newobj)], 1]
                                     }
-                                    return [[...new Set(...old, ...newobj)], 1]
+                                    return [
+                                        [...new Set([...old, ...newobj])],
+                                        1,
+                                    ]
                                 }
                             )[0]
                         }
@@ -532,7 +538,7 @@ export function mergeUpdates(
                                                             [
                                                                 ...new Set([
                                                                     ...old,
-                                                                    newobj,
+                                                                    ...newobj,
                                                                 ]),
                                                             ],
                                                             1,
@@ -562,7 +568,7 @@ export function mergeUpdates(
                                                             [
                                                                 ...new Set([
                                                                     ...old,
-                                                                    newobj,
+                                                                    ...newobj,
                                                                 ]),
                                                             ],
                                                             1,

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Iterable, Optional, List
 from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q, QuerySet
+from django.db.models import Subquery, Q
 
 from ....core.constants import public_states
 from ...utils.auth import (
@@ -188,7 +188,7 @@ class ContentNode(ActionMixin, relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> QuerySet[Content]:
+    def get_queryset(cls, queryset, info) -> Iterable[Content]:
         results = get_cached_result(info.context["request"])
 
         return queryset.filter(
@@ -199,7 +199,7 @@ class ContentNode(ActionMixin, relay.Node):
     @classmethod
     def get_queryset_intern(
         cls, queryset, info: Info, filters: ContentFilter
-    ) -> QuerySet[Content]:
+    ) -> Iterable[Content]:
         results = get_cached_result(
             info.context["request"],
         )

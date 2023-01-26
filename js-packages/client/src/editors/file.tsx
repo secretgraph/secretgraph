@@ -441,7 +441,7 @@ function InnerFile({
                                 url,
                                 action: 'update',
                                 tokens: [
-                                    ...new Set(...mainCtx.tokens, ...nTokens),
+                                    ...new Set([...mainCtx.tokens, ...nTokens]),
                                 ],
                             })
                         } else {

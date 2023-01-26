@@ -36,6 +36,7 @@ import ConfigProtected from '../components/ConfigProtected'
 import DecisionFrame from '../components/DecisionFrame'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
+import ConfigShareDialog from '../components/share/ConfigShareDialog'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
 
@@ -77,6 +78,13 @@ function InnerConfig({
 
     return (
         <>
+            <ConfigShareDialog
+                open={mainCtx.openDialog == 'share'}
+                disarmedQuestion
+                closeFn={() => {
+                    updateMainCtx({ openDialog: null })
+                }}
+            />
             <Formik
                 initialValues={initialValues}
                 onSubmit={async (
@@ -139,7 +147,7 @@ function InnerConfig({
                                 url,
                                 action: 'update',
                                 tokens: [
-                                    ...new Set(...mainCtx.tokens, ...nTokens),
+                                    ...new Set([...mainCtx.tokens, ...nTokens]),
                                 ],
                             })
                         } else {
@@ -322,6 +330,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                         (val: { keyHash: string; type: string }) => val.type
                     ),
                 ]),
+                shareFn: () => updateMainCtx({ openDialog: 'share' }),
             }
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =
@@ -368,6 +377,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                 name = obj.tags['~name'][0]
             }
             updateOb['title'] = name
+            updateMainCtx(updateOb)
             let thisConfig = JSON.parse(await new Blob([data]).text())
             if (!cleanConfig(thisConfig)[0]) {
                 throw Error('Invalid config')

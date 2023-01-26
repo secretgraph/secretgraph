@@ -109,6 +109,7 @@ export default function LoadingComponent() {
                     require: new Set(['manage']),
                 })
                 updateMainCtx({
+                    action: 'create',
                     item: null,
                     type: 'Cluster',
                     url: activeUrl,

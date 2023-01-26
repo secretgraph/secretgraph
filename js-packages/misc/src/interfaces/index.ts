@@ -162,6 +162,7 @@ export interface MainContextInterface {
     type: null | string
     shareFn: null | (() => void)
     deleted: Date | null | false
+    openDialog: null | string
     tokens: string[]
     tokensPermissions: Set<string>
     cloneData: null | { [key: string]: any }

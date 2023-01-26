@@ -575,7 +575,6 @@ export async function compareClientPw(
     ) {
         return true
     }
-    console.log(2)
     return false
 }
 

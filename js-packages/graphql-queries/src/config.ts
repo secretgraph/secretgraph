@@ -90,6 +90,42 @@ export const updateConfigQuery = gql`
     }
 `
 
+export const findConfigIdQuery = gql`
+    query contentFindConfigIdQuery(
+        $cluster: ID!
+        $authorization: [String!]
+        $configTags: [String!]
+    ) {
+        secretgraph(authorization: $authorization) {
+            contents(
+                filters: {
+                    public: FALSE
+                    deleted: FALSE
+                    clusters: [$cluster]
+                    includeTypes: ["Config"]
+                    includeTags: $configTags
+                }
+            )
+                @connection(
+                    key: "configIdQuery"
+                    filter: [
+                        "cluster"
+                        "authorization"
+                        "configContentHashes"
+                        "configTags"
+                    ]
+                ) {
+                edges {
+                    node {
+                        id
+                        updateId
+                    }
+                }
+            }
+        }
+    }
+`
+
 export const findConfigQuery = gql`
     query contentFindConfigQuery(
         $cluster: ID!

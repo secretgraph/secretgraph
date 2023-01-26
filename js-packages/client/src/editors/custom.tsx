@@ -130,7 +130,9 @@ const InnerCustom = ({
                             updateId: res.node.updateId,
                             url,
                             action: 'update',
-                            tokens: [...new Set(...mainCtx.tokens, ...nTokens)],
+                            tokens: [
+                                ...new Set([...mainCtx.tokens, ...nTokens]),
+                            ],
                         })
                     } else {
                         updateMainCtx({

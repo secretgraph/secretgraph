@@ -32,9 +32,11 @@ import ConfigProtected from '../ConfigProtected'
 
 export default React.memo(function ConfigShareDialog({
     open,
+    disarmedQuestion = false,
     closeFn,
 }: {
     open: boolean
+    disarmedQuestion?: boolean
     closeFn: () => void
 }) {
     const { config } = React.useContext(Contexts.Config)
@@ -127,7 +129,10 @@ export default React.memo(function ConfigShareDialog({
             aria-labelledby="export-dialog-title"
         >
             <DialogTitle id="export-dialog-title">Export</DialogTitle>
-            <ConfigProtected wrapper={DialogContent}>
+            <ConfigProtected
+                wrapper={DialogContent}
+                disarmed={disarmedQuestion}
+            >
                 <DialogContent>
                     <Grid container spacing={2}>
                         <Grid xs={12} md={6}>

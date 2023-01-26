@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Iterable, Optional, List
 from strawberry_django_plus import relay, gql
 
 # from django.utils.translation import gettext_lazy as _
@@ -46,18 +46,14 @@ class SecretgraphObject:
 
     @gql.django.connection()
     @gql.django.django_resolver
-    def clusters(
-        self, info: Info, filters: ClusterFilter
-    ) -> relay.Connection[ClusterNode]:
+    def clusters(self, info, filters: ClusterFilter) -> Iterable[ClusterNode]:
         return ClusterNode.get_queryset_intern(
             Cluster.objects.all(), info, filters
         )
 
     @gql.django.connection()
     @gql.django.django_resolver
-    def contents(
-        self, info: Info, filters: ContentFilter
-    ) -> relay.Connection[ContentNode]:
+    def contents(self, info, filters: ContentFilter) -> Iterable[ContentNode]:
         return ContentNode.get_queryset_intern(
             Content.objects.all(), info, filters
         )

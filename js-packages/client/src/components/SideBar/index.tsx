@@ -110,6 +110,7 @@ const SideBarItems = () => {
             action: 'view',
             url: activeUrl,
             shareFn: null,
+            openDialog: null,
             title: mainCtx.updateId == node.updateId ? undefined : name,
             tokens,
             tokensPermissions,
