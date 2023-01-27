@@ -45,20 +45,25 @@ export default function ConfigProtected({
     }
     if (!pwOk) {
         const inner = (
-            <Stack spacing={1}>
-                <Typography>{config.configSecurityQuestion[0]}</Typography>
-                <FormControl>
-                    <TextField
-                        fullWidth={true}
-                        value={password}
-                        onChange={(ev) => setPassword(ev.target.value)}
-                        variant="outlined"
-                        label="Answer"
-                        type="password"
-                        autoComplete="on"
-                    />
-                </FormControl>
-            </Stack>
+            <form>
+                <Stack spacing={4}>
+                    <Typography variant="h4">
+                        Proceed by answering the security question
+                    </Typography>
+                    <Typography>{config.configSecurityQuestion[0]}</Typography>
+                    <FormControl>
+                        <TextField
+                            fullWidth={true}
+                            value={password}
+                            onChange={(ev) => setPassword(ev.target.value)}
+                            variant="outlined"
+                            label="Answer"
+                            type="password"
+                            autoComplete="on"
+                        />
+                    </FormControl>
+                </Stack>
+            </form>
         )
         if (!Wrapper) {
             return inner

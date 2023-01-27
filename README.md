@@ -468,9 +468,6 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 -   move settings export dialog to only settings
 -   PushedArticle
 -   ChannelStore for push input and as foreign data safe
--   add config security question, a client side password which must be entered to access configs
-    save it in the config itself
-    replace stub
 -   add config lockUrl for locking config
     save it in the config itself
     maybe: allow it to be used as a start_url (for apple devices)
@@ -490,6 +487,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO later
 
+-   translations, changing languages
 -   time restrictions (time ranges, block e.g. requests from 1 to 3 at weekdays)
 -   edge-serverside encryption
     -   custom components

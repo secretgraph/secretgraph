@@ -3,6 +3,7 @@ import SecurityIcon from '@mui/icons-material/Security'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
+import Stack from '@mui/material/Stack'
 import { Theme } from '@mui/material/styles'
 import { useTheme } from '@mui/material/styles'
 import Tooltip from '@mui/material/Tooltip'
@@ -19,6 +20,7 @@ import {
     saveConfig,
     updateConfig as updateConfigOb,
 } from '@secretgraph/misc/utils/config'
+import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
 import {
     findWorkingHashAlgorithms,
     hashTagsContentHash,
@@ -28,12 +30,13 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
-import { FastField, FieldArray, Form, Formik } from 'formik'
+import { FastField, Field, FieldArray, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
 import ConfigProtected from '../components/ConfigProtected'
 import DecisionFrame from '../components/DecisionFrame'
+import FormikTextField from '../components/formik/FormikTextField'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import ConfigShareDialog from '../components/share/ConfigShareDialog'
@@ -74,6 +77,9 @@ function InnerConfig({
         slots: thisConfig?.slots || [],
         actions,
         cluster: mainCtx.cluster || null,
+        securityQuestion: thisConfig?.configSecurityQuestion
+            ? [thisConfig!.configSecurityQuestion[0], '']
+            : ['The answer to life, the universe, and everything', '42'],
     }
 
     return (
@@ -97,6 +103,25 @@ function InnerConfig({
                     const update: Interfaces.ConfigInputInterface = {}
                     if (!compareArray(initialValues.slots, slots)) {
                         update['slots'] = slots
+                    }
+                    if (values.cluster != initialValues.cluster) {
+                        update['configCluster'] = values.cluster
+                    }
+                    if (
+                        values.securityQuestion[0] !=
+                            initialValues.securityQuestion[0] ||
+                        values.securityQuestion[1].length
+                    ) {
+                        update['configSecurityQuestion'] = [
+                            values.securityQuestion[0],
+                            values.securityQuestion[1]
+                                ? await deriveClientPW({
+                                      pw: values.securityQuestion[1],
+                                      hashAlgorithm: 'sha512',
+                                      iterations: 1000000,
+                                  })
+                                : thisConfig.configSecurityQuestion[1],
+                        ]
                     }
 
                     const [mergedConfig, changes] = updateConfigOb(
@@ -195,19 +220,32 @@ function InnerConfig({
                                 }}
                             </FieldArray>
                             <Grid container spacing={2}>
-                                <Grid xs={12}>
-                                    <Typography>Active Url</Typography>
+                                <Grid xs>
+                                    <Typography>Config Url</Typography>
                                     <Typography>{url}</Typography>
                                 </Grid>
-                                <Grid container xs>
+                                <Grid xs="auto">
+                                    <Tooltip title="Actions">
+                                        <span>
+                                            <IconButton
+                                                onClick={() => setOpen(!open)}
+                                                size="large"
+                                            >
+                                                <SecurityIcon />
+                                            </IconButton>
+                                        </span>
+                                    </Tooltip>
+                                </Grid>
+                                <Grid container xs={12}>
                                     <Grid xs={12} md={6}>
-                                        <FastField
+                                        <Field
                                             component={SimpleSelect}
-                                            url={url}
                                             name="slots"
                                             disabled={isSubmitting || disabled}
                                             label="Slots"
-                                            firstIfEmpty
+                                            options={config.slots}
+                                            freeSolo
+                                            multiple
                                             validate={(val: string) => {
                                                 if (!val) {
                                                     return 'empty'
@@ -217,7 +255,7 @@ function InnerConfig({
                                         />
                                     </Grid>
                                     <Grid xs={12} md={6}>
-                                        <FastField
+                                        <Field
                                             component={ClusterSelectViaUrl}
                                             url={url}
                                             name="cluster"
@@ -233,17 +271,36 @@ function InnerConfig({
                                         />
                                     </Grid>
                                 </Grid>
-                                <Grid xs="auto">
-                                    <Tooltip title="Actions">
-                                        <span>
-                                            <IconButton
-                                                onClick={() => setOpen(!open)}
-                                                size="large"
-                                            >
-                                                <SecurityIcon />
-                                            </IconButton>
-                                        </span>
-                                    </Tooltip>
+                                <Grid container xs={12}>
+                                    <Stack
+                                        spacing={1}
+                                        direction="column"
+                                        sx={{
+                                            width: '100%',
+                                            margin: (theme) => theme.spacing(1),
+                                        }}
+                                    >
+                                        <Typography variant="h5">
+                                            Update Security Question
+                                        </Typography>
+                                        <Field
+                                            name="securityQuestion[0]"
+                                            component={FormikTextField}
+                                            disabled={isSubmitting}
+                                            fullWidth
+                                            variant="outlined"
+                                            label="Security Question"
+                                        />
+                                        <Field
+                                            name="securityQuestion[1]"
+                                            component={FormikTextField}
+                                            disabled={isSubmitting}
+                                            fullWidth
+                                            variant="outlined"
+                                            label="Security Question Answer"
+                                            helperText="Leave empty to keep the answer"
+                                        />
+                                    </Stack>
                                 </Grid>
                                 <Grid xs={12}>
                                     {isSubmitting && <LinearProgress />}
@@ -330,6 +387,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                         (val: { keyHash: string; type: string }) => val.type
                     ),
                 ]),
+                readonly: false,
                 shareFn: () => updateMainCtx({ openDialog: 'share' }),
             }
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
