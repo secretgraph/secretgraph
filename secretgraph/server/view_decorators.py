@@ -19,7 +19,7 @@ def no_opener(view_func):
             # Ensure argument looks like a request.
             if not hasattr(request, "META"):
                 raise TypeError(
-                    "never_cache didn't receive an HttpRequest. If you are "
+                    "no_opener didn't receive an HttpRequest. If you are "
                     "decorating a classmethod, be sure to use"
                     "@method_decorator."
                 )
@@ -34,7 +34,7 @@ def no_opener(view_func):
             # Ensure argument looks like a request.
             if not hasattr(request, "META"):
                 raise TypeError(
-                    "never_cache didn't receive an HttpRequest. If you are "
+                    "no_opener didn't receive an HttpRequest. If you are "
                     "decorating a classmethod, be sure to use "
                     "@method_decorator."
                 )
@@ -71,7 +71,7 @@ def add_secretgraph_headers(view_func):
             # Ensure argument looks like a request.
             if not hasattr(request, "META"):
                 raise TypeError(
-                    "never_cache didn't receive an HttpRequest. If you are "
+                    "add_secretgraph_headers didn't receive an HttpRequest. If you are "  # noqa: E501
                     "decorating a classmethod, be sure to use "
                     "@method_decorator."
                 )
@@ -86,7 +86,7 @@ def add_secretgraph_headers(view_func):
             # Ensure argument looks like a request.
             if not hasattr(request, "META"):
                 raise TypeError(
-                    "never_cache didn't receive an HttpRequest. If you are "
+                    "add_secretgraph_headers didn't receive an HttpRequest. If you are "  # noqa: E501
                     "decorating a classmethod, be sure to use "
                     "@method_decorator."
                 )
@@ -119,7 +119,7 @@ def add_cors_headers(view_func):
             # Ensure argument looks like a request.
             if not hasattr(request, "META"):
                 raise TypeError(
-                    "never_cache didn't receive an HttpRequest. If you are "
+                    "add_cors_headers didn't receive an HttpRequest. If you are "  # noqa: E501
                     "decorating a classmethod, be sure to use "
                     "@method_decorator."
                 )
@@ -134,7 +134,7 @@ def add_cors_headers(view_func):
             # Ensure argument looks like a request.
             if not hasattr(request, "META"):
                 raise TypeError(
-                    "never_cache didn't receive an HttpRequest. If you are "
+                    "add_cors_headers didn't receive an HttpRequest. If you are "  # noqa: E501
                     "decorating a classmethod, be sure to use "
                     "@method_decorator."
                 )

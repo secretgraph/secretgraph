@@ -306,6 +306,7 @@ export async function decryptContentObject({
             headers: {
                 Authorization: _info.join(','),
             },
+            cache: 'no-cache',
         }).then(async (result) => {
             if (!result.ok) {
                 throw new Error('Could not fetch content')

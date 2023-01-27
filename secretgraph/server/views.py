@@ -17,7 +17,9 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.cache import add_never_cache_headers
 from django.utils.decorators import method_decorator
+from django.utils.cache import patch_cache_control
 from django.views.decorators.http import last_modified
+
 from django.views.generic import View
 from strawberry.django.views import AsyncGraphQLView
 
@@ -267,6 +269,8 @@ class ContentView(View):
                 .annotate(raw_key=Substr("tag", 5))
                 .values_list("raw_key", flat=True)
             )
+        # otherwise crazy stuff happens after updates
+        patch_cache_control(response, max_age=0)
         return response
 
 
