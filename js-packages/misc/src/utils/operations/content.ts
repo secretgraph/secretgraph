@@ -179,6 +179,9 @@ export async function updateContent({
     } else {
         sharedKey = undefined
     }
+    if (!updateId) {
+        throw Error('UpdateId required for update')
+    }
     const references: Interfaces.ReferenceInterface[] = []
     let tags: (PromiseLike<string> | string)[] | null = tagsOptions
     if (sharedKey && tagsOptions && !isPublic) {

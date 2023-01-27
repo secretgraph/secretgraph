@@ -148,7 +148,7 @@ export function deepEqual<T>(a: T, b: T) {
 
 export async function retry<T>({
     action,
-    retryInterval = 5000,
+    retryInterval = 3000,
     maxAttempts = 3,
 }: {
     action: (attempted: number) => Promise<T> | T
