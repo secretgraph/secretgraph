@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Optional
 from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
@@ -28,16 +28,16 @@ if TYPE_CHECKING:
 
 @gql.input
 class ContentFilter:
-    states: Optional[List[str]] = None
-    includeTypes: Optional[List[str]] = None
-    excludeTypes: Optional[List[str]] = None
-    includeTags: Optional[List[str]] = None
-    excludeTags: Optional[List[str]] = gql.django.field(
+    states: Optional[list[str]] = None
+    includeTypes: Optional[list[str]] = None
+    excludeTypes: Optional[list[str]] = None
+    includeTags: Optional[list[str]] = None
+    excludeTags: Optional[list[str]] = gql.django.field(
         default=None,
         description="Use id=xy for excluding contents with ids",
     )
-    contentHashes: Optional[List[str]] = None
-    clusters: Optional[List[gql.ID]] = None
+    contentHashes: Optional[list[str]] = None
+    clusters: Optional[list[gql.ID]] = None
     hidden: UseCriteria = UseCriteria.FALSE
     featured: UseCriteria = UseCriteria.IGNORE
     deleted: UseCriteria = UseCriteria.FALSE
@@ -66,9 +66,9 @@ class ContentNode(ActionMixin, relay.Node):
     def tags(
         self: Content,
         info: Info,
-        includeTags: Optional[List[str]] = None,
-        excludeTags: Optional[List[str]] = None,
-    ) -> List[str]:
+        includeTags: Optional[list[str]] = None,
+        excludeTags: Optional[list[str]] = None,
+    ) -> list[str]:
         incl_filters = Q()
         excl_filters = Q()
         for i in includeTags or []:
@@ -89,8 +89,8 @@ class ContentNode(ActionMixin, relay.Node):
     def signatures(
         self: Content,
         info: Info,
-        includeAlgorithms: Optional[List[str]] = None,
-    ) -> List[str]:
+        includeAlgorithms: Optional[list[str]] = None,
+    ) -> list[str]:
         # authorization often cannot be used, but it is ok, we have cached then
         result = get_cached_result(info.context["request"])["Content"]
         return self.signatures(
