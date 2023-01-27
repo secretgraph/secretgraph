@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional, List
+from typing import Iterable, Optional, List
 from datetime import datetime
-import strawberry
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
@@ -21,9 +20,7 @@ from ...models import (
 from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import ActionMixin
 
-
-if TYPE_CHECKING:
-    from .contents import ContentNode
+from .contents import ContentNode
 
 
 @gql.input
@@ -142,9 +139,7 @@ class ClusterNode(ActionMixin, relay.Node):
     @gql.django.connection()
     def contents(
         self, info: Info, filters: ContentFilterSimple
-    ) -> list[
-        strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
-    ]:
+    ) -> list[ContentNode]:
         result = get_cached_result(info.context["request"])["Content"]
         queryset: QuerySet = self.contents.filter(hidden=False)
         deleted = filters.deleted
