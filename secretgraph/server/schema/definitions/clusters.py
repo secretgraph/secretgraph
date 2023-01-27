@@ -142,7 +142,7 @@ class ClusterNode(ActionMixin, relay.Node):
     @gql.django.connection()
     def contents(
         self, info: Info, filters: ContentFilterSimple
-    ) -> relay.Connection[
+    ) -> list[
         strawberry.LazyType["ContentNode", ".contents"]  # noqa: F821,F722
     ]:
         result = get_cached_result(info.context["request"])["Content"]
@@ -247,7 +247,7 @@ class ClusterNode(ActionMixin, relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> Iterable[Cluster]:
+    def get_queryset(cls, queryset, info) -> list[Cluster]:
         result = get_cached_result(info.context["request"])["Cluster"]
         return queryset.filter(id__in=Subquery(result["objects"].values("id")))
 
@@ -255,7 +255,7 @@ class ClusterNode(ActionMixin, relay.Node):
     @classmethod
     def get_queryset_intern(
         cls, queryset, info: Info, filters: Optional[ClusterFilter] = None
-    ) -> Iterable[Cluster]:
+    ) -> list[Cluster]:
         result = get_cached_result(info.context["request"])["Cluster"]
         deleted = filters.deleted
         if (

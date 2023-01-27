@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Optional, List
+from typing import TYPE_CHECKING, Optional, List
 from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
@@ -121,7 +121,7 @@ class ContentNode(ActionMixin, relay.Node):
     @gql.django.connection()
     def references(
         self, info: Info, filters: ContentReferenceFilter
-    ) -> relay.Connection[ContentReferenceNode]:
+    ) -> list[ContentReferenceNode]:
         if (
             not isinstance(self, Content)
             or self.limited
@@ -153,7 +153,7 @@ class ContentNode(ActionMixin, relay.Node):
     @gql.django.connection()
     def referencedBy(
         self, info: Info, filters: ContentReferenceFilter
-    ) -> relay.Connection[ContentReferenceNode]:
+    ) -> list[ContentReferenceNode]:
         if (
             not isinstance(self, Content)
             or self.limited
@@ -188,7 +188,7 @@ class ContentNode(ActionMixin, relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> Iterable[Content]:
+    def get_queryset(cls, queryset, info) -> list[Content]:
         results = get_cached_result(info.context["request"])
 
         return queryset.filter(
@@ -199,7 +199,7 @@ class ContentNode(ActionMixin, relay.Node):
     @classmethod
     def get_queryset_intern(
         cls, queryset, info: Info, filters: ContentFilter
-    ) -> Iterable[Content]:
+    ) -> list[Content]:
         results = get_cached_result(
             info.context["request"],
         )

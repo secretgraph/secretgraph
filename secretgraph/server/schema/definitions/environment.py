@@ -5,7 +5,6 @@ from strawberry.types import Info
 from strawberry_django_plus import relay, gql
 from django.conf import settings
 from django.shortcuts import resolve_url
-from django.db.models import QuerySet
 
 from ...models import (
     Content,
@@ -36,7 +35,7 @@ class InjectedKeyNode:
         return self.contentHash
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> QuerySet[Content]:
+    def get_queryset(cls, queryset, info) -> list[Content]:
         return queryset.filter(type="PublicKey", injectedFor__isnull=False)
 
 
