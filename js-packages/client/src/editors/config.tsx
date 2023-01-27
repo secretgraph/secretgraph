@@ -86,7 +86,6 @@ function InnerConfig({
         <>
             <ConfigShareDialog
                 open={mainCtx.openDialog == 'share'}
-                disarmedQuestion
                 closeFn={() => {
                     updateMainCtx({ openDialog: null })
                 }}
