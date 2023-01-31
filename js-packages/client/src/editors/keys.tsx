@@ -45,7 +45,7 @@ import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations/co
 import { decryptContentObject } from '@secretgraph/misc/utils/operations/content'
 import { createKeys, updateKey } from '@secretgraph/misc/utils/operations/key'
 import { deleteNodes } from '@secretgraph/misc/utils/operations/node'
-import { extractPubKeysCluster } from '@secretgraph/misc/utils/references'
+import { extractPubKeysReferences } from '@secretgraph/misc/utils/references'
 import { saveAs } from 'file-saver'
 import {
     FastField,
@@ -841,7 +841,8 @@ const KeysUpdate = ({
                             onlySignKeys: true,
                             hashAlgorithm: hashAlgorithmsWorking[0],
                         })
-                        publicKeys = extractPubKeysCluster({
+                        // we only encrypt for seen references, ignoring all injected or trusted keys
+                        publicKeys = extractPubKeysReferences({
                             node: pubkeysResult.data.secretgraph.node,
                             authorization: tokensTarget,
                             hashAlgorithm: keyParams.hash,

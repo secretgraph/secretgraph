@@ -27,12 +27,9 @@ class RegisterUrl:
 @gql.django.type(Content, name="InjectedKey")
 class InjectedKeyNode:
     link: str
+    contentHash: str
 
     id_attr = "name"
-
-    @gql.django.field(only=["contentHash"])
-    def hash(self) -> str:
-        return self.contentHash
 
     @classmethod
     def get_queryset(cls, queryset, info) -> list[Content]:

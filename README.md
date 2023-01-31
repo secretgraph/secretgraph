@@ -465,10 +465,11 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
--   move settings export dialog to only settings
+-   select certificates a private is encrypted for
+-   certificates for slot
 -   PushedArticle
 -   ChannelStore for push input and as foreign data safe
--   add config lockUrl for locking config
+-   add config lockUrl for locking config (partly done)
     save it in the config itself
     maybe: allow it to be used as a start_url (for apple devices)
 -   split keys in signing/encrypting

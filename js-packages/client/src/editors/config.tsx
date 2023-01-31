@@ -152,6 +152,8 @@ function InnerConfig({
                         updateId: nodeData?.updateId,
                         url,
                         hashAlgorithm,
+                        // to disable groupkeys
+                        groupKeys: {},
                     })
                     if (res) {
                         if (res.config) {

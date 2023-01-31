@@ -505,14 +505,14 @@ files = [
 
 [[package]]
 name = "graphene-protector"
-version = "0.10.0"
+version = "0.10.1"
 description = "Protects graphene, graphql or strawberry against malicious queries"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4"
 files = [
-    {file = "graphene_protector-0.10.0-py3-none-any.whl", hash = "sha256:f3f773277b6f4e3d3b80758570470728b1aeb166b51a90b939e52576e6a0188c"},
-    {file = "graphene_protector-0.10.0.tar.gz", hash = "sha256:00d8a284f18e483606f4d62f762447d244da6530f22f8252488f2fa3ab0cb4e3"},
+    {file = "graphene_protector-0.10.1-py3-none-any.whl", hash = "sha256:105ca3a6004023367a1e3b53cd9bfeb2d97ee754a0644ffba799cc59eb531fe6"},
+    {file = "graphene_protector-0.10.1.tar.gz", hash = "sha256:a591eb68fb0eb45a3e5fd52f99330777437325adb8eb21eeaf691bb266299f3f"},
 ]
 
 [package.dependencies]
@@ -1102,14 +1102,14 @@ six = ">=1.5"
 
 [[package]]
 name = "pytoolconfig"
-version = "1.2.4"
+version = "1.2.5"
 description = "Python tool configuration"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytoolconfig-1.2.4-py3-none-any.whl", hash = "sha256:7befe396f91b2593345b829a7745c7f459f04fc6c53fc86c0b771945446a7bd1"},
-    {file = "pytoolconfig-1.2.4.tar.gz", hash = "sha256:5e1a246f77970ddb5f3d8d06fbf162424b8a1adfc22c2eb51826b383bf293d1e"},
+    {file = "pytoolconfig-1.2.5-py3-none-any.whl", hash = "sha256:239ba9d3e537b91d0243275a497700ea39a5e259ddb80421c366e3b288bf30fe"},
+    {file = "pytoolconfig-1.2.5.tar.gz", hash = "sha256:a50f9dfe23b03a9d40414c1fdf902fefbeae12f2ac75a3c8f915944d6ffac279"},
 ]
 
 [package.dependencies]
@@ -1119,7 +1119,7 @@ tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
 
 [package.extras]
 doc = ["sphinx (>=4.5.0)", "tabulate (>=0.8.9)"]
-gen-docs = ["pytoolconfig[doc]", "sphinx (>=4.5.0)", "sphinx-autodoc-typehints (>=1.18.1)", "sphinx-rtd-theme (>=1.0.0)"]
+gendocs = ["pytoolconfig[doc]", "sphinx (>=4.5.0)", "sphinx-autodoc-typehints (>=1.18.1)", "sphinx-rtd-theme (>=1.0.0)"]
 global = ["platformdirs (>=1.4.4)"]
 validation = ["pydantic (>=1.7.4)"]
 
@@ -1461,14 +1461,14 @@ files = [
 
 [[package]]
 name = "tox"
-version = "4.4.2"
+version = "4.4.3"
 description = "tox is a generic virtualenv management and test command line tool"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "tox-4.4.2-py3-none-any.whl", hash = "sha256:258895ba5de919490c03ef97467c4c8c42954537dfd96ae72cc2fb63dac67cf0"},
-    {file = "tox-4.4.2.tar.gz", hash = "sha256:3d8a8dd8a5afdc0d37af3e2b4959e427fe22530d0aa599baf0120e144b3defa3"},
+    {file = "tox-4.4.3-py3-none-any.whl", hash = "sha256:04ad250ceff5ca4b6b7c62b8f7839fbbde8fd656d037756c9387eec6d643a7d8"},
+    {file = "tox-4.4.3.tar.gz", hash = "sha256:2ae0ab67b0c4ca0fc3da0a8814f88ee6a94b43f5c911258c9b78e8b40591ed2b"},
 ]
 
 [package.dependencies]

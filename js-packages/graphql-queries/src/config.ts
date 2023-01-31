@@ -174,6 +174,8 @@ export const findConfigQuery = gql`
                                         tags(includeTags: ["key_hash="])
                                         contentHash
                                         link
+                                        state
+                                        type
                                         referencedBy(
                                             filters: { groups: ["public_key"] }
                                         ) {

@@ -1,4 +1,4 @@
-import { mapHashNames } from '../constants'
+import { mapHashNames, trusted_states } from '../constants'
 import * as Interfaces from '../interfaces'
 import { serializeToBase64, unserializeToArrayBuffer } from './encoding'
 import {
@@ -6,19 +6,116 @@ import {
     unserializeToCryptoKey,
     verifySignature,
 } from './encryption'
-import { hashKey } from './hashing'
+import { hashKey, hashObject } from './hashing'
 
-// onlyPubkeys enforces checks which can fail in case of missing tag inclusion
+export async function extractGroupKeys({
+    serverConfig,
+    hashAlgorithm,
+    itemDomain,
+}: {
+    serverConfig: {
+        groups: {
+            name: string
+            injectedKeys: {
+                link: string
+                contentHash: string
+            }[]
+        }[]
+    }
+    readonly hashAlgorithm: string
+    readonly itemDomain: string
+}): Promise<{
+    [name: string]: { [hash: string]: Promise<CryptoKey> }
+}> {
+    const mapItem = mapHashNames['' + hashAlgorithm]
+    if (!mapItem) {
+        throw new Error(
+            'Invalid hash algorithm/no hash algorithm specified: ' +
+                hashAlgorithm
+        )
+    }
+    const prefix = `Key:${mapItem.serializedName}`
+    const groupsMapping: {
+        [name: string]: { [hash: string]: Promise<CryptoKey> }
+    } = {}
+    const seenKeys: { [link: string]: [string, Promise<CryptoKey>] } = {}
+    for (const groupNode of serverConfig.groups) {
+        if (groupNode.injectedKeys.length) {
+            const keys: { [hash: string]: Promise<CryptoKey> } = {}
+            for (const keyNode of groupNode.injectedKeys) {
+                const isInSeenKeys = seenKeys[keyNode.link] ? false : true
+                let [key_hash, key]: [string, Promise<CryptoKey>] = isInSeenKeys
+                    ? seenKeys[keyNode.link]
+                    : [
+                          '',
+                          fetch(new URL(keyNode.link, itemDomain)).then(
+                              async (result) => {
+                                  const buf = await result.arrayBuffer()
+                                  try {
+                                      return await unserializeToCryptoKey(
+                                          buf,
+                                          {
+                                              name: 'RSA-OAEP',
+                                              hash: mapItem.operationName,
+                                          },
+                                          'publicKey'
+                                      )
+                                  } catch (exc) {
+                                      console.error(
+                                          'failed exctracting public key from cluster',
+                                          buf,
+                                          exc
+                                      )
+                                      throw exc
+                                  }
+                              }
+                          ),
+                      ]
+                if (!key_hash.length) {
+                    if (keyNode.contentHash.startsWith(prefix)) {
+                        key_hash = keyNode.contentHash.replace(/^Key:/, '')
+                    } else {
+                        try {
+                            key_hash = await hashObject(
+                                key,
+                                mapItem.serializedName
+                            )
+                        } catch {}
+                    }
+                }
+                if (key_hash.length) {
+                    if (!isInSeenKeys) {
+                        seenKeys[keyNode.link] = [key_hash, key]
+                    }
+                    keys[key_hash] = key
+                }
+            }
+            groupsMapping[groupNode.name] = keys
+        }
+    }
+    return groupsMapping
+}
+
+// validateKey enforces checks which can fail in case of missing tag inclusion
 // this is the case with the findConfigQuery
-export function extractPubKeysCluster(props: {
+export function extractPubKeysClusterAndInjected({
+    validateKey = true,
+    groupKeys,
+    ...props
+}: {
     readonly node: any
     readonly authorization: string[]
     readonly hashAlgorithm: string
+    readonly itemDomain: string
     // can be used to boost speed; in case the key is already available it is used and not downloaded
     // if not onlySeen is specified, then source is merged
     readonly source?: { [hash: string]: Promise<CryptoKey> }
-    readonly onlyPubkeys?: boolean
+    readonly validateKey?: boolean
     readonly onlySeen?: boolean
+    readonly onlyExtraAndRequired?: Set<string>
+    readonly groupKeys: {
+        [name: string]: { [hash: string]: Promise<CryptoKey> }
+    }
 }): { [hash: string]: Promise<CryptoKey> } {
     const mapItem = mapHashNames['' + props.hashAlgorithm]
     if (!mapItem) {
@@ -32,29 +129,56 @@ export function extractPubKeysCluster(props: {
         ? props.node.cluster.contents.edges
         : props.node.contents.edges
     const seen = new Set<string>()
+    for (const group of props.node.groups) {
+        const mObject = groupKeys[group]
+        if (mObject) {
+            for (const entry of Object.entries(mObject)) {
+                pubkeys[entry[0]] = entry[1]
+            }
+        }
+    }
     for (const { node: keyNode } of contents) {
-        if (!props.onlyPubkeys && keyNode.type != 'PublicKey') {
+        if (
+            validateKey &&
+            (keyNode.type != 'PublicKey' || !trusted_states.has(keyNode.state))
+        ) {
             continue
         }
         let mainKeyHash: string | undefined = undefined
+        let valid = false
+        let hashes: string[] = []
         for (const tag of keyNode.tags as string[]) {
             if (tag.startsWith('key_hash=')) {
                 const key_hash = tag.replace(/^key_hash=/, '')
                 if (key_hash.startsWith(mapItem.serializedName)) {
                     mainKeyHash = key_hash
                 }
-                seen.add(key_hash)
+                hashes.push(key_hash)
+                if (
+                    !props.onlyExtraAndRequired ||
+                    keyNode.state == 'required' ||
+                    props.onlyExtraAndRequired.has(key_hash)
+                ) {
+                    valid = true
+                }
             }
         }
-        if (!mainKeyHash) {
+        if (!valid || !mainKeyHash) {
             continue
         }
+        for (const key in hashes) {
+            seen.add(key)
+        }
+
         if (!pubkeys[mainKeyHash]) {
-            pubkeys[mainKeyHash] = fetch(keyNode.link, {
-                headers: {
-                    Authorization: props.authorization.join(','),
-                },
-            }).then(async (result) => {
+            pubkeys[mainKeyHash] = fetch(
+                new URL(keyNode.link, props.itemDomain),
+                {
+                    headers: {
+                        Authorization: props.authorization.join(','),
+                    },
+                }
+            ).then(async (result) => {
                 const buf = await result.arrayBuffer()
                 try {
                     return await unserializeToCryptoKey(
@@ -85,24 +209,132 @@ export function extractPubKeysCluster(props: {
             )
         }
     }
-    if (props.onlySeen) {
-        for (const key of Object.keys(pubkeys)) {
-            if (!seen.has(key)) {
-                delete pubkeys[key]
+    if (props.source && Object.keys(props.source).length) {
+        if (props.onlySeen) {
+            for (const key of Object.keys(pubkeys)) {
+                if (!seen.has(key)) {
+                    delete pubkeys[key]
+                }
+            }
+        } else {
+            // we need to convert the rest of source
+            for (const key of Object.keys(pubkeys)) {
+                if (!seen.has(key)) {
+                    pubkeys[key] = unserializeToCryptoKey(
+                        pubkeys[key],
+                        {
+                            name: 'RSA-OAEP',
+                            hash: mapItem.operationName,
+                        },
+                        'publicKey'
+                    )
+                }
             }
         }
-    } else {
-        // we need to convert the rest of source
-        for (const key of Object.keys(pubkeys)) {
-            if (!seen.has(key)) {
-                pubkeys[key] = unserializeToCryptoKey(
-                    pubkeys[key],
-                    {
-                        name: 'RSA-OAEP',
-                        hash: mapItem.operationName,
-                    },
-                    'publicKey'
-                )
+    }
+    return pubkeys
+}
+
+// for private keys we don't want to encrypt them for all other public keys
+// so only encrypt for the keys found in references
+export function extractPubKeysReferences({
+    validateKey,
+    ...props
+}: {
+    readonly node: any
+    readonly authorization: string[]
+    readonly source?: { [hash: string]: Promise<CryptoKey> }
+    readonly validateKey?: boolean
+    readonly onlySeen?: boolean
+    readonly hashAlgorithm: string
+}): { [hash: string]: Promise<CryptoKey> } {
+    const pubkeys = Object.assign({}, props.source || {})
+    const seen = new Set<string>()
+    const mapItem = mapHashNames['' + props.hashAlgorithm]
+    if (!mapItem) {
+        throw new Error(
+            'Invalid hash algorithm/no hash algorithm specified: ' +
+                props.hashAlgorithm
+        )
+    }
+    for (const {
+        node: { target: keyNode },
+    } of props.node.references.edges) {
+        if (
+            validateKey &&
+            (keyNode.type != 'PublicKey' || !trusted_states.has(keyNode.state))
+        ) {
+            continue
+        }
+        let mainKeyHash: string | undefined = undefined
+        for (const tag of keyNode.tags as string[]) {
+            if (tag.startsWith('key_hash=')) {
+                const key_hash = tag.replace(/^key_hash=/, '')
+                if (key_hash.startsWith(mapItem.serializedName)) {
+                    mainKeyHash = key_hash
+                }
+                seen.add(key_hash)
+            }
+        }
+        if (!mainKeyHash) {
+            continue
+        }
+        if (!pubkeys[mainKeyHash]) {
+            pubkeys[mainKeyHash] = fetch(keyNode.link, {
+                headers: {
+                    Authorization: props.authorization.join(','),
+                },
+            }).then(async (result) => {
+                const buf = await result.arrayBuffer()
+                try {
+                    return await unserializeToCryptoKey(
+                        buf,
+
+                        {
+                            name: 'RSA-OAEP',
+                            hash: mapItem.operationName,
+                        },
+                        'publicKey'
+                    )
+                } catch (exc) {
+                    console.log(
+                        'failed exctracting public key from reference',
+                        buf
+                    )
+                    throw exc
+                }
+            })
+        } else {
+            pubkeys[mainKeyHash] = unserializeToCryptoKey(
+                pubkeys[mainKeyHash],
+                {
+                    name: 'RSA-OAEP',
+                    hash: mapItem.operationName,
+                },
+                'publicKey'
+            )
+        }
+    }
+    if (props.source && Object.keys(props.source).length) {
+        if (props.onlySeen) {
+            for (const key of Object.keys(pubkeys)) {
+                if (!seen.has(key)) {
+                    delete pubkeys[key]
+                }
+            }
+        } else {
+            // we need to convert the rest of source
+            for (const key of Object.keys(pubkeys)) {
+                if (!seen.has(key)) {
+                    pubkeys[key] = unserializeToCryptoKey(
+                        pubkeys[key],
+                        {
+                            name: 'RSA-OAEP',
+                            hash: mapItem.operationName,
+                        },
+                        'publicKey'
+                    )
+                }
             }
         }
     }

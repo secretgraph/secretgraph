@@ -33,7 +33,9 @@ import { retry } from '../misc'
 import {
     createSignatureReferences,
     encryptSharedKey,
-    extractPubKeysCluster,
+    extractGroupKeys,
+    extractPubKeysClusterAndInjected,
+    extractPubKeysReferences,
 } from '../references'
 import { createContent, decryptContentObject, updateContent } from './content'
 
@@ -454,7 +456,7 @@ export async function updateConfigRemoteReducer(
     const privkeysSign = Object.values(privkeys)
     //
     const pubkeys = Object.values(
-        extractPubKeysCluster({
+        extractPubKeysReferences({
             node: nodes[mainNodeIndex].node,
             source: privkeys,
             onlySeen: true,
@@ -522,6 +524,9 @@ interface updateOrCreateContentWithConfigSharedParams {
     actions: Parameters<typeof transformActions>[0]['actions']
     hashAlgorithm: string
     authorization: string[]
+    groupKeys?: {
+        [name: string]: { [hash: string]: Promise<CryptoKey> }
+    }
 }
 
 type updateOrCreateContentWithConfigReplacedParams =
@@ -562,6 +567,7 @@ export async function updateOrCreateContentWithConfig({
     id,
     updateId,
     value,
+    groupKeys,
     ...options
 }: updateOrCreateContentWithConfigParams): Promise<
     | {
@@ -612,10 +618,20 @@ export async function updateOrCreateContentWithConfig({
                 id: cluster,
             },
         })
-        pubkeys = extractPubKeysCluster({
+        if (!groupKeys) {
+            groupKeys = await extractGroupKeys({
+                serverConfig: pubkeysResult.data.secretgraph.config,
+                hashAlgorithm,
+                itemDomain: url,
+            })
+        }
+
+        pubkeys = extractPubKeysClusterAndInjected({
             node: pubkeysResult.data.secretgraph.node,
             authorization,
             hashAlgorithm: hashAlgorithm,
+            groupKeys,
+            itemDomain: url,
         })
     }
 

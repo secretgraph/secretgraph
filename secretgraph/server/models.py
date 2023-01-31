@@ -6,8 +6,9 @@ import secrets
 from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
-from typing import Iterable, Union
+from typing import Iterable, Optional, Union
 from strawberry_django_plus import relay
+from functools import cached_property
 
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
@@ -218,7 +219,12 @@ class ContentManager(models.Manager):
     def _get_q_required_keys(self, cluster):
         return models.Q(cluster=cluster, state="required", type="PublicKey")
 
-    def _get_q_injected_keys(self, /, groups=None, states=None):
+    def _get_q_injected_keys(
+        self,
+        /,
+        groups: Optional[Union[Cluster, Content, str, Iterable[str]]] = None,
+        states: Optional[Iterable[str]] = None,
+    ):
         q = models.Q(cluster_id=0)
         if not states:
             states = constants.public_states
@@ -232,28 +238,34 @@ class ContentManager(models.Manager):
         else:
             return q & models.Q(injectedFor__isnull=False)
 
-    def trusted_keys(self, cluster):
+    def trusted_keys(self, cluster: Cluster):
         return self.get_queryset().filter(
             cluster=cluster,
             state__in=["trusted", "required"],
             type="PublicKey",
         )
 
-    def injected_keys(self, /, groups=None, states=None):
+    def injected_keys(
+        self,
+        /,
+        groups: Optional[Union[Cluster, Content, str, Iterable[str]]] = None,
+        states=None,
+    ):
         return self.get_queryset().filter(
             self._get_q_injected_keys(groups, states)
         )
 
-    def required_keys(self, cluster):
+    def required_keys(self, cluster: Cluster):
         return self.get_queryset().filter(self._get_q_required_keys(cluster))
 
     def required_keys_full(
         self,
-        cluster,
+        cluster: Cluster,
     ):
         # union would prevent many features like annotate
         return self.get_queryset().filter(
-            self._get_q_required_keys(cluster) | self._get_q_injected_keys()
+            self._get_q_required_keys(cluster)
+            | self._get_q_injected_keys(groups=cluster)
         )
 
 
@@ -329,6 +341,14 @@ class Content(FlexidModel):
                 except Exception as exc:
                     logger.error("Could not load public key", exc_info=exc)
         return None
+
+    @cached_property
+    def is_mutable(self) -> bool:
+        if self.type == "PublicKey":
+            return False
+        if self.tags.filter(tag="immutable").exists():
+            return False
+        return True
 
     @property
     def link(self) -> str:

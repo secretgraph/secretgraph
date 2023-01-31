@@ -270,7 +270,9 @@ class ContentView(View):
                 .values_list("raw_key", flat=True)
             )
         # otherwise crazy stuff happens after updates
-        patch_cache_control(response, max_age=0)
+        # checks for public key and immutable flag
+        if content.is_mutable:
+            patch_cache_control(response, max_age=0)
         return response
 
 

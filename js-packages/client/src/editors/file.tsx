@@ -30,6 +30,7 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
+import { extractGroupKeys } from '@secretgraph/misc/utils/references'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'

@@ -347,7 +347,7 @@ scalar GlobalID @specifiedBy(url: "https://relay.dev/graphql/objectidentificatio
 
 type InjectedKey {
   link: String!
-  hash: String!
+  contentHash: String!
 }
 
 """

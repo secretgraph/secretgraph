@@ -161,7 +161,7 @@ def _update_or_create_content_or_key(
     objdata: ContentMergedInput,
     authset,
     is_key: bool,
-    required_keys,
+    required_keys: set[str],
 ):
     create = not content.id
     size_new = 0
@@ -354,7 +354,7 @@ def _update_or_create_content_or_key(
     content.clean()
 
     final_references = None
-    key_hashes_ref = set()
+    encryption_target_ref = set()
     verifiers_ref = set()
     if (
         old_cluster
@@ -372,7 +372,7 @@ def _update_or_create_content_or_key(
         # no_final_refs final_references => None
         (
             final_references,
-            key_hashes_ref,
+            encryption_target_ref,
             verifiers_ref,
             is_transfer,
             size_refs,
@@ -384,8 +384,16 @@ def _update_or_create_content_or_key(
             no_final_refs=objdata.references is None,
             early_size_limit=early_op_limit,
         )
-        if required_keys and required_keys.isdisjoint(verifiers_ref):
-            raise ValueError("Not signed by required keys")
+        if (
+            required_keys
+            and not constants.public_states.has(content.state)
+            and not constants.protectedTypes.has(content.type)
+            and required_keys.difference(encryption_target_ref)
+        ):
+            raise ValueError("Not encrypted for required keys")
+        # required for bootstrapping
+        if not verifiers_ref and not constants.keyTypes.has(content.type):
+            raise ValueError("Not signed by a known key")
         if (
             not create
             and is_transfer
@@ -431,7 +439,7 @@ def _update_or_create_content_or_key(
         if (
             not is_key
             and content.state != "public"
-            and len(key_hashes_ref) < 1
+            and len(encryption_target_ref) < 1
         ):
             raise ValueError(">=1 key references required for non-key content")
     if objdata.actions is not None:

@@ -75,7 +75,7 @@ export const getClusterQuery = gql`
                     name
                     injectedKeys {
                         link
-                        hash
+                        contentHash
                     }
                 }
             }

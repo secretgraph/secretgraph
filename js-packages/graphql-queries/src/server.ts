@@ -14,7 +14,7 @@ export const serverConfigQuery = gql`
                     description
                     injectedKeys {
                         link
-                        hash
+                        contentHash
                     }
                 }
                 registerUrl
@@ -40,7 +40,7 @@ export const serverConfigQueryWithPermissions = gql`
                     description
                     injectedKeys {
                         link
-                        hash
+                        contentHash
                     }
                 }
                 registerUrl

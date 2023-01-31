@@ -28,6 +28,8 @@ publickey_states: set[ContentState] = {
 # set here because ignored names are removed and must be manually set
 # must be normal set to be extendable
 protectedActions = {"storedUpdate", "auth"}
+protectedTypes = {"Config", "PrivateKey"}
+keyTypes = {"PublicKey", "PrivateKey"}
 
 
 class DeleteRecursive(enum.Enum):

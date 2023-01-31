@@ -192,6 +192,13 @@ export const contentRetrievalQuery = gql`
             config {
                 id
                 hashAlgorithms
+                groups {
+                    name
+                    injectedKeys {
+                        link
+                        contentHash
+                    }
+                }
             }
             node(id: $id) {
                 ... on Content {
@@ -224,6 +231,7 @@ export const contentRetrievalQuery = gql`
                                 target {
                                     link
                                     type
+                                    state
                                     tags(includeTags: ["key_hash="])
                                 }
                             }
@@ -263,6 +271,7 @@ export const getContentReferencesQuery = gql`
                                     id
                                     link
                                     type
+                                    state
                                     tags(includeTags: ["name=", "~name="])
                                 }
                             }
@@ -292,7 +301,7 @@ export const getContentConfigurationQuery = gql`
                     name
                     injectedKeys {
                         link
-                        hash
+                        contentHash
                     }
                 }
             }

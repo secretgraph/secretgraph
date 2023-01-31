@@ -245,6 +245,7 @@ def transform_references(
                     deleteRecursive=DeleteRecursive.FALSE.value,
                 )
         # first extra tag in same group with same target wins
+        # injected key refs needn't appear in key_hashes_tags
         if (
             injected_ref
             and (injected_ref.group, injected_ref.target.id) not in deduplicate
