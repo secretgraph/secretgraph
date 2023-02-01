@@ -12,6 +12,7 @@ from django.http import (
     HttpResponse,
     JsonResponse,
     StreamingHttpResponse,
+    HttpRequest,
 )
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -24,7 +25,7 @@ from django.views.generic import View
 from strawberry.django.views import AsyncGraphQLView
 
 from ..core import constants
-from .utils.auth import get_cached_result
+from .utils.auth import retrieve_allowed_objects
 from .utils.encryption import iter_decrypt_contents
 from .utils.mark import freeze_contents, update_file_accessed
 from .view_decorators import (
@@ -52,9 +53,6 @@ def calc_content_modified_decrypted(request, content, *args, **kwargs):
 
 
 class ContentView(View):
-    template_name = "secretgraph/content_form.html"
-    action = "view"
-
     @method_decorator(no_opener)
     @method_decorator(add_cors_headers)
     @method_decorator(add_secretgraph_headers)
@@ -64,7 +62,7 @@ class ContentView(View):
         )
         return super().dispatch(request, *args, **kwargs)
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: HttpRequest, *args, **kwargs):
         authset = set(
             request.headers.get("Authorization", "")
             .replace(" ", "")
@@ -72,27 +70,28 @@ class ContentView(View):
         )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
-        self.result = get_cached_result(request, authset=authset)["Content"]
-        if request.GET.get("key") or request.headers.get("X-Key"):
-            if self.action != "view":
-                raise Http404()
+        self.result = retrieve_allowed_objects(
+            request,
+            "Content",
+            scope="peek"
+            if "peek" in request.GET or "X-PEEK" in request.headers
+            else "view",
+            authset=authset,
+        )
+        if request.GET.get("key") or request.headers.get("X-KEY"):
             return self.handle_decrypt(
                 request, authset=authset, *args, **kwargs
             )
-        if self.action in {"push", "update"}:
-            # user interface
-            response = self.render_to_response(self.get_context_data())
-        else:
-            # raw interface
-            content = get_object_or_404(
-                self.result["objects"], downloadId=kwargs["id"]
-            )
-            response = self.handle_raw_singlecontent(
-                request, content, *args, **kwargs
-            )
+        # raw interface
+        content = get_object_or_404(
+            self.result["objects"], downloadId=kwargs["id"]
+        )
+        response = self.handle_raw_singlecontent(
+            request, content, *args, **kwargs
+        )
         return response
 
-    def handle_decrypt(self, request, id, *args, **kwargs):
+    def handle_decrypt(self, request: HttpRequest, id, *args, **kwargs):
         """
         space efficient join of one or more documents, decrypted
         In case of multiple documents the \\0 is escaped and the documents with
@@ -103,9 +102,6 @@ class ContentView(View):
 
         Raises:
             Http404: [description]
-
-        Returns:
-            [type]: [description]
 
         Yields:
             chunks
@@ -128,7 +124,9 @@ class ContentView(View):
         return response
 
     @method_decorator(last_modified(calc_content_modified_decrypted))
-    def handle_decrypt_singlecontent(self, request, content, *args, **kwargs):
+    def handle_decrypt_singlecontent(
+        self, request: HttpRequest, content, *args, **kwargs
+    ):
         if self.serverside_decryption_rate:
             r = ratelimit.get_ratelimit(
                 group="serverside_decryption",
@@ -156,7 +154,8 @@ class ContentView(View):
             content = next(iterator)
         except StopIteration:
             return HttpResponse("Missing key", status=400)
-        freeze_contents([content.id], request)
+        if result["scope"] != "peek":
+            freeze_contents([content.id], request)
         names = content.tags_proxy.name
         if hasattr(content, "read_decrypt"):
             response = StreamingHttpResponse(content.read_decrypt())
@@ -257,7 +256,8 @@ class ContentView(View):
                 update_file_accessed([content.id])
             except FileNotFoundError as e:
                 raise Http404() from e
-        freeze_contents([content.id], self.request)
+        if self.result["scope"] != "peek":
+            freeze_contents([content.id], self.request)
         response["X-TYPE"] = content.type
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())

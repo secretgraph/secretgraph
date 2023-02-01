@@ -109,7 +109,8 @@ class ViewHandlers:
     @staticmethod
     def do_view(action_dict, scope, sender, accesslevel, action, **kwargs):
         if scope != "view":
-            return None
+            if scope != "peek" or not action_dict.get("allowPeek"):
+                return None
         ownaccesslevel = 1
         if accesslevel > ownaccesslevel:
             return None
@@ -169,4 +170,8 @@ class ViewHandlers:
         result = cls._clean_view_or_auth(action_dict, request, content, admin)
         if action_dict.get("fetch"):
             result["contentActionGroup"] = "fetch"
+        if action_dict.get("allowPeek", False):
+            result["allowPeek"] = True
+        else:
+            result["allowPeek"] = False
         return result

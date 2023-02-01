@@ -95,12 +95,13 @@ Special configuration keys:
 
 # API
 
-## Permissions (cluster)
+## Permissions (cluster or content)
 
 -   manage: can change and create clusters, full access like admin
 -   create: can add or move contents to cluster TODO: should check permission of cluster it moves from
 -   delete: can delete contents or clusters and contents (depending on scope)
--   update: update contents or clusters (depending on scope)
+-   update: update contents or clusters
+-   peek: can view contents without triggering freeze
 -   push: create subcontents via push
 -   view: view contents and or clusters (depending on scope)
 -   auth: one-time view with intent to signal auth event
@@ -177,6 +178,7 @@ key refs are assigned to privatekey, the rest to the public key
 -   key=key hash:sharedkey (privatekey way) or key=content id:sharedkey (direct way) : decrypt on the fly with key as crypto key (or X-Key Header)
 -   token=flexid/global flexid:token: Auth token (or Authorization Header)
 -   key_hash=hash: retrieve keys with hash (or X-KEY-HASH Header)
+-   peek: don't trigger freeze (only with update permission) (or via X-PEEK header)
 
 Not implemented yet
 
@@ -256,12 +258,14 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
 -   view (Content, Cluster) affects (Content, Cluster):
     -   for Content:
         -   fetch: autodelete content after viewing
+            allowPeek: allow peeking at content (not triggering freeze or update readStatistic)
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[\]
         -   states:like param, include only contents with state
         -   includeTypes: like param, include only contents with type
         -   excludeTypes: like param, exclude contents with type, default: \[\]
+            allowPeek: allow peeking at content (not triggering freeze or update readStatistic)
 -   delete (Content, Cluster):
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
@@ -269,7 +273,7 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
         -   states:like param, include only contents with state
         -   includeTypes: like param, include only contents with type
         -   excludeTypes: like param, exclude contents with type, default: \[\]
--   update (Content, Cluster) affects (Content, Cluster) (has default view permission):
+-   update (Content, Cluster) affects (Content, Cluster) (has default view and peek permission):
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag,

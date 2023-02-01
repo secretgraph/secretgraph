@@ -92,13 +92,14 @@ class UpdateHandlers:
 
     @staticmethod
     def do_update(action_dict, scope, sender, accesslevel, **kwargs):
-        if scope == "update":
+        if scope in {"update", "peek"}:
             ownaccesslevel = 1
         else:
             ownaccesslevel = 0
         if accesslevel > ownaccesslevel or scope not in {
             "update",
             "view",
+            "peek",
         }:
             return None
         if issubclass(sender, Content):

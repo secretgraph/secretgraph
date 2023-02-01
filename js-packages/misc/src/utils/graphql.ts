@@ -1,11 +1,36 @@
-import { ApolloClient, InMemoryCache } from '@apollo/client'
+import { ApolloClient, InMemoryCache, split } from '@apollo/client'
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
+import { getMainDefinition } from '@apollo/client/utilities'
 import { relayStylePagination } from '@apollo/client/utilities'
 import { createUploadLink } from 'apollo-upload-client'
+import { createClient as SubscriptionCreateClient } from 'graphql-ws'
 
 declare var __DEV__: any
 const dev = typeof __DEV__ != 'undefined' && __DEV__
 
 export const createClient = (url: string) => {
+    const uploadLink = new createUploadLink({
+        uri: url,
+    })
+
+    const wsLink = new GraphQLWsLink(
+        SubscriptionCreateClient({
+            url: url.replace(/^http:/, 'ws:/').replace(/^https:/, 'wss:/'),
+        })
+    )
+    const splitLink = split(
+        ({ query }) => {
+            const definition = getMainDefinition(query)
+
+            return (
+                definition.kind === 'OperationDefinition' &&
+                definition.operation === 'subscription'
+            )
+        },
+
+        wsLink,
+        uploadLink
+    )
     return new ApolloClient({
         connectToDevTools: dev,
         cache: new InMemoryCache({
@@ -42,9 +67,7 @@ export const createClient = (url: string) => {
                 },
             },
         }),
-        link: createUploadLink({
-            uri: url,
-        }),
+        link: splitLink,
         name: 'secretgraph',
         version: '0.1',
         queryDeduplication: !dev,

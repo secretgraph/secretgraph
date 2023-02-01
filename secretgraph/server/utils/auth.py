@@ -337,9 +337,21 @@ def retrieve_allowed_objects(
     returnval["actions"] = Action.objects.filter(
         id__in=models.Subquery(returnval["actions"].values("id"))
     ).order_by("-start", "-id")
-    updatedActions = returnval["actions"].filter(
-        id__in=returnval["active_actions"], used__isnull=True
-    )
+
+    # active actions are only marked as used if scope is not peek
+    if scope != "peek":
+        updatedActions = returnval["actions"].filter(
+            id__in=returnval["active_actions"], used__isnull=True
+        )
+        setattr(
+            request,
+            "secretgraphActionsToRollback",
+            getattr(request, "secretgraphActionsToRollback", set()),
+        )
+        request.secretgraphActionsToRollback.update(
+            updatedActions.values_list("id", flat=True)
+        )
+        updatedActions.update(used=now)
 
     # extract subqueries union them
     all_query = reduce(
@@ -383,15 +395,6 @@ def retrieve_allowed_objects(
         assert issubclass(query.model, Action), "invalid type %r" % query.model
         id_subquery = models.Subquery(all_query.values("id"))
         id_subquery_without_public = id_subquery
-    setattr(
-        request,
-        "secretgraphActionsToRollback",
-        getattr(request, "secretgraphActionsToRollback", set()),
-    )
-    request.secretgraphActionsToRollback.update(
-        updatedActions.values_list("id", flat=True)
-    )
-    updatedActions.update(used=now)
     returnval["objects"] = query.filter(id__in=id_subquery)
     returnval["objects_ignore_public"] = query.filter(
         id__in=id_subquery_without_public

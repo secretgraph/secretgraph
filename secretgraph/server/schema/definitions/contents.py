@@ -5,7 +5,7 @@ from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q
+from django.db.models import Subquery, Q, QuerySet
 
 from ....core.constants import public_states
 from ...utils.auth import (
@@ -16,6 +16,7 @@ from ...utils.auth import (
 from ...actions.fetch import fetch_contents
 from ...models import (
     Content,
+    Action,
     ContentReference,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
@@ -46,6 +47,34 @@ class ContentFilter:
     maxUpdated: Optional[datetime] = None
 
 
+# for actions view and fetch
+@gql.type
+class ReadStatistic:
+    query: gql.Private[QuerySet[Action]]
+
+    def last(self) -> Optional[datetime]:
+        action = (
+            self.query.filter(used__isnull=False).only("used").latest("used")
+        )
+        if action:
+            return action.used
+        return None
+
+    def first(self) -> Optional[datetime]:
+        action = (
+            self.query.filter(used__isnull=False).only("used").earliest("used")
+        )
+        if action:
+            return action.used
+        return None
+
+    def count(self) -> int:
+        return self.query.filter(used__isnull=False).count()
+
+    def totalAmount(self) -> int:
+        return self.query.count()
+
+
 @gql.django.type(Content, name="Content")
 class ContentNode(ActionMixin, relay.Node):
     id_attr = "flexid"
@@ -61,6 +90,19 @@ class ContentNode(ActionMixin, relay.Node):
     )
     link: str
     limited: gql.Private[bool] = False
+
+    @gql.django.field()
+    def readStatistic(self: Content) -> ReadStatistic:
+        """Uses fetch/view group actions to provide statistics"""
+        return ReadStatistic(
+            query=Action.objects.filter(
+                contentAction_id__in=Subquery(
+                    self.actions.filter(group__in=("fetch", "view")).values(
+                        "id"
+                    )
+                )
+            )
+        )
 
     @gql.django.field()
     def tags(
