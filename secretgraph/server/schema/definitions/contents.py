@@ -53,30 +53,32 @@ class ReadStatistic:
     query: gql.Private[QuerySet[Action]]
 
     @gql.field()
-    def last(self) -> Optional[datetime]:
-        action = (
-            self.query.filter(used__isnull=False).only("used").latest("used")
+    async def last(self) -> Optional[datetime]:
+        action = await (
+            self.query.filter(used__isnull=False).only("used").alatest("used")
         )
         if action:
             return action.used
         return None
 
     @gql.field()
-    def first(self) -> Optional[datetime]:
-        action = (
-            self.query.filter(used__isnull=False).only("used").earliest("used")
+    async def first(self) -> Optional[datetime]:
+        action = await (
+            self.query.filter(used__isnull=False)
+            .only("used")
+            .aearliest("used")
         )
         if action:
             return action.used
         return None
 
     @gql.field()
-    def count(self) -> int:
-        return self.query.filter(used__isnull=False).count()
+    async def count(self) -> int:
+        return await self.query.filter(used__isnull=False).acount()
 
     @gql.field()
-    def totalAmount(self) -> int:
-        return self.query.count()
+    async def totalAmount(self) -> int:
+        return await self.query.acount()
 
 
 @gql.django.type(Content, name="Content")
