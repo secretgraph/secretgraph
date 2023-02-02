@@ -144,6 +144,10 @@ export default React.memo(function HeaderBar() {
             tokens: [],
             tokensPermissions: new Set(),
         })
+        // in case it is in localStorage
+        localStorage.removeItem('secretgraphConfig')
+        // in case it is in sessionStorage
+        sessionStorage.removeItem('secretgraphConfig')
     }
 
     const logout = () => {
@@ -152,12 +156,11 @@ export default React.memo(function HeaderBar() {
         baseClient.resetStore()
         navClient.resetStore()
         itemClient.resetStore()
-        localStorage.removeItem('secretgraphConfig')
     }
 
     const lock = () => {
         sharedLockLogout()
-        sessionStorage.clear()
+        window.location.replace(config!.configLockUrl)
     }
 
     let sidebarButton = null
