@@ -160,6 +160,7 @@ export default React.memo(function HeaderBar() {
 
     const lock = () => {
         sharedLockLogout()
+        // don't clear session as we want to keep some session local settings
         window.location.replace(config!.configLockUrl)
     }
 
