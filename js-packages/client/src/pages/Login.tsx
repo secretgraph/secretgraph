@@ -8,7 +8,7 @@ import FormHelperText from '@mui/material/FormHelperText'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { loadConfig, saveConfig } from '@secretgraph/misc/utils/config'
+import { loadConfig } from '@secretgraph/misc/utils/config'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import {
     checkConfigObject,
@@ -74,7 +74,6 @@ function Login() {
                         setSubmitting(false)
                         return
                     }
-                    saveConfig(newConfig)
 
                     // const env = createEnvironment(newConfig.baseUrl);
                     updateConfig(newConfig, true)

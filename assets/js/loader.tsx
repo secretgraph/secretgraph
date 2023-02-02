@@ -62,9 +62,5 @@ function load() {
             }
         )
     }*/
-    /**
-    if ('serviceWorker' in navigator) {
-        const registration = runtime.register()
-    } */
 }
 load()

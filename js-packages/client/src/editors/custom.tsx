@@ -19,7 +19,6 @@ import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
-import { saveConfig } from '@secretgraph/misc/utils/config'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
@@ -123,7 +122,6 @@ const InnerCustom = ({
                                 : undefined,
                             require: new Set(['update', 'manage']),
                         }).tokens
-                        saveConfig(res.config)
                         updateConfig(res.config, true)
                         updateMainCtx({
                             item: res.node.id,

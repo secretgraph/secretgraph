@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
@@ -97,7 +95,7 @@ class ContentNode(ActionMixin, relay.Node):
     link: str
     limited: gql.Private[bool] = False
 
-    @gql.django.field()
+    @gql.field()
     def readStatistic(self: Content) -> ReadStatistic:
         """Uses fetch/view group actions to provide statistics"""
         return ReadStatistic(
@@ -110,7 +108,8 @@ class ContentNode(ActionMixin, relay.Node):
             )
         )
 
-    @gql.django.field()
+    @gql.field()
+    @gql.django.django_resolver
     def tags(
         self: Content,
         info: Info,
@@ -133,7 +132,8 @@ class ContentNode(ActionMixin, relay.Node):
             )
         return tags
 
-    @gql.django.field()
+    @gql.field()
+    @gql.django.django_resolver
     def signatures(
         self: Content,
         info: Info,
@@ -146,10 +146,11 @@ class ContentNode(ActionMixin, relay.Node):
             ContentReference.objects.filter(target__in=result["objects"]),
         )
 
-    @gql.django.field()
+    @gql.field()
+    @gql.django.django_resolver
     def cluster(
         self: Content, info: Info
-    ) -> Optional[gql.LazyType["ClusterNode", ".clusters"]]:
+    ) -> Optional[Annotated["ClusterNode", gql.lazy(".clusters")]]:
         # we are in the 2nd level, block
         if self.limited:
             return None

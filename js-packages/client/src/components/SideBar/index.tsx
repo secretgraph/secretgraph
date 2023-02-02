@@ -101,7 +101,7 @@ const SideBarItems = () => {
         updateMainCtx({
             item: node.id,
             securityLevel: null,
-            securityWarningActive: true,
+            securityWarningArmed: true,
             readonly: true,
             cluster: type == 'Cluster' ? node.id : null,
             updateId: node.updateId,

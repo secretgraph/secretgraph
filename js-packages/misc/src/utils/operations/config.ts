@@ -236,8 +236,8 @@ export async function exportConfigAsUrl({
     config: Interfaces.ConfigInterface
     slot: string
     pw?: string
-    iterations: number
-    types: ('direct' | 'privatekey')[]
+    iterations?: number
+    types?: ('direct' | 'privatekey')[]
 }) {
     const authInfo = authInfoFromConfig({
         config,

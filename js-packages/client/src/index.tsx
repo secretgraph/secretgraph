@@ -6,9 +6,11 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     loadConfig,
     loadConfigSync,
+    saveConfig,
     updateConfigReducer,
 } from '@secretgraph/misc/utils/config'
 import { createClient } from '@secretgraph/misc/utils/graphql'
+import { is_pwa } from '@secretgraph/misc/utils/misc'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations'
 import * as React from 'react'
 
@@ -25,7 +27,7 @@ function Client(props: Props) {
         updateConfigReducer,
         null,
         () => {
-            let [conf, needsUpdate] = loadConfigSync()
+            let [conf, needsUpdate] = loadConfigSync(is_pwa() ? window.localStorage : window.sessionStorage)
             /**if(res[1]){
                  *  trigger update
 
@@ -33,6 +35,19 @@ function Client(props: Props) {
             return conf
         }
     )
+    React.useEffect(() => {
+        if (!config) {
+            return
+        }
+        saveConfig(config, is_pwa() ? window.localStorage : window.sessionStorage)
+    }, [config])
+
+    React.useEffect(() => {
+        if (!config?.configLockUrl) {
+            return
+        }
+        window.localStorage.setItem("secretgraphLoginUrl", config.configLockUrl)
+    }, [config?.configLockUrl])
     const [loading, setLoading] = React.useState(() => !config)
     React.useEffect(() => {
         if (config) {

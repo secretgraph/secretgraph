@@ -386,13 +386,13 @@ def _update_or_create_content_or_key(
         )
         if (
             required_keys
-            and not constants.public_states.has(content.state)
-            and not constants.protectedTypes.has(content.type)
+            and content.state not in constants.public_states
+            and content.type not in constants.protectedTypes
             and required_keys.difference(encryption_target_ref)
         ):
             raise ValueError("Not encrypted for required keys")
         # required for bootstrapping
-        if not verifiers_ref and not constants.keyTypes.has(content.type):
+        if not verifiers_ref and content.type not in constants.keyTypes:
             raise ValueError("Not signed by a known key")
         if (
             not create

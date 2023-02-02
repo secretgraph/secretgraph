@@ -1,6 +1,4 @@
-// import { ApolloClient } from "@apollo/client";
-
-export type NonKeyInput = string | Blob | ArrayBuffer
+export type NonKeyInput = string | Blob | ArrayBuffer | DataView
 export type RawInput = NonKeyInput | CryptoKey
 export type KeyInput = RawInput | CryptoKeyPair
 
@@ -147,7 +145,7 @@ export interface MainContextInterface {
     // in level 3 it requests for an update of trusted keys
     // in level 4 it is a modal and must be accepted to continue
     // should be initial active
-    securityWarningActive: boolean
+    securityWarningArmed: boolean
     // is content editable, must be initially set to true
     // optional for create (item=null), maybe becomes mandatory
     readonly: boolean

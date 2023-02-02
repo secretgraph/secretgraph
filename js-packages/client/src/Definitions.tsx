@@ -48,7 +48,9 @@ function Definitions({
     const [activeUrl, setActiveUrl] = React.useState(
         () => (config ? config.baseUrl : defaultPath) as string
     )
-    const [loginUrl, setLoginUrl] = React.useState('')
+    const [loginUrl, setLoginUrl] = React.useState<string>(() => {
+        return localStorage.getItem("secretgraphLoginUrl") || ""
+    })
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>,
         URLSearchParams
@@ -64,7 +66,7 @@ function Definitions({
             action,
             title: '',
             securityLevel: null,
-            securityWarningActive: true,
+            securityWarningArmed: true,
             readonly: true,
             item: query.get('item'),
             updateId: null,

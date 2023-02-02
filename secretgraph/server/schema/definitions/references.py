@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Optional, List, Iterable
+from typing import TYPE_CHECKING, Annotated, Optional, List, Iterable
 from strawberry.types import Info
 from strawberry_django_plus import relay, gql
 
@@ -45,7 +43,7 @@ class ContentReferenceNode(relay.Node):
         *,
         info: Info,
         required: bool = False,
-    ) -> ContentReferenceNode:
+    ):
         result = get_cached_result(info.context["request"])["Content"]
         queryset = ContentReference.objects.all()
         try:
@@ -80,7 +78,7 @@ class ContentReferenceNode(relay.Node):
     @gql.django.field
     def source(
         self, info: Info
-    ) -> gql.LazyType["ContentNode", ".contents"]:  # noqa F821,F722
+    ) -> Annotated["ContentNode", gql.lazy(".contents")]:
         result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
             result["objects"].filter(references=self),
@@ -90,7 +88,7 @@ class ContentReferenceNode(relay.Node):
     @gql.django.field
     def target(
         self, info: Info
-    ) -> gql.LazyType["ContentNode", ".contents"]:  # noqa F821,F722
+    ) -> Annotated["ContentNode", gql.lazy(".contents")]:
         result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
             result["objects"].filter(referencedBy=self),

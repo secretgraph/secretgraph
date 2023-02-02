@@ -18,7 +18,7 @@ import {
     generateActionMapper,
     transformActions,
 } from '@secretgraph/misc/utils/action'
-import { authInfoFromConfig, saveConfig } from '@secretgraph/misc/utils/config'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { serializeToBase64 } from '@secretgraph/misc/utils/encoding'
 import {
     findWorkingHashAlgorithms,
@@ -248,7 +248,6 @@ const ClusterIntern = ({
                           }).tokens
                         : []
                     if (newConfig) {
-                        saveConfig(newConfig as Interfaces.ConfigInterface)
                         updateConfig(newConfig, true)
                     }
                     updateMainCtx({

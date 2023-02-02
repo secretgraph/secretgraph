@@ -7,7 +7,6 @@ import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { saveConfig } from '@secretgraph/misc/utils/config'
 import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
@@ -93,7 +92,6 @@ function Register() {
                             noteToken: 'initial token',
                         })
                         // TODO: handle exceptions and try with login
-                        saveConfig(newConfig)
                         updateConfig(newConfig, true)
                         setActiveUrl(newConfig.baseUrl)
                         updateMainCtx({

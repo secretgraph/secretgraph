@@ -173,3 +173,8 @@ export async function retry<T>({
 export function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
+
+
+export function is_pwa() : boolean{
+    return window.matchMedia('(display-mode: fullscreen), (display-mode: standalone), (display-mode: minimal-ui), (display-mode: window-controls-overlay)').matches
+}

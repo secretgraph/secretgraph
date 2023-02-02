@@ -17,7 +17,6 @@ import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import {
     authInfoFromConfig,
     cleanConfig,
-    saveConfig,
     updateConfig as updateConfigOb,
 } from '@secretgraph/misc/utils/config'
 import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
@@ -28,6 +27,7 @@ import {
 import { compareArray } from '@secretgraph/misc/utils/misc'
 import {
     decryptContentObject,
+    exportConfigAsUrl,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
 import { FastField, Field, FieldArray, Form, Formik } from 'formik'
@@ -36,6 +36,7 @@ import * as React from 'react'
 import ActionsDialog from '../components/ActionsDialog'
 import ConfigProtected from '../components/ConfigProtected'
 import DecisionFrame from '../components/DecisionFrame'
+import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
@@ -77,6 +78,8 @@ function InnerConfig({
         slots: thisConfig?.slots || [],
         actions,
         cluster: mainCtx.cluster || null,
+        lockPW: '',
+        removeLockPW: false,
         securityQuestion: thisConfig?.configSecurityQuestion
             ? [thisConfig!.configSecurityQuestion[0], '']
             : ['The answer to life, the universe, and everything', '42'],
@@ -105,6 +108,16 @@ function InnerConfig({
                     }
                     if (values.cluster != initialValues.cluster) {
                         update['configCluster'] = values.cluster
+                    }
+
+                    if (values.lockPW) {
+                        update['configLockUrl'] = await exportConfigAsUrl({
+                            client: itemClient,
+                            config: thisConfig,
+                            slot: thisConfig.slots[0],
+                            pw: values.lockPW,
+                            types: ['privatekey'],
+                        })
                     }
                     if (
                         values.securityQuestion[0] !=
@@ -165,7 +178,6 @@ function InnerConfig({
                                     : undefined,
                                 require: new Set(['update', 'manage']),
                             }).tokens
-                            saveConfig(res.config)
                             updateConfig(res.config, true)
                             updateMainCtx({
                                 item: res.node.id,
@@ -201,6 +213,11 @@ function InnerConfig({
                         values.cluster &&
                             updateMainCtx({ cluster: values.cluster })
                     }, [values.cluster])
+                    React.useEffect(() => {
+                        values.lockPW &&
+                            values.removeLockPW &&
+                            setFieldValue('removeLockPW', false)
+                    }, [values.lockPW])
                     return (
                         <Form>
                             <FieldArray name="actions">
@@ -287,7 +304,7 @@ function InnerConfig({
                                         <Field
                                             name="securityQuestion[0]"
                                             component={FormikTextField}
-                                            disabled={isSubmitting}
+                                            disabled={isSubmitting || disabled}
                                             fullWidth
                                             variant="outlined"
                                             label="Security Question"
@@ -295,7 +312,7 @@ function InnerConfig({
                                         <Field
                                             name="securityQuestion[1]"
                                             component={FormikTextField}
-                                            disabled={isSubmitting}
+                                            disabled={isSubmitting || disabled}
                                             fullWidth
                                             variant="outlined"
                                             label="Security Question Answer"
@@ -303,19 +320,81 @@ function InnerConfig({
                                         />
                                     </Stack>
                                 </Grid>
-                                <Grid xs={12}>
-                                    {isSubmitting && <LinearProgress />}
-                                </Grid>
-                                <Grid xs={12}>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        disabled={isSubmitting || !dirty}
-                                        onClick={submitForm}
+                                <Grid container xs={12}>
+                                    <Stack
+                                        spacing={1}
+                                        direction="column"
+                                        sx={{
+                                            width: '100%',
+                                            margin: (theme) => theme.spacing(1),
+                                        }}
                                     >
-                                        Submit
-                                    </Button>
+                                        <Typography variant="h5">
+                                            {thisConfig.configLockUrl &&
+                                            !values.removeLockPW
+                                                ? 'Update Lock password'
+                                                : 'Set Lock Pw'}
+                                        </Typography>
+                                        <Field
+                                            name="lockPW"
+                                            component={FormikTextField}
+                                            disabled={
+                                                isSubmitting ||
+                                                disabled ||
+                                                !nodeData ||
+                                                values.slots[0] !=
+                                                    initialValues.slots[0]
+                                            }
+                                            fullWidth
+                                            variant="outlined"
+                                            label="Password used for locking secretgraph on inactivity"
+                                            helperText="Leave empty to keep the pw"
+                                        />
+                                        <Field
+                                            name="removeLockPW"
+                                            type="checkbox"
+                                            Label={{
+                                                label: 'Remove Password Lock',
+                                            }}
+                                            disabled={
+                                                disabled ||
+                                                !config.configLockUrl.length ||
+                                                values.lockPW.length ||
+                                                !nodeData ||
+                                                values.slots[0] !=
+                                                    initialValues.slots[0]
+                                            }
+                                            component={FormikCheckboxWithLabel}
+                                        />
+                                        {!nodeData && (
+                                            <Typography
+                                                variant="body1"
+                                                color="warning"
+                                            >
+                                                Need to save config first
+                                            </Typography>
+                                        )}
+                                    </Stack>
                                 </Grid>
+                                {viewOnly ? null : (
+                                    <>
+                                        <Grid xs={12}>
+                                            {isSubmitting && <LinearProgress />}
+                                        </Grid>
+                                        <Grid xs={12}>
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                disabled={
+                                                    isSubmitting || !dirty
+                                                }
+                                                onClick={submitForm}
+                                            >
+                                                Submit
+                                            </Button>
+                                        </Grid>
+                                    </>
+                                )}
                             </Grid>
                         </Form>
                     )

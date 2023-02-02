@@ -10,6 +10,7 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import { findConfigIdQuery } from '@secretgraph/graphql-queries/config'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
+import { is_pwa } from '@secretgraph/misc/utils/misc'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
@@ -108,7 +109,7 @@ export default React.memo(function HeaderBar() {
         updateMainCtx({
             item: node.id,
             securityLevel: null,
-            securityWarningActive: true,
+            securityWarningArmed: true,
             readonly: true,
             cluster: null,
             updateId: node.updateId,
@@ -124,8 +125,7 @@ export default React.memo(function HeaderBar() {
             cloneData: null,
         })
     }
-
-    const logout = () => {
+    const sharedLockLogout = () => {
         setMenuOpen(false)
 
         updateConfig(null, true)
@@ -134,7 +134,7 @@ export default React.memo(function HeaderBar() {
             action: 'login',
             readonly: true,
             securityLevel: null,
-            securityWarningActive: true,
+            securityWarningArmed: true,
             title: '',
             item: null,
             updateId: null,
@@ -144,11 +144,20 @@ export default React.memo(function HeaderBar() {
             tokens: [],
             tokensPermissions: new Set(),
         })
+    }
+
+    const logout = () => {
+        sharedLockLogout()
         sessionStorage.clear()
         baseClient.resetStore()
         navClient.resetStore()
         itemClient.resetStore()
         localStorage.removeItem('secretgraphConfig')
+    }
+
+    const lock = () => {
+        sharedLockLogout()
+        sessionStorage.clear()
     }
 
     let sidebarButton = null
@@ -227,7 +236,20 @@ export default React.memo(function HeaderBar() {
                     </MenuItem>
                     <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
                     <MenuItem
-                        style={{ display: !config ? 'none' : undefined }}
+                        style={{
+                            display:
+                                !config || !config.configLockUrl.length
+                                    ? 'none'
+                                    : undefined,
+                        }}
+                        onClick={lock}
+                    >
+                        Lock
+                    </MenuItem>
+                    <MenuItem
+                        style={{
+                            display: !config || is_pwa() ? 'none' : undefined,
+                        }}
                         onClick={logout}
                     >
                         Logout

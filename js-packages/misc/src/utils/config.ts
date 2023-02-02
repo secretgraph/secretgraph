@@ -977,7 +977,7 @@ export function loadConfigSync(
 }
 
 export const loadConfig = async (
-    obj: string | File | Storage = window.localStorage,
+    obj: string | File | Storage,
     pws?: string[]
 ): Promise<[Interfaces.ConfigInterface | null, boolean]> => {
     if (obj instanceof Storage) {

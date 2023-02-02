@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Iterable, Optional, List
 from datetime import datetime
 from strawberry.types import Info
