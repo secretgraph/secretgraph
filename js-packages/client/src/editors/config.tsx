@@ -118,6 +118,8 @@ function InnerConfig({
                             pw: values.lockPW,
                             types: ['privatekey'],
                         })
+                    } else if (values.removeLockPW) {
+                        update['configLockUrl'] = ''
                     }
                     if (
                         values.securityQuestion[0] !=
