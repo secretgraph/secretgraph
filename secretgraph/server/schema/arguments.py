@@ -17,11 +17,13 @@ class ActionInput:
     value: JSON = strawberry.field(
         description='Action definition, "delete" for action deletion'
     )
-    # except with deletion always required as actions must be checked and
-    # transformed by server
+    # required for special value "delete" or replacing existing tokens
+    # note: delete works Cluster wide even if used in connection with a content
     existingHash: Optional[str] = None
     start: Optional[datetime] = None
     stop: Optional[datetime] = None
+    # except with deletion always required as actions must be checked and
+    # transformed by server
     key: Optional[str] = strawberry.field(
         description="Action key for encrypting action (base64, 32 bytes)",
         default=None,

@@ -57,7 +57,9 @@ class UpdateHandlers:
                 "filters": ~excl_filters & incl_filters,
                 "accesslevel": ownaccesslevel,
             }
-        elif issubclass(sender, Cluster) and not action.contentAction:
+        elif issubclass(sender, Cluster) and not hasattr(
+            action, "contentAction"
+        ):
             return {
                 "filters": Q(),
                 "accesslevel": ownaccesslevel,

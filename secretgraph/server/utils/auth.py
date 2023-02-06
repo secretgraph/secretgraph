@@ -265,7 +265,7 @@ def retrieve_allowed_objects(
                 returnval["rejecting_action"] = (action, action_dict)
                 returnval["objects"] = query.none()
                 return returnval
-            if action.contentAction:
+            if hasattr(action, "contentAction"):
                 action_info_dict_ref = returnval[
                     "action_info_contents"
                 ].setdefault(action.contentAction.content_id, {})
@@ -294,9 +294,8 @@ def retrieve_allowed_objects(
 
                 if issubclass(query.model, Content):
                     returnval["active_actions"].add(action.id)
-                elif (
-                    issubclass(query.model, Cluster)
-                    and not action.contentAction
+                elif issubclass(query.model, Cluster) and not hasattr(
+                    action, "contentAction"
                 ):
                     returnval["active_actions"].add(action.id)
             elif newaccesslevel < 0:

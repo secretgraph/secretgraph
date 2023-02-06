@@ -27,9 +27,9 @@ from ._arguments import ActionInput
 def manage_actions_fn(
     request, obj, actionlist: List[ActionInput], authset=None, admin=False
 ):
-    add_actions = []
-    modify_actions = {}
+    add_actions = {}
     delete_actions = set()
+    delete_actions_content = set()
     action_types = set()
 
     if isinstance(obj, Content):
@@ -90,11 +90,18 @@ def manage_actions_fn(
             action_value = action.value
             if isinstance(action_value, str):
                 action_value = json.loads(action_value)
-        if action_value == "delete":
-            if "existingHash" in action:
-                if action["existingHash"] in modify_actions:
-                    raise ValueError("update id in delete set")
-                delete_actions.add(action["existingHash"])
+        if action_value == "delete" or action.existingHash:
+            if action.existingHash:
+                if action_value == "delete":
+                    if action.existingHash in add_actions:
+                        raise ValueError(
+                            "Cannot update and delete the same Action"
+                        )
+                    delete_actions.add(action.existingHash)
+                elif content:
+                    delete_actions_content.add(action.existingHash)
+                else:
+                    delete_actions.add(action.existingHash)
             continue
         action_key = getattr(action, "key", None)
         if isinstance(action_key, bytes):
@@ -117,25 +124,7 @@ def manage_actions_fn(
         # add contentAction
         group = action_value.pop("contentActionGroup", "")
         maxLifetime = action_value.pop("maxLifetime", None)
-        existing = action.existingHash
-        if existing:
-            if existing.isdecimal():
-                actionObjs = allowed_and_existing_actions.filter(
-                    Q(id=int(existing)) | Q(keyHash=existing)
-                )
-            else:
-                actionObjs = allowed_and_existing_actions.filter(
-                    keyHash=existing
-                )
-            if not actionObjs.exists():
-                continue
-            else:
-                actionObj = actionObjs.first()
-                for obj in actionObjs[1:]:
-                    if obj.id in modify_actions:
-                        continue
-                    delete_actions.add(obj.id)
-        elif content:
+        if content:
             actionObj = Action(contentAction=ContentAction(content=content))
         else:
             actionObj = Action()
@@ -159,73 +148,50 @@ def manage_actions_fn(
         actionObj.cluster = cluster
         actionObj.action_type = action_value["action"]
         action_types.add(action_value["action"])
-        if actionObj.id:
-            if actionObj.id in delete_actions:
-                raise ValueError("update id in delete set")
-            modify_actions[actionObj.id] = actionObj
-        else:
-            add_actions.append(actionObj)
+        add_actions[actionObj.keyHash] = actionObj
 
-    if None in delete_actions:
-        if content:
-            delete_q = Q()
-        else:
-            delete_q = Q(ContentAction__isnull=True)
-    else:
-        ldelete_actions = list(delete_actions)
-        delete_q = Q(keyHash__in=ldelete_actions)
+    delete_q = Q(keyHash__in=delete_actions)
+    if content:
+        delete_q |= Q(
+            keyHash__in__in=delete_actions_content,
+            contentAction__content=content,
+        )
 
     def save_fn(context=nullcontext):
         if callable(context):
             context = context()
         with context:
-            if not create and delete_q:
+            if not create and (delete_actions or delete_actions_content):
                 # delete old actions of obj, if allowed to
-                actions = allowed_and_existing_actions.filter(delete_q)
-                if content:
-                    # recursive deletion
-                    ContentAction.objects.filter(
-                        action__in=actions,
-                        content=content,
-                    ).delete()
-                else:
-                    # direct deletion
-                    actions.delete()
+                allowed_and_existing_actions.filter(delete_q).delete()
             if add_actions:
-                ContentAction.objects.bulk_create(
-                    map(
-                        lambda c: c.contentAction,
-                        filter(lambda x: x.contentAction, add_actions),
+                if create:
+                    Action.objects.bulk_create(
+                        refresh_fields(add_actions.values(), "cluster")
                     )
-                )
-            if create:
-                Action.objects.bulk_create(
-                    refresh_fields(add_actions, "cluster")
-                )
-            else:
-                if modify_actions:
-                    ContentAction.objects.bulk_update(
-                        [
-                            c.contentAction
-                            for c in filter(
-                                lambda x: x.contentAction,
-                                modify_actions.values(),
+                    if content:
+                        ContentAction.objects.bulk_create(
+                            map(
+                                lambda c: c.contentAction,
+                                filter(
+                                    lambda x: x.contentAction,
+                                    add_actions.values(),
+                                ),
                             )
-                        ],
-                        ["content", "used", "group"],
-                    )
-                Action.objects.bulk_create(add_actions)
-                Action.objects.bulk_update(
-                    modify_actions.values(),
-                    [
-                        "keyHash",
-                        "nonce",
-                        "value",
-                        "start",
-                        "stop",
-                    ],
-                )
+                        )
+                else:
+                    Action.objects.bulk_create(add_actions.values())
+                    if content:
+                        ContentAction.objects.bulk_create(
+                            map(
+                                lambda c: c.contentAction,
+                                filter(
+                                    lambda x: x.contentAction,
+                                    add_actions.values(),
+                                ),
+                            )
+                        )
 
-    setattr(save_fn, "actions", [*add_actions, *modify_actions.values()])
+    setattr(save_fn, "actions", [*add_actions.values()])
     setattr(save_fn, "action_types", action_types)
     return save_fn

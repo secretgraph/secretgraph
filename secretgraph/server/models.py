@@ -478,6 +478,11 @@ class ContentAction(models.Model):
         help_text=contentaction_group_help,
         validators=[TypeAndGroupValidator],
     )
+    action: Action = models.OneToOneField(
+        "Action",
+        related_name="contentAction",
+        on_delete=models.CASCADE,
+    )
 
     class Meta:
         constraints = [
@@ -507,13 +512,6 @@ class Action(models.Model):
     )
     start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)
-    contentAction: ContentAction = models.OneToOneField(
-        ContentAction,
-        related_name="action",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
 
     class Meta:
         constraints = [

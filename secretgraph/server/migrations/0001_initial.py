@@ -305,37 +305,6 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name="ContentAction",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        editable=False, primary_key=True, serialize=False
-                    ),
-                ),
-                (
-                    "group",
-                    models.CharField(
-                        blank=True,
-                        default="",
-                        help_text="ContentAction group: ContentActions are clustered in groups. They are used to signal different functions of the connection",
-                        max_length=20,
-                        validators=[
-                            secretgraph.server.validators.TypeAndGroupValidator
-                        ],
-                    ),
-                ),
-                (
-                    "content",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="actions",
-                        to="secretgraph.content",
-                    ),
-                ),
-            ],
-        ),
-        migrations.CreateModel(
             name="Action",
             fields=[
                 (
@@ -371,14 +340,43 @@ class Migration(migrations.Migration):
                         to="secretgraph.cluster",
                     ),
                 ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="ContentAction",
+            fields=[
                 (
-                    "contentAction",
-                    models.OneToOneField(
+                    "id",
+                    models.BigAutoField(
+                        editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                (
+                    "group",
+                    models.CharField(
                         blank=True,
-                        null=True,
+                        default="",
+                        help_text="ContentAction group: ContentActions are clustered in groups. They are used to signal different functions of the connection",
+                        max_length=20,
+                        validators=[
+                            secretgraph.server.validators.TypeAndGroupValidator
+                        ],
+                    ),
+                ),
+                (
+                    "content",
+                    models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="action",
-                        to="secretgraph.contentaction",
+                        related_name="actions",
+                        to="secretgraph.content",
+                    ),
+                ),
+                (
+                    "action",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="contentAction",
+                        to="secretgraph.action",
                     ),
                 ),
             ],
