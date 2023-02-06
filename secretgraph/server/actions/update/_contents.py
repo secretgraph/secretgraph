@@ -20,7 +20,11 @@ from django.utils.timezone import now
 from ....core.exceptions import ResourceLimitExceeded
 
 from ....core import constants
-from ...utils.auth import ids_to_results, get_cached_result
+from ...utils.auth import (
+    ids_to_results,
+    get_cached_result,
+    retrieve_allowed_objects,
+)
 from ...utils.hashing import calculateHashes
 from ...utils.misc import refresh_fields
 
@@ -202,6 +206,7 @@ def _update_or_create_content_or_key(
     old_net = None
     if not create:
         old_net = content.net
+    explicit_net = False
     if net:
         if isinstance(net, Net):
             content.net = net
@@ -220,16 +225,20 @@ def _update_or_create_content_or_key(
             if not content.net_id:
                 net_result = ids_to_results(
                     request,
+                    # Cluster
                     objdata.net,
                     Cluster,
                     "create",
                     authset=authset,
                 )["Cluster"]
                 content.net = net_result["objects"].get().net
+        if content.net_id:
+            explicit_net = True
     if create and not content.net_id:
         content.net = content.cluster.net
     if old_net == content.net:
         old_net = None
+
     del net
     early_op_limit = (
         settings.SECRETGRAPH_OPERATION_SIZE_LIMIT
@@ -453,6 +462,20 @@ def _update_or_create_content_or_key(
 
     if old_net is None:
         size_diff = size_new - size_old
+        if size_diff:
+            if (
+                not explicit_net
+                and content.net != content.cluster.net
+                and not retrieve_allowed_objects(
+                    request,
+                    content.net.clusters.all(),
+                    "create",
+                    authset=authset,
+                )["objects"].exists()
+            ):
+                raise ResourceLimitExceeded(
+                    "Cannot use more resources of a net not owned"
+                )
         if (
             content.net.quota is not None
             and size_diff > 0
@@ -465,6 +488,7 @@ def _update_or_create_content_or_key(
         else:
             content.net.bytes_in_use = F("bytes_in_use") + size_diff
     else:
+        # always explicit
         if (
             content.net.quota is not None
             and size_new > 0
