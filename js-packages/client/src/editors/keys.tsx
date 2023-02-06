@@ -104,7 +104,8 @@ async function loadKeys({
 
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: results['hashAlgorithmsWorking'][0],
+        hash: Constants.mapHashNames[results['hashAlgorithmsWorking'][0]]
+            .operationName,
     }
     requests.push(
         fetch(new URL(data.secretgraph.node.link, baseUrl).href, {
@@ -582,9 +583,9 @@ function UpdateKeysForm({
                                                                 }}
                                                             >
                                                                 {showKey ? (
-                                                                    <VisibilityIcon />
-                                                                ) : (
                                                                     <VisibilityOffIcon />
+                                                                ) : (
+                                                                    <VisibilityIcon />
                                                                 )}
                                                             </IconButton>
                                                         </Tooltip>

@@ -330,6 +330,7 @@ export async function decryptContentObject({
     }
     let key
     try {
+        // also handles key= tags
         const found = findCertCandidatesForRefs(config, _node)
         if (!found.length) {
             console.debug('No certificate tag found')

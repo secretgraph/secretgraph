@@ -400,6 +400,7 @@ export function extractPrivKeys({
     return privkeys
 }
 
+// also handles key= tags
 export function findCertCandidatesForRefs(
     config: Interfaces.ConfigInterface,
     nodeData: any
@@ -435,6 +436,7 @@ export function findCertCandidatesForRefs(
                 }
             }
         }
+        // find the only key tag
         for (const tag_value of nodeData.tags) {
             if (tag_value.startsWith('key=')) {
                 for (const { hash, hashAlgorithm } of hashes) {
