@@ -9,9 +9,13 @@ def syncNetAndUserActiveCb(sender, instance, raw, **kwargs):
             user = instance.user
         except Exception:
             user = None
-        if user and instance.active != user.is_active:
-            instance.user.is_active = instance.active
-            instance.user.save(update_fields=["is_active"])
+        if (
+            user
+            and not isinstance(user, str)
+            and instance.active != user.is_active
+        ):
+            user.is_active = instance.active
+            user.save(update_fields=["is_active"])
     else:
         if instance.is_active != instance.net.active:
             instance.net.active = instance.is_active
