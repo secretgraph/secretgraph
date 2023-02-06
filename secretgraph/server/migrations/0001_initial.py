@@ -60,6 +60,12 @@ class Migration(migrations.Migration):
                     "bytes_in_use",
                     models.PositiveBigIntegerField(blank=True, default=0),
                 ),
+                (
+                    "user_name",
+                    models.CharField(
+                        max_length=255, null=True, blank=True, unique=True
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(

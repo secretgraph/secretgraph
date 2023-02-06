@@ -110,7 +110,10 @@ class ClusterNode(ActionMixin, relay.Node):
             return None
         if not self.globalNameRegisteredAt:
             return None
-        return str(self.net.user)
+        try:
+            return str(self.net.user)
+        except Exception:
+            return self.user_name
 
     @gql.django.field()
     def description(self) -> Optional[str]:

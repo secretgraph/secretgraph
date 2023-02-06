@@ -88,7 +88,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
                 user = getattr(request, "user", None)
                 if not user or not user.is_authenticated:
                     raise ValueError("Must be logged in")
-                net = user.secretgraph_net
+                net = Net.objects.filter(user=str(user)).first()
             elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
                 raise ValueError("Cannot register")
         if not net:
@@ -112,7 +112,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
                         )
             net = Net()
             if user:
-                net.user = user
+                net.user_name = str(user)
             net.reset_quota()
             net.reset_max_upload_size()
         cluster.net = net

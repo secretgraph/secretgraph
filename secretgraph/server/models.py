@@ -39,6 +39,13 @@ from ..core import constants
 
 logger = logging.getLogger(__name__)
 
+if getattr(settings, "AUTH_USER_MODEL", None):
+    from django.contrib.auth import get_user_model
+
+    usermodel = get_user_model()
+else:
+    usermodel = None
+
 
 def get_content_file_path(instance, filename) -> str:
     cluster_id = instance.cluster_id or instance.cluster.id
@@ -113,17 +120,9 @@ class Net(models.Model):
     )
     clusters: models.ManyToOneRel["Cluster"]
     contents: models.ManyToOneRel["Content"]
-
-    if getattr(settings, "AUTH_USER_MODEL", None) or getattr(
-        settings, "SECRETGRAPH_BIND_TO_USER", False
-    ):
-        user = models.OneToOneField(
-            settings.AUTH_USER_MODEL,
-            on_delete=models.CASCADE,
-            null=True,
-            blank=True,
-            related_name="secretgraph_net",
-        )
+    user_name: str = models.CharField(
+        max_length=255, null=True, blank=True, unique=True
+    )
 
     def reset_quota(self):
         self.quota = default_net_limit(self, "SECRETGRAPH_QUOTA")
@@ -133,15 +132,27 @@ class Net(models.Model):
             self, "SECRETGRAPH_MAX_UPLOAD"
         )
 
+    @cached_property
+    def user(self) -> usermodel | str:
+        username = self.user_name
+        if not username:
+            raise AttributeError("No User assigned")
+        if usermodel:
+            return usermodel.get(**{usermodel.USERNAME_FIELD: username})
+        return username
+
     def __repr__(self) -> str:
         userrepr = ""
-        if getattr(settings, "AUTH_USER_MODEL", None) or getattr(
-            settings, "SECRETGRAPH_BIND_TO_USER", False
-        ):
+        if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
             userrepr = ", no user assigned"
-            user = getattr(self, "user", None)
+            try:
+                user = self.user
+            except Exception:
+                user = self.user_name
             if user:
-                userrepr = f", user({user!r})"
+                if not isinstance(user, str):
+                    user = repr(user)
+                userrepr = f", user({user})"
         return "<Net: id(%s)%s%s>" % (
             self.id,
             userrepr,

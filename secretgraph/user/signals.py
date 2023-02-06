@@ -5,10 +5,11 @@ def syncNetAndUserActiveCb(sender, instance, raw, **kwargs):
         return
     if isinstance(instance, Net):
         # if net is bound to user - system nets are not neccessary bound
-        if (
-            getattr(instance, "user_id", None)
-            and instance.active != instance.user.is_active
-        ):
+        try:
+            user = instance.user
+        except Exception:
+            user = None
+        if user and instance.active != user.is_active:
             instance.user.is_active = instance.active
             instance.user.save(update_fields=["is_active"])
     else:

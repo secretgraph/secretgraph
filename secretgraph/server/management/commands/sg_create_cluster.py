@@ -1,6 +1,5 @@
 from base64 import b64encode
 import os
-from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
@@ -38,10 +37,7 @@ class Command(BaseCommand):
         else:
             net = Net()
             if options["user"]:
-                User = get_user_model()
-                net.user = User.objects.get(
-                    **{User.USERNAME_FIELD: options["user"]}
-                )
+                net.user_name = options["user"]
             if options["quota"]:
                 net.quota = options["quota"]
             else:
