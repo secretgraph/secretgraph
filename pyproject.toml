@@ -117,6 +117,9 @@ deps =
 
 """
 
+[tool.black]
+line-length = 79
+
 [build-system]
 requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
