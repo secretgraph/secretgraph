@@ -470,12 +470,10 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 # TODO
 
 -   select certificates a private is encrypted for
+-   lockurl has some problems
 -   certificates for slot
 -   PushedArticle
 -   ChannelStore for push input and as foreign data safe
--   add config lockUrl for locking config (partly done)
-    save it in the config itself
-    maybe: allow it to be used as a start_url (for apple devices)
 -   split keys in signing/encrypting
 -   validationError: use params
 -   trustedKeys logic (partly done):
@@ -491,6 +489,8 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
     -   issue: hashAlgorithm is sometimes directly fed to importKey
 
 # TODO later
+
+    maybe: allow it to be used as a start_url (for apple devices)
 
 -   translations, changing languages
 -   time restrictions (time ranges, block e.g. requests from 1 to 3 at weekdays)

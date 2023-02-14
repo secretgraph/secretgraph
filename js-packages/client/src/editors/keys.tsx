@@ -46,6 +46,7 @@ import { decryptContentObject } from '@secretgraph/misc/utils/operations/content
 import { createKeys, updateKey } from '@secretgraph/misc/utils/operations/key'
 import { deleteNodes } from '@secretgraph/misc/utils/operations/node'
 import { extractPubKeysReferences } from '@secretgraph/misc/utils/references'
+import * as SetOps from '@secretgraph/misc/utils/set'
 import { saveAs } from 'file-saver'
 import {
     FastField,
@@ -147,7 +148,8 @@ async function loadKeys({
         data.secretgraph.node.referencedBy &&
         data.secretgraph.node.referencedBy.edges.length > 0
     ) {
-        const nodeData = data.secretgraph.node.referencedBy.edges[0].node.source
+        const nodeData =
+            data.secretgraph.node.referencedBy.edges[0].node.source
         requests.push(
             decryptContentObject({
                 config,
@@ -198,7 +200,8 @@ async function loadKeys({
                             knownHashesCluster: [
                                 nodeData?.cluster?.availableActions,
                                 contentstuff &&
-                                    host.clusters[contentstuff.cluster]?.hashes,
+                                    host.clusters[contentstuff.cluster]
+                                        ?.hashes,
                                 clusterstuff && clusterstuff.hashes,
                             ],
                             hashAlgorithms: results['hashAlgorithmsWorking'],
@@ -275,9 +278,7 @@ function UpdateKeysForm({
     disabled?: boolean
     canSelectCluster: boolean
 }) {
-    const [open, setOpen] = React.useState<'none' | 'private' | 'public'>(
-        'none'
-    )
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const {
         submitForm,
         isSubmitting,
@@ -287,6 +288,7 @@ function UpdateKeysForm({
         errors,
         setErrors,
         values,
+        touched,
         dirty,
     } = useFormikContext<any>()
     const [joinedHashes, setJoinedHashes] = React.useState<string>('loading')
@@ -334,8 +336,10 @@ function UpdateKeysForm({
                             push={push}
                             form={form}
                             disabled={disabled}
-                            handleClose={() => setOpen('none')}
-                            open={open == 'private'}
+                            handleClose={() =>
+                                updateMainCtx({ openDialog: null })
+                            }
+                            open={mainCtx.openDialog == 'private'}
                             isContent
                             isPublic={false}
                             fieldname="actionsPrivateKey"
@@ -353,8 +357,10 @@ function UpdateKeysForm({
                             push={push}
                             form={form}
                             disabled={disabled}
-                            handleClose={() => setOpen('none')}
-                            open={open == 'public'}
+                            handleClose={() =>
+                                updateMainCtx({ openDialog: null })
+                            }
+                            open={mainCtx.openDialog == 'public'}
                             isContent
                             isPublic={values.state == 'public'}
                             fieldname="actionsPublicKey"
@@ -436,7 +442,14 @@ function UpdateKeysForm({
                                 name="publicKey"
                                 component={FormikTextField}
                                 fullWidth
-                                disabled={disabled}
+                                disabled={
+                                    disabled ||
+                                    (!SetOps.hasIntersection(
+                                        mainCtx.tokensPermissions,
+                                        ['create', 'manage']
+                                    ) &&
+                                        touched.cluster)
+                                }
                                 multiline
                                 minRows={4}
                                 variant="outlined"
@@ -469,7 +482,11 @@ function UpdateKeysForm({
                             <Tooltip title="Public Key Actions">
                                 <span>
                                     <IconButton
-                                        onClick={() => setOpen('public')}
+                                        onClick={() =>
+                                            updateMainCtx({
+                                                openDialog: 'public',
+                                            })
+                                        }
                                     >
                                         <SecurityIcon />
                                     </IconButton>
@@ -560,7 +577,9 @@ function UpdateKeysForm({
                                             {...formikProps}
                                             fullWidth
                                             disabled={disabled}
-                                            type={showKey ? 'text' : 'password'}
+                                            type={
+                                                showKey ? 'text' : 'password'
+                                            }
                                             multiline={showKey}
                                             minRows={showKey ? 4 : undefined}
                                             InputProps={{
@@ -623,7 +642,11 @@ function UpdateKeysForm({
                             <Tooltip title="Private Key Actions">
                                 <span>
                                     <IconButton
-                                        onClick={() => setOpen('private')}
+                                        onClick={() =>
+                                            updateMainCtx({
+                                                openDialog: 'private',
+                                            })
+                                        }
                                         disabled={!values.privateKey}
                                     >
                                         <SecurityIcon />
@@ -653,9 +676,9 @@ function UpdateKeysForm({
                                             {
                                                 name: 'RSA-OAEP',
                                                 modulusLength: 4096,
-                                                publicExponent: new Uint8Array([
-                                                    1, 0, 1,
-                                                ]),
+                                                publicExponent: new Uint8Array(
+                                                    [1, 0, 1]
+                                                ),
                                                 hash: operationName,
                                             },
                                             true,
@@ -812,7 +835,8 @@ const KeysUpdate = ({
                             .operationName,
                     }
                     let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
-                    let privateKeys: { [hash: string]: Promise<CryptoKey> } = {}
+                    let privateKeys: { [hash: string]: Promise<CryptoKey> } =
+                        {}
                     let tokensTarget = mainCtx.tokens
                     if (publicKey) {
                         if (values.cluster != publicKey.nodeData.cluster.id) {
@@ -1211,7 +1235,8 @@ function CreateKeys() {
         return {
             key: `${new Date().getTime()}`,
             hashAlgorithmsRaw,
-            hashAlgorithmsWorking: findWorkingHashAlgorithms(hashAlgorithmsRaw),
+            hashAlgorithmsWorking:
+                findWorkingHashAlgorithms(hashAlgorithmsRaw),
         }
     }, [data?.secretgraph?.config?.hashAlgorithms])
     return (
@@ -1267,8 +1292,8 @@ export default function KeyComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
-    const [barrier, setBarrier] = React.useState<Promise<any> | undefined>(() =>
-        Promise.resolve()
+    const [barrier, setBarrier] = React.useState<Promise<any> | undefined>(
+        () => Promise.resolve()
     )
     React.useEffect(() => {
         let active = true
