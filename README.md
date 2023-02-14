@@ -469,6 +469,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
+-   keys need more infos, like callback url, item and tokens
 -   select certificates a private is encrypted for
 -   lockurl has some problems
 -   certificates for slot
