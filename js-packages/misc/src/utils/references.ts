@@ -44,33 +44,34 @@ export async function extractGroupKeys({
             const keys: { [hash: string]: Promise<CryptoKey> } = {}
             for (const keyNode of groupNode.injectedKeys) {
                 const isInSeenKeys = seenKeys[keyNode.link] ? false : true
-                let [key_hash, key]: [string, Promise<CryptoKey>] = isInSeenKeys
-                    ? seenKeys[keyNode.link]
-                    : [
-                          '',
-                          fetch(new URL(keyNode.link, itemDomain)).then(
-                              async (result) => {
-                                  const buf = await result.arrayBuffer()
-                                  try {
-                                      return await unserializeToCryptoKey(
-                                          buf,
-                                          {
-                                              name: 'RSA-OAEP',
-                                              hash: mapItem.operationName,
-                                          },
-                                          'publicKey'
-                                      )
-                                  } catch (exc) {
-                                      console.error(
-                                          'failed exctracting public key from cluster',
-                                          buf,
-                                          exc
-                                      )
-                                      throw exc
+                let [key_hash, key]: [string, Promise<CryptoKey>] =
+                    isInSeenKeys
+                        ? seenKeys[keyNode.link]
+                        : [
+                              '',
+                              fetch(new URL(keyNode.link, itemDomain)).then(
+                                  async (result) => {
+                                      const buf = await result.arrayBuffer()
+                                      try {
+                                          return await unserializeToCryptoKey(
+                                              buf,
+                                              {
+                                                  name: 'RSA-OAEP',
+                                                  hash: mapItem.operationName,
+                                              },
+                                              'publicKey'
+                                          )
+                                      } catch (exc) {
+                                          console.error(
+                                              'failed exctracting public key from cluster',
+                                              buf,
+                                              exc
+                                          )
+                                          throw exc
+                                      }
                                   }
-                              }
-                          ),
-                      ]
+                              ),
+                          ]
                 if (!key_hash.length) {
                     if (keyNode.contentHash.startsWith(prefix)) {
                         key_hash = keyNode.contentHash.replace(/^Key:/, '')
@@ -128,8 +129,11 @@ export function extractPubKeysClusterAndInjected({
     const contents = props.node.cluster
         ? props.node.cluster.contents.edges
         : props.node.contents.edges
+    const groups = props.node.cluster
+        ? props.node.cluster.groups
+        : props.node.groups
     const seen = new Set<string>()
-    for (const group of props.node.groups) {
+    for (const group of groups) {
         const mObject = groupKeys[group]
         if (mObject) {
             for (const entry of Object.entries(mObject)) {
@@ -387,7 +391,11 @@ export async function verifyContent({
         } else {
             const fn = async () => {
                 if (
-                    await verifySignature(existing[keyHash], signature, content)
+                    await verifySignature(
+                        existing[keyHash],
+                        signature,
+                        content
+                    )
                 ) {
                     // level is inverted
                     if (maxLevel > level) {
@@ -537,7 +545,11 @@ export function encryptSharedKey(
                     }
                 },
                 async (reason) => {
-                    console.error('failed PublicKey', (await temp).hash, reason)
+                    console.error(
+                        'failed PublicKey',
+                        (await temp).hash,
+                        reason
+                    )
                 }
             )
         )

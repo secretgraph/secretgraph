@@ -327,6 +327,7 @@ export const getContentConfigurationQuery = gql`
                                 id
                                 link
                                 type
+                                state
                                 tags(includeTags: ["key_hash="])
                             }
                         }
@@ -357,6 +358,7 @@ export const getContentConfigurationQuery = gql`
                                     id
                                     link
                                     type
+                                    state
                                     tags(includeTags: ["key_hash="])
                                 }
                             }

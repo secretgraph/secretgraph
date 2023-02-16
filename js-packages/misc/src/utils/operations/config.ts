@@ -266,7 +266,8 @@ export async function exportConfigAsUrl({
             configTags: [`slot=${slot}`],
         },
     })
-    for (const { node: configContent } of obj.data.secretgraph.contents.edges) {
+    for (const { node: configContent } of obj.data.secretgraph.contents
+        .edges) {
         for (const {
             node: { target: pubkey, extra },
         } of configContent.references.edges) {
@@ -755,7 +756,8 @@ async function updateTrust({
                     for (const { node } of keynode.referencedBy.edges) {
                         const source = node.source
                         const signature = node.signature
-                        const sourceLink = new URL(source.link, itemDomain).href
+                        const sourceLink = new URL(source.link, itemDomain)
+                            .href
                         let foundHash = linksToHash[sourceLink]
                         if (!foundHash) {
                             continue
@@ -873,7 +875,10 @@ export async function updateTrustedKeys({
                     trustedKeysWithNodes[hash] = {
                         ...config.trustedKeys[hash],
                         level,
-                        key: await unserializeToCryptoKey(keyBlob, 'publickey'),
+                        key: await unserializeToCryptoKey(
+                            keyBlob,
+                            'publickey'
+                        ),
                         blob: keyBlob,
                         nodes: [node],
                         links: [...config.trustedKeys[hash].links, link.href],

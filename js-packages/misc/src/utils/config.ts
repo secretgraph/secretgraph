@@ -8,8 +8,6 @@ import {
     decryptFirstPreKey,
     decryptPreKeys,
     decryptRSAOEAP,
-    deriveClientPW,
-    derivePW,
     encryptAESGCM,
     encryptPreKey,
     unserializeToCryptoKey,
@@ -249,6 +247,11 @@ export function cleanConfig(
         }
     }
     return [config, hasChanges]
+}
+
+export function isUpdateEmpty(config: Interfaces.ConfigInputInterface) {
+    // TODO
+    throw Error('not implemented yet')
 }
 
 export function authInfoFromConfig({
