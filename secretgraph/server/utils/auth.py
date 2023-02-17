@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import json
 import logging
 from itertools import islice
 from typing import TYPE_CHECKING, Iterable, Optional
@@ -241,15 +240,7 @@ def retrieve_allowed_objects(
         # 3 special
         accesslevel = 0
         for action in actions:
-            action_value = action.value
-            # cryptography doesn't support memoryview
-            if isinstance(action_value, memoryview):
-                action_value = action_value.tobytes()
-            action_dict = json.loads(
-                aesgcm.decrypt(
-                    base64.b64decode(action.nonce), action_value, None
-                )
-            )
+            action_dict = action.decrypt_aesgcm(aesgcm)
             decrypted = ActionHandler.handle_action(
                 query.model,
                 action_dict,

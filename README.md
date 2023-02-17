@@ -469,9 +469,10 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
+-   config editor has wrong token set (the initial view token)
+-   change count tracking broken?
 -   keys need more infos, like callback url, item and tokens
 -   select certificates a private is encrypted for
--   lockurl has some problems
 -   certificates for slot
 -   PushedArticle
 -   ChannelStore for push input and as foreign data safe
@@ -491,8 +492,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO later
 
-    maybe: allow it to be used as a start_url (for apple devices)
-
+-   maybe: allow lock url to be used as a start_url (for apple devices)
 -   translations, changing languages
 -   time restrictions (time ranges, block e.g. requests from 1 to 3 at weekdays)
 -   edge-serverside encryption

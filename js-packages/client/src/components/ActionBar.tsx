@@ -138,6 +138,13 @@ function ActionBar(props: Props) {
                                                 mainCtx.action == 'update'
                                                     ? updateTokens
                                                     : mainCtx.tokens,
+                                            tokensPermissions:
+                                                mainCtx.action == 'update'
+                                                    ? SetOps.union(
+                                                          mainCtx.tokensPermissions,
+                                                          ['update']
+                                                      )
+                                                    : undefined,
                                         })
                                     }
                                     size="large"
@@ -202,11 +209,15 @@ function ActionBar(props: Props) {
                                                 updateId: null,
                                             })
                                         } else {
-                                            const { data } = await deleteNodes({
-                                                client,
-                                                ids: [mainCtx.item as string],
-                                                authorization: authtokens,
-                                            })
+                                            const { data } = await deleteNodes(
+                                                {
+                                                    client,
+                                                    ids: [
+                                                        mainCtx.item as string,
+                                                    ],
+                                                    authorization: authtokens,
+                                                }
+                                            )
                                             updateMainCtx({
                                                 deleted:
                                                     data.deleteContentOrCluster
@@ -282,7 +293,8 @@ function ActionBar(props: Props) {
                                     aria-label="create"
                                     disabled={!createTokens.length}
                                     onClick={(event) => {
-                                        const cloneQuery = new URLSearchParams()
+                                        const cloneQuery =
+                                            new URLSearchParams()
                                         if (mainCtx.url) {
                                             cloneQuery.append(
                                                 'url',

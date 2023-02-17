@@ -142,35 +142,39 @@ function InnerConfig({
                         thisConfig,
                         update
                     )
-                    const res = await updateOrCreateContentWithConfig({
-                        actions: actionsNew,
-                        config,
-                        mapper,
-                        cluster: values.cluster,
-                        value: changes
-                            ? JSON.stringify(mergedConfig)
-                            : undefined,
-                        contentHash: !nodeData
-                            ? await hashTagsContentHash(
-                                  [`slot=${slots[0]}`],
-                                  'Config',
-                                  hashAlgorithm
-                              )
-                            : undefined,
-                        tags: ['name=config.json', `slot=${slots[0]}`],
-                        itemClient,
-                        baseClient,
-                        authorization: mainCtx.tokens,
-                        state: 'protected',
-                        type: 'Config',
-                        id: nodeData?.id,
-                        updateId: nodeData?.updateId,
-                        url,
-                        hashAlgorithm,
-                        // to disable groupkeys
-                        groupKeys: {},
-                    })
+
+                    const res = changes
+                        ? await updateOrCreateContentWithConfig({
+                              actions: actionsNew,
+                              config,
+                              mapper,
+                              cluster: values.cluster,
+                              value: changes
+                                  ? JSON.stringify(mergedConfig)
+                                  : undefined,
+                              contentHash: !nodeData
+                                  ? await hashTagsContentHash(
+                                        [`slot=${slots[0]}`],
+                                        'Config',
+                                        hashAlgorithm
+                                    )
+                                  : undefined,
+                              tags: ['name=config.json', `slot=${slots[0]}`],
+                              itemClient,
+                              baseClient,
+                              authorization: mainCtx.tokens,
+                              state: 'protected',
+                              type: 'Config',
+                              id: nodeData?.id,
+                              updateId: nodeData?.updateId,
+                              url,
+                              hashAlgorithm,
+                              // to disable groupkeys
+                              groupKeys: {},
+                          })
+                        : null
                     if (res) {
+                        // main config has been changed
                         if (res.config) {
                             const nTokens = authInfoFromConfig({
                                 config: res.config,
@@ -187,7 +191,10 @@ function InnerConfig({
                                 url,
                                 action: 'update',
                                 tokens: [
-                                    ...new Set([...mainCtx.tokens, ...nTokens]),
+                                    ...new Set([
+                                        ...mainCtx.tokens,
+                                        ...nTokens,
+                                    ]),
                                 ],
                             })
                         } else {
@@ -297,7 +304,8 @@ function InnerConfig({
                                         direction="column"
                                         sx={{
                                             width: '100%',
-                                            margin: (theme) => theme.spacing(1),
+                                            margin: (theme) =>
+                                                theme.spacing(1),
                                         }}
                                     >
                                         <Typography variant="h5">
@@ -328,7 +336,8 @@ function InnerConfig({
                                         direction="column"
                                         sx={{
                                             width: '100%',
-                                            margin: (theme) => theme.spacing(1),
+                                            margin: (theme) =>
+                                                theme.spacing(1),
                                         }}
                                     >
                                         <Typography variant="h5">
@@ -381,7 +390,9 @@ function InnerConfig({
                                 {viewOnly ? null : (
                                     <>
                                         <Grid xs={12}>
-                                            {isSubmitting && <LinearProgress />}
+                                            {isSubmitting && (
+                                                <LinearProgress />
+                                            )}
                                         </Grid>
                                         <Grid xs={12}>
                                             <Button

@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import posixpath
 import secrets
+import base64
+import json
 from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
@@ -10,6 +12,8 @@ from typing import Iterable, Optional, Union
 from strawberry_django_plus import relay
 from functools import cached_property
 
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -537,6 +541,20 @@ class Action(models.Model):
                 name="%(class)s_exist",
             ),
         ]
+
+    def decrypt(self, key: str | bytes):
+        if isinstance(key, str):
+            key = base64.b64decode(key)
+        return self.decrypt_aesgcm(AESGCM(key))
+
+    def decrypt_aesgcm(self, aesgcm: AESGCM):
+        action_value = self.value
+        # cryptography doesn't support memoryview
+        if isinstance(action_value, memoryview):
+            action_value = action_value.tobytes()
+        return json.loads(
+            aesgcm.decrypt(base64.b64decode(self.nonce), action_value, None)
+        )
 
 
 class ContentTag(models.Model):

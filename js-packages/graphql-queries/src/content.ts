@@ -177,6 +177,13 @@ export const updateContentMutation = gql`
                 }
                 writeok
             }
+            ... on OperationInfo {
+                messages {
+                    kind
+                    message
+                    field
+                }
+            }
         }
     }
 `

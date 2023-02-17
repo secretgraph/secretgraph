@@ -249,11 +249,6 @@ export function cleanConfig(
     return [config, hasChanges]
 }
 
-export function isUpdateEmpty(config: Interfaces.ConfigInputInterface) {
-    // TODO
-    throw Error('not implemented yet')
-}
-
 export function authInfoFromConfig({
     config,
     url,
@@ -489,6 +484,106 @@ export function findCertCandidatesForRefs(
     return found
 }
 
+export function isUpdateEmpty(update: Interfaces.ConfigInputInterface) {
+    for (const key of Object.keys(
+        update
+    ) as (keyof Interfaces.ConfigInterface)[]) {
+        const val = update[key]
+        switch (key) {
+            case 'certificates':
+            case 'tokens':
+                if (
+                    Object.values(
+                        val as Required<Interfaces.ConfigInputInterface>[
+                            | 'certificates'
+                            | 'tokens']
+                    ).some((val) => val !== undefined)
+                ) {
+                    return false
+                }
+                break
+            case 'trustedKeys':
+                for (const tkey of Object.values(
+                    val as Required<Interfaces.ConfigInputInterface>['trustedKeys']
+                )) {
+                    if (tkey === undefined) {
+                        continue
+                    }
+                    if (tkey === null) {
+                        return false
+                    }
+
+                    if (Object.values(tkey).some((val) => val !== undefined)) {
+                        return false
+                    }
+                }
+                break
+            case 'hosts':
+                for (const host of Object.values(
+                    val as Required<Interfaces.ConfigInputInterface>['hosts']
+                )) {
+                    if (host === undefined) {
+                        continue
+                    }
+                    if (host === null) {
+                        return false
+                    }
+                    for (const cluster of Object.values(host.clusters || [])) {
+                        if (cluster === undefined) {
+                            continue
+                        }
+                        if (cluster === null) {
+                            return false
+                        }
+                        if (
+                            Object.values(cluster.hashes).some(
+                                (val) => val !== undefined
+                            )
+                        ) {
+                            return false
+                        }
+                    }
+                    for (const content of Object.values(host.contents || [])) {
+                        if (content === undefined) {
+                            continue
+                        }
+                        if (content === null) {
+                            return false
+                        }
+                        if (content.cluster) {
+                            return false
+                        }
+                        if (
+                            Object.values(content.hashes).some(
+                                (val) => val !== undefined
+                            )
+                        ) {
+                            return false
+                        }
+                    }
+                }
+                break
+            case 'slots':
+                if (val && val.length) {
+                    return false
+                }
+                break
+            case 'configSecurityQuestion':
+                if (val && val.length == 2) {
+                    return false
+                }
+                break
+
+            default:
+                if (val) {
+                    return false
+                }
+                break
+        }
+    }
+    return true
+}
+
 export function mergeUpdates(
     ...updates: Interfaces.ConfigInputInterface[]
 ): Interfaces.ConfigInputInterface {
@@ -497,7 +592,6 @@ export function mergeUpdates(
         for (const key of Object.keys(
             update
         ) as (keyof Interfaces.ConfigInterface)[]) {
-            let res
             const val = update[key]
             switch (key) {
                 case 'tokens':

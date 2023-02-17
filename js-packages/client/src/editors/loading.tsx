@@ -16,7 +16,9 @@ export default function LoadingComponent() {
             if (['update', 'view'].includes(mainCtx.action)) {
                 const require = new Set(
                     mainCtx.action == 'create'
-                        ? ['manage']
+                        ? mainCtx.type == 'Cluster'
+                            ? ['manage']
+                            : ['manage', 'create']
                         : mainCtx.action == 'update'
                         ? ['manage', 'update']
                         : ['view', 'update', 'manage']
@@ -35,6 +37,9 @@ export default function LoadingComponent() {
                     require,
                 })
                 if (!authinfo.tokens.length) {
+                    console.debug(
+                        'nothing found, remove contents and clusters constraints'
+                    )
                     authinfo = authInfoFromConfig({
                         config,
                         url: mainCtx.url || config.baseUrl,
@@ -54,7 +59,8 @@ export default function LoadingComponent() {
                             if (result.data.secretgraph.node) {
                                 if (result.data.secretgraph.node.type) {
                                     updateMainCtx({
-                                        type: result.data.secretgraph.node.type,
+                                        type: result.data.secretgraph.node
+                                            .type,
                                         tokens: authinfo.tokens,
                                         tokensPermissions: authinfo.types,
                                     })

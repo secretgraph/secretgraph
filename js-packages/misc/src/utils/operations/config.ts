@@ -669,7 +669,7 @@ export async function updateOrCreateContentWithConfig({
             return {
                 config: null,
                 configUpdate: null,
-                node: result.data.updateOrCreateContent.node,
+                node: result.data.updateOrCreateContent.content,
                 writeok: false,
                 configok: false,
             }
@@ -714,7 +714,7 @@ export async function updateOrCreateContentWithConfig({
         console.error('updating config failed', exc)
         return {
             config: null,
-            node: result.data.updateOrCreateContent.node,
+            node: result.data.updateOrCreateContent.content,
             writeok: true,
             configok: false,
             configUpdate,
