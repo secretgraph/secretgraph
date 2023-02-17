@@ -665,6 +665,13 @@ export async function updateOrCreateContentWithConfig({
                 type: type as string,
             })
         }
+        if (!result.data.updateOrCreateContent.content) {
+            console.error(
+                'updating/creating content failed',
+                result.data.updateOrCreateContent
+            )
+            return false
+        }
         if (!result.data.updateOrCreateContent.writeok) {
             return {
                 config: null,

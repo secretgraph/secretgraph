@@ -23,7 +23,14 @@ type Props = {
 }
 
 function updateState<T>(state: T, update: Partial<T>): T {
-    return Object.assign({}, state, update)
+    const newState = Object.assign({}, state)
+    for (const key of Object.keys(update) as (keyof typeof update)[]) {
+        let val = update[key]
+        if (val !== undefined) {
+            newState[key] = val as any
+        }
+    }
+    return newState
 }
 type updateStateType<T> = (state: T, update: Partial<T>) => T
 
@@ -49,7 +56,7 @@ function Definitions({
         () => (config ? config.baseUrl : defaultPath) as string
     )
     const [loginUrl, setLoginUrl] = React.useState<string>(() => {
-        return localStorage.getItem("secretgraphLoginUrl") || ""
+        return localStorage.getItem('secretgraphLoginUrl') || ''
     })
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>,
@@ -85,7 +92,11 @@ function Definitions({
             ctx.cloneData = window.opener!.cloneData
         }
         if (!config && ctx.action == 'login') {
-            if (query.has('prekey') || query.has('token') || query.has('key')) {
+            if (
+                query.has('prekey') ||
+                query.has('token') ||
+                query.has('key')
+            ) {
                 const loginQuery = new URLSearchParams(query)
                 loginQuery.delete('url')
                 loginQuery.delete('action')
