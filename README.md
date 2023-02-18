@@ -469,7 +469,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
--   config editor has wrong token set (the initial view token)
+-   content updates broken
 -   change count tracking broken?
 -   keys need more infos, like callback url, item and tokens
 -   select certificates a private is encrypted for

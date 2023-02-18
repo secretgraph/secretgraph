@@ -435,6 +435,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
               mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
           })
         | null
+        | Error
     >(null)
 
     let {
@@ -529,9 +530,15 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
             }
             updateOb['title'] = name
             updateMainCtx(updateOb)
-            let thisConfig = JSON.parse(await new Blob([data]).text())
-            if (!cleanConfig(thisConfig)[0]) {
-                throw Error('Invalid config')
+            let thisConfig
+            try {
+                thisConfig = JSON.parse(await new Blob([data]).text())
+                if (!cleanConfig(thisConfig)[0]) {
+                    throw Error('Invalid config')
+                }
+            } catch (error) {
+                setData(error)
+                return
             }
             setData({
                 ...obj2,
@@ -549,6 +556,9 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
     }, [dataUnfinished])
     if (!data) {
         return null
+    }
+    if (data instanceof Error) {
+        throw data
     }
     return <InnerConfig {...data} disabled={loading} viewOnly={viewOnly} />
 }

@@ -6,7 +6,9 @@ import * as React from 'react'
 
 interface DecisionFrameProps {
     mainCtx: Interfaces.MainContextInterface
-    updateMainCtx?: (updateOb: Partial<Interfaces.MainContextInterface>) => void
+    updateMainCtx?: (
+        updateOb: Partial<Interfaces.MainContextInterface>
+    ) => void
     view: any
     edit: any
     create: any
@@ -49,8 +51,8 @@ export default class DecisionFrame extends React.Component<
                     </Typography>
                     {recoverFn ? (
                         <>
-                            Do you want to try to recover by switching to custom
-                            and fix the errors?
+                            Do you want to try to recover by switching to
+                            custom and fix the errors?
                             <Button
                                 onClick={() => recoverFn({ type: 'custom' })}
                             >

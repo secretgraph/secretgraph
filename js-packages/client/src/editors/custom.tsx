@@ -62,7 +62,6 @@ const InnerCustom = ({
     const [open, setOpen] = React.useState(false)
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { searchCtx } = React.useContext(Contexts.Search)
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
@@ -147,7 +146,8 @@ const InnerCustom = ({
         >
             {({ values, isSubmitting, dirty, submitForm, setFieldValue }) => {
                 React.useEffect(() => {
-                    values.cluster && updateMainCtx({ cluster: values.cluster })
+                    values.cluster &&
+                        updateMainCtx({ cluster: values.cluster })
                 }, [values.cluster])
                 const updateTags = React.useCallback((tags: string[]) => {
                     const ntags = tags.filter((val) => val)
@@ -191,55 +191,12 @@ const InnerCustom = ({
                             }}
                         </FieldArray>
                         <Grid container spacing={2}>
-                            <Grid xs={12}>
+                            <Grid xs={11}>
                                 <Typography>Active Url</Typography>
                                 <Typography>{url}</Typography>
                             </Grid>
-                            <Grid xs={12}>
-                                <FastField
-                                    component={FormikTextField}
-                                    name="type"
-                                    fullWidth
-                                    disabled={
-                                        disabled || isSubmitting || !!nodeData
-                                    }
-                                    label="Type"
-                                />
-                            </Grid>
-                            <Grid container xs>
-                                <Grid xs={12} md={6}>
-                                    <FastField
-                                        component={StateSelect}
-                                        name="state"
-                                        fullWidth
-                                        label="State"
-                                        disabled={isSubmitting || disabled}
-                                        validate={(val: string) => {
-                                            if (!val) {
-                                                return 'empty'
-                                            }
-                                            return null
-                                        }}
-                                    />
-                                </Grid>
-                                <Grid xs={12} md={6}>
-                                    <FastField
-                                        component={ClusterSelectViaUrl}
-                                        url={url}
-                                        name="cluster"
-                                        disabled={isSubmitting || disabled}
-                                        label="Cluster"
-                                        firstIfEmpty
-                                        validate={(val: string) => {
-                                            if (!val) {
-                                                return 'empty'
-                                            }
-                                            return null
-                                        }}
-                                    />
-                                </Grid>
-                            </Grid>
-                            <Grid xs="auto">
+
+                            <Grid xs>
                                 <Tooltip title="Actions">
                                     <span>
                                         <IconButton
@@ -252,7 +209,49 @@ const InnerCustom = ({
                                 </Tooltip>
                             </Grid>
                             <Grid xs={12}>
-                                <FastField
+                                <Field
+                                    component={FormikTextField}
+                                    name="type"
+                                    fullWidth
+                                    disabled={
+                                        disabled || isSubmitting || !!nodeData
+                                    }
+                                    label="Type"
+                                />
+                            </Grid>
+                            <Grid xs={12} md={6}>
+                                <Field
+                                    component={StateSelect}
+                                    name="state"
+                                    fullWidth
+                                    label="State"
+                                    disabled={isSubmitting || disabled}
+                                    validate={(val: string) => {
+                                        if (!val) {
+                                            return 'empty'
+                                        }
+                                        return null
+                                    }}
+                                />
+                            </Grid>
+                            <Grid xs={12} md={6}>
+                                <Field
+                                    component={ClusterSelectViaUrl}
+                                    url={url}
+                                    name="cluster"
+                                    disabled={isSubmitting || disabled}
+                                    label="Cluster"
+                                    firstIfEmpty
+                                    validate={(val: string) => {
+                                        if (!val) {
+                                            return 'empty'
+                                        }
+                                        return null
+                                    }}
+                                />
+                            </Grid>
+                            <Grid xs={12}>
+                                <Field
                                     component={FormikTextField}
                                     name="contentHash"
                                     disabled={disabled || isSubmitting}
@@ -283,7 +282,7 @@ const InnerCustom = ({
                                     <Typography variant="h4">Tags</Typography>
                                     {values.tags.map(
                                         (tag: string, index: number) => (
-                                            <FastField
+                                            <Field
                                                 name={`tags[${index}]`}
                                                 key={index}
                                             >
@@ -315,7 +314,9 @@ const InnerCustom = ({
                                                                 </InputAdornment>
                                                             </Tooltip>
                                                         )
-                                                    } else if (tag.length > 0) {
+                                                    } else if (
+                                                        tag.length > 0
+                                                    ) {
                                                         icon = (
                                                             <Tooltip title="Flag">
                                                                 <InputAdornment position="start">
@@ -372,13 +373,13 @@ const InnerCustom = ({
                                                         />
                                                     )
                                                 }}
-                                            </FastField>
+                                            </Field>
                                         )
                                     )}
                                 </Box>
                             </Grid>
                             <Grid xs={12}>
-                                <FastField
+                                <Field
                                     component={FormikTextField}
                                     name="text"
                                     disabled={disabled || isSubmitting}
