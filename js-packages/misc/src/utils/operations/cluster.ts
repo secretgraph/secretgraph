@@ -136,7 +136,7 @@ export async function initializeCluster({
         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
     )) as Required<CryptoKeyPair>
     const manage_keyb64 = Buffer.from(manage_key).toString('base64')
-    const view_keyb64 = Buffer.from(manage_key).toString('base64')
+    const view_keyb64 = Buffer.from(view_key).toString('base64')
     const digestPublicKey = await hashObject(publicKey, hashAlgorithm)
     const digestManageKey = await hashObject(manage_key, hashAlgorithm)
     const digestViewKey = await hashObject(view_key, hashAlgorithm)
