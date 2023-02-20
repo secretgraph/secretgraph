@@ -1283,14 +1283,14 @@ tests = ["coverage[toml] (>=5.0.2)", "pytest"]
 
 [[package]]
 name = "setuptools"
-version = "67.3.2"
+version = "67.3.3"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "setuptools-67.3.2-py3-none-any.whl", hash = "sha256:bb6d8e508de562768f2027902929f8523932fcd1fb784e6d573d2cafac995a48"},
-    {file = "setuptools-67.3.2.tar.gz", hash = "sha256:95f00380ef2ffa41d9bba85d95b27689d923c93dfbafed4aecd7cf988a25e012"},
+    {file = "setuptools-67.3.3-py3-none-any.whl", hash = "sha256:9d3de8591bd6f6522594406fa46a6418eabd0562dacb267f8556675762801514"},
+    {file = "setuptools-67.3.3.tar.gz", hash = "sha256:ed4e75fafe103c79b692f217158ba87edf38d31004b9dbc1913debb48793c828"},
 ]
 
 [package.extras]
@@ -1370,14 +1370,14 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.158.0"
+version = "0.158.1"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql-0.158.0-py3-none-any.whl", hash = "sha256:b29998c3923eb857f7248a51efcdb9aa7710e088235a294ee01c7143e558469e"},
-    {file = "strawberry_graphql-0.158.0.tar.gz", hash = "sha256:6805828723eac45211fa4d250018be6c3d3a60f994634a9f8d0c5f18042cb9cc"},
+    {file = "strawberry_graphql-0.158.1-py3-none-any.whl", hash = "sha256:3b79e28ab20acb5e22a4a6e36acf67128b155227de45fb14be2d66115b1c7148"},
+    {file = "strawberry_graphql-0.158.1.tar.gz", hash = "sha256:ca2a4140d20aec4f9026ea3b2a313af75cca7341f1bc9928d44e1f559daff942"},
 ]
 
 [package.dependencies]
