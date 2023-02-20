@@ -67,6 +67,62 @@ class SecretgraphObject:
 
 
 @gql.type
+class SecretgraphMutations:
+    updateOrCreateContent: ContentMutation = gql.django.input_mutation(
+        resolver=mutate_content,
+        description=(
+            "Supports creation or update of:\n"
+            "  public key or key-pair (key): used for further encryption.\n"
+            "  content (value): a content encrypted by public key except "
+            "public"
+        ),
+        handle_django_errors=False,
+    )
+    updateOrCreateCluster: ClusterMutation = gql.django.input_mutation(
+        resolver=mutate_cluster,
+        description=(
+            "Create a cluster, optionally initialize with a key-(pair)"
+        ),
+        handle_django_errors=False,
+    )
+
+    deleteContentOrCluster: DeleteContentOrClusterMutation = (
+        gql.django.input_mutation(
+            resolver=delete_content_or_cluster, handle_django_errors=False
+        )
+    )
+    resetDeletionContentOrCluster: ResetDeletionContentOrClusterMutation = (
+        gql.django.input_mutation(
+            resolver=reset_deletion_content_or_cluster,
+            handle_django_errors=False,
+        )
+    )
+    regenerateFlexid: RegenerateFlexidMutation = gql.django.input_mutation(
+        resolver=regenerate_flexid, handle_django_errors=False
+    )
+    updateMetadata: MetadataUpdateMutation = gql.django.input_mutation(
+        resolver=update_metadata, handle_django_errors=False
+    )
+    updateMarks: MarkMutation = gql.django.input_mutation(
+        resolver=mark, handle_django_errors=False
+    )
+    pushContent: PushContentMutation = gql.django.input_mutation(
+        resolver=mutate_push_content, handle_django_errors=False
+    )
+
+    transferContent: TransferMutation = gql.django.input_mutation(
+        resolver=mutate_transfer, handle_django_errors=False
+    )
+
+
+@gql.type
+class SecretgraphSubscriptions:
+    subscribeNodeUpdates: NodeUpdateSubscription = gql.subscription(
+        resolver=subscribe_node_updates
+    )
+
+
+@gql.type
 class Query:
     @gql.field
     @gql.django.django_resolver
@@ -85,46 +141,9 @@ class Query:
 
 @gql.type
 class Mutation:
-    updateOrCreateContent: ContentMutation = gql.django.input_mutation(
-        resolver=mutate_content,
-        description=(
-            "Supports creation or update of:\n"
-            "  public key or key-pair (key): used for further encryption.\n"
-            "  content (value): a content encrypted by public key except "
-            "public"
-        ),
-    )
-    updateOrCreateCluster: ClusterMutation = gql.django.input_mutation(
-        resolver=mutate_cluster,
-        description=(
-            "Create a cluster, optionally initialize with a key-(pair)"
-        ),
-    )
-
-    deleteContentOrCluster: DeleteContentOrClusterMutation = (
-        gql.django.input_mutation(resolver=delete_content_or_cluster)
-    )
-    resetDeletionContentOrCluster: ResetDeletionContentOrClusterMutation = (
-        gql.django.input_mutation(resolver=reset_deletion_content_or_cluster)
-    )
-    regenerateFlexid: RegenerateFlexidMutation = gql.django.input_mutation(
-        resolver=regenerate_flexid
-    )
-    updateMetadata: MetadataUpdateMutation = gql.django.input_mutation(
-        resolver=update_metadata
-    )
-    updateMarks: MarkMutation = gql.django.input_mutation(resolver=mark)
-    pushContent: PushContentMutation = gql.django.input_mutation(
-        resolver=mutate_push_content
-    )
-
-    transferContent: TransferMutation = gql.django.input_mutation(
-        resolver=mutate_transfer
-    )
+    secretgraph: SecretgraphMutations
 
 
 @gql.type
 class Subscription:
-    subscribeNodeUpdates: NodeUpdateSubscription = gql.subscription(
-        resolver=subscribe_node_updates
-    )
+    secretgraph: SecretgraphSubscriptions

@@ -95,26 +95,26 @@ export const createContentMutation = gql`
         $authorization: [String!]
         $actions: [ActionInput!]
     ) {
-        updateOrCreateContent(
-            input: {
-                content: {
-                    cluster: $cluster
-                    net: $net
-                    value: {
-                        state: $state
-                        type: $type
-                        tags: $tags
-                        value: $value
-                        nonce: $nonce
-                        actions: $actions
-                        references: $references
+        secretgraph {
+            updateOrCreateContent(
+                input: {
+                    content: {
+                        cluster: $cluster
+                        net: $net
+                        value: {
+                            state: $state
+                            type: $type
+                            tags: $tags
+                            value: $value
+                            nonce: $nonce
+                            actions: $actions
+                            references: $references
+                        }
+                        contentHash: $contentHash
                     }
-                    contentHash: $contentHash
+                    authorization: $authorization
                 }
-                authorization: $authorization
-            }
-        ) {
-            ... on ContentMutation {
+            ) {
                 content {
                     id
                     nonce
@@ -145,28 +145,28 @@ export const updateContentMutation = gql`
         $contentHash: String
         $authorization: [String!]
     ) {
-        updateOrCreateContent(
-            input: {
-                id: $id
-                content: {
-                    cluster: $cluster
-                    net: $net
-                    value: {
-                        tags: $tags
-                        value: $value
-                        nonce: $nonce
-                        type: $type
-                        state: $state
-                        actions: $actions
-                        references: $references
+        secretgraph {
+            updateOrCreateContent(
+                input: {
+                    id: $id
+                    content: {
+                        cluster: $cluster
+                        net: $net
+                        value: {
+                            tags: $tags
+                            value: $value
+                            nonce: $nonce
+                            type: $type
+                            state: $state
+                            actions: $actions
+                            references: $references
+                        }
+                        contentHash: $contentHash
                     }
-                    contentHash: $contentHash
+                    updateId: $updateId
+                    authorization: $authorization
                 }
-                updateId: $updateId
-                authorization: $authorization
-            }
-        ) {
-            ... on ContentMutation {
+            ) {
                 content {
                     id
                     nonce
@@ -176,13 +176,6 @@ export const updateContentMutation = gql`
                     updateId
                 }
                 writeok
-            }
-            ... on OperationInfo {
-                messages {
-                    kind
-                    message
-                    field
-                }
             }
         }
     }

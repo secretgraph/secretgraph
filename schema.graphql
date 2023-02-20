@@ -103,7 +103,7 @@ input ClusterInput {
   """
   add up to two keys initially;note: if out of resources even the cluster is reverted
   """
-  keys: [ContentKeyInput!]
+  keys: [ContentKeyInput!] = null
   groups: [String!] = null
 }
 
@@ -125,6 +125,9 @@ type Content implements Node {
   authOk: Boolean!
   availableActions: [ActionEntry!]!
   cluster: Cluster
+
+  """Uses fetch/view group actions to provide statistics"""
+  readStatistic: ReadStatistic!
   referencedBy(
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
@@ -314,8 +317,6 @@ type DeleteContentOrClusterMutation {
   latestDeletion: DateTime
 }
 
-union DeleteContentOrClusterPayload = DeleteContentOrClusterMutation | OperationInfo
-
 """Specify policy for recursive deletions"""
 enum DeleteRecursive {
   """Delete content when referenced content is deleted (default)"""
@@ -411,84 +412,13 @@ input MutateTransferInput {
 }
 
 type Mutation {
-  """
-  Supports creation or update of:
-    public key or key-pair (key): used for further encryption.
-    content (value): a content encrypted by public key except public
-  """
-  updateOrCreateContent(
-    """Input data for `mutateContent` mutation"""
-    input: MutateContentInput!
-  ): UpdateOrCreateContentPayload!
-
-  """Create a cluster, optionally initialize with a key-(pair)"""
-  updateOrCreateCluster(
-    """Input data for `mutateCluster` mutation"""
-    input: MutateClusterInput!
-  ): UpdateOrCreateClusterPayload!
-  deleteContentOrCluster(
-    """Input data for `deleteContentOrCluster` mutation"""
-    input: DeleteContentOrClusterInput!
-  ): DeleteContentOrClusterPayload!
-  resetDeletionContentOrCluster(
-    """Input data for `resetDeletionContentOrCluster` mutation"""
-    input: ResetDeletionContentOrClusterInput!
-  ): ResetDeletionContentOrClusterPayload!
-  regenerateFlexid(
-    """Input data for `regenerateFlexid` mutation"""
-    input: RegenerateFlexidInput!
-  ): RegenerateFlexidPayload!
-  updateMetadata(
-    """Input data for `updateMetadata` mutation"""
-    input: UpdateMetadataInput!
-  ): UpdateMetadataPayload!
-  updateMarks(
-    """Input data for `mark` mutation"""
-    input: MarkInput!
-  ): UpdateMarksPayload!
-  pushContent(
-    """Input data for `mutatePushContent` mutation"""
-    input: MutatePushContentInput!
-  ): PushContentPayload!
-  transferContent(
-    """Input data for `mutateTransfer` mutation"""
-    input: MutateTransferInput!
-  ): TransferContentPayload!
+  secretgraph: SecretgraphMutations!
 }
 
 """An object with a Globally Unique ID"""
 interface Node {
   """The Globally Unique ID of this object"""
   id: GlobalID!
-}
-
-"""Multiple messages returned by an operation."""
-type OperationInfo {
-  """List of messages returned by the operation."""
-  messages: [OperationMessage!]!
-}
-
-"""An error that happened while executing an operation."""
-type OperationMessage {
-  """The kind of this message."""
-  kind: OperationMessageKind!
-
-  """The error message."""
-  message: String!
-
-  """
-  The field that caused the error, or `null` if it isn't associated with any particular field.
-  """
-  field: String
-}
-
-"""The kind of the returned message."""
-enum OperationMessageKind {
-  INFO
-  WARNING
-  ERROR
-  PERMISSION
-  VALIDATION
 }
 
 """Information to aid in pagination."""
@@ -517,8 +447,6 @@ type PushContentMutation {
   actionKey: String
 }
 
-union PushContentPayload = PushContentMutation | OperationInfo
-
 input PushContentValueInput {
   value: Upload!
   state: String = null
@@ -533,6 +461,13 @@ type Query {
     """The ID of the object."""
     id: GlobalID!
   ): Node!
+}
+
+type ReadStatistic {
+  last: DateTime
+  first: DateTime
+  count: Int!
+  totalAmount: Int!
 }
 
 input ReferenceInput {
@@ -553,8 +488,6 @@ type RegenerateFlexidMutation {
   updated: [GlobalID!]!
 }
 
-union RegenerateFlexidPayload = RegenerateFlexidMutation | OperationInfo
-
 scalar RegisterUrl
 
 """Input data for `resetDeletionContentOrCluster` mutation"""
@@ -567,8 +500,6 @@ type ResetDeletionContentOrClusterMutation {
   restored: [GlobalID!]!
 }
 
-union ResetDeletionContentOrClusterPayload = ResetDeletionContentOrClusterMutation | OperationInfo
-
 type SecretgraphConfig implements Node {
   """The Globally Unique ID of this object"""
   id: GlobalID!
@@ -579,6 +510,52 @@ type SecretgraphConfig implements Node {
   maxRelayResults: Int!
   registerUrl: RegisterUrl!
   loginUrl: String
+}
+
+type SecretgraphMutations {
+  """
+  Supports creation or update of:
+    public key or key-pair (key): used for further encryption.
+    content (value): a content encrypted by public key except public
+  """
+  updateOrCreateContent(
+    """Input data for `mutateContent` mutation"""
+    input: MutateContentInput!
+  ): ContentMutation!
+
+  """Create a cluster, optionally initialize with a key-(pair)"""
+  updateOrCreateCluster(
+    """Input data for `mutateCluster` mutation"""
+    input: MutateClusterInput!
+  ): ClusterMutation!
+  deleteContentOrCluster(
+    """Input data for `deleteContentOrCluster` mutation"""
+    input: DeleteContentOrClusterInput!
+  ): DeleteContentOrClusterMutation!
+  resetDeletionContentOrCluster(
+    """Input data for `resetDeletionContentOrCluster` mutation"""
+    input: ResetDeletionContentOrClusterInput!
+  ): ResetDeletionContentOrClusterMutation!
+  regenerateFlexid(
+    """Input data for `regenerateFlexid` mutation"""
+    input: RegenerateFlexidInput!
+  ): RegenerateFlexidMutation!
+  updateMetadata(
+    """Input data for `updateMetadata` mutation"""
+    input: UpdateMetadataInput!
+  ): MetadataUpdateMutation!
+  updateMarks(
+    """Input data for `mark` mutation"""
+    input: MarkInput!
+  ): MarkMutation!
+  pushContent(
+    """Input data for `mutatePushContent` mutation"""
+    input: MutatePushContentInput!
+  ): PushContentMutation!
+  transferContent(
+    """Input data for `mutateTransfer` mutation"""
+    input: MutateTransferInput!
+  ): TransferMutation!
 }
 
 type SecretgraphObject {
@@ -622,15 +599,11 @@ type Subscription {
   subscribeNodeUpdates(ids: [GlobalID!]!, authorization: [String!] = null): [Node!]!
 }
 
-union TransferContentPayload = TransferMutation | OperationInfo
-
 type TransferMutation {
   content: Content
 }
 
 scalar UUID
-
-union UpdateMarksPayload = MarkMutation | OperationInfo
 
 """Input data for `updateMetadata` mutation"""
 input UpdateMetadataInput {
@@ -642,12 +615,6 @@ input UpdateMetadataInput {
   operation: MetadataOperations = APPEND
   authorization: [String!] = null
 }
-
-union UpdateMetadataPayload = MetadataUpdateMutation | OperationInfo
-
-union UpdateOrCreateClusterPayload = ClusterMutation | OperationInfo
-
-union UpdateOrCreateContentPayload = ContentMutation | OperationInfo
 
 scalar Upload
 

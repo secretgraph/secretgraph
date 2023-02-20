@@ -15,27 +15,27 @@ export const createKeysMutation = gql`
         $nonce: String
         $authorization: [String!]
     ) {
-        updateOrCreateContent(
-            input: {
-                content: {
-                    cluster: $cluster
-                    net: $net
-                    key: {
-                        publicKey: $publicKey
-                        privateKey: $privateKey
-                        nonce: $nonce
-                        privateTags: $privateTags
-                        privateActions: $privateActions
-                        publicTags: $publicTags
-                        publicActions: $publicActions
-                        publicState: $publicState
-                        references: $references
+        secretgraph {
+            updateOrCreateContent(
+                input: {
+                    content: {
+                        cluster: $cluster
+                        net: $net
+                        key: {
+                            publicKey: $publicKey
+                            privateKey: $privateKey
+                            nonce: $nonce
+                            privateTags: $privateTags
+                            privateActions: $privateActions
+                            publicTags: $publicTags
+                            publicActions: $publicActions
+                            publicState: $publicState
+                            references: $references
+                        }
                     }
+                    authorization: $authorization
                 }
-                authorization: $authorization
-            }
-        ) {
-            ... on ContentMutation {
+            ) {
                 content {
                     id
                     nonce
@@ -64,28 +64,28 @@ export const updateKeyMutation = gql`
         $contentHash: String
         $authorization: [String!]
     ) {
-        updateOrCreateContent(
-            input: {
-                id: $id
-                content: {
-                    net: $net
-                    key: {
-                        privateKey: $key
-                        nonce: $nonce
-                        privateTags: $privateTags
-                        publicTags: $publicTags
-                        publicState: $publicState
-                        privateActions: $actions
-                        publicActions: $actions
-                        references: $references
+        secretgraph {
+            updateOrCreateContent(
+                input: {
+                    id: $id
+                    content: {
+                        net: $net
+                        key: {
+                            privateKey: $key
+                            nonce: $nonce
+                            privateTags: $privateTags
+                            publicTags: $publicTags
+                            publicState: $publicState
+                            privateActions: $actions
+                            publicActions: $actions
+                            references: $references
+                        }
+                        contentHash: $contentHash
                     }
-                    contentHash: $contentHash
+                    updateId: $updateId
+                    authorization: $authorization
                 }
-                updateId: $updateId
-                authorization: $authorization
-            }
-        ) {
-            ... on ContentMutation {
+            ) {
                 content {
                     id
                     nonce
@@ -101,7 +101,10 @@ export const updateKeyMutation = gql`
 `
 
 export const findPublicKeyQuery = gql`
-    query contentFindPublicKeyQuery($id: GlobalID!, $authorization: [String!]) {
+    query contentFindPublicKeyQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+    ) {
         secretgraph(authorization: $authorization) {
             node(id: $id) {
                 ... on Content {
@@ -277,15 +280,15 @@ export const signKeyMutation = gql`
         $references: [ReferenceInput!]
         $authorization: [String!]
     ) {
-        updateMetadata(
-            input: {
-                ids: [$id]
-                references: $references
-                operation: APPEND
-                authorization: $authorization
-            }
-        ) {
-            ... on MetadataUpdateMutation {
+        secretgraph {
+            updateMetadata(
+                input: {
+                    ids: [$id]
+                    references: $references
+                    operation: APPEND
+                    authorization: $authorization
+                }
+            ) {
                 updated
             }
         }

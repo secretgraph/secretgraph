@@ -113,28 +113,28 @@ export const createClusterMutation = gql`
         $nonce: String
         $authorization: [String!]
     ) {
-        updateOrCreateCluster(
-            input: {
-                cluster: {
-                    name: $name
-                    description: $description
-                    actions: $actions
-                    featured: $featured
-                    keys: [
-                        {
-                            publicKey: $publicKey
-                            publicState: "trusted"
-                            privateKey: $privateKey
-                            privateTags: $privateTags
-                            publicTags: ["name=initial key"]
-                            nonce: $nonce
-                        }
-                    ]
+        secretgraph {
+            updateOrCreateCluster(
+                input: {
+                    cluster: {
+                        name: $name
+                        description: $description
+                        actions: $actions
+                        featured: $featured
+                        keys: [
+                            {
+                                publicKey: $publicKey
+                                publicState: "trusted"
+                                privateKey: $privateKey
+                                privateTags: $privateTags
+                                publicTags: ["name=initial key"]
+                                nonce: $nonce
+                            }
+                        ]
+                    }
+                    authorization: $authorization
                 }
-                authorization: $authorization
-            }
-        ) {
-            ... on ClusterMutation {
+            ) {
                 cluster {
                     id
                     groups
@@ -179,20 +179,20 @@ export const updateClusterMutation = gql`
         $actions: [ActionInput!]
         $authorization: [String!]
     ) {
-        updateOrCreateCluster(
-            input: {
-                id: $id
-                updateId: $updateId
-                cluster: {
-                    name: $name
-                    description: $description
-                    actions: $actions
-                    featured: $featured
+        secretgraph {
+            updateOrCreateCluster(
+                input: {
+                    id: $id
+                    updateId: $updateId
+                    cluster: {
+                        name: $name
+                        description: $description
+                        actions: $actions
+                        featured: $featured
+                    }
+                    authorization: $authorization
                 }
-                authorization: $authorization
-            }
-        ) {
-            ... on ClusterMutation {
+            ) {
                 cluster {
                     id
                     groups
