@@ -974,10 +974,10 @@ const KeysUpdate = ({
                             authorization: tokensTarget,
                         })
                         updateMainCtx({
-                            item: newdata.secretgraph.updateOrCreateContent
+                            item: newData.secretgraph.updateOrCreateContent
                                 .content.id,
                             updateId:
-                                newdata.secretgraph.updateOrCreateContent
+                                newData.secretgraph.updateOrCreateContent
                                     .content.updateId,
                         })
                     } else {
@@ -1034,7 +1034,7 @@ const KeysUpdate = ({
                         }
                         updateMainCtx({
                             updateId:
-                                newdata.secretgraph.updateOrCreateContent
+                                newData.secretgraph.updateOrCreateContent
                                     .content.updateId,
                         })
                     }

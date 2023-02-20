@@ -469,7 +469,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
--   tools need to adapt to new config layout
+-   tools initializeCluster need to adapt to new config layout
 -   content updates broken
 -   change count tracking broken?
 -   keys need more infos, like callback url, item and tokens
@@ -493,6 +493,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO later
 
+-   use threading for cryptography operations (put in threadpool)
 -   maybe: allow lock url to be used as a start_url (for apple devices)
 -   translations, changing languages
 -   time restrictions (time ranges, block e.g. requests from 1 to 3 at weekdays)
