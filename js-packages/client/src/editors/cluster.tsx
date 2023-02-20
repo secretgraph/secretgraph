@@ -200,7 +200,8 @@ const ClusterIntern = ({
                     }
                     // should be solved better
                     const newNode =
-                        clusterResponse.data.updateOrCreateCluster.cluster
+                        clusterResponse.data.secretgraph.updateOrCreateCluster
+                            .cluster
                     configUpdate.hosts[url] = {
                         clusters: {
                             [newNode.id as string]: {
@@ -241,8 +242,8 @@ const ClusterIntern = ({
                               config: newConfig,
                               url,
                               clusters: new Set([
-                                  clusterResponse.data.updateOrCreateCluster
-                                      .cluster.id,
+                                  clusterResponse.data.secretgraph
+                                      .updateOrCreateCluster.cluster.id,
                               ]),
                               require: new Set(['update', 'manage']),
                           }).tokens
@@ -253,12 +254,12 @@ const ClusterIntern = ({
                     updateMainCtx({
                         title: name || '',
                         action: 'update',
-                        item: clusterResponse.data.updateOrCreateCluster.cluster
-                            .id,
+                        item: clusterResponse.data.secretgraph
+                            .updateOrCreateCluster.cluster.id,
                         url,
                         updateId:
-                            clusterResponse.data.updateOrCreateCluster.cluster
-                                .updateId,
+                            clusterResponse.data.secretgraph
+                                .updateOrCreateCluster.cluster.updateId,
                         tokens: [...mainCtx.tokens, ...nTokens],
                     })
                 }}

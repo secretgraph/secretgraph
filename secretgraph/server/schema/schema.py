@@ -141,9 +141,15 @@ class Query:
 
 @gql.type
 class Mutation:
-    secretgraph: SecretgraphMutations
+    @gql.field
+    @staticmethod
+    def secretgraph() -> SecretgraphMutations:
+        return SecretgraphMutations
 
 
 @gql.type
 class Subscription:
-    secretgraph: SecretgraphSubscriptions
+    @gql.field
+    @staticmethod
+    def secretgraph() -> SecretgraphSubscriptions:
+        return SecretgraphSubscriptions

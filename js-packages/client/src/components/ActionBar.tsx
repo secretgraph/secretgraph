@@ -205,7 +205,8 @@ function ActionBar(props: Props) {
                                                     authorization: authtokens,
                                                 })
                                             updateMainCtx({
-                                                deleted: data.deleted,
+                                                deleted:
+                                                    data.secretgraph.deleted,
                                                 updateId: null,
                                             })
                                         } else {
@@ -220,7 +221,8 @@ function ActionBar(props: Props) {
                                             )
                                             updateMainCtx({
                                                 deleted:
-                                                    data.deleteContentOrCluster
+                                                    data.secretgraph
+                                                        .deleteContentOrCluster
                                                         .deleted,
                                                 updateId: null,
                                             })

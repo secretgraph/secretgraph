@@ -974,9 +974,11 @@ const KeysUpdate = ({
                             authorization: tokensTarget,
                         })
                         updateMainCtx({
-                            item: newData.updateOrCreateContent.content.id,
+                            item: newdata.secretgraph.updateOrCreateContent
+                                .content.id,
                             updateId:
-                                newData.updateOrCreateContent.content.updateId,
+                                newdata.secretgraph.updateOrCreateContent
+                                    .content.updateId,
                         })
                     } else {
                         const { data: newData } = await updateKey({
@@ -1032,7 +1034,8 @@ const KeysUpdate = ({
                         }
                         updateMainCtx({
                             updateId:
-                                newData.updateOrCreateContent.content.updateId,
+                                newdata.secretgraph.updateOrCreateContent
+                                    .content.updateId,
                         })
                     }
                     const configUpdate = mergeUpdates(

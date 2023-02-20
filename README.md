@@ -469,6 +469,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
+-   tools need to adapt to new config layout
 -   content updates broken
 -   change count tracking broken?
 -   keys need more infos, like callback url, item and tokens

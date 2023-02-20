@@ -165,7 +165,7 @@ async function updateRemoteConfig({
     if (result.errors) {
         throw new Error(`Update failed: ${result.errors}`)
     }
-    if (result.data.updateOrCreateContent.writeok) {
+    if (result.data.secretgraph.updateOrCreateContent.writeok) {
         return [mergedConfig, changes]
     }
     return false
@@ -665,18 +665,18 @@ export async function updateOrCreateContentWithConfig({
                 type: type as string,
             })
         }
-        if (!result.data.updateOrCreateContent.content) {
+        if (!result.data.secretgraph.updateOrCreateContent.content) {
             console.error(
                 'updating/creating content failed',
-                result.data.updateOrCreateContent
+                result.data.secretgraph.updateOrCreateContent
             )
             return false
         }
-        if (!result.data.updateOrCreateContent.writeok) {
+        if (!result.data.secretgraph.updateOrCreateContent.writeok) {
             return {
                 config: null,
                 configUpdate: null,
-                node: result.data.updateOrCreateContent.content,
+                node: result.data.secretgraph.updateOrCreateContent.content,
                 writeok: false,
                 configok: false,
             }
@@ -697,7 +697,7 @@ export async function updateOrCreateContentWithConfig({
         }
         configUpdate.hosts[url] = {
             contents: {
-                [result.data.updateOrCreateContent.content.id]: {
+                [result.data.secretgraph.updateOrCreateContent.content.id]: {
                     hashes: hashesNew,
                     cluster,
                 },
@@ -710,9 +710,10 @@ export async function updateOrCreateContentWithConfig({
                 client: baseClient,
                 nullonnoupdate: true,
                 // allow updating config objects with updateOrCreateContentWithConfig
-                ignoreId: result.data.updateOrCreateContent.content.id,
+                ignoreId:
+                    result.data.secretgraph.updateOrCreateContent.content.id,
             }),
-            node: result.data.updateOrCreateContent.content,
+            node: result.data.secretgraph.updateOrCreateContent.content,
             writeok: true,
             configok: true,
             configUpdate,
@@ -721,7 +722,7 @@ export async function updateOrCreateContentWithConfig({
         console.error('updating config failed', exc)
         return {
             config: null,
-            node: result.data.updateOrCreateContent.content,
+            node: result.data.secretgraph.updateOrCreateContent.content,
             writeok: true,
             configok: false,
             configUpdate,

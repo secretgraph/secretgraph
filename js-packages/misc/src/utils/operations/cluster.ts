@@ -166,7 +166,8 @@ export async function initializeCluster({
         privateKeyKey: manage_key,
         ...options,
     })
-    const clusterResult = clusterResponse.data.updateOrCreateCluster
+    const clusterResult =
+        clusterResponse.data.secretgraph.updateOrCreateCluster
     config.configCluster = clusterResult.cluster['id']
     config.hosts[config['baseUrl']].clusters[clusterResult.cluster['id']] = {
         hashes: {

@@ -44,72 +44,77 @@ query serverSecretgraphConfigQuery {
 
 clusterCreateMutation_mutation = """
 mutation clusterCreateMutation($description: String, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $publicTags: [String!]!, $privateTags: [String!]!, $nonce: String, $authorization: [String!]) {
-    updateOrCreateCluster(
-        input: {
-            cluster: {
-                description: $description
-                actions: $actions
-                key: {
-                    publicKey: $publicKey
-                    publicTags: $publicTags
-                    privateKey: $privateKey
-                    privateTags: $privateTags
-                    nonce: $nonce
+
+    secretgraph{
+        updateOrCreateCluster(
+            input: {
+                cluster: {
+                    description: $description
+                    actions: $actions
+                    key: {
+                        publicKey: $publicKey
+                        publicTags: $publicTags
+                        privateKey: $privateKey
+                        privateTags: $privateTags
+                        nonce: $nonce
+                    }
                 }
+                authorization: $authorization
             }
-            authorization: $authorization
-          }
-    ) {
-        cluster {
-            id
-            group
-            availableActions {
-                keyHash
-                type
-                allowedTags
-            }
-            contents(
-                filters: {
-                    states: ["trusted", "required", "public"]
-                    deleted: FALSE
-                    includeTypes: ["PublicKey"]
+        ) {
+            cluster {
+                id
+                group
+                availableActions {
+                    keyHash
+                    type
+                    allowedTags
                 }
-            ) {
-                edges {
-                    node {
-                        link
+                contents(
+                    filters: {
+                        states: ["trusted", "required", "public"]
+                        deleted: FALSE
+                        includeTypes: ["PublicKey"]
+                    }
+                ) {
+                    edges {
+                        node {
+                            link
+                        }
                     }
                 }
             }
+            writeok
         }
-        writeok
     }
 }
 """  # noqa E502
 
 configCreateMutation_mutation = """
 mutation contentConfigMutation($cluster: ID!, $tags: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
-    updateOrCreateContent(
-      input: {
-        content: {
-          cluster: $cluster
-          value: {
-            tags: $tags
-            value: $value
-            nonce: $nonce
-          }
-          contentHash: $contentHash
-          references: $references
+    secretgraph{
+        updateOrCreateContent(
+        input: {
+            content: {
+            cluster: $cluster
+            value: {
+                tags: $tags
+                value: $value
+                nonce: $nonce
+            }
+            contentHash: $contentHash
+            references: $references
+            }
+            authorization: $authorization
         }
-        authorization: $authorization
-      }
-    ) {
-        content {
-            id
-            nonce
-            link
+        ) {
+            content {
+                id
+                nonce
+                link
+            }
+            writeok
         }
-        writeok
     }
 }
 """  # noqa E502
@@ -207,7 +212,9 @@ def main(argv=None):
             argv.url: {
                 "hashAlgorithms": hash_algos,
                 "clusters": {
-                    jsob["updateOrCreateCluster"]["cluster"]["id"]: {
+                    jsob["secretgraph"]["updateOrCreateCluster"]["cluster"][
+                        "id"
+                    ]: {
                         "hashes": {
                             action_key_hash: ["manage", "view", "update"]
                         }
@@ -221,9 +228,9 @@ def main(argv=None):
                     urljoin(
                         argv.url,
                         # public key
-                        jsob["updateOrCreateCluster"]["cluster"]["contents"][
-                            "edges"
-                        ][0]["node"].link,
+                        jsob["secretgraph"]["updateOrCreateCluster"][
+                            "cluster"
+                        ]["contents"]["edges"][0]["node"].link,
                     )
                 ],
                 "level": 1,
@@ -233,7 +240,9 @@ def main(argv=None):
         },
         "baseUrl": argv.url,
         "configHashes": [certhash_b64, action_key_hash],
-        "configCluster": jsob["updateOrCreateCluster"]["cluster"]["id"],
+        "configCluster": jsob["secretgraph"]["updateOrCreateCluster"][
+            "cluster"
+        ]["id"],
     }
 
     nonce = os.urandom(13)
