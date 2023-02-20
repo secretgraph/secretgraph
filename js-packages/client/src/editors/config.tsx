@@ -137,7 +137,6 @@ function InnerConfig({
                                 : thisConfig.configSecurityQuestion[1],
                         ]
                     }
-
                     const [mergedConfig, changes] = updateConfigOb(
                         thisConfig,
                         update
@@ -149,9 +148,7 @@ function InnerConfig({
                               config,
                               mapper,
                               cluster: values.cluster,
-                              value: changes
-                                  ? JSON.stringify(mergedConfig)
-                                  : undefined,
+                              value: new Blob([JSON.stringify(mergedConfig)]),
                               contentHash: !nodeData
                                   ? await hashTagsContentHash(
                                         [`slot=${slots[0]}`],
@@ -175,16 +172,19 @@ function InnerConfig({
                         : null
                     if (res) {
                         // main config has been changed
-                        if (res.config) {
+                        if (
+                            res.config ||
+                            mergedConfig.slots[0] == config.slots[0]
+                        ) {
                             const nTokens = authInfoFromConfig({
-                                config: res.config,
+                                config: res.config || mergedConfig,
                                 url,
                                 clusters: values.cluster
                                     ? new Set([values.cluster])
                                     : undefined,
                                 require: new Set(['update', 'manage']),
                             }).tokens
-                            updateConfig(res.config, true)
+                            updateConfig(res.config || mergedConfig, true)
                             updateMainCtx({
                                 item: res.node.id,
                                 updateId: res.node.updateId,
@@ -352,9 +352,7 @@ function InnerConfig({
                                             disabled={
                                                 isSubmitting ||
                                                 disabled ||
-                                                !nodeData ||
-                                                values.slots[0] !=
-                                                    initialValues.slots[0]
+                                                !nodeData
                                             }
                                             fullWidth
                                             variant="outlined"
@@ -367,13 +365,15 @@ function InnerConfig({
                                             Label={{
                                                 label: 'Remove Password Lock',
                                             }}
+                                            sx={{
+                                                display:
+                                                    !!thisConfig.configLockUrl,
+                                            }}
                                             disabled={
                                                 disabled ||
                                                 !config.configLockUrl.length ||
                                                 values.lockPW.length ||
-                                                !nodeData ||
-                                                values.slots[0] !=
-                                                    initialValues.slots[0]
+                                                !nodeData
                                             }
                                             component={FormikCheckboxWithLabel}
                                         />
@@ -507,12 +507,20 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
             if (!active) {
                 return
             }
-            const obj = await decryptContentObject({
-                config,
-                nodeData: dataUnfinished.secretgraph.node,
-                blobOrTokens: mainCtx.tokens,
-                itemDomain: mainCtx.url || '/',
-            })
+            let obj
+            try {
+                obj = await decryptContentObject({
+                    config,
+                    nodeData: dataUnfinished.secretgraph.node,
+                    blobOrTokens: mainCtx.tokens,
+                    itemDomain: mainCtx.url || '/',
+                })
+            } catch (exc) {
+                if (!active) {
+                    return
+                }
+                throw exc
+            }
             if (!obj) {
                 console.error('failed decoding')
                 return

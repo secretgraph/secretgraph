@@ -71,7 +71,12 @@ export async function createContent({
                   return data.data
               },
               (reason) => {
-                  console.error('encrypting content failed', key, nonce, reason)
+                  console.error(
+                      'encrypting content failed',
+                      key,
+                      nonce,
+                      reason
+                  )
                   throw reason
               }
           )
@@ -127,7 +132,8 @@ export async function createContent({
             type: options.type,
             nonce: nonce ? await serializeToBase64(nonce) : undefined,
             value: await encryptedContentPromise.then(
-                (data) => new Blob([data], { type: 'application/octet-stream' })
+                (data) =>
+                    new Blob([data], { type: 'application/octet-stream' })
             ),
             actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,
@@ -224,11 +230,12 @@ export async function updateContent({
                     data: options.value,
                 })
             ).data
-            const [publicKeyReferencesPromise, tagsPromise2] = encryptSharedKey(
-                sharedKey as ArrayBuffer,
-                options.pubkeys,
-                options.hashAlgorithm
-            )
+            const [publicKeyReferencesPromise, tagsPromise2] =
+                encryptSharedKey(
+                    sharedKey as ArrayBuffer,
+                    options.pubkeys,
+                    options.hashAlgorithm
+                )
             references.push(...(await publicKeyReferencesPromise))
             tags.push(...(await tagsPromise2))
         }
@@ -278,13 +285,16 @@ interface decryptContentObjectInterface
     nodeData: any
 }
 
+class KeyMissmatchError extends Error {}
 export async function decryptContentObject({
     config: _config,
     nodeData,
     blobOrTokens,
     itemDomain,
 }: {
-    config: Interfaces.ConfigInterface | PromiseLike<Interfaces.ConfigInterface>
+    config:
+        | Interfaces.ConfigInterface
+        | PromiseLike<Interfaces.ConfigInterface>
     nodeData: any | PromiseLike<any>
     blobOrTokens:
         | Blob
@@ -305,6 +315,7 @@ export async function decryptContentObject({
     } else if (typeof _info == 'string') {
         arrPromise = Promise.resolve(b64tobuffer(_info))
     } else {
+        // TODO: fallback to cache
         arrPromise = fetch(new URL(_node.link, itemDomain), {
             headers: {
                 Authorization: _info.join(','),
@@ -370,7 +381,9 @@ export async function decryptContentObject({
             nodeData,
         }
     } catch (exc) {
-        console.debug('Decoding content failed', exc)
-        throw Error("Encrypted content and shared key doesn't match")
+        // console.debug('Decoding content failed', exc)
+        throw new KeyMissmatchError(
+            "Encrypted content and shared key doesn't match"
+        )
     }
 }

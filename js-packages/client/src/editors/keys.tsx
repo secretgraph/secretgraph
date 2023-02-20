@@ -1155,12 +1155,20 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
                     break
                 }
             }
-            const reskeys = await loadKeys({
-                baseUrl: mainCtx.url as string,
-                data: dataUnfinished,
-                config,
-                authorization: mainCtx.tokens,
-            })
+            let reskeys
+            try {
+                reskeys = await loadKeys({
+                    baseUrl: mainCtx.url as string,
+                    data: dataUnfinished,
+                    config,
+                    authorization: mainCtx.tokens,
+                })
+            } catch (exc) {
+                if (!active) {
+                    return
+                }
+                throw exc
+            }
             if (active) {
                 updateMainCtx(updateOb)
                 setData({

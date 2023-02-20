@@ -665,13 +665,6 @@ export async function updateOrCreateContentWithConfig({
                 type: type as string,
             })
         }
-        if (!result.data.secretgraph.updateOrCreateContent.content) {
-            console.error(
-                'updating/creating content failed',
-                result.data.secretgraph.updateOrCreateContent
-            )
-            return false
-        }
         if (!result.data.secretgraph.updateOrCreateContent.writeok) {
             return {
                 config: null,

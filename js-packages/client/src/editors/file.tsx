@@ -1158,12 +1158,20 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 return
             }
 
-            const obj = await decryptContentObject({
-                config,
-                nodeData: dataUnfinished.secretgraph.node,
-                blobOrTokens: mainCtx.tokens,
-                itemDomain: mainCtx.url || '/',
-            })
+            let obj
+            try{
+                obj = await decryptContentObject({
+                    config,
+                    nodeData: dataUnfinished.secretgraph.node,
+                    blobOrTokens: mainCtx.tokens,
+                    itemDomain: mainCtx.url || '/',
+                })
+            }catch(exc){
+                if(!active){
+                    return
+                }
+                throw exc
+            }
             if (!obj) {
                 console.error('failed decoding')
                 return
