@@ -99,7 +99,7 @@ interface BaseConfigInterface<N = never> {
     certificates: { [hash: string]: ConfigCertificateValue | N }
     tokens: { [hash: string]: ConfigTokenValue | N }
     slots: string[]
-    configLockUrl: string
+    configLockQuery: string
     configSecurityQuestion: [string, string]
 }
 

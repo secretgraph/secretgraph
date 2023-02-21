@@ -27,7 +27,9 @@ function Client(props: Props) {
         updateConfigReducer,
         null,
         () => {
-            let [conf, needsUpdate] = loadConfigSync(is_pwa() ? window.localStorage : window.sessionStorage)
+            let [conf, needsUpdate] = loadConfigSync(
+                is_pwa() ? window.localStorage : window.sessionStorage
+            )
             /**if(res[1]){
                  *  trigger update
 
@@ -39,15 +41,12 @@ function Client(props: Props) {
         if (!config) {
             return
         }
-        saveConfig(config, is_pwa() ? window.localStorage : window.sessionStorage)
+        saveConfig(
+            config,
+            is_pwa() ? window.localStorage : window.sessionStorage
+        )
     }, [config])
 
-    React.useEffect(() => {
-        if (!config?.configLockUrl) {
-            return
-        }
-        window.localStorage.setItem("secretgraphLoginUrl", config.configLockUrl)
-    }, [config?.configLockUrl])
     const [loading, setLoading] = React.useState(() => !config)
     React.useEffect(() => {
         if (config) {

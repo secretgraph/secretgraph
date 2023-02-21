@@ -92,8 +92,8 @@ export function cleanConfig(
         config.slots = ['main']
         hasChanges = true
     }
-    if (!config.configLockUrl) {
-        config.configLockUrl = ''
+    if (!config.configLockQuery) {
+        config.configLockQuery = ''
         hasChanges = true
     }
 

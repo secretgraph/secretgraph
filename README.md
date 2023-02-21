@@ -1,3 +1,7 @@
+# About
+
+Secretgraph is a platform for online identities. You cna
+
 # Installation
 
 ## Docker
@@ -432,6 +436,17 @@ This is currently not implemented as it needs background workers and has many ca
 
 # FAQ
 
+## Why not Haskell/Rust for the backend
+
+I know that languages would maybe be better for the backend.
+But I am not familar with both (I grew up with C++ and learned python later).
+Haskell has also the disadvantage of giant stack. That make system updates very big.
+
+But on the bright side: we have nuitka, so the mallus is neglectable.
+
+Anyway: I am always interested in Clients in other languages.
+If you have such a project, we can put it in the secretgraph namespace, if you like
+
 ## Why 3party decryption via private key
 
 The shared key can change, so safest assumption is that the key of the private key stays stable.
@@ -470,8 +485,6 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 # TODO
 
 -   tools initializeCluster need to adapt to new config layout
--   content updates broken
--   change count tracking broken?
 -   keys need more infos, like callback url, item and tokens
 -   select certificates a private is encrypted for
 -   certificates for slot
@@ -493,6 +506,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO later
 
+-   rename lockurl to lockquery
 -   use threading for cryptography operations (put in threadpool)
 -   maybe: allow lock url to be used as a start_url (for apple devices)
 -   translations, changing languages

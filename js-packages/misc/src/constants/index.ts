@@ -8,11 +8,9 @@ export const validActions = new Set<MainContextInterface['action']>([
     'help',
     'clone',
 ])
-export const validNotLoggedInActions = new Set<MainContextInterface['action']>([
-    'login',
-    'register',
-    'help',
-])
+export const validNotLoggedInActions = new Set<MainContextInterface['action']>(
+    ['login', 'register', 'help']
+)
 
 export const public_states = new Set(['required', 'trusted', 'public'])
 export const trusted_states = new Set(['required', 'trusted'])
@@ -44,13 +42,21 @@ export const mapHashNames: {
         readonly serializedName: string
     }
 } = {
-    sha512: { operationName: 'SHA-512', length: 512, serializedName: 'sha512' },
+    sha512: {
+        operationName: 'SHA-512',
+        length: 512,
+        serializedName: 'sha512',
+    },
     'SHA-512': {
         operationName: 'SHA-512',
         length: 512,
         serializedName: 'sha512',
     },
-    sha256: { operationName: 'SHA-256', length: 256, serializedName: 'sha256' },
+    sha256: {
+        operationName: 'SHA-256',
+        length: 256,
+        serializedName: 'sha256',
+    },
     'SHA-256': {
         operationName: 'SHA-256',
         length: 256,
@@ -76,6 +82,6 @@ export const stubContent = Buffer.from('stubContent:-1').toString('base64')
 export const privateConfigKeys = new Set([
     'slots',
     'certificates',
-    'configLockUrl',
+    'configLockQuery',
     'configSecurityQuestion',
 ])

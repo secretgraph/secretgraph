@@ -161,7 +161,9 @@ export default React.memo(function HeaderBar() {
     const lock = () => {
         sharedLockLogout()
         // don't clear session as we want to keep some session local settings
-        window.location.replace(config!.configLockUrl)
+        window.location.replace(
+            `${location.origin}?${config!.configLockQuery}`
+        )
     }
 
     let sidebarButton = null
@@ -238,11 +240,13 @@ export default React.memo(function HeaderBar() {
                     >
                         Settings
                     </MenuItem>
-                    <MenuItem onClick={() => setMenuOpen(false)}>Help</MenuItem>
+                    <MenuItem onClick={() => setMenuOpen(false)}>
+                        Help
+                    </MenuItem>
                     <MenuItem
                         style={{
                             display:
-                                !config || !config.configLockUrl.length
+                                !config || !config.configLockQuery.length
                                     ? 'none'
                                     : undefined,
                         }}

@@ -75,7 +75,7 @@ function Register() {
                                     iterations: 1000000,
                                 }),
                             ],
-                            configLockUrl: '',
+                            configLockQuery: '',
                             trustedKeys: {},
                         }
                         newConfig.hosts[newConfig.baseUrl] = {
@@ -191,7 +191,10 @@ function Register() {
                                 <div style={{ paddingTop: theme.spacing(1) }}>
                                     {registerContext!.errors.map(
                                         (error: string) => (
-                                            <Alert severity="error" key={error}>
+                                            <Alert
+                                                severity="error"
+                                                key={error}
+                                            >
                                                 {error}
                                             </Alert>
                                         )
@@ -215,7 +218,8 @@ function Register() {
                                 label="Security Question Answer"
                             />
 
-                            {typeof registerContext?.registerUrl === 'string' &&
+                            {typeof registerContext?.registerUrl ===
+                                'string' &&
                             !registerContext?.errors?.length ? (
                                 <div>
                                     <Typography

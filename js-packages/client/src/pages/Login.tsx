@@ -21,9 +21,10 @@ import FormikTextField from '../components/formik/FormikTextField'
 import * as Contexts from '../contexts'
 import {
     decryptingPasswordSettingsHelp,
-    importFileLabel,
     importHelp,
-    importStartLabel,
+    loginFileLabel,
+    loginLabel,
+    loginUrlLabel,
     passwordLabel,
 } from '../messages'
 
@@ -184,7 +185,7 @@ function Login() {
                                                 )
                                             }
                                         >
-                                            Import from File
+                                            File
                                         </Button>
                                     </label>
                                     <FormHelperText id="secretgraph-import-file-help">
@@ -215,11 +216,8 @@ function Login() {
                                         fullWidth={true}
                                         variant="outlined"
                                         size="small"
-                                        placeholder="import url"
+                                        placeholder="url"
                                     />
-                                    <FormHelperText id="secretgraph-import-url-help">
-                                        Import from url
-                                    </FormHelperText>
                                 </FormControl>
                             </Stack>
                             {needsPw ? (
@@ -252,7 +250,7 @@ function Login() {
                                     disabled={isSubmitting || !isValid}
                                     onClick={submitForm}
                                 >
-                                    {importStartLabel}
+                                    {loginLabel}
                                 </LoadingButton>
                                 <Button
                                     size="small"

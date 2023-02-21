@@ -111,15 +111,23 @@ function InnerConfig({
                     }
 
                     if (values.lockPW) {
-                        update['configLockUrl'] = await exportConfigAsUrl({
-                            client: itemClient,
-                            config: thisConfig,
-                            slot: thisConfig.slots[0],
-                            pw: values.lockPW,
-                            types: ['privatekey'],
-                        })
+                        const configUrl = new URL(
+                            await exportConfigAsUrl({
+                                client: itemClient,
+                                config: thisConfig,
+                                slot: thisConfig.slots[0],
+                                pw: values.lockPW,
+                                types: ['privatekey'],
+                            })
+                        )
+                        const query = new URLSearchParams(
+                            configUrl.searchParams
+                        )
+                        query.append('url', configUrl.origin)
+
+                        update['configLockQuery'] = query.toString()
                     } else if (values.removeLockPW) {
-                        update['configLockUrl'] = ''
+                        update['configLockQuery'] = ''
                     }
                     if (
                         values.securityQuestion[0] !=
@@ -341,7 +349,7 @@ function InnerConfig({
                                         }}
                                     >
                                         <Typography variant="h5">
-                                            {thisConfig.configLockUrl &&
+                                            {thisConfig.configLockQuery &&
                                             !values.removeLockPW
                                                 ? 'Update Lock password'
                                                 : 'Set Lock Pw'}
@@ -367,11 +375,12 @@ function InnerConfig({
                                             }}
                                             sx={{
                                                 display:
-                                                    !!thisConfig.configLockUrl,
+                                                    !!thisConfig.configLockQuery,
                                             }}
                                             disabled={
                                                 disabled ||
-                                                !config.configLockUrl.length ||
+                                                !config.configLockQuery
+                                                    .length ||
                                                 values.lockPW.length ||
                                                 !nodeData
                                             }
