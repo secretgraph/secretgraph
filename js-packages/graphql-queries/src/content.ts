@@ -117,6 +117,7 @@ export const createContentMutation = gql`
             ) {
                 content {
                     id
+                    updateId
                     nonce
                     link
                     state
@@ -169,11 +170,11 @@ export const updateContentMutation = gql`
             ) {
                 content {
                     id
+                    updateId
                     nonce
                     link
                     type
                     state
-                    updateId
                 }
                 writeok
             }

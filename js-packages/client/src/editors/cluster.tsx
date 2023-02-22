@@ -108,7 +108,6 @@ const ClusterIntern = ({
         Contexts.InitializedConfig
     )
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const { updateSearchCtx } = React.useContext(Contexts.Search)
     React.useLayoutEffect(() => {
         updateMainCtx({ title: props.name || '' })
     }, [props.name])

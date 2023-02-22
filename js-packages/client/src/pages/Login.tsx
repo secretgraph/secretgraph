@@ -21,11 +21,13 @@ import FormikTextField from '../components/formik/FormikTextField'
 import * as Contexts from '../contexts'
 import {
     decryptingPasswordSettingsHelp,
+    fileLabel,
     importHelp,
-    loginFileLabel,
+    loginFileHelp,
     loginLabel,
-    loginUrlLabel,
+    loginUrlHelp,
     passwordLabel,
+    urlLabel,
 } from '../messages'
 
 function Login() {
@@ -36,7 +38,7 @@ function Login() {
     ]
     const { loginUrl } = React.useContext(Contexts.External)
     const { sendMessage } = React.useContext(Contexts.Snackbar)
-    const { updateMainCtx } = React.useContext(Contexts.Main)
+    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
 
@@ -80,7 +82,7 @@ function Login() {
                     updateConfig(newConfig, true)
                     setActiveUrl(newConfig.baseUrl)
                     updateMainCtx({
-                        action: 'create',
+                        action: mainCtx.item ? 'view' : 'create',
                     })
                 } catch (errors) {
                     console.error(errors)
@@ -174,7 +176,7 @@ function Login() {
                                     <label htmlFor="secretgraph-import-file">
                                         <Button
                                             variant="contained"
-                                            component="span"
+                                            style={{ width: '100%' }}
                                             color="primary"
                                             disabled={isSubmitting}
                                             endIcon={
@@ -185,7 +187,7 @@ function Login() {
                                                 )
                                             }
                                         >
-                                            File
+                                            {fileLabel}
                                         </Button>
                                     </label>
                                     <FormHelperText id="secretgraph-import-file-help">
@@ -200,7 +202,7 @@ function Login() {
                                                 {errors!.file}
                                             </Box>
                                         ) : null}
-                                        {importFileLabel}
+                                        {loginFileHelp}
                                     </FormHelperText>
                                 </FormControl>
                                 <Typography textAlign="center">or</Typography>
@@ -216,7 +218,8 @@ function Login() {
                                         fullWidth={true}
                                         variant="outlined"
                                         size="small"
-                                        placeholder="url"
+                                        placeholder={urlLabel}
+                                        helperText={loginUrlHelp}
                                     />
                                 </FormControl>
                             </Stack>
@@ -241,9 +244,9 @@ function Login() {
                                 </FormControl>
                             ) : null}
 
-                            <div>
+                            <Stack direction="row" spacing={2}>
                                 <LoadingButton
-                                    size="small"
+                                    style={{ minWidth: '15vw' }}
                                     variant="contained"
                                     color="primary"
                                     loading={isSubmitting}
@@ -262,7 +265,7 @@ function Login() {
                                 >
                                     Register instead
                                 </Button>
-                            </div>
+                            </Stack>
                         </Stack>
                     </Form>
                 )

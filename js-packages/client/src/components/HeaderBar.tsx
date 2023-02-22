@@ -157,12 +157,11 @@ export default React.memo(function HeaderBar() {
         navClient.resetStore()
         itemClient.resetStore()
     }
-
     const lock = () => {
         sharedLockLogout()
         // don't clear session as we want to keep some session local settings
         window.location.replace(
-            `${location.origin}?${config!.configLockQuery}`
+            `${location.href.split(/#|\?/, 1)[0]}#${config!.configLockQuery}`
         )
     }
 

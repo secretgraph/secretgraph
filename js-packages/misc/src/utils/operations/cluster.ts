@@ -220,7 +220,7 @@ export async function initializeCluster({
     if (!authorization.length) {
         throw new Error('no tokens found after initialization')
     }
-    const { data: contentResult } = await createContent({
+    const { data: configResult } = await createContent({
         client,
         cluster: clusterResult.cluster['id'],
         value: new Blob([JSON.stringify(config)]),
@@ -236,7 +236,10 @@ export async function initializeCluster({
 
     return {
         config,
-        cluster: clusterResult,
-        content: contentResult.updateOrCreateContent,
+        clusterResult: clusterResult,
+        configResult: configResult.secretgraph.updateOrCreateContent,
+        pubkey: publicKey,
+        signkey: privateKey,
+        manageToken: manage_keyb64,
     }
 }

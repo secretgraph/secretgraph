@@ -1087,7 +1087,7 @@ export const loadConfig = async (
             const parsedResult2: ArrayBuffer = (await decryptFirstPreKey({
                 prekeys: parsedResult.prekeys,
                 pws,
-                hashAlgorithm: 'SHA-512',
+                fallbackHashAlgorithm: 'SHA-512',
                 iterations: parsedResult.iterations,
                 fn: async (data: [ArrayBuffer, string | null]) => {
                     if (data[1]) {
@@ -1158,8 +1158,8 @@ export const loadConfig = async (
             const pkeys = await decryptPreKeys({
                 prekeys,
                 pws,
-                hashAlgorithm: 'SHA-512',
                 iterations,
+                fallbackHashAlgorithm: 'SHA-512',
             })
 
             for (const pkey of pkeys) {
@@ -1171,6 +1171,7 @@ export const loadConfig = async (
             console.debug('no prekeys decrypted')
             return [null, false]
         }
+
         // try direct way
         try {
             return cleanConfig(
@@ -1196,6 +1197,7 @@ export const loadConfig = async (
                 'X-KEY-HASH': key_hashes.join(','),
             },
         })
+
         if (!keysResponse.ok) {
             console.error('key response errored', keysResponse.statusText)
             return [null, false]

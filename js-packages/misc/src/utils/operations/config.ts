@@ -198,17 +198,17 @@ export async function checkConfigObject(
     const algos = findWorkingHashAlgorithms(
         data.secretgraph.config.hashAlgorithms
     )
-    const contentHash = hashTagsContentHash(
-        [`slot=${config}`],
-        'Config',
-        algos[0]
-    )
     if (!data) {
         return false
     }
+    const contentHash = await hashTagsContentHash(
+        [`slot=${config.slots[0]}`],
+        'Config',
+        algos[0]
+    )
     const occurences = data.secretgraph.contents.edges.reduce(
         (prevValue: number, { node: curValue }: any) =>
-            prevValue + curValue.contentHash == contentHash ? 1 : 0,
+            prevValue + (curValue.contentHash == contentHash ? 1 : 0),
         0
     )
     if (occurences == 0) {
@@ -404,7 +404,6 @@ export async function updateConfigRemoteReducer(
     const hashAlgorithms = findWorkingHashAlgorithms(
         serverConfigRes.data.secretgraph.config.hashAlgorithms
     )
-
     let slotHashes = [...(slots ? slots : resconf[0].slots)]
     if (excludeSlots) {
         slotHashes = slotHashes.filter(

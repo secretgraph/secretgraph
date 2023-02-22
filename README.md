@@ -506,7 +506,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO later
 
--   rename lockurl to lockquery
+-   replace slothashes in config server side validation, it is broken
 -   use threading for cryptography operations (put in threadpool)
 -   maybe: allow lock url to be used as a start_url (for apple devices)
 -   translations, changing languages

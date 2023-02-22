@@ -10,7 +10,9 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import { updateContent } from '@secretgraph/misc/utils/operations'
 import { initializeCluster } from '@secretgraph/misc/utils/operations/cluster'
+import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 
@@ -40,7 +42,10 @@ function Register() {
 
     return (
         <Formik
-            onSubmit={async ({ url, securityQuestion }, { setSubmitting }) => {
+            onSubmit={async (
+                { url, securityQuestion, lockPW },
+                { setSubmitting }
+            ) => {
                 setOldConfig(config)
                 url = new URL(url, window.location.href).href
                 const slot = 'main'
@@ -91,6 +96,44 @@ function Register() {
                             noteCertificate: 'initial certificate',
                             noteToken: 'initial token',
                         })
+                        if (lockPW) {
+                            const configUrl = new URL(
+                                await exportConfigAsUrl({
+                                    client,
+                                    config: newConfig,
+                                    slot: newConfig.slots[0],
+                                    pw: lockPW,
+                                    types: ['privatekey'],
+                                })
+                            )
+                            const query = new URLSearchParams(
+                                configUrl.searchParams
+                            )
+                            query.append(
+                                'url',
+                                configUrl.href.split(/#|\?/, 1)[0]
+                            )
+                            query.append('action', 'login')
+
+                            newConfig['configLockQuery'] = query.toString()
+                            await updateContent({
+                                id: result.configResult.content.id,
+                                updateId: result.configResult.content.updateId,
+                                client,
+                                value: new Blob([JSON.stringify(newConfig)]),
+                                tags: [
+                                    'name=config.json',
+                                    `slot=${newConfig.slots[0]}`,
+                                ],
+                                pubkeys: [result.pubkey],
+                                privkeys: [result.signkey],
+                                authorization: [
+                                    `${result.clusterResult.cluster.id}:${result.manageToken}`,
+                                ],
+                                hashAlgorithm:
+                                    registerContext!.hashAlgorithms[0],
+                            })
+                        }
                         // TODO: handle exceptions and try with login
                         updateConfig(newConfig, true)
                         setActiveUrl(newConfig.baseUrl)
@@ -118,6 +161,7 @@ function Register() {
                     'The answer to life, the universe, and everything',
                     '42',
                 ],
+                lockPW: '',
             }}
         >
             {({ submitForm, isSubmitting, isValid, values }) => {
@@ -218,6 +262,16 @@ function Register() {
                                 label="Security Question Answer"
                             />
 
+                            <Field
+                                name="lockPW"
+                                component={FormikTextField}
+                                disabled={isSubmitting}
+                                fullWidth
+                                variant="outlined"
+                                label="Password used for locking secretgraph on inactivity"
+                                helperText="Leave empty to not set an pw"
+                            />
+
                             {typeof registerContext?.registerUrl ===
                                 'string' &&
                             !registerContext?.errors?.length ? (
@@ -243,13 +297,13 @@ function Register() {
                                 </div>
                             ) : undefined}
 
-                            <div>
+                            <Stack direction="row" spacing={2}>
                                 <LoadingButton
-                                    size="small"
                                     variant="contained"
                                     color="secondary"
                                     onClick={submitForm}
                                     style={{
+                                        minWidth: '15vw',
                                         visibility:
                                             typeof registerContext?.registerUrl ===
                                             'string'
@@ -276,7 +330,7 @@ function Register() {
                                 >
                                     Login instead
                                 </Button>
-                            </div>
+                            </Stack>
                         </Stack>
                     </Form>
                 )

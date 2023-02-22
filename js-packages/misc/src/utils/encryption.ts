@@ -264,7 +264,8 @@ export async function encryptRSAOEAP(
             key,
             await unserializeToArrayBuffer(_options.data)
         ),
-        hashAlgorithm: Constants.mapHashNames[hashalgo as string].operationName,
+        hashAlgorithm:
+            Constants.mapHashNames[hashalgo as string].operationName,
         key,
     }
 }
@@ -782,7 +783,11 @@ export async function extractTags(
                             String.fromCharCode(...new Uint8Array(val))
                         )
                     } catch (error) {
-                        console.error('decrypting tag caused error', tag, error)
+                        console.error(
+                            'decrypting tag caused error',
+                            tag,
+                            error
+                        )
                     }
                 } else {
                     tags[tag].push(data)
@@ -831,15 +836,20 @@ export async function encryptPreKey({
 async function _pwsdecryptprekey(options: {
     readonly prekey: ArrayBuffer | string
     pws: Interfaces.NonKeyInput[]
-    hashAlgorithm: string
     iterations: number | string
+    hashAlgorithm: string
 }): Promise<[ArrayBuffer, string | null]> {
     let prefix = null,
         prekey
+    let hashAlgorithm = options.hashAlgorithm
     if (typeof options.prekey === 'string') {
-        const _prekey = options.prekey.split(':', 2)
-        if (_prekey.length > 1) {
-            prefix = _prekey[0]
+        const _prekey = options.prekey.split(':', 3)
+        if (_prekey.length > 2) {
+            hashAlgorithm = _prekey[0]
+            prefix = `${hashAlgorithm}:${_prekey[1]}`
+            prekey = b64tobuffer(_prekey[2])
+        } else if (_prekey.length > 1) {
+            prefix = `${hashAlgorithm}:${_prekey[0]}`
             prekey = b64tobuffer(_prekey[1])
         } else {
             prekey = b64tobuffer(_prekey[0])
@@ -866,7 +876,7 @@ async function _pwsdecryptprekey(options: {
                 key: derivePW({
                     pw,
                     salt: nonce,
-                    hashAlgorithm: options.hashAlgorithm,
+                    hashAlgorithm,
                     iterations: options.iterations,
                 }).then(
                     (result) => {
@@ -889,15 +899,24 @@ async function _pwsdecryptprekey(options: {
     ]
 }
 
-export async function decryptPreKeys(options: {
+export async function decryptPreKeys({
+    fallbackHashAlgorithm = 'invalid',
+    ...options
+}: {
     prekeys: (ArrayBuffer | string)[]
     pws: Interfaces.NonKeyInput[]
-    hashAlgorithm: string
     iterations: number | string
+    fallbackHashAlgorithm?: string
 }): Promise<[ArrayBuffer, string | null][]> {
     const decryptprocesses = []
     for (const prekey of options.prekeys) {
-        decryptprocesses.push(_pwsdecryptprekey({ ...options, prekey }))
+        decryptprocesses.push(
+            _pwsdecryptprekey({
+                ...options,
+                prekey,
+                hashAlgorithm: fallbackHashAlgorithm,
+            })
+        )
     }
     const results: [ArrayBuffer, string | null][] = []
     for (const res of await Promise.allSettled(decryptprocesses)) {
@@ -908,12 +927,13 @@ export async function decryptPreKeys(options: {
     return results
 }
 
-export async function decryptFirstPreKey<
-    T = [ArrayBuffer, string | null]
->(options: {
+export async function decryptFirstPreKey<T = [ArrayBuffer, string | null]>({
+    fallbackHashAlgorithm,
+    ...options
+}: {
     prekeys: ArrayBuffer[] | string[]
     pws: Interfaces.NonKeyInput[]
-    hashAlgorithm: string
+    fallbackHashAlgorithm: string
     iterations: number | string
     fn?: (a: [ArrayBuffer, string | null]) => T
 }): Promise<T> {
@@ -921,11 +941,19 @@ export async function decryptFirstPreKey<
     for (const prekey of options.prekeys) {
         if (options.fn) {
             decryptprocesses.push(
-                _pwsdecryptprekey({ ...options, prekey }).then(options.fn)
+                _pwsdecryptprekey({
+                    ...options,
+                    prekey,
+                    hashAlgorithm: fallbackHashAlgorithm,
+                }).then(options.fn)
             )
         } else {
             decryptprocesses.push(
-                _pwsdecryptprekey({ ...options, prekey }) as PromiseLike<any>
+                _pwsdecryptprekey({
+                    ...options,
+                    prekey,
+                    hashAlgorithm: fallbackHashAlgorithm,
+                }) as PromiseLike<any>
             )
         }
     }

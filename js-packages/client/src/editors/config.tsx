@@ -123,7 +123,9 @@ function InnerConfig({
                         const query = new URLSearchParams(
                             configUrl.searchParams
                         )
-                        query.append('url', configUrl.origin)
+                        query.append('url', configUrl.href.split(/#|\?/, 1)[0])
+
+                        query.append('action', 'login')
 
                         update['configLockQuery'] = query.toString()
                     } else if (values.removeLockPW) {

@@ -3,10 +3,13 @@ declare var gettext: any
 export const initializeHelp = gettext(
     'Thanks for using secretgraph. To start provide the url to a secretgraph provider and press Register. You may have to register a user account.'
 )
+
+export const fileLabel = gettext('File')
+export const urlLabel = gettext('Url')
 export const registerLabel = gettext('Register')
 export const loginLabel = gettext('Login')
-export const loginFileLabel = gettext('Settings file for login')
-export const loginUrlLabel = gettext('Settings url for login')
+export const loginFileHelp = gettext('Settings file for login')
+export const loginUrlHelp = gettext('Settings url for login')
 export const importHelp = gettext('Import settings to log into secretgraph')
 
 export const passwordLabel = gettext('Password')
