@@ -12,6 +12,7 @@
     ],
     "paths": {
       "@secretgraph/misc/*": ["../../misc/src/*"],
+      "@secretgraph/rdf/*": ["../../misc/rdf/*"],
       "@secretgraph/graphql-queries/*": [
         "../../graphql-queries/src/*"
       ]
@@ -23,6 +24,9 @@
     },
     {
       "path": "../misc/tsconfig.json"
+    },
+    {
+      "path": "../rdf/tsconfig.json"
     }
   ],
   "include": [

@@ -6,6 +6,7 @@
     "license": "MIT",
     "dependencies": {
         "@secretgraph/misc": "*",
+        "@secretgraph/rdf": "*",
         "@secretgraph/graphql-queries": "*",
         "@apollo/client": "*",
         "graphql-ws": "*",

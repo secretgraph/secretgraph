@@ -59,6 +59,14 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
     [
+        'ChannelStore',
+        {
+            label: gettext('ChannelStore'),
+            ignore: true,
+            component: React.lazy(() => import('./ChannelStore')),
+        },
+    ],
+    [
         'loading',
         {
             label: gettext('Loading'),
