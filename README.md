@@ -484,6 +484,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
+-   key callbacks: url:contentid:token
 -   editors starting with : for meta editors like galeries (real types cannot contain :)
 -   tools initializeCluster need to adapt to new config layout
 -   keys need more infos, like callback url, item and tokens

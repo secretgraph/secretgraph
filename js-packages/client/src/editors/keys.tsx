@@ -798,6 +798,7 @@ const KeysUpdate = ({
         description: publicKey?.tags?.description
             ? publicKey.tags.description[0]
             : '',
+        callbacks: publicKey?.tags?.callbacks ? publicKey.tags.callbacks : [],
         publicKey: publicKey
             ? `-----BEGIN PUBLIC KEY-----\n${Buffer.from(
                   publicKey.data
@@ -899,7 +900,6 @@ const KeysUpdate = ({
                     }
 
                     const {
-                        hashes: hashesPrivateKey,
                         actions: finishedActionsPrivateKey,
                         configUpdate: configUpdatePrivateKey,
                     } = privKey
@@ -909,7 +909,6 @@ const KeysUpdate = ({
                               hashAlgorithm: hashAlgorithmsWorking[0],
                           })
                         : {
-                              hashes: [],
                               actions: [],
                               configUpdate: {},
                           }

@@ -108,7 +108,7 @@ class PushContentValueInput:
 
 @strawberry.input
 class PushContentInput:
-    parent: ID
+    parent: Optional[ID] = None
     value: PushContentValueInput
     net: Optional[ID] = None
     additionalNets: strawberry.Private[Optional[Iterable[Net]]] = None

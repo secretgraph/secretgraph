@@ -437,7 +437,7 @@ type PageInfo {
 }
 
 input PushContentInput {
-  parent: ID!
+  parent: ID = null
   value: PushContentValueInput!
   net: ID = null
 }
@@ -595,8 +595,12 @@ type SecretgraphObject {
   config: SecretgraphConfig!
 }
 
-type Subscription {
+type SecretgraphSubscriptions {
   subscribeNodeUpdates(ids: [GlobalID!]!, authorization: [String!] = null): [Node!]!
+}
+
+type Subscription {
+  secretgraph: SecretgraphSubscriptions!
 }
 
 type TransferMutation {

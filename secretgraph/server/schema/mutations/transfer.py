@@ -15,6 +15,7 @@ from ....core.constants import TransferResult
 from ...actions.update import sync_transfer_value, create_content_fn
 from ...models import Content, ContentTag
 from ...utils.auth import (
+    fetch_by_id,
     ids_to_results,
     get_cached_result,
     retrieve_allowed_objects,
@@ -37,17 +38,18 @@ def mutate_push_content(
     content: PushContentInput,
     authorization: Optional[AuthList] = None,
 ) -> PushContentMutation:
-    parent_id = content.pop("parent")
-    result = ids_to_results(
+    objs = Content.objects.all()
+    if content.parent:
+        objs = fetch_by_id(objs, content.parent)
+    result = retrieve_allowed_objects(
         info.context["request"],
-        parent_id,
-        Content,
+        objs,
         "push",
         authset=authorization,
-    )["Content"]
-    source = result["objects"].first()
-    if not source:
-        raise ValueError("Content not found")
+    )
+    if not content.parent and result["accesslevel"] != 3:
+        raise ValueError("Could not determinate parent for push operation")
+    source = result["objects"].get()
     cleaned_result = pre_clean_content_spec(True, content, result)
     required_keys = set(
         Content.objects.required_keys_full(source.cluster).values_list(
@@ -79,7 +81,6 @@ def mutate_push_content(
 
 @strawberry.type
 class TransferMutation:
-
     content: Optional[ContentNode] = None
 
 
@@ -131,7 +132,6 @@ def mutate_transfer(
 
 @strawberry.type
 class PullMutation:
-
     content: Optional[ContentNode] = None
     writeok: bool
 
@@ -152,7 +152,7 @@ def mutate_pull(
     )["Content"]
     transfer_target = transfer_result.objects.get()
     if key and url:
-        raise ValueError()
+        raise ValueError("key and value specified together")
     # was signed? => restrict to keys
     signer_keys = view_result["objects"].filter(
         type="PublicKey", referencedBy__source=transfer_target
