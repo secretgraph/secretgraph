@@ -314,7 +314,6 @@ function ActionBar(props: Props) {
                                             window.location.href
                                         )
                                         url.hash = `${cloneQuery}`
-                                        console.log('actionbar', url)
                                         // we have the opener
                                         window.open(`${url}`, '_blank')
                                     }}

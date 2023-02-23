@@ -484,6 +484,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
+-   editors starting with : for meta editors like galeries (real types cannot contain :)
 -   tools initializeCluster need to adapt to new config layout
 -   keys need more infos, like callback url, item and tokens
 -   select certificates a private is encrypted for
@@ -506,7 +507,6 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO later
 
--   replace slothashes in config server side validation, it is broken
 -   use threading for cryptography operations (put in threadpool)
 -   maybe: allow lock url to be used as a start_url (for apple devices)
 -   translations, changing languages
