@@ -17,7 +17,7 @@ import {
     extractPrivKeys,
     updateConfig,
 } from '../config'
-import { b64toarr } from '../encoding'
+import { b64toarr, utf8encoder } from '../encoding'
 import {
     decryptRSAOEAP,
     encryptPreKey,
@@ -25,6 +25,7 @@ import {
     verifySignature,
 } from '../encryption'
 import {
+    calculateHashes,
     findWorkingHashAlgorithms,
     hashObject,
     hashTagsContentHash,
@@ -173,7 +174,8 @@ async function updateRemoteConfig({
 
 export async function checkConfigObject(
     client: ApolloClient<any>,
-    config: Interfaces.ConfigInterface
+    config: Interfaces.ConfigInterface,
+    onlyMainHash: boolean = false
 ) {
     const authInfo = authInfoFromConfig({
         config,
@@ -201,14 +203,17 @@ export async function checkConfigObject(
     if (!data) {
         return false
     }
-    const contentHash = await hashTagsContentHash(
-        [`slot=${config.slots[0]}`],
-        'Config',
-        algos[0]
+    const contentHashes = new Set(
+        (
+            await calculateHashes(
+                utf8encoder.encode(`slot=${config.slots[0]}`),
+                onlyMainHash ? [algos[0]] : algos
+            )
+        ).map((val) => `Config:${val}`)
     )
     const occurences = data.secretgraph.contents.edges.reduce(
         (prevValue: number, { node: curValue }: any) =>
-            prevValue + (curValue.contentHash == contentHash ? 1 : 0),
+            prevValue + (contentHashes.has(curValue.contentHash) ? 1 : 0),
         0
     )
     if (occurences == 0) {

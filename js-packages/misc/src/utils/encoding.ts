@@ -12,7 +12,8 @@ export class Base64Error extends Error {}
 export function b64tobuffer(inp: string) {
     const tmp = Buffer.from(inp, 'base64')
 
-    if (tmp.byteLength == 0 && inp.length) {
+    // if smaller than lower limit, raise an exception
+    if (inp.length && (Math.floor(tmp.byteLength / 3) + 1) * 4 < inp.length) {
         throw new Base64Error('Not a base64 string')
     }
 

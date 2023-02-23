@@ -89,16 +89,12 @@ function Definitions({
             ctx.action = 'create'
             ctx.cloneData = window.opener!.cloneData
         }
-        if (!config && ctx.action == 'login') {
-            if (
-                query.has('prekey') ||
-                query.has('token') ||
-                query.has('key')
-            ) {
-                const loginQuery = new URLSearchParams(query)
-                loginQuery.delete('url')
-                loginQuery.delete('action')
-                setLoginUrl(`${ctx.url}?${loginQuery}`)
+        if (ctx.action == 'login' || loginUrl.length) {
+            if (!loginUrl.length) {
+                const loginUrlQuery = query.get('loginUrl')
+                if (loginUrlQuery) {
+                    setLoginUrl(loginUrlQuery)
+                }
             }
         } else {
             if (
@@ -132,6 +128,11 @@ function Definitions({
         }
         if (mainCtx.url) {
             search.set('url', mainCtx.url)
+        }
+        if (loginUrl.length) {
+            search.set('loginUrl', loginUrl)
+        } else {
+            search.delete('loginUrl')
         }
         window.location.hash = search.toString()
     }, [mainCtx.action, mainCtx.item, mainCtx.type, mainCtx.url])
@@ -170,51 +171,57 @@ function Definitions({
             value={{
                 defaultPath: defaultPath ?? '/graphql',
                 homeUrl,
-                loginUrl,
             }}
         >
-            <Contexts.OpenSidebar.Provider
+            <Contexts.LoginUrl.Provider
                 value={{
-                    open: openSidebar,
-                    setOpen: setOpenSidebar,
+                    loginUrl,
+                    setLoginUrl,
                 }}
             >
-                <Contexts.Clients.Provider
+                <Contexts.OpenSidebar.Provider
                     value={{
-                        navClient,
-                        itemClient,
-                        baseClient: configClient,
+                        open: openSidebar,
+                        setOpen: setOpenSidebar,
                     }}
                 >
-                    <Contexts.ActiveUrl.Provider
-                        value={{ activeUrl, setActiveUrl }}
+                    <Contexts.Clients.Provider
+                        value={{
+                            navClient,
+                            itemClient,
+                            baseClient: configClient,
+                        }}
                     >
-                        <Contexts.Main.Provider
-                            value={{ mainCtx, updateMainCtx }}
+                        <Contexts.ActiveUrl.Provider
+                            value={{ activeUrl, setActiveUrl }}
                         >
-                            <Contexts.Search.Provider
-                                value={{
-                                    searchCtx,
-                                    updateSearchCtx,
-                                }}
+                            <Contexts.Main.Provider
+                                value={{ mainCtx, updateMainCtx }}
                             >
-                                <Contexts.Config.Provider
-                                    value={{ config, updateConfig }}
+                                <Contexts.Search.Provider
+                                    value={{
+                                        searchCtx,
+                                        updateSearchCtx,
+                                    }}
                                 >
-                                    <Contexts.Snackbar.Provider
-                                        value={{
-                                            message,
-                                            sendMessage,
-                                        }}
+                                    <Contexts.Config.Provider
+                                        value={{ config, updateConfig }}
                                     >
-                                        <Main />
-                                    </Contexts.Snackbar.Provider>
-                                </Contexts.Config.Provider>
-                            </Contexts.Search.Provider>
-                        </Contexts.Main.Provider>
-                    </Contexts.ActiveUrl.Provider>
-                </Contexts.Clients.Provider>
-            </Contexts.OpenSidebar.Provider>
+                                        <Contexts.Snackbar.Provider
+                                            value={{
+                                                message,
+                                                sendMessage,
+                                            }}
+                                        >
+                                            <Main />
+                                        </Contexts.Snackbar.Provider>
+                                    </Contexts.Config.Provider>
+                                </Contexts.Search.Provider>
+                            </Contexts.Main.Provider>
+                        </Contexts.ActiveUrl.Provider>
+                    </Contexts.Clients.Provider>
+                </Contexts.OpenSidebar.Provider>
+            </Contexts.LoginUrl.Provider>
         </Contexts.External.Provider>
     )
 }

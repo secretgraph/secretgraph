@@ -24,6 +24,7 @@ export default React.memo(function HeaderBar() {
     const { open, setOpen } = React.useContext(Contexts.OpenSidebar)
     const [menuOpen, setMenuOpen] = React.useState(false)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { setLoginUrl } = React.useContext(Contexts.LoginUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     const { homeUrl } = React.useContext(Contexts.External)
     const { baseClient, itemClient, navClient } = React.useContext(
@@ -159,10 +160,7 @@ export default React.memo(function HeaderBar() {
     }
     const lock = () => {
         sharedLockLogout()
-        // don't clear session as we want to keep some session local settings
-        window.location.replace(
-            `${location.href.split(/#|\?/, 1)[0]}#${config!.configLockQuery}`
-        )
+        setLoginUrl(config!.configLockUrl)
     }
 
     let sidebarButton = null
@@ -245,7 +243,7 @@ export default React.memo(function HeaderBar() {
                     <MenuItem
                         style={{
                             display:
-                                !config || !config.configLockQuery.length
+                                !config || !config.configLockUrl.length
                                     ? 'none'
                                     : undefined,
                         }}

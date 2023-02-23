@@ -80,7 +80,7 @@ function Register() {
                                     iterations: 1000000,
                                 }),
                             ],
-                            configLockQuery: '',
+                            configLockUrl: '',
                             trustedKeys: {},
                         }
                         newConfig.hosts[newConfig.baseUrl] = {
@@ -97,7 +97,7 @@ function Register() {
                             noteToken: 'initial token',
                         })
                         if (lockPW) {
-                            const configUrl = new URL(
+                            newConfig['configLockUrl'] =
                                 await exportConfigAsUrl({
                                     client,
                                     config: newConfig,
@@ -105,17 +105,6 @@ function Register() {
                                     pw: lockPW,
                                     types: ['privatekey'],
                                 })
-                            )
-                            const query = new URLSearchParams(
-                                configUrl.searchParams
-                            )
-                            query.append(
-                                'url',
-                                configUrl.href.split(/#|\?/, 1)[0]
-                            )
-                            query.append('action', 'login')
-
-                            newConfig['configLockQuery'] = query.toString()
                             await updateContent({
                                 id: result.configResult.content.id,
                                 updateId: result.configResult.content.updateId,

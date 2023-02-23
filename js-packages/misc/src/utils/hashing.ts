@@ -96,7 +96,7 @@ export async function calculateHashes(
     const obj = await unserializeToArrayBuffer(inp)
     const hashes: Promise<string>[] = []
     for (const algo of _hashAlgorithms) {
-        hashes.push(hashObject(inp, algo))
+        hashes.push(hashObject(obj, algo))
     }
     return await Promise.all(hashes)
 }

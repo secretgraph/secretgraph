@@ -73,11 +73,18 @@ export const ActiveUrl = createContext<{
     setActiveUrl: stubFn,
 })
 
+export const LoginUrl = createContext<{
+    loginUrl: string
+    setLoginUrl: (update: string) => void
+}>({
+    loginUrl: '',
+    setLoginUrl: stubFn,
+})
+
 export const External = createContext<{
     defaultPath: string
     homeUrl?: string
-    loginUrl: string
-}>({ defaultPath: '', loginUrl: '' })
+}>({ defaultPath: '' })
 
 export const OpenSidebar = createContext<{
     open: boolean

@@ -111,25 +111,15 @@ function InnerConfig({
                     }
 
                     if (values.lockPW) {
-                        const configUrl = new URL(
-                            await exportConfigAsUrl({
-                                client: itemClient,
-                                config: thisConfig,
-                                slot: thisConfig.slots[0],
-                                pw: values.lockPW,
-                                types: ['privatekey'],
-                            })
-                        )
-                        const query = new URLSearchParams(
-                            configUrl.searchParams
-                        )
-                        query.append('url', configUrl.href.split(/#|\?/, 1)[0])
-
-                        query.append('action', 'login')
-
-                        update['configLockQuery'] = query.toString()
+                        update['configLockUrl'] = await exportConfigAsUrl({
+                            client: itemClient,
+                            config: thisConfig,
+                            slot: thisConfig.slots[0],
+                            pw: values.lockPW,
+                            types: ['privatekey'],
+                        })
                     } else if (values.removeLockPW) {
-                        update['configLockQuery'] = ''
+                        update['configLockUrl'] = ''
                     }
                     if (
                         values.securityQuestion[0] !=
@@ -351,7 +341,7 @@ function InnerConfig({
                                         }}
                                     >
                                         <Typography variant="h5">
-                                            {thisConfig.configLockQuery &&
+                                            {thisConfig.configLockUrl &&
                                             !values.removeLockPW
                                                 ? 'Update Lock password'
                                                 : 'Set Lock Pw'}
@@ -377,12 +367,11 @@ function InnerConfig({
                                             }}
                                             sx={{
                                                 display:
-                                                    !!thisConfig.configLockQuery,
+                                                    !!thisConfig.configLockUrl,
                                             }}
                                             disabled={
                                                 disabled ||
-                                                !config.configLockQuery
-                                                    .length ||
+                                                !config.configLockUrl.length ||
                                                 values.lockPW.length ||
                                                 !nodeData
                                             }

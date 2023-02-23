@@ -36,7 +36,7 @@ function Login() {
         Interfaces.ConfigInterface | null,
         any
     ]
-    const { loginUrl } = React.useContext(Contexts.External)
+    const { loginUrl, setLoginUrl } = React.useContext(Contexts.LoginUrl)
     const { sendMessage } = React.useContext(Contexts.Snackbar)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { setActiveUrl } = React.useContext(Contexts.ActiveUrl)
@@ -80,6 +80,7 @@ function Login() {
 
                     // const env = createEnvironment(newConfig.baseUrl);
                     updateConfig(newConfig, true)
+                    setLoginUrl('')
                     setActiveUrl(newConfig.baseUrl)
                     updateMainCtx({
                         action: mainCtx.item ? 'view' : 'create',
