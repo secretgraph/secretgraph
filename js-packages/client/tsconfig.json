@@ -12,7 +12,7 @@
     ],
     "paths": {
       "@secretgraph/misc/*": ["../../misc/src/*"],
-      "@secretgraph/rdf/*": ["../../misc/rdf/*"],
+      "@secretgraph/rdf/*": ["../../rdf/src/*"],
       "@secretgraph/graphql-queries/*": [
         "../../graphql-queries/src/*"
       ]

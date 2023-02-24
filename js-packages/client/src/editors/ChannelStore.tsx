@@ -31,6 +31,7 @@ import {
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
 import { extractGroupKeys } from '@secretgraph/misc/utils/references'
+import { parseToStoreAndPrefixes } from '@secretgraph/rdf/utils/graph'
 import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
@@ -47,7 +48,134 @@ import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
 
-const ViewChannelStore = () => {
+const rdfMimes = new Set(['text/turtle', 'application/trig', 'text/n3'])
+function jsonToNodes(currentElement: Array<any> | Object) {
+    if (currentElement instanceof Array) {
+        const ret: React.ReactNode[] = []
+        for (const el of currentElement) {
+            ret.push(jsonToNodes(el))
+        }
+        return <>{...ret}</>
+    } else if (currentElement instanceof Object) {
+        const ret: React.ReactNode[] = []
+        for (const tuple of Object.entries(currentElement)) {
+            ret.push(
+                <Stack direction="row" spacing={2} key={tuple[0]}>
+                    <Typography>{tuple[0]}</Typography>
+                    {jsonToNodes(tuple[1])}
+                </Stack>
+            )
+        }
+    } else {
+        return <Typography variant="body2">{`${currentElement}`}</Typography>
+    }
+}
+
+function JSONView({ data }: { data: Blob }) {
+    const [struct, setStruct] = React.useState<React.ReactNode>(null)
+    React.useEffect(() => {
+        let active = true
+        async function f() {
+            const jsonOb = JSON.parse(await data.text())
+            setStruct(jsonToNodes(jsonOb))
+        }
+        f()
+        return () => {
+            active = false
+        }
+    }, [data])
+    return <>{struct}</>
+}
+
+function RDFTripleView({ data, mime }: { data: Blob; mime: string }) {
+    const [struct, setStruct] = React.useState<React.ReactNode>(null)
+    React.useEffect(() => {
+        let active = true
+        async function f() {
+            let store,
+                prefixes,
+                text = await data.text()
+            try {
+                const res = parseToStoreAndPrefixes(text, mime)
+                store = res[0]
+                prefixes = res[1]
+            } catch (exc) {
+                console.warn('Missmatch mime type format', exc)
+                const res = parseToStoreAndPrefixes(text)
+                store = res[0]
+                prefixes = res[1]
+            }
+
+            const prefixNodes: React.ReactNode[] = Object.entries(
+                prefixes
+            ).map(([key, val]) => {
+                return (
+                    <Stack direction="row" spacing={2}>
+                        <Typography>{key}</Typography>
+                        <Typography>{val.value}</Typography>
+                    </Stack>
+                )
+            })
+            const quadsNodes: React.ReactNode[] = []
+            for (const quad of store) {
+                quadsNodes.push(
+                    <Stack direction="row" spacing={1}>
+                        <Typography>{quad.subject.value}</Typography>
+                        <Typography>{quad.predicate.value}</Typography>
+                        <Typography>{quad.object.value}</Typography>
+                    </Stack>
+                )
+            }
+            setStruct(
+                <Stack spacing={2}>
+                    <div>
+                        <Typography variant="h2">Prefixes</Typography>
+                        <Box sx={{ paddingLeft: (theme) => theme.spacing(2) }}>
+                            {...prefixNodes}
+                        </Box>
+                    </div>
+                    <div>
+                        <Typography variant="h2">Triple</Typography>
+                        <Box sx={{ paddingLeft: (theme) => theme.spacing(2) }}>
+                            {...quadsNodes}
+                        </Box>
+                    </div>
+                </Stack>
+            )
+        }
+        f()
+        return () => {
+            active = false
+        }
+    }, [data])
+    return <>{struct}</>
+}
+
+function CustomView({ data }: { data: Blob }) {
+    const [text, setText] = React.useState<string>()
+    React.useEffect(() => {
+        let active = true
+        async function f() {
+            try {
+                setText(await data.text())
+            } catch (exc) {
+                setText(Buffer.from(await data.arrayBuffer()).toString('hex'))
+            }
+        }
+        f()
+        return () => {
+            active = false
+        }
+    }, [data])
+    return (
+        <>
+            <Typography variant="h2">Stored data</Typography>
+            <Typography variant="body1">{text}</Typography>
+        </>
+    )
+}
+
+function ViewChannelStore() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [data, setData] = React.useState<{
@@ -55,7 +183,7 @@ const ViewChannelStore = () => {
         hashAlgorithms: string[]
         nodeData: any
         tags: { [name: string]: string[] }
-        data: Blob | null
+        data: Blob
         key: string | number
     } | null>(null)
 
@@ -69,7 +197,7 @@ const ViewChannelStore = () => {
         variables: {
             id: mainCtx.item as string,
             authorization: mainCtx.tokens,
-            includeTags: ['name=', '~name=', '~type='],
+            includeTags: ['name=', '~name=', '~mime='],
         },
         onError: console.error,
     })
@@ -199,11 +327,17 @@ const ViewChannelStore = () => {
     if (!data) {
         return null
     }
-    return null
+    if (data.tags['~mime'][0] == 'application/json') {
+        return <JSONView data={data.data} />
+    } else if (rdfMimes.has(data.tags['~mime'][0])) {
+        return <RDFTripleView data={data.data} mime={data.tags['~mime'][0]} />
+    } else {
+        return <CustomView data={data.data} />
+    }
     //return <InnerFile {...data} url={mainCtx.url as string} />
 }
 
-const CreateChannelStore = () => {
+function CreateChannelStore() {
     return null
 }
 

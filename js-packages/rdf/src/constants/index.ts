@@ -3,5 +3,10 @@ export const RDFS = 'http://www.w3.org/2000/01/rdf-schema#'
 export const XSD = 'http://www.w3.org/2001/XMLSchema#'
 export const SECRETGRAPH =
     'https://secretgraph.net/static/schemes/secretgraph/secretgraph#'
-export const CLUSTER =
-    'https://secretgraph.net/static/schemes/secretgraph/cluster#'
+
+export const defaultPrefixes = {
+    RDF,
+    RDFS,
+    XSD,
+    SECRETGRAPH,
+}
