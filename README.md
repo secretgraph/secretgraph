@@ -484,7 +484,7 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
--   Text type files for impressum, etc.
+-   Document documents (imprint)
 -   key callbacks: url:contentid:token
 -   editors starting with : for meta editors like galeries (real types cannot contain :)
 -   tools initializeCluster need to adapt to new config layout

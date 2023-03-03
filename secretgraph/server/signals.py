@@ -273,13 +273,13 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
     cas_disarm = cas.filter(action__used__isnull=True)
     Content.objects.annotate(
         latest_used=models.Subquery(
-            cas_trigger.order_by("-used").values("used")[:1],
-            content_id=models.OuterRef("id"),
+            cas_trigger.filter(content_id=models.OuterRef("id"))
+            .order_by("-action__used")
+            .values("action__used")[:1],
         )
     ).filter(
         ~models.Exists(cas_disarm),
         latest_used__isnull=False,  # no trigger
-        content_id=models.OuterRef("id"),
     ).update(
         markForDestruction=models.F("latest_used") + td(hours=24)
     )

@@ -286,6 +286,19 @@ class ContentManager(models.Manager):
             | self._get_q_injected_keys(groups=cluster)
         )
 
+    def global_documents(self, ignoreStates=False):
+        query = self.filter(
+            cluster__name="@system",
+            type__in=("File", "Text"),
+        ).annotate(
+            limited=models.Value(True)  # no access to cluster for unprivileged
+        )
+        if not ignoreStates:
+            query = query.filter(
+                markForDestruction__isnull=True, hidden=False, state="public"
+            )
+        return query
+
 
 class Content(FlexidModel):
     limited: bool = False

@@ -11,9 +11,9 @@ from operator import or_
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db import models
-from django.conf import settings
 from django.apps import apps
 from django.utils import timezone
+from django.conf import settings
 
 from ...core import constants
 from ..actions.handler import ActionHandler
@@ -282,7 +282,6 @@ def retrieve_allowed_objects(
                     [],
                 ).append(action.id)
             if accesslevel <= newaccesslevel:
-
                 if issubclass(query.model, Content):
                     returnval["active_actions"].add(action.id)
                 elif issubclass(query.model, Cluster) and not hasattr(
@@ -428,6 +427,7 @@ def fetch_by_id(
         if check_short_name:
             _q |= models.Q(name__in=flexids)
         filters |= _q & models.Q(name__startswith="@")
+
     return query.filter(filters)
 
 

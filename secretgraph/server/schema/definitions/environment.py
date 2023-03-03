@@ -115,6 +115,4 @@ class SecretgraphConfig(relay.Node):
 
     @staticmethod
     def documents() -> List[Annotated["ContentNode", gql.lazy(".contents")]]:
-        return Content.objects.annotate(limited=True).filter(
-            cluster__name="@system", state="public", type="Text"
-        )
+        return Content.objects.global_documents()

@@ -161,7 +161,7 @@
 
 {% block layout %}
 {% fetch_clusters public=True featured=True as clusters %}
-{% fetch_contents states="public" includeTypes="Text" clusters="@system" allow_system=True order_by="name" as footer_contents %}
+{% fetch_contents states="public" includeTypes="Text,File" clusters="@system" allow_system=True order_by="name" as footer_contents %}
 <div class="frame frame-shifted">
     <header>
         <nav>
