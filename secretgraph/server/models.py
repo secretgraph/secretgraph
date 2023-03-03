@@ -52,8 +52,11 @@ else:
 
 
 def get_content_file_path(instance, filename) -> str:
-    cluster_id = instance.cluster_id or instance.cluster.id
-    if not cluster_id:
+    # cluster id can be 0
+    cluster_id = instance.cluster_id
+    if cluster_id is None:
+        cluster_id = instance.cluster.id
+    if cluster_id is None:
         raise Exception("no cluster id found")
 
     # try 100 times to find free filename
@@ -366,6 +369,13 @@ class Content(FlexidModel):
         return True
 
     @property
+    def needs_signature(self) -> bool:
+        return (
+            self.type not in constants.keyTypes  # required for bootstrapping
+            and self.cluster.name != "@system"  # pages have no signature
+        )
+
+    @property
     def link(self) -> str:
         # path to raw view
         return reverse("secretgraph:contents", kwargs={"id": self.downloadId})
@@ -386,7 +396,7 @@ class Content(FlexidModel):
             size_sum=models.Sum("size"), count=models.Count("id")
         )
         # include target id size and group field
-        return refs["size_sum"] + refs["count"] * 28
+        return (refs["size_sum"] or 0) + refs["count"] * 28
 
     @property
     def size(self) -> int:

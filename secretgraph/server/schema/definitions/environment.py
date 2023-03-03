@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Optional, List, Iterable
+from typing import TYPE_CHECKING, Annotated, Optional, List, Iterable
 from strawberry.types import Info
 from strawberry_django_plus import relay, gql
 from django.conf import settings
@@ -11,10 +9,11 @@ from ...models import (
     GlobalGroup,
 )
 
+if TYPE_CHECKING:
+    from .contents import ContentNode
 
-# why?: scalars cannot be used in Unions
 
-
+# why scalar?: scalars cannot be used in Unions
 @gql.scalar
 class RegisterUrl:
     """
@@ -38,7 +37,6 @@ class InjectedKeyNode:
 
 @gql.django.type(GlobalGroup, name="GlobalGroup")
 class GlobalGroupNode(relay.Node):
-
     name: str
     description: str
     hidden: bool
@@ -114,3 +112,9 @@ class SecretgraphConfig(relay.Node):
         if login_url:
             return resolve_url(login_url)
         return None
+
+    @staticmethod
+    def documents() -> List[Annotated["ContentNode", gql.lazy(".contents")]]:
+        return Content.objects.annotate(limited=True).filter(
+            cluster__name="@system", state="public", type="Text"
+        )

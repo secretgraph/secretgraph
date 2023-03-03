@@ -400,8 +400,7 @@ def _update_or_create_content_or_key(
             and required_keys.difference(encryption_target_ref)
         ):
             raise ValueError("Not encrypted for required keys")
-        # required for bootstrapping
-        if not verifiers_ref and content.type not in constants.keyTypes:
+        if not verifiers_ref and content.needs_signature:
             raise ValueError("Not signed by a known key")
         if (
             not create
@@ -670,10 +669,11 @@ def update_content_fn(
     required_keys=None,
 ):
     assert content.id
-    try:
-        updateId = UUID(updateId)
-    except Exception:
-        raise ValueError("updateId is not an uuid")
+    if not isinstance(updateId, UUID):
+        try:
+            updateId = UUID(updateId)
+        except Exception:
+            raise ValueError("updateId is not an uuid")
     is_key = False
     if content.type == "PublicKey":
         # can only update public tags and actions, updateId

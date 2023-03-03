@@ -12,13 +12,14 @@
             Cluster: <a href="{% url "secretgraph_proxy:cluster" id=contents.0.cluster.flexid %}">{{contents.0.cluster.name}}</a>
         </div>
     {% endif %}
+    {% if contents.0.tags_proxy.description.0%}
     <br/><div class="container">
         <div>Description: <span>{{contents.0.tags_proxy.description.0|default:""}}</span></div>
     </div>
+    {% endif %}
     <h4>Content:</h4>
     <div class="start-container">
-        <div class="bg-white">{% read_content_sync contents.0 %}</div>
-    </div>
+        <div class="bg-white"><div class="container wrapping-pre">{% read_content_sync contents.0 %}</div></div>
     </div>
 </div>
 {% endblock %}

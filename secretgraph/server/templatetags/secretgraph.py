@@ -8,11 +8,12 @@ from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.core.paginator import Paginator
 
-from django.db.models import Q, Subquery
+from django.db.models import Q, Subquery, OuterRef
+from django.db.models.functions import Substr
 
 from secretgraph.server.utils.mark import freeze_contents, update_file_accessed
 
-from ..models import Content, Cluster
+from ..models import Content, ContentTag, Cluster
 from ..utils.auth import get_cached_result, fetch_by_id
 from ..actions.fetch import (
     fetch_clusters as _fetch_clusters,
@@ -52,7 +53,7 @@ try:
         "data",
         "mailto",
     }
-    cleach_cleaner = sanitizer.Cleaner(
+    bleach_cleaner = sanitizer.Cleaner(
         tags=_default_allowed_tags,
         attributes=lambda tag, name, value: True,
         protocols=_default_allowed_protocols,
@@ -60,12 +61,11 @@ try:
     )
 
     def clean(inp):
-
-        return cleach_cleaner.clean(inp)
+        return bleach_cleaner.clean(inp)
 
 except ImportError:
     logging.warning("bleach not found, fallback to escape")
-    cleach_cleaner = None
+    bleach_cleaner = None
     clean = escape
 
 
@@ -169,6 +169,7 @@ def fetch_contents(
     # provide default decrypt keys
     default_decryptkeys=None,
     authorization=None,
+    allow_system=False,
 ):
     results = get_cached_result(context["request"], authset=authorization)
     result = results["Content"].copy()
@@ -180,10 +181,13 @@ def fetch_contents(
 
     if clusters:
         clusters = _split_comma(clusters)
+        valid_clusters = results["Cluster"]["objects"]
+        if allow_system:
+            valid_clusters |= Cluster.objects.filter(name="@system")
         result["objects"] = result["objects"].filter(
             cluster_id__in=Subquery(
                 fetch_by_id(
-                    results["Cluster"]["objects"],
+                    valid_clusters,
                     clusters,
                     limit_ids=None,
                     check_short_id=True,
@@ -225,7 +229,18 @@ def fetch_contents(
             )
         )
     if order_by:
-        result["objects"] = result["objects"].order_by(*_split_comma(order_by))
+        name_sub = (
+            ContentTag.objects.filter(
+                tag__startswith="name=", content_id=OuterRef("id")
+            )
+            .annotate(name=Substr("tag", 6))
+            .values("name")
+        )
+        result["objects"] = (
+            result["objects"]
+            .annotate(name=Subquery(name_sub))
+            .order_by(*_split_comma(order_by))
+        )
     else:
         result["objects"] = result["objects"].order_by("-updated")
     result["objects"] = _fetch_contents(
@@ -290,7 +305,7 @@ def read_content_sync(
     # provide default decrypt keys
     default_decryptkeys=None,
     # use bleach/escape for text contents which can be inlined
-    inline_text=True if cleach_cleaner else False,
+    inline_text=True if bleach_cleaner else False,
 ):
     if not authorization:
         authorization = set(

@@ -9,7 +9,7 @@
         <div>Description: <span>{{clusters.0.description}}</span></div>
     </div>
     <h3>Contents:</h3>
-    {% fetch_contents clusters=id excludeTypes="PublicKey,PrivateKey" excludeTags="mime=image/,mime=video/,mime=audio/" as contents %}
+    {% fetch_contents clusters=id includeTypes="File,Text" excludeTags="mime=image/,mime=video/,mime=audio/" as contents %}
     <div class="container">
         {% for content in contents %}
         <div class="card">
@@ -23,12 +23,12 @@
             <div class="container">
                 {% read_content_sync content=content %}
             </div>
-            <a  class="footer" href="{% url "secretgraph_proxy:content" id=content.flexid %}">Open</a>
+            <a class="footer" href="{% url "secretgraph_proxy:content" id=content.flexid %}">Open</a>
         </div>
         {% endfor %}
     </div>
     <h3>Gallery:</h3>
-    {% fetch_contents clusters=id includeTags="mime=image/,mime=video/,mime=audio/" as gallery %}
+    {% fetch_contents clusters=id includeTypes="File" includeTags="mime=image/,mime=video/,mime=audio/" as gallery %}
     <div class="container gallery">
         {% for content in gallery %}
         <div class="card">

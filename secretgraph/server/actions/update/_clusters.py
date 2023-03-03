@@ -92,7 +92,6 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
                 raise ValueError("Cannot register")
         if not net:
-
             if not user:
                 rate = settings.SECRETGRAPH_RATELIMITS.get(
                     "ANONYMOUS_REGISTER"
@@ -234,10 +233,11 @@ def create_cluster_fn(request, objdata: ClusterInput, authset=None):
 
 def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
     assert cluster.id
-    try:
-        updateId = UUID(updateId)
-    except Exception:
-        raise ValueError("updateId is not an uuid")
+    if not isinstance(updateId, UUID):
+        try:
+            updateId = UUID(updateId)
+        except Exception:
+            raise ValueError("updateId is not an uuid")
 
     cluster_fn = _update_or_create_cluster(
         request, cluster, objdata, authset=authset
