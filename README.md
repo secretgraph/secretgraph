@@ -368,6 +368,17 @@ idea: seperate actions on contents with different concerns.
 Config defines slots. Config Updates will be send to all Configs with a same slot. The first slot is the main slot.
 Currently there is no way to move items from one config to another
 
+## Documents
+
+Global documents (actually contents) can be created via `sg_manage_document` and specify a file and optionally name and description
+They are for imprints and are presented in the proxy component as footer links.
+
+Some special behavior
+
+-   document contents are children of the @system cluster
+-   cluster attribute is always null if retrieved via graphql
+-   `sg_manage_document` addresses the documents via name
+
 # Internal
 
 ## Net? Cluster? Contents? References?
@@ -484,12 +495,12 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 # TODO
 
--   Document documents (imprint)
+-   improve documention of documents (imprint), show usage
 -   key callbacks: url:contentid:token
 -   editors starting with : for meta editors like galeries (real types cannot contain :)
 -   tools initializeCluster need to adapt to new config layout
 -   keys need more infos, like callback url, item and tokens
--   select certificates a private is encrypted for
+-   select certificates a private content is encrypted for
 -   certificates for slot
 -   PushedArticle
 -   ChannelStore for push input and as foreign data safe

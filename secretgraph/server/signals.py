@@ -278,7 +278,7 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
             .values("action__used")[:1],
         )
     ).filter(
-        ~models.Exists(cas_disarm),
+        ~models.Exists(cas_disarm.filter(content_id=models.OuterRef("id"))),
         latest_used__isnull=False,  # no trigger
     ).update(
         markForDestruction=models.F("latest_used") + td(hours=24)
