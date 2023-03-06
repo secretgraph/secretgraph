@@ -94,9 +94,9 @@ def mutate_transfer(
     headers: Optional[JSON] = None,
     authorization: Optional[AuthList] = None,
 ) -> TransferMutation:
-    view_result = retrieve_allowed_objects(
-        info.context, authset=authorization
-    )["Content"]
+    view_result = get_cached_result(info.context, authset=authorization)[
+        "Content"
+    ]
     transfer_result = ids_to_results(
         info.context["request"], id, Content, "update", authset=authorization
     )["Content"]
@@ -125,7 +125,7 @@ def mutate_transfer(
         transfer_target.delete()
     elif tres == TransferResult.SUCCESS:
         f = get_cached_result(info.context["request"], authset=authorization)
-        f.preinit("Content", "Cluster")
+        f.preinit("Content", "Cluster", refresh=True)
         return TransferMutation(content=transfer_target)
     return TransferMutation(content=None)
 
@@ -144,9 +144,9 @@ def mutate_pull(
     headers: Optional[JSON] = None,
     authorization: Optional[AuthList] = None,
 ) -> TransferMutation:
-    view_result = retrieve_allowed_objects(
-        info.context, authset=authorization
-    )["Content"]
+    view_result = get_cached_result(info.context, authset=authorization)[
+        "Content"
+    ]
     transfer_result = ids_to_results(
         info.context["request"], id, Content, "update", authset=authorization
     )["Content"]
@@ -168,13 +168,14 @@ def mutate_pull(
         url=url,
         headers=headers,
         verifiers=signer_key_hashes,
-        delete_failed_verification=True,
+        delete_failed_verification=False,
+        transfer=False,
     )
 
     if tres == TransferResult.NOTFOUND:
         transfer_target.delete()
     elif tres == TransferResult.SUCCESS:
         f = get_cached_result(info.context["request"], authset=authorization)
-        f.preinit("Content", "Cluster")
+        f.preinit("Content", "Cluster", refresh=True)
         return TransferMutation(content=transfer_target)
     return TransferMutation(content=None)

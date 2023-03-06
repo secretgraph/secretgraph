@@ -497,13 +497,13 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 -   improve documention of documents (imprint), show usage
 -   key callbacks: url:contentid:token
--   editors starting with : for meta editors like galeries (real types cannot contain :)
+-   editors starting with : for meta editors like galeries (real types cannot contain ":")
+-   teach decryptObject transfer
 -   tools initializeCluster need to adapt to new config layout
 -   keys need more infos, like callback url, item and tokens
 -   select certificates a private content is encrypted for
 -   certificates for slot
 -   PushedArticle
--   ChannelStore for push input and as foreign data safe
 -   split keys in signing/encrypting
 -   validationError: use params
 -   trustedKeys logic (partly done):
@@ -516,7 +516,6 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 -   way to inject tokens (as user)
 -   way to import private key in config
 -   cleanup js structure, harmonize naming
-    -   issue: hashAlgorithm is sometimes directly fed to importKey
 
 # TODO later
 
