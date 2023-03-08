@@ -2,6 +2,7 @@ import argparse
 from os import path
 from typing import Optional
 from django.core.management.base import BaseCommand
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Substr
@@ -72,6 +73,9 @@ class Command(BaseCommand):
             name = path.splitext(path.basename(file.name))[0]
         if not name:
             raise ValueError("Name could not be determinated")
+        # otherwise file size calculation causes error
+        if file.name == "-":
+            file = ContentFile(file.read(), name=name)
         content: Optional[Content] = (
             Content.objects.global_documents(True)
             .filter(
