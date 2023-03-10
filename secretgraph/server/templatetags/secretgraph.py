@@ -48,6 +48,8 @@ try:
         "audio",
         "source",
         "video",
+        "div",
+        "span",
     }
     _default_allowed_protocols = sanitizer.ALLOWED_PROTOCOLS | {
         "data",
