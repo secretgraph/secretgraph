@@ -4,6 +4,8 @@ from secretgraph.settings.withclient import *  # noqa: F403, F401, E402
 
 DOCKER_VOLUME_DIR = "/var/lib/secretgraph"
 
+STATIC_ROOT = "/static/"
+
 DATABASES = {
     "default": {
         "ENGINE": os.environ.get("DB_ENGINE", "django.db.backends.sqlite3"),

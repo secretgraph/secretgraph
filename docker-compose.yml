@@ -16,7 +16,7 @@ services:
             context: .
         volumes:
             - secretgraph:/var/lib/secretgraph
-            - static_files:/app/static
+            - static_files:/static
             - sockets:/sockets
         environment:
             USER_GROUP: '101'
