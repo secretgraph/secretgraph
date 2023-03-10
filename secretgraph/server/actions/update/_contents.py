@@ -3,6 +3,7 @@ __all__ = ["create_content_fn", "update_content_fn", "create_key_fn"]
 
 import base64
 import logging
+import sys
 from contextlib import nullcontext
 from itertools import chain
 from typing import Iterable, List, Optional
@@ -329,8 +330,10 @@ def _update_or_create_content_or_key(
             checknonce
         )  # noqa E502
         content.nonce = objdata.nonce
-
-        if isinstance(objdata.value, bytes):
+        # otherwise file size calculation causes error
+        if objdata.value is sys.stdin:
+            objdata.value = ContentFile(objdata.value.read())
+        elif isinstance(objdata.value, bytes):
             objdata.value = ContentFile(objdata.value)
         elif isinstance(objdata.value, str):
             objdata.value = ContentFile(base64.b64decode(objdata.value))
