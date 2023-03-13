@@ -25,7 +25,10 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import {
+    findWorkingHashAlgorithms,
+    hashTagsContentHash,
+} from '@secretgraph/misc/utils/hashing'
 import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
@@ -216,7 +219,9 @@ const TextFileAdapter = ({
                 multiline
                 value={text}
                 onChange={(ev) => {
-                    onChange(new Blob([ev.currentTarget.value], { type: mime }))
+                    onChange(
+                        new Blob([ev.currentTarget.value], { type: mime })
+                    )
                 }}
                 onBlur={onBlur}
                 InputProps={{
@@ -273,7 +278,6 @@ function InnerFile({
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
-    const [open, setOpen] = React.useState(false)
     const [tab, setTab] = React.useState(() => {
         if (!nodeData || data?.type == 'text/html') {
             return 'html'
@@ -335,10 +339,16 @@ function InnerFile({
                         encryptName,
                         keywords:
                             tags?.keywords ||
-                            (mainCtx.cloneData && mainCtx.cloneData.keywords) ||
+                            (mainCtx.cloneData &&
+                                mainCtx.cloneData.keywords) ||
                             [],
                         cluster: mainCtx.cluster,
                         actions,
+                        uniqueName: nodeData
+                            ? !!nodeData.contentHash
+                            : mainCtx.cloneData
+                            ? mainCtx.cloneData.uniqueName
+                            : true,
                     } as {
                         plainInput: string
                         htmlInput: string
@@ -346,6 +356,7 @@ function InnerFile({
                         state: string
                         name: string
                         encryptName: boolean
+                        uniqueName: boolean
                         keywords: string[]
                         cluster: string
                         actions: typeof actions
@@ -410,6 +421,13 @@ function InnerFile({
                         baseClient,
                         authorization: mainCtx.tokens,
                         state: values.state,
+                        contentHash: values.uniqueName
+                            ? await hashTagsContentHash(
+                                  [`name=${values.name}`],
+                                  'File',
+                                  hashAlgorithm
+                              )
+                            : undefined,
                         type: value.type.startsWith('text/') ? 'Text' : 'File',
                         tags: [
                             !values.encryptName || values.state == 'public'
@@ -441,7 +459,10 @@ function InnerFile({
                                 url,
                                 action: 'update',
                                 tokens: [
-                                    ...new Set([...mainCtx.tokens, ...nTokens]),
+                                    ...new Set([
+                                        ...mainCtx.tokens,
+                                        ...nTokens,
+                                    ]),
                                 ],
                             })
                         } else {
@@ -537,31 +558,41 @@ function InnerFile({
                                             return null
                                         }}
                                     />
-                                    <Tooltip title="Encrypt name">
-                                        <span>
-                                            <Field
-                                                name="encryptName"
-                                                component={
-                                                    FormikCheckboxWithLabel
-                                                }
-                                                Label={{
-                                                    label: 'Encrypt Name',
-                                                }}
-                                                disabled={
-                                                    isSubmitting ||
-                                                    values.state == 'public' ||
-                                                    disabled
-                                                }
-                                                type="checkbox"
-                                            />
-                                        </span>
-                                    </Tooltip>
+                                    <Field
+                                        name="encryptName"
+                                        component={FormikCheckboxWithLabel}
+                                        Label={{
+                                            label: 'Encrypt Name',
+                                        }}
+                                        disabled={
+                                            isSubmitting ||
+                                            values.state == 'public' ||
+                                            disabled
+                                        }
+                                        type="checkbox"
+                                    />
+                                    <Field
+                                        name="uniqueName"
+                                        component={FormikCheckboxWithLabel}
+                                        Label={{
+                                            label: 'Unique Name',
+                                        }}
+                                        disabled={
+                                            isSubmitting ||
+                                            values.state == 'public' ||
+                                            disabled
+                                        }
+                                        type="checkbox"
+                                    />
                                     {viewOnly ? null : (
                                         <Tooltip title="Actions">
                                             <span>
                                                 <IconButton
                                                     onClick={() =>
-                                                        setOpen(!open)
+                                                        updateMainCtx({
+                                                            openDialog:
+                                                                'actions',
+                                                        })
                                                     }
                                                     size="large"
                                                 >
@@ -738,7 +769,9 @@ function InnerFile({
                                                                     name="htmlInput"
                                                                     label="Html Text"
                                                                     variant="outlined"
-                                                                    minRows={10}
+                                                                    minRows={
+                                                                        10
+                                                                    }
                                                                     onChange={(
                                                                         ev
                                                                     ) => {
@@ -809,7 +842,9 @@ function InnerFile({
                                                 )
                                             }
                                         >
-                                            {(formikFieldProps: FieldProps) => {
+                                            {(
+                                                formikFieldProps: FieldProps
+                                            ) => {
                                                 return (
                                                     <>
                                                         <Stack
@@ -974,8 +1009,14 @@ function InnerFile({
                                             push={push}
                                             form={form}
                                             disabled={isSubmitting || disabled}
-                                            handleClose={() => setOpen(false)}
-                                            open={open}
+                                            handleClose={() =>
+                                                updateMainCtx({
+                                                    openDialog: null,
+                                                })
+                                            }
+                                            open={
+                                                mainCtx.openDialog == 'actions'
+                                            }
                                             isContent
                                             isPublic={values.state == 'public'}
                                         />
@@ -1019,8 +1060,11 @@ function InnerFile({
                                                         <span>
                                                             <IconButton
                                                                 onClick={() =>
-                                                                    setOpen(
-                                                                        !open
+                                                                    updateMainCtx(
+                                                                        {
+                                                                            openDialog:
+                                                                                'actions',
+                                                                        }
                                                                     )
                                                                 }
                                                                 size="large"
@@ -1159,15 +1203,15 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             }
 
             let obj
-            try{
+            try {
                 obj = await decryptContentObject({
                     config,
                     nodeData: dataUnfinished.secretgraph.node,
                     blobOrTokens: mainCtx.tokens,
                     itemDomain: mainCtx.url || '/',
                 })
-            }catch(exc){
-                if(!active){
+            } catch (exc) {
+                if (!active) {
                     return
                 }
                 throw exc

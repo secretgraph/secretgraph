@@ -15,6 +15,7 @@ from ...actions.update import (
     ContentInput,
     ContentValueInput,
 )
+from ...utils.hashing import hashTagsContentHash
 
 
 def lowerStr(inp: str):
@@ -95,6 +96,7 @@ class Command(BaseCommand):
                 type="Text",
                 tags=tags,
             ),
+            contentHash=hashTagsContentHash([f"name={name}"], "File"),
         )
         if content:
             content.markForDestruction = None
