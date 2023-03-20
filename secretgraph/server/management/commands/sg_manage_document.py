@@ -1,4 +1,5 @@
 import argparse
+import sys
 from os import path
 from typing import Optional
 from django.core.management.base import BaseCommand
@@ -69,7 +70,7 @@ class Command(BaseCommand):
 
     def handle_update(self, name, file, description, mime, **options):
         cluster = Cluster.objects.get(name="@system")
-        if not name and file.name and file.name != "-":
+        if not name and file.name and file is not sys.stdin:
             name = path.splitext(path.basename(file.name))[0]
         if not name:
             raise ValueError("Name could not be determinated")
