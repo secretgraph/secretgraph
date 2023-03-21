@@ -1,22 +1,20 @@
 import TextField from '@mui/material/TextField'
-import {
-    DateTimePicker,
-    DateTimePickerProps,
-} from '@mui/x-date-pickers/DateTimePicker'
+import { TimePicker, TimePickerProps } from '@mui/x-date-pickers/TimePicker'
 import { OptionalAttributes } from '@secretgraph/misc/typing'
+import { format } from 'date-fns'
 import { FieldProps } from 'formik'
 import * as React from 'react'
 
-export type FormikDateTimePickerProps<
+export type FormikTimePickerProps<
     V extends string = string,
     FormValues = any
 > = Omit<
-    DateTimePickerProps<string>,
+    TimePickerProps<string>,
     keyof FieldProps<V, FormValues> | 'defaultValue' | 'onChange'
 > &
     FieldProps<V, FormValues>
 
-export default function FormikDateTimePicker<
+export default function FormikTimePicker<
     V extends string = string,
     FormValues = any
 >({
@@ -25,9 +23,9 @@ export default function FormikDateTimePicker<
     meta: metaIntern,
     ampm,
     ...params
-}: FormikDateTimePickerProps<V, FormValues>) {
+}: FormikTimePickerProps<V, FormValues>) {
     return (
-        <DateTimePicker
+        <TimePicker
             // TODO: use until code is fixed
             ampm={ampm !== undefined ? ampm : false}
             {...field}
@@ -38,9 +36,9 @@ export default function FormikDateTimePicker<
                     if (isNaN(val.getTime())) {
                         return
                     }
-                    val = val.toISOString()
+                    val = format(val, 'HH:mm')
                 }
-                form.setFieldValue(field.name, val)
+                form.setFieldValue(field.name, val as string)
                 form.setFieldTouched(field.name, true)
             }}
         />

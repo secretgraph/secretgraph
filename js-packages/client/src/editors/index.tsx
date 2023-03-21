@@ -52,18 +52,25 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
     [
-        'custom',
-        {
-            label: gettext('Custom'),
-            component: React.lazy(() => import('./custom')),
-        },
-    ],
-    [
         'ChannelStore',
         {
             label: gettext('ChannelStore'),
             ignore: true,
             component: React.lazy(() => import('./ChannelStore')),
+        },
+    ],
+    [
+        'WorkDay',
+        {
+            label: gettext('Workday'),
+            component: React.lazy(() => import('./Workday')),
+        },
+    ],
+    [
+        'custom',
+        {
+            label: gettext('Custom'),
+            component: React.lazy(() => import('./custom')),
         },
     ],
     [
