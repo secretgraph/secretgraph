@@ -1,7 +1,4 @@
-import TextField from '@mui/material/TextField'
 import { TimePicker, TimePickerProps } from '@mui/x-date-pickers/TimePicker'
-import { OptionalAttributes } from '@secretgraph/misc/typing'
-import { format } from 'date-fns'
 import { FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -36,7 +33,9 @@ export default function FormikTimePicker<
                     if (isNaN(val.getTime())) {
                         return
                     }
-                    val = format(val, 'HH:mm')
+                    const hours = `${val.getHours()}`.padStart(2, '0')
+                    const minutes = `${val.getMinutes()}`.padStart(2, '0')
+                    val = `${hours}:${minutes}`
                 }
                 form.setFieldValue(field.name, val as string)
                 form.setFieldTouched(field.name, true)
