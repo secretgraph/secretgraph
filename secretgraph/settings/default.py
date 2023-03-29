@@ -109,7 +109,6 @@ LOGIN_URL = "auth:login"
 LOGIN_REDIRECT_URL = "auth:profile"
 LOGOUT_REDIRECT_URL = "home"
 
-
 # httpx parameter overwrites (for transfers)
 # note: timeout should be low as ddos is possible elsewise
 # * "hostname.foo": parameter for specific domain

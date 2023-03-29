@@ -17,6 +17,14 @@ def syncNetAndUserActiveCb(sender, instance, raw, **kwargs):
             user.is_active = instance.active
             user.save(update_fields=["is_active"])
     else:
-        if instance.is_active != instance.net.active:
-            instance.net.active = instance.is_active
-            instance.net.save(update_fields=["active"])
+        net = None
+        try:
+            net = Net.objects.filter(
+                user_name=getattr(instance, instance.USERNAME_FIELD)
+            ).first()
+        except AttributeError:
+            pass
+        if net:
+            if instance.is_active != net.active:
+                net.active = instance.is_active
+                net.save(update_fields=["active"])

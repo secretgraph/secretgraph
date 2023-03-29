@@ -19,8 +19,24 @@ SECRET_KEY = "CHANGEME"
 INSTALLED_APPS += [  # noqa F405
     "django.contrib.auth",  # required for user
     "django.contrib.contenttypes",  # required for auth
+    "django.contrib.sessions",  # required for admin
+    "django.contrib.messages",  # required for admin
+    "django.contrib.admin",  # requires admin
     "secretgraph.server",
     "secretgraph.user",
+]
+
+#  for admin
+MIDDLEWARE += [  # noqa F405
+    "django.contrib.sessions.middleware.SessionMiddleware",  # for auth
+    "django.contrib.auth.middleware.AuthenticationMiddleware",  # for auth
+    "django.contrib.messages.middleware.MessageMiddleware",  # for admin
+]
+
+#  for admin
+TEMPLATES[0]["OPTIONS"]["context_processors"] += [  # noqa F405
+    "django.contrib.auth.context_processors.auth",
+    "django.contrib.messages.context_processors.messages",
 ]
 try:
     import daphne  # noqa: F401
@@ -34,6 +50,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
 SECRETGRAPH_BIND_TO_USER = False
 SECRETGRAPH_ALLOW_REGISTER = True
+SECRETGRAPH_USER_ADMINAREA = True
 
 SECRETGRAPH_DEFAULT_GROUPS["debug"] = {  # noqa F405
     "properties": ["allow_global_name", "allow_dangerous_actions", "default"],

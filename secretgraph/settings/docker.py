@@ -23,6 +23,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
 
 INSTALLED_APPS += [  # noqa F405
+    "django.contrib.sessions",  # required for auth
     "django.contrib.auth",  # required for user
     "django.contrib.contenttypes",  # required for auth
     "secretgraph.server",
@@ -37,6 +38,32 @@ SECRETGRAPH_BIND_TO_USER = (
 SECRETGRAPH_ALLOW_REGISTER = (
     os.environ.get("ALLOW_REGISTER", "false").lower() == "true"
 )
+
+# for auth
+MIDDLEWARE += [  # noqa F405
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+]
+
+
+SECRETGRAPH_USER_ADMINAREA = (
+    os.environ.get("USER_ADMINAREA", "false").lower() == "true"
+)
+if SECRETGRAPH_USER_ADMINAREA:
+    INSTALLED_APPS += [  # noqa F405
+        "django.contrib.admin",
+        "django.contrib.messages",
+    ]
+    MIDDLEWARE += [  # noqa F405
+        "django.contrib.sessions.middleware.SessionMiddleware",
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "django.contrib.messages.middleware.MessageMiddleware",
+    ]
+    TEMPLATES[0]["OPTIONS"]["context_processors"] += [  # noqa F405
+        "django.contrib.auth.context_processors.auth",
+        "django.contrib.messages.context_processors.messages",
+    ]
+
 SECRETGRAPH_CACHE_DECRYPTED = (
     os.environ.get("CACHE_DECRYPTED", "false").lower() == "true"
 )

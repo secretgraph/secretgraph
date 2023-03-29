@@ -1,4 +1,5 @@
 from django.conf.urls.i18n import i18n_patterns
+from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import include, path
 from django.views.decorators.csrf import csrf_exempt
@@ -36,8 +37,7 @@ urlpatterns = [
         ),
     ),
 ]
-
-urlpatterns += i18n_patterns(
+i18n_urlpatterns = [
     path("", include("secretgraph.proxy.urls"), name="secretgraph_proxy"),
     path(
         "jsi18n/",
@@ -57,4 +57,10 @@ urlpatterns += i18n_patterns(
     #    ),
     #    name="graphql-localized",
     # ),
-)
+]
+if "secretgraph.user" in settings.INSTALLED_APPS:
+    i18n_urlpatterns.insert(
+        0, path("", include("secretgraph.user.urls"), name="secretgraph_user")
+    )
+
+urlpatterns += i18n_patterns(*i18n_urlpatterns)
