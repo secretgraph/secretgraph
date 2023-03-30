@@ -5,7 +5,7 @@ from typing import Optional
 
 import strawberry
 from strawberry.types import Info
-from strawberry_django_plus import relay
+from strawberry_django_plus import relay, gql
 from django.db import transaction
 from django.db.models.functions import Substr
 
@@ -87,7 +87,6 @@ def mutate_cluster(
             authset=authorization,
         )(transaction.atomic)
     else:
-
         if cluster.groups is None:
             default_groups = GlobalGroupProperty.objects.get_or_create(
                 name="default", defaults={}
@@ -109,7 +108,6 @@ def mutate_cluster(
 
 @strawberry.type()
 class ContentMutation:
-
     content: ContentNode
     writeok: bool
 
@@ -208,3 +206,12 @@ def mutate_content(
     f = get_cached_result(info.context["request"], authset=authorization)
     f.preinit("Content", "Cluster")
     return returnval
+
+
+@gql.django.django_resolver
+def logoutUser(info: Info) -> None:
+    user = getattr(info.context["request"], "user", None)
+    if user and getattr(user, "is_authenticated", True):
+        from django.contrib.auth import logout
+
+        logout(info.context["request"])

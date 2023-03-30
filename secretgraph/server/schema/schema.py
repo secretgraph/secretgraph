@@ -35,6 +35,7 @@ from .mutations import (
     RegenerateFlexidMutation,
     ResetDeletionContentOrClusterMutation,
     MarkMutation,
+    logoutUser,
 )
 
 from .subscriptions import subscribe_node_updates, NodeUpdateSubscription
@@ -113,6 +114,8 @@ class SecretgraphMutations:
     transferContent: TransferMutation = gql.django.input_mutation(
         resolver=mutate_transfer, handle_django_errors=False
     )
+
+    logoutUser: None = gql.mutation(resolver=logoutUser)
 
 
 @gql.type

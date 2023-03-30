@@ -556,6 +556,7 @@ type SecretgraphMutations {
     """Input data for `mutateTransfer` mutation"""
     input: MutateTransferInput!
   ): TransferMutation!
+  logoutUser: Void
 }
 
 type SecretgraphObject {
@@ -638,3 +639,6 @@ enum UseCriteriaPublic {
   """Check only token"""
   TOKEN
 }
+
+"""Represents NULL values"""
+scalar Void

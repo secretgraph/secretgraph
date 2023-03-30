@@ -47,7 +47,7 @@ MIDDLEWARE += [  # noqa F405
 
 
 SECRETGRAPH_USER_ADMINAREA = (
-    os.environ.get("USER_ADMINAREA", "false").lower() == "true"
+    os.environ.get("SECRETGRAPH_USER_ADMINAREA", "false").lower() == "true"
 )
 if SECRETGRAPH_USER_ADMINAREA:
     INSTALLED_APPS += [  # noqa F405

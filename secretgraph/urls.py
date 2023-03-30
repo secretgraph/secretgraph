@@ -58,9 +58,13 @@ i18n_urlpatterns = [
     #    name="graphql-localized",
     # ),
 ]
-if "secretgraph.user" in settings.INSTALLED_APPS:
-    i18n_urlpatterns.insert(
-        0, path("", include("secretgraph.user.urls"), name="secretgraph_user")
-    )
+
+if (
+    getattr(settings, "SECRETGRAPH_USER_ADMINAREA", False)
+    and "django.contrib.admin" in settings.INSTALLED_APPS
+):
+    from django.contrib import admin
+
+    i18n_urlpatterns.insert(0, path("admin/", admin.site.urls))
 
 urlpatterns += i18n_patterns(*i18n_urlpatterns)

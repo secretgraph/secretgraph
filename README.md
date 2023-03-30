@@ -89,7 +89,8 @@ Special configuration keys:
 -   `BIND_TO_USER`: nets need user
 -   `ALLOW_REGISTER`: allow registering new users
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
--   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of fast . Only useful if server side decryption is required.
+-   `SECRETGRAPH_USER_ADMINAREA`: allow admin login
+-   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of proxy. Only useful if server side decryption is required.
 -   `RATELIMIT_*` where as keys `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE` are defined: set ratelimits or remove the default with the special key: `none`
 -   `DB_ENGINE`: db stuff
 -   `DB_USER`: db stuff
@@ -322,8 +323,7 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
 
 ## Operations (Mutations)
 
-reason behind this cumbersome operation names:
-itt would be nice to have namespaces like for queries
+They are put away in the subnamespace secretgraph
 
 -   updateOrCreateContent: what it says
 -   updateOrCreateCluster: what it says, can create keys
@@ -332,6 +332,7 @@ itt would be nice to have namespaces like for queries
 -   regenerateFlexid: shuffles (flex)id of content or cluster. Useful if somethings should be hidden.
 -   deleteContentOrCluster: mark cluster or content for deletion (in case of cluster also to children)
 -   resetDeletionContentOrCluster: reset deletion mark
+-   logoutUser: logout user if logged in, note this is special as users are not a requirement for secretgraph
 
 ## includeTypes and excludeTypes
 
