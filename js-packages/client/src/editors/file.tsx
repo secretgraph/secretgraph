@@ -45,6 +45,7 @@ import FormikTextField from '../components/formik/FormikTextField'
 import SimpleSelect from '../components/forms/SimpleSelect'
 import StateSelect from '../components/forms/StateSelect'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
+import SimpleShareDialog from '../components/share/SimpleShareDialog'
 import SunEditor from '../components/SunEditor'
 import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
@@ -314,9 +315,18 @@ function InnerFile({
     if (state == 'public') {
         encryptName = false
     }
-    // <SimpleShareDialog shareUrl={nodeData?.link} />
+    //
     return (
         <>
+            <SimpleShareDialog
+                shareUrl={
+                    nodeData?.link
+                        ? new URL(nodeData?.link, mainCtx.url as string).href
+                        : undefined
+                }
+                isPublic={state == 'public'}
+                actions={actions}
+            />
             <Formik
                 initialValues={
                     {
@@ -1177,6 +1187,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 ]),
                 readonly:
                     dataUnfinished.secretgraph.node.tags.includes('immutable'),
+                shareFn: () => updateMainCtx({ openDialog: 'share' }),
             }
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =

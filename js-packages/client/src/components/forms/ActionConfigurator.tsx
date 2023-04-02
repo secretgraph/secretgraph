@@ -69,8 +69,9 @@ const ActionFields = React.memo(function ActionFields({
     disabled?: boolean
 }) {
     switch (action) {
-        case 'view':
         case 'auth':
+            return <div></div>
+        case 'view':
             if (isContent) {
                 return (
                     <div>
@@ -79,6 +80,13 @@ const ActionFields = React.memo(function ActionFields({
                             name={`${path}fetch`}
                             type="checkbox"
                             Label={{ label: 'Fetch' }}
+                            disabled={disabled}
+                        />
+                        <FastField
+                            component={FormikCheckboxWithLabel}
+                            name={`${path}allowPeek`}
+                            type="checkbox"
+                            Label={{ label: 'Allow Peek' }}
                             disabled={disabled}
                         />
                     </div>
@@ -103,6 +111,40 @@ const ActionFields = React.memo(function ActionFields({
                             label="Exclude tags"
                             freeSolo
                             multiple
+                        />
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}includeTypes`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Include types"
+                            freeSolo
+                            multiple
+                        />
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}excludeTypes`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Exclude types"
+                            freeSolo
+                            multiple
+                        />
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}states`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Only states"
+                            freeSolo
+                            multiple
+                        />
+                        <FastField
+                            component={FormikCheckboxWithLabel}
+                            name={`${path}allowPeek`}
+                            type="checkbox"
+                            Label={{ label: 'Allow Peek' }}
+                            disabled={disabled}
                         />
                     </div>
                 )
@@ -128,6 +170,33 @@ const ActionFields = React.memo(function ActionFields({
                             disabled={disabled}
                             options={[]}
                             label="Exclude tags"
+                            freeSolo
+                            multiple
+                        />
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}includeTypes`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Include types"
+                            freeSolo
+                            multiple
+                        />
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}excludeTypes`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Exclude types"
+                            freeSolo
+                            multiple
+                        />
+                        <FastField
+                            component={SimpleSelect}
+                            name={`${path}states`}
+                            disabled={disabled}
+                            options={[]}
+                            label="Only states"
                             freeSolo
                             multiple
                         />
@@ -200,32 +269,29 @@ export default function ActionConfigurator({
                 '& .MuiTextField-root': { m: 1 },
             }}
         >
-            {value.type == 'action' && value.value?.action != 'other' ? (
+            {value.type == 'action' &&
+            value.value?.action != 'other' &&
+            mode != 'auth' ? (
                 <>
-                    {mode != 'auth' ? (
-                        <>
-                            <div>
-                                <Typography>
-                                    For security reasons action options are not
-                                    shown after creation. Use note field to
-                                    document them
-                                </Typography>
-                                <FastField
-                                    name={`${path}value.action`}
-                                    component={SimpleSelect}
-                                    options={
-                                        mode == 'public'
-                                            ? publicActions
-                                            : availableActions
-                                    }
-                                    disabled={disabled || locked}
-                                    label="Action"
-                                    fullWidth
-                                />
-                            </div>
-                            <Divider />
-                        </>
-                    ) : null}
+                    <div>
+                        <Typography>
+                            For security reasons action options are not shown
+                            after creation. Use note field to document them
+                        </Typography>
+                        <FastField
+                            name={`${path}value.action`}
+                            component={SimpleSelect}
+                            options={
+                                mode == 'public'
+                                    ? publicActions
+                                    : availableActions
+                            }
+                            disabled={disabled || locked}
+                            label="Action"
+                            fullWidth
+                        />
+                    </div>
+                    <Divider />
 
                     <Grid container>
                         <Grid xs={12} sm={6}>
