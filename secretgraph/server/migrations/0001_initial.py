@@ -14,7 +14,6 @@ import uuid
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -58,7 +57,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "bytes_in_use",
-                    models.PositiveBigIntegerField(blank=True, default=0),
+                    models.PositiveBigIntegerField(
+                        blank=True, default=0, editable=False
+                    ),
                 ),
                 (
                     "user_name",
@@ -86,7 +87,11 @@ class Migration(migrations.Migration):
                 (
                     "flexid_cached",
                     models.CharField(
-                        blank=True, max_length=80, null=True, unique=True
+                        blank=True,
+                        max_length=80,
+                        null=True,
+                        unique=True,
+                        editable=False,
                     ),
                 ),
                 (
@@ -104,7 +109,11 @@ class Migration(migrations.Migration):
                 (
                     "name_cached",
                     models.CharField(
-                        blank=True, max_length=252, null=True, unique=True
+                        blank=True,
+                        max_length=252,
+                        null=True,
+                        unique=True,
+                        editable=False,
                     ),
                 ),
                 (
@@ -163,7 +172,11 @@ class Migration(migrations.Migration):
                 (
                     "flexid_cached",
                     models.CharField(
-                        blank=True, max_length=80, null=True, unique=True
+                        blank=True,
+                        max_length=80,
+                        null=True,
+                        unique=True,
+                        editable=False,
                     ),
                 ),
                 ("updated", models.DateTimeField(auto_now=True)),

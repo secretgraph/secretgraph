@@ -92,7 +92,7 @@ class FlexidModel(models.Model):
         max_length=36, blank=True, null=True, unique=True
     )
     flexid_cached: str = models.CharField(
-        max_length=80, blank=True, null=True, unique=True
+        max_length=80, blank=True, null=True, unique=True, editable=False
     )
 
     class Meta:
@@ -121,9 +121,7 @@ class Net(models.Model):
         default=None,
     )
     bytes_in_use: int = models.PositiveBigIntegerField(
-        null=False,
-        blank=True,
-        default=0,
+        null=False, blank=True, default=0, editable=False
     )
     clusters: models.ManyToOneRel["Cluster"]
     contents: models.ManyToOneRel["Content"]
@@ -149,17 +147,15 @@ class Net(models.Model):
         return username
 
     def __repr__(self) -> str:
-        userrepr = ""
-        if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
-            userrepr = ", no user assigned"
-            try:
-                user = self.user
-            except Exception:
-                user = self.user_name
-            if user:
-                if not isinstance(user, str):
-                    user = repr(user)
-                userrepr = f", user({user})"
+        userrepr = ", no user assigned"
+        try:
+            user = self.user
+        except Exception:
+            user = self.user_name
+        if user:
+            if not isinstance(user, str):
+                user = repr(user)
+            userrepr = f", user({user})"
         return "<Net: id(%s)%s%s>" % (
             self.id,
             userrepr,
@@ -179,7 +175,7 @@ class Cluster(FlexidModel):
     )
     # provides uniqueness to global name and is a speedup
     name_cached: str = models.CharField(
-        max_length=252, blank=True, null=True, unique=True
+        max_length=252, blank=True, null=True, unique=True, editable=False
     )
     description: str = models.TextField(
         default="",
