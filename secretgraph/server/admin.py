@@ -11,12 +11,10 @@ from .models import (
 
 class NetAdmin(admin.ModelAdmin):
     list_display = [repr]
-    readonly_fields = ["bytes_in_use"]
 
 
 class ClusterAdmin(admin.ModelAdmin):
     list_display = [repr]
-    readonly_fields = []
 
 
 class ContentTagInline(admin.TabularInline):

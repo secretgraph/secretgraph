@@ -691,6 +691,7 @@ class GlobalGroupProperty(models.Model):
         unique=True,
         validators=[SafeNameValidator, MinLengthValidator(1)],
     )
+    groups: models.ManyToManyRel["GlobalGroup"]
 
     def __str__(self) -> str:
         return self.name
