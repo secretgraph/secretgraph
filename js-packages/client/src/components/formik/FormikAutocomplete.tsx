@@ -1,12 +1,7 @@
 import Autocomplete, { AutocompleteProps } from '@mui/material/Autocomplete'
+import { ChipTypeMap } from '@mui/material/Chip'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
-import {
-    FieldHelperProps,
-    FieldInputProps,
-    FieldMetaProps,
-    FieldProps,
-    useField,
-} from 'formik'
+import { FieldHelperProps, FieldProps } from 'formik'
 import * as React from 'react'
 
 export function createOnChangeFn<
@@ -34,14 +29,16 @@ export function createOnChangeFn<
         helpers.setValue(value)
     }
 }
+
 export type FormikAutocompleteProps<
     T,
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined,
+    ChipComponent extends React.ElementType = ChipTypeMap['defaultComponent'],
     FormValues = any
 > = Omit<
-    AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
+    AutocompleteProps<T, Multiple, DisableClearable, FreeSolo, ChipComponent>,
     Exclude<
         keyof FieldProps<
             AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
@@ -60,10 +57,11 @@ export default function FormikAutocomplete<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
     FreeSolo extends boolean | undefined,
+    ChipComponent extends React.ElementType = ChipTypeMap['defaultComponent'],
     FormValues = any
 >({
     onChange,
-    field: { onChange: onFieldChange, ...field },
+    field: { onChange: onFieldChange, multiple, ...field },
     form,
     ...params
 }: FormikAutocompleteProps<
@@ -71,6 +69,7 @@ export default function FormikAutocomplete<
     Multiple,
     DisableClearable,
     FreeSolo,
+    ChipComponent,
     FormValues
 >) {
     const helpers = form.getFieldHelpers(field.name)
