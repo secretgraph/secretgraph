@@ -17,6 +17,7 @@ input ActionInput {
 
 type Cluster implements Node {
   id: GlobalID!
+  link: String!
   authOk: Boolean!
   availableActions: [ActionEntry!]!
   contents(

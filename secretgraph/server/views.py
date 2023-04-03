@@ -52,14 +52,41 @@ def calc_content_modified_decrypted(request, content, *args, **kwargs):
     return calc_content_modified_raw(request, content, *args, **kwargs)
 
 
+class ClusterView(View):
+    @method_decorator(add_cors_headers)
+    @method_decorator(add_secretgraph_headers)
+    def get(self, request: HttpRequest, *args, **kwargs):
+        authset = set(
+            request.headers.get("Authorization", "")
+            .replace(" ", "")
+            .split(",")
+        )
+        authset.update(request.GET.getlist("token"))
+        # authset can contain: ""
+        self.result = retrieve_allowed_objects(
+            request,
+            "Cluster",
+            scope="view",
+            authset=authset,
+        )
+        if kwargs.get("id"):
+            cluster = get_object_or_404(
+                self.result["objects"], downloadId=kwargs["id"]
+            )
+        else:
+            cluster = get_object_or_404(self.result["objects"])
+        response = JsonResponse(
+            {"name": cluster.name, "description": cluster.description}
+        )
+        response["X-TYPE"] = "Cluster"
+        return response
+
+
 class ContentView(View):
     @method_decorator(no_opener)
     @method_decorator(add_cors_headers)
     @method_decorator(add_secretgraph_headers)
     def dispatch(self, request, *args, **kwargs):
-        self.serverside_decryption_rate = settings.SECRETGRAPH_RATELIMITS.get(
-            "DECRYPT_SERVERSIDE"
-        )
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request: HttpRequest, *args, **kwargs):
@@ -83,9 +110,12 @@ class ContentView(View):
                 request, authset=authset, *args, **kwargs
             )
         # raw interface
-        content = get_object_or_404(
-            self.result["objects"], downloadId=kwargs["id"]
-        )
+        if kwargs.get("id"):
+            content = get_object_or_404(
+                self.result["objects"], downloadId=kwargs["id"]
+            )
+        else:
+            content = get_object_or_404(self.result["objects"])
         response = self.handle_raw_singlecontent(
             request, content, *args, **kwargs
         )
@@ -127,12 +157,15 @@ class ContentView(View):
     def handle_decrypt_singlecontent(
         self, request: HttpRequest, content, *args, **kwargs
     ):
-        if self.serverside_decryption_rate:
+        serverside_decryption_rate = settings.SECRETGRAPH_RATELIMITS.get(
+            "DECRYPT_SERVERSIDE"
+        )
+        if serverside_decryption_rate:
             r = ratelimit.get_ratelimit(
                 group="serverside_decryption",
                 key="ip",
                 request=request,
-                rate=self.serverside_decryption_rate,
+                rate=serverside_decryption_rate,
                 action=ratelimit.Action.INCREASE,
             )
             if r.request_limit >= 1:

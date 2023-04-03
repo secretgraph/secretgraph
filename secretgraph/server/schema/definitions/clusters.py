@@ -66,6 +66,7 @@ class ClusterFilter:
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(ActionMixin, relay.Node):
     id_attr = "flexid"
+    link: str
     limited: gql.Private[bool] = False
 
     @gql.django.field()

@@ -497,12 +497,13 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 ## Share url
 
-The share url is fake:
-it is composed by graphql url and tokens as get parameters. It must be parsed by a client and is not valid for web usage
+The share url for clusters is a stub with only name and description as json ob.
+Via X-GRAPHQL-PATH response header the path to the graphql interface can be found
 
 # TODO
 
--   shareurl: graphql url ? token = ...
+-   if no id is specified the tokens are used to determine cluster/content
+-   shareurl: cluster url ? token = ...
 -   ActionConfigurator must prime the missing field values before using them in fields
     -   maybe add prime method for initialValues
 -   improve documention of documents (imprint), show usage

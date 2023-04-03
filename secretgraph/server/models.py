@@ -219,6 +219,11 @@ class Cluster(FlexidModel):
             self.globalNameRegisteredAt = None
         return super().clean()
 
+    @property
+    def link(self) -> str:
+        # path to raw view
+        return reverse("secretgraph:clusters", kwargs={"id": self.flexid})
+
     def __repr__(self) -> str:
         return "<Cluster: id(%s), net(%s), name(%s), flexid(%s)%s>" % (
             self.id,
