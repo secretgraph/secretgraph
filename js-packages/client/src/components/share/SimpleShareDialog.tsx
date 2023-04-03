@@ -160,7 +160,13 @@ function NewPanel({
         <TabPanel {...props}>
             <SharePanel url={shareUrl} />
             <Formik
-                initialValues={{ value, start: '', stop: '' }}
+                initialValues={{
+                    value,
+                    start: '',
+                    stop: '',
+                    data: '',
+                    note: '',
+                }}
                 onSubmit={async (values, { setSubmitting }) => {
                     setSubmitting(false)
                 }}
@@ -214,7 +220,7 @@ function AuthPanel({
             <SharePanel url={shareUrl} />
             <Formik
                 initialValues={{
-                    action: { value, start: '', stop: '' },
+                    action: { value, start: '', stop: '', data: '', note: '' },
                     actionActive: false,
                 }}
                 onSubmit={async (values, { setSubmitting }) => {

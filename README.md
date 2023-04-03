@@ -406,6 +406,10 @@ The system cluster (id=0) has no quota (it will be removed after every migration
 
 # Caveats
 
+## js cloneData
+
+cloneData must be set to null after update/ whilenavigation to prevent strange effects
+
 ## hidden Actions
 
 Actions can be hidden via manage, for preventing leaks:
@@ -456,10 +460,12 @@ If you have such a project, we can put it in the secretgraph namespace, if you l
 
 ## Why 3party decryption via private key
 
-The shared key can change, so safest assumption is that the key of the private key stays stable.
+The shared key can change, so the safest assumption is that the key of the private key stays stable.
 This way you invalidate the access by updating the encryption key of the private key.
 The private key is not neccessary exposed to the user but there are some danger:
-now you have a decryption key to the private key, that is very dangerous
+now you have a decryption key to the private key, that is very dangerous.
+
+For this reason, you should prefer a client and post a public key
 
 ## Why two languages?
 
@@ -489,8 +495,14 @@ By default the included nginx can be used (it has no cache activated).
 The best way to have a good performance is to avoid serverside decryption (decrypt get parameter). And in case someone abuses it for e.g. DDOS, to set a ratelimit or disable it via a ratelimit of "0/s". The client is not affected (urls are parsed internally so the shown decrypt get parameter is neglectable).
 Note: the decrypt parameter is required for some proxy stuff (serving media or other non text files) and transfers
 
+## Share url
+
+The share url is fake:
+it is composed by graphql url and tokens as get parameters. It must be parsed by a client and is not valid for web usage
+
 # TODO
 
+-   shareurl: graphql url ? token = ...
 -   improve documention of documents (imprint), show usage
 -   key callbacks: url:contentid:token
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")

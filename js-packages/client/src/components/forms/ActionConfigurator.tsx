@@ -316,7 +316,12 @@ export default function ActionConfigurator({
                             name={`${path}value.action`}
                             component={SimpleSelect}
                             options={validactions}
-                            disabled={disabled || locked}
+                            disabled={
+                                disabled ||
+                                locked ||
+                                mode == 'share' ||
+                                mode == 'publicShare'
+                            }
                             label="Action"
                             fullWidth
                         />
