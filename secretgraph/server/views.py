@@ -92,23 +92,9 @@ class ContentView(View):
         return response
 
     def handle_decrypt(self, request: HttpRequest, id, *args, **kwargs):
-        """
-        space efficient join of one or more documents, decrypted
-        In case of multiple documents the \\0 is escaped and the documents with
-        \\0 joined
-
-        Args:
-            request ([type]): [description]
-
-        Raises:
-            Http404: [description]
-
-        Yields:
-            chunks
-        """
         content = get_object_or_404(self.result["objects"], downloadId=id)
         try:
-            response = self.handle_decrypt_singlecontent(
+            response = self.handle_decrypt_inner(
                 request, content, *args, **kwargs
             )
         except ratelimit.DISABLED:
@@ -124,7 +110,7 @@ class ContentView(View):
         return response
 
     @method_decorator(last_modified(calc_content_modified_decrypted))
-    def handle_decrypt_singlecontent(
+    def handle_decrypt_inner(
         self, request: HttpRequest, content, *args, **kwargs
     ):
         serverside_decryption_rate = settings.SECRETGRAPH_RATELIMITS.get(
