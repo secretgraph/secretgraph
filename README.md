@@ -503,6 +503,8 @@ it is composed by graphql url and tokens as get parameters. It must be parsed by
 # TODO
 
 -   shareurl: graphql url ? token = ...
+-   ActionConfigurator must prime the missing field values before using them in fields
+    -   maybe add prime method for initialValues
 -   improve documention of documents (imprint), show usage
 -   key callbacks: url:contentid:token
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")
