@@ -12,6 +12,7 @@ import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
+import { Theme } from '@mui/material/styles'
 import Tab from '@mui/material/Tab'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -20,6 +21,7 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow, { TableRowProps } from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import {
     ActionInputEntry,
     CertificateEntry,
@@ -28,31 +30,58 @@ import {
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as SetOps from '@secretgraph/misc/utils/set'
 import { FastField, FieldArray, Form, Formik } from 'formik'
+import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
-import ActionConfigurator, {
-    ActionConfiguratorProps,
-} from '../forms/ActionConfigurator'
+import ActionConfigurator from '../forms/ActionConfigurator'
 
 const _update_set = new Set(['update', 'manage'])
 function SharePanel({ url }: { url: string }) {
+    const isMedium = useMediaQuery((theme: Theme) =>
+        theme.breakpoints.up('md')
+    )
+    const isBig = useMediaQuery((theme: Theme) => theme.breakpoints.up('xl'))
     return (
-        <Link
-            href={url}
-            onClick={(event: any) => {
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(url)
-                    event.preventDefault()
-                    console.log('url copied')
-                    return false
-                } else {
-                    console.log('clipboard not supported')
-                }
-            }}
-        >
-            {url}
-        </Link>
+        <details>
+            <summary
+                style={{
+                    whiteSpace: 'nowrap',
+                    paddingRight: '4px',
+                }}
+            >
+                <span
+                    style={{
+                        display: 'inline-block',
+                    }}
+                >
+                    <Link
+                        href={url}
+                        onClick={(event: any) => {
+                            if (navigator.clipboard) {
+                                navigator.clipboard.writeText(url)
+                                event.preventDefault()
+                                console.log('url copied')
+                                return false
+                            } else {
+                                console.log('clipboard not supported')
+                            }
+                        }}
+                    >
+                        {url}
+                    </Link>
+                </span>
+            </summary>
+            <QRCodeSVG
+                value={url}
+                width="100%"
+                height="100%"
+                style={{
+                    maxHeight: '70vh',
+                }}
+                level={isBig ? 'Q' : isMedium ? 'M' : 'L'}
+            />
+        </details>
     )
 }
 
@@ -112,45 +141,99 @@ const HashEntry = React.memo(function HashEntry({
 
 function NewPanel({
     shareUrl,
-    mode,
     disabled,
+    isPublic,
     isContent,
     tokens,
     ...props
 }: Exclude<TabPanelProps, 'children'> & {
-    mode: NonNullable<ActionConfiguratorProps['mode']>
     shareUrl: string
     tokens: string[]
     isContent: boolean
+    isPublic: boolean
     disabled?: boolean
 }) {
+    const value = {
+        action: isPublic ? 'update' : 'view',
+    }
     return (
         <TabPanel {...props}>
             <SharePanel url={shareUrl} />
             <Formik
-                initialValues={{}}
+                initialValues={{ value, start: '', stop: '' }}
+                onSubmit={async (values, { setSubmitting }) => {
+                    setSubmitting(false)
+                }}
+            >
+                {({ values, isSubmitting }) => {
+                    return (
+                        <Form>
+                            <ActionConfigurator
+                                path=""
+                                disabled={disabled}
+                                isContent={isContent}
+                                mode={isPublic ? 'publicShare' : 'share'}
+                                tokens={tokens}
+                                value={{
+                                    type: 'action',
+                                    start: '',
+                                    stop: '',
+                                    data: '',
+                                    note: '',
+                                    newHash: '',
+                                    value: values.value,
+                                }}
+                            />
+                        </Form>
+                    )
+                }}
+            </Formik>
+        </TabPanel>
+    )
+}
+
+function AuthPanel({
+    shareUrl,
+    disabled,
+    isContent,
+    isPublic,
+    tokens,
+    ...props
+}: Exclude<TabPanelProps, 'children'> & {
+    shareUrl: string
+    tokens: string[]
+    isContent: boolean
+    isPublic: boolean
+    disabled?: boolean
+}) {
+    const value = {
+        action: isPublic ? 'update' : 'view',
+    }
+    return (
+        <TabPanel {...props}>
+            <SharePanel url={shareUrl} />
+            <Formik
+                initialValues={{
+                    action: { value, start: '', stop: '' },
+                    actionActive: false,
+                }}
                 onSubmit={async (values, { setSubmitting }) => {
                     setSubmitting(false)
                 }}
             >
                 <Form>
                     <ActionConfigurator
-                        path=""
+                        path="action."
                         disabled={disabled}
                         isContent={isContent}
-                        mode={mode}
+                        mode={isPublic ? 'publicShare' : 'share'}
                         tokens={tokens}
                         value={{
                             type: 'action',
                             start: '',
                             stop: '',
                             value: {
-                                action:
-                                    mode == 'auth'
-                                        ? 'auth'
-                                        : mode == 'public'
-                                        ? 'update'
-                                        : 'view',
+                                action: isPublic ? 'update' : 'view',
                             },
                             data: '',
                             note: '',
@@ -165,17 +248,17 @@ function NewPanel({
 
 function OverviewPanel({
     shareUrl,
-    mode,
+    isPublic,
     isContent,
     actions,
     tokens,
     disabled,
     ...props
 }: Exclude<TabPanelProps, 'children'> & {
-    mode: NonNullable<ActionConfiguratorProps['mode']>
     shareUrl: string
     disabled?: boolean
     isContent: boolean
+    isPublic: boolean
     actions: (ActionInputEntry | CertificateInputEntry)[]
     tokens: string[]
 }) {
@@ -260,7 +343,7 @@ function OverviewPanel({
                                     disabled={disabled}
                                     isContent={isContent}
                                     tokens={tokens}
-                                    mode={mode}
+                                    mode={isPublic ? 'public' : 'default'}
                                     value={selectedItem.value}
                                 />
                             </Form>
@@ -342,24 +425,24 @@ export default function SimpleShareDialog({
                             variant="fullWidth"
                             textColor="primary"
                         >
-                            <Tab label="New" value="new" />
                             <Tab label="Auth" value="auth" />
+                            <Tab label="New" value="new" />
                             {actions && (
                                 <Tab label="Overview" value="overview" />
                             )}
                         </TabList>
                     </Box>
-                    <NewPanel
-                        value="new"
-                        mode={isPublic ? 'public' : 'default'}
+                    <AuthPanel
+                        value="auth"
+                        isPublic={isPublic}
                         tokens={tokens}
                         isContent={mainCtx.type != 'Cluster'}
                         shareUrl={shareUrl}
                         disabled={disabled}
                     />
                     <NewPanel
-                        value="auth"
-                        mode="auth"
+                        value="new"
+                        isPublic={isPublic}
                         tokens={tokens}
                         isContent={mainCtx.type != 'Cluster'}
                         shareUrl={shareUrl}
@@ -370,7 +453,7 @@ export default function SimpleShareDialog({
                             value="overview"
                             tokens={tokens}
                             actions={actions}
-                            mode={isPublic ? 'public' : 'default'}
+                            isPublic={isPublic}
                             isContent={mainCtx.type != 'Cluster'}
                             shareUrl={shareUrl}
                             disabled={disabled}

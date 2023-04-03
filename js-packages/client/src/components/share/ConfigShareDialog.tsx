@@ -1,11 +1,13 @@
-import { DialogActions, DialogContent, Theme } from '@mui/material'
 import Autocomplete from '@mui/material/Autocomplete'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import FormControl from '@mui/material/FormControl'
 import FormHelperText from '@mui/material/FormHelperText'
 import Link from '@mui/material/Link'
+import { Theme } from '@mui/material/styles'
 import TextField from '@mui/material/TextField'
 import Grid from '@mui/material/Unstable_Grid2'
 import useMediaQuery from '@mui/material/useMediaQuery'
@@ -39,7 +41,9 @@ export default React.memo(function ConfigShareDialog({
     const [typing, setTyping] = React.useState(false)
     const [show, setShow] = React.useState(false)
     const deferredPw = React.useDeferredValue(password)
-    const isMedium = useMediaQuery((theme: Theme) => theme.breakpoints.up('md'))
+    const isMedium = useMediaQuery((theme: Theme) =>
+        theme.breakpoints.up('md')
+    )
     const isBig = useMediaQuery((theme: Theme) => theme.breakpoints.up('xl'))
     const { baseClient } = React.useContext(Contexts.Clients)
     React.useEffect(() => {

@@ -52,22 +52,26 @@ const availableActions = [
     'push',
     'delete',
     'update',
+    'storedUpdate',
 ]
 const publicActions = availableActions.filter((val) => val != 'view')
-
-const availableActionsSet = new Set(availableActions)
+const publicShareActions = availableActions.filter(
+    (val) => val != 'view' && val != 'auth'
+)
+const shareActions = availableActions.filter((val) => val != 'auth')
+const contentOnlyActions = new Set(['push'])
+const clusterOnlyActions = new Set(['create', 'storedUpdate'])
 
 const ActionFields = React.memo(function ActionFields({
-    action,
     path,
     disabled,
     isContent,
 }: {
-    action: string
     path: '' | `${string}.`
     isContent: boolean
     disabled?: boolean
 }) {
+    const { value: action } = useField(`${path}action`)[0]
     switch (action) {
         case 'auth':
             return <div></div>
@@ -203,6 +207,12 @@ const ActionFields = React.memo(function ActionFields({
                     </div>
                 )
             }
+        case 'inject':
+            return (
+                <>
+                    <div></div>
+                </>
+            )
         case 'create':
         case 'update':
             return (
@@ -217,6 +227,9 @@ const ActionFields = React.memo(function ActionFields({
                 </>
             )
         case 'push':
+            if (!isContent) {
+                throw Error('Push only defined for contents')
+            }
             return (
                 <>
                     <div></div>
@@ -237,9 +250,10 @@ export type ActionConfiguratorProps = {
     disabled?: boolean
     tokens: string[]
     isContent: boolean
-    mode?: 'public' | 'auth' | 'default'
+    mode?: 'public' | 'default' | 'share' | 'publicShare'
 }
 
+// maybe remove auth
 // Configurator for actions and certificates
 export default function ActionConfigurator({
     value,
@@ -254,14 +268,36 @@ export default function ActionConfigurator({
     }, [tokens])
     const { getFieldHelpers } = useFormikContext<any>()
     disabled = !!(disabled || value?.readonly)
-    const locked =
-        value?.delete ||
-        value?.locked ||
-        !availableActionsSet.has(value?.value?.action || 'view')
 
     const { setValue: changeToken } = getFieldHelpers(`${path}data`)
     const { value: minDateTime } = useField(`${path}start`)[0]
     const { value: maxDateTime } = useField(`${path}stop`)[0]
+    const validactions = React.useMemo(() => {
+        const actions =
+            mode == 'share'
+                ? shareActions
+                : mode == 'public'
+                ? publicActions
+                : mode == 'publicShare'
+                ? publicShareActions
+                : availableActions
+        if (isContent) {
+            return actions.filter((val) => !clusterOnlyActions.has(val))
+        } else {
+            return actions.filter((val) => !contentOnlyActions.has(val))
+        }
+    }, [isContent, mode])
+    const locked = React.useMemo(() => {
+        if (
+            value?.delete ||
+            value?.locked ||
+            value?.value?.action == 'other'
+        ) {
+            return true
+        }
+        const v = value?.value?.action || 'view'
+        return !validactions.some((val) => v == val)
+    }, [validactions, value?.delete, value?.locked])
 
     return (
         <Box
@@ -269,9 +305,7 @@ export default function ActionConfigurator({
                 '& .MuiTextField-root': { m: 1 },
             }}
         >
-            {value.type == 'action' &&
-            value.value?.action != 'other' &&
-            mode != 'auth' ? (
+            {value.type == 'action' && value.value?.action != 'other' ? (
                 <>
                     <div>
                         <Typography>
@@ -281,43 +315,42 @@ export default function ActionConfigurator({
                         <FastField
                             name={`${path}value.action`}
                             component={SimpleSelect}
-                            options={
-                                mode == 'public'
-                                    ? publicActions
-                                    : availableActions
-                            }
+                            options={validactions}
                             disabled={disabled || locked}
                             label="Action"
                             fullWidth
                         />
                     </div>
                     <Divider />
-
-                    <Grid container>
-                        <Grid xs={12} sm={6}>
-                            <FastField
-                                name={`${path}start`}
-                                component={FormikDateTimePicker}
-                                maxDateTime={maxDateTime}
-                                disabled={disabled || locked}
-                                clearable
-                                showTodayButton
-                                label="Start"
-                            />
-                        </Grid>
-                        <Grid xs={12} sm={6}>
-                            <FastField
-                                name={`${path}stop`}
-                                component={FormikDateTimePicker}
-                                minDateTime={minDateTime}
-                                clearable
-                                showTodayButton
-                                disabled={disabled || locked}
-                                label="Stop"
-                            />
-                        </Grid>
-                    </Grid>
-                    <Divider />
+                    {mode != 'share' && mode != 'publicShare' && (
+                        <>
+                            <Grid container>
+                                <Grid xs={12} sm={6}>
+                                    <FastField
+                                        name={`${path}start`}
+                                        component={FormikDateTimePicker}
+                                        maxDateTime={maxDateTime}
+                                        disabled={disabled || locked}
+                                        clearable
+                                        showTodayButton
+                                        label="Start"
+                                    />
+                                </Grid>
+                                <Grid xs={12} sm={6}>
+                                    <FastField
+                                        name={`${path}stop`}
+                                        component={FormikDateTimePicker}
+                                        minDateTime={minDateTime}
+                                        clearable
+                                        showTodayButton
+                                        disabled={disabled || locked}
+                                        label="Stop"
+                                    />
+                                </Grid>
+                            </Grid>
+                            <Divider />
+                        </>
+                    )}
                 </>
             ) : null}
             <div>
@@ -375,11 +408,10 @@ export default function ActionConfigurator({
                     variant="outlined"
                 />
             </div>
-            {!locked && (
+            {value.type == 'action' && !locked && (
                 <div>
                     <Grid spacing={2} container>
                         <ActionFields
-                            action={value.value?.action}
                             path={`${path}value.`}
                             disabled={disabled || locked}
                             isContent={isContent}

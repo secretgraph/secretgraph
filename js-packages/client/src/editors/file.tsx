@@ -474,6 +474,7 @@ function InnerFile({
                                         ...nTokens,
                                     ]),
                                 ],
+                                cloneData: null,
                             })
                         } else {
                             updateMainCtx({
@@ -481,6 +482,7 @@ function InnerFile({
                                 updateId: res.node.updateId,
                                 url,
                                 action: 'update',
+                                cloneData: null,
                             })
                         }
                     } else {
@@ -790,6 +792,10 @@ function InnerFile({
                                                                             ev
                                                                                 .target
                                                                                 .value
+                                                                        )
+                                                                        formikFieldProps.form.setFieldTouched(
+                                                                            'htmlInput',
+                                                                            true
                                                                         )
                                                                     }}
                                                                     helperText={
