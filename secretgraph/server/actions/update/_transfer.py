@@ -94,16 +94,6 @@ def _lock_content(content: Content, transfer):
     return had_hide
 
 
-@sync_to_async(thread_sensitive=True)
-def _save_content(content):
-    content.save(update_fields=["hide", "updateId", "nonce"])
-
-
-@sync_to_async(thread_sensitive=True)
-def _delete_content(content):
-    content.delete()
-
-
 # can be also used for server to server transfers (transfer=False)
 async def transfer_value(
     request,
@@ -178,7 +168,7 @@ async def transfer_value(
             logger.error("Invalid nonce (not 13 bytes)")
             # if transfer, fail, otherwise ignore
             if transfer:
-                await _delete_content(content)
+                await content.adelete()
                 return TransferResult.NONRECOVERABLE_ERROR
         else:
             content.nonce = checknonce
@@ -239,7 +229,7 @@ async def transfer_value(
         )
         if destroy_content:
             # then delete with the correct amount of bytes
-            _delete_content(content)
+            await content.adelete()
         else:
             if await content.tags.filter(tag="freeze").aexists():
                 await content.tags.filter(tag="freeze").adelete()
@@ -248,7 +238,7 @@ async def transfer_value(
             if not had_hide:
                 content.hide = False
             content.updateId = uuid4()
-            await _save_content(content)
+            await content.asave(update_fields=["hide", "updateId", "nonce"])
 
         if not session:
             s.close()

@@ -212,9 +212,12 @@ function AuthPanel({
     isPublic: boolean
     disabled?: boolean
 }) {
+    const { mainCtx } = React.useContext(Contexts.Main)
     const value = {
         action: isPublic ? 'update' : 'view',
     }
+    const parsedUrl = new URL(shareUrl)
+    parsedUrl.searchParams.append('item', mainCtx.item as string)
     return (
         <TabPanel {...props}>
             <SharePanel url={shareUrl} />

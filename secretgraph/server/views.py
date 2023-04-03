@@ -52,36 +52,6 @@ def calc_content_modified_decrypted(request, content, *args, **kwargs):
     return calc_content_modified_raw(request, content, *args, **kwargs)
 
 
-class ClusterView(View):
-    @method_decorator(add_cors_headers)
-    @method_decorator(add_secretgraph_headers)
-    def get(self, request: HttpRequest, *args, **kwargs):
-        authset = set(
-            request.headers.get("Authorization", "")
-            .replace(" ", "")
-            .split(",")
-        )
-        authset.update(request.GET.getlist("token"))
-        # authset can contain: ""
-        self.result = retrieve_allowed_objects(
-            request,
-            "Cluster",
-            scope="view",
-            authset=authset,
-        )
-        if kwargs.get("id"):
-            cluster = get_object_or_404(
-                self.result["objects"], downloadId=kwargs["id"]
-            )
-        else:
-            cluster = get_object_or_404(self.result["objects"])
-        response = JsonResponse(
-            {"name": cluster.name, "description": cluster.description}
-        )
-        response["X-TYPE"] = "Cluster"
-        return response
-
-
 class ContentView(View):
     @method_decorator(no_opener)
     @method_decorator(add_cors_headers)

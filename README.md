@@ -497,8 +497,20 @@ Note: the decrypt parameter is required for some proxy stuff (serving media or o
 
 ## Share url
 
-The share url for clusters is a stub with only name and description as json ob.
-Via X-GRAPHQL-PATH response header the path to the graphql interface can be found
+### Content:
+
+link of content object joined with url. Get parameter token are added. The resulting url is usable in webbrowers.
+Via X-GRAPHQL-PATH response header the path to the graphql interface can be found.
+
+Optionally an item GET parameter can be added to provide a hint for the client
+
+### Cluster:
+
+graphql url. Get parameter token are added. If it should resolve to a specific cluster either use the tokens or add an extra get parameter hint item which must be parsed by clients
+
+### Auth (Cluster/Content):
+
+The item get parameter is mandatory.
 
 # TODO
 
