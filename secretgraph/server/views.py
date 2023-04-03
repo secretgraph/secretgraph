@@ -85,7 +85,7 @@ class ContentView(View):
                 self.result["objects"], downloadId=kwargs["id"]
             )
         else:
-            content = get_object_or_404(self.result["objects"])
+            content = get_object_or_404(self.result["objects_ignore_public"])
         response = self.handle_raw_singlecontent(
             request, content, *args, **kwargs
         )

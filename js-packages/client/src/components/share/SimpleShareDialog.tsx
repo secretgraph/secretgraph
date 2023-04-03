@@ -153,12 +153,23 @@ function NewPanel({
     isPublic: boolean
     disabled?: boolean
 }) {
+    const { mainCtx } = React.useContext(Contexts.Main)
+    const [ntokens, setNTokens] = React.useState<string[]>([])
     const value = {
         action: isPublic ? 'update' : 'view',
     }
+    const url = React.useMemo(() => {
+        const parsedUrl = new URL(shareUrl)
+        parsedUrl.searchParams.set('item', mainCtx.item as string)
+        parsedUrl.searchParams.delete('token')
+        for (const t of ntokens) {
+            parsedUrl.searchParams.append('token', t)
+        }
+        return parsedUrl.href
+    }, [mainCtx.item, shareUrl, ntokens])
     return (
         <TabPanel {...props}>
-            <SharePanel url={shareUrl} />
+            <SharePanel url={url} />
             <Formik
                 initialValues={{
                     value,
@@ -213,14 +224,23 @@ function AuthPanel({
     disabled?: boolean
 }) {
     const { mainCtx } = React.useContext(Contexts.Main)
+    const [ntokens, setNTokens] = React.useState<string[]>([])
     const value = {
         action: isPublic ? 'update' : 'view',
     }
-    const parsedUrl = new URL(shareUrl)
-    parsedUrl.searchParams.append('item', mainCtx.item as string)
+    const url = React.useMemo(() => {
+        const parsedUrl = new URL(shareUrl)
+        parsedUrl.searchParams.set('item', mainCtx.item as string)
+        parsedUrl.searchParams.delete('token')
+        for (const t of ntokens) {
+            parsedUrl.searchParams.append('token', t)
+        }
+        return parsedUrl.href
+    }, [mainCtx.item, shareUrl, ntokens])
+
     return (
         <TabPanel {...props}>
-            <SharePanel url={shareUrl} />
+            <SharePanel url={url} />
             <Formik
                 initialValues={{
                     action: { value, start: '', stop: '', data: '', note: '' },
