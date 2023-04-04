@@ -105,7 +105,6 @@ def _patch_cors_headers(request, response):
 
 
 def add_cors_headers(view_func):
-
     fntocheck = view_func
     if hasattr(fntocheck, "func"):
         fntocheck = fntocheck.func

@@ -266,6 +266,10 @@ class ContentView(View):
 
 
 class CORSFileUploadGraphQLView(AsyncGraphQLView):
+    @method_decorator(add_secretgraph_headers)
+    async def stub_response(self, request, *args, **kwargs):
+        return HttpResponse("stub for cluster")
+
     @method_decorator(add_cors_headers)
     async def dispatch(self, request, *args, **kwargs):
         # if settings.DEBUG and "operations" in request.POST:
@@ -277,5 +281,5 @@ class CORSFileUploadGraphQLView(AsyncGraphQLView):
         #            pprint.pformat(request.FILES),
         #     )
         if request.method == "GET" and not request.GET.get("query"):
-            return HttpResponse("stub for cluster")
+            return await self.stub_response(request, *args, **kwargs)
         return await super().dispatch(request, *args, **kwargs)

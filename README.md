@@ -508,6 +508,8 @@ Optionally an item GET parameter can be added to provide a hint for the client
 
 graphql url. Get parameter token are added. If it should resolve to a specific cluster either use the tokens or add an extra get parameter hint item which must be parsed by clients
 
+Note: the grapqhl view is modified in that way that the method for contents (X-GRAPHQL-PATH header) is also available if called directly
+
 ### Auth (Cluster/Content):
 
 The item get parameter is mandatory.
