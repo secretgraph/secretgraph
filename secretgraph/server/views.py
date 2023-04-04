@@ -276,4 +276,6 @@ class CORSFileUploadGraphQLView(AsyncGraphQLView):
         #            pprint.pformat(json.loads(request.POST.get("map", "{}"))),
         #            pprint.pformat(request.FILES),
         #     )
+        if request.method == "GET" and not request.GET.get("query"):
+            return HttpResponse("stub for cluster")
         return await super().dispatch(request, *args, **kwargs)

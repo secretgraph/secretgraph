@@ -1,7 +1,11 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { RequireAttributes, UnpackPromise } from '../typing'
-import { serializeToBase64, unserializeToArrayBuffer } from './encoding'
+import {
+    serializeToBase64,
+    unserializeToArrayBuffer,
+    utf8encoder,
+} from './encoding'
 import { findWorkingHashAlgorithms, hashObject } from './hashing'
 import * as SetOps from './set'
 
@@ -147,10 +151,11 @@ export async function generateActionMapper({
             console.debug('unknown tokens contains invalid entry', t)
             continue
         }
+        let rawT: string = t.split(':', 2).at(-1) as string
         let firstHash: string | undefined = undefined
         for (const halgo of hashalgos) {
             updateHashOps.push(
-                hashObject(t, halgo).then((data) => {
+                hashObject(rawT, halgo).then((data) => {
                     if (!firstHash) {
                         firstHash = data
                         tokenToHash[t] = data
@@ -190,8 +195,9 @@ export async function generateActionMapper({
     }
     await Promise.all(updateHashOps)
 
-    const actions: { [newHash: string]: ActionMapperEntry | CertificateEntry } =
-        {}
+    const actions: {
+        [newHash: string]: ActionMapperEntry | CertificateEntry
+    } = {}
     for (const [hash, actionsRaw] of Object.entries(knownHashes)) {
         if (
             !actions[upgradeHash[hash]] ||
@@ -401,14 +407,20 @@ export async function transformActions({
                         actions = actions.filter((val) => !val[1])
                     }
                     hashes[newHash] = actions.map((val) => val[0])
-                    if (mapperval.oldHash && val.newHash != mapperval.oldHash) {
+                    if (
+                        mapperval.oldHash &&
+                        val.newHash != mapperval.oldHash
+                    ) {
                         hashes[mapperval.oldHash] = null
                         configUpdate.tokens[mapperval.oldHash] = null
                     }
                 } else {
                     hashes[newHash] = []
                     // move certificate
-                    if (mapperval.oldHash && val.newHash != mapperval.oldHash) {
+                    if (
+                        mapperval.oldHash &&
+                        val.newHash != mapperval.oldHash
+                    ) {
                         hashes[mapperval.oldHash] = null
                         configUpdate.certificates[mapperval.oldHash] = null
                     }

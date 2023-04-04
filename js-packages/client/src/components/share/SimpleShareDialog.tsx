@@ -160,7 +160,6 @@ function NewPanel({
     }
     const url = React.useMemo(() => {
         const parsedUrl = new URL(shareUrl)
-        parsedUrl.searchParams.set('item', mainCtx.item as string)
         parsedUrl.searchParams.delete('token')
         for (const t of ntokens) {
             parsedUrl.searchParams.append('token', t)
@@ -400,7 +399,6 @@ export default function SimpleShareDialog({
     const [tab, setTab] = React.useState(defaultTab)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.Config)
-    const [open, setOpen] = React.useState(false)
     const dialogTitleId = React.useId()
     const tokens = React.useMemo(() => {
         if (!shareUrl) {
@@ -424,21 +422,13 @@ export default function SimpleShareDialog({
         }).tokens
     }, [mainCtx.tokens, mainCtx.tokensPermissions])
 
-    React.useLayoutEffect(() => {
-        if (shareUrl) {
-            updateMainCtx({ shareFn: () => setOpen(true) })
-        }
-        return () => {
-            updateMainCtx({ shareFn: null })
-        }
-    }, [shareUrl])
     if (!shareUrl) {
         return null
     }
     return (
         <Dialog
-            open={open}
-            onClose={() => setOpen(false)}
+            open={mainCtx.openDialog == 'share'}
+            onClose={() => updateMainCtx({ openDialog: null })}
             maxWidth="xl"
             fullWidth
             aria-labelledby={dialogTitleId}
@@ -491,7 +481,10 @@ export default function SimpleShareDialog({
                 </TabContext>
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => setOpen(false)} color="secondary">
+                <Button
+                    onClick={() => updateMainCtx({ openDialog: null })}
+                    color="secondary"
+                >
                     Close
                 </Button>
             </DialogActions>

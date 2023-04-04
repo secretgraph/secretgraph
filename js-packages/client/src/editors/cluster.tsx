@@ -102,7 +102,7 @@ const ClusterIntern = ({
 }: ClusterInternProps) => {
     disabled = disabled || viewOnly
 
-    const [open, setOpen] = React.useState(false)
+    const [dirty, setDirty] = React.useState(false)
     const { itemClient, baseClient } = React.useContext(Contexts.Clients)
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
@@ -127,6 +127,15 @@ const ClusterIntern = ({
     readonly: boolean*/
     return (
         <>
+            {mainCtx.item && (
+                <SimpleShareDialog
+                    actions={actions}
+                    shareUrl={new URL(url, window.location.href).href}
+                    isPublic={props.name.startsWith('@')}
+                    disabled={dirty}
+                />
+            )}
+
             <Formik
                 initialValues={{
                     actions,
@@ -267,19 +276,11 @@ const ClusterIntern = ({
                     React.useEffect(() => {
                         updateMainCtx({ cloneData: values })
                     }, [values])
+                    React.useEffect(() => {
+                        setDirty(dirty)
+                    }, [dirty])
                     return (
                         <Form>
-                            {mainCtx.item && (
-                                <SimpleShareDialog
-                                    actions={actions}
-                                    shareUrl={
-                                        new URL(url, window.location.href).href
-                                    }
-                                    isPublic={values.name.startsWith('@')}
-                                    disabled={isSubmitting}
-                                />
-                            )}
-
                             <FieldArray name="actions">
                                 {({ remove, replace, push, form }) => {
                                     return (
@@ -289,8 +290,14 @@ const ClusterIntern = ({
                                             push={push}
                                             form={form}
                                             disabled={isSubmitting}
-                                            handleClose={() => setOpen(false)}
-                                            open={open}
+                                            handleClose={() =>
+                                                updateMainCtx({
+                                                    openDialog: null,
+                                                })
+                                            }
+                                            open={
+                                                mainCtx.openDialog == 'actions'
+                                            }
                                             isContent={false}
                                             isPublic={values.name.startsWith(
                                                 '@'
@@ -370,7 +377,11 @@ const ClusterIntern = ({
                                         <span>
                                             <IconButton
                                                 edge="start"
-                                                onClick={() => setOpen(!open)}
+                                                onClick={() =>
+                                                    updateMainCtx({
+                                                        openDialog: 'actions',
+                                                    })
+                                                }
                                                 size="large"
                                             >
                                                 <Security />
@@ -483,6 +494,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 updateId: dataUnfinished.secretgraph.node.updateId,
                 cluster: dataUnfinished.secretgraph.node.id,
                 readonly: false,
+                shareFn: () => updateMainCtx({ openDialog: 'share' }),
             }
             if (
                 dataUnfinished.secretgraph.node.id == config.configCluster &&
