@@ -66,5 +66,7 @@ SECRETGRAPH_DEFAULT_GROUPS["debug_admin"] = {  # noqa F405
         "manage_groups",
         "manage_deletion",
         "manage_update",
+        "manage_user",
     ],
+    "matchUserGroup": True,
 }

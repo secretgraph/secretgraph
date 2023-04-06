@@ -1,4 +1,4 @@
-from strawberry.extensions import Extension
+from strawberry.extensions import SchemaExtension
 from strawberry.types import ExecutionContext
 from strawberry.types.graphql import OperationType
 from graphql import ExecutionResult as GraphQLExecutionResult
@@ -9,7 +9,7 @@ import ratelimit
 from django.conf import settings
 
 
-class RatelimitMutations(Extension):
+class RatelimitMutations(SchemaExtension):
     def __init__(self, *, execution_context: ExecutionContext):
         self.rate = settings.SECRETGRAPH_RATELIMITS.get("GRAPHQL_MUTATIONS")
         super().__init__(execution_context=execution_context)
@@ -61,7 +61,7 @@ class RatelimitMutations(Extension):
         )
 
 
-class RatelimitErrors(Extension):
+class RatelimitErrors(SchemaExtension):
     rate = None
 
     def __init__(self, *, execution_context: ExecutionContext):

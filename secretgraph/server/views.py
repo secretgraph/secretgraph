@@ -280,6 +280,6 @@ class CORSFileUploadGraphQLView(AsyncGraphQLView):
         #            pprint.pformat(json.loads(request.POST.get("map", "{}"))),
         #            pprint.pformat(request.FILES),
         #     )
-        if request.method == "GET" and not request.GET.get("query"):
+        if request.method.lower() == "get" and "query" not in request.GET:
             return await self.stub_response(request, *args, **kwargs)
         return await super().dispatch(request, *args, **kwargs)
