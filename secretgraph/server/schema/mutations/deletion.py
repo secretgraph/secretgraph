@@ -107,18 +107,23 @@ def reset_deletion_content_or_cluster(
         )
         contents = results["Content"]["objects"]
         clusters = results["Cluster"]["objects"]
-    contents = Content.objects.filter(
-        Q(cluster_id__in=Subquery(clusters.values("id")))
-        | Q(id__in=Subquery(contents.values("id"))),
-        markForDestruction__isnull=False,
-    )
-    contents.update(markForDestruction=None)
     clusters = Cluster.objects.filter(
         Q(id__in=Subquery(clusters.values("id")))
         | Q(id__in=Subquery(contents.values("cluster_id"))),
         markForDestruction__isnull=False,
     )
     clusters.update(markForDestruction=None)
+    # undelete all contents if cluster is undeleted or
+    # undelete contents of clusters not in deletion
+    contents = Content.objects.filter(
+        Q(cluster_id__in=Subquery(clusters.values("id")))
+        | Q(
+            id__in=Subquery(contents.values("id")),
+            cluster__markForDestruction=None,
+        ),
+        markForDestruction__isnull=False,
+    )
+    contents.update(markForDestruction=None)
     return ResetDeletionContentOrClusterMutation(
         restored=[
             *contents.filter(

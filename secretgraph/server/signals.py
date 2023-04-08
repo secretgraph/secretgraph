@@ -287,6 +287,17 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
     ).update(
         markForDestruction=models.F("latest_used") + td(hours=24)
     )
+    # update all non-destructing contents of clusters in destruction with
+    # the markForDestruction of the cluster
+    Content.objects.annotate(
+        ClusterMarkForDestruction=models.Subquery(
+            Cluster.objects.filter(id=models.OuterRef("cluster_id")).values(
+                "markForDestruction"
+            )
+        )
+    ).exclude(ClusterMarkForDestruction=None).update(
+        markForDestruction=models.F("ClusterMarkForDestruction")
+    )
 
     # cleanup expired Contents
     for c in Content.objects.filter(
