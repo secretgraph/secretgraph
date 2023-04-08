@@ -46,10 +46,10 @@ MIDDLEWARE += [  # noqa F405
 ]
 
 
-SECRETGRAPH_USER_ADMINAREA = (
-    os.environ.get("SECRETGRAPH_USER_ADMINAREA", "false").lower() == "true"
+SECRETGRAPH_ADMINAREA = (
+    os.environ.get("SECRETGRAPH_ADMINAREA", "false").lower() == "true"
 )
-if SECRETGRAPH_USER_ADMINAREA:
+if SECRETGRAPH_ADMINAREA:
     INSTALLED_APPS += [  # noqa F405
         "django.contrib.admin",
         "django.contrib.messages",

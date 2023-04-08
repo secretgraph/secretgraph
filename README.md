@@ -89,7 +89,7 @@ Special configuration keys:
 -   `BIND_TO_USER`: nets need user
 -   `ALLOW_REGISTER`: allow registering new users
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
--   `SECRETGRAPH_USER_ADMINAREA`: allow admin login
+-   `SECRETGRAPH_ADMINAREA`: allow admin login
 -   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of proxy. Only useful if server side decryption is required.
 -   `RATELIMIT_*` where as keys `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE` are defined: set ratelimits or remove the default with the special key: `none`
 -   `DB_ENGINE`: db stuff

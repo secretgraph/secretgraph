@@ -60,7 +60,7 @@ i18n_urlpatterns = [
 ]
 
 if (
-    getattr(settings, "SECRETGRAPH_USER_ADMINAREA", False)
+    getattr(settings, "SECRETGRAPH_ADMINAREA", False)
     and "django.contrib.admin" in settings.INSTALLED_APPS
 ):
     from django.contrib import admin
