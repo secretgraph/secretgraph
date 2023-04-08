@@ -313,4 +313,7 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
         else models.Q(markForDestruction__lte=now),
         contents__count=0,
     ):
-        c.delete()
+        try:
+            c.delete()
+        except models.RestrictedError:
+            pass
