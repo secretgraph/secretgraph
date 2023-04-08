@@ -498,11 +498,9 @@ class Migration(migrations.Migration):
             constraint=models.CheckConstraint(
                 check=models.Q(
                     models.Q(
-                        models.Q(
-                            ("group", "key"),
-                            ("group", "transfer"),
-                            _connector="OR",
-                        ),
+                        ("group", "key"),
+                        ("group", "transfer"),
+                        _connector="OR",
                         _negated=True,
                     ),
                     ("deleteRecursive", "c"),
