@@ -326,7 +326,10 @@ class Content(FlexidModel):
         Net, on_delete=models.CASCADE, related_name="contents"
     )
     cluster: Cluster = models.ForeignKey(
-        Cluster, on_delete=models.RESTRICT, related_name="contents"
+        Cluster,
+        on_delete=models.RESTRICT,
+        related_name="contents",
+        limit_choices_to={"markForDestruction": None},
     )
     # group virtual injection group attribute
 

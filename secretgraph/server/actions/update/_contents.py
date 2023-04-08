@@ -200,6 +200,8 @@ def _update_or_create_content_or_key(
 
     if not getattr(content, "cluster", None):
         raise ValueError("No cluster specified")
+    if content.cluster.markForDestruction:
+        raise ValueError("cluster marked for destruction")
 
     # set net on non-initializated contents
     # either by explicit cluster id of net or implicit of the current cluster

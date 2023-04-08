@@ -244,6 +244,7 @@ class Migration(migrations.Migration):
                     "cluster",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.RESTRICT,
+                        limit_choices_to={"markForDestruction": None},
                         related_name="contents",
                         to="secretgraph.cluster",
                     ),
