@@ -326,7 +326,7 @@ class Content(FlexidModel):
         Net, on_delete=models.CASCADE, related_name="contents"
     )
     cluster: Cluster = models.ForeignKey(
-        Cluster, on_delete=models.CASCADE, related_name="contents"
+        Cluster, on_delete=models.RESTRICT, related_name="contents"
     )
     # group virtual injection group attribute
 
@@ -390,6 +390,15 @@ class Content(FlexidModel):
         return reverse("secretgraph:contents", kwargs={"id": self.downloadId})
 
     @property
+    def size_file(self) -> int:
+        file_size = 0
+        try:
+            file_size = self.file.size
+        except Exception as exc:
+            logger.warning("Could not determinate file size", exc_info=exc)
+        return file_size
+
+    @property
     def size_tags(self) -> int:
         # exclude freeze, immutable from size calculation
         tags = (
@@ -409,7 +418,7 @@ class Content(FlexidModel):
 
     @property
     def size(self) -> int:
-        size = self.file.size
+        size = self.size_file
         size += self.size_tags
         size += self.size_references
         return size

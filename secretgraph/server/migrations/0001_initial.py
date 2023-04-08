@@ -243,7 +243,7 @@ class Migration(migrations.Migration):
                 (
                     "cluster",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
+                        on_delete=django.db.models.deletion.RESTRICT,
                         related_name="contents",
                         to="secretgraph.cluster",
                     ),

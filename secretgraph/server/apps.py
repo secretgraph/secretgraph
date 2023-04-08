@@ -15,6 +15,8 @@ from django.core.signals import (
 from .signals import (
     deleteContentCb,
     deleteEncryptedFileCb,
+    deleteSizePreCb,
+    deleteSizeCommitCb,
     generateFlexid,
     regenerateKeyHash,
     fillEmptyFlexidsCb,
@@ -42,6 +44,26 @@ class SecretgraphServerConfig(AppConfig):
             deleteEncryptedFileCb,
             sender=Content,
             dispatch_uid="secretgraph_ContentdeleteEncryptedFileCb",
+        )
+        pre_delete.connect(
+            deleteSizePreCb,
+            sender=Content,
+            dispatch_uid="secretgraph_ContentdeleteSizePreCb",
+        )
+        post_delete.connect(
+            deleteSizeCommitCb,
+            sender=Content,
+            dispatch_uid="secretgraph_ContentdeleteSizeCommitCb",
+        )
+        pre_delete.connect(
+            deleteSizePreCb,
+            sender=Cluster,
+            dispatch_uid="secretgraph_ClusterdeleteSizePreCb",
+        )
+        post_delete.connect(
+            deleteSizeCommitCb,
+            sender=Cluster,
+            dispatch_uid="secretgraph_ClusterdeleteSizeCommitCb",
         )
 
         post_save.connect(

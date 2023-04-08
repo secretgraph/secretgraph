@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.contrib import admin
 from django.db.models import Subquery
+from django.utils import timezone
 
 from secretgraph.server.utils.auth import (
     get_cached_properties,
@@ -17,6 +20,7 @@ from .models import (
     GlobalGroupProperty,
     Net,
 )
+from .signals import sweepContentsAndClusters
 
 
 class GlobalGroupInline(admin.TabularInline):
@@ -29,6 +33,25 @@ class GlobalGroupInline(admin.TabularInline):
         ):
             return qs
         return qs.filter(globalgroup__hidden=False)
+
+    def has_view_permission(self, request, obj=None) -> bool:
+        if (
+            obj
+            and obj.hidden
+            and get_cached_properties(request).isdisjoint(
+                {"manage_hidden", "manage_groups"}
+            )
+        ):
+            return False
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        return getattr(
+            request.user, "is_superuser", False
+        ) or "manage_groups" in get_cached_properties(request)
+
+    has_delete_permission = has_change_permission
+    has_add_permission = has_change_permission
 
 
 class GlobalGroupInlineOfGlobalGroupProperty(GlobalGroupInline):
@@ -93,11 +116,26 @@ class ContentActionInlineForCluster(admin.TabularInline):
     model = ContentAction
     extra = 1
 
+    def has_view_permission(self, request, obj=None) -> bool:
+        return True
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        if getattr(
+            request.user, "is_superuser", False
+        ) or "manage_update" in get_cached_properties(request):
+            return True
+        return False
+
+    has_delete_permission = has_change_permission
+
 
 class ActionInlineForCluster(admin.TabularInline):
     list_display = [repr]
     inlines = [ContentActionInlineForCluster]
-    readonly_fields = ["value"]
+    readonly_fields = ["nonce", "value"]
     model = Action
     extra = 0
 
@@ -144,6 +182,7 @@ class ClusterAdmin(admin.ModelAdmin):
     readonly_fields = []
 
     def get_queryset(self, request):
+        sweepContentsAndClusters()
         qs = super().get_queryset(request)
         if not getattr(request.user, "is_superuser", False):
             qs = qs.filter(
@@ -153,6 +192,8 @@ class ClusterAdmin(admin.ModelAdmin):
                     )
                 )
             )
+            if "manage_deletion" not in get_cached_properties(request):
+                qs = qs.filter(markForDestruction=False)
         return qs
 
     def get_readonly_fields(self, request, obj=None):
@@ -160,6 +201,8 @@ class ClusterAdmin(admin.ModelAdmin):
         if not getattr(request.user, "is_superuser", False):
             if "manage_featured" not in get_cached_properties(request):
                 rfields.append("featured")
+            if "manage_deletion" not in get_cached_properties(request):
+                rfields.append("markForDestruction")
 
         return rfields
 
@@ -169,29 +212,36 @@ class ClusterAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None) -> bool:
         return False
 
-    def has_delete_permission(self, request, obj=None) -> bool:
-        return False
-
     def has_add_permission(self, request) -> bool:
         return False
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        return bool(
+            getattr(request.user, "is_superuser", False)
+            or "manage_deletion" not in get_cached_properties(request)
+        )
+
+    def delete_model(self, request, obj):
+        now = timezone.now() - timedelta(minutes=1)
+        obj.contents.update(markForDestruction=now)
+        obj.markForDestruction = now
+        obj.save()
+
+    def delete_queryset(self, request, queryset):
+        now = timezone.now() - timedelta(minutes=1)
+        queryset.update(markForDestruction=now)
+        Content.objects.filter(cluster__in=Subquery(queryset)).update(
+            markForDestruction=now
+        )
 
 
 class ContentAdmin(admin.ModelAdmin):
     inlines = [ContentTagInline]
     list_display = [repr]
-    readonly_fields = ["net", "file"]
-
-    def get_readonly_fields(self, request, obj=None):
-        rfields = list(self.readonly_fields)
-        if obj:
-            rfields.append("type")
-        if not getattr(request.user, "is_superuser", False):
-            if "manage_hidden" not in get_cached_properties(request):
-                rfields.append("hidden")
-
-        return rfields
+    readonly_fields = ["net", "file", "nonce"]
 
     def get_queryset(self, request):
+        sweepContentsAndClusters()
         qs = super().get_queryset(request)
         if not getattr(request.user, "is_superuser", False):
             qs = qs.filter(
@@ -204,7 +254,22 @@ class ContentAdmin(admin.ModelAdmin):
 
             if "manage_hidden" not in get_cached_properties(request):
                 qs = qs.filter(hidden=False)
+
+            if "manage_deletion" not in get_cached_properties(request):
+                qs = qs.filter(markForDestruction=False)
         return qs
+
+    def get_readonly_fields(self, request, obj=None):
+        rfields = list(self.readonly_fields)
+        if obj:
+            rfields.append("type")
+        if not getattr(request.user, "is_superuser", False):
+            if "manage_hidden" not in get_cached_properties(request):
+                rfields.append("hidden")
+            if "manage_deletion" not in get_cached_properties(request):
+                rfields.append("markForDestruction")
+
+        return rfields
 
     def has_view_permission(self, request, obj=None) -> bool:
         if (
@@ -225,6 +290,21 @@ class ContentAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request) -> bool:
         return False
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        return bool(
+            getattr(request.user, "is_superuser", False)
+            or "manage_deletion" not in get_cached_properties(request)
+        )
+
+    def delete_model(self, request, obj):
+        now = timezone.now() - timedelta(minutes=1)
+        obj.markForDestruction = now
+        obj.save()
+
+    def delete_queryset(self, request, queryset):
+        now = timezone.now() - timedelta(minutes=1)
+        queryset.update(markForDestruction=now)
 
 
 class GlobalGroupAdmin(admin.ModelAdmin):

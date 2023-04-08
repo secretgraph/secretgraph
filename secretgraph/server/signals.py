@@ -65,6 +65,23 @@ def initializeDb(**kwargs):
                 instance.injectedKeys.set(injectedKeys)
 
 
+def deleteSizePreCb(sender, instance, **kwargs):
+    if getattr(instance, "id", None):
+        instance._deletion_size_calc_cache = instance.size
+
+
+def deleteSizeCommitCb(sender, instance, **kwargs):
+    from .models import Net
+
+    if instance.net_id and hasattr(instance, "_deletion_size_calc_cache"):
+        # don't update last_used, as it is not an interaction
+        # and can be triggered by everyone
+        Net.objects.filter(id=instance.net_id).update(
+            bytes_in_use=models.F("bytes_in_use")
+            - instance._deletion_size_calc_cache
+        )
+
+
 def deleteContentCb(sender, instance, **kwargs):
     from .models import ContentReference
 
@@ -108,21 +125,8 @@ def deleteContentCb(sender, instance, **kwargs):
 
 
 def deleteEncryptedFileCb(sender, instance, **kwargs):
-    from .models import Net
-
-    file_size = 0
-    try:
-        file_size = instance.file.size
-    except Exception as exc:
-        logger.warning("Could not determinate file size", exc_info=exc)
     if instance.file:
         instance.file.delete(False)
-    if instance.net_id:
-        # don't update last_used, as it is not an interaction
-        # and can be triggered by everyone
-        Net.objects.filter(id=instance.net_id).update(
-            bytes_in_use=models.F("bytes_in_use") - file_size
-        )
 
 
 def generateFlexid(sender, instance, force=False, **kwargs):
@@ -292,9 +296,10 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
     ):
         c.delete()
     # cleanup expired Clusters afterward
-    Cluster.objects.annotate(models.Count("contents")).filter(
+    for c in Cluster.objects.annotate(models.Count("contents")).filter(
         models.Q(markForDestruction__isnull=False)
         if ignoreTime
         else models.Q(markForDestruction__lte=now),
         contents__count=0,
-    ).delete()
+    ):
+        c.delete()

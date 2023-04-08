@@ -42,7 +42,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             cluster.featured = bool(objdata.featured)
 
     if getattr(objdata, "description", None) is not None:
-        size_old += len(cluster.description)
+        size_old -= len(cluster.description)
         size_new += len(objdata.description)
         cluster.description = objdata.description
 
