@@ -752,3 +752,11 @@ class GlobalGroup(models.Model):
             self.name,
             ", hidden" if self.hidden else "",
         )
+
+    @property
+    def is_managed(self) -> bool:
+        return bool(
+            settings.SECRETGRAPH_DEFAULT_GROUPS.get(self.name, {}).get(
+                "managed"
+            )
+        )

@@ -48,6 +48,8 @@ class GlobalGroupInline(admin.TabularInline):
         return True
 
     def has_change_permission(self, request, obj=None):
+        if obj and obj.is_managed:
+            return False
         return getattr(
             request.user, "is_superuser", False
         ) or "manage_groups" in get_cached_properties(request)
@@ -189,7 +191,7 @@ class NetAdmin(admin.ModelAdmin):
 class ClusterAdmin(admin.ModelAdmin):
     inlines = [ActionInlineForCluster, GlobalGroupInlineOfCluster]
     list_display = [repr]
-    readonly_fields = ["description", "flexid_cached", "name_cached"]
+    readonly_fields = ["flexid_cached", "name_cached"]
 
     def get_queryset(self, request):
         sweepContentsAndClusters()
@@ -395,6 +397,8 @@ class GlobalGroupAdmin(admin.ModelAdmin):
         return True
 
     def has_change_permission(self, request, obj=None):
+        if obj and obj.is_managed:
+            return False
         return getattr(
             request.user, "is_superuser", False
         ) or "manage_groups" in get_cached_properties(request)
@@ -413,6 +417,8 @@ class GlobalGroupPropertyAdmin(admin.ModelAdmin):
         return True
 
     def has_change_permission(self, request, obj=None):
+        if obj and obj.name == "default":
+            return False
         return getattr(
             request.user, "is_superuser", False
         ) or "manage_groups" in get_cached_properties(request)
