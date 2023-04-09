@@ -10,6 +10,8 @@ services:
             - '8000:8000'
         depends_on:
             - secretgraph
+        environment:
+            SCHEME_HEADER: '$scheme'
     secretgraph:
         init: true
         build:

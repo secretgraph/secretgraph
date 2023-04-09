@@ -86,10 +86,12 @@ Special configuration keys:
 
 ## docker
 
+### secretgraph
+
 -   `BIND_TO_USER`: nets need user
 -   `ALLOW_REGISTER`: allow registering new users
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
--   `SECRETGRAPH_ADMINAREA`: allow admin login
+-   `SECRETGRAPH_ADMINAREA`: allow admin login, needs `CSRF_TRUSTED_ORIGINS`
 -   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of proxy. Only useful if server side decryption is required.
 -   `RATELIMIT_*` where as keys `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE` are defined: set ratelimits or remove the default with the special key: `none`
 -   `DB_ENGINE`: db stuff
@@ -97,6 +99,15 @@ Special configuration keys:
 -   `DB_PASSWORD`: db stuff
 -   `DB_HOST`: db stuff
 -   `DB_PORT`: db stuff
+
+### nginx (docker-compose)
+
+Only valid for the nginx template specified in this repo!
+
+-   `SCHEME_HEADER`:
+    -   `'$scheme'` for automatic scheme detection
+    -   `'https'`: for hardcoding the value
+    -   `'$http_x_forwarded_proto'`: or other header containing the protocol
 
 # API
 

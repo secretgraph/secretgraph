@@ -21,6 +21,10 @@ DATABASES = {
 
 SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
+MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 INSTALLED_APPS += [  # noqa F405
     "django.contrib.sessions",  # required for auth
@@ -81,9 +85,6 @@ def _get_ratelimit(key: str):
 for key in SECRETGRAPH_RATELIMITS.keys():  # noqa F405
     _get_ratelimit(key)
 
-
-MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 
 SECRETGRAPH_DEFAULT_GROUPS["docker"] = {  # noqa F405
     "properties": ["allow_dangerous_actions", "default"],
