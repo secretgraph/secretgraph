@@ -159,6 +159,7 @@ class ActionAdmin(admin.ModelAdmin):
     list_display = ["id", "keyHash", "cluster"]
     inlines = [ContentActionInline]
     readonly_fields = ["id", "nonce", "value"]
+    search_fields = ["keyHash", "cluster__name"]
     sortable_by = ["id", "keyHash", "cluster"]
 
     def has_view_permission(self, request, obj=None) -> bool:
@@ -183,6 +184,7 @@ class ActionAdmin(admin.ModelAdmin):
 
 class NetAdmin(admin.ModelAdmin):
     list_display = [admin_repr]
+    search_fields = ["id", "user_name"]
 
     def has_module_permission(self, request, obj=None):
         return (
@@ -206,6 +208,7 @@ class ClusterAdmin(FlexidMixin, admin.ModelAdmin):
     inlines = [GlobalGroupInlineOfCluster]
     list_display = ["id", "flexid", "name", "net"]
     sortable_by = ["id", "flexid", "name", "net"]
+    search_fields = ["flexid", "name", "description"]
     readonly_fields = ["flexid_cached", "name_cached"]
 
     def get_queryset(self, request):
@@ -295,6 +298,7 @@ class ContentAdmin(FlexidMixin, admin.ModelAdmin):
         admin_repr,
     ]
     sortable_by = ["id", "flexid", "type", "state", "cluster", "net"]
+    search_fields = ["flexid", "tags__tag", "cluster__name"]
     readonly_fields = ["flexid_cached"]
 
     def get_queryset(self, request):
@@ -389,6 +393,7 @@ class ContentAdmin(FlexidMixin, admin.ModelAdmin):
 class GlobalGroupAdmin(admin.ModelAdmin):
     list_display = ["name"]
     sortable_by = ["name"]
+    search_fields = ["name"]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -422,6 +427,7 @@ class GlobalGroupAdmin(admin.ModelAdmin):
 class GlobalGroupPropertyAdmin(admin.ModelAdmin):
     list_display = ["name"]
     sortable_by = ["name"]
+    search_fields = ["name"]
     inlines = [GlobalGroupInlineOfGlobalGroupProperty]
 
     def has_module_permission(self, request):
