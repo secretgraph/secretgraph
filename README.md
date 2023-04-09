@@ -528,7 +528,8 @@ The item get parameter is mandatory.
 
 # TODO
 
--   if no id is specified the tokens are used to determine cluster/content
+-   add way for normal users to login and then to register a cluster
+-   finish auth flow
 -   shareurl: cluster url ? token = ...
 -   ActionConfigurator must prime the missing field values before using them in fields
     -   maybe add prime method for initialValues
