@@ -13,8 +13,19 @@ from ..core.constants import DeleteRecursive
 logger = logging.getLogger(__name__)
 
 
+def _hashbuilder_helper(inp: str):
+    return "key_hash={}".format(inp.removeprefix("Key:"))
+
+
 def initializeDb(**kwargs):
-    from .models import Net, Cluster, GlobalGroupProperty, GlobalGroup
+    from .models import (
+        Net,
+        Content,
+        ContentTag,
+        Cluster,
+        GlobalGroupProperty,
+        GlobalGroup,
+    )
     from django.conf import settings
 
     # system net for injected keys cluster and as fallback
@@ -61,7 +72,16 @@ def initializeDb(**kwargs):
             instance = GlobalGroup.objects.get(name=name)
             instance.properties.set(properties)
             if injectedKeys is not None:
-                # TODO: resolve hashes
+                hashes = list(map(_hashbuilder_helper, injectedKeys))
+                injectedKeys = Content.objects.filter(
+                    models.Exists(
+                        ContentTag.objects.filter(
+                            content_id=models.OuterRef("id", tag__in=hashes)
+                        )
+                    ),
+                    cluster__name="@system",
+                    type="PublicKey",
+                )
                 instance.injectedKeys.set(injectedKeys)
 
 

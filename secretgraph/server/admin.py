@@ -27,6 +27,7 @@ from .signals import sweepContentsAndClusters
 
 class GlobalGroupInline(admin.TabularInline):
     list_display = ["name"]
+    readonly_fields = ["name"]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -37,19 +38,11 @@ class GlobalGroupInline(admin.TabularInline):
         return qs.filter(globalgroup__hidden=False)
 
     def has_view_permission(self, request, obj=None) -> bool:
-        if (
-            obj
-            and obj.hidden
-            and get_cached_properties(request).isdisjoint(
-                {"manage_hidden", "manage_groups"}
-            )
-        ):
-            return False
+        # obj not GlobalGroup
         return True
 
     def has_change_permission(self, request, obj=None):
-        if obj and obj.is_managed:
-            return False
+        # obj not GlobalGroup
         return getattr(
             request.user, "is_superuser", False
         ) or "manage_groups" in get_cached_properties(request)
@@ -397,8 +390,6 @@ class GlobalGroupAdmin(admin.ModelAdmin):
         return True
 
     def has_change_permission(self, request, obj=None):
-        if obj and obj.is_managed:
-            return False
         return getattr(
             request.user, "is_superuser", False
         ) or "manage_groups" in get_cached_properties(request)
