@@ -10,6 +10,7 @@ import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import { findConfigIdQuery } from '@secretgraph/graphql-queries/config'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
+import { b64tobuffer, utf8decoder } from '@secretgraph/misc/utils/encoding'
 import { is_pwa } from '@secretgraph/misc/utils/misc'
 import * as React from 'react'
 
@@ -30,7 +31,18 @@ export default React.memo(function HeaderBar() {
     const { baseClient, itemClient, navClient } = React.useContext(
         Contexts.Clients
     )
-    let title: string, documenttitle: string
+    let title: string,
+        documenttitle: string,
+        itemParsed = mainCtx.item
+    if (itemParsed) {
+        try {
+            const rawTxt = utf8decoder.decode(b64tobuffer(itemParsed))
+            let [_, tmp] = rawTxt.match(/:(.*)/) as string[]
+            itemParsed = tmp
+        } catch (exc) {
+            itemParsed = `...${itemParsed.slice(-48)}`
+        }
+    }
     switch (mainCtx.action) {
         case 'create':
             let temp = elements.get(mainCtx.type as string)
@@ -39,7 +51,7 @@ export default React.memo(function HeaderBar() {
             break
         case 'update':
             title = `Update: ${mainCtx.type}: ${
-                mainCtx.title ? mainCtx.title : mainCtx.item
+                mainCtx.title ? mainCtx.title : itemParsed
             }`
             documenttitle = `Secretgraph: ${title}`
             break
@@ -59,10 +71,10 @@ export default React.memo(function HeaderBar() {
             if (mainCtx.title) {
                 title = mainCtx.title
             } else {
-                if (mainCtx.item) {
-                    title = `...${mainCtx.item.slice(-48)}`
+                if (itemParsed) {
+                    title = `${mainCtx.type}: ${itemParsed}`
                 } else {
-                    title = '-'
+                    title = `${mainCtx.type}: -`
                 }
             }
             documenttitle = `Secretgraph: ${title}`

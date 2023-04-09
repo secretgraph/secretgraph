@@ -10,6 +10,7 @@ import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
+import { b64tobuffer, utf8decoder } from '@secretgraph/misc/utils/encoding'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
@@ -97,7 +98,19 @@ export default React.memo(function Clusters({
             const nodeId = deleteable
                 ? `clusters::${node.id}`
                 : `clusters.${node.id}`
-            const name = node.name ? node.name : `...${node.id.slice(-48)}`
+            let name = node.name
+            if (!name) {
+                name = node.id
+                if (name) {
+                    try {
+                        const rawTxt = utf8decoder.decode(b64tobuffer(name))
+                        let [_, tmp] = rawTxt.match(/:(.*)/) as string[]
+                        name = tmp
+                    } catch (exc) {
+                        name = `...${node.id.slice(-48)}`
+                    }
+                }
+            }
             ret.push(
                 <TreeItem
                     label={
@@ -108,7 +121,7 @@ export default React.memo(function Clusters({
                             onDoubleClick={(ev) => {
                                 ev.preventDefault()
                                 ev.stopPropagation()
-                                node && goTo({ ...node, title: node.name })
+                                node && goTo({ ...node, title: name })
                             }}
                         >
                             <SidebarTreeItemLabel

@@ -22,11 +22,50 @@ from .models import (
     GlobalGroupProperty,
     Net,
 )
-from .signals import sweepContentsAndClusters
+from .signals import sweepContentsAndClusters, fillEmptyFlexidsCb
+
+
+@admin.display(description="")
+def admin_repr(inp):
+    return repr(inp)
+
+
+class FlexidMixin:
+    actions = ["reset_flexid", "undelete", "purge_immediate"]
+
+    @admin.action(
+        permissions=["change"], description="Reset Flexid of selected"
+    )
+    def reset_flexid(self, request, queryset):
+        queryset.update(flexid=None, flexid_cached=None)
+        fillEmptyFlexidsCb()
+
+    @admin.action(permissions=["delete"], description="Undelete selected")
+    def undelete(self, request, queryset):
+        queryset.update(markForDestruction=None)
+        if isinstance(queryset.model, Cluster):
+            Content.objects.filter(cluster__in=Subquery(queryset)).update(
+                markForDestruction=None
+            )
+
+    @admin.action(
+        permissions=["delete"], description="Purge selected immediate"
+    )
+    def purge_immediate(self, request, queryset):
+        self.delete_queryset(request, queryset, 0)
+        sweepContentsAndClusters()
+
+    def delete_queryset(self, request, queryset, minutes=10):
+        now = timezone.now() + timedelta(minutes=minutes)
+        queryset.update(markForDestruction=now)
+        if isinstance(queryset.model, Cluster):
+            Content.objects.filter(cluster__in=Subquery(queryset)).update(
+                markForDestruction=now
+            )
 
 
 class GlobalGroupInline(admin.TabularInline):
-    list_display = ["name"]
+    extra = 1
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -96,34 +135,14 @@ class ContentReferenceInline(admin.TabularInline):
     has_delete_permission = has_change_permission
 
 
-class ContentActionInlineForContent(admin.TabularInline):
+class ContentActionInline(admin.TabularInline):
     model = ContentAction
     extra = 1
 
     def has_view_permission(self, request, obj=None) -> bool:
         return True
 
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_delete_permission(self, request):
-        if getattr(
-            request.user, "is_superuser", False
-        ) or "manage_update" in get_cached_properties(request):
-            return True
-
-
-class ContentActionInlineForCluster(admin.TabularInline):
-    model = ContentAction
-    extra = 1
-
-    def has_view_permission(self, request, obj=None) -> bool:
-        return True
-
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj=None):
         return False
 
     def has_change_permission(self, request, obj=None):
@@ -136,17 +155,19 @@ class ContentActionInlineForCluster(admin.TabularInline):
     has_delete_permission = has_change_permission
 
 
-class ActionInlineForCluster(admin.TabularInline):
-    list_display = [repr]
-    inlines = [ContentActionInlineForCluster]
+class ActionAdmin(admin.ModelAdmin):
+    list_display = [admin_repr]
+    inlines = [ContentActionInline]
     readonly_fields = ["nonce", "value"]
-    model = Action
-    extra = 0
 
     def has_view_permission(self, request, obj=None) -> bool:
         return True
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj=None):
+        """if getattr(
+            request.user, "is_superuser", False
+        ) or "manage_update" in get_cached_properties(request):
+            return True"""
         return False
 
     def has_change_permission(self, request, obj=None):
@@ -160,7 +181,7 @@ class ActionInlineForCluster(admin.TabularInline):
 
 
 class NetAdmin(admin.ModelAdmin):
-    list_display = [repr]
+    list_display = [admin_repr]
 
     def has_module_permission(self, request, obj=None):
         return (
@@ -180,9 +201,9 @@ class NetAdmin(admin.ModelAdmin):
     has_add_permission = has_change_permission
 
 
-class ClusterAdmin(admin.ModelAdmin):
-    inlines = [ActionInlineForCluster, GlobalGroupInlineOfCluster]
-    list_display = [repr]
+class ClusterAdmin(FlexidMixin, admin.ModelAdmin):
+    inlines = [GlobalGroupInlineOfCluster]
+    list_display = [admin_repr]
     readonly_fields = ["flexid_cached", "name_cached"]
 
     def get_queryset(self, request):
@@ -254,22 +275,15 @@ class ClusterAdmin(admin.ModelAdmin):
                 obj.save()
 
     def delete_model(self, request, obj):
-        now = timezone.now() - timedelta(minutes=1)
+        now = timezone.now() + timedelta(minutes=10)
         obj.contents.update(markForDestruction=now)
         obj.markForDestruction = now
         obj.save()
 
-    def delete_queryset(self, request, queryset):
-        now = timezone.now() - timedelta(minutes=1)
-        queryset.update(markForDestruction=now)
-        Content.objects.filter(cluster__in=Subquery(queryset)).update(
-            markForDestruction=now
-        )
 
-
-class ContentAdmin(admin.ModelAdmin):
+class ContentAdmin(FlexidMixin, admin.ModelAdmin):
     inlines = [ContentTagInline]
-    list_display = [repr]
+    list_display = [admin_repr]
     readonly_fields = ["flexid_cached"]
 
     def get_queryset(self, request):
@@ -356,17 +370,13 @@ class ContentAdmin(admin.ModelAdmin):
                 obj.save()
 
     def delete_model(self, request, obj):
-        now = timezone.now() - timedelta(minutes=1)
+        now = timezone.now() + timedelta(minutes=10)
         obj.markForDestruction = now
         obj.save()
 
-    def delete_queryset(self, request, queryset):
-        now = timezone.now() - timedelta(minutes=1)
-        queryset.update(markForDestruction=now)
-
 
 class GlobalGroupAdmin(admin.ModelAdmin):
-    list_display = ["name"]
+    list_display = [admin_repr]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -420,5 +430,6 @@ class GlobalGroupPropertyAdmin(admin.ModelAdmin):
 admin.site.register(Net, NetAdmin)
 admin.site.register(Cluster, ClusterAdmin)
 admin.site.register(Content, ContentAdmin)
+admin.site.register(Action, ActionAdmin)
 admin.site.register(GlobalGroup, GlobalGroupAdmin)
 admin.site.register(GlobalGroupProperty, GlobalGroupPropertyAdmin)

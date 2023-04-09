@@ -7,7 +7,7 @@ extra_tags_label = _("Extra metadata for content")
 tags_tag_label = _("Metadata Tag")
 reference_label = _("Reference")
 
-net_quota_help = _("quota in Bytes, null for no limit")
+net_limit_help = _("in bytes, null for no limit")
 last_used_help = _(
     "Last usage of net for creating or updating contents or clusters"
 )

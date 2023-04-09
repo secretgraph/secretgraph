@@ -11,6 +11,7 @@ import { useTheme } from '@mui/material/styles'
 import { contentFeedQuery } from '@secretgraph/graphql-queries/content'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
+import { b64tobuffer, utf8decoder } from '@secretgraph/misc/utils/encoding'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
@@ -114,6 +115,18 @@ export default React.memo(function SidebarContents({
                 // split works different in js, so match
                 name = name.match(/=(.*)/)[1]
             }
+            if (!name) {
+                name = node.id
+                if (name) {
+                    try {
+                        const rawTxt = utf8decoder.decode(b64tobuffer(name))
+                        let [_, tmp] = rawTxt.match(/:(.*)/) as string[]
+                        name = tmp
+                    } catch (exc) {
+                        name = `...${node.id.slice(-48)}`
+                    }
+                }
+            }
             let Icon
             switch (node.type) {
                 case 'Message':
@@ -154,7 +167,10 @@ export default React.memo(function SidebarContents({
                             onDoubleClick={(ev) => {
                                 ev.preventDefault()
                                 ev.stopPropagation()
-                                goTo(node)
+                                goTo({
+                                    ...node,
+                                    title: name,
+                                })
                             }}
                         >
                             <SidebarTreeItemLabel
@@ -166,7 +182,7 @@ export default React.memo(function SidebarContents({
                                     elements.get(node.type)
                                         ? elements.get(node.type)?.label
                                         : node.type
-                                }: ${name ? name : `...${node.id.slice(-48)}`}`}
+                                }: ${name}`}
                             </SidebarTreeItemLabel>
                         </div>
                     }

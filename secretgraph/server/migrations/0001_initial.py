@@ -45,14 +45,17 @@ class Migration(migrations.Migration):
                     models.PositiveIntegerField(
                         blank=True,
                         default=None,
-                        help_text="quota in Bytes, null for no limit",
+                        help_text="in bytes, null for no limit",
                         null=True,
                     ),
                 ),
                 (
                     "max_upload_size",
                     models.PositiveIntegerField(
-                        blank=True, default=None, null=True
+                        blank=True,
+                        default=None,
+                        null=True,
+                        help_text="in bytes, null for no limit",
                     ),
                 ),
                 (

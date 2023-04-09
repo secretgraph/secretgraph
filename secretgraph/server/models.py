@@ -30,7 +30,7 @@ from .messages import (
     contentaction_group_help,
     cluster_groups_help,
     reference_group_help,
-    net_quota_help,
+    net_limit_help,
     last_used_help,
 )
 from .validators import (
@@ -113,12 +113,10 @@ class Net(models.Model):
         null=True,
         blank=True,
         default=None,
-        help_text=net_quota_help,
+        help_text=net_limit_help,
     )
     max_upload_size: int = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        default=None,
+        null=True, blank=True, default=None, help_text=net_limit_help
     )
     bytes_in_use: int = models.PositiveBigIntegerField(
         null=False, blank=True, default=0, editable=False
@@ -218,6 +216,9 @@ class Cluster(FlexidModel):
         ):
             self.globalNameRegisteredAt = None
         return super().clean()
+
+    def __str__(self) -> str:
+        return self.name if self.name.startswith("@") else self.flexid
 
     def __repr__(self) -> str:
         return "<Cluster: id(%s), net(%s), name(%s), flexid(%s)%s>" % (
@@ -426,6 +427,9 @@ class Content(FlexidModel):
         size += self.size_references
         return size
 
+    def get_absolute_url(self):
+        return self.link
+
     def signatures(
         self, hashAlgorithms=None, references=None
     ) -> Iterable[str]:
@@ -495,6 +499,9 @@ class Content(FlexidModel):
                 )
         if self.state not in constants.public_states and not self.nonce:
             raise ValidationError({"nonce": "nonce empty"})
+
+    def __str__(self) -> str:
+        return self.flexid
 
     def __repr__(self) -> str:
         return (
@@ -586,6 +593,12 @@ class Action(models.Model):
         return json.loads(
             aesgcm.decrypt(base64.b64decode(self.nonce), action_value, None)
         )
+
+    def __str__(self) -> str:
+        return self.keyHash
+
+    def __repr__(self) -> str:
+        return '<Action: (%r:"%s")>' % (self.cluster, self.keyHash)
 
 
 class ContentTag(models.Model):
@@ -746,6 +759,9 @@ class GlobalGroup(models.Model):
             raise ValidationError(
                 {"hidden": "injectedKeys and hidden are mutual exclusive"}
             )
+
+    def __str__(self) -> str:
+        return self.name
 
     def __repr__(self) -> str:
         return "<GlobalGroup: %s%s>" % (
