@@ -102,12 +102,12 @@ Special configuration keys:
 
 ### nginx (docker-compose)
 
-Only valid for the nginx template specified in this repo!
+Only valid for the nginx template specified in this repo!. Note: you have to escape $ with another $
 
 -   `SCHEME_HEADER`:
-    -   `'$scheme'` for automatic scheme detection
+    -   `'$$scheme'` for automatic scheme detection
     -   `'https'`: for hardcoding the value
-    -   `'$http_x_forwarded_proto'`: or other header containing the protocol
+    -   `'$$http_x_forwarded_proto'`: or other header containing the protocol
 
 # API
 

@@ -11,7 +11,7 @@ services:
         depends_on:
             - secretgraph
         environment:
-            SCHEME_HEADER: '$scheme'
+            SCHEME_HEADER: '$$scheme'
     secretgraph:
         init: true
         build:
