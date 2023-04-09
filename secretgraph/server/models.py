@@ -598,7 +598,11 @@ class Action(models.Model):
         return self.keyHash
 
     def __repr__(self) -> str:
-        return '<Action: (%r:"%s")>' % (self.cluster, self.keyHash)
+        return "<Action: (id: %s, keyHash: %s, Cluster: %s)>" % (
+            self.id,
+            self.keyHash,
+            self.cluster,
+        )
 
 
 class ContentTag(models.Model):
