@@ -27,7 +27,6 @@ from .signals import sweepContentsAndClusters
 
 class GlobalGroupInline(admin.TabularInline):
     list_display = ["name"]
-    readonly_fields = ["name"]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
