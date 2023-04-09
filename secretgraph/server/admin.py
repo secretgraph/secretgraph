@@ -1,7 +1,9 @@
 from datetime import timedelta
 
+from strawberry_django_plus.relay import to_base64
 from django.contrib import admin
-from django.db.models import Subquery
+from django.db.models import Subquery, F
+from django.db import transaction
 from django.utils import timezone
 
 from secretgraph.server.utils.auth import (
@@ -70,6 +72,10 @@ class ContentTagInline(admin.TabularInline):
         return True
 
     def has_change_permission(self, request, obj=None):
+        if getattr(
+            request.user, "is_superuser", False
+        ) or "manage_update" in get_cached_properties(request):
+            return True
         return False
 
     has_add_permission = has_change_permission
@@ -86,6 +92,10 @@ class ContentReferenceInline(admin.TabularInline):
         return True
 
     def has_change_permission(self, request, obj=None):
+        if getattr(
+            request.user, "is_superuser", False
+        ) or "manage_update" in get_cached_properties(request):
+            return True
         return False
 
     has_add_permission = has_change_permission
@@ -179,7 +189,7 @@ class NetAdmin(admin.ModelAdmin):
 class ClusterAdmin(admin.ModelAdmin):
     inlines = [ActionInlineForCluster, GlobalGroupInlineOfCluster]
     list_display = [repr]
-    readonly_fields = []
+    readonly_fields = ["description", "flexid_cached", "name_cached"]
 
     def get_queryset(self, request):
         sweepContentsAndClusters()
@@ -209,10 +219,14 @@ class ClusterAdmin(admin.ModelAdmin):
     def has_view_permission(self, request, obj=None) -> bool:
         return True
 
-    def has_change_permission(self, request, obj=None) -> bool:
+    def has_add_permission(self, request) -> bool:
         return False
 
-    def has_add_permission(self, request) -> bool:
+    def has_change_permission(self, request, obj=None) -> bool:
+        if getattr(
+            request.user, "is_superuser", False
+        ) or "manage_update" in get_cached_properties(request):
+            return True
         return False
 
     def has_delete_permission(self, request, obj=None) -> bool:
@@ -220,6 +234,30 @@ class ClusterAdmin(admin.ModelAdmin):
             getattr(request.user, "is_superuser", False)
             or "manage_deletion" not in get_cached_properties(request)
         )
+
+    def save_model(self, request, obj: Cluster, form, change):
+        if change:
+            old = Cluster.objects.all().filter(id=obj.id).first()
+            if old.flexid != obj.flexid:
+                obj.flexid_cached = to_base64(obj.flexid)
+            if old.size != obj.size or old.net != obj.net:
+                old.net.bytes_in_use = F("bytes_in_use") - old.size
+                obj.net.bytes_in_use = F("bytes_in_use") + obj.size
+                with transaction.atomic():
+                    if old.net != obj.net:
+                        old.net.save()
+                    obj.net.save()
+                    obj.save()
+            else:
+                obj.save()
+        else:
+            if obj.flexid:
+                obj.flexid_cached = to_base64(obj.flexid)
+
+            obj.net.bytes_in_use += len(obj.description)
+            with transaction.atomic():
+                obj.net.save()
+                obj.save()
 
     def delete_model(self, request, obj):
         now = timezone.now() - timedelta(minutes=1)
@@ -238,7 +276,7 @@ class ClusterAdmin(admin.ModelAdmin):
 class ContentAdmin(admin.ModelAdmin):
     inlines = [ContentTagInline]
     list_display = [repr]
-    readonly_fields = ["net", "file", "nonce"]
+    readonly_fields = ["flexid_cached"]
 
     def get_queryset(self, request):
         sweepContentsAndClusters()
@@ -296,6 +334,32 @@ class ContentAdmin(admin.ModelAdmin):
             getattr(request.user, "is_superuser", False)
             or "manage_deletion" not in get_cached_properties(request)
         )
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            old = Content.objects.all().filter(id=obj.id).first()
+            if old.flexid != obj.flexid:
+                obj.flexid_cached = to_base64(obj.flexid)
+            old_size = old.size
+            new_size = obj.size
+            if old.net != obj.net or old_size != new_size:
+                old.net.bytes_in_use = F("bytes_in_use") - old_size
+                obj.net.bytes_in_use = F("bytes_in_use") + old_size
+                with transaction.atomic():
+                    if old.net != obj.net:
+                        old.net.save()
+                    obj.net.save()
+                    obj.save()
+            else:
+                obj.save()
+
+        else:
+            if obj.flexid:
+                obj.flexid_cached = to_base64(obj.flexid)
+            obj.net.bytes_in_use = F("bytes_in_use") + obj.size
+            with transaction.atomic():
+                obj.net.save()
+                obj.save()
 
     def delete_model(self, request, obj):
         now = timezone.now() - timedelta(minutes=1)
