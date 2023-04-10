@@ -66,7 +66,9 @@ class SecretgraphObject:
         return SecretgraphConfig()
 
     permissions: list[str] = gql.field(resolver=get_permissions)
-    activeUser: Optional[str] = gql.field(resolver=active_user)
+    activeUser: Optional[str] = gql.field(
+        resolver=gql.django.django_resolver(active_user)
+    )
 
 
 @gql.type
