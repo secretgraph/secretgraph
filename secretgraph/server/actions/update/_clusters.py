@@ -88,7 +88,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
                 user = getattr(request, "user", None)
                 if not user or not user.is_authenticated:
                     raise ValueError("Must be logged in")
-                net = Net.objects.filter(user=user.get_username()).first()
+                net = Net.objects.filter(user_name=user.get_username()).first()
             elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
                 raise ValueError("Cannot register")
         if not net:
