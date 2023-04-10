@@ -19,9 +19,7 @@ def syncNetAndUserActiveCb(sender, instance, raw, **kwargs):
     else:
         net = None
         try:
-            net = Net.objects.filter(
-                user_name=getattr(instance, instance.USERNAME_FIELD)
-            ).first()
+            net = Net.objects.filter(user_name=instance.get_username()).first()
         except AttributeError:
             pass
         if net:

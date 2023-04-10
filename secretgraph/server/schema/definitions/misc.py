@@ -20,6 +20,8 @@ def get_permissions(info: Info) -> List[str]:
 
 def active_user(info: Info) -> Optional[str]:
     user = getattr(info.context["request"], "user", None)
+    if user and not user.is_authenticated:
+        user = None
     if user:
-        user = str(user)
+        user = user.get_username()
     return user
