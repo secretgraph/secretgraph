@@ -550,6 +550,7 @@ The item get parameter is mandatory.
 -   modernize ActionDialog, redesign, multi column? Move partly to shareDialog?
 -   implement shareFn and ShareDialog, Config has a special ShareDialog (partly done)
 -   test permissions
+-   admin filter
 -   way to inject tokens (as user)
 -   way to import private key in config
 -   cleanup js structure, harmonize naming
