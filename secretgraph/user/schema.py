@@ -74,7 +74,7 @@ class UserMutation(relay.Node):
                 == "cluster"
                 and not manage.exist()
             ):
-                raise ValueError("Cannot register new cluster clusters")
+                raise ValueError("Cannot register new clusters")
             elif (
                 getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False)
                 is not True

@@ -84,7 +84,7 @@ class SecretgraphConfig(relay.Node):
     @gql.field()
     @classmethod
     def canDirectRegister(cls) -> bool:
-        if getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) is not True:
+        if not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
             return False
         if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
             return False
@@ -93,6 +93,8 @@ class SecretgraphConfig(relay.Node):
     @gql.field()
     @classmethod
     def registerUrl(cls) -> Optional[str]:
+        if not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
+            return None
         signup_url = getattr(settings, "SIGNUP_URL", None)
         if signup_url:
             try:
@@ -104,6 +106,10 @@ class SecretgraphConfig(relay.Node):
     @gql.field()
     @staticmethod
     def loginUrl() -> Optional[str]:
+        if not getattr(
+            settings, "SECRETGRAPH_ALLOW_REGISTER", False
+        ) and not getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+            return None
         login_url = getattr(settings, "LOGIN_URL", None)
         if login_url:
             try:
