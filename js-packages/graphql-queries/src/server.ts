@@ -17,8 +17,11 @@ export const serverConfigQuery = gql`
                         contentHash
                     }
                 }
+                canDirectRegister
                 registerUrl
+                loginUrl
             }
+            activeUser
         }
     }
 `
@@ -45,6 +48,14 @@ export const serverConfigQueryWithPermissions = gql`
                 }
                 registerUrl
             }
+        }
+    }
+`
+
+export const serverLogout = gql`
+    mutation serverLogoutMutation {
+        secretgraph {
+            logoutUser
         }
     }
 `

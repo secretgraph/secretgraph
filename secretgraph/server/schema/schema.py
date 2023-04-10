@@ -15,6 +15,7 @@ from .definitions import (
     ContentNode,
     SecretgraphConfig,
     get_permissions,
+    active_user,
 )
 from .mutations import (
     ClusterMutation,
@@ -65,6 +66,7 @@ class SecretgraphObject:
         return SecretgraphConfig()
 
     permissions: list[str] = gql.field(resolver=get_permissions)
+    activeUser: Optional[str] = gql.field(resolver=active_user)
 
 
 @gql.type

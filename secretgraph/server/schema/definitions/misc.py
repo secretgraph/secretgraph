@@ -1,5 +1,5 @@
 from strawberry.types import Info
-from typing import List
+from typing import List, Optional
 import re
 
 from ...utils.auth import get_cached_properties
@@ -16,3 +16,10 @@ def get_permissions(info: Info) -> List[str]:
             ),
         )
     )
+
+
+def active_user(info: Info) -> Optional[str]:
+    user = getattr(info.context["request"], "user", None)
+    if user:
+        user = str(user)
+    return user

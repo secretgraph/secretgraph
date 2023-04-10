@@ -42,6 +42,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+X_FRAME_OPTIONS = "SAMEORIGIN"
 ROOT_URLCONF = "secretgraph.urls"
 
 TEMPLATES = [
@@ -106,8 +107,8 @@ MEDIA_URL = "/media/"
 
 
 LOGIN_URL = "auth:login"
-LOGIN_REDIRECT_URL = "auth:profile"
-LOGOUT_REDIRECT_URL = "home"
+LOGIN_REDIRECT_URL = "auth:success"
+# SIGNUP_URL = "auth:signup"
 
 # httpx parameter overwrites (for transfers)
 # note: timeout should be low as ddos is possible elsewise

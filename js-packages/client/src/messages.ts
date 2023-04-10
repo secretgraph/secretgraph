@@ -6,7 +6,8 @@ export const initializeHelp = gettext(
 
 export const fileLabel = gettext('File')
 export const urlLabel = gettext('Url')
-export const registerLabel = gettext('Register')
+export const registerUserLabel = gettext('Register (User)')
+export const registerClusterLabel = gettext('Register (Cluster)')
 export const loginLabel = gettext('Login')
 export const loginFileHelp = gettext('Settings file for login')
 export const loginUrlHelp = gettext('Settings url for login')

@@ -48,7 +48,7 @@ except ImportError:
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
-SECRETGRAPH_BIND_TO_USER = False
+SECRETGRAPH_BIND_TO_USER = True
 SECRETGRAPH_ALLOW_REGISTER = True
 SECRETGRAPH_ADMINAREA = True
 

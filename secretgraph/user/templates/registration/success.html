@@ -1,0 +1,21 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate 'Home' %}</a></div>
+{% endblock %}
+
+{% block nav-sidebar %}{% endblock %}
+{% block extrahead %}
+<script>
+  if(window.parent){
+    window.parent.postMessage("", document.location.origin)
+  }
+</script>
+{% endblock %}
+
+{% block content %}
+
+<p>{% translate "Success login in" %}</p>
+
+{% endblock %}

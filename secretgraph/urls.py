@@ -67,4 +67,9 @@ if (
 
     i18n_urlpatterns.insert(0, path("admin/", admin.site.urls))
 
+if "django.contrib.auth" in settings.INSTALLED_APPS:
+    i18n_urlpatterns.insert(
+        0, path("accounts/", include("secretgraph.user.urls"), name="auth")
+    )
+
 urlpatterns += i18n_patterns(*i18n_urlpatterns)

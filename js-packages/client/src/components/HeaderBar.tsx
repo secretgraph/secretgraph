@@ -9,6 +9,7 @@ import { useTheme } from '@mui/material/styles'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import { findConfigIdQuery } from '@secretgraph/graphql-queries/config'
+import { serverLogout } from '@secretgraph/graphql-queries/server'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { b64tobuffer, utf8decoder } from '@secretgraph/misc/utils/encoding'
 import { is_pwa } from '@secretgraph/misc/utils/misc'
@@ -163,8 +164,9 @@ export default React.memo(function HeaderBar() {
         sessionStorage.removeItem('secretgraphConfig')
     }
 
-    const logout = () => {
+    const logout = async () => {
         sharedLockLogout()
+        await baseClient.mutate({ mutation: serverLogout })
         sessionStorage.clear()
         baseClient.resetStore()
         navClient.resetStore()

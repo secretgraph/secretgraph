@@ -14,7 +14,7 @@ async function grab_assets(
     if (resp.ok) {
         const assets: string[] = Object.values(await resp.json())
         for (const external of externals) {
-            if (!assets.includes(external)) {
+            if (external && !assets.includes(external)) {
                 assets.push(external)
             }
         }

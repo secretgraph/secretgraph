@@ -520,17 +520,14 @@ def get_properties_q(request, query):
             matchUserGroup=True
         ).values_list("name", flat=True)
         if global_groups_names:
-            q |= models.Q(
-                clusters__in=models.Subquery(
-                    query.filter(
-                        user__group__name__in=global_groups_names
-                    ).values("id")
-                )
-            )
             user = getattr(request, "user", None)
             if user:
                 q |= models.Q(
-                    name__in=models.Subquery(user.groups.values("name"))
+                    name__in=models.Subquery(
+                        user.groups.filter(
+                            name__in=global_groups_names
+                        ).values("name")
+                    )
                 )
     return q
 

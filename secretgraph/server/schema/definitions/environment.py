@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Annotated, Optional, List, Iterable
+from django.urls import NoReverseMatch
 from strawberry.types import Info
 from strawberry_django_plus import relay, gql
 from django.conf import settings
@@ -11,16 +12,6 @@ from ...models import (
 
 if TYPE_CHECKING:
     from .contents import ContentNode
-
-
-# why scalar?: scalars cannot be used in Unions
-@gql.scalar
-class RegisterUrl:
-    """
-    The `RegisterUrl` scalar type represents can be:
-    *  String: url,
-    *  Boolean: can register/cannot register at all.
-    """
 
 
 @gql.django.type(Content, name="InjectedKey")
@@ -91,26 +82,34 @@ class SecretgraphConfig(relay.Node):
         return getattr(settings, "STRAWBERRY_DJANGO_RELAY_MAX_RESULTS", 100)
 
     @gql.field()
-    @staticmethod
-    def registerUrl() -> RegisterUrl:
+    @classmethod
+    def canDirectRegister(cls) -> bool:
         if getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) is not True:
             return False
-        signup_url = getattr(settings, "SIGNUP_URL", None)
-        if (
-            getattr(settings, "SECRETGRAPH_BIND_TO_USER", False)
-            and not signup_url
-        ):
+        if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
             return False
-        if signup_url:
-            return resolve_url(signup_url)
         return True
+
+    @gql.field()
+    @classmethod
+    def registerUrl(cls) -> Optional[str]:
+        signup_url = getattr(settings, "SIGNUP_URL", None)
+        if signup_url:
+            try:
+                return resolve_url(signup_url)
+            except NoReverseMatch:
+                return None
+        return None
 
     @gql.field()
     @staticmethod
     def loginUrl() -> Optional[str]:
         login_url = getattr(settings, "LOGIN_URL", None)
         if login_url:
-            return resolve_url(login_url)
+            try:
+                return resolve_url(login_url)
+            except NoReverseMatch:
+                pass
         return None
 
     @staticmethod

@@ -2,6 +2,7 @@ import { ApolloQueryResult } from '@apollo/client'
 import LoadingButton from '@mui/lab/LoadingButton'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
+import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
@@ -15,16 +16,26 @@ import { initializeCluster } from '@secretgraph/misc/utils/operations/cluster'
 import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
+import { LegacyRef } from 'react'
 
 import FormikTextField from '../components/formik/FormikTextField'
 import * as Contexts from '../contexts'
-import { initializeHelp, registerLabel } from '../messages'
+import {
+    initializeHelp,
+    registerClusterLabel,
+    registerUserLabel,
+} from '../messages'
 
 function Register() {
     const theme = useTheme()
+    const iframeRef = React.useRef<HTMLIFrameElement>()
+    const [refreshHandle, notify] = React.useReducer((state) => !state, false)
     const [registerContext, setRegisterContext] = React.useState<
         | {
-              registerUrl: string | boolean
+              registerUrl?: string
+              loginUrl?: string
+              canDirectRegister: boolean
+              activeUser?: string
               hashAlgorithms: string[]
               errors: string[]
           }
@@ -39,6 +50,17 @@ function Register() {
     const { updateMainCtx } = React.useContext(Contexts.Main)
     const { setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
+    React.useEffect(() => {
+        const current = iframeRef.current
+        if (registerContext?.loginUrl || !current) {
+            return
+        }
+
+        current.addEventListener('message', notify)
+        return () => {
+            current.removeEventListener('submit', notify)
+        }
+    }, [registerContext?.loginUrl, iframeRef.current])
 
     return (
         <Formik
@@ -64,7 +86,10 @@ function Register() {
                         })
                         return
                     }
-                    if (registerContext?.registerUrl === true) {
+                    if (
+                        registerContext?.canDirectRegister === true ||
+                        registerContext?.activeUser
+                    ) {
                         const newConfig: Interfaces.ConfigInterface = {
                             certificates: {},
                             tokens: {},
@@ -173,7 +198,10 @@ function Register() {
                         }
                         if (!result || !result?.data) {
                             setRegisterContext({
-                                registerUrl: false,
+                                registerUrl: undefined,
+                                loginUrl: undefined,
+                                canDirectRegister: false,
+                                activeUser: undefined,
                                 hashAlgorithms: [],
                                 errors: ['provider url invalid'],
                             })
@@ -181,14 +209,25 @@ function Register() {
                         }
                         const sconfig = result.data.secretgraph.config
                         const context = {
-                            registerUrl: sconfig.registerUrl,
+                            registerUrl: sconfig.registerUrl || undefined,
+                            loginUrl: sconfig.loginUrl || undefined,
+                            canDirectRegister: sconfig.canDirectRegister,
+                            activeUser:
+                                result.data.secretgraph.activeUser ||
+                                undefined,
                             hashAlgorithms: findWorkingHashAlgorithms(
                                 sconfig.hashAlgorithms
                             ),
                             errors: [] as string[],
                         }
-                        if (context.registerUrl === false) {
-                            context.errors.push('cannot register here')
+                        if (!context.canDirectRegister) {
+                            if (!context.loginUrl) {
+                                context.errors.push('cannot register here')
+                            } else if (!context.activeUser) {
+                                context.errors.push(
+                                    'cannot register cluster, needs to login user first'
+                                )
+                            }
                         }
                         if (!context.hashAlgorithms.length) {
                             context.errors.push('no supported hash algorithms')
@@ -199,7 +238,7 @@ function Register() {
                     return () => {
                         active = false
                     }
-                }, [values.url])
+                }, [values.url, refreshHandle])
                 return (
                     <Form>
                         <Typography
@@ -210,7 +249,7 @@ function Register() {
                         >
                             {initializeHelp}
                         </Typography>
-                        <Stack spacing={1}>
+                        <Stack spacing={1} >
                             <Field
                                 name="url"
                                 component={FormikTextField}
@@ -261,44 +300,69 @@ function Register() {
                                 helperText="Leave empty to not set an pw"
                             />
 
-                            {typeof registerContext?.registerUrl ===
-                                'string' &&
-                            !registerContext?.errors?.length ? (
-                                <div>
+                            <div
+                                style={{
+                                    display:
+                                        typeof registerContext?.loginUrl !==
+                                        'string'
+                                            ? 'none'
+                                            : undefined,
+                                }}
+                            >
+                                <Typography
+                                    variant="h5"
+                                    color="textPrimary"
+                                    gutterBottom
+                                    paragraph
+                                >
+                                    Connect with user
+                                </Typography>
+                                {registerContext?.activeUser ? (
+                                    <>
                                     <Typography
-                                        variant="h5"
+                                        variant="body2"
                                         color="textPrimary"
                                         gutterBottom
-                                        paragraph
                                     >
-                                        Manual login required
+                                        Detected user:
                                     </Typography>
-                                    <iframe
-                                        style={{
-                                            border: '1px solid red;',
-                                            height: '100%',
-                                            width: '100%',
-                                            display: 'block',
-                                            paddingTop: theme.spacing(1),
-                                        }}
-                                        src={registerContext?.registerUrl}
-                                    ></iframe>
-                                </div>
-                            ) : undefined}
+                                <Typography
+                                                                        variant="body2"
+                                                                        color="textPrimary"
+                                                                        gutterBottom
+                                                                    >
+                                        {registerContext?.activeUser || '-'}
+                                    </Typography>
+                                    </>
+                                ) : undefined}
+                                <iframe
+                                    style={{
+                                        border: '1px solid red',
+                                        height: '50vh',
+                                        width: '100%',
+                                        display: 'block',
+                                        paddingTop: theme.spacing(1),
+                                    }}
+                                    ref={iframeRef as any}
+                                    src={registerContext?.loginUrl || ''}
+                                ></iframe>
+                                {registerContext?.registerUrl ? (
+                                    <div>
+                                        <Link
+                                            href={registerContext?.registerUrl}
+                                            target="_blank"
+                                        >
+                                            {registerUserLabel}
+                                        </Link>
+                                    </div>
+                                ) : null}
+                            </div>
 
                             <Stack direction="row" spacing={2}>
                                 <LoadingButton
                                     variant="contained"
                                     color="secondary"
                                     onClick={submitForm}
-                                    style={{
-                                        minWidth: '15vw',
-                                        visibility:
-                                            typeof registerContext?.registerUrl ===
-                                            'string'
-                                                ? 'hidden'
-                                                : undefined,
-                                    }}
                                     disabled={
                                         !registerContext ||
                                         isSubmitting ||
@@ -307,7 +371,7 @@ function Register() {
                                     }
                                     loading={isSubmitting || !registerContext}
                                 >
-                                    {registerLabel}
+                                    {registerClusterLabel}
                                 </LoadingButton>
                                 <Button
                                     size="small"
