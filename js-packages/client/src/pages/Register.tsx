@@ -6,7 +6,7 @@ import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
-import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
+import { serverConfigQuery, serverLogout } from '@secretgraph/graphql-queries/server'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
 import { createClient } from '@secretgraph/misc/utils/graphql'
@@ -148,12 +148,17 @@ function Register() {
                                     registerContext!.hashAlgorithms[0],
                             })
                         }
-                        // TODO: handle exceptions and try with login
                         updateConfig(newConfig, true)
                         setActiveUrl(newConfig.baseUrl)
                         updateMainCtx({
                             action: 'create',
                         })
+                        if(registerContext.activeUser){
+                            try{
+                                await client.mutate({ mutation: serverLogout })
+                            } catch(exc){}
+
+                        }
                     } else {
                         setSubmitting(false)
                     }
