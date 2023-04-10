@@ -548,15 +548,16 @@ The item get parameter is mandatory.
     -   a better ActionDialog is neccessary
 -   implement settings/config (partly done)
 -   modernize ActionDialog, redesign, multi column? Move partly to shareDialog?
--   implement shareFn and ShareDialog, Config has a special ShareDialog (partly done)
 -   test permissions
--   admin filter
+-   add admin filters
+-   admin: overwrite UserAdmin with correct permissions requirement (manage_user)
 -   way to inject tokens (as user)
 -   way to import private key in config
 -   cleanup js structure, harmonize naming
 
 # TODO later
 
+-   frontend: allow changing net
 -   use threading for cryptography operations (put in threadpool)
 -   maybe: allow lock url to be used as a start_url (for apple devices)
 -   translations, changing languages
@@ -565,8 +566,6 @@ The item get parameter is mandatory.
     -   custom components
     -   python proxy decryptor
     -   maybe: encrypt via python proxy (for e.g. push forms)
--   investigate if on_request_start of strawberry extensions can replace the django signal logic
-    -   maybe async signals are then already possible, use them instead
 -   use weakref finalizers to nuke bytes content
 -   disallow non global ids? Would ease implementation
 -   encrypt Config set with saveConfig/loaded with loadConfigSync via a static key
@@ -577,9 +576,6 @@ The item get parameter is mandatory.
 -   config: create a virtual global merge of all configs to get every token
 -   allow alternate cryptoalgorithms instead of aesgcm for tags (except ChaCha20Poly1305 and AESSIV no good alternatives, and both aren't supported in browser)
 -   cleanup user
--   implement different net resource logic in frontend
--   use more mainCtx.url instead of passing urls through
--   ratelimit API access per ip and per flexid
 -   harmonize incl/exclFilter and allowedTags specs (maybe)
 -   transform iter_decrypt_contents into QuerySet (maybe)
 -   subscribe to config, watch changes
