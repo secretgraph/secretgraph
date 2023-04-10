@@ -133,6 +133,7 @@ const ClusterIntern = ({
                     shareUrl={new URL(url, window.location.href).href}
                     isPublic={props.name.startsWith('@')}
                     disabled={dirty}
+                    hashAlgorithm={hashAlgorithm}
                 />
             )}
 

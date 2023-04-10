@@ -22,13 +22,18 @@ import TableHead from '@mui/material/TableHead'
 import TableRow, { TableRowProps } from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import useMediaQuery from '@mui/material/useMediaQuery'
+import { addActionsMutation } from '@secretgraph/graphql-queries/node'
 import {
     ActionInputEntry,
     CertificateEntry,
     CertificateInputEntry,
+    transformActions,
 } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
+import { hashObject } from '@secretgraph/misc/utils/hashing'
 import * as SetOps from '@secretgraph/misc/utils/set'
+import FormikCheckboxWithLabel from 'components/formik/FormikCheckboxWithLabel'
+import TokenSelect from 'components/forms/TokenSelect'
 import { FastField, FieldArray, Form, Formik } from 'formik'
 import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
@@ -145,15 +150,18 @@ function NewPanel({
     isPublic,
     isContent,
     tokens,
+    hashAlgorithm,
     ...props
 }: Exclude<TabPanelProps, 'children'> & {
     shareUrl: string
     tokens: string[]
     isContent: boolean
     isPublic: boolean
+    hashAlgorithm: string
     disabled?: boolean
 }) {
     const { mainCtx } = React.useContext(Contexts.Main)
+    const { itemClient } = React.useContext(Contexts.Clients)
     const [ntokens, setNTokens] = React.useState<string[]>([])
     const value = {
         action: isPublic ? 'update' : 'view',
@@ -172,12 +180,43 @@ function NewPanel({
             <Formik
                 initialValues={{
                     value,
-                    start: '',
-                    stop: '',
+                    start: '' as const,
+                    stop: '' as const,
                     data: '',
                     note: '',
                 }}
                 onSubmit={async (values, { setSubmitting }) => {
+                    if (!values.data) {
+                        setSubmitting(false)
+                        return
+                    }
+
+                    const newHash = await hashObject(
+                        values.data,
+                        hashAlgorithm
+                    )
+                    const actions: ActionInputEntry[] = [
+                        {
+                            ...values,
+                            newHash,
+                            type: 'action',
+                        },
+                    ]
+                    const { actions: finishedActions } =
+                        await transformActions({
+                            actions,
+                            hashAlgorithm,
+                        })
+
+                    await itemClient.mutate({
+                        mutation: addActionsMutation,
+                        variables: {
+                            ids: [mainCtx.item],
+                            authorize: tokens,
+                            actions: finishedActions,
+                        },
+                    })
+                    setNTokens([values.data])
                     setSubmitting(false)
                 }}
             >
@@ -214,15 +253,18 @@ function AuthPanel({
     isContent,
     isPublic,
     tokens,
+    hashAlgorithm,
     ...props
 }: Exclude<TabPanelProps, 'children'> & {
     shareUrl: string
+    hashAlgorithm: string
     tokens: string[]
     isContent: boolean
     isPublic: boolean
     disabled?: boolean
 }) {
     const { mainCtx } = React.useContext(Contexts.Main)
+    const { itemClient } = React.useContext(Contexts.Clients)
     const [ntokens, setNTokens] = React.useState<string[]>([])
     const value = {
         action: isPublic ? 'update' : 'view',
@@ -242,33 +284,138 @@ function AuthPanel({
             <SharePanel url={url} />
             <Formik
                 initialValues={{
-                    action: { value, start: '', stop: '', data: '', note: '' },
-                    actionActive: false,
+                    token: null,
+                    viewActive: false,
+                    view: {
+                        value,
+                        start: '' as const,
+                        stop: '' as const,
+                        data: '',
+                        note: '',
+                    },
+                    updateActive: false,
+                    update: {
+                        value,
+                        start: '' as const,
+                        stop: '' as const,
+                        data: '',
+                        note: '',
+                    },
                 }}
-                onSubmit={async (values, { setSubmitting }) => {
+                onSubmit={async ({ token, ...values }, { setSubmitting }) => {
+                    if (!token) {
+                        setSubmitting(false)
+                        return
+                    }
+                    const newHash = await hashObject(token, hashAlgorithm)
+                    const actions: ActionInputEntry[] = []
+                    if (values.viewActive) {
+                        actions.push({
+                            ...values.view,
+                            data: token,
+                            newHash,
+                            type: 'action',
+                        })
+                    }
+                    if (values.updateActive) {
+                        actions.push({
+                            ...values.update,
+                            data: token,
+                            newHash,
+                            type: 'action',
+                        })
+                    }
+                    const { actions: finishedActions } =
+                        await transformActions({
+                            actions,
+                            hashAlgorithm,
+                        })
+
+                    await itemClient.mutate({
+                        mutation: addActionsMutation,
+                        variables: {
+                            ids: [mainCtx.item],
+                            authorize: tokens,
+                            actions: finishedActions,
+                        },
+                    })
+                    setNTokens([token])
                     setSubmitting(false)
                 }}
             >
-                <Form>
-                    <ActionConfigurator
-                        path="action."
-                        disabled={disabled}
-                        isContent={isContent}
-                        mode={isPublic ? 'publicShare' : 'share'}
-                        tokens={tokens}
-                        value={{
-                            type: 'action',
-                            start: '',
-                            stop: '',
-                            value: {
-                                action: isPublic ? 'update' : 'view',
-                            },
-                            data: '',
-                            note: '',
-                            newHash: '',
-                        }}
-                    />
-                </Form>
+                {({ values }) => {
+                    return (
+                        <Form>
+                            <FastField
+                                component={TokenSelect}
+                                label="Token"
+                                freeSolo
+                                fullWidth
+                                name="token"
+                            />
+                            {isPublic ? (
+                                <>
+                                    <div>
+                                        <FastField
+                                            component={FormikCheckboxWithLabel}
+                                            Label={{ label: 'Add view' }}
+                                            name="viewActive"
+                                        />
+                                    </div>
+                                    {values.viewActive ? (
+                                        <ActionConfigurator
+                                            path="view."
+                                            disabled={disabled}
+                                            isContent={isContent}
+                                            mode="share"
+                                            noToken
+                                            tokens={tokens}
+                                            value={{
+                                                type: 'action',
+                                                start: '',
+                                                stop: '',
+                                                value: {
+                                                    action: 'view',
+                                                },
+                                                data: '',
+                                                note: '',
+                                                newHash: '',
+                                            }}
+                                        />
+                                    ) : null}
+                                </>
+                            ) : null}
+                            <div>
+                                <FastField
+                                    component={FormikCheckboxWithLabel}
+                                    Label={{ label: 'Add update' }}
+                                    name="updateActive"
+                                />
+                            </div>
+                            {values.updateActive ? (
+                                <ActionConfigurator
+                                    path="update."
+                                    disabled={disabled}
+                                    noToken
+                                    isContent={isContent}
+                                    mode={isPublic ? 'publicShare' : 'share'}
+                                    tokens={tokens}
+                                    value={{
+                                        type: 'action',
+                                        start: '',
+                                        stop: '',
+                                        value: {
+                                            action: 'update',
+                                        },
+                                        data: '',
+                                        note: '',
+                                        newHash: '',
+                                    }}
+                                />
+                            ) : null}
+                        </Form>
+                    )
+                }}
             </Formik>
         </TabPanel>
     )
@@ -281,6 +428,7 @@ function OverviewPanel({
     actions,
     tokens,
     disabled,
+    hashAlgorithm,
     ...props
 }: Exclude<TabPanelProps, 'children'> & {
     shareUrl: string
@@ -288,6 +436,7 @@ function OverviewPanel({
     isContent: boolean
     isPublic: boolean
     actions: (ActionInputEntry | CertificateInputEntry)[]
+    hashAlgorithm: string
     tokens: string[]
 }) {
     const [selectedItem, setSelectedItem] = React.useState<
@@ -389,12 +538,14 @@ export default function SimpleShareDialog({
     actions,
     defaultTab = 'new',
     disabled,
+    hashAlgorithm,
 }: {
     shareUrl?: string
     actions?: (ActionInputEntry | CertificateInputEntry)[]
     isPublic: boolean
     defaultTab?: 'new' | 'auth'
     disabled?: boolean
+    hashAlgorithm: string
 }) {
     const [tab, setTab] = React.useState(defaultTab)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
@@ -458,6 +609,7 @@ export default function SimpleShareDialog({
                         isContent={mainCtx.type != 'Cluster'}
                         shareUrl={shareUrl}
                         disabled={disabled}
+                        hashAlgorithm={hashAlgorithm}
                     />
                     <NewPanel
                         value="new"
@@ -466,6 +618,7 @@ export default function SimpleShareDialog({
                         isContent={mainCtx.type != 'Cluster'}
                         shareUrl={shareUrl}
                         disabled={disabled}
+                        hashAlgorithm={hashAlgorithm}
                     />
                     {actions && (
                         <OverviewPanel
@@ -476,6 +629,7 @@ export default function SimpleShareDialog({
                             isContent={mainCtx.type != 'Cluster'}
                             shareUrl={shareUrl}
                             disabled={disabled}
+                            hashAlgorithm={hashAlgorithm}
                         />
                     )}
                 </TabContext>

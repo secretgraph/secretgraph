@@ -326,6 +326,7 @@ function InnerFile({
                 }
                 isPublic={state == 'public'}
                 actions={actions}
+                hashAlgorithm={hashAlgorithms[0]}
             />
             <Formik
                 initialValues={

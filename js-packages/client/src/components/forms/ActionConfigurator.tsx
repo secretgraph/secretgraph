@@ -42,6 +42,7 @@ import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
 import FormikDateTimePicker from '../formik/FormikDateTimePicker'
 import FormikTextField from '../formik/FormikTextField'
 import SimpleSelect from './SimpleSelect'
+import TokenSelect from './TokenSelect'
 
 const availableActions = [
     'auth',
@@ -251,6 +252,7 @@ export type ActionConfiguratorProps = {
     tokens: string[]
     isContent: boolean
     mode?: 'public' | 'default' | 'share' | 'publicShare'
+    noToken?: boolean
 }
 
 // maybe remove auth
@@ -261,15 +263,12 @@ export default function ActionConfigurator({
     disabled,
     tokens,
     isContent,
+    noToken,
     mode = 'default',
 }: ActionConfiguratorProps) {
-    const tokensFinished = React.useMemo(() => {
-        return [...tokens, 'new']
-    }, [tokens])
     const { getFieldHelpers } = useFormikContext<any>()
     disabled = !!(disabled || value?.readonly)
 
-    const { setValue: changeToken } = getFieldHelpers(`${path}data`)
     const { value: minDateTime } = useField(`${path}start`)[0]
     const { value: maxDateTime } = useField(`${path}stop`)[0]
     const validactions = React.useMemo(() => {
@@ -358,49 +357,28 @@ export default function ActionConfigurator({
                     )}
                 </>
             ) : null}
-            <div>
+            <>
                 {value.type == 'certificate' ? (
-                    <>
+                    <div>
                         <Typography variant="h4">Certificate:</Typography>
                         <div style={{ wordBreak: 'break-all' }}>
                             {value.data}
                         </div>
-                    </>
-                ) : (
-                    <FastField
-                        name={`${path}data`}
-                        component={SimpleSelect}
-                        fullWidth
-                        freeSolo
-                        options={tokensFinished}
-                        onChange={(ev: any, val: string) => {
-                            if (val == 'new') {
-                                val = Buffer.from(
-                                    crypto.getRandomValues(new Uint8Array(32))
-                                ).toString('base64')
-                            }
-                            changeToken(val)
-                        }}
-                        renderOption={(
-                            props: React.HTMLAttributes<HTMLLIElement>,
-                            val: string
-                        ) => {
-                            if (val == 'new') {
-                                return (
-                                    <li {...props}>
-                                        <Typography style={{ color: 'green' }}>
-                                            {val}
-                                        </Typography>
-                                    </li>
-                                )
-                            }
-                            return <li {...props}>{val}</li>
-                        }}
-                        disabled={disabled || locked}
-                        label="Token"
-                    />
-                )}
-            </div>
+                    </div>
+                ) : !noToken ? (
+                    <div>
+                        <FastField
+                            name={`${path}data`}
+                            component={TokenSelect}
+                            fullWidth
+                            freeSolo
+                            tokens={tokens}
+                            disabled={disabled || locked}
+                            label="Token"
+                        />
+                    </div>
+                ) : null}
+            </>
 
             <div>
                 <FastField
