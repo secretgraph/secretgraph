@@ -488,8 +488,6 @@ type RegenerateFlexidMutation {
   updated: [GlobalID!]!
 }
 
-scalar RegisterUrl
-
 """Input data for `resetDeletionContentOrCluster` mutation"""
 input ResetDeletionContentOrClusterInput {
   ids: [ID!]!
@@ -508,7 +506,8 @@ type SecretgraphConfig implements Node {
 
   """Maximal results per relay query"""
   maxRelayResults: Int!
-  registerUrl: RegisterUrl!
+  canDirectRegister: Boolean!
+  registerUrl: String
   loginUrl: String
 }
 
@@ -565,6 +564,7 @@ type SecretgraphObject {
     id: GlobalID!
   ): Node
   permissions: [String!]!
+  activeUser: String
   clusters(
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
