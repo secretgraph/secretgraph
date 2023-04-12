@@ -515,7 +515,7 @@ def get_properties_q(request, query):
         "Not a cluster query: %s" % query.model
     )
     q = models.Q(clusters__in=query)
-    if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+    if getattr(settings, "SECRETGRAPH_USE_USER_GROUPS", True):
         global_groups_names = GlobalGroup.objects.filter(
             matchUserGroup=True
         ).values_list("name", flat=True)

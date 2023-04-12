@@ -77,8 +77,10 @@ server settings can be done in the standard django way. The derivated settings s
 
 Special configuration keys:
 
--   `SECRETGRAPH_BIND_TO_USER`: require the binding of nets to user accounts
--   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_BIND_TO_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
+-   `SECRETGRAPH_REQUIRE_USER`: require the binding of nets to user accounts
+-   `SECRETGRAPH_ADMINAREA`: enable the admin area, allow admin login
+-   `SECRETGRAPH_USE_USER_GROUPS`: use the groups of a found user for permissions, map the names to a `matchUserGroup` global groups, default: True. Disable in case a net only logic is used and it is causing errors
+-   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_REQUIRE_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
 -   `SECRETGRAPH_RATELIMITS`: required, set ratelimits for `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE`
     note: `GRAPHQL_ERRORS` is disabled in case `DEBUG` is on
@@ -91,7 +93,7 @@ Special configuration keys:
 -   `BIND_TO_USER`: nets need user
 -   `ALLOW_REGISTER`: allow registering new users
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
--   `SECRETGRAPH_ADMINAREA`: allow admin login, needs `CSRF_TRUSTED_ORIGINS`
+-   `SECRETGRAPH_ADMINAREA`: enable the admin area, allow admin login
 -   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of proxy. Only useful if server side decryption is required.
 -   `RATELIMIT_*` where as keys `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE` are defined: set ratelimits or remove the default with the special key: `none`
 -   `DB_ENGINE`: db stuff
@@ -528,6 +530,7 @@ The item get parameter is mandatory.
 
 # TODO
 
+-   Register: if canDirectRegister True: allow removing user when register
 -   complete share
 -   shareurl: cluster url ? token = ...
 -   ActionConfigurator must prime the missing field values before using them in fields

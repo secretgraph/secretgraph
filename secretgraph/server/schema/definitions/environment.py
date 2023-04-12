@@ -86,7 +86,7 @@ class SecretgraphConfig(relay.Node):
     def canDirectRegister(cls) -> bool:
         if not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
             return False
-        if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+        if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
             return False
         return True
 
@@ -108,7 +108,7 @@ class SecretgraphConfig(relay.Node):
     def loginUrl() -> Optional[str]:
         if not getattr(
             settings, "SECRETGRAPH_ALLOW_REGISTER", False
-        ) and not getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+        ) and not getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
             return None
         login_url = getattr(settings, "LOGIN_URL", None)
         if login_url:

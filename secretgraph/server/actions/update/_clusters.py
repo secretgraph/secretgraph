@@ -84,11 +84,14 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
                     "not allowed - net disabled or "
                     "not in actions time range"
                 )
-            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
-                user = getattr(request, "user", None)
-                if not user or not user.is_authenticated:
-                    raise ValueError("Must be logged in")
+            user = getattr(request, "user", None)
+            if user and not user.is_authenticated:
+                user = None
+            if user:
                 net = Net.objects.filter(user_name=user.get_username()).first()
+            if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
+                if not user:
+                    raise ValueError("Must be logged in")
             elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
                 raise ValueError("Cannot register")
         if not net:

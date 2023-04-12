@@ -36,9 +36,10 @@ INSTALLED_APPS += [  # noqa F405
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
-SECRETGRAPH_BIND_TO_USER = (
-    os.environ.get("BIND_TO_USER", "true").lower() == "true"
+SECRETGRAPH_REQUIRE_USER = (
+    os.environ.get("REQUIRE_USER", "true").lower() == "true"
 )
+SECRETGRAPH_USE_USER_GROUPS = True
 SECRETGRAPH_ALLOW_REGISTER = (
     os.environ.get("ALLOW_REGISTER", "false").lower() == "true"
 )
@@ -59,8 +60,6 @@ if SECRETGRAPH_ADMINAREA:
         "django.contrib.messages",
     ]
     MIDDLEWARE += [  # noqa F405
-        "django.contrib.sessions.middleware.SessionMiddleware",
-        "django.contrib.auth.middleware.AuthenticationMiddleware",
         "django.contrib.messages.middleware.MessageMiddleware",
     ]
     TEMPLATES[0]["OPTIONS"]["context_processors"] += [  # noqa F405

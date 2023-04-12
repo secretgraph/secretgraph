@@ -62,7 +62,7 @@ class UserMutation(relay.Node):
                 info.context["request"], Cluster.objects.all(), scope="manage"
             )["objects"].first()
 
-            if getattr(settings, "SECRETGRAPH_BIND_TO_USER", False):
+            if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
                 if manage:
                     admin_user = manage.user
                 if not admin_user:

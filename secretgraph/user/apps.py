@@ -17,9 +17,7 @@ class SecretGraphUserConfig(AppConfig):
         from django.conf import settings
         from ..server.models import Net
 
-        if getattr(settings, "AUTH_USER_MODEL", None) or getattr(
-            settings, "SECRETGRAPH_BIND_TO_USER", False
-        ):
+        if getattr(settings, "AUTH_USER_MODEL", None):
             usermodel = get_user_model()
             if hasattr(usermodel, "is_active"):
                 post_save.connect(syncNetAndUserActiveCb, sender=usermodel)

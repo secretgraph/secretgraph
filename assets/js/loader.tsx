@@ -17,6 +17,8 @@ function load() {
         navigator.serviceWorker
             .register(swUrl, {
                 scope: '/',
+                updateViaCache: 'all',
+                type: 'module',
             })
             .then(
                 (registration) => {
