@@ -1,3 +1,5 @@
+'use strict'
+
 const path = require('path')
 const fs = require('fs')
 const { SourceMapDevToolPlugin, ProvidePlugin } = require('webpack')
@@ -28,11 +30,11 @@ module.exports = (env, options) => {
     }
     const alias = {}
     fs.readdirSync(path.resolve(__dirname, './js-packages')).forEach(
-        (package) => {
-            alias[`@secretgraph/${package}`] = path.resolve(
+        (jpackage) => {
+            alias[`@secretgraph/${jpackage}`] = path.resolve(
                 __dirname,
                 'js-packages',
-                package,
+                jpackage,
                 'src'
             )
         }
