@@ -6,7 +6,10 @@ import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
-import { serverConfigQuery, serverLogout } from '@secretgraph/graphql-queries/server'
+import {
+    serverConfigQuery,
+    serverLogout,
+} from '@secretgraph/graphql-queries/server'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
 import { createClient } from '@secretgraph/misc/utils/graphql'
@@ -18,6 +21,7 @@ import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 import { LegacyRef } from 'react'
 
+import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
 import * as Contexts from '../contexts'
 import {
@@ -65,14 +69,20 @@ function Register() {
     return (
         <Formik
             onSubmit={async (
-                { url, securityQuestion, lockPW },
+                { url, securityQuestion, lockPW, directRegisterWhenPossible },
                 { setSubmitting }
             ) => {
                 setOldConfig(config)
                 url = new URL(url, window.location.href).href
                 const slot = 'main'
                 try {
-                    const client = createClient(url)
+                    const client = createClient(
+                        url,
+                        registerContext?.canDirectRegister &&
+                            directRegisterWhenPossible
+                            ? false
+                            : true
+                    )
                     const result: any = await client.query({
                         query: serverConfigQuery,
                     })
@@ -153,11 +163,10 @@ function Register() {
                         updateMainCtx({
                             action: 'create',
                         })
-                        if(registerContext.activeUser){
-                            try{
+                        if (registerContext.activeUser) {
+                            try {
                                 await client.mutate({ mutation: serverLogout })
-                            } catch(exc){}
-
+                            } catch (exc) {}
                         }
                     } else {
                         setSubmitting(false)
@@ -181,6 +190,7 @@ function Register() {
                     '42',
                 ],
                 lockPW: '',
+                directRegisterWhenPossible: false,
             }}
         >
             {({ submitForm, isSubmitting, isValid, values }) => {
@@ -254,7 +264,7 @@ function Register() {
                         >
                             {initializeHelp}
                         </Typography>
-                        <Stack spacing={1} >
+                        <Stack spacing={1}>
                             <Field
                                 name="url"
                                 component={FormikTextField}
@@ -324,28 +334,43 @@ function Register() {
                                 </Typography>
                                 {registerContext?.activeUser ? (
                                     <>
-                                    <Typography
-                                        variant="body2"
-                                        color="textPrimary"
-                                        gutterBottom
-                                    >
-                                        Detected user:
-                                    </Typography>
-                                <Typography
-                                                                        variant="body2"
-                                                                        color="textPrimary"
-                                                                        gutterBottom
-                                                                    >
-                                        {registerContext?.activeUser || '-'}
-                                    </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            color="textPrimary"
+                                            gutterBottom
+                                        >
+                                            Detected user:
+                                        </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            color="textPrimary"
+                                            gutterBottom
+                                        >
+                                            {registerContext?.activeUser ||
+                                                '-'}
+                                        </Typography>
                                     </>
                                 ) : undefined}
+                                {registerContext?.canDirectRegister &&
+                                registerContext?.activeUser ? (
+                                    <Field
+                                        name="directRegisterWhenPossible"
+                                        component={FormikCheckboxWithLabel}
+                                        Label={{
+                                            label: 'Register direct without user?',
+                                        }}
+                                    />
+                                ) : null}
                                 <iframe
                                     style={{
                                         border: '1px solid red',
                                         height: '50vh',
                                         width: '100%',
-                                        display: 'block',
+                                        display:
+                                            registerContext?.canDirectRegister &&
+                                            values.directRegisterWhenPossible
+                                                ? 'none'
+                                                : 'block',
                                         paddingTop: theme.spacing(1),
                                     }}
                                     ref={iframeRef as any}

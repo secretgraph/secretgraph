@@ -8,14 +8,22 @@ import { createClient as SubscriptionCreateClient } from 'graphql-ws'
 declare var __DEV__: any
 const dev = typeof __DEV__ != 'undefined' && __DEV__
 
-export const createClient = (url: string) => {
+export const createClient = (
+    url: string,
+    includeCredentials: boolean = true
+) => {
     const uploadLink = new createUploadLink({
         uri: url,
+        credentials: includeCredentials ? undefined : 'omit',
     })
+
+    // TODO: honor includeCredentials but as we use it only for subscriptions
+    // code works anyway
 
     const wsLink = new GraphQLWsLink(
         SubscriptionCreateClient({
             url: url.replace(/^http:/, 'ws:/').replace(/^https:/, 'wss:/'),
+            lazy: true,
         })
     )
     const splitLink = split(
