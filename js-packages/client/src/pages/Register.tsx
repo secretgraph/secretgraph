@@ -204,7 +204,7 @@ function Register() {
                     let active = true
                     const f = async () => {
                         setRegisterContext(undefined)
-                        const client = createClient(values.url)
+                        const client = createClient(values.url, true)
                         let result: ApolloQueryResult<any> | undefined =
                             undefined
                         try {
