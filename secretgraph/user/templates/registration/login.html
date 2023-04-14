@@ -45,6 +45,11 @@ User Login
 
 <form action="{{ app_path }}" method="post" id="login-form">
   {% csrf_token %}
+  {% if not user.is_anonymous %}
+    <div class="form-row">
+      Current user: {{ user }}
+    </div>
+  {% endif %}
   <div class="form-row">
     {{ form.username.errors }}
     {{ form.username.label_tag }} {{ form.username }}
