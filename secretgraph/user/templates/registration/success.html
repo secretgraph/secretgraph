@@ -9,13 +9,13 @@
 {% block extrahead %}
 <script>
   if(window.parent){
-    window.parent.postMessage("", window.parent.document.location.origin)
+    window.parent.postMessage("login", window.parent.document.location.origin)
   }
 </script>
 {% endblock %}
 
 {% block content %}
 
-<p>{% translate "Success login in" %}</p>
+<p>{% translate "Login successfull" %}</p>
 
 {% endblock %}

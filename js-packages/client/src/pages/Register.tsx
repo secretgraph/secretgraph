@@ -32,6 +32,7 @@ import {
 
 function Register() {
     const theme = useTheme()
+    const iframeRef = React.useRef<HTMLIFrameElement>()
     const [refreshHandle, notify] = React.useReducer((state) => !state, false)
     const [registerContext, setRegisterContext] = React.useState<
         | {
@@ -54,11 +55,21 @@ function Register() {
     const { setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     React.useEffect(() => {
-        window.addEventListener('message', notify)
-        return () => {
-            window.removeEventListener('submit', notify)
+        if (!registerContext?.loginUrl) {
+            return
         }
-    }, [])
+        window.addEventListener('message', (event) => {
+            if (
+                event.data == 'login' &&
+                event.source == iframeRef.current?.contentWindow
+            ) {
+                notify()
+            }
+        })
+        return () => {
+            window.removeEventListener('message', notify)
+        }
+    }, [!!registerContext?.loginUrl])
 
     return (
         <Formik
@@ -339,7 +350,14 @@ function Register() {
                                 >
                                     {registerContext?.activeUser || '-'}
                                 </Typography>
-                                {registerContext?.canDirectRegister ? (
+                                <div
+                                    style={{
+                                        display:
+                                            registerContext?.canDirectRegister
+                                                ? undefined
+                                                : 'none',
+                                    }}
+                                >
                                     <Field
                                         name="directRegisterWhenPossible"
                                         component={FormikCheckboxWithLabel}
@@ -351,7 +369,7 @@ function Register() {
                                                     : ''),
                                         }}
                                     />
-                                ) : null}
+                                </div>
                                 <iframe
                                     style={{
                                         border: '1px solid red',
@@ -365,17 +383,22 @@ function Register() {
                                         paddingTop: theme.spacing(1),
                                     }}
                                     src={registerContext?.loginUrl || ''}
+                                    ref={iframeRef as any}
                                 ></iframe>
-                                {registerContext?.registerUrl ? (
-                                    <div>
-                                        <Link
-                                            href={registerContext?.registerUrl}
-                                            target="_blank"
-                                        >
-                                            {registerUserLabel}
-                                        </Link>
-                                    </div>
-                                ) : null}
+                                <div
+                                    style={{
+                                        display: registerContext?.registerUrl
+                                            ? undefined
+                                            : 'none',
+                                    }}
+                                >
+                                    <Link
+                                        href={registerContext?.registerUrl}
+                                        target="_blank"
+                                    >
+                                        {registerUserLabel}
+                                    </Link>
+                                </div>
                             </div>
 
                             <Stack direction="row" spacing={2}>
@@ -412,4 +435,4 @@ function Register() {
     )
 }
 
-export default Register
+export default React.memo(Register)
