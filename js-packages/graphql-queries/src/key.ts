@@ -120,6 +120,9 @@ export const findPublicKeyQuery = gql`
                                     link
                                     type
                                     state
+                                    cluster {
+                                        id
+                                    }
                                 }
                             }
                         }

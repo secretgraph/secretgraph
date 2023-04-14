@@ -1171,14 +1171,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             console.log('empty node, permissions?')
             return
         }
-        if (!mainCtx.cluster) {
-            if (!dataUnfinished.secretgraph.node.cluster.id) {
-                throw Error('no cluster found')
-            }
-            updateMainCtx({
-                cluster: dataUnfinished.secretgraph.node.cluster.id,
-            })
-        }
         loading = true
         let active = true
         const f = async () => {

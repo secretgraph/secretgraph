@@ -1263,22 +1263,18 @@ function CreateKeys() {
 
 async function findOrReturn({
     client,
-    config,
+    authorization,
     id,
     url,
 }: {
     client: ApolloClient<any>
-    config: Interfaces.ConfigInterface
     id: string | null
     url: string | null
-}): Promise<string | null | true> {
+    authorization: string[]
+}): Promise<[string, string | null] | null | true> {
     if (!id || !url) {
         return true
     }
-    const { tokens: authorization } = authInfoFromConfig({
-        config,
-        url,
-    })
     const { data } = await client.query({
         query: findPublicKeyQuery,
         variables: {
@@ -1295,7 +1291,10 @@ async function findOrReturn({
         d = node.references
     }
     if (d && d.edges.length) {
-        return d.edges[0].node.target.id
+        return [
+            d.edges[0].node.target.id,
+            d.edges[0].node.target.cluster?.id || null,
+        ]
     }
     return null
 }
@@ -1316,14 +1315,29 @@ export default function KeyComponent() {
                     mainCtx.action === 'create'
                         ? null
                         : (mainCtx.item as string | null),
-                config,
                 url: mainCtx.url,
+                authorization: mainCtx.tokens,
             })
             if (active) {
                 if (result === true) {
                     setBarrier(undefined)
                 } else if (result) {
-                    updateMainCtx({ item: result, type: 'PublicKey' })
+                    let authInfo = undefined
+                    if (result[1] && result[1] != mainCtx.cluster) {
+                        authInfo = authInfoFromConfig({
+                            config,
+                            url: mainCtx.url as string,
+                            contents: new Set([result[0]]),
+                            clusters: new Set([result[1]]),
+                        })
+                    }
+                    updateMainCtx({
+                        item: result[0],
+                        cluster: result[1] || undefined,
+                        type: 'PublicKey',
+                        tokens: authInfo?.tokens || undefined,
+                        tokensPermissions: authInfo?.types || undefined,
+                    })
                 } else {
                     updateMainCtx({
                         item: null,
