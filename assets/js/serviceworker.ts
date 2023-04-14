@@ -69,14 +69,16 @@ async function interceptFetch(event: FetchEvent): Promise<Response> {
         let cacheResponse =
             url.pathname.startsWith('/static/') ||
             url.pathname.search(/\/client\/?$/) >= 0
+        let isError
         try {
             response = await fetch(event.request)
+            isError =
+                response.type == 'error' ||
+                (response.status != 0 && !response.ok)
             if (
-                !response.ok &&
-                response.status >= 500 &&
-                response.status < 600
+                response.type == 'error' ||
+                (response.status >= 500 && response.status < 600)
             ) {
-                cacheResponse = false
                 // serving client from cache when no network is no problem
                 const response2 = await cache.match(event.request.url)
                 if (response2) {
@@ -84,15 +86,15 @@ async function interceptFetch(event: FetchEvent): Promise<Response> {
                 }
             }
         } catch (error) {
-            cacheResponse = false
+            isError = true
             // serving client from cache when no network is no problem
             response = await cache.match(event.request.url)
             if (!response) {
                 throw error
             }
         }
-        // cache and static are cached
-        if (cacheResponse && response.ok) {
+        // cache and static are cached, don't cache errors
+        if (cacheResponse && !isError) {
             await cache.put(event.request, response.clone())
         }
 
