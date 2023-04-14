@@ -174,7 +174,36 @@ export function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+export function is_pwa(): boolean {
+    return window.matchMedia(
+        '(display-mode: fullscreen), (display-mode: standalone), (display-mode: minimal-ui), (display-mode: window-controls-overlay)'
+    ).matches
+}
 
-export function is_pwa() : boolean{
-    return window.matchMedia('(display-mode: fullscreen), (display-mode: standalone), (display-mode: minimal-ui), (display-mode: window-controls-overlay)').matches
+export async function fallback_fetch(
+    input: RequestInfo | URL,
+    init?: Omit<NonNullable<RequestInit>, 'cache'>
+) {
+    let result
+    let init_used: RequestInit = init
+        ? {
+              ...init,
+              cache: 'no-cache',
+              credentials: init.credentials ? init.credentials : 'omit',
+              mode: init.mode ? init.mode : 'no-cors',
+          }
+        : { cache: 'no-cache', credentials: 'omit', mode: 'no-cors' }
+    try {
+        result = await fetch(input, init_used)
+    } catch (exc) {
+        result = null
+    }
+    if (!result || !result.ok) {
+        result = await fetch(input, { ...init_used, cache: 'force-cache' })
+    }
+
+    if (!result.ok) {
+        throw new Error('Could not fetch content: ' + result.statusText)
+    }
+    return result
 }

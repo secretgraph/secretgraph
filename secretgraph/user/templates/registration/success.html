@@ -9,7 +9,7 @@
 {% block extrahead %}
 <script>
   if(window.parent){
-    window.parent.postMessage("", document.location.origin)
+    window.parent.postMessage("", window.parent.document.location.origin)
   }
 </script>
 {% endblock %}

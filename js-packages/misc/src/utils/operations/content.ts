@@ -21,6 +21,7 @@ import {
     extractTags,
     extractTagsRaw,
 } from '../encryption'
+import { fallback_fetch } from '../misc'
 import { createSignatureReferences, encryptSharedKey } from '../references'
 
 export async function createContent({
@@ -315,18 +316,11 @@ export async function decryptContentObject({
     } else if (typeof _info == 'string') {
         arrPromise = Promise.resolve(b64tobuffer(_info))
     } else {
-        // TODO: fallback to cache
-        arrPromise = fetch(new URL(_node.link, itemDomain), {
+        arrPromise = fallback_fetch(new URL(_node.link, itemDomain), {
             headers: {
                 Authorization: _info.join(','),
             },
-            cache: 'no-cache',
-        }).then(async (result) => {
-            if (!result.ok) {
-                throw new Error('Could not fetch content')
-            }
-            return await result.arrayBuffer()
-        })
+        }).then((result) => result.arrayBuffer())
     }
     // skip decryption as always unencrypted
     if (_node.type == 'PublicKey' || _node.state == 'public') {

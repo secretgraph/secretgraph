@@ -41,6 +41,7 @@ import {
     hashKey,
     hashObject,
 } from '@secretgraph/misc/utils/hashing'
+import { fallback_fetch } from '@secretgraph/misc/utils/misc'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations/config'
 import { decryptContentObject } from '@secretgraph/misc/utils/operations/content'
 import { createKeys, updateKey } from '@secretgraph/misc/utils/operations/key'
@@ -109,7 +110,7 @@ async function loadKeys({
             .operationName,
     }
     requests.push(
-        fetch(new URL(data.secretgraph.node.link, baseUrl).href, {
+        fallback_fetch(new URL(data.secretgraph.node.link, baseUrl), {
             headers: {
                 Authorization: authorization.join(','),
             },

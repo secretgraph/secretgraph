@@ -10,11 +10,11 @@ const dev = typeof __DEV__ != 'undefined' && __DEV__
 
 export const createClient = (
     url: string,
-    includeCredentials: boolean = true
+    includeCredentials: boolean = false
 ) => {
     const uploadLink = new createUploadLink({
         uri: url,
-        credentials: includeCredentials ? undefined : 'omit',
+        credentials: includeCredentials ? 'include' : 'omit',
     })
 
     // TODO: honor includeCredentials but as we use it only for subscriptions

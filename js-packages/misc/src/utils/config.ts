@@ -16,6 +16,7 @@ import { hashObject } from './hashing'
 import {
     InvalidMergeError,
     compareArray,
+    fallback_fetch,
     mergeDeleteObjects,
     mergeDeleteObjectsReplace,
     multiAssign,
@@ -1014,12 +1015,9 @@ async function loadConfigUrl_helper(
             continue
         }
         const fn = async () => {
-            const response = await fetch(new URL(link, url), {
+            const response = await fallback_fetch(new URL(link, url), {
                 headers: { Authorization: tokens.join(',') },
             })
-            if (!response.ok) {
-                throw Error('Invalid response')
-            }
             const nonce = response.headers.get('X-NONCE')
             if (!nonce) {
                 throw Error('Missing nonce')
@@ -1123,7 +1121,7 @@ export const loadConfig = async (
         url.searchParams.delete('token')
         url.searchParams.delete('prekey')
         url.searchParams.delete('iterations')
-        const contentResult = await fetch(url, {
+        const contentResult = await fallback_fetch(url, {
             headers: {
                 Authorization: tokens.join(','),
             },
@@ -1191,15 +1189,16 @@ export const loadConfig = async (
             console.warn('could not decode result, no key_hashes found', keys)
             return [null, false]
         }
-        const keysResponse = await fetch(url, {
-            headers: {
-                Authorization: tokens.join(','),
-                'X-KEY-HASH': key_hashes.join(','),
-            },
-        })
-
-        if (!keysResponse.ok) {
-            console.error('key response errored', keysResponse.statusText)
+        let keysResponse
+        try {
+            keysResponse = await fallback_fetch(url, {
+                headers: {
+                    Authorization: tokens.join(','),
+                    'X-KEY-HASH': key_hashes.join(','),
+                },
+            })
+        } catch (exc) {
+            console.error('key response errored', exc)
             return [null, false]
         }
         let keysResult
@@ -1314,7 +1313,11 @@ export async function pruneOldTrustedKeys({
         const fn = async function () {
             const workingLinks = []
             for (const link of value.links) {
-                const response = await fetch(link, { credentials: 'omit' })
+                const response = await fetch(link, {
+                    mode: 'no-cors',
+                    credentials: 'omit',
+                    cache: 'no-cache',
+                })
                 if (!response.ok) {
                     // could be temporary
                     if (response.status >= 500 && response.status < 600) {
@@ -1342,6 +1345,7 @@ export async function pruneOldTrustedKeys({
                 ret[key] = { links: workingLinks }
             }
         }
+        ops.push(fn())
     }
 
     await Promise.all(ops)

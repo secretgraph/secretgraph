@@ -30,7 +30,7 @@ import {
     hashObject,
     hashTagsContentHash,
 } from '../hashing'
-import { retry } from '../misc'
+import { fallback_fetch, retry } from '../misc'
 import {
     createSignatureReferences,
     encryptSharedKey,
@@ -839,7 +839,11 @@ export async function updateTrustedKeys({
     for (const { node } of data.secretgraph.contents.edges) {
         const fn = async () => {
             const link = new URL(node.link, itemDomain)
-            const response = await fetch(link, { credentials: 'omit' })
+            const response = await fetch(link, {
+                credentials: 'omit',
+                mode: 'no-cors',
+                cache: 'no-cache',
+            })
             if (!response.ok) {
                 return
             }

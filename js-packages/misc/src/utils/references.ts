@@ -7,6 +7,7 @@ import {
     verifySignature,
 } from './encryption'
 import { hashKey, hashObject } from './hashing'
+import { fallback_fetch } from './misc'
 
 export async function extractGroupKeys({
     serverConfig,
@@ -49,28 +50,24 @@ export async function extractGroupKeys({
                         ? seenKeys[keyNode.link]
                         : [
                               '',
-                              fetch(new URL(keyNode.link, itemDomain)).then(
-                                  async (result) => {
-                                      const buf = await result.arrayBuffer()
-                                      try {
-                                          return await unserializeToCryptoKey(
-                                              buf,
-                                              {
-                                                  name: 'RSA-OAEP',
-                                                  hash: mapItem.operationName,
-                                              },
-                                              'publicKey'
-                                          )
-                                      } catch (exc) {
-                                          console.error(
-                                              'failed exctracting public key from cluster',
-                                              buf,
-                                              exc
-                                          )
-                                          throw exc
-                                      }
-                                  }
-                              ),
+                              fallback_fetch(new URL(keyNode.link, itemDomain))
+                                  .then(async (result) => {
+                                      return await unserializeToCryptoKey(
+                                          result.arrayBuffer(),
+                                          {
+                                              name: 'RSA-OAEP',
+                                              hash: mapItem.operationName,
+                                          },
+                                          'publicKey'
+                                      )
+                                  })
+                                  .catch((exc) => {
+                                      console.error(
+                                          'failed exctracting public key from cluster',
+                                          exc
+                                      )
+                                      throw exc
+                                  }),
                           ]
                 if (!key_hash.length) {
                     if (keyNode.contentHash.startsWith(prefix)) {
@@ -175,33 +172,31 @@ export function extractPubKeysClusterAndInjected({
         }
 
         if (!pubkeys[mainKeyHash]) {
-            pubkeys[mainKeyHash] = fetch(
+            pubkeys[mainKeyHash] = fallback_fetch(
                 new URL(keyNode.link, props.itemDomain),
                 {
                     headers: {
                         Authorization: props.authorization.join(','),
                     },
                 }
-            ).then(async (result) => {
-                const buf = await result.arrayBuffer()
-                try {
+            )
+                .then(async (result) => {
                     return await unserializeToCryptoKey(
-                        buf,
+                        result.arrayBuffer(),
                         {
                             name: 'RSA-OAEP',
                             hash: mapItem.operationName,
                         },
                         'publicKey'
                     )
-                } catch (exc) {
+                })
+                .catch((exc) => {
                     console.error(
                         'failed exctracting public key from cluster',
-                        buf,
                         exc
                     )
                     throw exc
-                }
-            })
+                })
         } else {
             pubkeys[mainKeyHash] = unserializeToCryptoKey(
                 pubkeys[mainKeyHash],
@@ -284,30 +279,28 @@ export function extractPubKeysReferences({
             continue
         }
         if (!pubkeys[mainKeyHash]) {
-            pubkeys[mainKeyHash] = fetch(keyNode.link, {
+            pubkeys[mainKeyHash] = fallback_fetch(keyNode.link, {
                 headers: {
                     Authorization: props.authorization.join(','),
                 },
-            }).then(async (result) => {
-                const buf = await result.arrayBuffer()
-                try {
+            })
+                .then(async (result) => {
                     return await unserializeToCryptoKey(
-                        buf,
-
+                        result.arrayBuffer(),
                         {
                             name: 'RSA-OAEP',
                             hash: mapItem.operationName,
                         },
                         'publicKey'
                     )
-                } catch (exc) {
+                })
+                .catch((exc) => {
                     console.log(
                         'failed exctracting public key from reference',
-                        buf
+                        exc
                     )
                     throw exc
-                }
-            })
+                })
         } else {
             pubkeys[mainKeyHash] = unserializeToCryptoKey(
                 pubkeys[mainKeyHash],
@@ -373,10 +366,12 @@ export async function verifyContent({
         }
         if (!existing || !existing[keyHash]) {
             const fn = async () => {
-                const result = await fetch(
-                    new URL(node.target.link, props.itemDomain)
-                )
-                if (!result.ok) {
+                let result
+                try {
+                    result = await fallback_fetch(
+                        new URL(node.target.link, props.itemDomain)
+                    )
+                } catch (exc) {
                     return
                 }
                 const pubKeyBlob = await result.arrayBuffer()

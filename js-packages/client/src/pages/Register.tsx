@@ -32,7 +32,6 @@ import {
 
 function Register() {
     const theme = useTheme()
-    const iframeRef = React.useRef<HTMLIFrameElement>()
     const [refreshHandle, notify] = React.useReducer((state) => !state, false)
     const [registerContext, setRegisterContext] = React.useState<
         | {
@@ -55,16 +54,11 @@ function Register() {
     const { setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     React.useEffect(() => {
-        const current = iframeRef.current
-        if (registerContext?.loginUrl || !current) {
-            return
-        }
-
-        current.addEventListener('message', notify)
+        window.addEventListener('message', notify)
         return () => {
-            current.removeEventListener('submit', notify)
+            window.removeEventListener('submit', notify)
         }
-    }, [registerContext?.loginUrl, iframeRef.current])
+    }, [])
 
     return (
         <Formik
@@ -317,11 +311,9 @@ function Register() {
 
                             <div
                                 style={{
-                                    display:
-                                        typeof registerContext?.loginUrl !==
-                                        'string'
-                                            ? 'none'
-                                            : undefined,
+                                    display: !registerContext?.loginUrl
+                                        ? 'none'
+                                        : undefined,
                                 }}
                             >
                                 <Typography
@@ -332,25 +324,20 @@ function Register() {
                                 >
                                     Connect with user
                                 </Typography>
-                                {registerContext?.activeUser ? (
-                                    <>
-                                        <Typography
-                                            variant="body2"
-                                            color="textPrimary"
-                                            gutterBottom
-                                        >
-                                            Detected user:
-                                        </Typography>
-                                        <Typography
-                                            variant="body2"
-                                            color="textPrimary"
-                                            gutterBottom
-                                        >
-                                            {registerContext?.activeUser ||
-                                                '-'}
-                                        </Typography>
-                                    </>
-                                ) : undefined}
+                                <Typography
+                                    variant="body2"
+                                    color="textPrimary"
+                                    gutterBottom
+                                >
+                                    Detected user:
+                                </Typography>
+                                <Typography
+                                    variant="body2"
+                                    color="textPrimary"
+                                    gutterBottom
+                                >
+                                    {registerContext?.activeUser || '-'}
+                                </Typography>
                                 {registerContext?.canDirectRegister &&
                                 registerContext?.activeUser ? (
                                     <Field
@@ -373,7 +360,6 @@ function Register() {
                                                 : 'block',
                                         paddingTop: theme.spacing(1),
                                     }}
-                                    ref={iframeRef as any}
                                     src={registerContext?.loginUrl || ''}
                                 ></iframe>
                                 {registerContext?.registerUrl ? (
