@@ -73,7 +73,8 @@ function Register() {
                     const client = createClient(
                         url,
                         registerContext?.canDirectRegister &&
-                            directRegisterWhenPossible
+                            (directRegisterWhenPossible ||
+                                !registerContext?.activeUser)
                             ? false
                             : true
                     )
@@ -338,13 +339,16 @@ function Register() {
                                 >
                                     {registerContext?.activeUser || '-'}
                                 </Typography>
-                                {registerContext?.canDirectRegister &&
-                                registerContext?.activeUser ? (
+                                {registerContext?.canDirectRegister ? (
                                     <Field
                                         name="directRegisterWhenPossible"
                                         component={FormikCheckboxWithLabel}
                                         Label={{
-                                            label: 'Register direct without user?',
+                                            label:
+                                                'Register without user?' +
+                                                (!registerContext?.activeUser
+                                                    ? ' Note: will register without a user anyway as no user was detected'
+                                                    : ''),
                                         }}
                                     />
                                 ) : null}
