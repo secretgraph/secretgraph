@@ -1,7 +1,9 @@
-import { Typography } from '@mui/material'
+import CircularProgress from '@mui/material/CircularProgress'
 import FormControl from '@mui/material/FormControl'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import Box from '@mui/system/Box'
 import { compareClientPw } from '@secretgraph/misc/utils/encryption'
 import * as React from 'react'
 
@@ -19,6 +21,7 @@ export default function ConfigProtected({
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [password, setPassword] = React.useState('')
     const [pwOk, setPwOk] = React.useState(false)
+    const [loading, setLoading] = React.useState(true)
     const deferredPw = React.useDeferredValue(password)
     React.useEffect(() => {
         if (!config || disarmed) {
@@ -27,12 +30,16 @@ export default function ConfigProtected({
         let active = true
         const f = async () => {
             setPwOk(false)
+            setLoading(true)
             const _isPwOk = await compareClientPw(
                 deferredPw,
                 config.configSecurityQuestion[1]
             )
-            if (active && _isPwOk) {
-                setPwOk(true)
+            if (active) {
+                if (_isPwOk) {
+                    setPwOk(true)
+                }
+                setLoading(false)
             }
         }
         f()
@@ -62,6 +69,23 @@ export default function ConfigProtected({
                             autoComplete="on"
                         />
                     </FormControl>
+                    <Box
+                        sx={{
+                            paddingLeft: {
+                                sm: 2,
+                                md: 4,
+                                lg: 8,
+                            },
+                        }}
+                    >
+                        {loading ? (
+                            <CircularProgress />
+                        ) : (
+                            <Typography variant="h4" color="error">
+                                Password incorrect
+                            </Typography>
+                        )}
+                    </Box>
                 </Stack>
             </form>
         )
