@@ -57,18 +57,21 @@ self.addEventListener('install', (event: ExtendableEvent) => {
 async function interceptFetch(event: FetchEvent): Promise<Response> {
     let response: undefined | Response = undefined
     if (event.request.method == 'GET' || event.request.method == 'HEAD') {
-        const url = new URL(event.request.url)
+        let pathname = event.request.url
+        try {
+            pathname = new URL(event.request.url).pathname
+        } catch (exc) {}
         const cache = await caches.open(cacheName)
         // serving cached client here can lead to big problems
-        if (url.pathname.startsWith('/static/')) {
+        if (pathname.startsWith('/static/')) {
             response = await cache.match(event.request.url)
             if (response) {
                 return response
             }
         }
         let cacheResponse =
-            url.pathname.startsWith('/static/') ||
-            url.pathname.search(/\/client\/?$/) >= 0
+            pathname.startsWith('/static/') ||
+            pathname.search(/\/client\/?$/) >= 0
         let isError
         try {
             response = await fetch(event.request)
