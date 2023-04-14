@@ -59,7 +59,7 @@ User Login
     {{ form.password.label_tag }} {{ form.password }}
     <input type="hidden" name="next" value="{{ next }}">
   </div>
-  {% url 'password_reset' as password_reset_url %}
+  {% url 'auth:password_reset' as password_reset_url %}
   {% if password_reset_url %}
   <div class="password-reset-link">
     <a href="{{ password_reset_url }}">{% translate 'Forgotten your password or username?' %}</a>
@@ -67,8 +67,12 @@ User Login
   {% endif %}
   <div class="submit-row">
     <input type="submit" value="{% translate 'Log in' %}">
+    {% if not user.is_anonymous %}
+      <input type="submit" value="{% translate 'Log out' %}" form="logout-form">
+    {% endif %}
   </div>
 </form>
-
+<form action="{% url 'auth:logout' %}" method="post" id="logout-form" style="display:none">{% csrf_token %}
+</form>
 </div>
 {% endblock %}
