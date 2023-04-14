@@ -173,12 +173,7 @@ export function extractPubKeysClusterAndInjected({
 
         if (!pubkeys[mainKeyHash]) {
             pubkeys[mainKeyHash] = fallback_fetch(
-                new URL(keyNode.link, props.itemDomain),
-                {
-                    headers: {
-                        Authorization: props.authorization.join(','),
-                    },
-                }
+                new URL(keyNode.link, props.itemDomain)
             )
                 .then(async (result) => {
                     return await unserializeToCryptoKey(
@@ -246,6 +241,7 @@ export function extractPubKeysReferences({
     readonly validateKey?: boolean
     readonly onlySeen?: boolean
     readonly hashAlgorithm: string
+    readonly itemDomain: string
 }): { [hash: string]: Promise<CryptoKey> } {
     const pubkeys = Object.assign({}, props.source || {})
     const seen = new Set<string>()
@@ -279,11 +275,9 @@ export function extractPubKeysReferences({
             continue
         }
         if (!pubkeys[mainKeyHash]) {
-            pubkeys[mainKeyHash] = fallback_fetch(keyNode.link, {
-                headers: {
-                    Authorization: props.authorization.join(','),
-                },
-            })
+            pubkeys[mainKeyHash] = fallback_fetch(
+                new URL(keyNode.link, props.itemDomain)
+            )
                 .then(async (result) => {
                     return await unserializeToCryptoKey(
                         result.arrayBuffer(),

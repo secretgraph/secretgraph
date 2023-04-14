@@ -467,6 +467,7 @@ export async function updateConfigRemoteReducer(
             onlySeen: true,
             authorization: authInfo.tokens,
             hashAlgorithm: hashAlgorithms[0],
+            itemDomain: resconf[0].baseUrl,
         })
     )
     let resultPromises = []

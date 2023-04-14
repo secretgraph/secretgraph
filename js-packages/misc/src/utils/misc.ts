@@ -190,7 +190,7 @@ export async function fallback_fetch(
               ...init,
               cache: 'no-cache',
               credentials: init.credentials ? init.credentials : 'omit',
-              mode: init.mode ? init.mode : 'no-cors',
+              mode: init.mode ? init.mode : init?.headers ? 'cors' : 'no-cors',
           }
         : { cache: 'no-cache', credentials: 'omit', mode: 'no-cors' }
     try {

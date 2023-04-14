@@ -875,6 +875,7 @@ const KeysUpdate = ({
                             hashAlgorithm: keyParams.hash,
                             source: privateKeys,
                             onlySeen: true,
+                            itemDomain: mainCtx.url || '/',
                         })
                     }
                     let privKey = null
