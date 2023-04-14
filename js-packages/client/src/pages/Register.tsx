@@ -32,7 +32,6 @@ import {
 
 function Register() {
     const theme = useTheme()
-    const iframeRef = React.useRef<HTMLIFrameElement>()
     const [refreshHandle, notify] = React.useReducer((state) => !state, false)
     const [registerContext, setRegisterContext] = React.useState<
         | {
@@ -59,10 +58,7 @@ function Register() {
             return
         }
         window.addEventListener('message', (event) => {
-            if (
-                event.data == 'login' &&
-                event.source == iframeRef.current?.contentWindow
-            ) {
+            if (event.data == 'login') {
                 notify()
             }
         })
@@ -382,8 +378,7 @@ function Register() {
                                                 : 'block',
                                         paddingTop: theme.spacing(1),
                                     }}
-                                    src={registerContext?.loginUrl || ''}
-                                    ref={iframeRef as any}
+                                    src={registerContext?.loginUrl || '/'}
                                 ></iframe>
                                 <div
                                     style={{
