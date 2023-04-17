@@ -52,6 +52,7 @@ SECRETGRAPH_REQUIRE_USER = False
 SECRETGRAPH_USE_USER_GROUPS = True
 SECRETGRAPH_ALLOW_REGISTER = True
 SECRETGRAPH_ADMINAREA = True
+SECRETGRAPH_HEADLESS = False
 
 SECRETGRAPH_DEFAULT_GROUPS["debug"] = {  # noqa F405
     "properties": ["allow_global_name", "allow_dangerous_actions", "default"],

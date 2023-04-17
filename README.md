@@ -40,6 +40,23 @@ hypercorn secretgraph.asgi:application
 ./tools/debugrun.py
 ```
 
+## Usage
+
+### With user interface
+
+Requirement:
+
+-   secretgraph.proxy active (default)
+-   client enabled (default with secretgraph.proxy active)
+
+Go to `serveraddress` e.g. http://localhost:8000 and click in the right corner on `webclient`
+You will get redirected to login.
+
+If you don't have a config / config url for login yet, go to register.
+
+If you get `provider url invalid` enter a secretgraph provider with enabled login or register capabilities.
+By default you just have to login with a user (created via cmd (e.g. `./manage.py createsuperuser`) or via admin area)
+
 # structure
 
 It is currently a monorepo containing js and python parts
@@ -77,8 +94,9 @@ server settings can be done in the standard django way. The derivated settings s
 
 Special configuration keys:
 
--   `SECRETGRAPH_REQUIRE_USER`: require the binding of nets to user accounts
--   `SECRETGRAPH_ADMINAREA`: enable the admin area, allow admin login
+-   `SECRETGRAPH_REQUIRE_USER`: require the binding of nets to user accounts (except admin created nets) (default: true)
+-   `SECRETGRAPH_ADMINAREA`: enable the admin area, allow admin login (default: false)
+-   `SECRETGRAPH_HEADLESS`: remove gui (secretgraph.proxy) (default: false)
 -   `SECRETGRAPH_USE_USER_GROUPS`: use the groups of a found user for permissions, map the names to a `matchUserGroup` global groups, default: True. Disable in case a net only logic is used and it is causing errors
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_REQUIRE_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
@@ -90,9 +108,11 @@ Special configuration keys:
 
 ### secretgraph
 
--   `BIND_TO_USER`: nets need user
--   `ALLOW_REGISTER`: allow registering new users
+-   `REQUIRE_USER`: require the binding of nets to user accounts (except admin created nets) (default: true)
+-   `ALLOW_REGISTER`: allow registering new users (default: false)
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
+-   `HEADLESS`: activates `SECRETGRAPH_HEADLESS` (remove gui) (default: false)
+-   `NO_USERS`: removes user auth stuff, can only be enabled if `REQUIRE_USER` and `SECRETGRAPH_ADMINAREA` are off
 -   `SECRETGRAPH_ADMINAREA`: enable the admin area, allow admin login
 -   `CACHE_DECRYPTED`: activate `SECRETGRAPH_CACHE_DECRYPTED` in emergency for slow file backends and the requirement of proxy. Only useful if server side decryption is required.
 -   `RATELIMIT_*` where as keys `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE` are defined: set ratelimits or remove the default with the special key: `none`
