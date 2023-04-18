@@ -102,3 +102,18 @@ export async function serializeToBase64(
 ): Promise<string> {
     return Buffer.from(await unserializeToArrayBuffer(inp)).toString('base64')
 }
+
+export function fromGraphqlId(gid: string) {
+    try {
+        const rawTxt = utf8decoder.decode(b64tobuffer(gid))
+        let [_, type, id] = rawTxt.match(/([^:]*):(.*)/) as string[]
+        return [type, id]
+    } catch (exc) {
+        console.debug('error parsing id', gid, exc)
+    }
+    return null
+}
+
+export function toGraphqlId(type: string, rid: string) {
+    return Buffer.from(utf8ToBinary(`${type}:${rid}`)).toString('base64')
+}

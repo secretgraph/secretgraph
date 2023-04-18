@@ -7,6 +7,13 @@ import {
     authInfoFromConfig,
     updateConfigReducer,
 } from '@secretgraph/misc/utils/config'
+import {
+    b64tobuffer,
+    fromGraphqlId,
+    toGraphqlId,
+    utf8ToBinary,
+    utf8decoder,
+} from '@secretgraph/misc/utils/encoding'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import * as React from 'react'
 
@@ -67,6 +74,10 @@ function Definitions({
         if (vActions.has(query.get('action') as any)) {
             action = query.get('action') as any
         }
+        let cluster = query.get('cluster') || null
+        if (cluster) {
+            cluster = toGraphqlId('Cluster', cluster)
+        }
         const ctx: Interfaces.MainContextInterface = {
             action,
             title: '',
@@ -82,12 +93,13 @@ function Definitions({
             deleted: null,
             tokens: [],
             tokensPermissions: new Set(),
-            currentCluster: query.get('cluster') || null,
-            editCluster: query.get('cluster') || null,
+            currentCluster: cluster,
+            editCluster: cluster,
             cloneData: null,
         }
         if (ctx.type == 'Cluster' && !ctx.currentCluster) {
             ctx.currentCluster = ctx.item
+            ctx.editCluster = ctx.item
         }
         if (ctx.action == 'clone' && window.opener?.cloneData) {
             ctx.action = 'create'
@@ -133,7 +145,10 @@ function Definitions({
         // why cluster? Otherwise we would load !all tokens for all clusters and could get easily bigger,
         // than the 100 tokens limit
         if (mainCtx.currentCluster && mainCtx.type != 'Cluster') {
-            search.set('cluster', mainCtx.currentCluster)
+            let nCluster = fromGraphqlId(mainCtx.currentCluster)
+            if (nCluster) {
+                search.set('cluster', nCluster[1])
+            }
         }
 
         if (mainCtx.url) {

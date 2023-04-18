@@ -2,6 +2,7 @@ import { ApolloClient, useQuery } from '@apollo/client'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
+import { fromGraphqlId } from '@secretgraph/misc/utils/encoding'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -70,7 +71,7 @@ export default function ClusterSelect<
                     ret.disabled.add(node.id)
                 }
                 ret.ids.push(node.id)
-                if (node.name) {
+                if (node.name || node.description) {
                     ret.labelMap[node.id] = {
                         name: node.name,
                         description: node.description,
@@ -99,7 +100,17 @@ export default function ClusterSelect<
                 return disabled.has(option)
             }}
             getOptionLabel={(option) => {
-                return labelMap[option]?.name || option
+                let roption = labelMap[option]?.name
+                if (!roption) {
+                    try {
+                        roption = (
+                            fromGraphqlId(option) as [string, string]
+                        )[1]
+                    } catch (e) {
+                        roption = option
+                    }
+                }
+                return roption
             }}
             onInputChange={(event, newInputValue, reason) => {
                 if (reason == 'input' && newInputValue != deferredInput) {
