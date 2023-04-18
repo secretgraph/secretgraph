@@ -550,7 +550,7 @@ The item get parameter is mandatory.
 
 # TODO
 
--   Register: if canDirectRegister True: allow removing user when register
+-   ClusterEditor: show somehow the id of a named cluster
 -   complete share
 -   shareurl: cluster url ? token = ...
 -   ActionConfigurator must prime the missing field values before using them in fields
