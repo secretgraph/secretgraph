@@ -96,7 +96,7 @@ Special configuration keys:
 
 -   `SECRETGRAPH_REQUIRE_USER`: require the binding of nets to user accounts (except admin created nets) (default: true)
 -   `SECRETGRAPH_ADMINAREA`: enable the admin area, allow admin login (default: false)
--   `SECRETGRAPH_HEADLESS`: remove gui (secretgraph.proxy) (default: false)
+-   `SECRETGRAPH_HEADLESS`: remove gui (secretgraph.proxy) (note: it doesn't remove the graphiql gui as it is a useful tool even headless) (default: false)
 -   `SECRETGRAPH_USE_USER_GROUPS`: use the groups of a found user for permissions, map the names to a `matchUserGroup` global groups, default: True. Disable in case a net only logic is used and it is causing errors
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_REQUIRE_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required

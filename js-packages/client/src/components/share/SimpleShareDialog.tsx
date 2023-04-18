@@ -558,7 +558,7 @@ export default function SimpleShareDialog({
         if (SetOps.hasIntersection(mainCtx.tokensPermissions, _update_set)) {
             return mainCtx.tokens
         }
-        if (!config || (!mainCtx.cluster && !mainCtx.item)) {
+        if (!config || (!mainCtx.currentCluster && !mainCtx.item)) {
             return []
         }
         return authInfoFromConfig({
@@ -569,9 +569,16 @@ export default function SimpleShareDialog({
                 mainCtx.type != 'Cluster'
                     ? new Set([mainCtx.item as string])
                     : undefined,
-            clusters: mainCtx.cluster ? new Set([mainCtx.cluster]) : undefined,
+            clusters: mainCtx.currentCluster
+                ? new Set([mainCtx.currentCluster])
+                : undefined,
         }).tokens
-    }, [mainCtx.tokens, mainCtx.tokensPermissions])
+    }, [
+        mainCtx.tokens,
+        mainCtx.tokensPermissions,
+        mainCtx.item,
+        mainCtx.currentCluster,
+    ])
 
     if (!shareUrl) {
         return null

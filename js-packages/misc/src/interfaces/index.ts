@@ -153,8 +153,10 @@ export interface MainContextInterface {
     title: string
     // Content
     item: null | string
-    // Cluster
-    cluster: null | string
+    // Cluster used for determining current cluster of item, saved in hash
+    currentCluster: null | string
+    // Cluster used for updates
+    editCluster: null | string
     // activeUrl can be changed without changing active element, so cache it here
     url: null | string
     type: null | string
@@ -179,6 +181,7 @@ export interface AuthInfoInterface {
     hashes: string[]
     certificateHashes: string[]
     types: Set<string>
+    limitReached: boolean
 }
 
 export interface ElementEntryInterface {

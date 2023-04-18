@@ -353,7 +353,7 @@ function InnerFile({
                             (mainCtx.cloneData &&
                                 mainCtx.cloneData.keywords) ||
                             [],
-                        cluster: mainCtx.cluster,
+                        cluster: mainCtx.editCluster || null,
                         actions,
                         uniqueName: nodeData
                             ? !!nodeData.contentHash
@@ -422,6 +422,18 @@ function InnerFile({
                     if (!values.cluster) {
                         throw Error('Cluster not set')
                     }
+                    const tags: string[] = [`mime=${value.type}`]
+                    if (values.name) {
+                        tags.push(
+                            !values.encryptName || values.state == 'public'
+                                ? `name=${values.name}`
+                                : `~name=${values.name}`
+                        )
+                    }
+                    tags.push(
+                        ...values.keywords.map((val) => `keyword=${val}`)
+                    )
+
                     const res = await updateOrCreateContentWithConfig({
                         actions: actionsNew,
                         config,
@@ -432,22 +444,16 @@ function InnerFile({
                         baseClient,
                         authorization: mainCtx.tokens,
                         state: values.state,
-                        contentHash: values.uniqueName
-                            ? await hashTagsContentHash(
-                                  [`name=${values.name}`],
-                                  'File',
-                                  hashAlgorithm
-                              )
-                            : undefined,
+                        contentHash:
+                            values.uniqueName && values.name
+                                ? await hashTagsContentHash(
+                                      [`name=${values.name}`],
+                                      'File',
+                                      hashAlgorithm
+                                  )
+                                : undefined,
                         type: value.type.startsWith('text/') ? 'Text' : 'File',
-                        tags: [
-                            !values.encryptName || values.state == 'public'
-                                ? `name=${values.name}`
-                                : `~name=${values.name}`,
-                            `mime=${value.type}`,
-                        ].concat(
-                            values.keywords.map((val) => `keyword=${val}`)
-                        ),
+                        tags,
                         id: nodeData?.id,
                         updateId: nodeData?.updateId,
                         url,
@@ -475,6 +481,8 @@ function InnerFile({
                                         ...nTokens,
                                     ]),
                                 ],
+                                editCluster: values.cluster,
+                                currentCluster: values.cluster,
                                 cloneData: null,
                             })
                         } else {
@@ -484,6 +492,8 @@ function InnerFile({
                                 url,
                                 action: 'update',
                                 cloneData: null,
+                                editCluster: values.cluster,
+                                currentCluster: values.cluster,
                             })
                         }
                     } else {
@@ -513,7 +523,8 @@ function InnerFile({
                         if (updateCloneData) {
                             updateMainCtx({
                                 cloneData: values,
-                                cluster: values.cluster,
+                                currentCluster: values.cluster,
+                                editCluster: values.cluster,
                             })
                         }
                     }, [values])
@@ -1157,12 +1168,12 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     React.useEffect(() => {
         if (
             dataUnfinished &&
-            dataUnfinished.secretgraph.node.cluster.id != mainCtx.cluster
+            dataUnfinished.secretgraph.node.cluster.id != mainCtx.editCluster
         ) {
             loading = true
             refetch()
         }
-    }, [mainCtx.cluster])
+    }, [mainCtx.editCluster])
     React.useEffect(() => {
         if (!dataUnfinished || loading) {
             return
@@ -1295,7 +1306,7 @@ const CreateFile = () => {
         {
             fetchPolicy: 'cache-and-network',
             variables: {
-                id: mainCtx.cluster || Constants.stubCluster,
+                id: mainCtx.editCluster || Constants.stubCluster,
                 authorization: mainCtx.tokens,
             },
             onError: console.error,
@@ -1306,7 +1317,7 @@ const CreateFile = () => {
         if (dataUnfinished) {
             refetch()
         }
-    }, [mainCtx.cluster, activeUrl])
+    }, [mainCtx.editCluster, activeUrl])
 
     React.useEffect(() => {
         let active = true

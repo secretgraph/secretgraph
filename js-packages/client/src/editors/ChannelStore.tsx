@@ -212,12 +212,12 @@ function ViewChannelStore() {
     React.useEffect(() => {
         if (
             dataUnfinished &&
-            dataUnfinished.secretgraph.node.cluster.id != mainCtx.cluster
+            dataUnfinished.secretgraph.node.current.id != mainCtx.editCluster
         ) {
             loading = true
             refetch()
         }
-    }, [mainCtx.cluster])
+    }, [mainCtx.editCluster])
     React.useEffect(() => {
         if (!dataUnfinished || loading) {
             return
@@ -226,12 +226,13 @@ function ViewChannelStore() {
             console.log('empty node, permissions?')
             return
         }
-        if (!mainCtx.cluster) {
+        if (!mainCtx.editCluster && !mainCtx.editCluster) {
             if (!dataUnfinished.secretgraph.node.cluster.id) {
                 throw Error('no cluster found')
             }
             updateMainCtx({
-                cluster: dataUnfinished.secretgraph.node.cluster.id,
+                currentCluster: dataUnfinished.secretgraph.node.cluster.id,
+                editCluster: dataUnfinished.secretgraph.node.cluster.id,
             })
         }
         loading = true

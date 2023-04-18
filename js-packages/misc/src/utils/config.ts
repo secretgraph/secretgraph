@@ -255,6 +255,7 @@ export function authInfoFromConfig({
     url,
     require = new Set(['view', 'update', 'manage']),
     excludeClusters = new Set(),
+    limit,
     ...props
 }: {
     readonly config: Interfaces.ConfigInterface
@@ -264,10 +265,14 @@ export function authInfoFromConfig({
     readonly contents?: Set<string>
     readonly require?: Set<string>
     readonly search?: string
+    readonly limit?: number
 }): Interfaces.AuthInfoInterface {
     const tokens = new Set<string>()
     const hashes = new Set<string>()
     const types = new Set<string>()
+    let limitReached = false
+    const limitWarning = limit === undefined ? false : true
+    limit = limit !== undefined ? limit : 100
     const certificateHashes = new Set<string>()
     // TODO: remove other tokens if manage was found for exactly this content or cluster
     if (url === undefined || url === null) {
@@ -275,37 +280,7 @@ export function authInfoFromConfig({
     }
     const host = config.hosts[new URL(url, window.location.href).href]
     if (host) {
-        if (!props.contents || props.clusters) {
-            //  either the specified clusters or all found in host in case
-            // no contents and clusters are specified
-            const clusters = props.clusters
-                ? props.clusters
-                : Object.keys(host.clusters)
-            for (const id of clusters) {
-                if (id in excludeClusters) {
-                    continue
-                }
-                const clusterconf = host.clusters[id]
-                if (clusterconf) {
-                    for (const hash in clusterconf.hashes) {
-                        const perms = clusterconf.hashes[hash]
-                        if (
-                            config.tokens[hash] &&
-                            SetOps.hasIntersection(require, perms)
-                        ) {
-                            hashes.add(hash)
-                            tokens.add(`${id}:${config.tokens[hash]?.data}`)
-                            for (const permission of perms) {
-                                types.add(permission)
-                            }
-                        }
-                        if (config.certificates[hash]) {
-                            certificateHashes.add(hash)
-                        }
-                    }
-                }
-            }
-        }
+        // first are contents
         if (props.contents) {
             for (const content of props.contents) {
                 const contentconf = host.contents[content]
@@ -318,6 +293,10 @@ export function authInfoFromConfig({
                             config.tokens[hash] &&
                             SetOps.hasIntersection(require, perms)
                         ) {
+                            if (limit && tokens.size > limit) {
+                                limitReached = true
+                                continue
+                            }
                             hashes.add(hash)
                             if (!config.tokens[hash] || !hash) {
                                 console.warn('token not found for:', hash)
@@ -338,6 +317,46 @@ export function authInfoFromConfig({
                 }
             }
         }
+        if (!props.contents || props.clusters || excludeClusters) {
+            //  either the specified clusters or all found in host in case
+            // no contents and clusters are specified
+            const clusters = props.clusters
+                ? props.clusters
+                : Object.keys(host.clusters)
+            for (const id of clusters) {
+                if (id in excludeClusters) {
+                    continue
+                }
+                const clusterconf = host.clusters[id]
+                if (clusterconf) {
+                    for (const hash in clusterconf.hashes) {
+                        const perms = clusterconf.hashes[hash]
+                        if (
+                            config.tokens[hash] &&
+                            SetOps.hasIntersection(require, perms)
+                        ) {
+                            if (limit && tokens.size > limit) {
+                                limitReached = true
+                                continue
+                            }
+                            hashes.add(hash)
+                            tokens.add(`${id}:${config.tokens[hash]?.data}`)
+
+                            for (const permission of perms) {
+                                types.add(permission)
+                            }
+                        }
+                        if (config.certificates[hash]) {
+                            certificateHashes.add(hash)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (limitReached && limitWarning) {
+        console.warn('Warning: tokens are capped as limit of 100 is reached')
     }
 
     // sorted is better for caching
@@ -347,6 +366,7 @@ export function authInfoFromConfig({
         tokens: [...tokens].sort(),
         // only informative
         types,
+        limitReached,
     }
 }
 

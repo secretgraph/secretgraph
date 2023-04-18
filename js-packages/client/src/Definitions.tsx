@@ -82,8 +82,12 @@ function Definitions({
             deleted: null,
             tokens: [],
             tokensPermissions: new Set(),
-            cluster: null,
+            currentCluster: query.get('cluster') || null,
+            editCluster: query.get('cluster') || null,
             cloneData: null,
+        }
+        if (ctx.type == 'Cluster' && !ctx.currentCluster) {
+            ctx.currentCluster = ctx.item
         }
         if (ctx.action == 'clone' && window.opener?.cloneData) {
             ctx.action = 'create'
@@ -126,6 +130,12 @@ function Definitions({
         } else if (mainCtx.item) {
             search.set('item', mainCtx.item)
         }
+        // why cluster? Otherwise we would load !all tokens for all clusters and could get easily bigger,
+        // than the 100 tokens limit
+        if (mainCtx.currentCluster && mainCtx.type != 'Cluster') {
+            search.set('cluster', mainCtx.currentCluster)
+        }
+
         if (mainCtx.url) {
             search.set('url', mainCtx.url)
         }
@@ -135,7 +145,13 @@ function Definitions({
             search.delete('loginUrl')
         }
         window.location.hash = search.toString()
-    }, [mainCtx.action, mainCtx.item, mainCtx.type, mainCtx.url])
+    }, [
+        mainCtx.action,
+        mainCtx.item,
+        mainCtx.currentCluster,
+        mainCtx.type,
+        mainCtx.url,
+    ])
 
     const [searchCtx, updateSearchCtx] = React.useReducer<
         updateStateType<Interfaces.SearchContextInterface>

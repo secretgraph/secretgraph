@@ -264,6 +264,12 @@ const ClusterIntern = ({
                         action: 'update',
                         item: clusterResponse.data.secretgraph
                             .updateOrCreateCluster.cluster.id,
+                        currentCluster:
+                            clusterResponse.data.secretgraph
+                                .updateOrCreateCluster.cluster.id,
+                        editCluster:
+                            clusterResponse.data.secretgraph
+                                .updateOrCreateCluster.cluster.id,
                         url,
                         updateId:
                             clusterResponse.data.secretgraph

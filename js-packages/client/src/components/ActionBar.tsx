@@ -41,7 +41,7 @@ function ActionBar(props: Props) {
         }
         if (
             !config ||
-            (!mainCtx.cluster && !mainCtx.item) ||
+            (!mainCtx.currentCluster && !mainCtx.item) ||
             mainCtx.readonly
         ) {
             return []
@@ -54,7 +54,9 @@ function ActionBar(props: Props) {
                 mainCtx.type != 'Cluster' && mainCtx.item
                     ? new Set([mainCtx.item])
                     : undefined,
-            clusters: mainCtx.cluster ? new Set([mainCtx.cluster]) : undefined,
+            clusters: mainCtx.currentCluster
+                ? new Set([mainCtx.currentCluster])
+                : undefined,
         }).tokens
     }, [mainCtx.tokens, mainCtx.readonly, mainCtx.tokensPermissions])
 
@@ -265,9 +267,12 @@ function ActionBar(props: Props) {
                                             shareFn: null,
                                             deleted: null,
                                             type: event.currentTarget.value,
-                                            cluster:
+                                            /*currentCluster:
                                                 searchCtx.cluster ||
                                                 config.configCluster,
+                                            editCluster:
+                                                searchCtx.cluster ||
+                                                config.configCluster,*/
                                             tokens: createTokens,
                                             cloneData: null,
                                         })

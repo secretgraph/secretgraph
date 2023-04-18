@@ -186,7 +186,7 @@ function InnerWorkday({
 
     const initialValues = {
         actions,
-        cluster: mainCtx.cluster,
+        cluster: mainCtx.editCluster,
         day:
             (tags ? tags['~day'][0] : null) ||
             new Date(Date.now()).toDateString(),
@@ -255,6 +255,8 @@ function InnerWorkday({
                             tokens: [
                                 ...new Set([...mainCtx.tokens, ...nTokens]),
                             ],
+                            editCluster: values.cluster,
+                            currentCluster: values.cluster,
                         })
                     } else {
                         updateMainCtx({
@@ -262,6 +264,8 @@ function InnerWorkday({
                             updateId: res.node.updateId,
                             url,
                             action: 'update',
+                            editCluster: values.cluster,
+                            currentCluster: values.cluster,
                         })
                     }
                 } else {
@@ -272,7 +276,7 @@ function InnerWorkday({
             {({ values, isSubmitting, dirty, submitForm, setFieldValue }) => {
                 React.useEffect(() => {
                     values.cluster &&
-                        updateMainCtx({ cluster: values.cluster })
+                        updateMainCtx({ editCluster: values.cluster })
                 }, [values.cluster])
                 return (
                     <Form>
@@ -417,12 +421,12 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
     React.useEffect(() => {
         if (
             dataUnfinished &&
-            dataUnfinished.secretgraph.node.cluster.id != mainCtx.cluster
+            dataUnfinished.secretgraph.node.cluster.id != mainCtx.editCluster
         ) {
             loading = true
             refetch()
         }
-    }, [mainCtx.cluster])
+    }, [mainCtx.editCluster])
     React.useEffect(() => {
         if (!dataUnfinished) {
             return
@@ -528,17 +532,17 @@ const CreateWorkday = () => {
     } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
-            id: mainCtx.cluster || Constants.stubCluster,
+            id: mainCtx.editCluster || Constants.stubCluster,
             authorization: mainCtx.tokens,
         },
         onError: console.error,
     })
     React.useEffect(() => {
-        if (mainCtx.cluster) {
+        if (mainCtx.editCluster) {
             loading = true
             refetch()
         }
-    }, [mainCtx.cluster])
+    }, [mainCtx.editCluster])
 
     React.useEffect(() => {
         if (!dataUnfinished) {

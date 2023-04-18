@@ -103,7 +103,10 @@ const SideBarItems = () => {
             securityLevel: null,
             securityWarningArmed: true,
             readonly: true,
-            cluster: type == 'Cluster' ? node.id : node?.cluster?.id || null,
+            currentCluster:
+                type == 'Cluster' ? node.id : node?.cluster?.id || null,
+            editCluster:
+                type == 'Cluster' ? node.id : node?.cluster?.id || null,
             updateId: node.updateId,
             type,
             deleted: false,

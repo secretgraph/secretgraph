@@ -30,10 +30,9 @@ export default function LoadingComponent() {
                         mainCtx.type == 'Cluster' || !mainCtx.item
                             ? undefined
                             : new Set([mainCtx.item]),
-                    clusters:
-                        mainCtx.type != 'Cluster' || !mainCtx.item
-                            ? undefined
-                            : new Set([mainCtx.item]),
+                    clusters: !mainCtx.currentCluster
+                        ? undefined
+                        : new Set([mainCtx.currentCluster]),
                     require,
                 })
                 if (!authinfo.tokens.length) {

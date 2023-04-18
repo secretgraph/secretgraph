@@ -793,7 +793,7 @@ const KeysUpdate = ({
         lockExisting: !!mainCtx.item,
     })
     const initialValues = {
-        cluster: mainCtx.cluster,
+        cluster: mainCtx.editCluster,
         state: publicKey?.nodeData?.state,
         name: publicKey?.tags?.name ? publicKey.tags.name[0] : '',
         description: publicKey?.tags?.description
@@ -980,6 +980,10 @@ const KeysUpdate = ({
                             updateId:
                                 newData.secretgraph.updateOrCreateContent
                                     .content.updateId,
+                            cloneData: null,
+
+                            editCluster: values.cluster,
+                            currentCluster: values.cluster,
                         })
                     } else {
                         const { data: newData } = await updateKey({
@@ -1037,6 +1041,10 @@ const KeysUpdate = ({
                             updateId:
                                 newData.secretgraph.updateOrCreateContent
                                     .content.updateId,
+                            cloneData: null,
+
+                            editCluster: values.cluster,
+                            currentCluster: values.cluster,
                         })
                     }
                     const configUpdate = mergeUpdates(
@@ -1075,7 +1083,7 @@ const KeysUpdate = ({
                 React.useEffect(() => {
                     updateMainCtx({
                         cloneData: values,
-                        cluster: values.cluster,
+                        editCluster: values.cluster,
                     })
                 }, [values])
                 return (
@@ -1211,16 +1219,16 @@ function CreateKeys() {
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { tokens } = React.useMemo(() => {
-        if (mainCtx.cluster) {
+        if (mainCtx.editCluster) {
             return authInfoFromConfig({
                 config,
                 url: activeUrl,
-                clusters: new Set([mainCtx.cluster]),
+                clusters: new Set([mainCtx.editCluster]),
                 require: new Set(['create', 'manage']),
             })
         }
         return { tokens: [] }
-    }, [config, mainCtx.cluster, activeUrl])
+    }, [config, mainCtx.editCluster, activeUrl])
 
     const authorization = React.useMemo(() => {
         return [...new Set([...mainCtx.tokens, ...tokens])]
@@ -1229,7 +1237,7 @@ function CreateKeys() {
     const { data, loading, refetch } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
-            id: mainCtx.cluster || Constants.stubCluster,
+            id: mainCtx.editCluster || Constants.stubCluster,
             authorization,
         },
         onError: console.error,
@@ -1237,10 +1245,10 @@ function CreateKeys() {
     React.useEffect(() => {
         if (data) {
             refetch({
-                id: mainCtx.cluster || Constants.stubCluster,
+                id: mainCtx.editCluster || Constants.stubCluster,
             })
         }
-    }, [mainCtx.cluster])
+    }, [mainCtx.editCluster])
     const algosAndKey = React.useMemo(() => {
         const hashAlgorithmsRaw =
             data?.secretgraph?.config?.hashAlgorithms || []
@@ -1254,7 +1262,9 @@ function CreateKeys() {
     return (
         <KeysUpdate
             url={activeUrl}
-            setCluster={(cluster: string) => updateMainCtx({ cluster })}
+            setCluster={(cluster: string) =>
+                updateMainCtx({ editCluster: cluster })
+            }
             disabled={loading}
             {...algosAndKey}
         />
@@ -1323,7 +1333,7 @@ export default function KeyComponent() {
                     setBarrier(undefined)
                 } else if (result) {
                     let authInfo = undefined
-                    if (result[1] && result[1] != mainCtx.cluster) {
+                    if (result[1] && result[1] != mainCtx.editCluster) {
                         authInfo = authInfoFromConfig({
                             config,
                             url: mainCtx.url as string,
@@ -1333,7 +1343,8 @@ export default function KeyComponent() {
                     }
                     updateMainCtx({
                         item: result[0],
-                        cluster: result[1] || undefined,
+                        editCluster: result[1] || undefined,
+                        currentCluster: result[1] || undefined,
                         type: 'PublicKey',
                         tokens: authInfo?.tokens || undefined,
                         tokensPermissions: authInfo?.types || undefined,

@@ -77,7 +77,7 @@ function InnerConfig({
     const initialValues = {
         slots: thisConfig?.slots || [],
         actions,
-        cluster: mainCtx.cluster || null,
+        cluster: mainCtx.editCluster || null,
         lockPW: '',
         removeLockPW: false,
         securityQuestion: thisConfig?.configSecurityQuestion
@@ -220,7 +220,7 @@ function InnerConfig({
                 }) => {
                     React.useEffect(() => {
                         values.cluster &&
-                            updateMainCtx({ cluster: values.cluster })
+                            updateMainCtx({ editCluster: values.cluster })
                     }, [values.cluster])
                     React.useEffect(() => {
                         values.lockPW &&
@@ -459,12 +459,12 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
     React.useEffect(() => {
         if (
             dataUnfinished &&
-            dataUnfinished.secretgraph.node.cluster.id != mainCtx.cluster
+            dataUnfinished.secretgraph.node.cluster.id != mainCtx.editCluster
         ) {
             loading = true
             refetch()
         }
-    }, [mainCtx.cluster])
+    }, [mainCtx.editCluster])
     React.useEffect(() => {
         if (!dataUnfinished) {
             return

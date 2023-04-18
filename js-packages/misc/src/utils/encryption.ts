@@ -964,11 +964,21 @@ export async function authInfoFromTokens({
     tokens,
     hashAlgorithms,
     certificateHashes,
+    limit,
 }: {
     tokens: string[]
     hashAlgorithms: Set<string> | string
     certificateHashes: string[]
+    limit?: number
 }): Promise<Interfaces.AuthInfoInterface> {
+    let limitReached = false
+    if (limit && tokens.length > limit) {
+        limitReached = true
+        tokens = tokens.slice(0, limit)
+    } else if (limit === undefined && tokens.length > 100) {
+        limitReached = true
+        tokens = tokens.slice(0, 100)
+    }
     if (typeof hashAlgorithms == 'string') {
         hashAlgorithms = new Set(hashAlgorithms)
     }
@@ -980,10 +990,14 @@ export async function authInfoFromTokens({
             hashes.push(hashObject(token, hashAlgorithm))
         }
     }
+    if (limitReached && limit === undefined) {
+        console.warn('Warning: tokens are capped as limit of 100 is reached')
+    }
     return {
         certificateHashes,
         hashes: (await Promise.all(hashes)).sort(),
         tokens: [...tokens].sort(),
         types: new Set(),
+        limitReached,
     }
 }

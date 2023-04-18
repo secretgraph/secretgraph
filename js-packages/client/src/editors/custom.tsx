@@ -74,7 +74,7 @@ const InnerCustom = ({
         contentHash: nodeData?.contentHash || '',
         type: nodeData?.type || '',
         actions,
-        cluster: mainCtx.cluster,
+        cluster: mainCtx.editCluster,
     }
     for (const [prefix, vals] of Object.entries(tags || {})) {
         if (vals.length) {
@@ -130,6 +130,8 @@ const InnerCustom = ({
                             tokens: [
                                 ...new Set([...mainCtx.tokens, ...nTokens]),
                             ],
+                            editCluster: values.cluster,
+                            currentCluster: values.cluster,
                         })
                     } else {
                         updateMainCtx({
@@ -137,6 +139,8 @@ const InnerCustom = ({
                             updateId: res.node.updateId,
                             url,
                             action: 'update',
+                            editCluster: values.cluster,
+                            currentCluster: values.cluster,
                         })
                     }
                 } else {
@@ -147,7 +151,7 @@ const InnerCustom = ({
             {({ values, isSubmitting, dirty, submitForm, setFieldValue }) => {
                 React.useEffect(() => {
                     values.cluster &&
-                        updateMainCtx({ cluster: values.cluster })
+                        updateMainCtx({ editCluster: values.cluster })
                 }, [values.cluster])
                 const updateTags = React.useCallback((tags: string[]) => {
                     const ntags = tags.filter((val) => val)
@@ -547,12 +551,12 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     React.useEffect(() => {
         if (
             dataUnfinished &&
-            dataUnfinished.secretgraph.node.cluster.id != mainCtx.cluster
+            dataUnfinished.secretgraph.node.cluster.id != mainCtx.editCluster
         ) {
             loading = true
             refetch()
         }
-    }, [mainCtx.cluster])
+    }, [mainCtx.editCluster])
     React.useEffect(() => {
         if (!dataUnfinished) {
             return
@@ -658,17 +662,17 @@ const CreateCustom = () => {
     } = useQuery(getContentConfigurationQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
-            id: mainCtx.cluster || Constants.stubCluster,
+            id: mainCtx.editCluster || Constants.stubCluster,
             authorization: mainCtx.tokens,
         },
         onError: console.error,
     })
     React.useEffect(() => {
-        if (mainCtx.cluster) {
+        if (mainCtx.editCluster) {
             loading = true
             refetch()
         }
-    }, [mainCtx.cluster])
+    }, [mainCtx.editCluster])
 
     React.useEffect(() => {
         if (!dataUnfinished) {
