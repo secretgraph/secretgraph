@@ -612,7 +612,6 @@ The item get parameter is mandatory.
 # TODO far future
 
 -   post quantum crypto (library support is very bad)
--   pull support, "stream in" of content
 -   more async (needs better django support)
 -   recovery:
     -   save a recovery token in remote identity provider (needs identity provider+ identity editor)

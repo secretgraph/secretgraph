@@ -15,6 +15,7 @@ from functools import cached_property
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_public_key
+from django.db import transaction
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import File
@@ -127,6 +128,45 @@ class Net(models.Model):
         max_length=255, null=True, blank=True, unique=True
     )
 
+    @staticmethod
+    def _size_tags(net_id) -> int:
+        # exclude freeze, immutable from size calculation
+        tags = (
+            ContentTag.objects.filter(content__net_id=net_id)
+            .exclude(tag__in=["freeze", "immutable"])
+            .annotate(size=Length("tag"))
+            .aggregate(size_sum=models.Sum("size"))
+        )
+        return tags["size_sum"] or 0
+
+    @staticmethod
+    def _size_references(net_id) -> int:
+        refs = (
+            ContentReference.objects.filter(content__net_id=net_id)
+            .annotate(size=Length("extra"))
+            .aggregate(size_sum=models.Sum("size"), count=models.Count("id"))
+        )
+        # include target id size and group field
+        return (refs["size_sum"] or 0) + refs["count"] * 28
+
+    def calculate_bytes_in_use(self):
+        # should be used with locked net and in transaction
+        # or with nets, clusters, contents not in use e.g. maintainance work
+        # clusters are easy
+        size = (
+            self.clusters.annotate(size=Length("description")).aggregate(
+                size_sum=models.Sum("size")
+            )["size_sum"]
+            or 0
+        )
+
+        # contents are complicated
+        for c in self.contents.all():
+            size += c.size_file
+        size += self._size_tags(self.id)
+        size += self._size_references(self.id)
+        return size
+
     def reset_quota(self):
         self.quota = default_net_limit(self, "SECRETGRAPH_QUOTA")
 
@@ -134,6 +174,14 @@ class Net(models.Model):
         self.max_upload_size = default_net_limit(
             self, "SECRETGRAPH_MAX_UPLOAD"
         )
+
+    def recalculate_bytes_in_use(self, context=transaction.atomic):
+        if callable(context):
+            context = context()
+        with context:
+            obj: Net = self.objects.select_for_update().get(id=self.id)
+            obj.bytes_in_use = obj.calculate_bytes_in_use()
+            obj.save(update_fields=["bytes_in_use"])
 
     @cached_property
     def user(self) -> usermodel | str:
@@ -410,7 +458,7 @@ class Content(FlexidModel):
             .annotate(size=Length("tag"))
             .aggregate(size_sum=models.Sum("size"))
         )
-        return tags["size_sum"]
+        return tags["size_sum"] or 0
 
     @property
     def size_references(self) -> int:

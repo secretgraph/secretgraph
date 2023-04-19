@@ -1,8 +1,9 @@
 from datetime import timedelta
+from contextlib import nullcontext
 
 from strawberry_django_plus.relay import to_base64
 from django.contrib import admin
-from django.db.models import Subquery, F
+from django.db.models import Subquery, F, QuerySet
 from django.db import transaction
 from django.utils import timezone
 
@@ -186,12 +187,23 @@ class NetAdmin(admin.ModelAdmin):
     list_display = [admin_repr]
     search_fields = ["id", "user_name"]
 
+    @admin.action(
+        permissions=["view", "change"], description="Recalculate bytes_in_use"
+    )
+    def recalculate_bytes_in_use(self, request, queryset: QuerySet[Net]):
+        nullctx = nullcontext()
+        with transaction.atomic():
+            for net in queryset.select_for_update():
+                net.recalculate_bytes_in_use(nullctx)
+
     def has_module_permission(self, request, obj=None):
         return (
             getattr(request.user, "is_staff", False)
             or getattr(request.user, "is_superuser", False)
             or "manage_user" in get_cached_properties(request)
         )
+
+    has_view_permission = has_module_permission
 
     def has_delete_permission(self, request, obj=None) -> bool:
         return False

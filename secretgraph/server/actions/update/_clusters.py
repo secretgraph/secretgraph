@@ -2,6 +2,7 @@ __all__ = ["create_cluster_fn", "update_cluster_fn"]
 
 from contextlib import nullcontext
 from uuid import UUID, uuid4
+import logging
 
 import ratelimit
 from django.conf import settings
@@ -19,6 +20,8 @@ from ...utils.auth import (
 from ._arguments import ContentInput, ClusterInput
 from ._actions import manage_actions_fn
 from ._contents import create_key_fn
+
+logger = logging.getLogger(__name__)
 
 
 def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
@@ -89,11 +92,20 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
                 user = None
             if user:
                 net = Net.objects.filter(user_name=user.get_username()).first()
-            if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
-                if not user:
+                if net.clusters.exists():
+                    logger.info(
+                        "User '%s' has already registered some cluster, "
+                        "but doesn't use them for registering new ones. "
+                        "He may has trouble.",
+                        user.get_username(),
+                    )
+            else:
+                if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
                     raise ValueError("Must be logged in")
-            elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
-                raise ValueError("Cannot register")
+                elif not getattr(
+                    settings, "SECRETGRAPH_ALLOW_REGISTER", False
+                ):
+                    raise ValueError("Cannot register")
         if not net:
             if not user:
                 rate = settings.SECRETGRAPH_RATELIMITS.get(
