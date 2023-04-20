@@ -7,6 +7,7 @@ import strawberry
 from strawberry.types import Info
 from strawberry_django_plus import relay, gql
 from django.db import transaction
+from django.db.models import QuerySet
 from django.db.models.functions import Substr
 
 from ...actions.update import (
@@ -157,11 +158,11 @@ def mutate_content(
                 required_keys = Content.objects.required_keys_full(
                     content_obj.cluster
                 )
-            required_keys = set(
-                required_keys.annotate(
+            if isinstance(required_keys, QuerySet):
+                required_keys = required_keys.annotate(
                     keyHash=Substr("contentHash", 5)
                 ).values_list("keyHash", flat=True)
-            )
+            required_keys = set(required_keys)
         pre_clean_content_spec(False, content, result)
 
         returnval = ContentMutation(
