@@ -217,7 +217,7 @@ class Cluster(FlexidModel):
         default="",
         null=False,
         blank=True,
-        validators=[SafeNameValidator],
+        validators=[SafeNameValidator()],
     )
     # provides uniqueness to global name and is a speedup
     name_cached: str = models.CharField(
@@ -369,7 +369,7 @@ class Content(FlexidModel):
         max_length=255,
         blank=True,
         null=True,
-        validators=[ContentHashValidator],
+        validators=[ContentHashValidator()],
     )
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="contents"
@@ -385,7 +385,7 @@ class Content(FlexidModel):
     type: str = models.CharField(
         max_length=50,
         null=False,
-        validators=[TypeAndGroupValidator, MinLengthValidator(1)],
+        validators=[TypeAndGroupValidator(), MinLengthValidator(1)],
     )
     state: str = models.CharField(max_length=10, null=False)
 
@@ -577,7 +577,7 @@ class ContentAction(models.Model):
         default="",
         blank=True,
         help_text=contentaction_group_help,
-        validators=[TypeAndGroupValidator],
+        validators=[TypeAndGroupValidator()],
     )
     action: Action = models.OneToOneField(
         "Action",
@@ -604,7 +604,7 @@ class Action(models.Model):
     used: dt = models.DateTimeField(null=True, blank=True)
     keyHash: str = models.CharField(
         max_length=255,
-        validators=[ActionKeyHashValidator],
+        validators=[ActionKeyHashValidator()],
     )
     nonce: str = models.CharField(max_length=255)
     # value returns json with required encrypted aes key
@@ -700,7 +700,7 @@ class ContentReference(models.Model):
         null=False,
         blank=True,
         help_text=reference_group_help,
-        validators=[TypeAndGroupValidator],
+        validators=[TypeAndGroupValidator()],
     )
     extra: str = models.TextField(blank=True, null=False, default="")
 
@@ -766,7 +766,7 @@ class GlobalGroupProperty(models.Model):
         max_length=50,
         null=False,
         unique=True,
-        validators=[SafeNameValidator, MinLengthValidator(1)],
+        validators=[SafeNameValidator(), MinLengthValidator(1)],
     )
     groups: models.ManyToManyRel["GlobalGroup"]
 
@@ -781,7 +781,7 @@ class GlobalGroup(models.Model):
         max_length=50,
         null=False,
         unique=True,
-        validators=[SafeNameValidator, MinLengthValidator(1)],
+        validators=[SafeNameValidator(), MinLengthValidator(1)],
     )
     description: str = models.TextField()
     # don't show in groups, mutual exclusive to keys

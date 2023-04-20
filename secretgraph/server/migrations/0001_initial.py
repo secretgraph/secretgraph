@@ -105,7 +105,7 @@ class Migration(migrations.Migration):
                         max_length=181,
                         null=False,
                         validators=[
-                            secretgraph.server.validators.SafeNameValidator
+                            secretgraph.server.validators.SafeNameValidator()
                         ],
                     ),
                 ),
@@ -201,7 +201,7 @@ class Migration(migrations.Migration):
                         max_length=50,
                         null=False,
                         validators=[
-                            secretgraph.server.validators.TypeAndGroupValidator,
+                            secretgraph.server.validators.TypeAndGroupValidator(),
                             django.core.validators.MinLengthValidator(1),
                         ],
                     ),
@@ -230,7 +230,7 @@ class Migration(migrations.Migration):
                         max_length=255,
                         null=True,
                         validators=[
-                            secretgraph.server.validators.ContentHashValidator
+                            secretgraph.server.validators.ContentHashValidator()
                         ],
                     ),
                 ),
@@ -291,7 +291,7 @@ class Migration(migrations.Migration):
                         help_text="ContentReference group: references are clustered in groups. They are used to signal different functions of the connection",
                         max_length=20,
                         validators=[
-                            secretgraph.server.validators.TypeAndGroupValidator
+                            secretgraph.server.validators.TypeAndGroupValidator()
                         ],
                     ),
                 ),
@@ -342,7 +342,7 @@ class Migration(migrations.Migration):
                     models.CharField(
                         max_length=255,
                         validators=[
-                            secretgraph.server.validators.ActionKeyHashValidator
+                            secretgraph.server.validators.ActionKeyHashValidator()
                         ],
                     ),
                 ),
@@ -382,7 +382,7 @@ class Migration(migrations.Migration):
                         help_text="ContentAction group: ContentActions are clustered in groups. They are used to signal different functions of the connection",
                         max_length=20,
                         validators=[
-                            secretgraph.server.validators.TypeAndGroupValidator
+                            secretgraph.server.validators.TypeAndGroupValidator()
                         ],
                     ),
                 ),
@@ -419,7 +419,7 @@ class Migration(migrations.Migration):
                         max_length=50,
                         unique=True,
                         validators=[
-                            secretgraph.server.validators.SafeNameValidator,
+                            secretgraph.server.validators.SafeNameValidator(),
                             django.core.validators.MinLengthValidator(1),
                         ],
                     ),
@@ -441,7 +441,7 @@ class Migration(migrations.Migration):
                         max_length=50,
                         unique=True,
                         validators=[
-                            secretgraph.server.validators.SafeNameValidator,
+                            secretgraph.server.validators.SafeNameValidator(),
                             django.core.validators.MinLengthValidator(1),
                         ],
                     ),
