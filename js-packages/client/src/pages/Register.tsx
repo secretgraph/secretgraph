@@ -19,7 +19,6 @@ import { initializeCluster } from '@secretgraph/misc/utils/operations/cluster'
 import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
-import { LegacyRef } from 'react'
 
 import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '../components/formik/FormikTextField'
@@ -70,7 +69,13 @@ function Register() {
     return (
         <Formik
             onSubmit={async (
-                { url, securityQuestion, lockPW, directRegisterWhenPossible },
+                {
+                    url,
+                    securityQuestion,
+                    lockPW,
+                    directRegisterWhenPossible,
+                    keepUserAfterRegistration,
+                },
                 { setSubmitting }
             ) => {
                 setOldConfig(config)
@@ -165,7 +170,11 @@ function Register() {
                         updateMainCtx({
                             action: 'create',
                         })
-                        if (registerContext.activeUser) {
+                        if (
+                            registerContext.activeUser &&
+                            !directRegisterWhenPossible &&
+                            !keepUserAfterRegistration
+                        ) {
                             try {
                                 await client.mutate({ mutation: serverLogout })
                             } catch (exc) {}
@@ -188,11 +197,12 @@ function Register() {
             initialValues={{
                 url: defaultPath,
                 securityQuestion: [
-                    'The answer to life, the universe, and everything',
+                    'The answer to life, the universe and everything',
                     '42',
                 ],
                 lockPW: '',
                 directRegisterWhenPossible: false,
+                keepUserAfterRegistration: false,
             }}
         >
             {({ submitForm, isSubmitting, isValid, values }) => {
@@ -238,7 +248,7 @@ function Register() {
                             errors: [] as string[],
                         }
                         if (!context.canDirectRegister) {
-                            if (!context.loginUrl) {
+                            if (!context.loginUrl && !context.activeUser) {
                                 context.errors.push('cannot register here')
                             } else if (!context.activeUser) {
                                 context.errors.push(
@@ -319,9 +329,11 @@ function Register() {
 
                             <div
                                 style={{
-                                    display: !registerContext?.loginUrl
-                                        ? 'none'
-                                        : undefined,
+                                    display:
+                                        !registerContext?.loginUrl &&
+                                        !registerContext?.activeUser
+                                            ? 'none'
+                                            : undefined,
                                 }}
                             >
                                 <Typography
@@ -346,25 +358,44 @@ function Register() {
                                 >
                                     {registerContext?.activeUser || '-'}
                                 </Typography>
-                                <div
-                                    style={{
-                                        display:
-                                            registerContext?.canDirectRegister
-                                                ? undefined
-                                                : 'none',
-                                    }}
-                                >
-                                    <Field
-                                        name="directRegisterWhenPossible"
-                                        component={FormikCheckboxWithLabel}
-                                        Label={{
-                                            label:
-                                                'Register without user?' +
-                                                (!registerContext?.activeUser
-                                                    ? ' Note: will register without a user anyway as no user was detected'
-                                                    : ''),
+                                <div>
+                                    <span
+                                        style={{
+                                            display:
+                                                registerContext?.canDirectRegister
+                                                    ? undefined
+                                                    : 'none',
                                         }}
-                                    />
+                                    >
+                                        <Field
+                                            name="directRegisterWhenPossible"
+                                            component={FormikCheckboxWithLabel}
+                                            Label={{
+                                                label:
+                                                    'Register without user?' +
+                                                    (!registerContext?.activeUser
+                                                        ? ' Note: will register without a user anyway as no user was detected'
+                                                        : ''),
+                                            }}
+                                        />
+                                    </span>
+                                    <span
+                                        style={{
+                                            display:
+                                                registerContext?.activeUser &&
+                                                !values.directRegisterWhenPossible
+                                                    ? undefined
+                                                    : 'none',
+                                        }}
+                                    >
+                                        <Field
+                                            name="keepUserAfterRegistration"
+                                            component={FormikCheckboxWithLabel}
+                                            Label={{
+                                                label: "Don't logout user out after registration? (You are using config instead of user afterwards)",
+                                            }}
+                                        />
+                                    </span>
                                 </div>
                                 <iframe
                                     style={{
@@ -378,7 +409,7 @@ function Register() {
                                                 : 'block',
                                         paddingTop: theme.spacing(1),
                                     }}
-                                    src={registerContext?.loginUrl || '/'}
+                                    src={registerContext?.loginUrl || ''}
                                 ></iframe>
                                 <div
                                     style={{
