@@ -431,14 +431,14 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-fast-ratelimit"
-version = "0.11.0"
+version = "0.11.1"
 description = "Fast ratelimit implementation with django caches"
 category = "main"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django_fast_ratelimit-0.11.0-py3-none-any.whl", hash = "sha256:3cd39e66446316b51c5d60b41b982b22593245762be3bb5b0e43794155a00944"},
-    {file = "django_fast_ratelimit-0.11.0.tar.gz", hash = "sha256:b2a0e1bb18ed2fd43fe80b7725550461ca6097ac70a810ef832e81c46203309b"},
+    {file = "django_fast_ratelimit-0.11.1-py3-none-any.whl", hash = "sha256:509523ef9bb1bb265c604713e1620e417accd94047eb624234a2ecf624fa2fb3"},
+    {file = "django_fast_ratelimit-0.11.1.tar.gz", hash = "sha256:05378d9584af2f69f45c618850caf7b994c016f439a8a83825dc569f5dbe40f9"},
 ]
 
 [package.dependencies]
@@ -1340,14 +1340,14 @@ tests = ["coverage[toml] (>=5.0.2)", "pytest"]
 
 [[package]]
 name = "setuptools"
-version = "67.7.0"
+version = "67.7.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "setuptools-67.7.0-py3-none-any.whl", hash = "sha256:888be97fde8cc3afd60f7784e678fa29ee13c4e5362daa7104a93bba33646c50"},
-    {file = "setuptools-67.7.0.tar.gz", hash = "sha256:b7e53a01c6c654d26d2999ee033d8c6125e5fa55f03b7b193f937ae7ac999f22"},
+    {file = "setuptools-67.7.1-py3-none-any.whl", hash = "sha256:6f0839fbdb7e3cfef1fc38d7954f5c1c26bf4eebb155a55c9bf8faf997b9fb67"},
+    {file = "setuptools-67.7.1.tar.gz", hash = "sha256:bb16732e8eb928922eabaa022f881ae2b7cdcfaf9993ef1f5e841a96d32b8e0c"},
 ]
 
 [package.extras]
@@ -1432,14 +1432,14 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.171.2"
+version = "0.171.3"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql-0.171.2-py3-none-any.whl", hash = "sha256:fd4b7ee37517bb3211c734368706b2e55beaf10cb106d4f999ca4885d83cc8c0"},
-    {file = "strawberry_graphql-0.171.2.tar.gz", hash = "sha256:0ab4d797e326d1797d55b05864a2c731a02ae53f894e2d600fd6303e7a6767e2"},
+    {file = "strawberry_graphql-0.171.3-py3-none-any.whl", hash = "sha256:c45169384343328e3143f376b3349dc5ec34f55ce3bb11cf18e5d8e1a43cbd41"},
+    {file = "strawberry_graphql-0.171.3.tar.gz", hash = "sha256:87bf921726018c75789fe2b71dadcc40a3a12f851a56b51afaac4d982be18aab"},
 ]
 
 [package.dependencies]
