@@ -5,21 +5,24 @@ import FormControlLabel, {
 import { FieldProps, useField } from 'formik'
 import * as React from 'react'
 
-export type FormikCheckboxProps<
-    V extends string = string,
-    FormValues = any
-> = Omit<CheckboxProps, keyof FieldProps<V, FormValues>> &
-    FieldProps<V, FormValues> & {
+export type FormikCheckboxProps<FormValues = any> = Omit<
+    CheckboxProps,
+    keyof FieldProps<boolean, FormValues>
+> &
+    FieldProps<boolean, FormValues> & {
         Label: Omit<FormControlLabelProps, 'control'>
     }
 
-export default function FormikCheckboxWithLabel<
-    V extends string = string,
-    FormValues = any
->({ field, form, meta, Label, ...params }: FormikCheckboxProps<V, FormValues>) {
+export default function FormikCheckboxWithLabel<FormValues = any>({
+    field: { value, ...field },
+    form,
+    meta,
+    Label,
+    ...params
+}: FormikCheckboxProps<FormValues>) {
     return (
         <FormControlLabel
-            control={<Checkbox {...field} {...params} />}
+            control={<Checkbox checked={value} {...field} {...params} />}
             {...Label}
         />
     )

@@ -74,7 +74,7 @@ function Register() {
                     securityQuestion,
                     lockPW,
                     directRegisterWhenPossible,
-                    keepUserAfterRegistration,
+                    logoutUserAfterRegistration,
                 },
                 { setSubmitting }
             ) => {
@@ -173,7 +173,7 @@ function Register() {
                         if (
                             registerContext.activeUser &&
                             !directRegisterWhenPossible &&
-                            !keepUserAfterRegistration
+                            logoutUserAfterRegistration
                         ) {
                             try {
                                 await client.mutate({ mutation: serverLogout })
@@ -202,7 +202,7 @@ function Register() {
                 ],
                 lockPW: '',
                 directRegisterWhenPossible: false,
-                keepUserAfterRegistration: false,
+                logoutUserAfterRegistration: true,
             }}
         >
             {({ submitForm, isSubmitting, isValid, values }) => {
@@ -389,10 +389,10 @@ function Register() {
                                         }}
                                     >
                                         <Field
-                                            name="keepUserAfterRegistration"
+                                            name="logoutUserAfterRegistration"
                                             component={FormikCheckboxWithLabel}
                                             Label={{
-                                                label: "Don't logout user out after registration? (You are using config instead of user afterwards)",
+                                                label: 'Logout user out after registration? (You are using config instead of user afterwards)',
                                             }}
                                         />
                                     </span>

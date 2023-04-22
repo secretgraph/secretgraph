@@ -2,13 +2,17 @@ import Checkbox, { CheckboxProps } from '@mui/material/Checkbox'
 import { FieldProps, useField } from 'formik'
 import * as React from 'react'
 
-export type FormikCheckboxProps<V extends string = string, FormValues = any> =
-    Omit<CheckboxProps, keyof FieldProps<V, FormValues>> &
-        FieldProps<V, FormValues>
+export type FormikCheckboxProps<FormValues = any> = Omit<
+    CheckboxProps,
+    keyof FieldProps<boolean, FormValues>
+> &
+    FieldProps<boolean, FormValues>
 
-export default function FormikCheckbox<
-    V extends string = string,
-    FormValues = any
->({ field, meta, form, ...params }: FormikCheckboxProps<V, FormValues>) {
-    return <Checkbox {...field} {...params} />
+export default function FormikCheckbox<FormValues = any>({
+    field: { value, ...field },
+    meta,
+    form,
+    ...params
+}: FormikCheckboxProps<FormValues>) {
+    return <Checkbox checked={value} {...field} {...params} />
 }
