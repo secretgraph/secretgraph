@@ -8,7 +8,10 @@ import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
 import Grid from '@mui/material/Unstable_Grid2'
-import { getClusterQuery } from '@secretgraph/graphql-queries/cluster'
+import {
+    clusterFeedQuery,
+    getClusterQuery,
+} from '@secretgraph/graphql-queries/cluster'
 import { getNodeType } from '@secretgraph/graphql-queries/node'
 import { serverConfigQueryWithPermissions } from '@secretgraph/graphql-queries/server'
 import * as Constants from '@secretgraph/misc/constants'
@@ -172,6 +175,9 @@ const ClusterIntern = ({
                             authorization: mainCtx.tokens,
                             featured: values.featured,
                         })
+                        await itemClient.refetchQueries({
+                            include: [clusterFeedQuery, getClusterQuery],
+                        })
                     } else {
                         const key = crypto.getRandomValues(new Uint8Array(32))
                         const { publicKey, privateKey } =
@@ -199,6 +205,9 @@ const ClusterIntern = ({
                             privateKey,
                             privateKeyKey: key,
                             featured: values.featured,
+                        })
+                        await itemClient.refetchQueries({
+                            include: [clusterFeedQuery],
                         })
                     }
                     if (clusterResponse.errors || !clusterResponse.data) {

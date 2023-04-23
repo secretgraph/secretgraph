@@ -12,6 +12,7 @@ import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Unstable_Grid2'
 import Box from '@mui/system/Box'
 import {
+    contentFeedQuery,
     contentRetrievalQuery,
     getContentConfigurationQuery,
 } from '@secretgraph/graphql-queries/content'
@@ -110,6 +111,9 @@ const InnerCustom = ({
                     updateId: nodeData?.updateId,
                     url,
                     hashAlgorithm,
+                })
+                await itemClient.refetchQueries({
+                    include: [contentRetrievalQuery, contentFeedQuery],
                 })
                 if (res) {
                     if (res.config) {

@@ -58,6 +58,7 @@ function SharePanel({ url }: { url: string }) {
                 <span
                     style={{
                         display: 'inline-block',
+                        wordBreak: 'break-all',
                     }}
                 >
                     <Link

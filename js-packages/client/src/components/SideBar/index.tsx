@@ -134,8 +134,8 @@ const SideBarItems = () => {
                 {authinfoCluster && (
                     <SideBarClusters
                         heading
-                        nodeId={`${activeUrl}-clusters-owned`}
-                        label="Owned"
+                        nodeId={`${activeUrl}-clusters-nonpublic`}
+                        label="Non-Public"
                         authinfo={authinfoCluster}
                         deleted={searchCtx.deleted}
                         goTo={goTo}

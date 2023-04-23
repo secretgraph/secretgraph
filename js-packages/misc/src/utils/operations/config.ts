@@ -511,6 +511,7 @@ export async function updateConfigRemoteReducer(
         )
     }
     const results = await Promise.allSettled(resultPromises)
+    await client.refetchQueries({})
     let mainResult = results[mainNodeIndex]
     if (mainResult.status == 'fulfilled') {
         return mainResult.value[0]

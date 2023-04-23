@@ -11,7 +11,10 @@ import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/system/Box'
-import { getContentConfigurationQuery } from '@secretgraph/graphql-queries/content'
+import {
+    contentFeedQuery,
+    getContentConfigurationQuery,
+} from '@secretgraph/graphql-queries/content'
 import {
     findPublicKeyQuery,
     keysRetrievalQuery,
@@ -1037,6 +1040,12 @@ const KeysUpdate = ({
                                 authorization: mainCtx.tokens,
                             })
                         }
+                        await client.refetchQueries({
+                            include: [
+                                getContentConfigurationQuery,
+                                contentFeedQuery,
+                            ],
+                        })
                         updateMainCtx({
                             updateId:
                                 newData.secretgraph.updateOrCreateContent

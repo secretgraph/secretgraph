@@ -17,6 +17,7 @@ import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Unstable_Grid2'
 import Box from '@mui/system/Box'
 import {
+    contentFeedQuery,
     contentRetrievalQuery,
     getContentConfigurationQuery,
 } from '@secretgraph/graphql-queries/content'
@@ -293,11 +294,13 @@ function InnerFile({
         }
     })
     // const [PSelections, setPSelections] = React.useState<string[]>([])
-    let name: string = (mainCtx.cloneData && mainCtx.cloneData.name) || ''
+    let name: string = mainCtx.cloneData?.name || ''
 
     const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
     let encryptName =
-        (mainCtx.cloneData && mainCtx.cloneData.encryptName) || true
+        mainCtx.cloneData?.encryptName !== undefined
+            ? mainCtx.cloneData.encryptName
+            : true
     if (tags) {
         if (tags.name && tags.name.length > 0) {
             name = tags.name[0]
@@ -459,6 +462,9 @@ function InnerFile({
                         url,
                         hashAlgorithm,
                     })
+                    await itemClient.refetchQueries({
+                        include: [contentRetrievalQuery, contentFeedQuery],
+                    })
                     if (res) {
                         if (res.config) {
                             const nTokens = authInfoFromConfig({
@@ -505,7 +511,6 @@ function InnerFile({
                     submitForm,
                     isSubmitting,
                     values,
-                    setValues,
                     dirty,
                     setFieldTouched,
                     touched,
@@ -522,7 +527,14 @@ function InnerFile({
                     React.useEffect(() => {
                         if (updateCloneData) {
                             updateMainCtx({
-                                cloneData: values,
+                                cloneData:
+                                    mainCtx.action == 'create'
+                                        ? values
+                                        : {
+                                              name: values.name,
+                                              encryptName: values.encryptName,
+                                              uniqueName: values.uniqueName,
+                                          },
                                 currentCluster: values.cluster,
                                 editCluster: values.cluster,
                             })
@@ -809,6 +821,14 @@ function InnerFile({
                                                                             'htmlInput',
                                                                             true
                                                                         )
+                                                                        setFieldValue(
+                                                                            'fileInput',
+                                                                            null
+                                                                        )
+                                                                        setFieldTouched(
+                                                                            'fileInput',
+                                                                            false
+                                                                        )
                                                                     }}
                                                                     helperText={
                                                                         formikFieldProps
@@ -899,12 +919,9 @@ function InnerFile({
                                                                     .name,
                                                             ])*/
                                                                         if (
-                                                                            !formikFieldProps
-                                                                                .form
-                                                                                .touched
-                                                                                .name
+                                                                            !touched.name
                                                                         ) {
-                                                                            formikFieldProps.form.setFieldValue(
+                                                                            setFieldValue(
                                                                                 'name',
                                                                                 ev
                                                                                     .target
@@ -912,7 +929,7 @@ function InnerFile({
                                                                                     .name
                                                                             )
                                                                         }
-                                                                        formikFieldProps.form.setFieldValue(
+                                                                        setFieldValue(
                                                                             'fileInput',
                                                                             ev
                                                                                 .target
@@ -924,7 +941,7 @@ function InnerFile({
                                                                             true
                                                                         )
                                                                     } else {
-                                                                        formikFieldProps.form.setFieldValue(
+                                                                        setFieldValue(
                                                                             'fileInput',
                                                                             null
                                                                         )
@@ -967,11 +984,10 @@ function InnerFile({
                                                                     )
                                                                 }
                                                                 onClick={() => {
-                                                                    setValues({
-                                                                        ...values,
-                                                                        fileInput:
-                                                                            null,
-                                                                    })
+                                                                    setFieldValue(
+                                                                        'fileInput',
+                                                                        null
+                                                                    )
                                                                     setFieldTouched(
                                                                         'fileInput',
                                                                         false

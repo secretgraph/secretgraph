@@ -9,7 +9,10 @@ import { useTheme } from '@mui/material/styles'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Unstable_Grid2'
-import { contentRetrievalQuery } from '@secretgraph/graphql-queries/content'
+import {
+    contentFeedQuery,
+    contentRetrievalQuery,
+} from '@secretgraph/graphql-queries/content'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
@@ -170,6 +173,9 @@ function InnerConfig({
                               groupKeys: {},
                           })
                         : null
+                    await itemClient.refetchQueries({
+                        include: [contentRetrievalQuery, contentFeedQuery],
+                    })
                     if (res) {
                         // main config has been changed
                         if (

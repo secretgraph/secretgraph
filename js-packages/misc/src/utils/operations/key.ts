@@ -56,7 +56,11 @@ export async function createKeys({
         ? encryptAESGCM({
               key: sharedkey,
               nonce,
-              data: unserializeToCryptoKey(privateKey, keyParams, 'privateKey'),
+              data: unserializeToCryptoKey(
+                  privateKey,
+                  keyParams,
+                  'privateKey'
+              ),
           }).then((data) => new Blob([data.data]))
         : null
 
@@ -104,8 +108,6 @@ export async function createKeys({
         : []
     return await client.mutate({
         mutation: createKeysMutation,
-        // we need a current updateId
-        awaitRefetchQueries: true,
         variables: {
             cluster,
             references: references.concat(await signatureReferencesPromise),
@@ -241,8 +243,6 @@ export async function updateKey({
     }
 
     return await client.mutate({
-        // we need a current updateId
-        awaitRefetchQueries: true,
         mutation: updateKeyMutation,
         variables: {
             id,

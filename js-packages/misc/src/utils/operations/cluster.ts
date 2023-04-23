@@ -54,8 +54,6 @@ export async function createCluster(options: {
     }
     return await options.client.mutate({
         mutation: createClusterMutation,
-        // we need a current updateId
-        awaitRefetchQueries: true,
         variables: {
             net: options.net,
             name: options.name,
@@ -84,8 +82,6 @@ export async function updateCluster(options: {
 }): Promise<FetchResult<any>> {
     return await options.client.mutate({
         mutation: updateClusterMutation,
-        // we need a current updateId
-        awaitRefetchQueries: true,
         variables: {
             id: options.id,
             net: options.net,

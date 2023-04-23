@@ -15,14 +15,14 @@ export interface TokenSelectProps<
         SimpleSelectProps<string, Multiple, DisableClearable, true>,
         'options' | 'getOptionLabel' | 'loading' | 'freeSolo'
     > {
-    tokens: string[]
+    tokens?: string[]
 }
 
 export default function TokenSelect<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined
 >({
-    tokens,
+    tokens = [],
     ...props
 }: TokenSelectProps<Multiple, DisableClearable> &
     FieldProps<AutocompleteValue<string, Multiple, DisableClearable, true>>) {

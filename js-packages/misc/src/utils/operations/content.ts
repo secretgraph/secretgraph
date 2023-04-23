@@ -1,4 +1,4 @@
-import { ApolloClient, FetchResult } from '@apollo/client'
+import { ApolloClient, FetchResult, useMutation } from '@apollo/client'
 import {
     createContentMutation,
     updateContentMutation,
@@ -119,7 +119,6 @@ export async function createContent({
     return await client.mutate({
         mutation: createContentMutation,
         // we need a current updateId
-        awaitRefetchQueries: true,
         variables: {
             cluster,
             net: net || cluster,
@@ -257,8 +256,6 @@ export async function updateContent({
     }
     return await client.mutate({
         mutation: updateContentMutation,
-        // we need a current updateId
-        awaitRefetchQueries: true,
         variables: {
             id,
             updateId,
