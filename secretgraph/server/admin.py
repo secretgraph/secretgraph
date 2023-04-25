@@ -170,7 +170,7 @@ class ContentActionInline(admin.TabularInline):
 
 
 class ActionAdmin(admin.ModelAdmin):
-    list_display = ["id", "keyHash", "cluster"]
+    list_display = ["id", "keyHash", "cluster", "contentAction"]
     inlines = [ContentActionInline]
     readonly_fields = ["id", "nonce", "value"]
     search_fields = ["keyHash", "cluster__name"]
