@@ -26,7 +26,7 @@ from .models import (
 from .signals import sweepContentsAndClusters, fillEmptyFlexidsCb
 
 
-@admin.display(description="")
+@admin.display(ordering="id", description="")
 def admin_repr(inp):
     return repr(inp)
 
@@ -34,6 +34,11 @@ def admin_repr(inp):
 @admin.display(ordering="net_id", description="Net")
 def net_repr(inp):
     return repr(inp.net)
+
+
+@admin.display(ordering="user_name", description="User")
+def user_of_net(inp):
+    return str(inp.user) if inp.user else ""
 
 
 class BeautifyNetMixin:
@@ -197,9 +202,10 @@ class ActionAdmin(admin.ModelAdmin):
 
 
 class NetAdmin(admin.ModelAdmin):
-    list_display = [admin_repr]
+    list_display = [admin_repr, user_of_net]
     readonly_fields = ["id", "bytes_in_use"]
     search_fields = ["id", "user_name"]
+    sortable_by = [admin_repr, user_of_net]
 
     @admin.action(
         permissions=["view", "change"], description="Recalculate bytes_in_use"
