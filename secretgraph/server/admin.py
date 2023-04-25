@@ -31,6 +31,19 @@ def admin_repr(inp):
     return repr(inp)
 
 
+@admin.display(ordering="net_id", description="Net")
+def net_repr(inp):
+    return repr(inp.net)
+
+
+class BeautifyNetMixin:
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        ret = super().formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name == "net":
+            ret.label_from_instance = repr
+        return ret
+
+
 class FlexidMixin:
     actions = ["reset_flexid", "undelete", "purge_immediate"]
 
@@ -185,6 +198,7 @@ class ActionAdmin(admin.ModelAdmin):
 
 class NetAdmin(admin.ModelAdmin):
     list_display = [admin_repr]
+    readonly_fields = ["id", "bytes_in_use"]
     search_fields = ["id", "user_name"]
 
     @admin.action(
@@ -216,12 +230,12 @@ class NetAdmin(admin.ModelAdmin):
     has_add_permission = has_change_permission
 
 
-class ClusterAdmin(FlexidMixin, admin.ModelAdmin):
+class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     inlines = [GlobalGroupInlineOfCluster]
-    list_display = ["id", "flexid", "name", "net"]
-    sortable_by = ["id", "flexid", "name", "net"]
-    search_fields = ["flexid", "name", "description"]
-    readonly_fields = ["flexid_cached", "name_cached"]
+    list_display = ["id", "flexid", "name", net_repr]
+    sortable_by = ["id", "flexid", "name", net_repr]
+    search_fields = ["flexid", "name", "id", "description"]
+    readonly_fields = ["id", "flexid_cached", "name_cached"]
 
     def get_queryset(self, request):
         sweepContentsAndClusters()
@@ -298,7 +312,7 @@ class ClusterAdmin(FlexidMixin, admin.ModelAdmin):
         obj.save()
 
 
-class ContentAdmin(FlexidMixin, admin.ModelAdmin):
+class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     inlines = [ContentTagInline]
     list_display = [
         "id",
@@ -306,10 +320,10 @@ class ContentAdmin(FlexidMixin, admin.ModelAdmin):
         "type",
         "state",
         "cluster",
-        "net",
-        admin_repr,
+        "hidden",
+        net_repr,
     ]
-    sortable_by = ["id", "flexid", "type", "state", "cluster", "net"]
+    sortable_by = ["flexid", "id", "type", "state", "cluster", net_repr]
     search_fields = ["flexid", "tags__tag", "cluster__name"]
     readonly_fields = ["flexid_cached"]
 

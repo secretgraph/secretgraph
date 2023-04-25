@@ -552,6 +552,7 @@ The item get parameter is mandatory.
 
 -   ClusterEditor: show somehow the id of a named cluster
 -   complete share
+    -   add option to save new token in config (not auth)
 -   shareurl: cluster url ? token = ...
 -   ActionConfigurator must prime the missing field values before using them in fields
     -   maybe add prime method for initialValues

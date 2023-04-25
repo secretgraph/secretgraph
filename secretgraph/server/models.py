@@ -184,24 +184,25 @@ class Net(models.Model):
             obj.save(update_fields=["bytes_in_use"])
 
     @cached_property
-    def user(self) -> usermodel | str:
+    def user(self) -> Optional[usermodel]:
         username = self.user_name
         if not username:
-            raise AttributeError("No User assigned")
+            return None
         if usermodel:
-            return usermodel.get(**{usermodel.USERNAME_FIELD: username})
-        return username
+            return usermodel.objects.filter(
+                **{usermodel.USERNAME_FIELD: username}
+            ).first()
+        return None
 
     def __repr__(self) -> str:
         userrepr = ", no user assigned"
-        try:
-            user = self.user
-        except Exception:
-            user = self.user_name
+        user = self.user
         if user:
             if not isinstance(user, str):
                 user = repr(user)
             userrepr = f", user({user})"
+        elif self.user_name:
+            userrepr = f", user?({self.user_name})"
         return "<Net: id(%s)%s%s>" % (
             self.id,
             userrepr,

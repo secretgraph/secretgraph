@@ -10,6 +10,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
+import LinearProgress from '@mui/material/LinearProgress'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import { Theme } from '@mui/material/styles'
@@ -58,11 +59,11 @@ function SharePanel({ url }: { url: string }) {
                 <span
                     style={{
                         display: 'inline-block',
-                        wordBreak: 'break-all',
                     }}
                 >
                     <Link
                         href={url}
+                        style={{ wordBreak: 'break-all' }}
                         onClick={(event: any) => {
                             if (navigator.clipboard) {
                                 navigator.clipboard.writeText(url)
@@ -180,32 +181,30 @@ function NewPanel({
             <SharePanel url={url} />
             <Formik
                 initialValues={{
-                    value,
-                    start: '' as const,
-                    stop: '' as const,
-                    data: '',
-                    note: '',
+                    actions: [
+                        {
+                            value,
+                            start: '' as const,
+                            stop: '' as const,
+                            data: '',
+                            note: '',
+                        } as ActionInputEntry,
+                    ],
+                    storeInConfig: true,
                 }}
                 onSubmit={async (values, { setSubmitting }) => {
-                    if (!values.data) {
+                    if (!values.actions[0].data) {
                         setSubmitting(false)
                         return
                     }
 
                     const newHash = await hashObject(
-                        values.data,
+                        values.actions[0].data,
                         hashAlgorithm
                     )
-                    const actions: ActionInputEntry[] = [
-                        {
-                            ...values,
-                            newHash,
-                            type: 'action',
-                        },
-                    ]
                     const { actions: finishedActions } =
                         await transformActions({
-                            actions,
+                            actions: values.actions,
                             hashAlgorithm,
                         })
 
@@ -217,15 +216,15 @@ function NewPanel({
                             actions: finishedActions,
                         },
                     })
-                    setNTokens([values.data])
+                    setNTokens([values.actions[0].data])
                     setSubmitting(false)
                 }}
             >
-                {({ values, isSubmitting }) => {
+                {({ values, isSubmitting, submitForm, dirty }) => {
                     return (
                         <Form>
                             <ActionConfigurator
-                                path=""
+                                path="actions.0."
                                 disabled={disabled}
                                 isContent={isContent}
                                 mode={isPublic ? 'publicShare' : 'share'}
@@ -237,9 +236,25 @@ function NewPanel({
                                     data: '',
                                     note: '',
                                     newHash: '',
-                                    value: values.value,
+                                    value: values.actions[0].value,
                                 }}
                             />
+                            <FastField
+                                name="storeInConfig"
+                                component={FormikCheckboxWithLabel}
+                                Label={{ label: 'Store in Config' }}
+                            />
+                            <div>{isSubmitting && <LinearProgress />}</div>
+                            <div>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    disabled={isSubmitting || !dirty}
+                                    onClick={submitForm}
+                                >
+                                    Submit
+                                </Button>
+                            </div>
                         </Form>
                     )
                 }}
@@ -344,7 +359,7 @@ function AuthPanel({
                     setSubmitting(false)
                 }}
             >
-                {({ values }) => {
+                {({ values, isSubmitting, dirty, submitForm }) => {
                     return (
                         <Form>
                             <FastField
@@ -414,6 +429,18 @@ function AuthPanel({
                                     }}
                                 />
                             ) : null}
+
+                            <div>{isSubmitting && <LinearProgress />}</div>
+                            <div>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    disabled={isSubmitting || !dirty}
+                                    onClick={submitForm}
+                                >
+                                    Submit
+                                </Button>
+                            </div>
                         </Form>
                     )
                 }}
