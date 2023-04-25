@@ -191,6 +191,7 @@ def manage_actions_fn(
                                 ),
                             )
                         )
+        return obj
 
     setattr(save_fn, "actions", [*add_actions.values()])
     setattr(save_fn, "action_types", action_types)

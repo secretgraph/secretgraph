@@ -142,12 +142,11 @@ def update_metadata(
     operation: Optional[MetadataOperations] = MetadataOperations.APPEND,
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
-
     manage_update = "manage_update" in get_cached_properties(
         info.context["request"], authset=authorization
     )
     if manage_update:
-        objects = fetch_by_id(
+        contents = fetch_by_id(
             Content.objects.annotate(
                 has_immutable=Exists(
                     ContentTag.objects.filter(
@@ -159,18 +158,26 @@ def update_metadata(
             ids,
             limit_ids=None,
         )
+        clusters = fetch_by_id(
+            Cluster.objects.all(),
+            ids,
+            limit_ids=None,
+        )
     else:
         result = ids_to_results(
             info.context["request"],
             ids,
-            Content,
+            (Content, Cluster),
             "update",
             authset=authorization,
-        )["Content"]
+        )
         # immutable are excluded
-        objects = result["objects"].annotate(has_immutable=Value(False))
+        contents = result["Content"]["objects"].annotate(
+            has_immutable=Value(False)
+        )
+        clusters = result["Clusters"]["objects"]
     ops = []
-    for content_obj in objects:
+    for content_obj in contents:
         ops.append(
             update_metadata_fn(
                 info.context["request"],
@@ -195,8 +202,19 @@ def update_metadata(
                     authset=authorization,
                 )
             )
-    updated = []
+    if actions and clusters:
+        for cluster_obj in clusters:
+            ops.append(
+                manage_actions_fn(
+                    info.context["request"],
+                    cluster_obj,
+                    actions,
+                    authset=authorization,
+                )
+            )
+
+    updated = set()
     with transaction.atomic():
         for f in ops:
-            updated.push(f().flexid_cached)
-    return MetadataUpdateMutation(updated=updated)
+            updated.add(f().flexid_cached)
+    return MetadataUpdateMutation(updated=list(updated))
