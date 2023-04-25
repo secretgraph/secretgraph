@@ -198,7 +198,7 @@ class ActionAdmin(admin.ModelAdmin):
 
 class NetAdmin(admin.ModelAdmin):
     list_display = [admin_repr, "user_name"]
-    readonly_fields = ["id", "bytes_in_use"]
+    readonly_fields = ["id", "bytes_in_use", "user"]
     search_fields = ["id", "user_name"]
     sortable_by = [admin_repr, "user_name"]
 
