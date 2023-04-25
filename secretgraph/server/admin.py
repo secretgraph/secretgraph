@@ -233,8 +233,9 @@ class NetAdmin(admin.ModelAdmin):
 
 class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     inlines = [GlobalGroupInlineOfCluster]
-    list_display = ["id", "flexid", "name", net_repr]
-    sortable_by = ["id", "flexid", "name", net_repr]
+    list_display = ["id", "flexid", "name", "featured", net_repr]
+    list_filter = ["featured"]
+    sortable_by = ["id", "flexid", "name", "featured", net_repr]
     search_fields = ["flexid", "name", "id", "description"]
     readonly_fields = ["id", "flexid_cached", "name_cached"]
 
@@ -324,6 +325,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         "hidden",
         net_repr,
     ]
+    list_filter = ["hidden", "state", "type"]
     sortable_by = ["flexid", "id", "type", "state", "cluster", net_repr]
     search_fields = ["flexid", "tags__tag", "cluster__name"]
     readonly_fields = ["flexid_cached"]
@@ -421,6 +423,7 @@ class GlobalGroupAdmin(admin.ModelAdmin):
     list_display = ["name"]
     sortable_by = ["name"]
     search_fields = ["name"]
+    list_filter = ["properties"]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
