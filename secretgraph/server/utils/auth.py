@@ -463,15 +463,13 @@ def ids_to_results(
         else:
             raise ValueError(
                 "Only for {}. Provided: {}".format(
-                    ",".join(map(lambda x: x.__name__, klasses)), id
+                    ",".join(klasses_d.keys()), id
                 )
             )
 
         if type_name not in klasses_d:
             raise ValueError(
-                "Only for {} (ids)".format(
-                    ",".join(map(lambda x: x.__name__, klasses))
-                )
+                "Only for {} (ids)".format(",".join(klasses_d.keys()))
             )
         flexid_d.setdefault(type_name, set()).add(flexid)
     results = {}
