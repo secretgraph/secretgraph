@@ -36,11 +36,6 @@ def net_repr(inp):
     return repr(inp.net)
 
 
-@admin.display(ordering="user_name", description="User")
-def user_of_net(inp):
-    return str(inp.user) if inp.user else ""
-
-
 class BeautifyNetMixin:
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         ret = super().formfield_for_foreignkey(db_field, request, **kwargs)
@@ -202,10 +197,10 @@ class ActionAdmin(admin.ModelAdmin):
 
 
 class NetAdmin(admin.ModelAdmin):
-    list_display = [admin_repr, user_of_net]
+    list_display = [admin_repr, "user_name"]
     readonly_fields = ["id", "bytes_in_use"]
     search_fields = ["id", "user_name"]
-    sortable_by = [admin_repr, user_of_net]
+    sortable_by = [admin_repr, "user_name"]
 
     @admin.action(
         permissions=["view", "change"], description="Recalculate bytes_in_use"
