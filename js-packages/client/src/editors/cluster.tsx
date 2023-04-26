@@ -301,6 +301,7 @@ const ClusterIntern = ({
                                 {({ remove, replace, push, form }) => {
                                     return (
                                         <ActionsDialog
+                                            hashAlgorithm={hashAlgorithm}
                                             remove={remove}
                                             replace={replace}
                                             push={push}

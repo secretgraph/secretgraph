@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
+import { hashObject } from '@secretgraph/misc/utils/hashing'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -16,6 +17,8 @@ export interface TokenSelectProps<
         'options' | 'getOptionLabel' | 'loading' | 'freeSolo'
     > {
     tokens?: string[]
+    hashAlgorithm?: string
+    updateHashField?: string
 }
 
 export default function TokenSelect<
@@ -23,6 +26,8 @@ export default function TokenSelect<
     DisableClearable extends boolean | undefined
 >({
     tokens = [],
+    hashAlgorithm,
+    updateHashField,
     ...props
 }: TokenSelectProps<Multiple, DisableClearable> &
     FieldProps<AutocompleteValue<string, Multiple, DisableClearable, true>>) {
@@ -34,7 +39,7 @@ export default function TokenSelect<
             {...props}
             freeSolo
             options={tokensFinished}
-            onChange={(
+            onChange={async (
                 ev: any,
                 val: AutocompleteValue<
                     string,
@@ -45,28 +50,52 @@ export default function TokenSelect<
             ) => {
                 if (typeof val == 'string') {
                     if (val == 'new') {
-                        props.form.setFieldValue(
+                        const res = crypto.getRandomValues(new Uint8Array(32))
+                        if (hashAlgorithm && updateHashField) {
+                            props.form.setFieldValue(
+                                updateHashField,
+                                await hashObject(res, hashAlgorithm),
+                                false
+                            )
+                        }
+                        ;-props.form.setFieldValue(
                             props.field.name,
-                            Buffer.from(
-                                crypto.getRandomValues(new Uint8Array(32))
-                            ).toString('base64')
+                            Buffer.from(res).toString('base64'),
+                            false
                         )
                     } else {
-                        props.form.setFieldValue(props.field.name, val)
+                        if (hashAlgorithm && updateHashField) {
+                            props.form.setFieldValue(
+                                updateHashField,
+                                await hashObject(val, hashAlgorithm),
+                                false
+                            )
+                        }
+                        ;-props.form.setFieldValue(props.field.name, val)
                     }
                 } else if (val) {
-                    props.form.setFieldValue(
-                        props.field.name,
-                        val.map((v) => {
-                            if (v == 'new') {
-                                return Buffer.from(
-                                    crypto.getRandomValues(new Uint8Array(32))
-                                ).toString('base64')
-                            } else {
-                                return v
-                            }
-                        })
-                    )
+                    const ret = val.map((v) => {
+                        if (v == 'new') {
+                            return Buffer.from(
+                                crypto.getRandomValues(new Uint8Array(32))
+                            ).toString('base64')
+                        } else {
+                            return v
+                        }
+                    })
+
+                    if (hashAlgorithm && updateHashField) {
+                        props.form.setFieldValue(
+                            updateHashField,
+                            await Promise.all(
+                                ret.map((val) =>
+                                    hashObject(val, hashAlgorithm)
+                                )
+                            ),
+                            false
+                        )
+                    }
+                    ;-props.form.setFieldValue(props.field.name, ret)
                 } else {
                     props.form.setFieldValue(props.field.name, val)
                 }

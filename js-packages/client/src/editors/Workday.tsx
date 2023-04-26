@@ -297,6 +297,7 @@ function InnerWorkday({
                                         open={open}
                                         isContent
                                         isPublic={false}
+                                        hashAlgorithm={hashAlgorithm}
                                     />
                                 )
                             }}

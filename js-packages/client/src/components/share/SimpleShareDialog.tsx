@@ -39,7 +39,7 @@ import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
-import ActionConfigurator from '../forms/ActionConfigurator'
+import ActionOrCertificateConfigurator from '../forms/ActionOrCertificateConfigurator'
 import TokenSelect from '../forms/TokenSelect'
 
 const _update_set = new Set(['update', 'manage'])
@@ -165,8 +165,33 @@ function NewPanel({
     const { mainCtx } = React.useContext(Contexts.Main)
     const { itemClient } = React.useContext(Contexts.Clients)
     const [ntokens, setNTokens] = React.useState<string[]>([])
-    const value = {
-        action: isPublic ? 'update' : 'view',
+    const actions: ActionInputEntry[] = []
+    if (isPublic) {
+        actions.push({
+            value: {
+                action: 'update',
+            },
+            start: '' as const,
+            stop: '' as const,
+            data: '',
+            note: '',
+            type: 'action',
+            newHash: '',
+            locked: false,
+        })
+    } else {
+        actions.push({
+            value: {
+                action: 'view',
+            },
+            start: '' as const,
+            stop: '' as const,
+            data: '',
+            note: '',
+            type: 'action',
+            newHash: '',
+            locked: false,
+        })
     }
     const url = React.useMemo(() => {
         const parsedUrl = new URL(shareUrl)
@@ -181,15 +206,7 @@ function NewPanel({
             <SharePanel url={url} />
             <Formik
                 initialValues={{
-                    actions: [
-                        {
-                            value,
-                            start: '' as const,
-                            stop: '' as const,
-                            data: '',
-                            note: '',
-                        } as ActionInputEntry,
-                    ],
+                    actions,
                     storeInConfig: true,
                 }}
                 onSubmit={async (values, { setSubmitting }) => {
@@ -220,15 +237,25 @@ function NewPanel({
                     setSubmitting(false)
                 }}
             >
-                {({ values, isSubmitting, submitForm, dirty }) => {
+                {({
+                    values,
+                    setFieldValue,
+                    isSubmitting,
+                    submitForm,
+                    dirty,
+                }) => {
                     return (
                         <Form>
-                            <ActionConfigurator
+                            <ActionOrCertificateConfigurator
+                                hashAlgorithm={hashAlgorithm}
                                 path="actions.0."
                                 disabled={disabled}
                                 isContent={isContent}
                                 mode={isPublic ? 'publicShare' : 'share'}
                                 tokens={tokens}
+                                handleNoteChange={(e) =>
+                                    setFieldValue('actions.0.note', e)
+                                }
                                 value={{
                                     type: 'action',
                                     start: '',
@@ -308,14 +335,16 @@ function AuthPanel({
                         stop: '' as const,
                         data: '',
                         note: '',
+                        locked: false,
                     },
                     updateActive: false,
                     update: {
-                        value,
+                        value: { action: 'update' },
                         start: '' as const,
                         stop: '' as const,
                         data: '',
                         note: '',
+                        locked: false,
                     },
                 }}
                 onSubmit={async ({ token, ...values }, { setSubmitting }) => {
@@ -369,7 +398,7 @@ function AuthPanel({
                                 fullWidth
                                 name="token"
                             />
-                            {isPublic ? (
+                            {!isPublic ? (
                                 <>
                                     <div>
                                         <FastField
@@ -379,12 +408,14 @@ function AuthPanel({
                                         />
                                     </div>
                                     {values.viewActive ? (
-                                        <ActionConfigurator
+                                        <ActionOrCertificateConfigurator
+                                            hashAlgorithm={hashAlgorithm}
                                             path="view."
                                             disabled={disabled}
                                             isContent={isContent}
                                             mode="share"
                                             noToken
+                                            lockAction
                                             tokens={tokens}
                                             value={{
                                                 type: 'action',
@@ -409,10 +440,12 @@ function AuthPanel({
                                 />
                             </div>
                             {values.updateActive ? (
-                                <ActionConfigurator
+                                <ActionOrCertificateConfigurator
+                                    hashAlgorithm={hashAlgorithm}
                                     path="update."
                                     disabled={disabled}
                                     noToken
+                                    lockAction
                                     isContent={isContent}
                                     mode={isPublic ? 'publicShare' : 'share'}
                                     tokens={tokens}
@@ -524,7 +557,7 @@ function OverviewPanel({
                                                     selectedItem?.index ==
                                                     item.index
                                                 }
-                                                key={item.value.newHash}
+                                                key={item.index}
                                                 disabled={disabled}
                                                 item={item}
                                                 selectItem={setSelectedItem}
@@ -537,14 +570,18 @@ function OverviewPanel({
                     </div>
                     {selectedItem && (
                         <Formik
-                            initialValues={{}}
+                            enableReinitialize
+                            initialValues={{
+                                action: selectedItem.value,
+                            }}
                             onSubmit={async (values, { setSubmitting }) => {
                                 setSubmitting(false)
                             }}
                         >
                             <Form>
-                                <ActionConfigurator
-                                    path=""
+                                <ActionOrCertificateConfigurator
+                                    path="action."
+                                    hashAlgorithm={hashAlgorithm}
                                     disabled={disabled}
                                     isContent={isContent}
                                     tokens={tokens}

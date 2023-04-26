@@ -1048,6 +1048,7 @@ function InnerFile({
                                 {({ remove, replace, push, form }) => {
                                     return (
                                         <ActionsDialog
+                                            hashAlgorithm={hashAlgorithms[0]}
                                             remove={remove}
                                             replace={replace}
                                             push={push}

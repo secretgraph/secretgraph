@@ -550,6 +550,7 @@ The item get parameter is mandatory.
 
 # TODO
 
+-   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   ClusterEditor: show somehow the id of a named cluster
 -   complete share
     -   add option to save new token in config (not auth)

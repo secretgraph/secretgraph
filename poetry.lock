@@ -892,19 +892,19 @@ files = [
 
 [[package]]
 name = "platformdirs"
-version = "3.2.0"
+version = "3.3.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.2.0-py3-none-any.whl", hash = "sha256:ebe11c0d7a805086e99506aa331612429a72ca7cd52a1f0d277dc4adc20cb10e"},
-    {file = "platformdirs-3.2.0.tar.gz", hash = "sha256:d5b638ca397f25f979350ff789db335903d7ea010ab28903f57b27e1b16c2b08"},
+    {file = "platformdirs-3.3.0-py3-none-any.whl", hash = "sha256:ea61fd7b85554beecbbd3e9b37fb26689b227ffae38f73353cbcc1cf8bd01878"},
+    {file = "platformdirs-3.3.0.tar.gz", hash = "sha256:64370d47dc3fca65b4879f89bdead8197e93e05d696d6d1816243ebae8595da5"},
 ]
 
 [package.extras]
-docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.22,!=1.23.4)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.2.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
+docs = ["furo (>=2023.3.27)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
+test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
 
 [[package]]
 name = "pluggy"
@@ -1410,14 +1410,14 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "strawberry-django-plus"
-version = "2.3.0"
+version = "2.3.1"
 description = "Enhanced Strawberry GraphQL integration with Django"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "strawberry_django_plus-2.3.0-py3-none-any.whl", hash = "sha256:8d7dc4a070b732135c5cb9fd9d390e24da326681b85b1bdb3b51b6c0898224fa"},
-    {file = "strawberry_django_plus-2.3.0.tar.gz", hash = "sha256:a06132735baf2363bce710c9c41e445dc96cad3e593ef6abf3352ba7b4707386"},
+    {file = "strawberry_django_plus-2.3.1-py3-none-any.whl", hash = "sha256:51149cd064441a6e79cf5c477d7d28aae4b0fb0b6fe1c98c3540c58a1fc7c2b7"},
+    {file = "strawberry_django_plus-2.3.1.tar.gz", hash = "sha256:2e3762a2d6f83bf66699888e42115b1371db66961f087c0311d7d89d0932e0ab"},
 ]
 
 [package.dependencies]
@@ -1432,14 +1432,14 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.172.0"
+version = "0.174.0"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql-0.172.0-py3-none-any.whl", hash = "sha256:08bd6c3246d4ad1098cc8e6eb3dc45de378aad15dfef38b6b08776e60428acb6"},
-    {file = "strawberry_graphql-0.172.0.tar.gz", hash = "sha256:7bee67857d002d1ebc8b2ddbbcca1fa7c57ce5e9ec1cfde54e0d95d810a2f99c"},
+    {file = "strawberry_graphql-0.174.0-py3-none-any.whl", hash = "sha256:41e330d416558659efbdcecb664f52c34525f77f16b1d9f2b977afaee2aa927b"},
+    {file = "strawberry_graphql-0.174.0.tar.gz", hash = "sha256:fc64d83b0290f32aec6f880622c38c3249b49e10378642f89c31beaf5e0d5632"},
 ]
 
 [package.dependencies]
@@ -1447,7 +1447,7 @@ graphql-core = ">=3.2.0,<3.3.0"
 libcst = {version = ">=0.4.7", optional = true, markers = "extra == \"debug\" or extra == \"debug-server\" or extra == \"cli\""}
 python-dateutil = ">=2.7.0,<3.0.0"
 rich = {version = ">=12.0.0", optional = true, markers = "extra == \"debug\" or extra == \"debug-server\" or extra == \"cli\""}
-typing_extensions = ">=3.7.4,<5.0.0"
+typing_extensions = ">=4.0.0,<5.0.0"
 
 [package.extras]
 aiohttp = ["aiohttp (>=3.7.4.post0,<4.0.0)"]
@@ -1462,6 +1462,7 @@ fastapi = ["fastapi (>=0.65.2)", "python-multipart (>=0.0.5,<0.0.7)"]
 flask = ["flask (>=1.1)"]
 opentelemetry = ["opentelemetry-api (<2)", "opentelemetry-sdk (<2)"]
 pydantic = ["pydantic (<2)"]
+pyinstrument = ["pyinstrument (>=4.0.0)"]
 sanic = ["sanic (>=20.12.2)"]
 starlite = ["starlite (>=1.48.0)"]
 

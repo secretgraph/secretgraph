@@ -1,46 +1,18 @@
-import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
-import MoreVertIcon from '@mui/icons-material/MoreVert'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import Dialog, { DialogProps } from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import Divider from '@mui/material/Divider'
-import IconButton from '@mui/material/IconButton'
-import LinearProgress from '@mui/material/LinearProgress'
-import List from '@mui/material/List'
-import ListItem, { ListItemProps } from '@mui/material/ListItem'
-import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
-import ListItemText from '@mui/material/ListItemText'
-import Portal from '@mui/material/Portal'
-import Tooltip from '@mui/material/Tooltip'
+import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Unstable_Grid2'
 import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
-import { deepEqual } from '@secretgraph/misc/utils/misc'
-import {
-    FastField,
-    Field,
-    FieldArray,
-    FieldArrayRenderProps,
-    Form,
-    Formik,
-    FormikProps,
-    useField,
-    useFormikContext,
-} from 'formik'
+import { parseISO } from 'date-fns'
+import { FastField, useField } from 'formik'
 import * as React from 'react'
 
-import FormikCheckbox from '../formik/FormikCheckbox'
+import * as Contexts from '../../contexts'
 import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
 import FormikDateTimePicker from '../formik/FormikDateTimePicker'
-import FormikTextField from '../formik/FormikTextField'
 import SimpleSelect from './SimpleSelect'
 import TokenSelect from './TokenSelect'
 
@@ -62,6 +34,30 @@ const publicShareActions = availableActions.filter(
 const shareActions = availableActions.filter((val) => val != 'auth')
 const contentOnlyActions = new Set(['push'])
 const clusterOnlyActions = new Set(['create', 'storedUpdate'])
+
+type ActionConfiguratorProps = {
+    value: ActionInputEntry
+    path?: '' | `${string}.`
+    disabled?: boolean
+    tokens: string[]
+    noToken?: boolean
+    lockAction?: boolean
+    handleNoteChange?: TextFieldProps['onChange']
+    isContent: boolean
+    hashAlgorithm: string
+    mode?: 'public' | 'default' | 'share' | 'publicShare'
+}
+type CertificateConfiguratorProps = {
+    value: CertificateInputEntry
+    disabled?: boolean
+    path?: '' | `${string}.`
+    handleNoteChange?: TextFieldProps['onChange']
+}
+
+export type ActionOrCertificateConfiguratorProps = Omit<
+    ActionConfiguratorProps,
+    'value'
+> & { value: ActionInputEntry | CertificateInputEntry }
 
 const ActionFields = React.memo(function ActionFields({
     path,
@@ -245,32 +241,74 @@ const ActionFields = React.memo(function ActionFields({
     }
 })
 
-export type ActionConfiguratorProps = {
-    value: ActionInputEntry | CertificateInputEntry
-    path?: '' | `${string}.`
-    disabled?: boolean
-    tokens: string[]
-    isContent: boolean
-    mode?: 'public' | 'default' | 'share' | 'publicShare'
-    noToken?: boolean
-}
+const SelectStartStop = React.memo(function SelectStartStop({
+    disabled,
+    path,
+}: {
+    disabled: boolean
+    path: '' | `${string}.`
+}) {
+    const { value: minDateTime } = useField(`${path}start`)[0]
+    const { value: maxDateTime } = useField(`${path}stop`)[0]
+    return (
+        <>
+            <Grid container>
+                <Grid xs={12} sm={6}>
+                    <FastField
+                        name={`${path}start`}
+                        component={FormikDateTimePicker}
+                        maxDateTime={
+                            maxDateTime ? parseISO(maxDateTime) : undefined
+                        }
+                        disabled={disabled}
+                        clearable
+                        showTodayButton
+                        label="Start"
+                    />
+                </Grid>
+                <Grid xs={12} sm={6}>
+                    <FastField
+                        name={`${path}stop`}
+                        component={FormikDateTimePicker}
+                        minDateTime={
+                            minDateTime ? parseISO(minDateTime) : undefined
+                        }
+                        clearable
+                        showTodayButton
+                        disabled={disabled}
+                        label="Stop"
+                    />
+                </Grid>
+            </Grid>
+        </>
+    )
+})
 
-// maybe remove auth
-// Configurator for actions and certificates
-export default function ActionConfigurator({
+function ActionConfigurator({
     value,
     path = '',
     disabled,
-    tokens,
     isContent,
     noToken,
+    lockAction,
+    tokens,
+    hashAlgorithm,
+    handleNoteChange,
     mode = 'default',
 }: ActionConfiguratorProps) {
-    const { getFieldHelpers } = useFormikContext<any>()
     disabled = !!(disabled || value?.readonly)
+    const { config } = React.useContext(Contexts.InitializedConfig)
 
-    const { value: minDateTime } = useField(`${path}start`)[0]
-    const { value: maxDateTime } = useField(`${path}stop`)[0]
+    const { value: note, onChange: onChangeNote } = useField(`${path}note`)[0]
+    const { value: newHash } = useField(`${path}newHash`)[0]
+
+    React.useLayoutEffect(() => {
+        const curEntry = config.tokens[newHash]
+        if (curEntry && curEntry.note && curEntry.note != note) {
+            onChangeNote(curEntry.note)
+        }
+    }, [newHash])
+
     const validactions = React.useMemo(() => {
         const actions =
             mode == 'share'
@@ -304,94 +342,66 @@ export default function ActionConfigurator({
                 '& .MuiTextField-root': { m: 1 },
             }}
         >
-            {value.type == 'action' && value.value?.action != 'other' ? (
+            {value.value?.action != 'other' ? (
                 <>
                     <div>
-                        <Typography>
-                            For security reasons action options are not shown
-                            after creation. Use note field to document them
-                        </Typography>
                         <FastField
                             name={`${path}value.action`}
                             component={SimpleSelect}
                             options={validactions}
-                            disabled={
-                                disabled ||
-                                locked ||
-                                mode == 'share' ||
-                                mode == 'publicShare'
-                            }
+                            disabled={!!(disabled || locked || lockAction)}
                             label="Action"
                             fullWidth
                         />
                     </div>
-                    <Divider />
-                    {mode != 'share' && mode != 'publicShare' && (
-                        <>
-                            <Grid container>
-                                <Grid xs={12} sm={6}>
-                                    <FastField
-                                        name={`${path}start`}
-                                        component={FormikDateTimePicker}
-                                        maxDateTime={maxDateTime}
-                                        disabled={disabled || locked}
-                                        clearable
-                                        showTodayButton
-                                        label="Start"
-                                    />
-                                </Grid>
-                                <Grid xs={12} sm={6}>
-                                    <FastField
-                                        name={`${path}stop`}
-                                        component={FormikDateTimePicker}
-                                        minDateTime={minDateTime}
-                                        clearable
-                                        showTodayButton
-                                        disabled={disabled || locked}
-                                        label="Stop"
-                                    />
-                                </Grid>
-                            </Grid>
-                            <Divider />
-                        </>
-                    )}
+                    <div>
+                        {mode != 'share' && mode != 'publicShare' && (
+                            <SelectStartStop
+                                path={path}
+                                disabled={disabled || locked}
+                            />
+                        )}
+                    </div>
                 </>
             ) : null}
-            <>
-                {value.type == 'certificate' ? (
-                    <div>
-                        <Typography variant="h4">Certificate:</Typography>
-                        <div style={{ wordBreak: 'break-all' }}>
-                            {value.data}
-                        </div>
-                    </div>
-                ) : !noToken ? (
-                    <div>
-                        <FastField
-                            name={`${path}data`}
-                            component={TokenSelect}
-                            fullWidth
-                            freeSolo
-                            tokens={tokens}
-                            disabled={disabled || locked}
-                            label="Token"
-                        />
-                    </div>
-                ) : null}
-            </>
-
-            <div>
-                <FastField
-                    name={`${path}note`}
-                    component={FormikTextField}
-                    fullWidth
-                    disabled={disabled || value?.delete}
-                    label="Note"
-                    multiline
-                    variant="outlined"
-                />
-            </div>
-            {value.type == 'action' && !locked && (
+            {!noToken ? (
+                <div>
+                    <FastField
+                        name={`${path}data`}
+                        component={TokenSelect}
+                        hashAlgorithm={hashAlgorithm}
+                        updateHashField={`${path}newHash`}
+                        fullWidth
+                        freeSolo
+                        tokens={tokens}
+                        disabled={disabled || locked}
+                        label="Token"
+                    />
+                </div>
+            ) : null}
+            {handleNoteChange ? (
+                <div>
+                    <TextField
+                        onChange={handleNoteChange}
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        label="Note"
+                        value={note}
+                    />
+                </div>
+            ) : note ? (
+                <div>
+                    <TextField
+                        disabled
+                        fullWidth
+                        multiline
+                        label="Note"
+                        value={note}
+                    />
+                </div>
+            ) : null}
+            {!locked && (
                 <div>
                     <Grid spacing={2} container>
                         <ActionFields
@@ -404,4 +414,77 @@ export default function ActionConfigurator({
             )}
         </Box>
     )
+}
+
+function CertificateConfigurator({
+    value,
+    disabled,
+    path = '',
+    handleNoteChange,
+}: CertificateConfiguratorProps) {
+    disabled = !!(disabled || value?.readonly)
+    const { value: note } = useField(`${path}note`)[0]
+
+    return (
+        <Box
+            sx={{
+                '& .MuiTextField-root': { m: 1 },
+            }}
+        >
+            <div>
+                <Typography variant="h4">Certificate:</Typography>
+                <div style={{ wordBreak: 'break-all' }}>{value.data}</div>
+            </div>
+            {handleNoteChange ? (
+                <div>
+                    <TextField
+                        onChange={handleNoteChange}
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        label="Note"
+                        value={note}
+                    />
+                </div>
+            ) : note ? (
+                <div>
+                    <TextField
+                        disabled
+                        fullWidth
+                        multiline
+                        label="Note"
+                        value={note}
+                    />
+                </div>
+            ) : null}
+        </Box>
+    )
+}
+
+// maybe remove auth
+// Configurator for actions and certificates
+export default function ActionOrCertificateConfigurator({
+    value,
+    disabled,
+    handleNoteChange,
+    ...props
+}: ActionOrCertificateConfiguratorProps) {
+    if (value.type == 'action') {
+        return (
+            <ActionConfigurator
+                value={value}
+                disabled={disabled}
+                handleNoteChange={handleNoteChange}
+                {...props}
+            />
+        )
+    } else {
+        return (
+            <CertificateConfigurator
+                value={value}
+                disabled={disabled}
+                handleNoteChange={handleNoteChange}
+            />
+        )
+    }
 }

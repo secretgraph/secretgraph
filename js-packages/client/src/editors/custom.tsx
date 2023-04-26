@@ -194,6 +194,7 @@ const InnerCustom = ({
                                         open={open}
                                         isContent
                                         isPublic={values.state == 'public'}
+                                        hashAlgorithm={hashAlgorithm}
                                     />
                                 )
                             }}

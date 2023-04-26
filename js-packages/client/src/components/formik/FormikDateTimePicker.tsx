@@ -3,7 +3,7 @@ import {
     DateTimePicker,
     DateTimePickerProps,
 } from '@mui/x-date-pickers/DateTimePicker'
-import { OptionalAttributes } from '@secretgraph/misc/typing'
+import { parseISO } from 'date-fns'
 import { FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -11,7 +11,7 @@ export type FormikDateTimePickerProps<
     V extends string = string,
     FormValues = any
 > = Omit<
-    DateTimePickerProps<string>,
+    DateTimePickerProps<Date>,
     keyof FieldProps<V, FormValues> | 'defaultValue' | 'onChange'
 > &
     FieldProps<V, FormValues>
@@ -20,7 +20,7 @@ export default function FormikDateTimePicker<
     V extends string = string,
     FormValues = any
 >({
-    field,
+    field: { value, ...field },
     form,
     meta: metaIntern,
     ampm,
@@ -31,16 +31,18 @@ export default function FormikDateTimePicker<
             // TODO: use until code is fixed
             ampm={ampm !== undefined ? ampm : false}
             {...field}
+            value={value ? parseISO(value) : null}
             {...params}
-            onChange={(val: any, context) => {
+            onChange={(val: Date, context) => {
                 if (val instanceof Date) {
                     // invalid dates
                     if (isNaN(val.getTime())) {
                         return
                     }
-                    val = val.toISOString()
+                    form.setFieldValue(field.name, val.toISOString())
+                } else {
+                    form.setFieldValue(field.name, val)
                 }
-                form.setFieldValue(field.name, val)
                 form.setFieldTouched(field.name, true)
             }}
         />

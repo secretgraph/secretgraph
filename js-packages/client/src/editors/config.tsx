@@ -248,6 +248,7 @@ function InnerConfig({
                                             open={open}
                                             isContent
                                             isPublic={false}
+                                            hashAlgorithm={hashAlgorithm}
                                         />
                                     )
                                 }}

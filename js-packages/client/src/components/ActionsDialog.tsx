@@ -26,7 +26,7 @@ import { FastField, FieldArrayRenderProps, FormikProps } from 'formik'
 import * as React from 'react'
 
 import FormikCheckBox from './formik/FormikCheckbox'
-import ActionConfigurator from './forms/ActionConfigurator'
+import ActionConfigurator from './forms/ActionOrCertificateConfigurator'
 import SimpleSelect from './forms/SimpleSelect'
 
 const HashEntry = React.memo(function HashEntry({
@@ -108,6 +108,7 @@ interface ActionsDialogProps
     isContent: boolean
     isPublic: boolean
     fieldname?: string
+    hashAlgorithm: string
     handleClose: () => void
     form: FormikProps<{
         [p: string]: (ActionInputEntry | CertificateInputEntry)[]
@@ -123,6 +124,7 @@ export default function ActionsDialog({
     push,
     isContent,
     isPublic,
+    hashAlgorithm,
     maxWidth = 'xl',
     fullWidth = true,
     fieldname = 'actions',
@@ -185,6 +187,43 @@ export default function ActionsDialog({
         )
         return ret
     }, [form.values[fieldname]])
+    const handleNoteChange = React.useCallback(
+        (e: React.ChangeEvent) => {
+            if (!selectedItem || selectedItem.value.type == 'action') {
+                if (selectedItem) {
+                    form.setFieldValue(
+                        `${fieldname}.${selectedItem.index}.note`,
+                        e
+                    )
+                    if (selectedItem.value.data) {
+                        for (const item of filteredActions) {
+                            if (
+                                (selectedItem.index != item.index &&
+                                    selectedItem.value.data) == item.value.data
+                            ) {
+                                form.setFieldValue(
+                                    `${fieldname}.${item.index}.note`,
+                                    e,
+                                    false
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    form.setFieldValue(
+                        `${fieldname}.${form.values[fieldname].length}.note`,
+                        e
+                    )
+                }
+            } else {
+                form.setFieldValue(
+                    `${fieldname}.${selectedItem.index}.note`,
+                    e
+                )
+            }
+        },
+        [selectedItem, filteredActions]
+    )
     return (
         <Dialog
             fullWidth={fullWidth}
@@ -235,7 +274,9 @@ export default function ActionsDialog({
                                                     key={item.index}
                                                     disabled={disabled}
                                                     item={item}
-                                                    selectItem={setSelectedItem}
+                                                    selectItem={
+                                                        setSelectedItem
+                                                    }
                                                     deleteItem={deleteItem}
                                                 />
                                             )
@@ -274,7 +315,9 @@ export default function ActionsDialog({
                                                     key={item.value.newHash}
                                                     disabled={disabled}
                                                     item={item}
-                                                    selectItem={setSelectedItem}
+                                                    selectItem={
+                                                        setSelectedItem
+                                                    }
                                                     deleteItem={deleteItem}
                                                 />
                                             )
@@ -294,6 +337,7 @@ export default function ActionsDialog({
                                     ? `${fieldname}.${selectedItem.index}.`
                                     : `${fieldname}.${form.values[fieldname].length}.`
                             }
+                            hashAlgorithm={hashAlgorithm}
                             isContent={isContent}
                             mode={isPublic ? 'public' : 'default'}
                             value={
@@ -313,6 +357,7 @@ export default function ActionsDialog({
                                           newHash: '',
                                       }
                             }
+                            handleNoteChange={handleNoteChange}
                             disabled={disabled}
                             tokens={tokens}
                         />

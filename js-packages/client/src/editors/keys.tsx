@@ -335,6 +335,7 @@ function UpdateKeysForm({
                 {({ remove, replace, push, form }) => {
                     return (
                         <ActionsDialog
+                            hashAlgorithm={hashAlgorithmsWorking[0]}
                             remove={remove}
                             replace={replace}
                             push={push}
@@ -356,6 +357,7 @@ function UpdateKeysForm({
                 {({ remove, replace, push, form }) => {
                     return (
                         <ActionsDialog
+                            hashAlgorithm={hashAlgorithmsWorking[0]}
                             remove={remove}
                             replace={replace}
                             push={push}
