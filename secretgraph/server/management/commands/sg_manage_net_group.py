@@ -67,9 +67,7 @@ class Command(BaseCommand):
         self,
         name,
         description,
-        hidden,
         properties,
-        match_user_group,
         **options,
     ):
         if not name:
@@ -82,18 +80,9 @@ class Command(BaseCommand):
 
             if description is not None:
                 net_group.description = description
-            if hidden is not None:
-                net_group.hidden = hidden
-            if match_user_group is not None:
-                net_group.matchUserGroup = match_user_group
-            if (
-                description is not None
-                or hidden is not None
-                or match_user_group is not None
-            ):
+            if description is not None:
                 net_group.clean()
                 net_group.save()
-            # TODO: handle injectedKeys
 
             if properties is not None:
                 _properties = []
@@ -107,11 +96,6 @@ class Command(BaseCommand):
                     SGroupProperty.objects.defaultNetProperties()
                 )
 
-            if (
-                description is not None
-                or hidden is not None
-                or match_user_group is not None
-                or properties is not None
-            ):
+            if description is not None or properties is not None:
                 print("Create or Update Group:", name)
             self.print_group(net_group)
