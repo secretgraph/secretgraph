@@ -13,9 +13,10 @@ last_used_help = _(
 )
 
 cluster_groups_help = _(
-    "cluster groups: groups for permissions and injected keys"
+    "cluster groups: groups for cluster permissions and injected keys"
 )
 
+net_groups_help = _("cluster groups: groups for permissions")
 reference_group_help = _(
     "ContentReference group: references are clustered in groups. "
     "They are used to signal different functions of the connection"

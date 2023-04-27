@@ -21,8 +21,9 @@ from ..models import (
     Action,
     Cluster,
     Content,
-    GlobalGroup,
-    GlobalGroupProperty,
+    Net,
+    NetGroup,
+    SGroupProperty,
 )
 from .hashing import calculateHashes
 
@@ -508,25 +509,19 @@ def ids_to_results(
     return results
 
 
-def get_properties_q(request, query):
-    assert issubclass(query.model, Cluster), (
-        "Not a cluster query: %s" % query.model
+def get_net_properties_q(request, query):
+    assert issubclass(query.model, (Cluster, Net)), (
+        "Not a cluster/net query: %s" % query.model
     )
-    q = models.Q(clusters__in=query)
-    if getattr(settings, "SECRETGRAPH_USE_USER_GROUPS", True):
-        global_groups_names = GlobalGroup.objects.filter(
-            matchUserGroup=True
-        ).values_list("name", flat=True)
-        if global_groups_names:
-            user = getattr(request, "user", None)
-            if user:
-                q |= models.Q(
-                    name__in=models.Subquery(
-                        user.groups.filter(
-                            name__in=global_groups_names
-                        ).values("name")
-                    )
-                )
+    q = (
+        models.Q(nets__in=query)
+        if issubclass(query.model, Net)
+        else models.Q(nets__in=models.Subquery(query.values("net")))
+    )
+    if getattr(settings, "SECRETGRAPH_USE_USER", True):
+        user = getattr(request, "user", None)
+        if user:
+            q |= models.Q(nets__user_name=user.get_username())
     return q
 
 
@@ -559,9 +554,9 @@ def get_cached_result(
     return getattr(request, name)
 
 
-def get_cached_properties(
+def get_cached_net_properties(
     request,
-    permissions_name="secretgraphProperties",
+    permissions_name="secretgraphNetProperties",
     result_name="secretgraphResult",
     authset=None,
     ensureInitialized=False,
@@ -581,12 +576,12 @@ def get_cached_properties(
             scope="manage",
             authset=authset,
         )["objects"]
-        global_groups = GlobalGroup.objects.filter(
-            get_properties_q(request, query)
+        net_groups = NetGroup.objects.filter(
+            get_net_properties_q(request, query)
         )
         all_props = frozenset(
-            GlobalGroupProperty.objects.filter(
-                groups__in=global_groups
+            SGroupProperty.objects.filter(
+                netGroups__in=net_groups
             ).values_list("name", flat=True)
         )
         setattr(
@@ -597,18 +592,18 @@ def get_cached_properties(
     return getattr(request, permissions_name)
 
 
-def update_cached_properties(
+def update_cached_net_properties(
     request,
     *,
     groups=None,
     properties=None,
-    permissions_name="secretgraphProperties",
+    permissions_name="secretgraphNetProperties",
 ):
     if getattr(request, permissions_name, None) is None:
         raise AttributeError("cached properties does not exist")
     if groups:
-        group_properties = GlobalGroupProperty.objects.filter(
-            groups__in=groups
+        group_properties = SGroupProperty.objects.filter(
+            netGroups__in=groups
         ).values_list("name")
     else:
         group_properties = []

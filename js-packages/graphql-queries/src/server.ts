@@ -7,7 +7,7 @@ export const serverConfigQuery = gql`
                 id
                 hashAlgorithms
                 maxRelayResults
-                groups {
+                clusterGroups {
                     name
                     hidden
                     properties
@@ -36,7 +36,7 @@ export const serverConfigQueryWithPermissions = gql`
                 id
                 hashAlgorithms
                 maxRelayResults
-                groups {
+                clusterGroups {
                     name
                     hidden
                     properties

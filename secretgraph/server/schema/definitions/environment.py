@@ -5,9 +5,10 @@ from strawberry_django_plus import relay, gql
 from django.conf import settings
 from django.shortcuts import resolve_url
 
+from ...utils.auth import get_cached_net_properties
 from ...models import (
     Content,
-    GlobalGroup,
+    ClusterGroup,
 )
 
 if TYPE_CHECKING:
@@ -26,12 +27,11 @@ class InjectedKeyNode:
         return queryset.filter(type="PublicKey", injectedFor__isnull=False)
 
 
-@gql.django.type(GlobalGroup, name="GlobalGroup")
-class GlobalGroupNode(relay.Node):
+@gql.django.type(ClusterGroup, name="ClusterGroup")
+class ClusterGroupNode(relay.Node):
     name: str
     description: str
     hidden: bool
-    matchUserGroup: str
     injectedKeys: List[InjectedKeyNode]
 
     id_attr = "name"
@@ -68,8 +68,16 @@ class SecretgraphConfig(relay.Node):
 
     @gql.django.field
     @staticmethod
-    def groups() -> List[GlobalGroupNode]:
-        return GlobalGroup.objects.all()
+    def clusterGroups(info: Info) -> List[ClusterGroupNode]:
+        # permissions allows to see the hidden global groups
+        # allow_hidden: have mod rights,
+        #   so the groups are handy for communication
+        # manage_groups: required for correctly updating groups
+        props = get_cached_net_properties(info.context["request"])
+        if "allow_hidden" in props or "manage_groups" in props:
+            return ClusterGroup.objects.all()
+        else:
+            return ClusterGroup.objects.filter(hidden=False)
 
     @gql.field()
     @staticmethod

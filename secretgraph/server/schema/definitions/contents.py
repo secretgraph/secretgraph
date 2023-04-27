@@ -8,7 +8,7 @@ from django.db.models import Subquery, Q, QuerySet
 from ....core.constants import public_states
 from ...utils.auth import (
     get_cached_result,
-    get_cached_properties,
+    get_cached_net_properties,
     fetch_by_id,
 )
 from ...actions.fetch import fetch_contents
@@ -132,8 +132,7 @@ class ContentNode(ActionMixin, relay.Node):
             )
         return tags
 
-    @gql.field()
-    @gql.django.django_resolver
+    @gql.django.field()
     def signatures(
         self: Content,
         info: Info,
@@ -145,6 +144,17 @@ class ContentNode(ActionMixin, relay.Node):
             includeAlgorithms,
             ContentReference.objects.filter(target__in=result["objects"]),
         )
+
+    @gql.django.field()
+    def properties(self, info: Info) -> Optional[list[str]]:
+        if self.limited:
+            return None
+        if "allow_hidden" in get_cached_net_properties(
+            info.context["request"]
+        ):
+            return self.properties
+        else:
+            return self.nonhidden_properties
 
     @gql.field()
     @gql.django.django_resolver
@@ -255,8 +265,8 @@ class ContentNode(ActionMixin, relay.Node):
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
-            and "manage_deletion"
-            not in get_cached_properties(info.context["request"])
+            and "allow_deletion"
+            not in get_cached_net_properties(info.context["request"])
         ):
             del_result = get_cached_result(
                 info.context["request"], scope="delete"
@@ -265,7 +275,7 @@ class ContentNode(ActionMixin, relay.Node):
                 id__in=Subquery(del_result["objects"].values("id"))
             )
 
-        if "manage_hidden" in get_cached_properties(
+        if "allow_hidden" in get_cached_net_properties(
             info.context["request"],
         ):
             hidden = filters.hidden

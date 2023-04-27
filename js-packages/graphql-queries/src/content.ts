@@ -193,8 +193,10 @@ export const contentRetrievalQuery = gql`
             config {
                 id
                 hashAlgorithms
-                groups {
+                clusterGroups {
                     name
+                    description
+                    hidden
                     injectedKeys {
                         link
                         contentHash
@@ -298,8 +300,9 @@ export const getContentConfigurationQuery = gql`
                 id
                 hashAlgorithms
                 maxRelayResults
-                groups {
+                clusterGroups {
                     name
+                    description
                     injectedKeys {
                         link
                         contentHash

@@ -20,7 +20,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import File
 from django.core.validators import MinLengthValidator
-from django.core.cache import caches
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models.functions import Concat, Substr, Length
@@ -30,6 +29,7 @@ from django.utils import timezone
 from .messages import (
     contentaction_group_help,
     cluster_groups_help,
+    net_groups_help,
     reference_group_help,
     net_limit_help,
     last_used_help,
@@ -183,6 +183,16 @@ class Net(models.Model):
             obj.bytes_in_use = obj.calculate_bytes_in_use()
             obj.save(update_fields=["bytes_in_use"])
 
+    @property
+    def properties(self) -> list[str]:
+        if not self.id:
+            return SGroupProperty.objects.defaultNetProperties.values_list(
+                "name", flat=True
+            )
+        return SGroupProperty.objects.filter(netGroups__nets=self).values_list(
+            "name", flat=True
+        )
+
     @cached_property
     def user(self) -> Optional[usermodel]:
         username = self.user_name
@@ -239,12 +249,32 @@ class Cluster(FlexidModel):
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
-    groups: models.ManyToManyRel["GlobalGroup"]
+    groups: models.ManyToManyRel["ClusterGroup"]
 
     @property
     def size(self) -> int:
         size = len(self.description)
         return size
+
+    @property
+    def properties(self) -> list[str]:
+        if not self.id:
+            return SGroupProperty.objects.defaultClusterProperties.values_list(
+                "name", flat=True
+            )
+        return SGroupProperty.objects.filter(
+            clusterGroups__clusters=self
+        ).values_list("name", flat=True)
+
+    @property
+    def nonhidden_properties(self) -> list[str]:
+        if not self.id:
+            return SGroupProperty.objects.defaultClusterProperties.values_list(
+                "name", flat=True
+            )
+        return SGroupProperty.objects.filter(
+            clusterGroups__in=self.groups.filter(hidden=False)
+        ).values_list("name", flat=True)
 
     def clean(self) -> None:
         if not self.globalNameRegisteredAt and self.featured:
@@ -429,6 +459,14 @@ class Content(FlexidModel):
         if self.tags.filter(tag="immutable").exists():
             return False
         return True
+
+    @property
+    def properties(self) -> list[str]:
+        return self.cluster.properties
+
+    @property
+    def nonhidden_properties(self) -> list[str]:
+        return self.cluster.nonhidden_properties
 
     @property
     def needs_signature(self) -> bool:
@@ -739,28 +777,30 @@ class ContentReference(models.Model):
         )
 
 
-class GlobalGroupManager(models.Manager):
-    def hidden(self, queryset=None) -> models.QuerySet[GlobalGroup]:
+class SGroupPropertyManager(models.Manager):
+    def defaultNetProperties(self, queryset=None):
         if queryset is None:
             queryset = self.get_queryset()
-        return queryset.filter(hidden=True)
 
-    def _get_hidden_names(self):
-        return set(self.hidden().values_list("name", flat=True))
+        dProperty = SGroupProperty.objects.get_or_create(
+            name="default", defaults={}
+        )[0]
+        default_ngroups = dProperty.netGroups.all()
+        return queryset.filter(netGroups__in=default_ngroups)
 
-    def get_hidden_names(self):
-        return caches["secretgraph_settings"].get_or_set(
-            "hidden_groups", self._get_hidden_names
-        )
-
-    def visible(self, queryset=None):
+    def defaultClusterProperties(self, queryset=None):
         if queryset is None:
             queryset = self.get_queryset()
-        return queryset.filter(hidden=False)
+
+        dProperty = SGroupProperty.objects.get_or_create(
+            name="default", defaults={}
+        )[0]
+        default_cgroups = dProperty.clusterGroups.all()
+        return queryset.filter(clusterGroups__in=default_cgroups)
 
 
 # e.g. auto_hide = contents are automatically hidden and manually
-class GlobalGroupProperty(models.Model):
+class SGroupProperty(models.Model):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
     name: str = models.CharField(
@@ -769,13 +809,50 @@ class GlobalGroupProperty(models.Model):
         unique=True,
         validators=[SafeNameValidator(), MinLengthValidator(1)],
     )
-    groups: models.ManyToManyRel["GlobalGroup"]
+    clusterGroups: models.ManyToManyRel["ClusterGroup"]
+    netGroups: models.ManyToManyRel["NetGroup"]
+
+    objects = SGroupPropertyManager()
 
     def __str__(self) -> str:
         return self.name
 
 
-class GlobalGroup(models.Model):
+class NetGroup(models.Model):
+    # there are just few of them
+    id: int = models.AutoField(primary_key=True, editable=False)
+    name: str = models.CharField(
+        max_length=50,
+        null=False,
+        unique=True,
+        validators=[SafeNameValidator(), MinLengthValidator(1)],
+    )
+    description: str = models.TextField()
+    nets: models.ManyToManyField[Net] = models.ManyToManyField(
+        Net,
+        related_name="groups",
+        help_text=net_groups_help,
+    )
+    properties: models.ManyToManyField[
+        SGroupProperty
+    ] = models.ManyToManyField(SGroupProperty, related_name="netGroups")
+
+    def __str__(self) -> str:
+        return self.name
+
+    def __repr__(self) -> str:
+        return "<NetGroup: %s>" % (self.name,)
+
+    @property
+    def is_managed(self) -> bool:
+        return bool(
+            settings.SECRETGRAPH_DEFAULT_NET_GROUPS.get(self.name, {}).get(
+                "managed"
+            )
+        )
+
+
+class ClusterGroup(models.Model):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
     name: str = models.CharField(
@@ -787,7 +864,6 @@ class GlobalGroup(models.Model):
     description: str = models.TextField()
     # don't show in groups, mutual exclusive to keys
     hidden: bool = models.BooleanField(default=False, blank=True)
-    matchUserGroup: bool = models.BooleanField(default=False, blank=True)
     clusters: models.ManyToManyField[Cluster] = models.ManyToManyField(
         Cluster,
         related_name="groups",
@@ -802,10 +878,12 @@ class GlobalGroup(models.Model):
         },
     )
     properties: models.ManyToManyField[
-        GlobalGroupProperty
-    ] = models.ManyToManyField(GlobalGroupProperty, related_name="groups")
-
-    objects = GlobalGroupManager()
+        SGroupProperty
+    ] = models.ManyToManyField(
+        SGroupProperty,
+        related_name="clusterGroups",
+        limit_choices_to=~models.Q(name__startswith="manage_"),
+    )
 
     def clean(self):
         if self.hidden and self.injectedKeys.exists():
@@ -817,7 +895,7 @@ class GlobalGroup(models.Model):
         return self.name
 
     def __repr__(self) -> str:
-        return "<GlobalGroup: %s%s>" % (
+        return "<ClusterGroup: %s%s>" % (
             self.name,
             ", hidden" if self.hidden else "",
         )
@@ -825,7 +903,7 @@ class GlobalGroup(models.Model):
     @property
     def is_managed(self) -> bool:
         return bool(
-            settings.SECRETGRAPH_DEFAULT_GROUPS.get(self.name, {}).get(
+            settings.SECRETGRAPH_DEFAULT_CLUSTER_GROUPS.get(self.name, {}).get(
                 "managed"
             )
         )

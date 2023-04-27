@@ -16,13 +16,13 @@ from ...actions.update import (
     update_cluster_fn,
     update_content_fn,
 )
-from ...models import Cluster, Content, GlobalGroupProperty
+from ...models import Cluster, Content, SGroupProperty
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
     get_cached_result,
-    get_cached_properties,
-    update_cached_properties,
+    get_cached_net_properties,
+    update_cached_net_properties,
 )
 from ..arguments import (
     AuthList,
@@ -49,20 +49,20 @@ def mutate_cluster(
     authorization: Optional[AuthList] = None,
 ) -> ClusterMutation:
     if cluster.featured is not None:
-        if "manage_featured" not in get_cached_properties(
+        if "allow_featured" not in get_cached_net_properties(
             info.context["request"], authset=authorization
         ):
             cluster.featured = None
 
     if cluster.groups is not None:
-        if "manage_groups" not in get_cached_properties(
+        if "manage_groups" not in get_cached_net_properties(
             info.context["request"], authset=authorization
         ):
             cluster.groups = None
 
     if cluster.name is not None and cluster.name.startswith("@"):
         if "allow_global_name" not in (
-            get_cached_properties(
+            get_cached_net_properties(
                 info.context["request"], authset=authorization
             )
         ):
@@ -89,15 +89,16 @@ def mutate_cluster(
         )(transaction.atomic)
     else:
         if cluster.groups is None:
-            default_groups = GlobalGroupProperty.objects.get_or_create(
+            dProperty = SGroupProperty.objects.get_or_create(
                 name="default", defaults={}
-            )[0].groups.all()
-            cluster.groups = default_groups.values_list("name", flat=True)
-            get_cached_properties(
+            )[0]
+            default_cgroups = dProperty.clusterGroups.all()
+            cluster.groups = default_cgroups.values_list("name", flat=True)
+            get_cached_net_properties(
                 info.context["request"], authset=authorization
             )
-            update_cached_properties(
-                info.context["request"], groups=default_groups
+            update_cached_net_properties(
+                info.context["request"], groups=dProperty.netGroups.all()
             )
         _cluster_res = create_cluster_fn(
             info.context["request"], cluster, authset=authorization
@@ -121,12 +122,6 @@ def mutate_content(
     authorization: Optional[AuthList] = None,
 ) -> ContentMutation:
     required_keys = set()
-    if content.hidden is not None:
-        if "manage_hidden" not in get_cached_properties(
-            info.context["request"], authset=authorization
-        ):
-            content.hidden = None
-
     if id:
         if not updateId:
             raise ValueError("updateId required")
@@ -138,6 +133,15 @@ def mutate_content(
             authset=authorization,
         )["Content"]
         content_obj = result["objects"].get()
+        if content.hidden is not None:
+            if (
+                "allow_hidden"
+                not in get_cached_net_properties(
+                    info.context["request"], authset=authorization
+                )
+                and "allow_hidden" not in content_obj.properties
+            ):
+                content.hidden = None
 
         if content.value:
             if content.cluster:
@@ -186,6 +190,16 @@ def mutate_content(
         cluster_obj = result["objects"].first()
         if not cluster_obj:
             raise ValueError("Cluster for Content not found")
+
+        if content.hidden is not None:
+            if (
+                "allow_hidden"
+                not in get_cached_net_properties(
+                    info.context["request"], authset=authorization
+                )
+                and "allow_hidden" not in cluster_obj.properties
+            ):
+                content.hidden = None
 
         # is a key spec
         if not content.key:

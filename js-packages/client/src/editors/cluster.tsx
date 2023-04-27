@@ -429,7 +429,7 @@ const ClusterIntern = ({
                                             disabled ||
                                             loading ||
                                             !permissions.includes(
-                                                'manage_featured'
+                                                'allow_featured'
                                             )
                                         }
                                     />

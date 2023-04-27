@@ -11,7 +11,11 @@ from strawberry.types import Info
 from strawberry_django_plus import relay
 
 from ...models import Cluster, Content
-from ...utils.auth import fetch_by_id, get_cached_properties, ids_to_results
+from ...utils.auth import (
+    fetch_by_id,
+    get_cached_net_properties,
+    ids_to_results,
+)
 from ..arguments import AuthList
 
 logger = logging.getLogger(__name__)
@@ -30,10 +34,10 @@ def delete_content_or_cluster(
 ) -> DeleteContentOrClusterMutation:
     now = timezone.now()
 
-    manage_deletion = "manage_deletion" in get_cached_properties(
+    allow_deletion = "allow_deletion" in get_cached_net_properties(
         info.context["request"], authset=authorization
     )
-    if manage_deletion:
+    if allow_deletion:
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         clusters = fetch_by_id(
             Cluster.objects.all(), ids, limit_ids=None, check_short_name=True
@@ -50,7 +54,7 @@ def delete_content_or_cluster(
         clusters = results["Cluster"]["objects"]
     if when:
         when_safe = (
-            when if manage_deletion else max(now + timedelta(minutes=20), when)
+            when if allow_deletion else max(now + timedelta(minutes=20), when)
         )
         contents.update(markForDestruction=when_safe)
         Content.objects.filter(
@@ -92,7 +96,7 @@ def reset_deletion_content_or_cluster(
     ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
-    if "manage_deletion" in get_cached_properties(
+    if "allow_deletion" in get_cached_net_properties(
         info.context["request"], authset=authorization
     ):
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)

@@ -11,7 +11,7 @@ from django.db.models import F
 from django.core.exceptions import ObjectDoesNotExist
 from ....core.exceptions import ResourceLimitExceeded
 
-from ...models import Cluster, Net, GlobalGroup
+from ...models import Cluster, Net, SGroupProperty, ClusterGroup
 from ...utils.auth import (
     ids_to_results,
     retrieve_allowed_objects,
@@ -127,6 +127,11 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             net = Net()
             if user:
                 net.user_name = user.get_username()
+
+            dProperty = SGroupProperty.objects.get_or_create(
+                name="default", defaults={}
+            )[0]
+            net.groups = dProperty.netGroups.all()
             net.reset_quota()
             net.reset_max_upload_size()
         cluster.net = net
@@ -184,7 +189,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             old_net.save(update_fields=["bytes_in_use"])
         if getattr(objdata, "groups", None) is not None:
             cluster.groups.set(
-                GlobalGroup.objects.filter(name__in=objdata.groups)
+                ClusterGroup.objects.filter(name__in=objdata.groups)
             )
 
     # path: actions are specified

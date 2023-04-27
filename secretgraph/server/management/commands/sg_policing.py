@@ -8,7 +8,7 @@ from django.utils.timezone import now
 from django.db.models import OuterRef, Exists, Q, QuerySet
 
 from ...utils.auth import fetch_by_id
-from ...models import Cluster, Content, ContentTag, GlobalGroup, Net
+from ...models import Cluster, Content, ContentTag, ClusterGroup, Net
 from ....core.constants import public_states
 
 
@@ -167,11 +167,11 @@ class Command(BaseCommand):
         # clusters
         clusters = Cluster.objects.filter(cluster_q)
         if append_groups:
-            append_groups = GlobalGroup.objects.filter(
+            append_groups = ClusterGroup.objects.filter(
                 name__in=set(append_groups).difference(remove_groups)
             )
         if remove_groups:
-            remove_groups = GlobalGroup.objects.filter(name__in=remove_groups)
+            remove_groups = ClusterGroup.objects.filter(name__in=remove_groups)
 
         if "Cluster" in scan:
             clusters_filtered = clusters
@@ -340,8 +340,8 @@ class Command(BaseCommand):
                 cluster__id__in=clusters_affected.values("id")
             ).update(hidden=change_hidden)
         if append_groups:
-            for g in cast(QuerySet[GlobalGroup], append_groups):
+            for g in cast(QuerySet[ClusterGroup], append_groups):
                 g.clusters.add(clusters_affected)
         if remove_groups:
-            for g in cast(QuerySet[GlobalGroup], remove_groups):
+            for g in cast(QuerySet[ClusterGroup], remove_groups):
                 g.clusters.remove(clusters_affected)

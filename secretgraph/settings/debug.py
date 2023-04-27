@@ -49,24 +49,24 @@ except ImportError:
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
 SECRETGRAPH_REQUIRE_USER = False
-SECRETGRAPH_USE_USER_GROUPS = True
+SECRETGRAPH_USE_USER = True
 SECRETGRAPH_ALLOW_REGISTER = True
 SECRETGRAPH_ADMINAREA = True
 SECRETGRAPH_HEADLESS = False
 
-SECRETGRAPH_DEFAULT_GROUPS["debug"] = {  # noqa F405
+SECRETGRAPH_DEFAULT_CLUSTER_GROUPS["debug"] = {  # noqa F405
     "properties": ["allow_global_name", "allow_dangerous_actions", "default"],
     "managed": True,
 }
-SECRETGRAPH_DEFAULT_GROUPS["debug_admin"] = {  # noqa F405
+SECRETGRAPH_DEFAULT_NET_GROUPS["debug_admin"] = {  # noqa F405
     "properties": [
         "allow_global_name",
         "allow_dangerous_actions",
         "manage_active",
-        "manage_featured",
-        "manage_hidden",
+        "allow_featured",
+        "allow_hidden",
         "manage_groups",
-        "manage_deletion",
+        "allow_deletion",
         "manage_update",
         "manage_user",
     ],

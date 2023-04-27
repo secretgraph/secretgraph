@@ -15,12 +15,12 @@ from ...actions.update import (
     update_metadata_fn,
     manage_actions_fn,
 )
-from ...models import Cluster, Content, ContentTag, Net
+from ...models import Cluster, Content, SGroupProperty, ContentTag, Net
 from ...signals import generateFlexid
 from ...utils.auth import (
     fetch_by_id,
     ids_to_results,
-    get_cached_properties,
+    get_cached_net_properties,
 )
 from ..arguments import AuthList, ActionInput, ReferenceInput
 
@@ -37,7 +37,7 @@ def regenerate_flexid(
     ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> RegenerateFlexidMutation:
-    if "manage_update" in get_cached_properties(
+    if "manage_update" in get_cached_net_properties(
         info.context["request"], authset=authorization
     ):
         results = {
@@ -85,39 +85,53 @@ def mark(
     active: Optional[bool] = None,
     authorization: Optional[AuthList] = None,
 ) -> MarkMutation:
-    if featured is not None:
-        if "manage_featured" not in get_cached_properties(
-            info.context["request"], authset=authorization
-        ):
-            featured = None
-    if hidden is not None:
-        if "manage_hidden" not in get_cached_properties(
-            info.context["request"], authset=authorization
-        ):
-            hidden = None
     if active is not None:
-        if "manage_active" not in get_cached_properties(
+        if get_cached_net_properties(
             info.context["request"], authset=authorization
-        ):
+        ).isdisjoint({"manage_active", "manage_user"}):
             active = None
     contents = Content.objects.none()
     clusters = Cluster.objects.none()
     if hidden is not None:
-        contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
+        if "allow_hidden" in get_cached_net_properties(
+            info.context["request"], authset=authorization
+        ):
+            contents = Content.objects.all()
+        else:
+            dProperty = SGroupProperty.objects.get_or_create(
+                name="allow_hidden"
+            )[0]
+            cgroups = dProperty.clusterGroups.all()
+            contents = Content.objects.filter(cluster__groups__in=cgroups)
+        contents = fetch_by_id(contents, ids, limit_ids=None)
 
         contents.update(hidden=hidden)
     if featured is not None or active is not None:
-        clusters = fetch_by_id(
+        clusters_all = fetch_by_id(
             Cluster.objects.all(), ids, limit_ids=None, check_short_name=True
         )
         if featured is not None:
+            if "allow_featured" in get_cached_net_properties(
+                info.context["request"], authset=authorization
+            ):
+                clusters = clusters_all
+            else:
+                dProperty = SGroupProperty.objects.get_or_create(
+                    name="allow_featured"
+                )[0]
+                cgroups = dProperty.clusterGroups.all()
+                clusters = clusters_all.filter(groups__in=cgroups)
+
             clusters.filter(globalNameRegisteredAt__isnull=False).update(
                 featured=featured
             )
+        # must be last, clusters is now filtered
         if active is not None:
             Net.objects.filter(
-                Exists(clusters.filter(net_id=OuterRef("id")))
+                Exists(clusters_all.filter(net_id=OuterRef("id")))
             ).update(active=active)
+            # as all clusters are updated, replace filtered with all
+            clusters = clusters_all
 
     return MarkMutation(
         updated=chain(
@@ -142,7 +156,7 @@ def update_metadata(
     operation: Optional[MetadataOperations] = MetadataOperations.APPEND,
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
-    manage_update = "manage_update" in get_cached_properties(
+    manage_update = "manage_update" in get_cached_net_properties(
         info.context["request"], authset=authorization
     )
     if manage_update:

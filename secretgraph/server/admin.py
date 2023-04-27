@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from secretgraph.server.utils.auth import (
-    get_cached_properties,
+    get_cached_net_properties,
     get_cached_result,
 )
 
@@ -19,8 +19,9 @@ from .models import (
     Content,
     ContentTag,
     ContentReference,
-    GlobalGroup,
-    GlobalGroupProperty,
+    ClusterGroup,
+    NetGroup,
+    SGroupProperty,
     Net,
 )
 from .signals import sweepContentsAndClusters, fillEmptyFlexidsCb
@@ -78,36 +79,28 @@ class FlexidMixin:
             )
 
 
-class GlobalGroupInline(admin.TabularInline):
+class ClusterGroupInline(admin.TabularInline):
     extra = 1
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if not get_cached_properties(request).isdisjoint(
-            {"manage_hidden", "manage_groups"}
-        ):
-            return qs
-        return qs.filter(globalgroup__hidden=False)
-
     def has_view_permission(self, request, obj=None) -> bool:
-        # obj not GlobalGroup
+        # obj not ClusterGroup
         return True
 
     def has_change_permission(self, request, obj=None):
-        # obj not GlobalGroup
+        # obj not ClusterGroup
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_groups" in get_cached_properties(request)
+        ) or "manage_groups" in get_cached_net_properties(request)
 
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission
 
 
-class GlobalGroupInlineOfGlobalGroupProperty(GlobalGroupInline):
-    model = GlobalGroupProperty.groups.through
+class ClusterGroupInlineOfSGroupProperty(ClusterGroupInline):
+    model = SGroupProperty.clusterGroups.through
 
 
-class GlobalGroupInlineOfCluster(GlobalGroupInline):
+class ClusterGroupInlineOfCluster(ClusterGroupInline):
     model = Cluster.groups.through
 
 
@@ -121,7 +114,7 @@ class ContentTagInline(admin.TabularInline):
     def has_change_permission(self, request, obj=None):
         if getattr(
             request.user, "is_superuser", False
-        ) or "manage_update" in get_cached_properties(request):
+        ) or "manage_update" in get_cached_net_properties(request):
             return True
         return False
 
@@ -141,7 +134,7 @@ class ContentReferenceInline(admin.TabularInline):
     def has_change_permission(self, request, obj=None):
         if getattr(
             request.user, "is_superuser", False
-        ) or "manage_update" in get_cached_properties(request):
+        ) or "manage_update" in get_cached_net_properties(request):
             return True
         return False
 
@@ -162,7 +155,7 @@ class ContentActionInline(admin.TabularInline):
     def has_change_permission(self, request, obj=None):
         if getattr(
             request.user, "is_superuser", False
-        ) or "manage_update" in get_cached_properties(request):
+        ) or "manage_update" in get_cached_net_properties(request):
             return True
         return False
 
@@ -182,14 +175,14 @@ class ActionAdmin(admin.ModelAdmin):
     def has_add_permission(self, request, obj=None):
         """if getattr(
             request.user, "is_superuser", False
-        ) or "manage_update" in get_cached_properties(request):
+        ) or "manage_update" in get_cached_net_properties(request):
             return True"""
         return False
 
     def has_change_permission(self, request, obj=None):
         if getattr(
             request.user, "is_superuser", False
-        ) or "manage_update" in get_cached_properties(request):
+        ) or "manage_update" in get_cached_net_properties(request):
             return True
         return False
 
@@ -215,7 +208,7 @@ class NetAdmin(admin.ModelAdmin):
         return (
             getattr(request.user, "is_staff", False)
             or getattr(request.user, "is_superuser", False)
-            or "manage_user" in get_cached_properties(request)
+            or "manage_user" in get_cached_net_properties(request)
         )
 
     has_view_permission = has_module_permission
@@ -226,13 +219,13 @@ class NetAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None) -> bool:
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_user" not in get_cached_properties(request)
+        ) or "manage_user" in get_cached_net_properties(request)
 
     has_add_permission = has_change_permission
 
 
 class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
-    inlines = [GlobalGroupInlineOfCluster]
+    inlines = [ClusterGroupInlineOfCluster]
     list_display = ["id", "flexid", "name", "featured", net_repr]
     list_filter = ["featured"]
     sortable_by = ["id", "flexid", "name", "featured", net_repr]
@@ -250,16 +243,16 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
                     )
                 )
             )
-            if "manage_deletion" not in get_cached_properties(request):
-                qs = qs.filter(markForDestruction=False)
+            if "allow_deletion" not in get_cached_net_properties(request):
+                qs = qs.filter(markForDestruction=None)
         return qs
 
     def get_readonly_fields(self, request, obj=None):
         rfields = list(self.readonly_fields)
         if not getattr(request.user, "is_superuser", False):
-            if "manage_featured" not in get_cached_properties(request):
+            if "allow_featured" in get_cached_net_properties(request):
                 rfields.append("featured")
-            if "manage_deletion" not in get_cached_properties(request):
+            if "allow_deletion" in get_cached_net_properties(request):
                 rfields.append("markForDestruction")
 
         return rfields
@@ -273,14 +266,14 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     def has_change_permission(self, request, obj=None) -> bool:
         if getattr(
             request.user, "is_superuser", False
-        ) or "manage_update" in get_cached_properties(request):
+        ) or "manage_update" in get_cached_net_properties(request):
             return True
         return False
 
     def has_delete_permission(self, request, obj=None) -> bool:
         return bool(
             getattr(request.user, "is_superuser", False)
-            or "manage_deletion" not in get_cached_properties(request)
+            or "allow_deletion" in get_cached_net_properties(request)
         )
 
     def save_model(self, request, obj: Cluster, form, change):
@@ -342,11 +335,11 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
                 )
             )
 
-            if "manage_hidden" not in get_cached_properties(request):
+            if "allow_hidden" not in get_cached_net_properties(request):
                 qs = qs.filter(hidden=False)
 
-            if "manage_deletion" not in get_cached_properties(request):
-                qs = qs.filter(markForDestruction=False)
+            if "allow_deletion" not in get_cached_net_properties(request):
+                qs = qs.filter(markForDestruction=None)
         return qs
 
     def get_readonly_fields(self, request, obj=None):
@@ -354,9 +347,9 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if obj:
             rfields.append("type")
         if not getattr(request.user, "is_superuser", False):
-            if "manage_hidden" not in get_cached_properties(request):
+            if "allow_hidden" in get_cached_net_properties(request):
                 rfields.append("hidden")
-            if "manage_deletion" not in get_cached_properties(request):
+            if "allow_deletion" in get_cached_net_properties(request):
                 rfields.append("markForDestruction")
 
         return rfields
@@ -365,7 +358,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if (
             obj
             and obj.hidden
-            and "manage_hidden" in get_cached_properties(request)
+            and "allow_hidden" in get_cached_net_properties(request)
         ):
             return False
         return True
@@ -374,7 +367,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         if getattr(
             request.user, "is_superuser", False
-        ) or "manage_update" in get_cached_properties(request):
+        ) or "manage_update" in get_cached_net_properties(request):
             return True
         return False
 
@@ -384,7 +377,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None) -> bool:
         return bool(
             getattr(request.user, "is_superuser", False)
-            or "manage_deletion" not in get_cached_properties(request)
+            or "allow_deletion" in get_cached_net_properties(request)
         )
 
     def save_model(self, request, obj, form, change):
@@ -419,46 +412,53 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         obj.save()
 
 
-class GlobalGroupAdmin(admin.ModelAdmin):
+class ClusterGroupAdmin(admin.ModelAdmin):
     list_display = ["name"]
     sortable_by = ["name"]
     search_fields = ["name"]
     list_filter = ["properties"]
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if "manage_hidden" in get_cached_properties(request):
-            return qs
-        return qs.filter(hidden=False)
-
     def has_module_permission(self, request):
         return True
 
     def has_view_permission(self, request, obj=None) -> bool:
-        if (
-            obj
-            and obj.hidden
-            and get_cached_properties(request).isdisjoint(
-                {"manage_hidden", "manage_groups"}
-            )
-        ):
-            return False
         return True
 
     def has_change_permission(self, request, obj=None):
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_groups" in get_cached_properties(request)
+        ) or "manage_groups" in get_cached_net_properties(request)
 
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission
 
 
-class GlobalGroupPropertyAdmin(admin.ModelAdmin):
+class NetGroupAdmin(admin.ModelAdmin):
+    list_display = ["name"]
+    sortable_by = ["name"]
+    search_fields = ["name", "nets__user_name"]
+    list_filter = ["properties"]
+
+    def has_module_permission(self, request):
+        return True
+
+    def has_view_permission(self, request, obj=None) -> bool:
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        return getattr(
+            request.user, "is_superuser", False
+        ) or "manage_groups" in get_cached_net_properties(request)
+
+    has_delete_permission = has_change_permission
+    has_add_permission = has_change_permission
+
+
+class SGroupPropertyAdmin(admin.ModelAdmin):
     list_display = ["name"]
     sortable_by = ["name"]
     search_fields = ["name"]
-    inlines = [GlobalGroupInlineOfGlobalGroupProperty]
+    inlines = [ClusterGroupInlineOfSGroupProperty]
 
     def has_module_permission(self, request):
         return True
@@ -471,7 +471,7 @@ class GlobalGroupPropertyAdmin(admin.ModelAdmin):
             return False
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_groups" in get_cached_properties(request)
+        ) or "manage_groups" in get_cached_net_properties(request)
 
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission
@@ -481,5 +481,6 @@ admin.site.register(Net, NetAdmin)
 admin.site.register(Cluster, ClusterAdmin)
 admin.site.register(Content, ContentAdmin)
 admin.site.register(Action, ActionAdmin)
-admin.site.register(GlobalGroup, GlobalGroupAdmin)
-admin.site.register(GlobalGroupProperty, GlobalGroupPropertyAdmin)
+admin.site.register(ClusterGroup, ClusterGroupAdmin)
+admin.site.register(NetGroup, NetGroupAdmin)
+admin.site.register(SGroupProperty, SGroupPropertyAdmin)

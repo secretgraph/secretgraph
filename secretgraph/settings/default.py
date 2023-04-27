@@ -135,7 +135,8 @@ SECRETGRAPH_HTTPX_KWARGS_MAP = {
 }
 
 #  for defining default global groups
-SECRETGRAPH_DEFAULT_GROUPS = {}
+SECRETGRAPH_DEFAULT_NET_GROUPS = {}
+SECRETGRAPH_DEFAULT_CLUSTER_GROUPS = {}
 
 # specify hash names from most current to most old
 SECRETGRAPH_HASH_ALGORITHMS = ["sha512"]

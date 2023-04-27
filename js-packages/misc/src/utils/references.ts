@@ -15,7 +15,7 @@ export async function extractGroupKeys({
     itemDomain,
 }: {
     serverConfig: {
-        groups: {
+        clusterGroups: {
             name: string
             injectedKeys: {
                 link: string
@@ -40,7 +40,7 @@ export async function extractGroupKeys({
         [name: string]: { [hash: string]: Promise<CryptoKey> }
     } = {}
     const seenKeys: { [link: string]: [string, Promise<CryptoKey>] } = {}
-    for (const groupNode of serverConfig.groups) {
+    for (const groupNode of serverConfig.clusterGroups) {
         if (groupNode.injectedKeys.length) {
             const keys: { [hash: string]: Promise<CryptoKey> } = {}
             for (const keyNode of groupNode.injectedKeys) {

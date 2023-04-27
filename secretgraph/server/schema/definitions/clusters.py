@@ -8,12 +8,11 @@ from django.db.models import Subquery, Q, QuerySet, Value
 from ...utils.auth import (
     fetch_by_id,
     get_cached_result,
-    get_cached_properties,
+    get_cached_net_properties,
 )
 from ...actions.fetch import fetch_clusters, fetch_contents
 from ...models import (
     Cluster,
-    GlobalGroup,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import ActionMixin
@@ -121,20 +120,31 @@ class ClusterNode(ActionMixin, relay.Node):
         return self.description
 
     @gql.django.field()
+    def properties(self, info: Info) -> Optional[List[str]]:
+        if self.limited:
+            return None
+        if "allow_hidden" in get_cached_net_properties(
+            info.context["request"]
+        ):
+            return self.properties
+        else:
+            return self.nonhidden_properties
+
+    @gql.django.field()
     def groups(self, info: Info) -> Optional[List[str]]:
         if self.limited:
             return None
-        names = self.groups.values_list("name", flat=True)
         # permissions allows to see the hidden global groups
-        # manage_hidden: have mod rights,
+        # allow_hidden: have mod rights,
         #   so the groups are handy for communication
         # manage_groups: required for correctly updating groups
-        props = get_cached_properties(info.context["request"])
-        if "manage_hidden" in props or "manage_groups" in props:
-            return names
-        # remove hidden
-        hidden_names = GlobalGroup.objects.get_hidden_names()
-        return set(names).difference(hidden_names)
+        props = get_cached_net_properties(info.context["request"])
+        if "allow_hidden" in props or "manage_groups" in props:
+            return self.groups.values_list("name", flat=True)
+        else:
+            return self.groups.filter(hidden=False).values_list(
+                "name", flat=True
+            )
 
     @gql.django.connection()
     def contents(
@@ -154,8 +164,8 @@ class ClusterNode(ActionMixin, relay.Node):
 
         if (
             deleted != UseCriteria.FALSE
-            and "manage_deletion"
-            not in get_cached_properties(info.context["request"])
+            and "allow_deletion"
+            not in get_cached_net_properties(info.context["request"])
         ):
             del_result = get_cached_result(
                 info.context["request"], scope="delete"
@@ -255,8 +265,8 @@ class ClusterNode(ActionMixin, relay.Node):
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
-            and "manage_deletion"
-            not in get_cached_properties(info.context["request"])
+            and "allow_deletion"
+            not in get_cached_net_properties(info.context["request"])
         ):
             del_result = get_cached_result(
                 info.context["request"], scope="delete"

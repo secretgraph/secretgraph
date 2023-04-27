@@ -58,14 +58,12 @@ if not NO_USERS:
     TEMPLATES[0]["OPTIONS"]["context_processors"].append(  # noqa F405
         "django.contrib.auth.context_processors.auth"
     )
-    SECRETGRAPH_USE_USER_GROUPS = True
 else:
     if SECRETGRAPH_ADMINAREA or SECRETGRAPH_REQUIRE_USER:
         raise Exception(
             "SECRETGRAPH_ADMINAREA and SECRETGRAPH_REQUIRE_USER "
             "cannot be specified with NO_USERS=true"
         )
-    SECRETGRAPH_USE_USER_GROUPS = False
 
 if SECRETGRAPH_ADMINAREA:
     INSTALLED_APPS += [  # noqa F405
@@ -97,18 +95,18 @@ for key in SECRETGRAPH_RATELIMITS.keys():  # noqa F405
     _get_ratelimit(key)
 
 
-SECRETGRAPH_DEFAULT_GROUPS["docker"] = {  # noqa F405
+SECRETGRAPH_DEFAULT_CLUSTER_GROUPS["docker"] = {  # noqa F405
     "properties": ["allow_dangerous_actions", "default"],
 }
-SECRETGRAPH_DEFAULT_GROUPS["docker_admin"] = {  # noqa F405
+SECRETGRAPH_DEFAULT_NET_GROUPS["docker_admin"] = {  # noqa F405
     "properties": [
         "allow_global_name",
         "allow_dangerous_actions",
-        "manage_featured",
+        "allow_featured",
         "manage_active",
-        "manage_hidden",
+        "allow_hidden",
         "manage_groups",
-        "manage_deletion",
+        "allow_deletion",
         "manage_update",
         "manage_user",
     ],

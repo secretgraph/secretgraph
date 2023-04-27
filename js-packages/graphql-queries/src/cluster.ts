@@ -71,8 +71,9 @@ export const getClusterQuery = gql`
             config {
                 id
                 hashAlgorithms
-                groups {
+                clusterGroups {
                     name
+                    description
                     injectedKeys {
                         link
                         contentHash

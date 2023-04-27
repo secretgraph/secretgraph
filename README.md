@@ -97,7 +97,7 @@ Special configuration keys:
 -   `SECRETGRAPH_REQUIRE_USER`: require the binding of nets to user accounts (except admin created nets) (default: true)
 -   `SECRETGRAPH_ADMINAREA`: enable the admin area, allow admin login (default: false)
 -   `SECRETGRAPH_HEADLESS`: remove gui (secretgraph.proxy) (note: it doesn't remove the graphiql gui as it is a useful tool even headless) (default: false)
--   `SECRETGRAPH_USE_USER_GROUPS`: use the groups of a found user for permissions, map the names to a `matchUserGroup` global groups, default: True. Disable in case a net only logic is used and it is causing errors
+-   `SECRETGRAPH_USE_USER`: if a user is logged in, also use his net, default: True. Disable in case a net only logic is used and it is causing errors
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_REQUIRE_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
 -   `SECRETGRAPH_RATELIMITS`: required, set ratelimits for `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE`
@@ -144,22 +144,22 @@ Only valid for the nginx template specified in this repo!. Note: you have to esc
 -   view: view contents and or clusters (depending on scope)
 -   auth: one-time view with intent to signal auth event
 
-## Global group properties:
+## Properties:
 
 -   default: on cluster creation these groups are added by default except if groups are explicit specified
 -   allow_global_name: can register a global cluster name
 -   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
--   manage_featured: can feature or unfeature clusters (only global clusters can be featured)
--   manage_hidden: can see hidden contents, can set hidden attribute, hidden groups of clusters become visible
+-   allow_featured: can feature or unfeature clusters (only global clusters can be featured)
+-   allow_deletion: can delete every content (Cluster) or cluster (Net)
+-   allow_hidden: can see hidden contents (Net,Cluster), can set hidden attribute (Net,Cluster), hidden groups of clusters become visible (Net)
 -   manage_active: can can block and unblock nets (via Cluster ids)
 -   manage_groups: can manage global groups of clusters, hidden groups of clusters become visible
 -   manage_user: manage nets and can add some to user
--   manage_deletion: can delete every content or cluster
 -   manage_update: can update every content or cluster (but has still no access to data if encrypted)
--   auto_hide_local: clusters with a group with this property have their public contents auto hidden if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)
--   auto_hide_local_update: clusters with a group with this property have their public contents auto hidden after an update if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)
--   auto_hide_global: clusters with a group with this property have their public contents auto hidden if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)
--   auto_hide_global_update: clusters with a group with this property have their public contents auto hidden after an update if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with manage_hidden permission)
+-   auto_hide_local: clusters with a group with this property have their public contents auto hidden if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)
+-   auto_hide_local_update: clusters with a group with this property have their public contents auto hidden after an update if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)
+-   auto_hide_global: clusters with a group with this property have their public contents auto hidden if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)
+-   auto_hide_global_update: clusters with a group with this property have their public contents auto hidden after an update if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)
 
 ## Global group attributes
 
@@ -574,7 +574,6 @@ The item get parameter is mandatory.
 -   implement settings/config (partly done)
 -   modernize ActionDialog, redesign, multi column? Move partly to shareDialog?
 -   test permissions
--   add admin filters
 -   admin: overwrite UserAdmin with correct permissions requirement (manage_user)
 -   way to inject tokens (as user)
 -   way to import private key in config

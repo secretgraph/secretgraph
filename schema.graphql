@@ -37,9 +37,10 @@ type Cluster implements Node {
   description: String
   featured: Boolean
 
-  """cluster groups: groups for permissions and injected keys"""
+  """cluster groups: groups for cluster permissions and injected keys"""
   groups: [String!]
   name: String
+  properties: [String!]
 
   """Is cluster public/global"""
   public: Boolean
@@ -93,6 +94,15 @@ input ClusterFilter {
   maxUpdated: DateTime = null
 }
 
+type ClusterGroup implements Node {
+  id: GlobalID!
+  name: String!
+  description: String!
+  hidden: Boolean!
+  injectedKeys: [InjectedKey!]!
+  properties: [String!]!
+}
+
 input ClusterInput {
   net: ID = null
   name: String = null
@@ -125,6 +135,7 @@ type Content implements Node {
   authOk: Boolean!
   availableActions: [ActionEntry!]!
   cluster: Cluster
+  properties: [String!]
 
   """Uses fetch/view group actions to provide statistics"""
   readStatistic: ReadStatistic!
@@ -331,16 +342,6 @@ enum DeleteRecursive {
   NO_GROUP
 }
 
-type GlobalGroup implements Node {
-  id: GlobalID!
-  name: String!
-  description: String!
-  hidden: Boolean!
-  matchUserGroup: String!
-  injectedKeys: [InjectedKey!]!
-  properties: [String!]!
-}
-
 """
 The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"4"`) or integer (such as `4`) input value will be accepted as an ID.
 """
@@ -501,7 +502,7 @@ type ResetDeletionContentOrClusterMutation {
 type SecretgraphConfig implements Node {
   """The Globally Unique ID of this object"""
   id: GlobalID!
-  groups: [GlobalGroup!]!
+  clusterGroups: [ClusterGroup!]!
   hashAlgorithms: [String!]!
 
   """Maximal results per relay query"""

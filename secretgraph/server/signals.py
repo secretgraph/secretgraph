@@ -23,8 +23,9 @@ def initializeDb(**kwargs):
         Content,
         ContentTag,
         Cluster,
-        GlobalGroupProperty,
-        GlobalGroup,
+        SGroupProperty,
+        ClusterGroup,
+        NetGroup,
     )
     from django.conf import settings
 
@@ -44,32 +45,30 @@ def initializeDb(**kwargs):
             "net": net,
         },
     )
-    for name, group in settings.SECRETGRAPH_DEFAULT_GROUPS.items():
+    for name, group in settings.SECRETGRAPH_DEFAULT_CLUSTER_GROUPS.items():
         group = dict(group)
         properties = []
         for prop in set(filter(lambda x: x, group.pop("properties", []))):
             properties.append(
-                GlobalGroupProperty.objects.get_or_create(
-                    name=prop, defaults={}
-                )[0]
+                SGroupProperty.objects.get_or_create(name=prop, defaults={})[0]
             )
         # not valid
         group.pop("clusters", None)
         injectedKeys = group.pop("injectedKeys", None)
         managed = group.pop("managed", False)
-        created = not GlobalGroup.objects.filter(name=name).exists()
-        instance = GlobalGroup(**group)
+        created = not ClusterGroup.objects.filter(name=name).exists()
+        instance = ClusterGroup(**group)
         instance.name = name
         instance.clean()
-        GlobalGroup.objects.bulk_create(
+        ClusterGroup.objects.bulk_create(
             [instance],
             ignore_conflicts=not managed,
             update_conflicts=managed,
-            update_fields=["description", "hidden", "matchUserGroup"],
+            update_fields=["description", "hidden"],
             unique_fields=["name"],
         )
         if created or managed:
-            instance = GlobalGroup.objects.get(name=name)
+            instance = ClusterGroup.objects.get(name=name)
             instance.properties.set(properties)
             if injectedKeys is not None:
                 hashes = list(map(_hashbuilder_helper, injectedKeys))
@@ -83,6 +82,30 @@ def initializeDb(**kwargs):
                     type="PublicKey",
                 )
                 instance.injectedKeys.set(injectedKeys)
+    for name, group in settings.SECRETGRAPH_DEFAULT_NET_GROUPS.items():
+        group = dict(group)
+        properties = []
+        for prop in set(filter(lambda x: x, group.pop("properties", []))):
+            properties.append(
+                SGroupProperty.objects.get_or_create(name=prop, defaults={})[0]
+            )
+        # not valid
+        group.pop("nets", None)
+        managed = group.pop("managed", False)
+        created = not NetGroup.objects.filter(name=name).exists()
+        instance = NetGroup(**group)
+        instance.name = name
+        instance.clean()
+        NetGroup.objects.bulk_create(
+            [instance],
+            ignore_conflicts=not managed,
+            update_conflicts=managed,
+            update_fields=["description", "matchUserGroup"],
+            unique_fields=["name"],
+        )
+        if created or managed:
+            instance = NetGroup.objects.get(name=name)
+            instance.properties.set(properties)
 
 
 def deleteSizePreCb(sender, instance, **kwargs):
@@ -129,13 +152,17 @@ def deleteContentCb(sender, instance, **kwargs):
                 ContentReference.objects.filter(
                     group__in=nogroup_groups,
                     source=models.OuterRef("pk"),
-                ).annotate(amount=models.Count("group", distinct=True))
+                )
+                .annotate(amount=models.Count("group", distinct=True))
+                .values("amount")
             ),
             remaining_groups=models.Subquery(
                 other_references.filter(
                     group__in=nogroup_groups,
                     source=models.OuterRef("pk"),
-                ).annotate(amount=models.Count("group", distinct=True))
+                )
+                .annotate(amount=models.Count("group", distinct=True))
+                .values("amount")
             ),
         )
         .filter(remaining_groups__lt=models.F("all_groups"))

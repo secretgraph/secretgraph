@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 
 from django.db.models import Subquery, OuterRef
 from django.conf import settings
-from ...models import GlobalGroup, GlobalGroupProperty, ContentTag
+from ...models import NetGroup, SGroupProperty, ContentTag
 
 
 def boolarg(val):
@@ -10,39 +10,31 @@ def boolarg(val):
 
 
 class Command(BaseCommand):
-    help = "List, create or update Global Group(s)"
+    help = "List, create or update Net Group(s)"
 
     def add_arguments(self, parser):
         parser.add_argument("name", nargs="?")
         parser.add_argument("--description", default=None)
-        parser.add_argument("--hidden", type=boolarg, default=None)
-        parser.add_argument(
-            "--match-user-group",
-            type=boolarg,
-            default=None,
-        )
         parser.add_argument("--properties", nargs="*", default=None)
 
     @staticmethod
-    def print_group(global_group):
-        print(repr(global_group))
-        print("  description:", global_group.description)
-        print("  hidden:", global_group.hidden)
-        print("  matchUserGroup:", global_group.matchUserGroup)
+    def print_group(net_group):
+        print(repr(net_group))
+        print("  description:", net_group.description)
         print(
             "  defined in settings:",
-            global_group.name in settings.SECRETGRAPH_DEFAULT_GROUPS,
+            net_group.name in settings.SECRETGRAPH_DEFAULT_NET_GROUPS,
         )
         print(
             "  managed:",
             (
-                settings.SECRETGRAPH_DEFAULT_GROUPS.get(global_group.name)
+                settings.SECRETGRAPH_DEFAULT_NET_GROUPS.get(net_group.name)
                 or {"managed": False}
             ).get("managed", False),
         )
         print(
             "  Properties:",
-            ", ".join(global_group.properties.values_list("name", flat=True)),
+            ", ".join(net_group.properties.values_list("name", flat=True)),
         )
         print(
             "  Injected Keys:",
@@ -53,7 +45,7 @@ class Command(BaseCommand):
                     )
                     if x.name
                     else "{}: {}".format(x.contentHash, x.description or ""),
-                    global_group.injectedKeys.annotate(
+                    net_group.injectedKeys.annotate(
                         name=Subquery(
                             ContentTag.objects.filter(
                                 content_id=OuterRef("id"),
@@ -81,35 +73,39 @@ class Command(BaseCommand):
         **options,
     ):
         if not name:
-            for global_group in GlobalGroup.objects.all():
-                self.print_group(global_group)
+            for net_group in NetGroup.objects.all():
+                self.print_group(net_group)
         else:
-            global_group = GlobalGroup.objects.get_or_create(name=name)[0]
+            net_group, created = NetGroup.objects.get_or_create(
+                name=name,
+            )
 
             if description is not None:
-                global_group.description = description
+                net_group.description = description
             if hidden is not None:
-                global_group.hidden = hidden
+                net_group.hidden = hidden
             if match_user_group is not None:
-                global_group.matchUserGroup = match_user_group
+                net_group.matchUserGroup = match_user_group
             if (
                 description is not None
                 or hidden is not None
                 or match_user_group is not None
             ):
-                global_group.clean()
-                global_group.save()
+                net_group.clean()
+                net_group.save()
             # TODO: handle injectedKeys
 
             if properties is not None:
                 _properties = []
-                for prop in set(filter(lambda x: x, properties)):
+                for prop in set(filter(bool, properties)):
                     _properties.append(
-                        GlobalGroupProperty.objects.get_or_create(
-                            name=prop, defaults={}
-                        )[0]
+                        SGroupProperty.objects.get_or_create(name=prop)[0]
                     )
-                global_group.properties.set(_properties)
+                net_group.properties.set(_properties)
+            elif created:
+                net_group.properties.set(
+                    SGroupProperty.objects.defaultNetProperties()
+                )
 
             if (
                 description is not None
@@ -118,4 +114,4 @@ class Command(BaseCommand):
                 or properties is not None
             ):
                 print("Create or Update Group:", name)
-            self.print_group(global_group)
+            self.print_group(net_group)

@@ -124,11 +124,11 @@ class SideEffectsHandlers:
 
     @staticmethod
     def clean_storedUpdate(action_dict, request, content, admin):
-        from ...utils.auth import get_cached_properties
+        from ...utils.auth import get_cached_net_properties
 
         if content:
             raise ValueError("storedUpdate cannot be used as contentaction")
-        if "allow_dangerous_actions" not in get_cached_properties(
+        if "allow_dangerous_actions" not in get_cached_net_properties(
             request, authset=request.secretgraphCleanResult.authset
         ):
             raise ValueError("No permission to register dangerous actions")
