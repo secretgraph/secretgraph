@@ -44,6 +44,12 @@ class BeautifyNetMixin:
             ret.label_from_instance = repr
         return ret
 
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        ret = super().formfield_for_manytomany(db_field, request, **kwargs)
+        if db_field.name == "nets":
+            ret.label_from_instance = repr
+        return ret
+
 
 class FlexidMixin:
     actions = ["reset_flexid", "undelete", "purge_immediate"]
@@ -77,6 +83,22 @@ class FlexidMixin:
             Content.objects.filter(cluster__in=Subquery(queryset)).update(
                 markForDestruction=now
             )
+
+
+class NetGroupInline(admin.TabularInline):
+    extra = 1
+    model = Net.groups.through
+
+    def has_view_permission(self, request, obj=None) -> bool:
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        return getattr(
+            request.user, "is_superuser", False
+        ) or "manage_groups" in get_cached_net_properties(request)
+
+    has_delete_permission = has_change_permission
+    has_add_permission = has_change_permission
 
 
 class ClusterGroupInline(admin.TabularInline):
@@ -194,6 +216,7 @@ class NetAdmin(admin.ModelAdmin):
     readonly_fields = ["id", "bytes_in_use", "user"]
     search_fields = ["id", "user_name"]
     sortable_by = [admin_repr, "user_name"]
+    inlines = [NetGroupInline]
 
     @admin.action(
         permissions=["view", "change"], description="Recalculate bytes_in_use"
@@ -433,7 +456,7 @@ class ClusterGroupAdmin(admin.ModelAdmin):
     has_add_permission = has_change_permission
 
 
-class NetGroupAdmin(admin.ModelAdmin):
+class NetGroupAdmin(BeautifyNetMixin, admin.ModelAdmin):
     list_display = ["name"]
     sortable_by = ["name"]
     search_fields = ["name", "nets__user_name"]
