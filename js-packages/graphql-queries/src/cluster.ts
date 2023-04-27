@@ -90,6 +90,7 @@ export const getClusterQuery = gql`
                     description
                     public
                     featured
+                    primary
                     updateId
                     availableActions {
                         keyHash

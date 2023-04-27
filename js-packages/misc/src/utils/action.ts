@@ -402,10 +402,13 @@ export async function transformActions({
                     throw Error('requires mapper')
                 }
                 if (mapperval.type == 'action') {
-                    let actions = [...mapperval.actions]
+                    let actions = [...mapperval.actions].map((val) =>
+                        val.split(',')
+                    )
                     if (ignoreCluster) {
                         actions = actions.filter((val) => !val[1])
                     }
+                    console.log(actions)
                     hashes[newHash] = actions.map((val) => val[0])
                     if (
                         mapperval.oldHash &&

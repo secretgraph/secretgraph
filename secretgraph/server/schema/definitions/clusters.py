@@ -56,6 +56,7 @@ class ClusterFilter:
     )
     contentHashes: Optional[List[str]] = None
     featured: UseCriteria = UseCriteria.IGNORE
+    primary: UseCriteria = UseCriteria.IGNORE
     deleted: UseCriteria = UseCriteria.FALSE
     public: UseCriteriaPublic = UseCriteriaPublic.IGNORE
     minUpdated: Optional[datetime] = None
@@ -314,6 +315,11 @@ class ClusterNode(ActionMixin, relay.Node):
         if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
+            )
+
+        if filters.primary != UseCriteria.IGNORE:
+            queryset = queryset.filter(
+                primaryFor__isnull=filters.primary != UseCriteria.TRUE
             )
 
         if filters.featured != UseCriteria.IGNORE:

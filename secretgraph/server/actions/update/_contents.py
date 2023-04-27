@@ -225,7 +225,7 @@ def _update_or_create_content_or_key(
             # content.net is None or result of first()
             # then check if user has permission to use the selected net
             # there is no shortcut possible (why, because of update action)
-            if not content.net_id:
+            if not content.net:
                 net_result = ids_to_results(
                     request,
                     # Cluster
@@ -234,10 +234,16 @@ def _update_or_create_content_or_key(
                     "create",
                     authset=authset,
                 )["Cluster"]
-                content.net = net_result["objects"].get().net
-        if content.net_id:
+                content.net = (
+                    net_result["objects"]
+                    .get(
+                        Q(primaryFor__isnull=False) | Q(id=content.cluster.id)
+                    )
+                    .net
+                )
+        if getattr(content, "net", None):
             explicit_net = True
-    if create and not content.net_id:
+    if create and not getattr(content, "net", None):
         content.net = content.cluster.net
     if old_net == content.net:
         old_net = None

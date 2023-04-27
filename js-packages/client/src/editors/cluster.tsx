@@ -74,6 +74,7 @@ async function extractInfo({
         description: node.description || '',
         public: node.public,
         featured: node.featured,
+        primary: node.primary,
         url,
         hashAlgorithm: hashAlgorithms[0],
         permissions,
@@ -84,6 +85,7 @@ interface ClusterInternProps {
     name: string
     description: string
     featured: boolean
+    primary: boolean
     url: string
     loading?: boolean
     disabled?: boolean
@@ -146,6 +148,7 @@ const ClusterIntern = ({
                     name: props.name,
                     description: props.description,
                     featured: !!props.featured,
+                    primary: !!props.primary,
                 }}
                 onSubmit={async (
                     { actions: actionsNew, name, description, ...values },
@@ -164,6 +167,15 @@ const ClusterIntern = ({
                     })
                     let digestCert: undefined | string = undefined,
                         privPromise: undefined | Promise<string> = undefined
+                    let tokens = mainCtx.tokens
+                    /** activate with proper warning, should only be done with config baseUrl updates
+                     * if (values.primary) {
+                        tokens = authInfoFromConfig({
+                            config,
+                            url,
+                            require: new Set(['manage']),
+                        }).tokens
+                    }*/
                     if (mainCtx.item) {
                         clusterResponse = await updateCluster({
                             id: mainCtx.item as string,
@@ -172,8 +184,9 @@ const ClusterIntern = ({
                             actions: finishedActions,
                             name,
                             description,
-                            authorization: mainCtx.tokens,
+                            authorization: tokens,
                             featured: values.featured,
+                            primary: values.primary,
                         })
                         await itemClient.refetchQueries({
                             include: [clusterFeedQuery, getClusterQuery],
@@ -204,7 +217,9 @@ const ClusterIntern = ({
                             publicKey,
                             privateKey,
                             privateKeyKey: key,
+                            authorization: tokens,
                             featured: values.featured,
+                            primary: values.primary,
                         })
                         await itemClient.refetchQueries({
                             include: [clusterFeedQuery],
@@ -433,6 +448,15 @@ const ClusterIntern = ({
                                             )
                                         }
                                     />
+                                    <Field
+                                        component={FormikCheckboxWithLabel}
+                                        name="primary"
+                                        type="checkbox"
+                                        Label={{
+                                            label: 'Primary (can be used for admin stuff)',
+                                        }}
+                                        disabled
+                                    />
                                 </Grid>
                                 <Grid xs={12}>
                                     {loading && <LinearProgress />}
@@ -442,9 +466,7 @@ const ClusterIntern = ({
                                         <Button
                                             variant="contained"
                                             color="primary"
-                                            disabled={
-                                                loading || disabled || !dirty
-                                            }
+                                            disabled={loading || disabled}
                                             onClick={submitForm}
                                         >
                                             Submit
@@ -600,6 +622,7 @@ const CreateCluster = () => {
                     name: '',
                     description: '',
                     featured: false,
+                    primary: false,
                     permissions: dataUnfinished.secretgraph.permissions,
                     mapper: {
                         [hashKey]: {

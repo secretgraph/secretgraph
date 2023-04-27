@@ -89,6 +89,7 @@ input ClusterFilter {
   excludeIds: [ID!] = null
   contentHashes: [String!] = null
   featured: UseCriteria! = IGNORE
+  primary: UseCriteria! = IGNORE
   deleted: UseCriteria! = FALSE
   public: UseCriteriaPublic! = IGNORE
   minUpdated: DateTime = null

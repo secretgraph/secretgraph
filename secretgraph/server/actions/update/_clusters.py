@@ -13,7 +13,7 @@ from ....core.exceptions import ResourceLimitExceeded
 
 from ...models import Cluster, Net, SGroupProperty, ClusterGroup
 from ...utils.auth import (
-    ids_to_results,
+    fetch_by_id,
     retrieve_allowed_objects,
     get_cached_result,
     get_cached_net_properties,
@@ -56,7 +56,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     if not create_cluster:
         old_net = cluster.net
     manage = Cluster.objects.none()
-    if create_cluster or objdata.primary:
+    if create_cluster or objdata.primary or isinstance(net, str):
         manage = retrieve_allowed_objects(
             request,
             Cluster.objects.all(),
@@ -67,16 +67,21 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
         if isinstance(net, Net):
             cluster.net = net
         else:
-            net_result = ids_to_results(
-                request,
-                [net],
-                Cluster,
-                "manage",
-                authset=authset,
-            )["Cluster"]
-            cluster.net = net_result["objects"].get().net
+            cluster.net = (
+                fetch_by_id(
+                    manage,
+                    [net],
+                    check_long=False,
+                    check_short_id=True,
+                    check_short_name=True,
+                    limit_ids=None,
+                )
+                .get(primaryFor__isnull=False)
+                .net
+            )
     elif create_cluster:
         user = None
+
         if manage:
             net = manage.first().net
         if not net:
@@ -132,27 +137,23 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             if user:
                 net.user_name = user.get_username()
 
-            dProperty = SGroupProperty.objects.get_or_create(
-                name="default", defaults={}
-            )[0]
-            net.groups = dProperty.netGroups.all()
             net.reset_quota()
             net.reset_max_upload_size()
         cluster.net = net
         del user
     if old_net == cluster.net:
         old_net = None
-    create_net = not net.id
     # cleanup after scope
     del net
+    create_net = not cluster.net.id
     if objdata.primary or not cluster.net.primaryCluster:
         if (
-            not cluster.net.primaryCluster
-            or "manage_update"
+            cluster.net.primaryCluster
+            and "manage_update"
             not in get_cached_net_properties(request, authset=authset)
         ):
             try:
-                manage.get(primaryFor=cluster.net)
+                manage.get(id=cluster.net.primaryCluster.id)
             except ObjectDoesNotExist:
                 raise ValueError("No permission to move primary mark")
         if old_net and old_net.primaryCluster == cluster:
@@ -164,7 +165,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
         else:
             objdata.primary = True
 
-    cluster.full_clean()
+    cluster.clean()
     assert size_new > 0, "Every cluster should have a size > 0"
     if old_net is None:
         size_diff = size_new - size_old
@@ -209,6 +210,12 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
 
         # first net in case of net is not persisted yet
         cluster.net.save(update_fields=update_fields)
+        # first net must be created
+        if create_net:
+            dProperty = SGroupProperty.objects.get_or_create(
+                name="default", defaults={}
+            )[0]
+            cluster.net.groups.set(dProperty.netGroups.all())
 
         cluster.updateId = uuid4()
         cluster.save()
