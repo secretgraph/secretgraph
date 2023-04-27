@@ -120,6 +120,7 @@ class ClusterInput:
     name: Optional[str] = None
     description: Optional[str] = None
     featured: Optional[bool] = None
+    primary: Optional[bool] = None
     actions: Optional[List[ActionInput]] = None
     keys: Optional[List[ContentKeyInput]] = strawberry.field(
         description="add up to two keys initially;"

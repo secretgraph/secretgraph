@@ -106,7 +106,7 @@ SECRETGRAPH_DEFAULT_NET_GROUPS["docker_admin"] = {  # noqa F405
         "manage_active",
         "allow_hidden",
         "manage_groups",
-        "allow_deletion",
+        "manage_deletion",
         "manage_update",
         "manage_user",
     ],

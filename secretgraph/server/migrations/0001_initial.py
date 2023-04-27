@@ -405,7 +405,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name="GlobalGroupProperty",
+            name="SGroupProperty",
             fields=[
                 (
                     "id",
@@ -427,7 +427,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name="GlobalGroup",
+            name="ClusterGroup",
             fields=[
                 (
                     "id",
@@ -449,8 +449,12 @@ class Migration(migrations.Migration):
                 ("description", models.TextField()),
                 ("hidden", models.BooleanField(blank=True, default=False)),
                 (
-                    "matchUserGroup",
-                    models.BooleanField(blank=True, default=False),
+                    "clusters",
+                    models.ManyToManyField(
+                        help_text="cluster groups: groups for cluster permissions and injected keys",
+                        related_name="groups",
+                        to="secretgraph.cluster",
+                    ),
                 ),
                 (
                     "injectedKeys",
@@ -460,25 +464,90 @@ class Migration(migrations.Migration):
                             "type": "PublicKey",
                         },
                         related_name="injectedFor",
-                        to="secretgraph.Content",
+                        to="secretgraph.content",
                     ),
                 ),
                 (
                     "properties",
                     models.ManyToManyField(
+                        limit_choices_to=models.Q(
+                            ("name__startswith", "manage_"), _negated=True
+                        ),
+                        related_name="clusterGroups",
+                        to="secretgraph.sgroupproperty",
+                    ),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="NetGroup",
+            fields=[
+                (
+                    "id",
+                    models.AutoField(
+                        editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=50,
+                        unique=True,
+                        validators=[
+                            secretgraph.server.validators.SafeNameValidator(),
+                            django.core.validators.MinLengthValidator(1),
+                        ],
+                    ),
+                ),
+                ("description", models.TextField()),
+                (
+                    "nets",
+                    models.ManyToManyField(
+                        help_text="net groups: groups for user permissions including admin access",
                         related_name="groups",
-                        to="secretgraph.GlobalGroupProperty",
+                        to="secretgraph.net",
+                    ),
+                ),
+                (
+                    "properties",
+                    models.ManyToManyField(
+                        related_name="netGroups",
+                        to="secretgraph.sgroupproperty",
                     ),
                 ),
             ],
         ),
         migrations.AddField(
-            model_name="globalgroup",
+            model_name="clustergroup",
             name="clusters",
             field=models.ManyToManyField(
-                help_text="cluster groups: groups for permissions and injected keys",
+                help_text="cluster groups: groups for cluster permissions and injected keys",
                 related_name="groups",
                 to="secretgraph.Cluster",
+            ),
+        ),
+        migrations.AddField(
+            model_name="netgroup",
+            name="nets",
+            field=models.ManyToManyField(
+                help_text="net groups: groups for user permissions including admin access",
+                related_name="groups",
+                to="secretgraph.Net",
+            ),
+        ),
+        migrations.AddField(
+            model_name="net",
+            name="primaryCluster",
+            field=models.OneToOneField(
+                blank=True,
+                limit_choices_to={
+                    "markForDestruction": None,
+                    "net_id": models.F("net_id"),
+                },
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="primaryFor",
+                to="secretgraph.cluster",
             ),
         ),
         migrations.AddConstraint(

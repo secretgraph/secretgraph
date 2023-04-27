@@ -516,7 +516,7 @@ def get_net_properties_q(request, query):
     q = (
         models.Q(nets__in=query)
         if issubclass(query.model, Net)
-        else models.Q(nets__in=models.Subquery(query.values("net")))
+        else models.Q(nets__primaryCluster__in=query)
     )
     if getattr(settings, "SECRETGRAPH_USE_USER", True):
         user = getattr(request, "user", None)

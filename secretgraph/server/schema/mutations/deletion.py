@@ -34,10 +34,10 @@ def delete_content_or_cluster(
 ) -> DeleteContentOrClusterMutation:
     now = timezone.now()
 
-    allow_deletion = "allow_deletion" in get_cached_net_properties(
+    manage_deletion = "manage_deletion" in get_cached_net_properties(
         info.context["request"], authset=authorization
     )
-    if allow_deletion:
+    if manage_deletion:
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
         clusters = fetch_by_id(
             Cluster.objects.all(), ids, limit_ids=None, check_short_name=True
@@ -54,7 +54,7 @@ def delete_content_or_cluster(
         clusters = results["Cluster"]["objects"]
     if when:
         when_safe = (
-            when if allow_deletion else max(now + timedelta(minutes=20), when)
+            when if manage_deletion else max(now + timedelta(minutes=20), when)
         )
         contents.update(markForDestruction=when_safe)
         Content.objects.filter(
@@ -96,7 +96,7 @@ def reset_deletion_content_or_cluster(
     ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
-    if "allow_deletion" in get_cached_net_properties(
+    if "manage_deletion" in get_cached_net_properties(
         info.context["request"], authset=authorization
     ):
         contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)

@@ -16,7 +16,9 @@ cluster_groups_help = _(
     "cluster groups: groups for cluster permissions and injected keys"
 )
 
-net_groups_help = _("cluster groups: groups for permissions")
+net_groups_help = _(
+    "net groups: groups for user permissions including admin access"
+)
 reference_group_help = _(
     "ContentReference group: references are clustered in groups. "
     "They are used to signal different functions of the connection"

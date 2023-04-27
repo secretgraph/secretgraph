@@ -243,7 +243,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
                     )
                 )
             )
-            if "allow_deletion" not in get_cached_net_properties(request):
+            if "manage_deletion" not in get_cached_net_properties(request):
                 qs = qs.filter(markForDestruction=None)
         return qs
 
@@ -252,7 +252,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if not getattr(request.user, "is_superuser", False):
             if "allow_featured" in get_cached_net_properties(request):
                 rfields.append("featured")
-            if "allow_deletion" in get_cached_net_properties(request):
+            if "manage_deletion" in get_cached_net_properties(request):
                 rfields.append("markForDestruction")
 
         return rfields
@@ -273,7 +273,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None) -> bool:
         return bool(
             getattr(request.user, "is_superuser", False)
-            or "allow_deletion" in get_cached_net_properties(request)
+            or "manage_deletion" in get_cached_net_properties(request)
         )
 
     def save_model(self, request, obj: Cluster, form, change):
@@ -338,7 +338,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
             if "allow_hidden" not in get_cached_net_properties(request):
                 qs = qs.filter(hidden=False)
 
-            if "allow_deletion" not in get_cached_net_properties(request):
+            if "manage_deletion" not in get_cached_net_properties(request):
                 qs = qs.filter(markForDestruction=None)
         return qs
 
@@ -349,7 +349,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if not getattr(request.user, "is_superuser", False):
             if "allow_hidden" in get_cached_net_properties(request):
                 rfields.append("hidden")
-            if "allow_deletion" in get_cached_net_properties(request):
+            if "manage_deletion" in get_cached_net_properties(request):
                 rfields.append("markForDestruction")
 
         return rfields
@@ -377,7 +377,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None) -> bool:
         return bool(
             getattr(request.user, "is_superuser", False)
-            or "allow_deletion" in get_cached_net_properties(request)
+            or "manage_deletion" in get_cached_net_properties(request)
         )
 
     def save_model(self, request, obj, form, change):

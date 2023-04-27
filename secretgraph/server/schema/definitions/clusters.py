@@ -164,7 +164,7 @@ class ClusterNode(ActionMixin, relay.Node):
 
         if (
             deleted != UseCriteria.FALSE
-            and "allow_deletion"
+            and "manage_deletion"
             not in get_cached_net_properties(info.context["request"])
         ):
             del_result = get_cached_result(
@@ -265,7 +265,7 @@ class ClusterNode(ActionMixin, relay.Node):
         deleted = filters.deleted
         if (
             deleted != UseCriteria.FALSE
-            and "allow_deletion"
+            and "manage_deletion"
             not in get_cached_net_properties(info.context["request"])
         ):
             del_result = get_cached_result(

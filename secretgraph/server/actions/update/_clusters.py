@@ -25,9 +25,9 @@ logger = logging.getLogger(__name__)
 
 
 def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
-    create = not cluster.id
+    create_cluster = not cluster.id
     size_new = 0
-    size_old = 0
+    size_old = cluster.size
 
     if getattr(objdata, "name", None) is not None:
         if cluster.name != objdata.name:
@@ -45,14 +45,23 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             cluster.featured = bool(objdata.featured)
 
     if getattr(objdata, "description", None) is not None:
-        size_old -= len(cluster.description)
-        size_new += len(objdata.description)
+        size_new += len(objdata.description) + Cluster.flexid_byte_size
         cluster.description = objdata.description
+    else:
+        size_new = size_old
 
     net = getattr(objdata, "net", None)
     old_net = None
-    if not create:
+    if not create_cluster:
         old_net = cluster.net
+    manage = Cluster.objects.none()
+    if create_cluster or objdata.primary:
+        manage = retrieve_allowed_objects(
+            request,
+            Cluster.objects.all(),
+            scope="manage",
+            authset=authset,
+        )["objects"]
     if net:
         if isinstance(net, Net):
             cluster.net = net
@@ -65,14 +74,8 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
                 authset=authset,
             )["Cluster"]
             cluster.net = net_result["objects"].get().net
-    elif create:
+    elif create_cluster:
         user = None
-        manage = retrieve_allowed_objects(
-            request,
-            Cluster.objects.all(),
-            scope="manage",
-            authset=authset,
-        )["objects"]
         if manage:
             net = manage.first().net
         if not net:
@@ -138,10 +141,18 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
         del user
     if old_net == cluster.net:
         old_net = None
+    create_net = not net.id
     # cleanup after scope
     del net
+    # in last case
+    if objdata.primary and cluster.net.primaryCluster:
+        try:
+            manage.get(primaryFor=cluster.net)
+        except ObjectDoesNotExist:
+            raise ValueError("No permission to move primary mark")
 
-    cluster.clean()
+    cluster.full_clean()
+    assert size_new > 0, "Every cluster should have a size > 0"
     if old_net is None:
         size_diff = size_new - size_old
         if (
@@ -158,7 +169,6 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     else:
         if (
             cluster.net.quota is not None
-            and size_new > 0
             and cluster.net.bytes_in_use + size_new > cluster.net.quota
         ):
             raise ResourceLimitExceeded("quota exceeded")
@@ -175,14 +185,22 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     cluster.net.last_used = timezone.now()
 
     def cluster_save_fn():
-        # first net in case of net is not persisted yet
-        cluster.net.save(
-            update_fields=["bytes_in_use", "last_used"]
-            if cluster.net.id
-            else None
-        )
+        if create_cluster or create_net:
+            # first net in case of net is not persisted yet
+            cluster.net.save(
+                update_fields=["bytes_in_use", "last_used"]
+                if create_net
+                else None
+            )
+        else:
+            if not cluster.net.primaryCluster:
+                cluster.net.primaryCluster = cluster
+
         cluster.updateId = uuid4()
         cluster.save()
+        if (create_cluster or create_net) and not cluster.net.primaryCluster:
+            cluster.net.primaryCluster = cluster
+            cluster.net.save(update_fields=["primaryCluster"])
         # only save a persisted old_net
         if old_net and old_net.id:
             # don't update last_used
@@ -203,7 +221,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
         )
         m_actions = set(map(lambda x: x.keyHash, m_actions))
 
-        if create and "manage" not in action_save_fn.action_types:
+        if create_cluster and "manage" not in action_save_fn.action_types:
             raise ValueError('Requires "manage" Action')
 
         def save_fn():
@@ -211,7 +229,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             action_save_fn()
             return cluster
 
-    elif not create:
+    elif not create_cluster:
         # path: actions are not specified but cluster exists and no
         # new public_secret_hashes
         def save_fn():

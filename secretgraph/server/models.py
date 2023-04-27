@@ -95,6 +95,8 @@ class FlexidModel(models.Model):
     flexid_cached: str = models.CharField(
         max_length=80, blank=True, null=True, unique=True, editable=False
     )
+    # id + flexid + flexid_cached
+    flexid_byte_size: int = 8 + 36 + 80
 
     class Meta:
         abstract = True
@@ -122,11 +124,22 @@ class Net(models.Model):
     bytes_in_use: int = models.PositiveBigIntegerField(
         null=False, blank=True, default=0, editable=False
     )
-    clusters: models.ManyToOneRel["Cluster"]
-    contents: models.ManyToOneRel["Content"]
     user_name: str = models.CharField(
         max_length=255, null=True, blank=True, unique=True
     )
+    primaryCluster: Cluster = models.OneToOneField(
+        "Cluster",
+        on_delete=models.SET_NULL,
+        related_name="primaryFor",
+        limit_choices_to={
+            "markForDestruction": None,
+            "net_id": models.F("net_id"),
+        },
+        null=True,
+        blank=True,
+    )
+    clusters: models.ManyToOneRel["Cluster"]
+    contents: models.ManyToOneRel["Content"]
 
     @staticmethod
     def _size_tags(net_id) -> int:
@@ -153,16 +166,18 @@ class Net(models.Model):
         # should be used with locked net and in transaction
         # or with nets, clusters, contents not in use e.g. maintainance work
         # clusters are easy
-        size = (
-            self.clusters.annotate(size=Length("description")).aggregate(
-                size_sum=models.Sum("size")
-            )["size_sum"]
-            or 0
+        aclusters = self.clusters.annotate(
+            size=Length("description").aggregate(
+                size_sum=models.Sum("size"), count=models.Count("id")
+            )
         )
+        size = (aclusters["size_sum"] or 0) + aclusters[
+            "count"
+        ] * FlexidModel.flexid_byte_size
 
         # contents are complicated
         for c in self.contents.all():
-            size += c.size_file
+            size += c.size_file + FlexidModel.flexid_byte_size
         size += self._size_tags(self.id)
         size += self._size_references(self.id)
         return size
@@ -249,11 +264,12 @@ class Cluster(FlexidModel):
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
+    primaryFor: models.OneToOneRel[Net]
     groups: models.ManyToManyRel["ClusterGroup"]
 
     @property
     def size(self) -> int:
-        size = len(self.description)
+        size = len(self.description) + FlexidModel.flexid_byte_size
         return size
 
     @property
@@ -509,7 +525,7 @@ class Content(FlexidModel):
 
     @property
     def size(self) -> int:
-        size = self.size_file
+        size = self.size_file + self.flexid_byte_size
         size += self.size_tags
         size += self.size_references
         return size

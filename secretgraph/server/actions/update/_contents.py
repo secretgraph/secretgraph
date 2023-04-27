@@ -169,8 +169,8 @@ def _update_or_create_content_or_key(
     required_keys: set[str],
 ):
     create = not content.id
-    size_new = 0
-    size_old = 0
+    size_new = content.flexid_byte_size
+    size_old = content.flexid_byte_size
     if not create:
         size_old = content.size
 
@@ -352,6 +352,7 @@ def _update_or_create_content_or_key(
             content.file.save("ignored", objdata.value)
 
     else:
+        size_new += content.size_file
 
         def save_fn_value():
             content.updateId = uuid4()
@@ -464,6 +465,8 @@ def _update_or_create_content_or_key(
         def actions_save_fn():
             pass
 
+    assert size_new > 0, "Every content should have a size > 0"
+
     if old_net is None:
         size_diff = size_new - size_old
         if size_diff:
@@ -495,7 +498,6 @@ def _update_or_create_content_or_key(
         # always explicit
         if (
             content.net.quota is not None
-            and size_new > 0
             and content.net.bytes_in_use + size_new > content.net.quota
         ):
             raise ResourceLimitExceeded("quota exceeded")
