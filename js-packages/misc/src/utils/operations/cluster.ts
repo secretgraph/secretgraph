@@ -20,6 +20,7 @@ export async function createCluster(options: {
     name?: string
     description?: string
     featured?: boolean
+    primary?: boolean
     publicKey: CryptoKey
     privateKey?: CryptoKey
     privateKeyKey?: Uint8Array
@@ -65,6 +66,7 @@ export async function createCluster(options: {
             actions: options.actions,
             authorization: options.authorization,
             featured: options.featured,
+            primary: options.primary,
         },
     })
 }
@@ -75,6 +77,7 @@ export async function updateCluster(options: {
     updateId: string
     actions?: Interfaces.ActionInterface[]
     featured?: boolean
+    primary?: boolean
     net?: string
     name?: string
     description?: string
@@ -91,6 +94,7 @@ export async function updateCluster(options: {
             actions: options.actions,
             authorization: options.authorization,
             featured: options.featured,
+            primary: options.primary,
         },
     })
 }
@@ -159,6 +163,7 @@ export async function initializeCluster({
         publicKey,
         privateKey,
         privateKeyKey: manage_key,
+        primary: true,
         ...options,
     })
     const clusterResult =

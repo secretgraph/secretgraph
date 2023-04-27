@@ -40,6 +40,7 @@ type Cluster implements Node {
   """cluster groups: groups for cluster permissions and injected keys"""
   groups: [String!]
   name: String
+  primary: Boolean
   properties: [String!]
 
   """Is cluster public/global"""
@@ -108,6 +109,7 @@ input ClusterInput {
   name: String = null
   description: String = null
   featured: Boolean = null
+  primary: Boolean = null
   actions: [ActionInput!] = null
 
   """

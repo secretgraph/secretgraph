@@ -73,6 +73,12 @@ class ClusterNode(ActionMixin, relay.Node):
             return None
         return self.featured
 
+    @gql.django.field()
+    def primary(self) -> Optional[bool]:
+        if self.limited:
+            return None
+        return self.is_primary
+
     @gql.django.field(description="Is cluster public/global")
     def public(self) -> Optional[bool]:
         if self.limited:

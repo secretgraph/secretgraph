@@ -100,7 +100,7 @@ def initializeDb(**kwargs):
             [instance],
             ignore_conflicts=not managed,
             update_conflicts=managed,
-            update_fields=["description", "matchUserGroup"],
+            update_fields=["description"],
             unique_fields=["name"],
         )
         if created or managed:

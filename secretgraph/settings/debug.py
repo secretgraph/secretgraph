@@ -70,5 +70,4 @@ SECRETGRAPH_DEFAULT_NET_GROUPS["debug_admin"] = {  # noqa F405
         "manage_update",
         "manage_user",
     ],
-    "matchUserGroup": True,
 }

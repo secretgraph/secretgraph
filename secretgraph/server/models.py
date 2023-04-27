@@ -273,6 +273,10 @@ class Cluster(FlexidModel):
         return size
 
     @property
+    def is_primary(self) -> bool:
+        return hasattr(self, "primaryFor")
+
+    @property
     def properties(self) -> list[str]:
         if not self.id:
             return SGroupProperty.objects.defaultClusterProperties.values_list(
@@ -310,6 +314,11 @@ class Cluster(FlexidModel):
             not self.name.startswith("@") or self.name == "@system"
         ):
             self.globalNameRegisteredAt = None
+        primary = getattr(self, "primaryFor", None)
+        if primary and primary != self.net:
+            raise ValidationError(
+                {"net": "cannot move cluster with primary mark"}
+            )
         return super().clean()
 
     def __str__(self) -> str:

@@ -16,6 +16,7 @@ from ...utils.auth import (
     ids_to_results,
     retrieve_allowed_objects,
     get_cached_result,
+    get_cached_net_properties,
 )
 from ._arguments import ContentInput, ClusterInput
 from ._actions import manage_actions_fn
@@ -144,12 +145,24 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     create_net = not net.id
     # cleanup after scope
     del net
-    # in last case
-    if objdata.primary and cluster.net.primaryCluster:
-        try:
-            manage.get(primaryFor=cluster.net)
-        except ObjectDoesNotExist:
-            raise ValueError("No permission to move primary mark")
+    if objdata.primary or not cluster.net.primaryCluster:
+        if (
+            not cluster.net.primaryCluster
+            or "manage_update"
+            not in get_cached_net_properties(request, authset=authset)
+        ):
+            try:
+                manage.get(primaryFor=cluster.net)
+            except ObjectDoesNotExist:
+                raise ValueError("No permission to move primary mark")
+        if old_net and old_net.primaryCluster == cluster:
+            if objdata.primary:
+                raise ValueError(
+                    "Cannot transfer a cluster with primary mark between nets"
+                )
+            objdata.primary = False
+        else:
+            objdata.primary = True
 
     cluster.full_clean()
     assert size_new > 0, "Every cluster should have a size > 0"
@@ -185,20 +198,22 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     cluster.net.last_used = timezone.now()
 
     def cluster_save_fn():
-        if create_cluster or create_net:
-            # first net in case of net is not persisted yet
-            cluster.net.save(
-                update_fields=["bytes_in_use", "last_used"]
-                if create_net
-                else None
-            )
-        else:
-            if not cluster.net.primaryCluster:
-                cluster.net.primaryCluster = cluster
+        update_fields = None
+        primary_updated = False
+        if not create_net:
+            update_fields = ["bytes_in_use", "last_used"]
+        if update_fields and not create_cluster and objdata.primary:
+            cluster.net.primaryCluster = cluster
+            update_fields.append("primaryCluster")
+            primary_updated = True
+
+        # first net in case of net is not persisted yet
+        cluster.net.save(update_fields=update_fields)
 
         cluster.updateId = uuid4()
         cluster.save()
-        if (create_cluster or create_net) and not cluster.net.primaryCluster:
+        # save only once
+        if objdata.primary and not primary_updated:
             cluster.net.primaryCluster = cluster
             cluster.net.save(update_fields=["primaryCluster"])
         # only save a persisted old_net

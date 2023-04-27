@@ -58,6 +58,7 @@ export const getNodeType = gql`
                     id
                     public
                     featured
+                    primary
                     name
                 }
                 ... on Content {

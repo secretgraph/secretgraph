@@ -449,14 +449,6 @@ class Migration(migrations.Migration):
                 ("description", models.TextField()),
                 ("hidden", models.BooleanField(blank=True, default=False)),
                 (
-                    "clusters",
-                    models.ManyToManyField(
-                        help_text="cluster groups: groups for cluster permissions and injected keys",
-                        related_name="groups",
-                        to="secretgraph.cluster",
-                    ),
-                ),
-                (
                     "injectedKeys",
                     models.ManyToManyField(
                         limit_choices_to={
@@ -500,14 +492,6 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("description", models.TextField()),
-                (
-                    "nets",
-                    models.ManyToManyField(
-                        help_text="net groups: groups for user permissions including admin access",
-                        related_name="groups",
-                        to="secretgraph.net",
-                    ),
-                ),
                 (
                     "properties",
                     models.ManyToManyField(

@@ -107,6 +107,7 @@ export const createClusterMutation = gql`
         $name: String
         $description: String
         $featured: Boolean
+        $primary: Boolean
         $actions: [ActionInput!]
         $publicKey: Upload!
         $privateKey: Upload
@@ -122,6 +123,7 @@ export const createClusterMutation = gql`
                         description: $description
                         actions: $actions
                         featured: $featured
+                        primary: $primary
                         keys: [
                             {
                                 publicKey: $publicKey
@@ -143,6 +145,7 @@ export const createClusterMutation = gql`
                     description
                     public
                     featured
+                    primary
                     updateId
                     availableActions {
                         keyHash
@@ -177,6 +180,7 @@ export const updateClusterMutation = gql`
         $name: String
         $description: String
         $featured: Boolean
+        $primary: Boolean
         $actions: [ActionInput!]
         $authorization: [String!]
     ) {
@@ -190,6 +194,7 @@ export const updateClusterMutation = gql`
                         description: $description
                         actions: $actions
                         featured: $featured
+                        primary: $primary
                     }
                     authorization: $authorization
                 }
@@ -202,6 +207,7 @@ export const updateClusterMutation = gql`
                     updateId
                     public
                     featured
+                    primary
                     availableActions {
                         keyHash
                         type
