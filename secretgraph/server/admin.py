@@ -1,5 +1,6 @@
 from datetime import timedelta
 from contextlib import nullcontext
+from typing import Optional
 
 from strawberry_django_plus.relay import to_base64
 from django.contrib import admin
@@ -226,6 +227,20 @@ class NetAdmin(admin.ModelAdmin):
         with transaction.atomic():
             for net in queryset.select_for_update():
                 net.recalculate_bytes_in_use(nullctx)
+
+    def get_readonly_fields(self, request, obj: Optional[Net] = None):
+        rfields = list(self.readonly_fields)
+        if obj and obj.primaryCluster and obj.primaryCluster.name == "@system":
+            rfields.extend(
+                [
+                    "active",
+                    "user_name",
+                    "primaryCluster",
+                    "max_upload_size",
+                    "quota",
+                ]
+            )
+        return rfields
 
     def has_module_permission(self, request, obj=None):
         return (

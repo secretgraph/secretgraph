@@ -220,6 +220,8 @@ class Net(models.Model):
         return None
 
     def __repr__(self) -> str:
+        if self.primaryCluster and self.primaryCluster.name == "@system":
+            return "<Systemnet>"
         userrepr = ", no user assigned"
         user = self.user
         if user:
@@ -325,6 +327,8 @@ class Cluster(FlexidModel):
         return self.name if self.name.startswith("@") else self.flexid
 
     def __repr__(self) -> str:
+        if self.name == "@system":
+            return "<Systemcluster>"
         return "<Cluster: id(%s), net(%s), name(%s), flexid(%s)%s>" % (
             self.id,
             getattr(self, "net_id", "?"),

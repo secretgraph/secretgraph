@@ -1,6 +1,34 @@
 # About
 
-Secretgraph is a platform for online identities. You cna
+Secretgraph is a platform for online identities.
+You can think of it like a batch of encrypted bags of data.
+
+Data is resolved via types and bags (called clusters) not pathes like in filesystems.
+
+This design has the advantage of giving thirdparties fine granular access to data and stop worrying to forget blocking a path.
+
+As an additional layer of security users can have multiple such clusters thus having multiple identities
+
+## Use cases
+
+-   Online shop: extract all user information from a link and have a backchannel
+-   Storage: saving images in the cloud and sharing it with family members
+-   blogging: blog entries can be pushed out in the plain web via Text contents on a as favourite marked cluster. For some private contents keys and tokens can be specified as GET parameters and the link shared to the target audience
+
+*   more
+
+# Differences between matrix protocol and secretgraph
+
+In short: secretgraph is for storage and matrix for communication
+
+In long: both can mostly emulate each other with performance/memory penalties for some operations
+
+-   Matrix: room, secretgraph: cluster: in contrast to rooms of matrix, secretgraph provides clusters with unordered contents. Key-chains are not used only the direct link to a key. This makes long threads of comments may slower to load (not implemented yet and there is maybe a workaround by sharing the key) but offers a better direct access to single contents of different types
+-   Matrix: event, secretgraph: content: matrix events are diffs, big files are transfered peer 2 peer, secretgraph content: a blob of data of a type. The storage is the secretgraph instance. Via transfers the ownership can be shifted. Contents are subject to quota specifications, via nets can the resource quota allocation be shifted
+-   User: in Matrix users are neccessary, in secretgraph optional. The main emphasis is on clusters and nets (abstraction of user). Therefore secretgraph is more suitable for non-users like industrial machines
+-   resources: secretgraph allows weaker clients (server-side decryption), but is slower than matrix (think more of an email server)
+-   special use cases: secretgraph has some unique features: autodestruction of data, simple authentication
+-   security: matrix uses cryptographic keys as access tokens, secretgraph seperate cryptographic keys and access tokens which strengthens against quantum computers and provides more privacy (as said, you can have multiple identities and they are more like throwaway identities)
 
 # Installation
 
@@ -26,7 +54,11 @@ Requirements:
 ```sh
 # remove not used databases
 # instead of hypercorn you can install any other asgi server
-pip install --no-cache .[server,postgresql,mysql] hypercorn[h3]
+poetry install --only main -E server -E postgresql -E mysql
+# when using hypercorn
+pip install hypercorn[h3]
+# or
+# pip install --no-cache .[server,postgresql,mysql] hypercorn[h3]
 npm install
 npm run build
 python ./manage.py collectstatic --noinput
@@ -37,8 +69,18 @@ hypercorn secretgraph.asgi:application
 ## debug
 
 ```sh
+poetry install
+npm install
 ./tools/debugrun.py
 ```
+
+## Reverse proxy
+
+A reverse proxy must provide three things to work with secretgraph:
+
+1. a reasonable big client body size (for uploading big files) or having it disabled (could be problematic in terms of security)
+2. forwarding the real ip and scheme
+3. compatibility with websockets (see nginx-docker.conf.template)
 
 ## Usage
 
@@ -550,6 +592,11 @@ The item get parameter is mandatory.
 
 # TODO
 
+-   introduce hashToken:
+    -   switch from plainly hashing a token to using argon2id with versioned parameter sets (otherwise it is possible to choke the server)
+    -   simplify encrypted config by using such a token string
+    -   use argon2id instead of pkdf2
+    -   hash only public keys like always
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   ClusterEditor: show somehow the id of a named cluster
 -   complete share

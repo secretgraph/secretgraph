@@ -32,11 +32,17 @@ def initializeDb(**kwargs):
     # system net for injected keys cluster and as fallback
     net = Net.objects.update_or_create(
         id=0,
-        defaults={"id": 0, "quota": None, "max_upload_size": None},
+        defaults={
+            "id": 0,
+            "quota": None,
+            "max_upload_size": None,
+            "active": True,
+            "user_name": "",
+        },
     )[0]
 
     # system cluster for injected keys
-    Cluster.objects.update_or_create(
+    c = Cluster.objects.update_or_create(
         id=0,
         defaults={
             "id": 0,
@@ -44,7 +50,10 @@ def initializeDb(**kwargs):
             "name_cached": to_base64("Cluster", "@system"),
             "net": net,
         },
-    )
+    )[0]
+    if c != net.primaryCluster:
+        net.primaryCluster = c
+        net.save(update_fields=["primaryCluster"])
     for name, group in settings.SECRETGRAPH_DEFAULT_CLUSTER_GROUPS.items():
         group = dict(group)
         properties = []
