@@ -595,7 +595,7 @@ The item get parameter is mandatory.
 -   introduce hashToken:
     -   switch from plainly hashing a token to using argon2id with versioned parameter sets (otherwise it is possible to choke the server)
     -   simplify encrypted config by using such a token string
-    -   use argon2id instead of pkdf2
+    -   use argon2id instead of pkdf2, may remove toPkdf2
     -   hash only public keys like always
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   ClusterEditor: show somehow the id of a named cluster
