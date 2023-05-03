@@ -45,6 +45,14 @@ def _gen_key_vars(inp: bytes | str):
     return *ret, hashObject(ret[0])
 
 
+def _gen_token_vars(inp: bytes | str):
+    # tokens are 
+    ret = _gen_key_vars_nohash(inp)
+    if len(ret[0]) < 50:
+        raise ValueError("Token too short") 
+    return *ret, hashObject(("secretgraph", ret[0]))
+
+
 class Command(BaseCommand):
     help = "Initialize cluster"
 
@@ -68,7 +76,7 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         if not options["token"]:
-            options["token"] = b64encode(os.urandom(32)).decode("ascii")
+            options["token"] = b64encode(os.urandom(50)).decode("ascii")
         if options["net"]:
             if options["net"].isdigit():
                 net = Net.objects.get(id=options["net"])
@@ -95,11 +103,11 @@ class Command(BaseCommand):
         ]
         nonce_config = os.urandom(13)
         nonce_privkey = os.urandom(13)
-        view_token, view_token_b64, view_token_hash = _gen_key_vars(
+        view_token, view_token_b64, view_token_hash = _gen_token_vars(
             options["token"]
         )
-        manage_key, manage_key_b64, manage_key_hash = _gen_key_vars(
-            os.urandom(32)
+        manage_key, manage_key_b64, manage_key_hash = _gen_token_vars(
+            os.urandom(50)
         )
         privkey_key, privkey_key_b64 = _gen_key_vars_nohash(os.urandom(32))
         config_shared_key, config_shared_key_b64 = _gen_key_vars_nohash(

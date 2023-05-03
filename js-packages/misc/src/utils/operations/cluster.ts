@@ -9,7 +9,7 @@ import * as Interfaces from '../../interfaces'
 import { authInfoFromConfig, cleanConfig } from '../config'
 import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
 import { encryptAESGCM, encryptRSAOEAP } from '../encryption'
-import { hashObject, hashTagsContentHash } from '../hashing'
+import { hashObject, hashTagsContentHash, hashToken } from '../hashing'
 import { createContent } from './content'
 
 export async function createCluster(options: {
@@ -37,7 +37,7 @@ export async function createCluster(options: {
     if (options.privateKey && options.privateKeyKey) {
         nonce = crypto.getRandomValues(new Uint8Array(13))
         privateKeyPromise = encryptAESGCM({
-            key: options.privateKeyKey,
+            key: options.privateKeyKey.slice(-32),
             data: options.privateKey,
             nonce,
         }).then((obj) => new Blob([obj.data]))
@@ -122,8 +122,8 @@ export async function initializeCluster({
     noteToken: string
     noteCertificate: string
 }) {
-    const manage_key = crypto.getRandomValues(new Uint8Array(32))
-    const view_key = crypto.getRandomValues(new Uint8Array(32))
+    const manage_key = crypto.getRandomValues(new Uint8Array(50))
+    const view_key = crypto.getRandomValues(new Uint8Array(50))
     const { publicKey, privateKey } = (await crypto.subtle.generateKey(
         {
             name: 'RSA-OAEP',
@@ -137,8 +137,8 @@ export async function initializeCluster({
     const manage_keyb64 = Buffer.from(manage_key).toString('base64')
     const view_keyb64 = Buffer.from(view_key).toString('base64')
     const digestPublicKey = await hashObject(publicKey, hashAlgorithm)
-    const digestManageKey = await hashObject(manage_key, hashAlgorithm)
-    const digestViewKey = await hashObject(view_key, hashAlgorithm)
+    const digestManageKey = await hashToken(manage_key, hashAlgorithm)
+    const digestViewKey = await hashToken(view_key, hashAlgorithm)
     const clusterResponse = await createCluster({
         client,
         actions: [

@@ -30,6 +30,27 @@ export async function hashObject(
         )
 }
 
+const _token_hash_prefix = utf8encoder.encode('secretgraph')
+export async function hashToken(
+    obj: Parameters<typeof unserializeToArrayBuffer>[0],
+    hashAlgorithm: string
+) {
+    const mappedItem = Constants.mapHashNames[hashAlgorithm]
+    const _arr = new Uint8Array(await unserializeToArrayBuffer(obj))
+    const mergedArray = new Uint8Array(_token_hash_prefix.length + _arr.length)
+    mergedArray.set(_token_hash_prefix)
+    mergedArray.set(_arr, _token_hash_prefix.length)
+
+    return await crypto.subtle
+        .digest(mappedItem.operationName, mergedArray)
+        .then(
+            (data) =>
+                `${mappedItem.serializedName}:${Buffer.from(data).toString(
+                    'base64'
+                )}`
+        )
+}
+
 export async function hashKey(
     key: Interfaces.KeyInput,
     hashAlgorithm: string

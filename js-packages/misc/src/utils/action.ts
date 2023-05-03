@@ -6,7 +6,7 @@ import {
     unserializeToArrayBuffer,
     utf8encoder,
 } from './encoding'
-import { findWorkingHashAlgorithms, hashObject } from './hashing'
+import { findWorkingHashAlgorithms, hashObject, hashToken } from './hashing'
 import * as SetOps from './set'
 
 const actionMatcher = /:(.*)/
@@ -155,7 +155,7 @@ export async function generateActionMapper({
         let firstHash: string | undefined = undefined
         for (const halgo of hashalgos) {
             updateHashOps.push(
-                hashObject(rawT, halgo).then((data) => {
+                hashToken(rawT, halgo).then((data) => {
                     if (!firstHash) {
                         firstHash = data
                         tokenToHash[t] = data
@@ -172,7 +172,7 @@ export async function generateActionMapper({
         if (config.tokens[hash]) {
             found = true
             updateHashOps.push(
-                hashObject(config.tokens[hash].data, hashalgos[0]).then(
+                hashToken(config.tokens[hash].data, hashalgos[0]).then(
                     (data) => {
                         upgradeHash[hash] = data
                     }
@@ -373,7 +373,10 @@ export async function transformActions({
             }
             // autogenerate newHash if not available
             const newHash =
-                val.newHash || (await hashObject(val.data, hashAlgorithm))
+                val.newHash ||
+                (val.type == 'certificate'
+                    ? await hashObject(val.data, hashAlgorithm)
+                    : await hashToken(val.data, hashAlgorithm))
             // find mapper value
             const mapperval =
                 mapper && mapper[newHash] ? mapper[newHash] : undefined

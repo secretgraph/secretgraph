@@ -27,6 +27,7 @@ import {
     findWorkingHashAlgorithms,
     hashKey,
     hashObject,
+    hashToken,
 } from '@secretgraph/misc/utils/hashing'
 import {
     createCluster,
@@ -192,7 +193,9 @@ const ClusterIntern = ({
                             include: [clusterFeedQuery, getClusterQuery],
                         })
                     } else {
-                        const key = crypto.getRandomValues(new Uint8Array(32))
+                        const privkey_key = crypto.getRandomValues(
+                            new Uint8Array(32)
+                        )
                         const { publicKey, privateKey } =
                             (await crypto.subtle.generateKey(
                                 {
@@ -216,7 +219,7 @@ const ClusterIntern = ({
                             hashAlgorithm,
                             publicKey,
                             privateKey,
-                            privateKeyKey: key,
+                            privateKeyKey: privkey_key,
                             authorization: tokens,
                             featured: values.featured,
                             primary: values.primary,
@@ -591,8 +594,8 @@ const CreateCluster = () => {
             },
         }
     )
-    const { key, keyb64 } = React.useMemo(() => {
-        const key = crypto.getRandomValues(new Uint8Array(32))
+    const { key: manage_key, keyb64: manage_keyb64 } = React.useMemo(() => {
+        const key = crypto.getRandomValues(new Uint8Array(50))
         const keyb64 = Buffer.from(key).toString('base64')
         return {
             key,
@@ -614,7 +617,7 @@ const CreateCluster = () => {
                 dataUnfinished.secretgraph.config.hashAlgorithms
             )
 
-            const hashKey = await hashObject(key, hashAlgorithms[0])
+            const hashKey = await hashToken(manage_key, hashAlgorithms[0])
             if (active) {
                 const data: Omit<ClusterInternProps, 'disabled' | 'url'> & {
                     key: string
@@ -627,7 +630,7 @@ const CreateCluster = () => {
                     mapper: {
                         [hashKey]: {
                             type: 'action',
-                            data: keyb64,
+                            data: manage_keyb64,
                             note: '',
                             newHash: hashKey,
                             oldHash: null,

@@ -31,7 +31,7 @@ import {
     transformActions,
 } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import { hashObject } from '@secretgraph/misc/utils/hashing'
+import { hashToken } from '@secretgraph/misc/utils/hashing'
 import * as SetOps from '@secretgraph/misc/utils/set'
 import { FastField, FieldArray, Form, Formik } from 'formik'
 import { QRCodeSVG } from 'qrcode.react'
@@ -215,7 +215,7 @@ function NewPanel({
                         return
                     }
 
-                    const newHash = await hashObject(
+                    const newHash = await hashToken(
                         values.actions[0].data,
                         hashAlgorithm
                     )
@@ -352,7 +352,7 @@ function AuthPanel({
                         setSubmitting(false)
                         return
                     }
-                    const newHash = await hashObject(token, hashAlgorithm)
+                    const newHash = await hashToken(token, hashAlgorithm)
                     const actions: ActionInputEntry[] = []
                     if (values.viewActive) {
                         actions.push({

@@ -25,7 +25,7 @@ class Command(BaseCommand):
 
     def handle(self, **options):
         if not options["token"]:
-            options["token"] = b64encode(os.urandom(32)).decode("ascii")
+            options["token"] = b64encode(os.urandom(50)).decode("ascii")
         if options["net"]:
             if options["net"].isdigit():
                 net = Net.objects.get(id=options["net"])

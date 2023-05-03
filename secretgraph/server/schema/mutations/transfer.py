@@ -58,7 +58,7 @@ def mutate_push_content(
     )
     action_key = None
     if cleaned_result["updateable"]:
-        action_key = os.urandom(32)
+        action_key = os.urandom(45)
         content.value.actions.append(
             {
                 "key": action_key,

@@ -523,6 +523,14 @@ This is currently not implemented as it needs background workers and has many ca
 
 # FAQ
 
+## Token hashing
+
+Token hashing is slightly different from normal hashing as you could build a rainbow table for 256 bit aes keys.
+Therefore token inputs are prefixed with the string `secretgraph`+18 random bytes, only the last 32 bytes are used for aes.
+Building a rainbow table would need 1600 Pebibyte.
+
+Note: in python there is no hashToken. it is done with a `hashToken((b"secretgraph", token), hashAlgorithm)`
+
 ## Why not Haskell/Rust for the backend
 
 I know that languages would maybe be better for the backend.
@@ -592,11 +600,6 @@ The item get parameter is mandatory.
 
 # TODO
 
--   introduce hashToken:
-    -   switch from plainly hashing a token to using argon2id with versioned parameter sets (otherwise it is possible to choke the server)
-    -   simplify encrypted config by using such a token string
-    -   use argon2id instead of pkdf2, may remove toPkdf2
-    -   OR use HKDF for token hashing
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   ClusterEditor: show somehow the id of a named cluster
 -   complete share

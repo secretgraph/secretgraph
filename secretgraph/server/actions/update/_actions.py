@@ -24,6 +24,9 @@ from ...models import Action, Content, Cluster, ContentAction
 from ._arguments import ActionInput
 
 
+_valid_lengths = {32, 50}
+
+
 def manage_actions_fn(
     request, obj, actionlist: List[ActionInput], authset=None, admin=False
 ):
@@ -110,8 +113,11 @@ def manage_actions_fn(
             action_key = base64.b64decode(action_key)
         else:
             raise ValueError("No key specified/available")
+        
+        if len(action_key) not in _valid_lengths:
+            raise ValueError("Invalid key size")
 
-        action_key_hash = hashObject(action_key)
+        action_key_hash = hashObject((b"secretgraph", action_key))
         action_value = ActionHandler.clean_action(
             action_value,
             request=request,
@@ -119,7 +125,7 @@ def manage_actions_fn(
         )
 
         # create Action object
-        aesgcm = AESGCM(action_key)
+        aesgcm = AESGCM(action_key[-32:])
         nonce = os.urandom(13)
         # add contentAction
         group = action_value.pop("contentActionGroup", "")

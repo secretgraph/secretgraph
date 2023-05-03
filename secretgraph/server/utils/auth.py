@@ -86,6 +86,9 @@ class LazyViewResult(object):
             self[i]
 
 
+_valid_lengths = {32, 50}
+
+
 def _parse_token(token: str):
     spitem = token.split(":", 1)
     if len(spitem) != 2:
@@ -95,12 +98,15 @@ def _parse_token(token: str):
     try:
         action_key = base64.b64decode(action_key)
     finally:
-        if not isinstance(action_key, bytes) or len(action_key) != 32:
+        if (
+            not isinstance(action_key, bytes) or
+            len(action_key) not in _valid_lengths
+        ):
             return None, None, None
     return (
         flexid_raw,
-        AESGCM(action_key),
-        calculateHashes(action_key),
+        AESGCM(action_key[-32:]),
+        calculateHashes((b"secretgraph", action_key)),
     )
 
 

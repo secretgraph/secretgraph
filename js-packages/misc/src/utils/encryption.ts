@@ -7,7 +7,7 @@ import {
     unserializeToArrayBuffer,
     utf8encoder,
 } from './encoding'
-import { hashObject } from './hashing'
+import { hashObject, hashToken } from './hashing'
 import * as IterableOps from './iterable'
 
 export async function toPBKDF2key(
@@ -987,7 +987,7 @@ export async function authInfoFromTokens({
 
     for (const hashAlgorithm of hashAlgorithms) {
         for (const token of tokens) {
-            hashes.push(hashObject(token, hashAlgorithm))
+            hashes.push(hashToken(token, hashAlgorithm))
         }
     }
     if (limitReached && limit === undefined) {

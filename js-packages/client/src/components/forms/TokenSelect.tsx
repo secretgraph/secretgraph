@@ -3,7 +3,7 @@ import Typography from '@mui/material/Typography'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
-import { hashObject } from '@secretgraph/misc/utils/hashing'
+import { hashObject, hashToken } from '@secretgraph/misc/utils/hashing'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -50,11 +50,11 @@ export default function TokenSelect<
             ) => {
                 if (typeof val == 'string') {
                     if (val == 'new') {
-                        const res = crypto.getRandomValues(new Uint8Array(32))
+                        const res = crypto.getRandomValues(new Uint8Array(50))
                         if (hashAlgorithm && updateHashField) {
                             props.form.setFieldValue(
                                 updateHashField,
-                                await hashObject(res, hashAlgorithm),
+                                await hashToken(res, hashAlgorithm),
                                 false
                             )
                         }
@@ -67,7 +67,7 @@ export default function TokenSelect<
                         if (hashAlgorithm && updateHashField) {
                             props.form.setFieldValue(
                                 updateHashField,
-                                await hashObject(val, hashAlgorithm),
+                                await hashToken(val, hashAlgorithm),
                                 false
                             )
                         }
@@ -77,7 +77,7 @@ export default function TokenSelect<
                     const ret = val.map((v) => {
                         if (v == 'new') {
                             return Buffer.from(
-                                crypto.getRandomValues(new Uint8Array(32))
+                                crypto.getRandomValues(new Uint8Array(50))
                             ).toString('base64')
                         } else {
                             return v
@@ -88,9 +88,7 @@ export default function TokenSelect<
                         props.form.setFieldValue(
                             updateHashField,
                             await Promise.all(
-                                ret.map((val) =>
-                                    hashObject(val, hashAlgorithm)
-                                )
+                                ret.map((val) => hashToken(val, hashAlgorithm))
                             ),
                             false
                         )

@@ -127,7 +127,7 @@ def main(argv=None):
 
     privkey_key = os.urandom(32)
 
-    action_key = os.urandom(32)
+    action_key = os.urandom(50)
     action_key_b64 = base64.b64encode(action_key).decode("ascii")
     config_shared_key = os.urandom(32)
     priv_key = rsa.generate_private_key(
