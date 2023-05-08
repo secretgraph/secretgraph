@@ -111,6 +111,12 @@ export default React.memo(function Clusters({
                     }
                 }
             }
+            let marked = false
+            if (node.__typename == 'Cluster') {
+                marked = node.id == mainCtx.item
+            } else if (node.cluster && node.cluster.id) {
+                marked = node.cluster.id == mainCtx.currentCluster
+            }
             ret.push(
                 <TreeItem
                     label={
@@ -127,7 +133,7 @@ export default React.memo(function Clusters({
                             <SidebarTreeItemLabel
                                 title={node.description || undefined}
                                 deleted={node.deleted}
-                                marked
+                                marked={marked}
                                 leftIcon={<GroupWorkIcon fontSize="small" />}
                             >
                                 {name}
