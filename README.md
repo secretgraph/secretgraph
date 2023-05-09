@@ -332,16 +332,15 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
     -   for Content: ignores inherited id exclusion
     -   for Cluster: adhers inherited id exclusion
 -   view (Content, Cluster) affects (Content, Cluster):
+    -   allowPeek: allow peeking at content (not triggering freeze or update readStatistic)
     -   for Content:
         -   fetch: autodelete content after viewing
-            allowPeek: allow peeking at content (not triggering freeze or update readStatistic)
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag, default: \[\]
         -   states:like param, include only contents with state
         -   includeTypes: like param, include only contents with type
         -   excludeTypes: like param, exclude contents with type, default: \[\]
-            allowPeek: allow peeking at content (not triggering freeze or update readStatistic)
 -   delete (Content, Cluster):
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
@@ -350,11 +349,11 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
         -   includeTypes: like param, include only contents with type
         -   excludeTypes: like param, exclude contents with type, default: \[\]
 -   update (Content, Cluster) affects (Content, Cluster) (has default view and peek permission):
+    -   injectedTags: force inject tags, use freeze tag to freeze after viewing
+    -   allowedTags: allow only tags specified here (if set)
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag,
-    -   injectedTags: force inject tags, use freeze tag to freeze after viewing
-    -   allowedTags: allow only tags specified here (if set)
 -   create (Cluster, partly implemented):
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
@@ -600,6 +599,8 @@ The item get parameter is mandatory.
 
 # TODO
 
+-   update Documentation and actions
+    -   allowedActions seems to be missińg implementation/cleaning
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   ClusterEditor: show somehow the id of a named cluster
 -   complete share

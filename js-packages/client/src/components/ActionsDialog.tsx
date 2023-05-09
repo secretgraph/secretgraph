@@ -26,8 +26,8 @@ import { FastField, FieldArrayRenderProps, FormikProps } from 'formik'
 import * as React from 'react'
 
 import FormikCheckBox from './formik/FormikCheckbox'
-import ActionConfigurator from './forms/ActionOrCertificateConfigurator'
 import SimpleSelect from './forms/SimpleSelect'
+import ActionConfigurator from './formsWithContext/ActionOrCertificateConfigurator'
 
 const HashEntry = React.memo(function HashEntry({
     item,

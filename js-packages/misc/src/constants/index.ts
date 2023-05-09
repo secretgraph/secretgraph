@@ -12,6 +12,23 @@ export const validNotLoggedInActions = new Set<MainContextInterface['action']>(
     ['login', 'register', 'help']
 )
 
+export const validFields: {[key: string]: Set<string>} = {
+    "authContent": new Set(),
+    "authCluster": new Set(),
+    "viewContent": new Set(["fetch", "allowPeek"]),
+    "viewCluster": new Set(["allowPeek"]),
+    "deleteContent": new Set(),
+    "deleteCluster": new Set(),
+}
+for(const key in ["viewCluster", "deleteCluster"]){
+    validFields[key].add("includeTags")
+    validFields[key].add("excludeTags")
+    validFields[key].add("includeTypes")
+    validFields[key].add("excludeTypes")
+    validFields[key].add("states")
+}
+
+
 export const public_states = new Set(['required', 'trusted', 'public'])
 export const trusted_states = new Set(['required', 'trusted'])
 

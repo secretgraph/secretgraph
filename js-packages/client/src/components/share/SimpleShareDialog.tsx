@@ -39,8 +39,8 @@ import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
-import ActionOrCertificateConfigurator from '../forms/ActionOrCertificateConfigurator'
 import TokenSelect from '../forms/TokenSelect'
+import ActionOrCertificateConfigurator from '../formsWithContext/ActionOrCertificateConfigurator'
 
 const _update_set = new Set(['update', 'manage'])
 function SharePanel({ url }: { url: string }) {

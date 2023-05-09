@@ -295,6 +295,7 @@ class UpdateHandlers:
             "allowedTags": None,
             "allowedStates": None,
             "allowedTypes": None,
+            "allowedActions": None,
         }
         if content.id:
             result["injectedReferences"].push(

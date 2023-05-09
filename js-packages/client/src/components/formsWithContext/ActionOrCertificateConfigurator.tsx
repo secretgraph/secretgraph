@@ -13,8 +13,8 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
 import FormikDateTimePicker from '../formik/FormikDateTimePicker'
-import SimpleSelect from './SimpleSelect'
-import TokenSelect from './TokenSelect'
+import SimpleSelect from '../forms/SimpleSelect'
+import TokenSelect from '../forms/TokenSelect'
 
 const availableActions = [
     'auth',
