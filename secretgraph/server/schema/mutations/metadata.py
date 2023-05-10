@@ -11,6 +11,10 @@ from django.db import transaction
 from django.db.models import Exists, OuterRef, Value
 from ..shared import MetadataOperations
 
+from ...utils.arguments import (
+    pre_clean_update_content_args,
+    check_actions,
+)
 from ...actions.update import (
     update_metadata_fn,
     manage_actions_fn,
@@ -185,11 +189,20 @@ def update_metadata(
             "update",
             authset=authorization,
         )
+        cleaned = pre_clean_update_content_args(
+            tags, state, references, actions, result["Contents"]
+        )
+
+        tags = cleaned["tags"]
+        references = cleaned["references"]
         # immutable are excluded
         contents = result["Content"]["objects"].annotate(
             has_immutable=Value(False)
         )
         clusters = result["Clusters"]["objects"]
+        if clusters:
+            check_actions(actions, result["Clusters"])
+
     ops = []
     for content_obj in contents:
         ops.append(

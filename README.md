@@ -348,34 +348,37 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
         -   states:like param, include only contents with state
         -   includeTypes: like param, include only contents with type
         -   excludeTypes: like param, exclude contents with type, default: \[\]
--   update (Content, Cluster) affects (Content, Cluster) (has default view and peek permission):
+-   update (Content, Cluster) affects (Content, Cluster) (has default view and peek permission). For updating contents:
     -   injectedTags: force inject tags, use freeze tag to freeze after viewing
     -   allowedTags: allow only tags specified here (if set)
+    -   allowedActions: allow only actions specified here (if set) (Default: [])
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag,
--   create (Cluster, partly implemented):
+-   create (Cluster, partly implemented). For creating contents:
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
-    -   not implemented yet (view and)
-        -   includeTags: like param, include only contents with tag
-        -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
--   inject (Cluster, Content): injects injectedTags, requiredKeys,
-    -   requiredKeys: require keys within array for encryption
+    -   allowedStates: allow only states specified here (if set)
+    -   allowedActions: allow only actions specified here (if set) (Default: [])
+-   inject (Cluster, Content): injects injectedTags, injectedReferences
     -   injectedTags: force inject tags
-    -   allowedTags: allow only tags specified here (if set)
-    -   not implemented yet (view and)
+    -   injectedReferences: force inject references
+        allowed{Tags,Types,States}: apply injection only if there is a match with the input
+    -   for Cluster:
         -   includeTags: like param, include only contents with tag
-        -   excludeTags: like param, exclude contents with tag, default: \[type=PrivateKey\]
+        -   excludeTags: like param, exclude contents with tag, default: \[\]
+        -   states:like param, include only contents with state
+        -   includeTypes: like param, include only contents with type
+        -   excludeTypes: like param, exclude contents with type, default: \[\]
 -   push (Content):
     -   updateable: can update newly created content
-    -   requiredKeys: require keys with keyhashes within array for encryption
     -   injectedReferences: force inject references to Contents, entries have following props:
         -   target: id of content
         -   group: group name
         -   deleteRecursive: group behaviour:
     -   injectedTags: force inject tags
     -   allowedTags: allow only tags specified here (if set)
+    -   allowedStates: allow only states specified here (if set)
 -   manage (Cluster) affects (Action, Content, Cluster):
     -   exclude:
         -   Cluster: ids of clusters which are excluded
@@ -600,7 +603,6 @@ The item get parameter is mandatory.
 # TODO
 
 -   update Documentation and actions
-    -   allowedActions seems to be missińg implementation/cleaning
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   ClusterEditor: show somehow the id of a named cluster
 -   complete share
@@ -632,6 +634,7 @@ The item get parameter is mandatory.
 
 # TODO later
 
+-   cleanup utils/arguments.py
 -   frontend: allow changing net
 -   use threading for cryptography operations (put in threadpool)
 -   maybe: allow lock url to be used as a start_url (for apple devices)

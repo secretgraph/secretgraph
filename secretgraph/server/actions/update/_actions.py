@@ -113,7 +113,7 @@ def manage_actions_fn(
             action_key = base64.b64decode(action_key)
         else:
             raise ValueError("No key specified/available")
-        
+
         if len(action_key) not in _valid_lengths:
             raise ValueError("Invalid key size")
 

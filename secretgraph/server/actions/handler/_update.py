@@ -68,7 +68,6 @@ class UpdateHandlers:
 
     @staticmethod
     def clean_delete(action_dict, request, content, admin):
-
         result = {"action": "delete", "contentActionGroup": "delete"}
         if content:
             # ignore tags if specified for a content
@@ -105,7 +104,6 @@ class UpdateHandlers:
         }:
             return None
         if issubclass(sender, Content):
-
             excl_filters_type = Q()
             if action_dict["excludeTypes"]:
                 excl_filters_type |= Q(type__in=action_dict["excludeTypes"])
@@ -153,7 +151,7 @@ class UpdateHandlers:
                 "allowedTags": action_dict.get("allowedTags", None),
                 # allowedTypes is invalid for update
                 "allowedStates": action_dict.get("allowedStates", None),
-                "allowedActions": action_dict.get("allowedActions", None),
+                "allowedActions": [],
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),
@@ -167,7 +165,7 @@ class UpdateHandlers:
                 "allowedTags": action_dict.get("allowedTags", None),
                 # allowedTypes is invalid for update
                 "allowedStates": action_dict.get("allowedStates", None),
-                "allowedActions": action_dict.get("allowedActions", None),
+                "allowedActions": [],
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),
@@ -177,7 +175,6 @@ class UpdateHandlers:
 
     @staticmethod
     def clean_update(action_dict, request, content, admin):
-
         result = {
             "action": "update",
             "contentActionGroup": "update",
@@ -185,6 +182,7 @@ class UpdateHandlers:
             "injectedTags": [],
             "allowedTags": None,
             "allowedStates": action_dict.get("allowedStates", None),
+            "allowedActions": [],
             "injectedReferences": [],
         }
         if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
@@ -212,6 +210,11 @@ class UpdateHandlers:
             result["excludeTypes"] = list(map(str, exclude_types))
             include_types = action_dict.get("includeTypes", [])
             result["includeTypes"] = list(map(str, include_types))
+
+        if action_dict.get("allowedActions"):
+            result["allowedActions"].extend(
+                action_dict["allowedActions"].filter(lambda x: x != "manage")
+            )
 
         if action_dict.get("injectedTags"):
             result["injectedTags"].extend(action_dict["injectedTags"])
@@ -295,7 +298,7 @@ class UpdateHandlers:
             "allowedTags": None,
             "allowedStates": None,
             "allowedTypes": None,
-            "allowedActions": None,
+            "allowedActions": [],
         }
         if content.id:
             result["injectedReferences"].push(
@@ -370,6 +373,11 @@ class UpdateHandlers:
         result = cls._clean_create_or_push(
             action_dict, request, content=content, admin=admin
         )
+        if action_dict.get("allowedActions"):
+            result["allowedActions"].extend(
+                action_dict["allowedActions"].filter(lambda x: x != "manage")
+            )
+
         result["action"] = "create"
         return result
 
@@ -385,7 +393,7 @@ class UpdateHandlers:
                 "allowedTags": action_dict.get("allowedTags", None),
                 "allowedTypes": action_dict.get("allowedTypes", None),
                 "allowedStates": action_dict.get("allowedStates", None),
-                "allowedActions": action_dict.get("allowedActions", None),
+                "allowedActions": [],
                 "injectedReferences": action_dict.get(
                     "injectedReferences", []
                 ),

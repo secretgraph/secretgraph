@@ -58,11 +58,16 @@ def mutate_push_content(
     )
     action_key = None
     if cleaned_result["updateable"]:
-        action_key = os.urandom(45)
+        action_key = os.urandom(50)
         content.value.actions.append(
             {
                 "key": action_key,
                 "action": "update",
+                "allowedActions": ["view", "update"],
+                "injectedReferences": list(
+                    cleaned_result["injectedReferences"]
+                ),
+                "injectedTags": list(cleaned_result["injectedTags"]),
             }
         )
     c = create_content_fn(

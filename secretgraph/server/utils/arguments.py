@@ -3,6 +3,96 @@ from itertools import chain
 
 from ..models import Net
 
+# TODO: may improve dataclasses so everything is calculated from itself
+
+
+def check_actions(actions, result):
+    passed = len(result["active_actions"]) == 0
+    if not actions:
+        return
+    for action_id in result["active_actions"]:
+        action_dict = result["decrypted"][action_id]
+        if action_dict.get("allowedActions", None) is None:
+            pass
+        else:
+            matcher = re.compile(
+                "^(%s)$"
+                % "|".join(map(re.escape, action_dict["allowedActions"]))
+            )
+            if actions.any(lambda x: not matcher.fullmatch(x.value.value)):
+                continue
+        # now mark that at least one action passed the checks
+        passed = True
+    if not passed:
+        raise ValueError("not passed")
+
+
+# clean the single parts
+def pre_clean_update_content_args(tags, state, references, actions, result):
+    passed = len(result["active_actions"]) == 0
+    injectedTags = set()
+    injectedRefs = {}
+
+    for action_id in result["active_actions"]:
+        action_dict = result["decrypted"][action_id]
+        if not actions:
+            pass
+        else:
+            if action_dict.get("allowedActions", None) is None:
+                pass
+            else:
+                matcher = re.compile(
+                    "^(%s)$"
+                    % "|".join(map(re.escape, action_dict["allowedActions"]))
+                )
+                if actions.any(lambda x: not matcher.fullmatch(x.value.value)):
+                    continue
+        if not state:
+            pass
+        elif action_dict.get("allowedStates", None) is None:
+            pass
+        else:
+            if state not in action_dict["allowedStates"]:
+                continue
+
+        if not tags:
+            pass
+        else:
+            if action_dict.get("allowedTags", None) is None:
+                pass
+            else:
+                matcher = re.compile(
+                    "^(?:%s)(?:(?<==)|$)"
+                    % "|".join(map(re.escape, action_dict["allowedTags"]))
+                )
+                if tags.any(lambda x: not matcher.fullmatch(x)):
+                    continue
+        if action_dict["accesslevel"] < 0:
+            continue
+        # now mark that at least one action passed the checks
+        passed = True
+
+        if action_dict.get("injectedTags"):
+            injectedTags.update(action_dict["injectedTags"])
+        for ref in action_dict.get("injectedRefs") or []:
+            key = (ref.target, ref.group or "")
+            if key in injectedRefs:
+                continue
+            injectedRefs[key] = ref
+    if not passed:
+        raise ValueError("not passed")
+
+    if injectedTags:
+        if tags is not None:
+            tags = chain(tags, injectedTags)
+    if injectedRefs:
+        if references is not None:
+            references = chain(references, injectedRefs.values())
+    return {
+        "tags": tags,
+        "references": references,
+    }
+
 
 def pre_clean_content_spec(create: bool, content, result):
     updateable = False
@@ -79,8 +169,11 @@ def pre_clean_content_spec(create: bool, content, result):
                 )
                 if tags.any(lambda x: not matcher.fullmatch(x)):
                     continue
-        if not action_dict["accesslevel"] < 0:
-            passed = True
+        if action_dict["accesslevel"] < 0:
+            continue
+        # now mark that at least one action passed the checks
+        passed = True
+        # now update outer parameters, e.g. updateable,...
         if action_dict.get("updateable"):
             updateable = True
         if action_dict.get("freeze"):
@@ -125,4 +218,6 @@ def pre_clean_content_spec(create: bool, content, result):
     return {
         "freeze": freeze,
         "updateable": updateable,
+        "injectedReferences": injectedRefs,
+        "injectedTags": injectedTags,
     }

@@ -8,7 +8,11 @@ from strawberry_django_plus import relay
 
 from ....core import constants
 from ...models import Action, Cluster, Content
-from ._shared import get_valid_fields, only_owned_helper
+from ._shared import (
+    get_valid_fields,
+    only_owned_helper,
+    get_forbidden_content_ids,
+)
 
 
 class SideEffectsHandlers:
@@ -17,19 +21,69 @@ class SideEffectsHandlers:
         if scope in {"create", "update", "push"} and issubclass(
             sender, (Content, Cluster)
         ):
-            return {
-                "action": "inject",
-                "filters": Q(),
-                "accesslevel": -1,
-                "allowedTags": action_dict.get("allowedTags", None),
-                "allowedTypes": action_dict.get("allowedTypes", None),
-                "allowedStates": action_dict.get("allowedStates", None),
-                "allowedActions": action_dict.get("allowedActions", None),
-                "injectedTags": action_dict.get("injectedTags", []),
-                "injectedReferences": action_dict.get(
-                    "injectedReferences", []
-                ),
-            }
+            if issubclass(sender, Content):
+                excl_filters_type = Q()
+                if action_dict["excludeTypes"]:
+                    excl_filters_type |= Q(
+                        type__in=action_dict["excludeTypes"]
+                    )
+                excl_filters_tag = Q()
+                for i in action_dict["excludeTags"]:
+                    if i.startswith("id="):
+                        excl_filters_tag |= Q(flexid_cached=i[3:])
+                    elif i.startswith("=id="):
+                        excl_filters_tag |= Q(flexid_cached=i[4:])
+                    elif i.startswith("="):
+                        excl_filters_tag |= Q(tags__tag=i[1:])
+                    else:
+                        excl_filters_tag |= Q(tags__tag__startswith=i)
+
+                incl_filters_type = Q()
+                if action_dict["includeTypes"]:
+                    incl_filters_type |= Q(
+                        type__in=action_dict["includeTypes"]
+                    )
+                incl_filters_state = Q()
+                if action_dict["states"]:
+                    incl_filters_state |= Q(state__in=action_dict["states"])
+
+                incl_filters_tag = Q()
+                for i in action_dict["includeTags"]:
+                    if i.startswith("id="):
+                        incl_filters_tag |= Q(flexid_cached=i[3:])
+                    elif i.startswith("=id="):
+                        incl_filters_tag |= Q(flexid_cached=i[4:])
+                    elif i.startswith("="):
+                        incl_filters_tag |= Q(tags__tag=i[1:])
+                    else:
+                        incl_filters_tag |= Q(tags__tag__startswith=i)
+                excl_filters = excl_filters_type | excl_filters_tag
+                if action_dict.get("excludeIds"):
+                    excl_filters |= Q(id__in=action_dict["excludeIds"])
+
+                return {
+                    "filters": ~excl_filters,
+                    "accesslevel": -1,
+                    "allowedTags": action_dict.get("allowedTags", None),
+                    "allowedTypes": action_dict.get("allowedTypes", None),
+                    "allowedStates": action_dict.get("allowedStates", None),
+                    "injectedTags": action_dict.get("injectedTags", []),
+                    "injectedReferences": action_dict.get(
+                        "injectedReferences", []
+                    ),
+                }
+            else:
+                return {
+                    "filters": Q(),
+                    "accesslevel": -1,
+                    "allowedTags": action_dict.get("allowedTags", None),
+                    "allowedTypes": action_dict.get("allowedTypes", None),
+                    "allowedStates": action_dict.get("allowedStates", None),
+                    "injectedTags": action_dict.get("injectedTags", []),
+                    "injectedReferences": action_dict.get(
+                        "injectedReferences", []
+                    ),
+                }
         return None
 
     @staticmethod
@@ -42,6 +96,32 @@ class SideEffectsHandlers:
             "allowedStates": None,
             "allowedTypes": None,
         }
+
+        if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
+            raise ValueError(
+                "Either includeTypes or excludeTypes should be specified"
+            )
+
+        if content:
+            # ignore tags if specified for a content
+            result["excludeTags"] = []
+            result["includeTags"] = []
+            result["states"] = []
+            result["includeTypes"] = []
+            result["excludeTypes"] = []
+            result["excludeIds"] = []
+        else:
+            result["excludeIds"] = list(get_forbidden_content_ids(request))
+            exclude_tags = action_dict.get("excludeTags", [])
+            result["excludeTags"] = list(map(str, exclude_tags))
+            include_tags = action_dict.get("includeTags", [])
+            result["includeTags"] = list(map(str, include_tags))
+            states = action_dict.get("states", [])
+            result["states"] = list(map(str, states))
+            exclude_types = action_dict.get("excludeTypes", [])
+            result["excludeTypes"] = list(map(str, exclude_types))
+            include_types = action_dict.get("includeTypes", [])
+            result["includeTypes"] = list(map(str, include_types))
 
         if action_dict.get("injectedTags"):
             result["injectedTags"].extend(action_dict["injectedTags"])
