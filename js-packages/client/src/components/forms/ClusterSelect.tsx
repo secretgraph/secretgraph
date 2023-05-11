@@ -1,4 +1,5 @@
 import { ApolloClient, useQuery } from '@apollo/client'
+import { Box, Typography } from '@mui/material'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
@@ -8,6 +9,15 @@ import * as React from 'react'
 
 import SimpleSelect, { SimpleSelectProps } from './SimpleSelect'
 
+/***
+ *  for search
+                let roption = labelMap[option]?.name || ''
+                let rawId = option
+                try {
+                    rawId = (fromGraphqlId(option) as [string, string])[1]
+                } catch (e) {}
+                return `${roption}${rawId}`
+ */
 export interface ClusterSelectProps<
     Multiple extends boolean | undefined,
     DisableClearable extends boolean | undefined,
@@ -96,8 +106,42 @@ export default function ClusterSelect<
         <SimpleSelect
             {...props}
             loading={loading}
-            getOptionDisabled={(option) => {
+            getOptionDisabled={(option: string) => {
                 return disabled.has(option)
+            }}
+            renderOption={(props, option: string) => {
+                let roption = labelMap[option]
+                let rawId = option
+                try {
+                    rawId = (fromGraphqlId(option) as [string, string])[1]
+                } catch (e) {}
+                if (roption && roption.name) {
+                    return (
+                        <li {...props} title={roption?.description || ''}>
+                            <div>
+                                <span style={{ maxWidth: '100%' }}>
+                                    {roption.name}
+                                </span>
+                                <Typography
+                                    component="span"
+                                    sx={{
+                                        paddingLeft: (theme) =>
+                                            theme.spacing(1),
+                                    }}
+                                    variant="body2"
+                                >
+                                    {rawId}
+                                </Typography>
+                            </div>
+                        </li>
+                    )
+                } else {
+                    return (
+                        <li title={roption?.description || ''} {...props}>
+                            {rawId}
+                        </li>
+                    )
+                }
             }}
             getOptionLabel={(option) => {
                 let roption = labelMap[option]?.name

@@ -1,13 +1,15 @@
 import Box from '@mui/material/Box'
+import Stack from '@mui/material/Stack'
 import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Unstable_Grid2'
+import * as Constants from '@secretgraph/misc/constants'
 import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
 import { parseISO } from 'date-fns'
-import { FastField, useField } from 'formik'
+import { FastField, useField, useFormikContext } from 'formik'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
@@ -34,6 +36,23 @@ const publicShareActions = availableActions.filter(
 const shareActions = availableActions.filter((val) => val != 'auth')
 const contentOnlyActions = new Set(['push'])
 const clusterOnlyActions = new Set(['create', 'storedUpdate'])
+
+function primeFields(values: any, path: string[], primetype: any): boolean {
+    if (path.length == 0) {
+        return false
+    }
+    let hasChanges: boolean = false
+    if (values[path[0]] === undefined) {
+        if (path.length == 1) {
+            // deep clone
+            values[path[0]] = JSON.parse(JSON.stringify(primetype))
+        } else {
+            values[path[0]] = {}
+        }
+        hasChanges = true
+    }
+    return primeFields(values[path[0]], path.slice(1), primetype) || hasChanges
+}
 
 type ActionConfiguratorProps = {
     value: ActionInputEntry
@@ -68,10 +87,36 @@ const ActionFields = React.memo(function ActionFields({
     isContent: boolean
     disabled?: boolean
 }) {
-    const { value: action } = useField(`${path}action`)[0]
+    const { values, setValues } = useFormikContext<any>()
+    const { value: action } = useField<any>(`${path}action`)[0]
+    React.useEffect(() => {
+        const validFields =
+            Constants.validFields[
+                `${action}${isContent ? 'Content' : 'Cluster'}`
+            ]
+        if (!validFields) {
+            console.error(
+                'Invalid: ',
+                `${action}${isContent ? 'Content' : 'Cluster'}`
+            )
+            return
+        }
+        const newValues: any = Object.assign({}, values)
+        let hasChanges = false
+        for (const [key, primetype] of Object.entries(validFields)) {
+            if (
+                primeFields(newValues, `${path}${key}`.split('.'), primetype)
+            ) {
+                hasChanges = true
+            }
+        }
+        if (hasChanges) {
+            setValues(newValues, false)
+        }
+    }, [action])
     switch (action) {
         case 'auth':
-            return <div></div>
+            return <></>
         case 'view':
             if (isContent) {
                 return (
@@ -155,7 +200,7 @@ const ActionFields = React.memo(function ActionFields({
                 return <div></div>
             } else {
                 return (
-                    <div>
+                    <Stack>
                         <FastField
                             component={SimpleSelect}
                             name={`${path}includeTags`}
@@ -201,37 +246,21 @@ const ActionFields = React.memo(function ActionFields({
                             freeSolo
                             multiple
                         />
-                    </div>
+                    </Stack>
                 )
             }
         case 'inject':
-            return (
-                <>
-                    <div></div>
-                </>
-            )
+            return <></>
         case 'create':
         case 'update':
-            return (
-                <>
-                    <div></div>
-                </>
-            )
+            return <></>
         case 'manage':
-            return (
-                <>
-                    <div></div>
-                </>
-            )
+            return <></>
         case 'push':
             if (!isContent) {
                 throw Error('Push only defined for contents')
             }
-            return (
-                <>
-                    <div></div>
-                </>
-            )
+            return <></>
         default:
             return (
                 <Typography color="error">
@@ -337,82 +366,66 @@ function ActionConfigurator({
     }, [validactions, value?.delete, value?.locked])
 
     return (
-        <Box
-            sx={{
-                '& .MuiTextField-root': { m: 1 },
-            }}
-        >
+        <Stack direction="column" spacing={2}>
             {value.value?.action != 'other' ? (
                 <>
-                    <div>
-                        <FastField
-                            name={`${path}value.action`}
-                            component={SimpleSelect}
-                            options={validactions}
-                            disabled={!!(disabled || locked || lockAction)}
-                            label="Action"
-                            fullWidth
+                    <FastField
+                        name={`${path}value.action`}
+                        component={SimpleSelect}
+                        options={validactions}
+                        disabled={!!(disabled || locked || lockAction)}
+                        label="Action"
+                        fullWidth
+                    />
+                    {mode != 'share' && mode != 'publicShare' && (
+                        <SelectStartStop
+                            path={path}
+                            disabled={disabled || locked}
                         />
-                    </div>
-                    <div>
-                        {mode != 'share' && mode != 'publicShare' && (
-                            <SelectStartStop
-                                path={path}
-                                disabled={disabled || locked}
-                            />
-                        )}
-                    </div>
+                    )}
                 </>
             ) : null}
             {!noToken ? (
-                <div>
-                    <FastField
-                        name={`${path}data`}
-                        component={TokenSelect}
-                        hashAlgorithm={hashAlgorithm}
-                        updateHashField={`${path}newHash`}
-                        fullWidth
-                        freeSolo
-                        tokens={tokens}
-                        disabled={disabled || locked}
-                        label="Token"
-                    />
-                </div>
+                <FastField
+                    name={`${path}data`}
+                    component={TokenSelect}
+                    hashAlgorithm={hashAlgorithm}
+                    updateHashField={`${path}newHash`}
+                    fullWidth
+                    freeSolo
+                    tokens={tokens}
+                    disabled={disabled || locked}
+                    label="Token"
+                />
             ) : null}
             {handleNoteChange ? (
-                <div>
-                    <TextField
-                        onChange={handleNoteChange}
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        label="Note"
-                        value={note}
-                    />
-                </div>
+                <TextField
+                    onChange={handleNoteChange}
+                    fullWidth
+                    multiline
+                    minRows={2}
+                    label="Note"
+                    value={note}
+                />
             ) : note ? (
-                <div>
-                    <TextField
-                        disabled
-                        fullWidth
-                        multiline
-                        label="Note"
-                        value={note}
-                    />
-                </div>
+                <TextField
+                    disabled
+                    fullWidth
+                    multiline
+                    label="Note"
+                    value={note}
+                />
             ) : null}
             {!locked && (
-                <div>
-                    <Grid spacing={2} container>
-                        <ActionFields
-                            path={`${path}value.`}
-                            disabled={disabled || locked}
-                            isContent={isContent}
-                        />
-                    </Grid>
-                </div>
+                <Box sx={{ leftMargin: { s: 1, m: 2 } }}>
+                    <ActionFields
+                        path={`${path}value.`}
+                        disabled={disabled || locked}
+                        isContent={isContent}
+                    />
+                </Box>
             )}
-        </Box>
+        </Stack>
     )
 }
 

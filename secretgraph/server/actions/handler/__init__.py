@@ -1,4 +1,3 @@
-from ._shared import get_valid_fields  # noqa: F401
 from ._sideeffects import SideEffectsHandlers
 from ._update import UpdateHandlers
 from ._view import ViewHandlers

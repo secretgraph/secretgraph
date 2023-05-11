@@ -1,4 +1,3 @@
-import json
 from datetime import datetime as dt
 from datetime import timedelta as td
 
@@ -9,7 +8,6 @@ from strawberry_django_plus import relay
 from ....core import constants
 from ...models import Action, Cluster, Content
 from ._shared import (
-    get_valid_fields,
     only_owned_helper,
     get_forbidden_content_ids,
 )
@@ -183,7 +181,7 @@ class SideEffectsHandlers:
                         | Q(markForDestruction__gt=mintime),
                         id__in=action_dict["delete"][type_name],
                     ).update(markForDestruction=mintime)
-                elif type_name == "Component":
+                elif type_name == "Cluster":
                     Content.objects.filter(
                         Q(markForDestruction__isnull=True)
                         | Q(markForDestruction__gt=mintime),
@@ -195,10 +193,9 @@ class SideEffectsHandlers:
                         id__in=action_dict["delete"][type_name],
                     ).update(markForDestruction=mintime)
             for _id, updatevalues in action_dict["update"][type_name].items():
-                updatevalues.pop("id", None)
-                updatevalues.pop("cluster", None)
-                updatevalues.pop("references", None)
-                updatevalues.pop("referencedBy", None)
+                for k in list(updatevalues.keys()):
+                    if k not in constants.storedUpdateFields[type_name]:
+                        updatevalues.pop(k, None)
                 klass.objects.filter(id=_id).update(updatevalues)
         return None
 
@@ -250,23 +247,19 @@ class SideEffectsHandlers:
             "Action": set(result["delete"]["Action"]),
         }
 
-        for jsonob in action_dict.get("update") or []:
-            if isinstance(jsonob, str):
-                jsonob = json.loads(jsonob)
+        for jsonob in action_dict.get("update") or {}:
             newob = {}
             type_name, idpart = relay.from_base64(jsonob["id"])
-            for name, field_type in get_valid_fields(type_name):
+            for name, field_type in constants.storedUpdateFields[
+                type_name
+            ].items():
                 if name in jsonob:
                     if not isinstance(jsonob[name], field_type):
                         raise ValueError(
                             "Invalid field type (%s) for: %s"
                             % (type(jsonob[name]), name)
                         )
-                    if name == "flexid":
-                        # autogenerate new flexid
-                        newob[name] = None
-                    else:
-                        newob[name] = jsonob[name]
+                    newob[name] = jsonob[name]
             update_mapper[type_name][idpart] = newob
 
         for klass in [Cluster, Content, Action]:
@@ -279,7 +272,7 @@ class SideEffectsHandlers:
                     ("id", "id") if type_name == "Action" else ("flexid", "id")
                 ),
                 admin=admin,
-                scope="manage" if isinstance(klass, Action) else "update",
+                scope="update",
             ):
                 if _id in _del_sets[type_name]:
                     continue

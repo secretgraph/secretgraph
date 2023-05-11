@@ -141,6 +141,7 @@ module.exports = (env, options) => {
             ],
             fallback: {
                 buffer: false,
+                stream: false,
             },
             alias,
         },

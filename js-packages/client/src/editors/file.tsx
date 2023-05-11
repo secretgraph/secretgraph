@@ -36,7 +36,15 @@ import {
 } from '@secretgraph/misc/utils/operations'
 import { extractGroupKeys } from '@secretgraph/misc/utils/references'
 import * as DOMPurify from 'dompurify'
-import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
+import {
+    ErrorMessage,
+    FastField,
+    Field,
+    FieldArray,
+    FieldProps,
+    Form,
+    Formik,
+} from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
@@ -997,25 +1005,19 @@ function InnerFile({
                                                                 Clear
                                                             </Button>
                                                         </Stack>
-
-                                                        {formikFieldProps.meta
-                                                            .error && (
-                                                            <Typography
-                                                                color={
-                                                                    formikFieldProps
-                                                                        .meta
-                                                                        .touched
-                                                                        ? 'error'
-                                                                        : undefined
-                                                                }
-                                                            >
-                                                                {
-                                                                    formikFieldProps
-                                                                        .meta
-                                                                        .error
-                                                                }
-                                                            </Typography>
-                                                        )}
+                                                        <ErrorMessage
+                                                            name={
+                                                                formikFieldProps
+                                                                    .field.name
+                                                            }
+                                                            render={(
+                                                                error
+                                                            ) => (
+                                                                <Typography color="error">
+                                                                    {error}
+                                                                </Typography>
+                                                            )}
+                                                        ></ErrorMessage>
                                                     </>
                                                 )
                                             }}

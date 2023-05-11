@@ -76,19 +76,3 @@ def get_forbidden_content_ids(request):
         if action["action"] == "manage":
             s.update(action["exclude"].get("Content", []))
     return frozenset(s)
-
-
-@lru_cache()
-def get_valid_fields(klass):
-    if isinstance(klass, str):
-        from django.apps import apps
-
-        klass = apps.get_model("secretgraph", klass)
-    return {
-        name: klass.__annotations__[name]
-        for name in set(map(lambda x: x.name, klass._meta.get_fields()))
-        .difference(
-            ("id", "cluster", "cluster_id", "references", "referencedBy")
-        )
-        .union(klass.__annotations__.keys())
-    }

@@ -63,7 +63,12 @@ function SharePanel({ url }: { url: string }) {
                 >
                     <Link
                         href={url}
-                        style={{ wordBreak: 'break-all' }}
+                        style={{
+                            wordBreak: 'break-all',
+                            display: 'block',
+                            maxWidth: '100%',
+                            whiteSpace: 'normal',
+                        }}
                         onClick={(event: any) => {
                             if (navigator.clipboard) {
                                 navigator.clipboard.writeText(url)
@@ -79,6 +84,7 @@ function SharePanel({ url }: { url: string }) {
                     </Link>
                 </span>
             </summary>
+            <Box sx={{ height: (theme) => theme.spacing(2) }} />
             <QRCodeSVG
                 value={url}
                 width="100%"
@@ -204,6 +210,7 @@ function NewPanel({
     return (
         <TabPanel {...props}>
             <SharePanel url={url} />
+            <Box sx={{ height: (theme) => theme.spacing(3) }} />
             <Formik
                 initialValues={{
                     actions,

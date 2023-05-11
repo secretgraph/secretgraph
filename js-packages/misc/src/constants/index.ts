@@ -12,22 +12,73 @@ export const validNotLoggedInActions = new Set<MainContextInterface['action']>(
     ['login', 'register', 'help']
 )
 
-export const validFields: {[key: string]: Set<string>} = {
-    "authContent": new Set(),
-    "authCluster": new Set(),
-    "viewContent": new Set(["fetch", "allowPeek"]),
-    "viewCluster": new Set(["allowPeek"]),
-    "deleteContent": new Set(),
-    "deleteCluster": new Set(),
+export const validFields: { [type: string]: { [key: string]: any } } = {
+    authContent: {},
+    authCluster: {},
+    viewContent: { fetch: false, allowPeek: false },
+    viewCluster: { allowPeek: false },
+    deleteContent: {},
+    deleteCluster: {},
+    updateContent: {
+        injectedTags: [],
+        injectedReferences: [],
+        allowedTags: [],
+        allowedStates: [],
+        allowedActions: [],
+    },
+    updateCluster: {
+        injectedTags: [],
+        injectedReferences: [],
+        allowedTags: [],
+        allowedStates: [],
+        allowedActions: [],
+    },
+    injectContent: {
+        injectedTags: [],
+        injectedReferences: [],
+        allowedTags: [],
+        allowedStates: [],
+        allowedActions: [],
+    },
+    injectCluster: {
+        injectedTags: [],
+        injectedReferences: [],
+        allowedTags: [],
+        allowedStates: [],
+        allowedActions: [],
+    },
+    pushContent: {
+        updateable: false,
+        injectedTags: [],
+        injectedReferences: [],
+        allowedTags: [],
+        allowedStates: [],
+        allowedActions: [],
+    },
+    manage: {
+        'exclude.Cluster': [],
+        'exclude.Content': [],
+        'exclude.Action': [],
+    },
+    storedUpdate: {
+        'delete.Cluster': [],
+        'delete.Content': [],
+        'delete.Action': [],
+        // TODO update
+    },
 }
-for(const key in ["viewCluster", "deleteCluster"]){
-    validFields[key].add("includeTags")
-    validFields[key].add("excludeTags")
-    validFields[key].add("includeTypes")
-    validFields[key].add("excludeTypes")
-    validFields[key].add("states")
+for (const key of [
+    'viewCluster',
+    'deleteCluster',
+    'updateCluster',
+    'injectCluster',
+]) {
+    validFields[key]['includeTags'] = []
+    validFields[key]['excludeTags'] = []
+    validFields[key]['includeTypes'] = []
+    validFields[key]['excludeTypes'] = []
+    validFields[key]['states'] = []
 }
-
 
 export const public_states = new Set(['required', 'trusted', 'public'])
 export const trusted_states = new Set(['required', 'trusted'])

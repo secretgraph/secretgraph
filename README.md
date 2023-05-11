@@ -350,13 +350,16 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
         -   excludeTypes: like param, exclude contents with type, default: \[\]
 -   update (Content, Cluster) affects (Content, Cluster) (has default view and peek permission). For updating contents:
     -   injectedTags: force inject tags, use freeze tag to freeze after viewing
+    -   injectedReferences: force inject references
     -   allowedTags: allow only tags specified here (if set)
+    -   allowedStates: allow only states specified here (if set)
     -   allowedActions: allow only actions specified here (if set) (Default: [])
     -   for Cluster:
         -   includeTags: like param, include only contents with tag
         -   excludeTags: like param, exclude contents with tag,
 -   create (Cluster, partly implemented). For creating contents:
     -   injectedTags: force inject tags
+    -   injectedReferences: force inject references
     -   allowedTags: allow only tags specified here (if set)
     -   allowedStates: allow only states specified here (if set)
     -   allowedActions: allow only actions specified here (if set) (Default: [])
@@ -390,9 +393,9 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
         -   Content: ids of contents which are deleted
         -   Action: keyHashes of actions which are deleted
     -   update:
-        -   Cluster: map id updated fields
-        -   Content: map id updated fields
-        -   Action: map keyHash updated fields
+        -   Cluster: map id updated fields (only some)
+        -   Content: map id updated fields (only some)
+        -   Action: map keyHash updated fields (only some)
 
 ## Operations (Mutations)
 
@@ -602,9 +605,7 @@ The item get parameter is mandatory.
 
 # TODO
 
--   update Documentation and actions
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
--   ClusterEditor: show somehow the id of a named cluster
 -   complete share
     -   add option to save new token in config (not auth)
 -   shareurl: cluster url ? token = ...

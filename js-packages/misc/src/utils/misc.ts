@@ -70,6 +70,7 @@ export function mergeDeleteObjectsReplace(
         } else {
             return objHandler(a, b)
         }
+        return undefined
     })
 }
 
