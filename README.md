@@ -461,7 +461,35 @@ Some special behavior
 
 -   document contents are children of the @system cluster
 -   cluster attribute is always null if retrieved via graphql
--   `sg_manage_document` addresses the documents via name
+-   `sg_manage_document` addresses the documents via name instead of id
+
+### Create a document
+
+```sh
+# with file name
+poetry run ./manage.py sg_manage_document <pathotodoc>
+
+# with custom name
+poetry run ./manage.py sg_manage_document --name <name> <pathotodoc>
+
+
+# with description
+poetry run ./manage.py sg_manage_document --description <description> <pathotodoc>
+```
+
+### Create a document in docker
+
+Note: name is required here
+
+```sh
+# docker
+ cat <pathotodoc> | docker exec <secretgraph container name> ./manage.py sg_manage_document --name <name> -
+
+
+# docker compose and description
+ cat <path to doc> | docker-compose exec -T secretgraph ./manage.py sg_manage_document --name <name> --description <foo> -
+
+```
 
 # Internal
 
