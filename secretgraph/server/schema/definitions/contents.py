@@ -18,31 +18,12 @@ from ...models import (
     ContentReference,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
+from ..filters import ContentFilter
 from ._shared import ActionMixin
 from .references import ContentReferenceNode, ContentReferenceFilter
 
 if TYPE_CHECKING:
     from .clusters import ClusterNode
-
-
-@gql.input
-class ContentFilter:
-    states: Optional[list[str]] = None
-    includeTypes: Optional[list[str]] = None
-    excludeTypes: Optional[list[str]] = None
-    includeTags: Optional[list[str]] = None
-    excludeTags: Optional[list[str]] = gql.django.field(
-        default=None,
-        description="Use id=xy for excluding contents with ids",
-    )
-    contentHashes: Optional[list[str]] = None
-    clusters: Optional[list[gql.ID]] = None
-    hidden: UseCriteria = UseCriteria.FALSE
-    featured: UseCriteria = UseCriteria.IGNORE
-    deleted: UseCriteria = UseCriteria.FALSE
-    public: UseCriteriaPublic = UseCriteriaPublic.IGNORE
-    minUpdated: Optional[datetime] = None
-    maxUpdated: Optional[datetime] = None
 
 
 # for actions view and fetch
@@ -247,7 +228,7 @@ class ContentNode(ActionMixin, relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> list[Content]:
+    def get_queryset(cls, queryset, info, **kwargs) -> list[Content]:
         results = get_cached_result(info.context["request"])
 
         return queryset.filter(
@@ -257,7 +238,12 @@ class ContentNode(ActionMixin, relay.Node):
     # TODO: merge with get_queryset and update filters
     @classmethod
     def get_queryset_intern(
-        cls, queryset, info: Info, filters: ContentFilter
+        cls,
+        queryset,
+        info: Info,
+        filters: ContentFilter,
+        fixedCluster: gql.Private[bool] = False,
+        allowDeleted: gql.Private[bool] = False,
     ) -> list[Content]:
         results = get_cached_result(
             info.context["request"],
@@ -267,6 +253,7 @@ class ContentNode(ActionMixin, relay.Node):
             deleted != UseCriteria.FALSE
             and "manage_deletion"
             not in get_cached_net_properties(info.context["request"])
+            and not allowDeleted
         ):
             del_result = get_cached_result(
                 info.context["request"], scope="delete"
@@ -283,11 +270,11 @@ class ContentNode(ActionMixin, relay.Node):
             hidden = UseCriteria.FALSE
         if hidden != UseCriteria.IGNORE:
             queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
-        if filters.featured != UseCriteria.IGNORE:
+        if not fixedCluster and filters.featured != UseCriteria.IGNORE:
             queryset = queryset.filter(
                 cluster__featured=filters.featured == UseCriteria.TRUE
             )
-        if filters.clusters is not None:
+        if not fixedCluster and filters.clusters is not None:
             queryset = queryset.filter(
                 cluster_id__in=Subquery(
                     fetch_by_id(
@@ -331,7 +318,7 @@ class ContentNode(ActionMixin, relay.Node):
         return fetch_contents(
             queryset,
             states=filters.states,
-            clustersAreRestricted=filters.clusters is not None,
+            clustersAreRestricted=fixedCluster or filters.clusters is not None,
             includeTypes=filters.includeTypes,
             excludeTypes=filters.excludeTypes,
             includeTags=filters.includeTags,

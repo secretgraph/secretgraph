@@ -31,7 +31,7 @@ type Cluster implements Node {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-    filters: ContentFilterSimple!
+    filters: ContentFilterCluster!
   ): ContentConnection!
   deleted: DateTime
   description: String
@@ -204,25 +204,29 @@ input ContentFilter {
   """Use id=xy for excluding contents with ids"""
   excludeTags: [String!] = null
   contentHashes: [String!] = null
-  clusters: [ID!] = null
-  hidden: UseCriteria! = FALSE
-  featured: UseCriteria! = IGNORE
-  deleted: UseCriteria! = FALSE
-  public: UseCriteriaPublic! = IGNORE
   minUpdated: DateTime = null
   maxUpdated: DateTime = null
+  deleted: UseCriteria! = FALSE
+  hidden: UseCriteria! = FALSE
+  public: UseCriteriaPublic! = IGNORE
+  clusters: [ID!] = null
+  featured: UseCriteria! = IGNORE
 }
 
-input ContentFilterSimple {
+input ContentFilterCluster {
   states: [String!] = null
   includeTypes: [String!] = null
   excludeTypes: [String!] = null
   includeTags: [String!] = null
+
+  """Use id=xy for excluding contents with ids"""
   excludeTags: [String!] = null
   contentHashes: [String!] = null
   minUpdated: DateTime = null
   maxUpdated: DateTime = null
   deleted: UseCriteria = null
+  hidden: UseCriteria! = FALSE
+  public: UseCriteriaPublic! = IGNORE
 }
 
 input ContentInput {
@@ -373,7 +377,6 @@ type MarkMutation {
   updated: [GlobalID!]!
 }
 
-"""An enumeration."""
 enum MetadataOperations {
   APPEND
   REMOVE

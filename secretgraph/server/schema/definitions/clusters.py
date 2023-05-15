@@ -3,64 +3,22 @@ from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
 from strawberry_django_plus import relay, gql
-from django.db.models import Subquery, Q, QuerySet, Value
+from django.db.models import Subquery, Q, Value
 
 from ...utils.auth import (
     fetch_by_id,
     get_cached_result,
     get_cached_net_properties,
 )
-from ...actions.fetch import fetch_clusters, fetch_contents
+from ...actions.fetch import fetch_clusters
 from ...models import (
     Cluster,
 )
 from ..shared import UseCriteria, UseCriteriaPublic
+from ..filters import ClusterFilter, ContentFilterCluster
 from ._shared import ActionMixin
 
 from .contents import ContentNode
-
-
-@gql.input
-class ContentFilterSimple:
-    states: Optional[List[str]] = None
-    includeTypes: Optional[List[str]] = None
-    excludeTypes: Optional[List[str]] = None
-    includeTags: Optional[List[str]] = None
-    excludeTags: Optional[List[str]] = None
-    contentHashes: Optional[List[str]] = None
-    minUpdated: Optional[datetime] = None
-    maxUpdated: Optional[datetime] = None
-    deleted: Optional[UseCriteria] = None
-
-
-@gql.input
-class ClusterFilter:
-    search: Optional[str] = gql.field(
-        default=None, description="Search description, id and name"
-    )
-    states: Optional[List[str]] = None
-    includeTypes: Optional[List[str]] = None
-    excludeTypes: Optional[List[str]] = None
-    includeTags: Optional[List[str]] = None
-    excludeTags: Optional[List[str]] = gql.field(
-        default=None,
-        description="Use id=xy for excluding clusters with content ids",
-    )
-    ids: Optional[List[gql.ID]] = gql.field(
-        default=None,
-        description="Filter clusters with ids or global name",
-    )
-    excludeIds: Optional[List[gql.ID]] = gql.field(
-        default=None,
-        description="Use for excluding clusters with ids or global names",
-    )
-    contentHashes: Optional[List[str]] = None
-    featured: UseCriteria = UseCriteria.IGNORE
-    primary: UseCriteria = UseCriteria.IGNORE
-    deleted: UseCriteria = UseCriteria.FALSE
-    public: UseCriteriaPublic = UseCriteriaPublic.IGNORE
-    minUpdated: Optional[datetime] = None
-    maxUpdated: Optional[datetime] = None
 
 
 @gql.django.type(Cluster, name="Cluster")
@@ -155,43 +113,29 @@ class ClusterNode(ActionMixin, relay.Node):
 
     @gql.django.connection()
     def contents(
-        self, info: Info, filters: ContentFilterSimple
+        self, info: Info, filters: ContentFilterCluster
     ) -> list[ContentNode]:
-        result = get_cached_result(info.context["request"])["Content"]
-        queryset: QuerySet = self.contents.filter(hidden=False)
-        deleted = filters.deleted
+        queryset = get_cached_result(info.context["request"])["Content"][
+            "objects"
+        ].filter(cluster=self)
+        allowDeleted = False
+        if not filters.deleted:
+            if self.markForDestruction:
+                filters.deleted = UseCriteria.IGNORE
+                allowDeleted = True
+            else:
+                filters.deleted = UseCriteria.FALSE
         if self.limited:
             queryset = queryset.annotate(limited=Value(True))
-            deleted = UseCriteria.FALSE
-        if not deleted:
-            if self.markForDestruction:
-                deleted = UseCriteria.IGNORE
-            else:
-                deleted = UseCriteria.TRUE
-
-        if (
-            deleted != UseCriteria.FALSE
-            and "manage_deletion"
-            not in get_cached_net_properties(info.context["request"])
-        ):
-            del_result = get_cached_result(
-                info.context["request"], scope="delete"
-            )["Content"]
-            queryset = queryset.filter(
-                id__in=Subquery(del_result["objects"].values("id"))
-            )
-
-        return fetch_contents(
-            queryset.filter(id__in=Subquery(result["objects"].values("id"))),
-            clustersAreRestricted=True,
-            states=filters.states,
-            includeTypes=["PublicKey"]
-            if self.limited
-            else filters.includeTypes,
-            excludeTypes=filters.excludeTypes,
-            includeTags=filters.includeTags,
-            excludeTags=filters.excludeTags,
-            contentHashes=filters.contentHashes,
+            filters.hidden = UseCriteria.FALSE
+            if not allowDeleted:
+                filters.deleted = UseCriteria.FALSE
+        return ContentNode.get_queryset_intern(
+            queryset,
+            info,
+            filters,
+            fixedCluster=True,
+            allowDeleted=allowDeleted,
         )
 
     @gql.django.django_resolver
@@ -259,7 +203,7 @@ class ClusterNode(ActionMixin, relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> list[Cluster]:
+    def get_queryset(cls, queryset, info, **kwargs) -> list[Cluster]:
         result = get_cached_result(info.context["request"])["Cluster"]
         return queryset.filter(id__in=Subquery(result["objects"].values("id")))
 

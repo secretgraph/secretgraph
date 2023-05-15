@@ -238,7 +238,8 @@ Seen and trusted keys should be kept client side. Every key and content has four
 
 With keys argument a keypair can be created or a privatekey associated with a publickey
 Specified references are distributed between privatekey and publickey.
-key refs are assigned to privatekey, the rest to the public key
+key refs are assigned to privatekey, the rest to the public key-
+The current maximum are 2 key-pairs.
 
 ## Special references
 
@@ -447,8 +448,14 @@ Currently there is no way to move items from one config to another
 
 ## Documents
 
-Global documents (actually contents) can be created via `sg_manage_document` and specify a file and optionally name and description
-They are for imprints and are presented in the proxy component as footer links.
+Global documents (actually contents) can be created via `sg_manage_document` and specify a file and optionally name and description.
+They are for imprints and are presented in the proxy component as footer links of the proxy component (web view).
+
+For extracting documents from graphql use the filter paremeters `clusters=["@system"], includeTypes=["File", "Text"]`.
+
+What are they for:
+
+it is actually for imprints and other legally required informations. Therefore they are available from normal web.
 
 Some special behavior
 
@@ -609,8 +616,6 @@ The item get parameter is mandatory.
 -   complete share
     -   add option to save new token in config (not auth)
 -   shareurl: cluster url ? token = ...
--   ActionConfigurator must prime the missing field values before using them in fields
-    -   maybe add prime method for initialValues
 -   improve documention of documents (imprint), show usage
 -   key callbacks: url:contentid:token
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")
