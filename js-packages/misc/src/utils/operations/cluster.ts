@@ -44,7 +44,7 @@ export async function createCluster(options: {
         privateTags.push(
             await encryptRSAOEAP({
                 key: options.privateKey,
-                data: options.privateKeyKey,
+                data: options.privateKeyKey.slice(-32),
                 hashAlgorithm: options.hashAlgorithm,
             })
                 .then((data) => serializeToBase64(data.data))

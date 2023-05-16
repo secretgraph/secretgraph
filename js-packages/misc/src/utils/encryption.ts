@@ -163,8 +163,15 @@ export async function unserializeToCryptoKey(
         throw new EmptyKeyError('Empty key')
     }
     if (params.name.startsWith('AES-')) {
-        if (!Constants.mapEncryptionAlgorithms[params.name]) {
+        const entry = Constants.mapEncryptionAlgorithms[params.name]
+        if (!entry) {
             throw Error('Algorithm not supported: ' + params.name)
+        }
+        if (_data.byteLength > 32) {
+            console.warn(
+                'Invalid key length: ' + _data.byteLength + ' fixing...'
+            )
+            _data = _data.slice(-32)
         }
         // symmetric
         _result = await crypto.subtle.importKey(
@@ -172,7 +179,7 @@ export async function unserializeToCryptoKey(
             _data,
             params,
             true,
-            Constants.mapEncryptionAlgorithms[params.name].usages
+            entry.usages
         )
     } else {
         if (
