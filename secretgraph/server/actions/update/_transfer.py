@@ -38,7 +38,7 @@ def _create_info_content(request, content: Content, signatures, admin=False):
     else:
         contents = get_cached_result(request, ensureInitialized=True)[
             "Content"
-        ]["objects"]
+        ]["objects_with_public"]
     for key in contents.filter(
         type="PublicKey",
         contentHash_in=map(lambda x: f"Key:{x}", signatures.keys()),

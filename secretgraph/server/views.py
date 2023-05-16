@@ -82,17 +82,19 @@ class ContentView(View):
         # raw interface
         if kwargs.get("id"):
             content = get_object_or_404(
-                self.result["objects"], downloadId=kwargs["id"]
+                self.result["objects_with_public"], downloadId=kwargs["id"]
             )
         else:
-            content = get_object_or_404(self.result["objects_ignore_public"])
+            content = get_object_or_404(self.result["objects_without_public"])
         response = self.handle_raw_singlecontent(
             request, content, *args, **kwargs
         )
         return response
 
     def handle_decrypt(self, request: HttpRequest, id, *args, **kwargs):
-        content = get_object_or_404(self.result["objects"], downloadId=id)
+        content = get_object_or_404(
+            self.result["objects_with_public"], downloadId=id
+        )
         try:
             response = self.handle_decrypt_inner(
                 request, content, *args, **kwargs
@@ -131,7 +133,9 @@ class ContentView(View):
 
         # shallow copy initialization of result
         result = self.result.copy()
-        result["objects"] = result["objects"].filter(id=content.id)
+        result["objects_with_public"] = result["objects_with_public"].filter(
+            id=content.id
+        )
 
         decryptset = set(
             request.headers.get("X-Key", "").replace(" ", "").split(",")
@@ -186,7 +190,7 @@ class ContentView(View):
                 group__in=["key", "signature"]
             )
             # Public key in result set
-            q = Q(target__in=self.result["objects"])
+            q = Q(target__in=self.result["objects_with_public"])
             for k in keyhash_set:
                 q |= Q(target__tags__tag=f"key_hash={k}")
             # signatures first, should be maximal 20, so on first page
@@ -195,7 +199,7 @@ class ContentView(View):
                 .annotate(
                     privkey_downloadId=Subquery(
                         # private keys in result set, empty if no permission
-                        self.result["objects"]
+                        self.result["objects_with_public"]
                         .filter(
                             type="PrivateKey",
                             references__target__referencedBy=OuterRef("pk"),

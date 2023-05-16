@@ -139,7 +139,7 @@ class SideEffectsHandlers:
                 request=request,
                 fields=("flexid", "id"),
                 admin=admin,
-                scope="view",
+                scope="link",
             ):
                 deleteRecursive = references[_flexid].get(
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value

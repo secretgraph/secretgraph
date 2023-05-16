@@ -50,12 +50,12 @@ class ContentReferenceNode(relay.Node):
             source, target, group = id.node_id.split("|", 2)
             return queryset.get(
                 source__in=fetch_contents(
-                    result["objects"],
+                    result["objects_with_public"],
                     clustersAreRestricted=True,
                     ids=source,
                 ),
                 target__in=fetch_contents(
-                    result["objects"],
+                    result["objects_with_public"],
                     clustersAreRestricted=True,
                     ids=target,
                 ),
@@ -81,7 +81,7 @@ class ContentReferenceNode(relay.Node):
     ) -> Annotated["ContentNode", gql.lazy(".contents")]:
         result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
-            result["objects"].filter(references=self),
+            result["objects_with_public"].filter(references=self),
             clustersAreRestricted=True,
         ).first()
 
@@ -91,6 +91,6 @@ class ContentReferenceNode(relay.Node):
     ) -> Annotated["ContentNode", gql.lazy(".contents")]:
         result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
-            result["objects"].filter(referencedBy=self),
+            result["objects_with_public"].filter(referencedBy=self),
             clustersAreRestricted=True,
         ).first()

@@ -52,10 +52,10 @@ def manage_actions_fn(
         allowed_and_existing_actions = get_cached_result(
             request,
             scope="manage",
-            name="secretgraphCleanResult",
+            cacheName="secretgraphCleanResult",
             authset=authset,
             stub="none",
-        )["Action"]["objects"]
+        )["Action"]["objects_without_public"]
     elif admin:
         # we don't need to filter as admin
         allowed_and_existing_actions = get_cached_result(
@@ -67,10 +67,10 @@ def manage_actions_fn(
                 authset=authset,
             ),
             scope="manage",
-            name="secretgraphCleanResult",
+            cacheName="secretgraphCleanResult",
             authset=authset,
             stub="all",
-        )["Action"]["objects"]
+        )["Action"]["objects_without_public"]
     else:
         # normal code path for existing contents/cluster
         allowed_and_existing_actions = get_cached_result(
@@ -82,9 +82,9 @@ def manage_actions_fn(
                 authset=authset,
             ),
             scope="manage",
-            name="secretgraphCleanResult",
+            cacheName="secretgraphCleanResult",
             authset=authset,
-        )["Action"]["objects"]
+        )["Action"]["objects_without_public"]
     for action in actionlist:
         # if already decoded by e.g. graphql
         if action.value == "delete":

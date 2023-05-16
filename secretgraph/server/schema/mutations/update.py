@@ -74,10 +74,11 @@ def mutate_cluster(
             info.context["request"],
             str(id),
             Cluster,
-            "update",
+            scope="update",
             authset=authorization,
+            cacheName=None,
         )["Cluster"]
-        cluster_obj = result["objects"].first()
+        cluster_obj = result["objects_without_public"].first()
         if not cluster_obj:
             raise ValueError("No cluster found")
         _cluster_res = update_cluster_fn(
@@ -129,10 +130,11 @@ def mutate_content(
             info.context["request"],
             id,
             Content,
-            "update",
+            scope="update",
             authset=authorization,
+            cacheName=None,
         )["Content"]
-        content_obj = result["objects"].get()
+        content_obj = result["objects_without_public"].get()
         if content.hidden is not None:
             if (
                 "allow_hidden"
@@ -184,10 +186,11 @@ def mutate_content(
             info.context["request"],
             content.cluster,
             Cluster,
-            "create",
+            scope="create",
             authset=authorization,
+            cacheName=None,
         )["Cluster"]
-        cluster_obj = result["objects"].first()
+        cluster_obj = result["objects_without_public"].first()
         if not cluster_obj:
             raise ValueError("Cluster for Content not found")
 

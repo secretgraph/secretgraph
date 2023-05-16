@@ -100,6 +100,7 @@ class UpdateHandlers:
         if accesslevel > ownaccesslevel or scope not in {
             "update",
             "view",
+            "link",
             "peek",
         }:
             return None
@@ -342,7 +343,7 @@ class UpdateHandlers:
                 request,
                 fields=("flexid", "id"),
                 admin=admin,
-                scope="view",
+                scope="link",
             ):
                 deleteRecursive = references[_flexid].get(
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
@@ -400,7 +401,7 @@ class UpdateHandlers:
                 "updateable": bool(action_dict.get("updateable", True)),
             }
         if (
-            scope == "view"
+            scope in {"view", "link"}
             and accesslevel < 1
             and issubclass(sender, Content)
             and action_dict.get("id")
@@ -490,24 +491,26 @@ class UpdateHandlers:
         res_action = get_cached_result(
             request,
             scope="manage",
-            name="secretgraphCleanResult",
+            cacheName="secretgraphCleanResult",
             ensureInitialized=True,
         )["Action"]
         for klass in [Content, Action]:
             type_name = klass.__name__
             if isinstance(klass, Action):
-                objs = res_action["objects"].filter(
+                objs = res_action["objects_without_public"].filter(
                     keyHash__in=result["exclude"][type_name]
                 )
             else:
                 r = get_cached_result(
                     request,
                     scope="manage",
-                    name="secretgraphCleanResult",
+                    cacheName="secretgraphCleanResult",
                     ensureInitialized=True,
                 )[type_name]
                 objs = fetch_by_id(
-                    r["objects"], result["exclude"][type_name], limit_ids=None
+                    r["objects_without_public"],
+                    result["exclude"][type_name],
+                    limit_ids=None,
                 )
 
             s = set(objs.values_list("id", flat=True))

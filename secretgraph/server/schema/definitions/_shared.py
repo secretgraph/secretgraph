@@ -73,7 +73,7 @@ class ActionMixin:
             # this is ensured by having manage in action set
             if isinstance(self, Content):
                 async for action in (
-                    results["Action"]["objects"]
+                    results["Action"]["objects_without_public"]
                     .filter(
                         Q(contentAction__isnull=True)
                         | Q(contentAction__content_id=self.id),
@@ -88,7 +88,7 @@ class ActionMixin:
                     )
             else:
                 async for action in (
-                    results["Action"]["objects"]
+                    results["Action"]["objects_without_public"]
                     .filter(contentAction__isnull=True, cluster_id=self.id)
                     .exclude(id__in=seen_ids)
                 ):

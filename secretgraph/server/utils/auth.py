@@ -46,7 +46,7 @@ class LazyViewResult(object):
         self.authset = authset
         self.fn = fn
         for r in viewResults:
-            self._result_dict[r["objects"].model.__name__] = r
+            self._result_dict[r["objects_with_public"].model.__name__] = r
         if self.authset is None:
             self.authset = set(
                 getattr(request, "headers", {})
@@ -99,8 +99,8 @@ def _parse_token(token: str):
         action_key = base64.b64decode(action_key)
     finally:
         if (
-            not isinstance(action_key, bytes) or
-            len(action_key) not in _valid_lengths
+            not isinstance(action_key, bytes)
+            or len(action_key) not in _valid_lengths
         ):
             return None, None, None
     return (
@@ -163,8 +163,8 @@ def stub_retrieve_allowed_objects(
         "action_info_clusters": {},
         "action_info_contents": {},
         "accesslevel": 0,
-        "objects": query,
-        "objects_ignore_public": query,
+        "objects_with_public": query,
+        "objects_without_public": query,
     }
 
 
@@ -261,7 +261,8 @@ def retrieve_allowed_objects(
                 continue
             if decrypted is False:
                 returnval["rejecting_action"] = (action, action_dict)
-                returnval["objects"] = query.none()
+                returnval["objects_with_public"] = query.none()
+                returnval["objects_without_public"] = query.none()
                 return returnval
             if hasattr(action, "contentAction"):
                 action_info_dict_ref = returnval[
@@ -364,11 +365,13 @@ def retrieve_allowed_objects(
                 *all_query.values_list("id", flat=True),
             }
         )
-        id_subquery = models.Subquery(
-            query.filter(
-                _q | models.Q(globalNameRegisteredAt__isnull=False)
-            ).values("id")
-        )
+        # in view, we can see @system contents
+        if scope == "view":
+            _q_public = _q | models.Q(name__startswith="@")
+        else:
+            _q_public = _q | models.Q(globalNameRegisteredAt__isnull=False)
+
+        id_subquery = models.Subquery(query.filter(_q_public).values("id"))
         id_subquery_without_public = models.Subquery(
             query.filter(_q).values("id")
         )
@@ -379,11 +382,15 @@ def retrieve_allowed_objects(
                 cluster_id__in=list(returnval["action_info_clusters"].keys())
             )
         )
+
+        _q_public = models.Q(state__in=constants.public_states)
+        if scope != "view":
+            _q_public &= ~models.Q(cluster__name="@system")
+
         id_subquery = models.Subquery(
-            query.filter(
-                models.Q(state__in=constants.public_states) | _q
-            ).values("id")
+            query.filter(_q_public | _q).values("id")
         )
+
         id_subquery_without_public = models.Subquery(
             query.filter(_q).values("id")
         )
@@ -391,8 +398,8 @@ def retrieve_allowed_objects(
         assert issubclass(query.model, Action), "invalid type %r" % query.model
         id_subquery = models.Subquery(all_query.values("id"))
         id_subquery_without_public = id_subquery
-    returnval["objects"] = query.filter(id__in=id_subquery)
-    returnval["objects_ignore_public"] = query.filter(
+    returnval["objects_with_public"] = query.filter(id__in=id_subquery)
+    returnval["objects_without_public"] = query.filter(
         id__in=id_subquery_without_public
     )
     return returnval
@@ -442,7 +449,8 @@ def ids_to_results(
     request,
     ids,
     klasses,
-    scope="view",
+    scope,
+    cacheName,
     authset=None,
     initialize_missing=True,
 ):
@@ -484,12 +492,20 @@ def ids_to_results(
         flexids = flexid_d.get(type_name, set())
         if not initialize_missing and not flexids:
             pass
-        elif scope == "view" and type_name in _cached_classes:
-            results[type_name] = get_cached_result(request, authset=authset)[
-                type_name
-            ].copy()
-            results[type_name]["objects"] = fetch_by_id(
-                results[type_name]["objects"],
+        elif cacheName:
+            results[type_name] = get_cached_result(
+                request, authset=authset, cacheName=cacheName
+            )[type_name].copy()
+            results[type_name]["objects_with_public"] = fetch_by_id(
+                results[type_name]["objects_with_public"],
+                flexids,
+                check_long=False,
+                check_short_id=True,
+                check_short_name=True,
+                limit_ids=None,
+            )
+            results[type_name]["objects_without_public"] = fetch_by_id(
+                results[type_name]["objects_without_public"],
                 flexids,
                 check_long=False,
                 check_short_id=True,
@@ -536,16 +552,16 @@ def get_cached_result(
     *viewResults,
     authset=None,
     scope="view",
-    name="secretgraphResult",
+    cacheName="secretgraphResult",
     ensureInitialized=False,
     stub: Optional[str] = None,
 ) -> LazyViewResult:
-    if not getattr(request, name, None):
+    if not getattr(request, cacheName, None):
         if ensureInitialized:
             raise AttributeError("cached query results does not exist")
         setattr(
             request,
-            name,
+            cacheName,
             LazyViewResult(
                 partial(
                     stub_retrieve_allowed_objects, scope=scope, query_call=stub
@@ -557,7 +573,7 @@ def get_cached_result(
                 authset=authset,
             ),
         )
-    return getattr(request, name)
+    return getattr(request, cacheName)
 
 
 def get_cached_net_properties(
@@ -574,14 +590,14 @@ def get_cached_net_properties(
             # initialize cached results and retrieve authset
             authset = get_cached_result(
                 request,
-                name=result_name,
+                cacheName=result_name,
             )["authset"]
         query = retrieve_allowed_objects(
             request,
             Cluster.objects.all(),
             scope="manage",
             authset=authset,
-        )["objects"]
+        )["objects_without_public"]
         net_groups = NetGroup.objects.filter(
             get_net_properties_q(request, query)
         )

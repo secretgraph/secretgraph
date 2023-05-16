@@ -256,7 +256,7 @@ def iter_decrypt_contents(
     if decryptset is None:
         raise Exception("decryptset is missing")
     # copy query
-    content_query = (queryset or result["objects"]).all()
+    content_query = (queryset or result["objects_with_public"]).all()
     content_map, transfer_map = create_key_maps(content_query, decryptset)
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(

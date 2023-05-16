@@ -276,9 +276,9 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if not getattr(request.user, "is_superuser", False):
             qs = qs.filter(
                 id__in=Subquery(
-                    get_cached_result(request)["Cluster"]["objects"].values(
-                        "id"
-                    )
+                    get_cached_result(request)["Cluster"][
+                        "objects_with_public"
+                    ].values("id")
                 )
             )
             if "manage_deletion" not in get_cached_net_properties(request):
@@ -367,9 +367,9 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if not getattr(request.user, "is_superuser", False):
             qs = qs.filter(
                 id__in=Subquery(
-                    get_cached_result(request)["Content"]["objects"].values(
-                        "id"
-                    )
+                    get_cached_result(request)["Content"][
+                        "objects_with_public"
+                    ].values("id")
                 )
             )
 

@@ -123,7 +123,9 @@ class ContentNode(ActionMixin, relay.Node):
         result = get_cached_result(info.context["request"])["Content"]
         return self.signatures(
             includeAlgorithms,
-            ContentReference.objects.filter(target__in=result["objects"]),
+            ContentReference.objects.filter(
+                target__in=result["objects_with_public"]
+            ),
         )
 
     @gql.django.field()
@@ -149,9 +151,9 @@ class ContentNode(ActionMixin, relay.Node):
             info.context["request"], ensureInitialized=True
         )
         if self.state not in public_states:
-            query = results["Cluster"]["objects_ignore_public"]
+            query = results["Cluster"]["objects_without_public"]
         else:
-            query = results["Cluster"]["objects"]
+            query = results["Cluster"]["objects_with_public"]
         cluster_visible = query.filter(id=self.cluster_id).exists()
         if not cluster_visible:
             # set cluster to limited (first level)
@@ -170,7 +172,7 @@ class ContentNode(ActionMixin, relay.Node):
         ):
             return ContentReference.objects.none()
         result = get_cached_result(info.context["request"])["Content"]
-        query = result["objects"].exclude(hidden=True)
+        query = result["objects_with_public"].exclude(hidden=True)
         filterob = {}
 
         if filters.groups is not None:
@@ -202,7 +204,7 @@ class ContentNode(ActionMixin, relay.Node):
         ):
             return ContentReference.objects.none()
         result = get_cached_result(info.context["request"])["Content"]
-        query = result["objects"].exclude(hidden=True)
+        query = result["objects_with_public"].exclude(hidden=True)
         filterob = {}
         if filters.groups is not None:
             filterob["group__in"] = filters.groups
@@ -232,7 +234,9 @@ class ContentNode(ActionMixin, relay.Node):
         results = get_cached_result(info.context["request"])
 
         return queryset.filter(
-            id__in=Subquery(results["Content"]["objects"].values("id"))
+            id__in=Subquery(
+                results["Content"]["objects_with_public"].values("id")
+            )
         )
 
     # TODO: merge with get_queryset and update filters
@@ -248,22 +252,13 @@ class ContentNode(ActionMixin, relay.Node):
         results = get_cached_result(
             info.context["request"],
         )
-        deleted = filters.deleted
-        if (
-            deleted != UseCriteria.FALSE
-            and "manage_deletion"
-            not in get_cached_net_properties(info.context["request"])
-            and not allowDeleted
-        ):
-            del_result = get_cached_result(
-                info.context["request"], scope="delete"
-            )["Content"]
-            queryset = queryset.filter(
-                id__in=Subquery(del_result["objects"].values("id"))
-            )
 
-        if "allow_hidden" in get_cached_net_properties(
-            info.context["request"],
+        if (
+            filters.hidden != UseCriteria.FALSE
+            and "allow_hidden"
+            in get_cached_net_properties(
+                info.context["request"],
+            )
         ):
             hidden = filters.hidden
         else:
@@ -278,7 +273,7 @@ class ContentNode(ActionMixin, relay.Node):
             queryset = queryset.filter(
                 cluster_id__in=Subquery(
                     fetch_by_id(
-                        results["Cluster"]["objects"],
+                        results["Cluster"]["objects_with_public"],
                         filters.clusters,
                         limit_ids=None,
                         check_short_id=True,
@@ -299,18 +294,34 @@ class ContentNode(ActionMixin, relay.Node):
             else:
                 # no states, so we can just exclude public states
                 queryset = queryset.exclude(state__in=public_states)
-
-        if deleted != UseCriteria.IGNORE:
+        if (
+            filters.deleted != UseCriteria.FALSE
+            and not allowDeleted
+            and "manage_deletion"
+            not in get_cached_net_properties(info.context["request"])
+        ):
+            del_result = get_cached_result(
+                info.context["request"],
+                scope="delete",
+                cacheName="secretgraphDeleteResult",
+            )["Content"]
             queryset = queryset.filter(
-                markForDestruction__isnull=deleted == UseCriteria.FALSE
+                id__in=Subquery(
+                    del_result["objects_without_public"].values("id")
+                )
+            )
+
+        if filters.deleted != UseCriteria.IGNORE:
+            queryset = queryset.filter(
+                markForDestruction__isnull=filters.deleted == UseCriteria.FALSE
             )
 
         queryset = queryset.filter(
             id__in=Subquery(
                 results["Content"][
-                    "objects_ignore_public"
+                    "objects_without_public"
                     if filters.public == UseCriteriaPublic.TOKEN
-                    else "objects"
+                    else "objects_with_public"
                 ].values("id")
             )
         )

@@ -49,7 +49,7 @@ def mutate_push_content(
     )
     if not content.parent and result["accesslevel"] != 3:
         raise ValueError("Could not determinate parent for push operation")
-    source = result["objects"].get()
+    source = result["objects_without_public"].get()
     cleaned_result = pre_clean_content_spec(True, content, result)
     required_keys = set(
         Content.objects.required_keys_full(source.cluster).values_list(
@@ -103,13 +103,18 @@ def mutate_transfer(
         "Content"
     ]
     transfer_result = ids_to_results(
-        info.context["request"], id, Content, "update", authset=authorization
+        info.context["request"],
+        id,
+        Content,
+        scope="update",
+        authset=authorization,
+        cacheName=None,
     )["Content"]
     transfer_target = transfer_result.objects.get()
     if key and url:
         raise ValueError()
     # was signed? => restrict to keys
-    signer_keys = view_result["objects"].filter(
+    signer_keys = view_result["objects_with_public"].filter(
         type="PublicKey", referencedBy__source=transfer_target
     )
     signer_key_hashes = ContentTag.objects.filter(
@@ -153,13 +158,18 @@ def mutate_pull(
         "Content"
     ]
     transfer_result = ids_to_results(
-        info.context["request"], id, Content, "update", authset=authorization
+        info.context["request"],
+        id,
+        Content,
+        scope="update",
+        authset=authorization,
+        cacheName=None,
     )["Content"]
     transfer_target = transfer_result.objects.get()
     if key and url:
         raise ValueError("key and value specified together")
     # was signed? => restrict to keys
-    signer_keys = view_result["objects"].filter(
+    signer_keys = view_result["objects_with_public"].filter(
         type="PublicKey", referencedBy__source=transfer_target
     )
     signer_key_hashes = ContentTag.objects.filter(

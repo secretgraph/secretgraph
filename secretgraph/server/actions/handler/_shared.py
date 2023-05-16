@@ -32,9 +32,20 @@ def only_owned_helper(
             get_cached_result(
                 request,
                 scope="manage",
-                name="secretgraphCleanResult",
+                cacheName="secretgraphCleanResult",
                 ensureInitialized=True,
-            )[klass]["objects"]
+            )[klass]["objects_without_public"]
+            .filter(q)
+            .values_list(*fields, flat=True)
+        )
+    elif scope == "link":
+        return (
+            get_cached_result(
+                request,
+                scope="link",
+                cacheName="secretgraphLinkResult",
+                authset=request.secretgraphResult.authset,
+            )[klass]["objects_with_public"]
             .filter(q)
             .values_list(*fields, flat=True)
         )
@@ -43,9 +54,8 @@ def only_owned_helper(
             get_cached_result(
                 request,
                 scope="view",
-                name="secretgraphCleanResult",
-                authset=request.secretgraphCleanResult.authset,
-            )[klass]["objects"]
+                authset=request.secretgraphResult.authset,
+            )[klass]["objects_with_public"]
             .filter(q)
             .values_list(*fields, flat=True)
         )
@@ -55,7 +65,7 @@ def only_owned_helper(
             klass.objects.filter(q),
             scope,
             authset=request.secretgraphCleanResult.authset,
-        )["objects"].values_list(*fields, flat=True)
+        )["objects_without_public"].values_list(*fields, flat=True)
 
 
 @lru_cache(maxsize=4)
@@ -67,7 +77,7 @@ def get_forbidden_content_ids(request):
     r = get_cached_result(
         request,
         scope="manage",
-        name="secretgraphCleanResult",
+        cacheName="secretgraphCleanResult",
         ensureInitialized=True,
     )["Action"]
     # note: manage always resolves, so using Action is possible

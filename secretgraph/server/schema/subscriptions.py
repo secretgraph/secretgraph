@@ -19,14 +19,23 @@ NodeUpdateSubscription = AsyncGenerator[List[relay.Node], None]
 @sync_to_async(thread_sensitive=True)
 def valid_node_ids(request, ids, authorization=None):
     results = ids_to_results(
-        request, ids, klasses=(Cluster, Content), authset=authorization
+        request,
+        ids,
+        klasses=(Cluster, Content),
+        scope="view",
+        cacheName="secretgraphResult",
+        authset=authorization,
     )
     return {
         "Cluster": list(
-            results["Cluster"]["objects"].values_list("flexid", flat=True)
+            results["Cluster"]["objects_with_public"].values_list(
+                "flexid", flat=True
+            )
         ),
         "Content": list(
-            results["Content"]["objects"].values_list("flexid", flat=True)
+            results["Content"]["objects_with_public"].values_list(
+                "flexid", flat=True
+            )
         ),
     }
 

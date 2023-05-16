@@ -49,9 +49,13 @@ class UserMutation(relay.Node):
             if not user:
                 raise ValueError()
             result = ids_to_results(
-                info.context["request"], id, Cluster, "manage"
+                info.context["request"],
+                id,
+                Cluster,
+                scope="manage",
+                cacheName=None,
             )["Cluster"]
-            cluster_obj = result["objects"].first()
+            cluster_obj = result["objects_without_public"].first()
             if not cluster_obj:
                 raise ValueError()
             user_obj = cluster_obj.user
@@ -60,7 +64,7 @@ class UserMutation(relay.Node):
             user = None
             manage = retrieve_allowed_objects(
                 info.context["request"], Cluster.objects.all(), scope="manage"
-            )["objects"].first()
+            )["objects_without_public"].first()
 
             if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
                 if manage:
@@ -99,7 +103,9 @@ class DeleteUserMutation(relay.Node):
             info.context["request"], Cluster.objects.all(), scope="manage"
         )
         if user.net.clusters.exclude(
-            id__in=result["objects"].values_list("id", flat=True)
+            id__in=result["objects_without_public"].values_list(
+                "id", flat=True
+            )
         ):
             raise ValueError("No permission")
         user_contents = Content.objects.filter(cluster__user=user)

@@ -116,7 +116,7 @@ class ClusterNode(ActionMixin, relay.Node):
         self, info: Info, filters: ContentFilterCluster
     ) -> list[ContentNode]:
         queryset = get_cached_result(info.context["request"])["Content"][
-            "objects"
+            "objects_with_public"
         ].filter(cluster=self)
         allowDeleted = False
         if not filters.deleted:
@@ -152,7 +152,7 @@ class ClusterNode(ActionMixin, relay.Node):
         else:
             q = Q(flexid=node_id)
         try:
-            return result["objects"].get(q)
+            return result["_iw"].get(q)
         except (Cluster.DoesNotExist, ValueError) as exc:
             if required:
                 raise exc
@@ -177,10 +177,10 @@ class ClusterNode(ActionMixin, relay.Node):
     ):
         result = get_cached_result(info.context["request"])["Cluster"]
         if not node_ids:
-            return result["objects"]
+            return result["objects_with_public"]
         # for allowing specifing global name
         return fetch_by_id(
-            result["objects"],
+            result["objects_with_public"],
             node_ids,
             limit_ids=None,
             check_short_id=True,
@@ -205,7 +205,9 @@ class ClusterNode(ActionMixin, relay.Node):
     @classmethod
     def get_queryset(cls, queryset, info, **kwargs) -> list[Cluster]:
         result = get_cached_result(info.context["request"])["Cluster"]
-        return queryset.filter(id__in=Subquery(result["objects"].values("id")))
+        return queryset.filter(
+            id__in=Subquery(result["objects_with_public"].values("id"))
+        )
 
     # TODO: merge with get_queryset and update filters
     @classmethod
@@ -220,10 +222,14 @@ class ClusterNode(ActionMixin, relay.Node):
             not in get_cached_net_properties(info.context["request"])
         ):
             del_result = get_cached_result(
-                info.context["request"], scope="delete"
+                info.context["request"],
+                cacheName="secretgraphDeleteResult",
+                scope="delete",
             )["Cluster"]
             queryset = queryset.filter(
-                id__in=Subquery(del_result["objects"].values("id"))
+                id__in=Subquery(
+                    del_result["objects_without_public"].values("id")
+                )
             )
 
         if filters.search:
@@ -276,9 +282,9 @@ class ClusterNode(ActionMixin, relay.Node):
             queryset.filter(
                 id__in=Subquery(
                     result[
-                        "objects_ignore_public"
+                        "objects_without_public"
                         if filters.public == UseCriteriaPublic.TOKEN
-                        else "objects"
+                        else "objects_with_public"
                     ].values("id")
                 )
             ).distinct(),

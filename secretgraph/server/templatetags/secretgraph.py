@@ -105,7 +105,7 @@ def fetch_clusters(
 ):
     queryset = get_cached_result(context["request"], authset=authorization)[
         "Cluster"
-    ]["objects"]
+    ]["objects_with_public"]
     if search is not None:
         queryset = queryset.filter(
             Q(flexid_cached__startswith=search)
@@ -177,16 +177,16 @@ def fetch_contents(
     result = results["Content"].copy()
 
     if deleted is not None:
-        result["objects"] = result["objects"].filter(
+        result["objects_with_public"] = result["objects_with_public"].filter(
             markForDestruction__isnull=not deleted
         )
 
     if clusters:
         clusters = _split_comma(clusters)
-        valid_clusters = results["Cluster"]["objects"]
+        valid_clusters = results["Cluster"]["objects_with_public"]
         if allow_system:
             valid_clusters |= Cluster.objects.filter(name="@system")
-        result["objects"] = result["objects"].filter(
+        result["objects_with_public"] = result["objects_with_public"].filter(
             cluster_id__in=Subquery(
                 fetch_by_id(
                     valid_clusters,
@@ -210,15 +210,15 @@ def fetch_contents(
         if states:
             states = set(states).difference(constants.public_states)
         else:
-            result["objects"] = result["objects"].exclude(
-                state__in=constants.public_states
-            )
+            result["objects_with_public"] = result[
+                "objects_with_public"
+            ].exclude(state__in=constants.public_states)
     if featured is not None:
-        result["objects"] = result["objects"].filter(
+        result["objects_with_public"] = result["objects_with_public"].filter(
             cluster__featured=bool(featured)
         )
     if excludeIds is not None:
-        result["objects"] = result["objects"].exclude(
+        result["objects_with_public"] = result["objects_with_public"].exclude(
             Q(
                 id__in=Subquery(
                     fetch_by_id(
@@ -238,15 +238,17 @@ def fetch_contents(
             .annotate(name=Substr("tag", 6))
             .values("name")
         )
-        result["objects"] = (
-            result["objects"]
+        result["objects_with_public"] = (
+            result["objects_with_public"]
             .annotate(name=Subquery(name_sub))
             .order_by(*_split_comma(order_by))
         )
     else:
-        result["objects"] = result["objects"].order_by("-updated")
-    result["objects"] = _fetch_contents(
-        result["objects"],
+        result["objects_with_public"] = result["objects_with_public"].order_by(
+            "-updated"
+        )
+    result["objects_with_public"] = _fetch_contents(
+        result["objects_with_public"],
         ids=_split_comma(ids),
         limit_ids=None,
         clustersAreRestricted=bool(clusters),
@@ -283,11 +285,13 @@ def fetch_contents(
             ):
                 yield content
 
-        page = Paginator(result["objects"], page_size).get_page(page)
+        page = Paginator(result["objects_with_public"], page_size).get_page(
+            page
+        )
         page.object_list = list(
             gen(
                 (
-                    result["objects"].filter(
+                    result["objects_with_public"].filter(
                         pk__in=Subquery(page.object_list.values("pk"))
                     )
                 )
@@ -296,7 +300,9 @@ def fetch_contents(
 
         return page
     else:
-        return Paginator(result["objects"], page_size).get_page(page)
+        return Paginator(result["objects_with_public"], page_size).get_page(
+            page
+        )
 
 
 @register.simple_tag(takes_context=True)
@@ -322,7 +328,9 @@ def read_content_sync(
         result = get_cached_result(context["request"], authset=authorization)[
             "Content"
         ].copy()
-        result["objects"] = fetch_by_id(result["objects"], content)
+        result["objects_with_public"] = fetch_by_id(
+            result["objects_with_public"], content
+        )
 
         decryptset = set(
             context["request"]

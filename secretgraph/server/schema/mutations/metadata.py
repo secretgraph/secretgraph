@@ -46,12 +46,12 @@ def regenerate_flexid(
     ):
         results = {
             "Content": {
-                "objects": fetch_by_id(
+                "objects_without_public": fetch_by_id(
                     Content.objects.all(), ids, limit_ids=None
                 )
             },
             "Cluster": {
-                "objects": fetch_by_id(
+                "objects_without_public": fetch_by_id(
                     Cluster.objects.all(),
                     ids,
                     limit_ids=None,
@@ -64,12 +64,13 @@ def regenerate_flexid(
             info.context["request"],
             ids,
             (Content, Cluster),
-            "update",
+            scope="update",
             authset=authorization,
+            cacheName=None,
         )
     updated = []
     for result in results.values():
-        for obj in result["objects"]:
+        for obj in result["objects_without_public"]:
             generateFlexid(type(obj), obj, True)
             updated.append(obj.flexid_cached)
     return RegenerateFlexidMutation(updated=updated)
@@ -186,8 +187,9 @@ def update_metadata(
             info.context["request"],
             ids,
             (Content, Cluster),
-            "update",
+            scope="update",
             authset=authorization,
+            cacheName=None,
         )
         cleaned = pre_clean_update_content_args(
             tags, state, references, actions, result["Contents"]
@@ -196,10 +198,10 @@ def update_metadata(
         tags = cleaned["tags"]
         references = cleaned["references"]
         # immutable are excluded
-        contents = result["Content"]["objects"].annotate(
+        contents = result["Content"]["objects_without_public"].annotate(
             has_immutable=Value(False)
         )
-        clusters = result["Clusters"]["objects"]
+        clusters = result["Clusters"]["objects_without_public"]
         if clusters:
             check_actions(actions, result["Clusters"])
 

@@ -182,8 +182,9 @@ def _update_or_create_content_or_key(
                 Cluster,
                 # create includes move permission
                 scope="create",
+                cacheName=None,
                 authset=authset,
-            )["Cluster"]["objects"]
+            )["Cluster"]["objects_without_public"]
             .filter(markForDestruction=None)
             .first()
         )
@@ -231,11 +232,12 @@ def _update_or_create_content_or_key(
                     # Cluster
                     objdata.net,
                     Cluster,
-                    "create",
+                    scope="create",
+                    cacheName=None,
                     authset=authset,
                 )["Cluster"]
                 content.net = (
-                    net_result["objects"]
+                    net_result["objects_without_public"]
                     .get(
                         Q(primaryFor__isnull=False) | Q(id=content.cluster.id)
                     )
@@ -401,7 +403,12 @@ def _update_or_create_content_or_key(
             content,
             refs,
             key_hashes_tags,
-            get_cached_result(request, authset=authset)["Content"]["objects"],
+            get_cached_result(
+                request,
+                authset=authset,
+                cacheName="secretgraphLinkResult",
+                scope="link",
+            )["Content"]["objects_with_public"],
             no_final_refs=objdata.references is None,
             early_size_limit=early_op_limit,
         )
@@ -484,7 +491,7 @@ def _update_or_create_content_or_key(
                     content.net.clusters.all(),
                     "create",
                     authset=authset,
-                )["objects"].exists()
+                )["objects_without_public"].exists()
             ):
                 raise ResourceLimitExceeded(
                     "Cannot use more resources of a net not owned"
@@ -572,7 +579,8 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
                 authset=authset,
                 # create includes move permission
                 scope="create",
-            )["Cluster"]["objects"]
+                cacheName=None,
+            )["Cluster"]["objects_without_public"]
             .filter(markForDestruction=None)
             .first()
         )

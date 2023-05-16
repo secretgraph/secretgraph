@@ -47,11 +47,12 @@ def delete_content_or_cluster(
             info.context["request"],
             ids,
             (Content, Cluster),
-            "delete",
+            scope="delete",
             authset=authorization,
+            cacheName="secretgraphDeleteResult",
         )
-        contents = results["Content"]["objects"]
-        clusters = results["Cluster"]["objects"]
+        contents = results["Content"]["objects_without_public"]
+        clusters = results["Cluster"]["objects_without_public"]
     if when:
         when_safe = (
             when if manage_deletion else max(now + timedelta(minutes=20), when)
@@ -106,11 +107,12 @@ def reset_deletion_content_or_cluster(
             info.context["request"],
             ids,
             (Content, Cluster),
-            "delete",
+            scope="delete",
             authset=authorization,
+            cacheName="secretgraphDeleteResult",
         )
-        contents = results["Content"]["objects"]
-        clusters = results["Cluster"]["objects"]
+        contents = results["Content"]["objects_without_public"]
+        clusters = results["Cluster"]["objects_without_public"]
     clusters = Cluster.objects.filter(
         Q(id__in=Subquery(clusters.values("id")))
         | Q(id__in=Subquery(contents.values("cluster_id"))),

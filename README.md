@@ -184,6 +184,7 @@ Only valid for the nginx template specified in this repo!. Note: you have to esc
 -   peek: can view contents without triggering freeze
 -   push: create subcontents via push
 -   view: view contents and or clusters (depending on scope)
+-   link: can add reference to content (all public without @system+most actions which allow viewing a content)
 -   auth: one-time view with intent to signal auth event
 
 ## Properties:
@@ -634,6 +635,12 @@ graphql url. Get parameter token are added. If it should resolve to a specific c
 
 Note: the grapqhl view is modified in that way that the method for contents (X-GRAPHQL-PATH header) is also available if called directly
 
+### System Cluster:
+
+Can be updated via admin access (admin area or permission) or actions defined on it.
+
+It is invisible for all access scopes except "view" or if the former condition is satisfied
+
 ### Auth (Cluster/Content):
 
 The item get parameter is mandatory.
@@ -644,7 +651,6 @@ The item get parameter is mandatory.
 -   complete share
     -   add option to save new token in config (not auth)
 -   shareurl: cluster url ? token = ...
--   improve documention of documents (imprint), show usage
 -   key callbacks: url:contentid:token
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")
 -   teach decryptObject transfer

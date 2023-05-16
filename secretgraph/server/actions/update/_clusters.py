@@ -62,7 +62,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
             Cluster.objects.all(),
             scope="manage",
             authset=authset,
-        )["objects"]
+        )["objects_without_public"]
     if net:
         if isinstance(net, Net):
             cluster.net = net
@@ -91,7 +91,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
                 scope="manage",
                 authset=authset,
                 ignore_restrictions=True,
-            )["objects"].exists():
+            )["objects_without_public"].exists():
                 raise ValueError(
                     "not allowed - net disabled or "
                     "not in actions time range"

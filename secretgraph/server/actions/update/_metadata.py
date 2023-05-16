@@ -405,7 +405,12 @@ def update_metadata_fn(
         content,
         _refs,
         key_hashes_tags,
-        get_cached_result(request, authset=authset)["Content"]["objects"],
+        get_cached_result(
+            request,
+            cacheName="secretgraphLinkResult",
+            scope="link",
+            authset=authset,
+        )["Content"]["objects_with_public"],
         no_final_refs=references is None,
         early_size_limit=early_op_limit,
     )
