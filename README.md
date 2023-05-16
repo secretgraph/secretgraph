@@ -647,15 +647,15 @@ The item get parameter is mandatory.
 
 # TODO
 
+-   fix PrivateKey loading
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   complete share
     -   add option to save new token in config (not auth)
--   shareurl: cluster url ? token = ...
--   key callbacks: url:contentid:token
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")
 -   teach decryptObject transfer
 -   tools initializeCluster need to adapt to new config layout
 -   keys need more infos, like callback url, item and tokens
+-   key callbacks: url:contentid:token
 -   select certificates a private content is encrypted for
 -   certificates for slot
 -   PushedArticle
