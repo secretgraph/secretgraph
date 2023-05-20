@@ -72,8 +72,9 @@ class ActionMixin:
             # use results["Action"] for ensuring exclusion of hidden actions
             # this is ensured by having manage in action set
             if isinstance(self, Content):
+                # is currently the same as without_public for Actions
                 async for action in (
-                    results["Action"]["objects_without_public"]
+                    results["Action"]["objects_with_public"]
                     .filter(
                         Q(contentAction__isnull=True)
                         | Q(contentAction__content_id=self.id),
@@ -87,8 +88,9 @@ class ActionMixin:
                         allowedTags=None,
                     )
             else:
+                # is currently the same as without_public for Actions
                 async for action in (
-                    results["Action"]["objects_without_public"]
+                    results["Action"]["objects_with_public"]
                     .filter(contentAction__isnull=True, cluster_id=self.id)
                     .exclude(id__in=seen_ids)
                 ):
