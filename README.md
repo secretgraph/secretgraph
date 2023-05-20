@@ -655,7 +655,7 @@ The item get parameter is mandatory.
 -   teach decryptObject transfer
 -   tools initializeCluster need to adapt to new config layout
 -   keys need more infos, like callback url, item and tokens
--   key callbacks: graphqlurl?item=baseCluster/&token=... or contenturl?token= for pushable contents
+-   key callbacks: graphqlurl?item=baseCluster&token=... or contenturl?token= for pushable contents
 -   certificates for slot
 -   PushedArticle
 -   split keys in signing/encrypting
@@ -673,6 +673,7 @@ The item get parameter is mandatory.
 
 # TODO later
 
+-   range support https://gist.github.com/dcwatson/cb5d8157a8fa5a4a046e
 -   allow token stubs, only containing description
 -   select certificates a private content is encrypted for
 -   cleanup utils/arguments.py
