@@ -1,19 +1,20 @@
 import logging
 from django.db import IntegrityError, transaction, models
-from django.utils import timezone
+from django.db.models.functions import Now
 from ..models import Content, ContentTag, ContentAction
 
 logger = logging.getLogger(__name__)
 
 
-def update_file_accessed(content_ids, now=None):
-    if not now:
-        now = timezone.now()
-    Content.objects.filter(id__in=content_ids).update(file_accessed=now)
+def update_file_accessed(content_ids):
+    # Now is faster and more accurate
+    if isinstance(content_ids, int):
+        Content.objects.filter(id=content_ids).update(file_accessed=Now())
+    else:
+        Content.objects.filter(id__in=content_ids).update(file_accessed=Now())
 
 
 def freeze_contents(content_ids, request=None, update=False):
-
     for i in range(0, 1000):
         if i >= 999:
             logger.warning(
