@@ -573,14 +573,14 @@ files = [
 
 [[package]]
 name = "httpcore"
-version = "0.17.1"
+version = "0.17.2"
 description = "A minimal low-level HTTP client."
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "httpcore-0.17.1-py3-none-any.whl", hash = "sha256:628e768aaeec1f7effdc6408ba1c3cdbd7487c1fc570f7d66844ec4f003e1ca4"},
-    {file = "httpcore-0.17.1.tar.gz", hash = "sha256:caf508597c525f9b8bfff187e270666309f63115af30f7d68b16143a403c8356"},
+    {file = "httpcore-0.17.2-py3-none-any.whl", hash = "sha256:5581b9c12379c4288fe70f43c710d16060c10080617001e6b22a3b6dbcbefd36"},
+    {file = "httpcore-0.17.2.tar.gz", hash = "sha256:125f8375ab60036db632f34f4b627a9ad085048eef7cb7d2616fea0f739f98af"},
 ]
 
 [package.dependencies]
@@ -1410,14 +1410,14 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "strawberry-django-plus"
-version = "2.4.1"
+version = "2.4.2"
 description = "Enhanced Strawberry GraphQL integration with Django"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "strawberry_django_plus-2.4.1-py3-none-any.whl", hash = "sha256:25ecf472dde2a4d29e8dbd0983e954d1c57a80b1ed955ba69f930e78d6103a30"},
-    {file = "strawberry_django_plus-2.4.1.tar.gz", hash = "sha256:230f51fed39107758ab7ab25d1799e9ff63edf373a0dd05e41e1bcf61cd0968a"},
+    {file = "strawberry_django_plus-2.4.2-py3-none-any.whl", hash = "sha256:0c4f82e928253be8e135c345d44db48de7836f9880b1d5bf4bc0ebe4670b248c"},
+    {file = "strawberry_django_plus-2.4.2.tar.gz", hash = "sha256:16df99b4dbb4981a5647054aafe662cd9b8237e8ba667d2c57ff67af064ca84c"},
 ]
 
 [package.dependencies]
@@ -1432,14 +1432,14 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.177.3"
+version = "0.178.0"
 description = "A library for creating GraphQL APIs"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql-0.177.3-py3-none-any.whl", hash = "sha256:eab39f235b9e42c05ad372e74aaa2cdd1d27c64dd702a10dcd82e253de8caf72"},
-    {file = "strawberry_graphql-0.177.3.tar.gz", hash = "sha256:0421ad86d867047d3af90f225ae57166d62802457e3c65ff10b17a3af0cd3911"},
+    {file = "strawberry_graphql-0.178.0-py3-none-any.whl", hash = "sha256:d32eb4a8dedae7afd8e59adaaef844c4c9263627a4c71161b130d8a44c6ae8f2"},
+    {file = "strawberry_graphql-0.178.0.tar.gz", hash = "sha256:c2cbd8b5b31dd643e5bbc510e19869a1dce9a8e0321973319b403999f10dcf5b"},
 ]
 
 [package.dependencies]
@@ -1643,14 +1643,14 @@ twisted = ["twisted (>=20.3.0)", "zope.interface (>=5.2.0)"]
 
 [[package]]
 name = "typing-extensions"
-version = "4.5.0"
+version = "4.6.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "typing_extensions-4.5.0-py3-none-any.whl", hash = "sha256:fb33085c39dd998ac16d1431ebc293a8b3eedd00fd4a32de0ff79002c19511b4"},
-    {file = "typing_extensions-4.5.0.tar.gz", hash = "sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb"},
+    {file = "typing_extensions-4.6.0-py3-none-any.whl", hash = "sha256:6ad00b63f849b7dcc313b70b6b304ed67b2b2963b3098a33efe18056b1a9a223"},
+    {file = "typing_extensions-4.6.0.tar.gz", hash = "sha256:ff6b238610c747e44c268aa4bb23c8c735d665a63726df3f9431ce707f2aa768"},
 ]
 
 [[package]]
@@ -1925,4 +1925,4 @@ server = ["channels", "django", "django-fast-ratelimit", "django-manifest-loader
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <4"
-content-hash = "ed6d08e1bb22dc59a1580e9c0f3af8d69db248d25bc86a76ae4572092b8191d4"
+content-hash = "0ea36d63d494f6e87330f11130d61bc421237049233f411f3e099ca223eceba8"

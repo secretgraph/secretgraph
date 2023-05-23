@@ -47,23 +47,33 @@ tinycss2 = {version="*", optional = true}
 optional = true
 
 [tool.poetry.group.test.dependencies]
-tox = "*"
 django-webtest = "*"
 WSGIProxy2 = "*"
-
-
-[tool.poetry.group.dev.dependencies]
+django-manifest-loader = "*"
+django-fast-ratelimit = ">=0.9.0"
+bleach = "*"
+tinycss2 = "*"
 graphene-protector = ">=0.7.2"
 django = ">=4.1"
 channels = {version = '>=4.0', extras = ["daphne"] }
 strawberry-graphql = {version = '>=0.145', extras = ["debug"] }
 strawberry-django-plus = "*"
-pylint = "*"
-rope = "*"
+tox = "*"
+
+
+[tool.poetry.group.dev.dependencies]
 django-manifest-loader = "*"
 django-fast-ratelimit = ">=0.9.0"
 bleach = "*"
 tinycss2 = "*"
+graphene-protector = ">=0.7.2"
+django = ">=4.2"
+channels = {version = '>=4.0', extras = ["daphne"] }
+strawberry-graphql = {version = '>=0.145', extras = ["debug"] }
+strawberry-django-plus = "*"
+pylint = "*"
+rope = "*"
+tox = "*"
 
 
 [tool.poetry.extras]
@@ -84,42 +94,10 @@ fastcgi = ["flipflop"]
 postgresql = ["psycopg"]
 mysql = ["mysqlclient"]
 
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-minversion = 3.4.0
-isolated_build = True
-envlist = py{36,37,38}-django{30,master}-{sqlite3,postgresql,mysql}
-extras =
-  test, server
-
-[testenv]
-whitelist_externals =
-  psql
-commands =
-  !postgresql: python -Wd ./manage.py test tests
-  postgresql: python -Wd ./manage.py test --keepdb tests
-  postgresql: psql -c 'drop database secretgraph_tests;' -U postgres
-
-
-setenv =
-    PYTHONDONTWRITEBYTECODE=1
-    sqlite3: DJANGO_SETTINGS_MODULE=testsettings.test_sqlite3
-    postgresql: DJANGO_SETTINGS_MODULE=testsettings.test_postgresql
-    mysql: DJANGO_SETTINGS_MODULE=testsettings.test_mysql
-
-deps =
-  django30: Django>=3.0,<3.1
-  djangomaster: https://github.com/django/django/archive/master.zip
-  postgresql: psycopg2-binary
-  mysql: mysqlclient
-  mysql: django-mysql
-
-"""
 
 [tool.black]
 line-length = 79
 
 [build-system]
-requires = ["poetry_core>=1.4.0"]
+requires = ["poetry_core"]
 build-backend = "poetry.core.masonry.api"

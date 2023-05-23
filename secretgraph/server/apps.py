@@ -30,6 +30,7 @@ class SecretgraphServerConfig(AppConfig):
     name = "secretgraph.server"
     label = "secretgraph"
     verbose_name = "Secretgraph backend"
+    default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
         from .models import Content, Cluster

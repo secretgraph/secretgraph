@@ -12,6 +12,7 @@ class SecretGraphUserConfig(AppConfig):
     name = "secretgraph.user"
     label = "secretgraph_user"
     verbose_name = "Secretgraph User"
+    default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
         from django.conf import settings
