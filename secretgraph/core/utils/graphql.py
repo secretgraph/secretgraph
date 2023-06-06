@@ -1,15 +1,25 @@
-import json
 import math
-from io import BytesIO, IOBase
 
-import httpx
+from gql import Client
+from gql.transport.websockets import WebsocketsTransport
+from gql.transport.aiohttp import AIOHTTPTransport
+
+
+def create_client(url, headers={}) -> Client:
+    if url.startswith("wss") or url.startswith("ws"):
+        transport = WebsocketsTransport(url, headers=headers)
+    else:
+        transport = AIOHTTPTransport(url, headers=headers)
+
+    return Client(
+        transport=transport,
+        fetch_schema_from_transport=True,
+    )
 
 
 def repeatOperation(
-    operation, writeokKey, start=None, retries=math.inf, session=None
+    operation, writeokKey, session, start=None, retries=math.inf
 ):
-    if not session:
-        session = httpx.AsyncClient()
     counter = 0
     obj = start
     result = operation(obj, counter=counter, session=session)
@@ -18,62 +28,3 @@ def repeatOperation(
         obj = result
         result = operation(obj, counter=counter, session=session)
     return result
-
-
-def _transform_files(
-    variables, mapper, files, counter=None, prefix="variables."
-):
-    if not counter:
-        counter = [0]
-    if isinstance(variables, dict):
-        it = variables.items()
-        retval = {}
-
-        def appender(key, val):
-            retval[key] = val
-
-    else:
-        it = enumerate(variables)
-        retval = []
-
-        def appender(key, val):
-            retval.append(val)
-
-    for key, val in it:
-        if isinstance(val, bytes):
-            val = BytesIO(val)
-        if isinstance(val, IOBase):
-            appender(key, None)
-            files[str(counter[0])] = val
-            mapper[str(counter[0])] = [f"{prefix}{key}"]
-            counter[0] += 1
-        elif isinstance(val, (list, tuple, dict)):
-            result = _transform_files(
-                val, mapper, files, counter=counter, prefix=f"{prefix}{key}."
-            )
-            appender(key, result)
-        else:
-            appender(key, val)
-    return retval
-
-
-# until gql supports files
-def transform_payload(query, variables):
-    files = {}
-    mapper = {}
-    newvars = _transform_files(variables, mapper, files)
-    # hack for sending multipart
-    # not required?
-    # if not files:
-    #    files = {"stub": ("", "content")}
-
-    return {
-        "operations": json.dumps({"query": query, "variables": newvars}),
-        "map": json.dumps(mapper),
-    }, files
-
-
-def reset_files(files):
-    for f in files.values():
-        if hasattr(f, "seek"):
-            f.seek(0)

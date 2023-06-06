@@ -6,7 +6,6 @@ from io import BytesIO
 from typing import Iterable
 
 from cryptography import exceptions
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -93,16 +92,14 @@ def create_key_maps(contents, keyset):
     ):
         split = ref.extra.split(":", 1)
         if len(split) == 1:
-            esharedkey = base64.b64decode(split[0])
-            p = padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None,
+            logger.warning(
+                "Invalid key reference, does not contain hash algorithm"
             )
+            continue
         else:
             esharedkey = base64.b64decode(split[1])
             algo = mapHashNames[split[0]].algorithm
-            p = padding.OAEP(
+            key_padding = padding.OAEP(
                 mgf=padding.MGF1(algorithm=algo),
                 algorithm=algo,
                 label=None,
@@ -130,11 +127,11 @@ def create_key_maps(contents, keyset):
                 try:
                     shared_key = privkey.decrypt(
                         esharedkey,
-                        p,
+                        key_padding,
                     )
                 except Exception as exc:
                     logger.warning(
-                        "Could not decrypt shared key (privkey)", exc_info=exc
+                        "Could not decrypt shared key", exc_info=exc
                     )
                     continue
                 if shared_key:

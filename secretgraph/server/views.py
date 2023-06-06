@@ -146,6 +146,8 @@ class ContentView(View):
             iterator = iter_decrypt_contents(result, decryptset=decryptset)
             content = next(iterator)
         except StopIteration:
+            if decryptset:
+                return HttpResponse("No matching key", status=400)
             return HttpResponse("Missing key", status=400)
         if result["scope"] != "peek":
             freeze_contents([content.id], request)

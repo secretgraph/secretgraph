@@ -8,7 +8,6 @@ from cryptography.hazmat.primitives import padding
 import httpx
 
 from ..constants import mapHashNames, HashNameItem
-from .graphql import transform_payload
 from .hashing import (
     findWorkingHashAlgorithms,
     calculateHashesForHashAlgorithms,
@@ -69,7 +68,6 @@ async def _fetch_certificate(
     key_hashes: set[str],
     hashAlgorithms: Iterable[HashNameItem],
 ):
-
     keyResponse = await session.get(
         url, headers={"Authorization": authorization}
     )
@@ -137,15 +135,10 @@ async def verify(
         variables = {}
         if key_hashes:
             variables["includeTags"] = list(key_hashes)
-        body, files = transform_payload(
-            contentVerification_query,
-            variables,
-        )
         result = (
             await session.post(
                 graphqlurl,
-                data=body,
-                files=files,
+                data=variables,
                 headers={"Authorization": authorization},
             )
         ).json()

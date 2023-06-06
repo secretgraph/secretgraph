@@ -1,26 +1,34 @@
 #! /usr/bin/env python3
 
 import os
+from io import BytesIO
 import base64
-import hashlib
 import json
+import asyncio
 import argparse
 from time import time
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlencode
 
 from cryptography.hazmat.primitives.asymmetric import rsa, padding, utils
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-import httpx
+from gql import gql
+from gql.client import AsyncClientSession
 
-from secretgraph.core.utils.hashing import findWorkingHashAlgorithms
+from secretgraph.core.utils.hashing import (
+    findWorkingHashAlgorithms,
+    hashObject,
+    hashTagsContentHash,
+)
 
-from ..core.utils.graphql import transform_payload
+from secretgraph.core.utils.graphql import create_client
 
 parser = argparse.ArgumentParser()
 parser.add_argument("url")
-parser.add_argument("--public", action="store_true")
+parser.add_argument("--public-only", action="store_true")
 parser.add_argument("--bits", "-b", type=int, default=4096)
+parser.add_argument("--slots", nargs="+", default=["main"], type=str)
+parser.add_argument("--store-config", type=argparse.FileType("w"))
 
 serverConfigQuery_query = """
 query serverSecretgraphConfigQuery {
@@ -28,14 +36,6 @@ query serverSecretgraphConfigQuery {
         config {
             id
             hashAlgorithms
-            groups {
-                name
-                injected_keys {
-                    id
-                    link
-                    hash
-                }
-            }
             registerUrl
         }
     }
@@ -51,20 +51,20 @@ mutation clusterCreateMutation($description: String, $actions: [ActionInput!], $
                 cluster: {
                     description: $description
                     actions: $actions
-                    key: {
+                    keys: [{
                         publicKey: $publicKey
                         publicTags: $publicTags
                         privateKey: $privateKey
                         privateTags: $privateTags
                         nonce: $nonce
-                    }
+                    }]
                 }
                 authorization: $authorization
             }
         ) {
             cluster {
                 id
-                group
+                groups
                 availableActions {
                     keyHash
                     type
@@ -91,19 +91,21 @@ mutation clusterCreateMutation($description: String, $actions: [ActionInput!], $
 """  # noqa E502
 
 configCreateMutation_mutation = """
-mutation contentConfigMutation($cluster: ID!, $tags: [String!], $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
+mutation contentConfigMutation($cluster: ID!, $tags: [String!], $type: String!, $state: String!, $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
     secretgraph{
         updateOrCreateContent(
         input: {
             content: {
-            cluster: $cluster
-            value: {
-                tags: $tags
-                value: $value
-                nonce: $nonce
-            }
-            contentHash: $contentHash
-            references: $references
+                cluster: $cluster
+                value: {
+                    type: $type
+                    state: $state
+                    tags: $tags
+                    value: $value
+                    nonce: $nonce
+                    references: $references
+                }
+                contentHash: $contentHash
             }
             authorization: $authorization
         }
@@ -120,16 +122,21 @@ mutation contentConfigMutation($cluster: ID!, $tags: [String!], $references: [Re
 """  # noqa E502
 
 
-def main(argv=None):
-    argv = parser.parse_args(argv)
-    nonce = os.urandom(13)
-    nonce_b64 = base64.b64encode(nonce).decode("ascii")
+async def run(argv, session: AsyncClientSession):
+    nonce_key = os.urandom(13)
+    nonce_key_b64 = base64.b64encode(nonce_key).decode("ascii")
+    nonce_config = os.urandom(13)
+    nonce_config_b64 = base64.b64encode(nonce_config).decode("ascii")
 
     privkey_key = os.urandom(32)
+    privkey_key_b64 = base64.b64encode(privkey_key).decode("ascii")
 
-    action_key = os.urandom(50)
-    action_key_b64 = base64.b64encode(action_key).decode("ascii")
-    config_shared_key = os.urandom(32)
+    manage_token = os.urandom(50)
+    manage_token_b64 = base64.b64encode(manage_token).decode("ascii")
+    view_token = os.urandom(50)
+    view_token_b64 = base64.b64encode(view_token).decode("ascii")
+    config_key = os.urandom(32)
+    config_key_b64 = base64.b64encode(config_key).decode("ascii")
     priv_key = rsa.generate_private_key(
         public_exponent=65537, key_size=argv.bits
     )
@@ -144,92 +151,96 @@ def main(argv=None):
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    session = httpx.Client()
-    body, files = transform_payload(serverConfigQuery_query, {})
-    result = session.post(argv.url, data=body, files=files)
-    if not result.ok and not argv.url.endswith("/graphql"):
-        argv.url = "%s/graphql" % argv.url.rstrip("/")
-        result = session.post(argv.url, data=body, files=files)
-    if not result.ok:
-        raise
-    serverConfig = result.json()["data"]["secretgraphConfig"]
+    result = await session.execute(gql(serverConfigQuery_query))
+    serverConfig = result["secretgraph"]["config"]
     hash_algos = findWorkingHashAlgorithms(serverConfig["hashAlgorithms"])
-    hash_algo = hashlib.new(hash_algos[0].serializedName)
-    chosen_hash = hashes.Hash(hash_algos[0].algorithm)
+    publicKey_hash = hashObject(pub_key_bytes, hash_algos[0])
     prepared_cluster = {
-        "publicKey": pub_key_bytes,
+        "publicKey": BytesIO(pub_key_bytes),
         "publicTags": [],
         "state": "public",
-        "actions": [{"value": '{"action": "manage"}', "key": action_key_b64}],
+        "actions": [
+            {"value": '{"action": "manage"}', "key": manage_token_b64},
+            {
+                "value": json.dumps(
+                    {
+                        "action": "view",
+                        "includeTypes": ["PublicKey", "PrivateKey", "Config"],
+                        "includeTags": [
+                            f"key_hash={publicKey_hash}",
+                            f"slot={argv.slots[0]}",
+                        ],
+                    }
+                ),
+                "key": view_token_b64,
+            },
+        ],
     }
-    if True:
-        prepared_cluster["privateKey"] = AESGCM(privkey_key).encrypt(
-            nonce, priv_key_bytes, None
+    if not argv.public_only:
+        prepared_cluster["privateKey"] = BytesIO(
+            AESGCM(privkey_key).encrypt(nonce_key, priv_key_bytes, None)
         )
-        encSharedKey = pub_key.encrypt(
-            config_shared_key,
+        privatekey_key_enc = pub_key.encrypt(
+            privkey_key,
             padding.OAEP(
-                mgf=padding.MGF1(algorithm=chosen_hash),
-                algorithm=chosen_hash,
+                mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
+                algorithm=hash_algos[0].algorithm,
                 label=None,
             ),
         )
-        prepared_cluster["nonce"] = nonce_b64
+        prepared_cluster["nonce"] = nonce_key_b64
         prepared_cluster["privateTags"] = [
-            "key={}".format(base64.b64encode(encSharedKey)),
+            "key={}".format(base64.b64encode(privatekey_key_enc)),
         ]
-    body, files = transform_payload(
-        clusterCreateMutation_mutation, prepared_cluster
+    result = await session.execute(
+        gql(clusterCreateMutation_mutation),
+        prepared_cluster,
+        upload_files=True,
     )
-    result = session.post(argv.url, data=body, files=files)
-    result.raise_for_status()
-    jsob = result.json()["data"]
-    certhash = hash_algo.copy()
-    certhash.update(pub_key_bytes)
-    certhash = certhash.digest()
-    certhash_b64 = base64.b64encode(certhash).decode("ascii")
-    action_key_hash = hash_algo.copy()
-    action_key_hash.update(action_key)
-    action_key_hash = action_key_hash.digest()
-    action_key_hash = base64.b64encode(action_key_hash).decode("ascii")
+    jsob_cluster = result["secretgraph"]["updateOrCreateCluster"]["cluster"]
+    manage_key_hash = hashObject(manage_token, hash_algos[0])
+    view_key_hash = hashObject(view_token, hash_algos[0])
     # config format by standard client
     config = {
         "certificates": {
-            certhash_b64: {
+            publicKey_hash: {
                 "data": base64.b64encode(priv_key_bytes).decode("ascii"),
                 "note": "initial key",
             }
         },
         "tokens": {
-            action_key_hash: {
-                "data": action_key_b64,
+            manage_key_hash: {
+                "data": manage_token_b64,
                 "system": False,
                 "note": "",
-            }
+            },
+            view_key_hash: {
+                "data": view_token_b64,
+                "system": True,
+                "note": "config token",
+            },
         },
+        "slots": argv.slots,
+        "signWith": {argv.slots[0]: publicKey_hash},
         "hosts": {
             argv.url: {
-                "hashAlgorithms": hash_algos,
                 "clusters": {
-                    jsob["secretgraph"]["updateOrCreateCluster"]["cluster"][
-                        "id"
-                    ]: {
+                    jsob_cluster["id"]: {
                         "hashes": {
-                            action_key_hash: ["manage", "view", "update"]
+                            manage_key_hash: ["manage"],
+                            view_key_hash: ["view"],
                         }
                     }
                 },
             }
         },
         "trustedKeys": {
-            certhash_b64: {
+            publicKey_hash: {
                 "links": [
                     urljoin(
                         argv.url,
                         # public key
-                        jsob["secretgraph"]["updateOrCreateCluster"][
-                            "cluster"
-                        ]["contents"]["edges"][0]["node"].link,
+                        jsob_cluster["contents"]["edges"][0]["node"]["link"],
                     )
                 ],
                 "level": 1,
@@ -238,46 +249,46 @@ def main(argv=None):
             }
         },
         "baseUrl": argv.url,
-        "configHashes": [certhash_b64, action_key_hash],
-        "configCluster": jsob["secretgraph"]["updateOrCreateCluster"][
-            "cluster"
-        ]["id"],
+        "configHashes": [publicKey_hash, manage_key_hash],
+        "configCluster": jsob_cluster["id"],
     }
 
-    nonce = os.urandom(13)
-    nonce_b64 = base64.b64encode(nonce).decode("ascii")
+    nonce_key = os.urandom(13)
+    nonce_key_b64 = base64.b64encode(nonce_key).decode("ascii")
 
-    encrypted_content = AESGCM(config_shared_key).encrypt(
-        nonce, json.dumps(config).encode("utf8"), None
+    encrypted_content = AESGCM(config_key).encrypt(
+        nonce_config, json.dumps(config).encode("utf8"), None
     )
 
-    encrypted_content_hash_raw = hash_algo.copy()
-    encrypted_content_hash_raw.update(encrypted_content)
-    encrypted_content_hash_raw = encrypted_content_hash_raw.digest()
+    hash_ctx = hashes.Hash(hash_algos[0].algorithm)
+    hash_ctx.update(encrypted_content)
+    encrypted_content_hash_raw = hash_ctx.finalize()
     signature = priv_key.sign(
         encrypted_content_hash_raw,
         padding.PSS(
-            mgf=padding.MGF1(chosen_hash), salt_length=padding.PSS.MAX_LENGTH
+            mgf=padding.MGF1(hash_algos[0].algorithm),
+            salt_length=padding.PSS.MAX_LENGTH,
         ),
-        utils.Prehashed(chosen_hash),
+        utils.Prehashed(hash_algos[0].algorithm),
     )
 
-    config_key = pub_key.encrypt(
-        config_shared_key,
+    config_key_enc = pub_key.encrypt(
+        config_key,
         padding.OAEP(
-            mgf=padding.MGF1(algorithm=chosen_hash),
-            algorithm=chosen_hash,
+            mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
+            algorithm=hash_algos[0].algorithm,
             label=None,
         ),
     )
+    config_contentHash = hashTagsContentHash(
+        [f"slot={argv.slots[0]}"], "Config", hash_algos[0]
+    )
 
-    config_hash = hash_algo.copy()
-    config_hash.update(b"type=Config")
-    config_hash = config_hash.digest()
-    config_hash = base64.b64encode(config_hash).decode("ascii")
     tags = [
-        "key_hash={}".format(action_key_hash),
-        "key_hash={}".format(certhash_b64),
+        "name=config.json",
+        "mime=application/json",
+        "key_hash={}".format(publicKey_hash),
+        f"slot={argv.slots[0]}",
     ]
     prepared_content = {
         "cluster": config["configCluster"],
@@ -287,27 +298,82 @@ def main(argv=None):
         "references": [
             {
                 "group": "key",
-                "target": certhash_b64,
-                "extra": base64.b64encode(config_key).decode("ascii"),
+                "target": publicKey_hash,
+                "extra": "{}:{}".format(
+                    hash_algos[0].serializedName,
+                    base64.b64encode(config_key_enc).decode("ascii"),
+                ),
             },
             {
                 "group": "signature",
-                "target": certhash_b64,
-                "extra": base64.b64encode(signature).decode("ascii"),
+                "target": publicKey_hash,
+                "extra": "{}:{}".format(
+                    hash_algos[0].serializedName,
+                    base64.b64encode(signature).decode("ascii"),
+                ),
             },
         ],
-        "value": encrypted_content,
-        "nonce": nonce_b64,
-        "contentHash": config_hash,
-        "authorization": [":".join([config["configCluster"], action_key_b64])],
+        "value": BytesIO(encrypted_content),
+        "nonce": nonce_config_b64,
+        "contentHash": config_contentHash,
+        "authorization": [
+            ":".join([config["configCluster"], manage_token_b64])
+        ],
     }
-    body, files = transform_payload(
-        configCreateMutation_mutation, prepared_content
+
+    result = await session.execute(
+        gql(configCreateMutation_mutation), prepared_content, upload_files=True
     )
 
-    result = session.post(argv.url, data=body, files=files)
-    result.raise_for_status()
-    print(config)
+    jsob_config = result["secretgraph"]["updateOrCreateContent"]
+    link = jsob_config["content"]["link"]
+    print()
+
+    search = urlencode(
+        {
+            "token": "{}:{}".format(
+                jsob_cluster["id"],
+                view_token_b64,
+            ),
+            "key": [
+                "{}:{}".format(
+                    publicKey_hash,
+                    privkey_key_b64,
+                ),
+                "{}:{}".format(
+                    jsob_config["content"]["id"],
+                    config_key_b64,
+                ),
+            ],
+        },
+        doseq=True,
+    )
+    print("Cluster:", jsob_cluster["id"])
+    print("Initialization url: {}?{}".format(urljoin(argv.url, link), search))
+    if argv.store_config:
+        argv.store_config.write(config)
+
+
+async def setup_and_run(argv):
+    client = create_client(argv.url)
+    try:
+        session = await client.connect_async()
+    except Exception as exc:
+        if argv.url.endswith("/graphql"):
+            raise exc
+        argv.url = "%s/graphql" % argv.url.rstrip("/")
+
+        client = create_client(argv.url)
+        session = await client.connect_async()
+    try:
+        await run(argv, session)
+    finally:
+        await client.close_async()
+
+
+def main(argv=None):
+    argv = parser.parse_args(argv)
+    asyncio.run(setup_and_run(argv))
 
 
 if __name__ == "__main__":

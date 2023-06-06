@@ -652,7 +652,6 @@ The item get parameter is mandatory.
     -   add option to save new token in config (not auth)
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")
 -   teach decryptObject transfer
--   tools initializeCluster need to adapt to new config layout
 -   keys need more infos, like callback url, item and tokens
 -   key callbacks: graphqlurl?item=baseCluster&token=... or contenturl?token= for pushable contents
 -   PushedArticle
