@@ -198,7 +198,6 @@ def main(argv=None):
             certhash_b64: {
                 "data": base64.b64encode(priv_key_bytes).decode("ascii"),
                 "note": "initial key",
-                "signWith": True,
             }
         },
         "tokens": {

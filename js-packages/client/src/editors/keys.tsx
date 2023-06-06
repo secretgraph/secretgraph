@@ -177,14 +177,13 @@ async function loadKeys({
                         keyParams,
                         'privateKey'
                     )
-                    let certificateInConfig = null
+                    let certificateInConfigHash = null
                     for (const tag of (nodeData?.tags || []) as string[]) {
                         if (
                             tag.startsWith('key_hash=') &&
                             config.certificates[tag.slice(9)]
                         ) {
-                            certificateInConfig =
-                                config.certificates[tag.slice(9)]
+                            certificateInConfigHash = tag.slice(9)
                             break
                         }
                     }
@@ -192,8 +191,10 @@ async function loadKeys({
                     results['privateKey'] = {
                         data: val.data,
                         tags: val.tags,
-                        signWith: certificateInConfig
-                            ? certificateInConfig.signWith
+                        signWith: certificateInConfigHash
+                            ? config.signWith[config.slots[0]].includes(
+                                  certificateInConfigHash
+                              )
                             : false,
                         nodeData: val.nodeData,
                         mapper: await generateActionMapper({
@@ -834,6 +835,7 @@ const KeysUpdate = ({
                     } = await transformActions({
                         actions: values.actionsPrivateKey,
                         mapper: privateKey?.mapper,
+                        config,
                         hashAlgorithm: hashAlgorithmsWorking[0],
                     })
                     const keyParams = {
@@ -913,6 +915,7 @@ const KeysUpdate = ({
                         ? await transformActions({
                               actions: values.actionsPrivateKey,
                               mapper: privateKey?.mapper,
+                              config,
                               hashAlgorithm: hashAlgorithmsWorking[0],
                           })
                         : {
@@ -1070,7 +1073,6 @@ const KeysUpdate = ({
                                 ? {
                                       data: await serializeToBase64(privKey),
                                       note: '',
-                                      signWith: false,
                                   }
                                 : null,
                         }

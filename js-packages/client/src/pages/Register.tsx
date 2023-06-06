@@ -111,6 +111,7 @@ function Register() {
                             certificates: {},
                             tokens: {},
                             hosts: {},
+                            signWith: {},
                             baseUrl: url,
                             configCluster: '',
                             slots: [slot],

@@ -163,6 +163,7 @@ const ClusterIntern = ({
                     } = await transformActions({
                         actions: actionsNew,
                         mapper,
+                        config,
                         hashAlgorithm,
                         ignoreCluster: false,
                     })
@@ -256,7 +257,12 @@ const ClusterIntern = ({
                         configUpdate.certificates[digestCert] = {
                             data: await privPromise,
                             note: `certificate of ${newNode.id}`,
-                            signWith: true,
+                        }
+                        configUpdate.signWith = {
+                            [config.slots[0]]: [
+                                ...(config.signWith[config.slots[0]] || []),
+                                digestCert,
+                            ],
                         }
                     }
                     let newConfig

@@ -655,7 +655,6 @@ The item get parameter is mandatory.
 -   tools initializeCluster need to adapt to new config layout
 -   keys need more infos, like callback url, item and tokens
 -   key callbacks: graphqlurl?item=baseCluster&token=... or contenturl?token= for pushable contents
--   certificates for slot
 -   PushedArticle
 -   split keys in signing/encrypting
 -   validationError: use params
@@ -665,7 +664,6 @@ The item get parameter is mandatory.
 -   implement settings/config (partly done)
 -   modernize ActionDialog, redesign, multi column? Move partly to shareDialog?
 -   test permissions
--   admin: overwrite UserAdmin with correct permissions requirement (manage_user)
 -   way to inject tokens (as user)
 -   way to import private key in config
 -   cleanup js structure, harmonize naming

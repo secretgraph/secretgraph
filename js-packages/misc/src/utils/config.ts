@@ -124,7 +124,6 @@ export function cleanConfig(
             config.certificates[key] = {
                 data: val,
                 note: '',
-                signWith: false,
             }
             hasChanges = true
         }
@@ -385,6 +384,9 @@ export function extractPrivKeys({
     const privkeys = Object.assign({}, props.source || {})
     const urlob = new URL(url, window.location.href)
     const clusters = config.hosts[urlob.href].clusters
+    const signWithHashes = new Set(
+        (props.onlySignKeys ? config.signWith[config.slots[0]] : []) || []
+    )
 
     const mapItem = Constants.mapHashNames['' + props.hashAlgorithm]
     if (!mapItem) {
@@ -403,7 +405,7 @@ export function extractPrivKeys({
             if (
                 certEntry &&
                 !privkeys[hash] &&
-                (!props.onlySignKeys || certEntry.signWith)
+                (!props.onlySignKeys || signWithHashes.has(hash))
             ) {
                 privkeys[hash] = unserializeToCryptoKey(
                     certEntry.data,
@@ -615,6 +617,13 @@ export function mergeUpdates(
         ) as (keyof Interfaces.ConfigInterface)[]) {
             const val = update[key]
             switch (key) {
+                case 'signWith':
+                    merged[key] = mergeDeleteObjects(
+                        merged[key],
+                        val,
+                        mergeDeleteObjectsReplace
+                    )[0]
+                    break
                 case 'tokens':
                     merged[key] = mergeDeleteObjects(merged[key], val)[0]
                     break
@@ -745,6 +754,30 @@ export function updateConfig(
         let res
         const val = update[key]
         switch (key) {
+            case 'signWith':
+                res = mergeDeleteObjects(
+                    newState[key],
+                    val,
+                    (
+                        oldval: Interfaces.ConfigInterface['signWith'][string],
+                        update: NonNullable<
+                            NonNullable<
+                                Interfaces.ConfigInputInterface['signWith']
+                            >[string]
+                        >
+                    ) => {
+                        const newUpdate = [...new Set(update)]
+                        newUpdate.sort()
+                        const [newState, count] = mergeDeleteObjectsReplace(
+                            oldval,
+                            newUpdate
+                        )
+                        return [newState, count]
+                    }
+                )
+                newState[key] = res[0]
+                count += res[1]
+                break
             case 'tokens':
                 res = mergeDeleteObjects(newState[key], val, (old, update) => {
                     if (update.note === undefined) {
@@ -769,9 +802,6 @@ export function updateConfig(
                     (old, update) => {
                         if (update.note === undefined) {
                             update.note = ''
-                        }
-                        if (update.signWith === undefined) {
-                            update.signWith = false
                         }
                         if (!update.data) {
                             throw new InvalidMergeError(

@@ -70,7 +70,6 @@ interface ConfigTokenValue {
 interface ConfigCertificateValue {
     data: string
     note: string
-    signWith: boolean
 }
 
 export type ConfigHashesInterface<N = never, T = string> = {
@@ -101,6 +100,7 @@ interface BaseConfigInterface<N = never> {
     slots: string[]
     configLockUrl: string
     configSecurityQuestion: [string, string]
+    signWith: { [slot: string]: string[] }
 }
 
 export interface ConfigInterface extends BaseConfigInterface {

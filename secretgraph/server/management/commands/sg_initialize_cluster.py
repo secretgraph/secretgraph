@@ -46,10 +46,10 @@ def _gen_key_vars(inp: bytes | str):
 
 
 def _gen_token_vars(inp: bytes | str):
-    # tokens are 
+    # tokens are
     ret = _gen_key_vars_nohash(inp)
     if len(ret[0]) < 50:
-        raise ValueError("Token too short") 
+        raise ValueError("Token too short")
     return *ret, hashObject(("secretgraph", ret[0]))
 
 
@@ -201,7 +201,6 @@ class Command(BaseCommand):
                         publicKey_hash: {
                             "data": privateKey_b64,
                             "note": "initial certificate",
-                            "signWith": True,
                         }
                     },
                     "trustedKeys": {
@@ -225,6 +224,7 @@ class Command(BaseCommand):
                         },
                     },
                     "slots": options["slots"],
+                    "signWith": {options["slots"][0]: [publicKey_hash]},
                     "hosts": {
                         url: {
                             "clusters": {

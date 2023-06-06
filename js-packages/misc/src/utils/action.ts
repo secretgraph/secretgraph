@@ -198,6 +198,9 @@ export async function generateActionMapper({
     const actions: {
         [newHash: string]: ActionMapperEntry | CertificateEntry
     } = {}
+
+    const signWithHashes = new Set(config.signWith[config.slots[0]] || [])
+
     for (const [hash, actionsRaw] of Object.entries(knownHashes)) {
         if (
             !actions[upgradeHash[hash]] ||
@@ -257,7 +260,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note,
                     data: data.data,
-                    signWith: data.signWith,
+                    signWith: signWithHashes.has(upgradeHash[hash]),
                     hasUpdate,
                 }
             } else if (config.certificates[hash]) {
@@ -268,7 +271,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note,
                     data: data.data,
-                    signWith: data.signWith,
+                    signWith: signWithHashes.has(hash),
                     hasUpdate,
                 }
             }
@@ -346,10 +349,12 @@ export async function transformActions({
     actions,
     hashAlgorithm,
     mapper: _mapper,
+    config,
     ignoreCluster = true,
 }: {
     actions: (ActionInputEntry | CertificateInputEntry)[]
     hashAlgorithm: string
+    config?: Interfaces.ConfigInterface
     mapper?:
         | ReturnType<typeof generateActionMapper>
         | UnpackPromise<ReturnType<typeof generateActionMapper>>
@@ -359,11 +364,12 @@ export async function transformActions({
     const finishedActions: Interfaces.ActionInterface[] = []
     const configUpdate: RequireAttributes<
         Interfaces.ConfigInputInterface,
-        'hosts' | 'tokens' | 'certificates'
+        'hosts' | 'tokens' | 'certificates' | 'signWith'
     > = {
         hosts: {},
         tokens: {},
         certificates: {},
+        signWith: {},
     }
     const hashes: Interfaces.ConfigHashesInterface<null> = {}
     await Promise.all(
@@ -470,7 +476,31 @@ export async function transformActions({
                     configUpdate.certificates[activeHash] = {
                         data: val.data,
                         note: val.note,
-                        signWith: val.signWith,
+                    }
+                }
+                if (
+                    (!mapperval && val.signWith) ||
+                    (mapperval?.type == 'certificate' &&
+                        mapperval.signWith != val.signWith)
+                ) {
+                    if (!config) {
+                        throw Error(
+                            'no config specified but certificate signWIth upgrades'
+                        )
+                    }
+                    if (val.signWith) {
+                        if (!configUpdate.signWith[config.slots[0]]) {
+                            configUpdate.signWith[config.slots[0]] = [
+                                ...(config.signWith[config.slots[0]] || []),
+                            ]
+                        }
+                        configUpdate.signWith[config.slots[0]].push(activeHash)
+                    } else {
+                        if (!configUpdate.signWith[config.slots[0]]) {
+                            configUpdate.signWith[config.slots[0]] = (
+                                config.signWith[config.slots[0]] || []
+                            ).filter((hash) => hash != activeHash)
+                        }
                     }
                 }
             }

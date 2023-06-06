@@ -593,6 +593,7 @@ export async function updateOrCreateContentWithConfig({
     } = await transformActions({
         actions,
         mapper,
+        config,
         hashAlgorithm,
     })
 
@@ -803,7 +804,7 @@ export async function updateTrustedKeys({
     hashAlgorithm,
     clusters,
     states = ['trusted', 'required'],
-    signWithIsTrusted = true,
+    signWithIsTrusted = 'all',
 }: {
     itemClient: ApolloClient<any>
     baseClient: ApolloClient<any>
@@ -813,8 +814,22 @@ export async function updateTrustedKeys({
     hashAlgorithm: string
     authorization: string[]
     states?: string[]
-    signWithIsTrusted?: boolean
+    signWithIsTrusted?: false | 'first' | 'all'
 }) {
+    const signWithKeyHashes = new Set<string>()
+    if (signWithIsTrusted) {
+        if (signWithIsTrusted == 'first') {
+            for (const hash of config.signWith[config.slots[0]] || []) {
+                signWithKeyHashes.add(hash)
+            }
+        } else {
+            for (const val of Object.values(config.signWith)) {
+                for (const hash of val) {
+                    signWithKeyHashes.add(hash)
+                }
+            }
+        }
+    }
     const { data } = await itemClient.query({
         query: trustedKeysRetrieval,
         variables: {
@@ -877,10 +892,7 @@ export async function updateTrustedKeys({
                 } else {
                     linksToHash[link.href] = hash
                     let level = config.trustedKeys[hash].level
-                    if (
-                        signWithIsTrusted &&
-                        config.certificates[hash]?.signWith
-                    ) {
+                    if (signWithIsTrusted && signWithKeyHashes.has(hash)) {
                         level = 1
                     }
                     trustedKeysWithNodes[hash] = {
@@ -903,7 +915,7 @@ export async function updateTrustedKeys({
             ) {
                 linksToHash[link.href] = hash
                 let level: 1 | 2 | 3 = 3
-                if (signWithIsTrusted && config.certificates[hash]?.signWith) {
+                if (signWithIsTrusted && signWithKeyHashes.has(hash)) {
                     level = 1
                 }
                 trustedKeysWithNodes[hash] = {

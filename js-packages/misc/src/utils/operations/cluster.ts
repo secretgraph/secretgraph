@@ -180,8 +180,11 @@ export async function initializeCluster({
         // private key is serialized
         data: await serializeToBase64(privateKey),
         note: noteCertificate,
-        signWith: true,
     }
+    if (!config.signWith[config.slots[0]]) {
+        config.signWith[config.slots[0]] = []
+    }
+    config.signWith[config.slots[0]].push(digestPublicKey)
     config.tokens[digestManageKey] = {
         data: manage_keyb64,
         note: noteToken,
