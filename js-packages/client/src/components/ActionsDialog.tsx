@@ -26,79 +26,8 @@ import { FastField, FieldArrayRenderProps, FormikProps } from 'formik'
 import * as React from 'react'
 
 import FormikCheckBox from './formik/FormikCheckbox'
-import SimpleSelect from './forms/SimpleSelect'
 import ActionConfigurator from './formsWithContext/ActionOrCertificateConfigurator'
-
-const HashEntry = React.memo(function HashEntry({
-    item,
-    disabled,
-    selectItem,
-    deleteItem,
-    ...props
-}: Omit<TableRowProps, 'children'> & {
-    item: {
-        value: ActionInputEntry | CertificateInputEntry
-        index: number
-    }
-    disabled?: boolean
-    selectItem: (arg: {
-        value: ActionInputEntry | CertificateInputEntry
-        index: number
-    }) => void | Promise<void>
-    deleteItem?: (arg: {
-        value: ActionInputEntry
-        index: number
-    }) => void | Promise<void>
-}) {
-    return (
-        <TableRow {...props}>
-            <TableCell
-                size="small"
-                onClick={() => selectItem(item)}
-                style={{ wordBreak: 'break-all' }}
-            >
-                {item.value.newHash}
-            </TableCell>
-            <TableCell size="small" padding="checkbox">
-                <FastField
-                    name={`actions.${item.index}.update`}
-                    disabled={
-                        disabled || item.value.delete || item.value.readonly
-                    }
-                    component={FormikCheckBox}
-                    style={{
-                        display:
-                            item.value.update !== undefined
-                                ? undefined
-                                : 'none',
-                    }}
-                    size="small"
-                    type="checkbox"
-                />
-            </TableCell>
-            <TableCell size="small">
-                {deleteItem ? (
-                    <IconButton
-                        size="small"
-                        edge="end"
-                        aria-label="trash"
-                        disabled={item.value.readonly || disabled}
-                        onClick={() =>
-                            deleteItem(
-                                item as {
-                                    value: ActionInputEntry
-                                    index: number
-                                }
-                            )
-                        }
-                    >
-                        <DeleteIcon />
-                    </IconButton>
-                ) : null}
-            </TableCell>
-        </TableRow>
-    )
-})
+import { HashEntry } from './misc'
 
 interface ActionsDialogProps
     extends Pick<FieldArrayRenderProps, 'remove' | 'replace' | 'push'>,
@@ -263,24 +192,34 @@ export default function ActionsDialog({
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {filteredActions.map((item) => {
-                                            return (
-                                                <HashEntry
-                                                    hover
-                                                    selected={
-                                                        selectedItem?.index ==
-                                                        item.index
-                                                    }
-                                                    key={item.index}
-                                                    disabled={disabled}
-                                                    item={item}
-                                                    selectItem={
-                                                        setSelectedItem
-                                                    }
-                                                    deleteItem={deleteItem}
-                                                />
-                                            )
-                                        })}
+                                        {filteredActions.map(
+                                            (item, filteredIndex) => {
+                                                return (
+                                                    <HashEntry
+                                                        hover
+                                                        lastItem={
+                                                            filteredIndex > 0
+                                                                ? filteredActions[
+                                                                      filteredIndex -
+                                                                          1
+                                                                  ]
+                                                                : undefined
+                                                        }
+                                                        selected={
+                                                            selectedItem?.index ==
+                                                            item.index
+                                                        }
+                                                        key={item.index}
+                                                        disabled={disabled}
+                                                        item={item}
+                                                        selectItem={
+                                                            setSelectedItem
+                                                        }
+                                                        deleteItem={deleteItem}
+                                                    />
+                                                )
+                                            }
+                                        )}
                                     </TableBody>
                                 </Table>
                             </TableContainer>

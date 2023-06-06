@@ -41,6 +41,7 @@ import * as Contexts from '../../contexts'
 import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
 import TokenSelect from '../forms/TokenSelect'
 import ActionOrCertificateConfigurator from '../formsWithContext/ActionOrCertificateConfigurator'
+import { HashEntry } from '../misc'
 
 const _update_set = new Set(['update', 'manage'])
 function SharePanel({ url }: { url: string }) {
@@ -97,60 +98,6 @@ function SharePanel({ url }: { url: string }) {
         </details>
     )
 }
-
-const HashEntry = React.memo(function HashEntry({
-    item,
-    disabled,
-    selectItem,
-    deleteItem,
-    ...props
-}: Omit<TableRowProps, 'children'> & {
-    item: {
-        value: ActionInputEntry
-        index: number
-    }
-    disabled?: boolean
-    selectItem: (arg: {
-        value: ActionInputEntry
-        index: number
-    }) => void | Promise<void>
-    deleteItem?: (arg: {
-        value: ActionInputEntry
-        index: number
-    }) => void | Promise<void>
-}) {
-    return (
-        <TableRow {...props}>
-            <TableCell
-                size="small"
-                onClick={() => selectItem(item)}
-                style={{ wordBreak: 'break-all' }}
-            >
-                {item.value.newHash}
-            </TableCell>
-            <TableCell size="small">
-                {deleteItem ? (
-                    <IconButton
-                        size="small"
-                        edge="end"
-                        aria-label="trash"
-                        disabled={item.value.readonly}
-                        onClick={() =>
-                            deleteItem(
-                                item as {
-                                    value: ActionInputEntry
-                                    index: number
-                                }
-                            )
-                        }
-                    >
-                        <DeleteIcon />
-                    </IconButton>
-                ) : null}
-            </TableCell>
-        </TableRow>
-    )
-})
 
 function NewPanel({
     shareUrl,
@@ -564,10 +511,18 @@ function OverviewPanel({
                                                     selectedItem?.index ==
                                                     item.index
                                                 }
+                                                noUpgrade
                                                 key={item.index}
                                                 disabled={disabled}
                                                 item={item}
-                                                selectItem={setSelectedItem}
+                                                selectItem={(arg) =>
+                                                    setSelectedItem(
+                                                        arg as {
+                                                            value: ActionInputEntry
+                                                            index: number
+                                                        }
+                                                    )
+                                                }
                                             />
                                         )
                                     })}
