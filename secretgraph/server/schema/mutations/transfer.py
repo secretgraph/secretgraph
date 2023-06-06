@@ -8,7 +8,7 @@ from typing import Optional
 import strawberry
 from strawberry.scalars import JSON
 from strawberry.types import Info
-from strawberry_django_plus import relay
+from strawberry import relay
 from django.db import transaction
 
 from ....core.constants import TransferResult

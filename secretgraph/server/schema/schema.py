@@ -1,5 +1,6 @@
 from typing import Optional
-from strawberry_django_plus import relay, gql
+from strawberry import relay
+from strawberry_django_plus import gql
 
 # from django.utils.translation import gettext_lazy as _
 from strawberry.types import Info

@@ -2,7 +2,8 @@ from typing import Iterable, Optional, List
 from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
-from strawberry_django_plus import relay, gql
+from strawberry import relay
+from strawberry_django_plus import gql
 from django.db.models import Subquery, Q, Value
 
 from ...utils.auth import (
@@ -23,7 +24,7 @@ from .contents import ContentNode
 
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(ActionMixin, relay.Node):
-    id_attr = "flexid"
+    flexid: relay.NodeID[str]
     limited: gql.Private[bool] = False
 
     @gql.django.field()
@@ -140,40 +141,11 @@ class ClusterNode(ActionMixin, relay.Node):
 
     @gql.django.django_resolver
     @staticmethod
-    def _resolve_node(
-        node_id: str,
-        *,
-        info: Info,
-        required: bool = False,
-    ):
-        result = get_cached_result(info.context["request"])["Cluster"]
-        if node_id.startswith("@"):
-            q = Q(name=node_id, globalNameRegisteredAt__isnull=False)
-        else:
-            q = Q(flexid=node_id)
-        try:
-            return result["_iw"].get(q)
-        except (Cluster.DoesNotExist, ValueError) as exc:
-            if required:
-                raise exc
-            return None
-
-    @classmethod
-    def resolve_node(
-        cls,
-        node_id: str,
-        *,
-        info: Info,
-        required: bool = False,
-    ):
-        return cls._resolve_node(node_id, info=info, required=required)
-
-    @gql.django.django_resolver
-    @staticmethod
     def _resolve_nodes(
         *,
         info: Info,
         node_ids: Optional[Iterable[str]] = None,
+        required: bool = False,
     ):
         result = get_cached_result(info.context["request"])["Cluster"]
         if not node_ids:
@@ -193,8 +165,11 @@ class ClusterNode(ActionMixin, relay.Node):
         *,
         info: Info,
         node_ids: Optional[Iterable[str]] = None,
+        required: bool = False,
     ):
-        return cls._resolve_nodes(info=info, node_ids=node_ids)
+        return cls._resolve_nodes(
+            info=info, node_ids=node_ids, required=required
+        )
 
     @classmethod
     def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:

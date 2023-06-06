@@ -9,7 +9,7 @@ from datetime import datetime as dt
 from itertools import chain
 from uuid import UUID, uuid4
 from typing import Iterable, Optional, Union
-from strawberry_django_plus import relay
+from strawberry import relay
 from functools import cached_property
 
 

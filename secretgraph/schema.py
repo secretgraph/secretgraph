@@ -1,5 +1,5 @@
 import strawberry
-from strawberry_django_plus import relay
+from strawberry import relay
 
 from graphene_protector.django.strawberry import Schema
 

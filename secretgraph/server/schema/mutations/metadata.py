@@ -6,7 +6,7 @@ import logging
 
 import strawberry
 from strawberry.types import Info
-from strawberry_django_plus import relay
+from strawberry import relay
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Value
 from ..shared import MetadataOperations

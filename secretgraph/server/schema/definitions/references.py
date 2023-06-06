@@ -1,6 +1,9 @@
 from typing import TYPE_CHECKING, Annotated, Optional, List, Iterable
+from django.db import models
+from django.db.models.functions import Concat
 from strawberry.types import Info
-from strawberry_django_plus import relay, gql
+from strawberry import relay
+from strawberry_django_plus import gql
 
 from ...utils.auth import get_cached_result
 from ...actions.fetch import fetch_contents
@@ -29,51 +32,37 @@ class ContentReferenceFilter:
 class ContentReferenceNode(relay.Node):
     group: str
     extra: str
+    relay_id: relay.NodeID[str]
 
     deleteRecursive: DeleteRecursive
 
     @classmethod
-    def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
-        return f"{root.source.flexid}|{root.target.flexid}|{root.group}"
-
-    @classmethod
-    def resolve_node(
-        cls,
-        node_id: str,
-        *,
-        info: Info,
-        required: bool = False,
-    ):
-        result = get_cached_result(info.context["request"])["Content"]
-        queryset = ContentReference.objects.all()
-        try:
-            source, target, group = id.node_id.split("|", 2)
-            return queryset.get(
-                source__in=fetch_contents(
-                    result["objects_with_public"],
-                    clustersAreRestricted=True,
-                    ids=source,
-                ),
-                target__in=fetch_contents(
-                    result["objects_with_public"],
-                    clustersAreRestricted=True,
-                    ids=target,
-                ),
-                group=group,
+    def get_queryset(cls, queryset, info):
+        return queryset.annotate(
+            relay_id=Concat(
+                models.F("source__flexid"),
+                models.Value("|"),
+                models.F("target__flexid"),
+                models.Value("|"),
+                models.F("group"),
             )
-        except (ContentReference.DoesNotExist, ValueError) as exc:
-            if required:
-                raise exc
-            return None
+        )
 
     @classmethod
     def resolve_nodes(
         cls,
         *,
-        info: Optional[Info] = None,
-        node_ids: Optional[Iterable[str]] = None,
-    ) -> None:
-        raise NotImplementedError
+        info: Info,
+        node_ids: Iterable[str],
+        required: bool = False,
+    ):
+        result = get_cached_result(info.context["request"])["Content"]
+        queryset = ContentReference.objects.filter(
+            source__in=result["objects_with_public"],
+            target__in=result["objects_with_public"],
+        )
+
+        return queryset.filter(relay_id__in=node_ids)
 
     @gql.django.field
     def source(

@@ -5,7 +5,9 @@ from typing import Optional
 
 import strawberry
 from strawberry.types import Info
-from strawberry_django_plus import relay, gql
+
+from strawberry import relay
+from strawberry_django_plus import gql
 from django.db import transaction
 from django.db.models import QuerySet
 from django.db.models.functions import Substr

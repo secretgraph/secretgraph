@@ -8,7 +8,7 @@ import strawberry
 from django.db.models import Q, Subquery
 from django.utils import timezone
 from strawberry.types import Info
-from strawberry_django_plus import relay
+from strawberry import relay
 
 from ...models import Cluster, Content
 from ...utils.auth import (

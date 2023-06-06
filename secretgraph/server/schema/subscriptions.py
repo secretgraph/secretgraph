@@ -5,7 +5,7 @@ from typing import List, Optional
 from asgiref.sync import sync_to_async
 from django.utils import timezone
 from strawberry.types import Info
-from strawberry_django_plus import relay
+from strawberry import relay
 from django.db.models import Value
 
 from ..models import Cluster, Content

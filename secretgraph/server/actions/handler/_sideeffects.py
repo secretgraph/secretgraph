@@ -3,7 +3,7 @@ from datetime import timedelta as td
 
 from django.db.models import Q
 from django.utils import timezone
-from strawberry_django_plus import relay
+from strawberry import relay
 
 from ....core import constants
 from ...models import Action, Cluster, Content

@@ -2,7 +2,8 @@ from typing import TYPE_CHECKING, Annotated, Optional
 from datetime import datetime
 from strawberry.types import Info
 from uuid import UUID
-from strawberry_django_plus import relay, gql
+from strawberry import relay
+from strawberry_django_plus import gql
 from django.db.models import Subquery, Q, QuerySet
 
 from ....core.constants import public_states
@@ -62,7 +63,7 @@ class ReadStatistic:
 
 @gql.django.type(Content, name="Content")
 class ContentNode(ActionMixin, relay.Node):
-    id_attr = "flexid"
+    flexid: relay.NodeID[str]
 
     nonce: str
     updated: datetime

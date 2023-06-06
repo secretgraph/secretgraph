@@ -2,7 +2,7 @@ from itertools import product, islice
 import uuid
 import logging
 from datetime import timedelta as td
-from strawberry_django_plus.relay import to_base64
+from strawberry.relay import to_base64
 from django.db import transaction, models
 from django.db.utils import IntegrityError
 from django.utils import timezone
@@ -186,7 +186,6 @@ def deleteEncryptedFileCb(sender, instance, **kwargs):
 
 
 def generateFlexid(sender, instance, force=False, **kwargs):
-    from strawberry_django_plus.relay import to_base64
     from .models import Cluster, Content
 
     if force or not instance.flexid or not instance.flexid_cached:

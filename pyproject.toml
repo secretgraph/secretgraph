@@ -33,7 +33,7 @@ gql = {version = "*", extras = ["aiohttp", "websockets"]}
 django = {version = '>=4.2', optional = true}
 channels = {version = ">=4.0", optional = true}
 graphene-protector = {version=">=0.8.0", optional = true}
-strawberry-graphql = {version=">=0.145",  optional = true}
+strawberry-graphql = {version=">=0.183",  optional = true}
 strawberry-django-plus = {version="*", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}

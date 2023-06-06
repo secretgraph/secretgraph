@@ -1,5 +1,5 @@
 from django.db.models import Q, Exists, OuterRef
-from strawberry_django_plus import relay
+from strawberry import relay
 
 from ....core import constants
 from ...models import Action, Cluster, Content, Net, ContentTag

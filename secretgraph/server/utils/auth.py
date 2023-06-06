@@ -4,7 +4,8 @@ import base64
 import logging
 from itertools import islice
 from typing import TYPE_CHECKING, Iterable, Optional
-from strawberry_django_plus import relay, gql
+from strawberry import relay
+from strawberry_django_plus import gql
 from functools import reduce, partial
 from itertools import chain
 from operator import or_

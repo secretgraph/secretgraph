@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING, Annotated, Optional, List, Iterable
 from django.urls import NoReverseMatch
 from strawberry.types import Info
-from strawberry_django_plus import relay, gql
+from strawberry import relay
+from strawberry_django_plus import gql
 from django.conf import settings
 from django.shortcuts import resolve_url
 
@@ -20,8 +21,6 @@ class InjectedKeyNode:
     link: str
     contentHash: str
 
-    id_attr = "name"
-
     @classmethod
     def get_queryset(cls, queryset, info) -> list[Content]:
         return queryset.filter(type="PublicKey", injectedFor__isnull=False)
@@ -29,12 +28,10 @@ class InjectedKeyNode:
 
 @gql.django.type(ClusterGroup, name="ClusterGroup")
 class ClusterGroupNode(relay.Node):
-    name: str
+    name: relay.NodeID[str]
     description: str
     hidden: bool
     injectedKeys: List[InjectedKeyNode]
-
-    id_attr = "name"
 
     @gql.field()
     def properties(self) -> list[str]:
@@ -43,26 +40,19 @@ class ClusterGroupNode(relay.Node):
 
 @gql.type()
 class SecretgraphConfig(relay.Node):
-    @classmethod
-    def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
-        return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
+    shut_up: relay.NodeID[int]
 
     @classmethod
-    def resolve_node(
-        cls,
-        *,
-        info: Optional[Info] = None,
-        node_id: str,
-        required: bool = False,
-    ) -> "SecretgraphConfig":
-        return cls()
+    def resolve_id(cls, root, *, info: Info) -> str:
+        return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
 
     @classmethod
     def resolve_nodes(
         cls,
         *,
-        info: Optional[Info] = None,
-        node_ids: Optional[Iterable[str]] = None,
+        info: Info,
+        node_ids: Iterable[str],
+        required: bool = False,
     ) -> None:
         return [cls()]
 

@@ -2,7 +2,7 @@ from datetime import timedelta
 from contextlib import nullcontext
 from typing import Optional
 
-from strawberry_django_plus.relay import to_base64
+from strawberry import relay
 from django.contrib import admin
 from django.db.models import Subquery, F, QuerySet
 from django.db import transaction
@@ -318,7 +318,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if change:
             old = Cluster.objects.all().filter(id=obj.id).first()
             if old.flexid != obj.flexid:
-                obj.flexid_cached = to_base64(obj.flexid)
+                obj.flexid_cached = relay.to_base64(obj.flexid)
             if old.size != obj.size or old.net != obj.net:
                 old.net.bytes_in_use = F("bytes_in_use") - old.size
                 obj.net.bytes_in_use = F("bytes_in_use") + obj.size
@@ -331,7 +331,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
                 obj.save()
         else:
             if obj.flexid:
-                obj.flexid_cached = to_base64(obj.flexid)
+                obj.flexid_cached = relay.to_base64(obj.flexid)
 
             obj.net.bytes_in_use += len(obj.description)
             with transaction.atomic():
@@ -422,7 +422,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if change:
             old = Content.objects.all().filter(id=obj.id).first()
             if old.flexid != obj.flexid:
-                obj.flexid_cached = to_base64(obj.flexid)
+                obj.flexid_cached = relay.to_base64(obj.flexid)
             old_size = old.size
             new_size = obj.size
             if old.net != obj.net or old_size != new_size:
@@ -438,7 +438,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
 
         else:
             if obj.flexid:
-                obj.flexid_cached = to_base64(obj.flexid)
+                obj.flexid_cached = relay.to_base64(obj.flexid)
             obj.net.bytes_in_use = F("bytes_in_use") + obj.size
             with transaction.atomic():
                 obj.net.save()

@@ -1,6 +1,7 @@
 import strawberry
+from strawberry import relay
 from strawberry.types import Info
-from strawberry_django_plus import relay, gql
+from strawberry_django_plus import gql
 from typing import Optional
 from datetime import timedelta as td
 
@@ -24,7 +25,14 @@ class UserNode(relay.Node):
     # def clusters(self) -> List[ClusterNode]:
     #    return se
 
-    id_attr = user_model.USERNAME_FIELD
+    @classmethod
+    def resolve_id(
+        cls,
+        root,
+        *,
+        info,
+    ):
+        return getattr(root, user_model.USERNAME_FIELD)
 
 
 @strawberry.input
