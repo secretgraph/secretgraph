@@ -669,7 +669,6 @@ The item get parameter is mandatory.
 
 # TODO later
 
--   range support https://gist.github.com/dcwatson/cb5d8157a8fa5a4a046e
 -   allow token stubs, only containing description
 -   select certificates a private content is encrypted for
 -   cleanup utils/arguments.py

@@ -328,7 +328,7 @@ def iter_decrypt_contents(
                     chunk = fileob.read(512)
                     nextchunk = None
                     while chunk:
-                        nextchunk = fileob.read(512)
+                        nextchunk = fileob.read(4096)
                         assert isinstance(chunk, bytes)
                         if nextchunk and len(nextchunk) > 16:
                             yield decryptor.update(chunk)

@@ -1,5 +1,10 @@
+from __future__ import annotations
+
 import json
+import os
+from typing import TYPE_CHECKING
 import logging
+import re
 from urllib.parse import quote
 
 import ratelimit
@@ -34,7 +39,12 @@ from .view_decorators import (
     no_opener,
 )
 
+if TYPE_CHECKING:
+    from .models import Content
+
 logger = logging.getLogger(__name__)
+
+range_request = re.compile(r"bytes\s*=\s*(\d+)\s*-\s*(\d*)", re.I)
 
 
 def calc_content_modified_raw(request, content, *args, **kwargs):
@@ -50,6 +60,61 @@ def calc_content_modified_decrypted(request, content, *args, **kwargs):
     ):
         return None
     return calc_content_modified_raw(request, content, *args, **kwargs)
+
+
+class RangeFileWrapper(object):
+    def __init__(self, filelike, offset, length, blksize=4096):
+        self.filelike = filelike
+        self.filelike.seek(offset, os.SEEK_SET)
+        self.remaining = length
+        self.blksize = blksize
+
+    def close(self):
+        if hasattr(self.filelike, "close"):
+            self.filelike.close()
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self.remaining <= 0:
+            raise StopIteration()
+        data = self.filelike.read(min(self.remaining, self.blksize))
+        if not data:
+            raise StopIteration()
+        self.remaining -= len(data)
+        return data
+
+
+def get_file_response_with_range_support(request, fileob, size, name):
+    range_header = request.META.get("HTTP_RANGE", "").strip()
+    range_match = range_request.match(range_header)
+    if range_match:
+        first_byte, last_byte = range_match.groups()
+        first_byte = int(first_byte) if first_byte else 0
+        last_byte = int(last_byte) if last_byte else size - 1
+        if last_byte >= size:
+            last_byte = size - 1
+        length = last_byte - first_byte + 1
+        response = FileResponse(
+            RangeFileWrapper(fileob, offset=first_byte, length=length),
+            status=206,
+            as_attachment=False,
+            filename=name,
+        )
+        response["Content-Length"] = str(length)
+        response["Content-Range"] = "bytes %s-%s/%s" % (
+            first_byte,
+            last_byte,
+            size,
+        )
+    else:
+        response = FileResponse(
+            fileob,
+            as_attachment=False,
+            filename=name,
+        )
+    return response
 
 
 class ContentView(View):
@@ -169,7 +234,9 @@ class ContentView(View):
                 response["Content-Disposition"] = header
             response["X-Robots-Tag"] = "noindex,nofollow"
         else:
-            response = FileResponse(content.file.read("rb"))
+            response = get_file_response_with_range_support(
+                request, content.file.read("rb"), content.file.size, names[0]
+            )
             if content.cluster.featured:
                 response["X-Robots-Tag"] = "index,follow"
             else:
@@ -180,7 +247,9 @@ class ContentView(View):
         return response
 
     @method_decorator(last_modified(calc_content_modified_raw))
-    def handle_raw_singlecontent(self, request, content, *args, **kwargs):
+    def handle_raw_singlecontent(
+        self, request, content: Content, *args, **kwargs
+    ):
         if "key_hash" in request.GET or request.headers.get("X-KEY-HASH", ""):
             keyhash_set = set(
                 request.headers.get("X-KEY-HASH", "")
@@ -243,10 +312,8 @@ class ContentView(View):
                 name = content.tags.filter(tag__startswith="name=").first()
                 if name:
                     name = name.tag.split("=", 1)[-1]
-                response = FileResponse(
-                    content.file.open("rb"),
-                    as_attachment=bool(name),
-                    filename=name,
+                response = get_file_response_with_range_support(
+                    request, content.file.open("rb"), content.file.size, name
                 )
                 update_file_accessed([content.id])
             except FileNotFoundError as e:
