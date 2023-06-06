@@ -25,6 +25,7 @@ from django.utils.cache import add_never_cache_headers
 from django.utils.decorators import method_decorator
 from django.utils.cache import patch_cache_control
 from django.views.decorators.http import last_modified
+from django.views.decorators.vary import vary_on_headers
 
 from django.views.generic import View
 from strawberry.django.views import AsyncGraphQLView
@@ -48,7 +49,11 @@ range_request = re.compile(r"bytes\s*=\s*(\d+)\s*-\s*(\d*)", re.I)
 
 
 def calc_content_modified_raw(request, content, *args, **kwargs):
-    if "key_hash" in request.GET or request.headers.get("X-KEY-HASH", ""):
+    if (
+        "key_hash" in request.GET
+        or request.headers.get("X-KEY-HASH", "")
+        or request.META.get("HTTP_RANGE", "").strip()
+    ):
         return None
     return content.updated
 
@@ -62,8 +67,10 @@ def calc_content_modified_decrypted(request, content, *args, **kwargs):
     return calc_content_modified_raw(request, content, *args, **kwargs)
 
 
+# range support inspired from
+# https://gist.github.com/dcwatson/cb5d8157a8fa5a4a046e
 class RangeFileWrapper(object):
-    def __init__(self, filelike, offset, length, blksize=4096):
+    def __init__(self, filelike, offset, length, blksize):
         self.filelike = filelike
         self.filelike.seek(offset, os.SEEK_SET)
         self.remaining = length
@@ -93,11 +100,17 @@ def get_file_response_with_range_support(request, fileob, size, name):
         first_byte, last_byte = range_match.groups()
         first_byte = int(first_byte) if first_byte else 0
         last_byte = int(last_byte) if last_byte else size - 1
+        # limit range
         if last_byte >= size:
             last_byte = size - 1
         length = last_byte - first_byte + 1
         response = FileResponse(
-            RangeFileWrapper(fileob, offset=first_byte, length=length),
+            RangeFileWrapper(
+                fileob,
+                offset=first_byte,
+                length=length,
+                blksize=FileResponse.block_size,
+            ),
             status=206,
             as_attachment=False,
             filename=name,
@@ -114,6 +127,7 @@ def get_file_response_with_range_support(request, fileob, size, name):
             as_attachment=False,
             filename=name,
         )
+    response["Accept-Ranges"] = "bytes"
     return response
 
 
@@ -246,6 +260,7 @@ class ContentView(View):
         response["X-TYPE"] = content.type
         return response
 
+    @method_decorator(vary_on_headers("X-KEY-HASH", "RANGE", "Authorization"))
     @method_decorator(last_modified(calc_content_modified_raw))
     def handle_raw_singlecontent(
         self, request, content: Content, *args, **kwargs
