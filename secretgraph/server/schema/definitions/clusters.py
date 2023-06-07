@@ -24,7 +24,7 @@ from .contents import ContentNode
 
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(ActionMixin, relay.Node):
-    flexid: relay.NodeID[str]
+    shut_up: relay.NodeID[str]
     limited: gql.Private[bool] = False
 
     @gql.django.field()
@@ -172,7 +172,12 @@ class ClusterNode(ActionMixin, relay.Node):
         )
 
     @classmethod
-    def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
+    def resolve_id(
+        cls,
+        root: Cluster,
+        *,
+        info: Info,
+    ) -> str:
         if root.limited:
             return ""
         return root.flexid

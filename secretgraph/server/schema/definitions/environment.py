@@ -28,7 +28,13 @@ class InjectedKeyNode:
 
 @gql.django.type(ClusterGroup, name="ClusterGroup")
 class ClusterGroupNode(relay.Node):
-    name: relay.NodeID[str]
+    shut_up: relay.NodeID[str]
+
+    @classmethod
+    def resolve_id(cls, root, *, info: Info) -> str:
+        return root.name
+
+    name: str
     description: str
     hidden: bool
     injectedKeys: List[InjectedKeyNode]

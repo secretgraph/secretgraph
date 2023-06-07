@@ -45,7 +45,7 @@ from .subscriptions import subscribe_node_updates, NodeUpdateSubscription
 
 @gql.type
 class SecretgraphObject:
-    node: Optional[relay.Node] = gql.django.node()
+    node: relay.Node = relay.node()
 
     @gql.django.connection()
     @gql.django.django_resolver
