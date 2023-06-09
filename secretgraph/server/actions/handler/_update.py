@@ -1,9 +1,9 @@
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
 from strawberry import relay
 
 from ....core import constants
-from ...models import Action, Cluster, Content, Net, ContentTag
-from ._shared import only_owned_helper, get_forbidden_content_ids
+from ...models import Action, Cluster, Content, ContentTag, Net
+from ._shared import get_forbidden_content_ids, only_owned_helper
 
 
 class UpdateHandlers:
@@ -461,7 +461,7 @@ class UpdateHandlers:
 
     @staticmethod
     def clean_manage(action_dict, request, content, admin):
-        from ...utils.auth import get_cached_result, fetch_by_id
+        from ...utils.auth import fetch_by_id, get_cached_result
 
         if content:
             raise ValueError("manage cannot be used for content")

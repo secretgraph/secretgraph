@@ -1,9 +1,10 @@
-from datetime import timedelta
 import time
-from django.utils.timezone import now
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
-from django.db.models import OuterRef, Exists, Subquery
+from django.db.models import Exists, OuterRef, Subquery
 from django.db.models.functions import Substr
+from django.utils.timezone import now
 
 from ...models import Content, ContentTag
 from ...signals import sweepContentsAndClusters

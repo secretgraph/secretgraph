@@ -1,27 +1,26 @@
 #! /usr/bin/env python3
 
-import os
-from io import BytesIO
+import argparse
+import asyncio
 import base64
 import json
-import asyncio
-import argparse
+import os
+from io import BytesIO
 from time import time
-from urllib.parse import urljoin, urlencode
+from urllib.parse import urlencode, urljoin
 
-from cryptography.hazmat.primitives.asymmetric import rsa, padding, utils
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from gql import gql
 from gql.client import AsyncClientSession
 
+from secretgraph.core.utils.graphql import create_client
 from secretgraph.core.utils.hashing import (
     findWorkingHashAlgorithms,
     hashObject,
     hashTagsContentHash,
 )
-
-from secretgraph.core.utils.graphql import create_client
 
 parser = argparse.ArgumentParser()
 parser.add_argument("url")

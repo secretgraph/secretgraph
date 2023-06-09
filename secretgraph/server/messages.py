@@ -1,6 +1,5 @@
 from django.utils.translation import gettext_lazy as _
 
-
 server_key_label = _("Key for decoding value")
 tags_label = _("Metadata for content")
 extra_tags_label = _("Extra metadata for content")

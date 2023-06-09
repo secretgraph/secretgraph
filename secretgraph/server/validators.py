@@ -1,7 +1,7 @@
 import re
 
-from django.utils.deconstruct import deconstructible
 from django.core.validators import RegexValidator
+from django.utils.deconstruct import deconstructible
 
 SafeName_regex = re.compile(r"^(?:\S+ \S)*\S*?$")
 

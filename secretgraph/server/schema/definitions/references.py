@@ -1,15 +1,14 @@
-from typing import TYPE_CHECKING, Annotated, Optional, List, Iterable
+from typing import TYPE_CHECKING, Annotated, Iterable, List, Optional
+
 from django.db import models
 from django.db.models.functions import Concat
-from strawberry.types import Info
 from strawberry import relay
+from strawberry.types import Info
 from strawberry_django_plus import gql
 
-from ...utils.auth import get_cached_result
 from ...actions.fetch import fetch_contents
-from ...models import (
-    ContentReference,
-)
+from ...models import ContentReference
+from ...utils.auth import get_cached_result
 from ..shared import DeleteRecursive, UseCriteria
 
 if TYPE_CHECKING:

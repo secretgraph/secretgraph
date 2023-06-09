@@ -1,8 +1,8 @@
-from django.core.management.base import BaseCommand
-
-from django.db.models import Subquery, OuterRef, Exists
 from django.conf import settings
-from ...models import NetGroup, SGroupProperty, ContentTag, Content
+from django.core.management.base import BaseCommand
+from django.db.models import Exists, OuterRef, Subquery
+
+from ...models import Content, ContentTag, NetGroup, SGroupProperty
 
 
 def boolarg(val):

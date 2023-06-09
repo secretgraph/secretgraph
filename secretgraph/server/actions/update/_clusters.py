@@ -1,25 +1,25 @@
 __all__ = ["create_cluster_fn", "update_cluster_fn"]
 
+import logging
 from contextlib import nullcontext
 from uuid import UUID, uuid4
-import logging
 
 import ratelimit
 from django.conf import settings
-from django.utils import timezone
-from django.db.models import F
 from django.core.exceptions import ObjectDoesNotExist
-from ....core.exceptions import ResourceLimitExceeded
+from django.db.models import F
+from django.utils import timezone
 
-from ...models import Cluster, Net, SGroupProperty, ClusterGroup
+from ....core.exceptions import ResourceLimitExceeded
+from ...models import Cluster, ClusterGroup, Net, SGroupProperty
 from ...utils.auth import (
     fetch_by_id,
-    retrieve_allowed_objects,
-    get_cached_result,
     get_cached_net_properties,
+    get_cached_result,
+    retrieve_allowed_objects,
 )
-from ._arguments import ContentInput, ClusterInput
 from ._actions import manage_actions_fn
+from ._arguments import ClusterInput, ContentInput
 from ._contents import create_key_fn
 
 logger = logging.getLogger(__name__)

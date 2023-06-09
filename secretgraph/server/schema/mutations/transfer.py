@@ -6,22 +6,22 @@ import os
 from typing import Optional
 
 import strawberry
+from django.db import transaction
+from strawberry import relay
 from strawberry.scalars import JSON
 from strawberry.types import Info
-from strawberry import relay
-from django.db import transaction
 
 from ....core.constants import TransferResult
-from ...actions.update import sync_transfer_value, create_content_fn
+from ...actions.update import create_content_fn, sync_transfer_value
 from ...models import Content, ContentTag
+from ...utils.arguments import pre_clean_content_spec
 from ...utils.auth import (
     fetch_by_id,
-    ids_to_results,
     get_cached_result,
+    ids_to_results,
     retrieve_allowed_objects,
 )
 from ..arguments import AuthList, PushContentInput
-from ...utils.arguments import pre_clean_content_spec
 from ..definitions import ContentNode
 
 logger = logging.getLogger(__name__)

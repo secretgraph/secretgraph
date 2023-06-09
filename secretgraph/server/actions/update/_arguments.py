@@ -1,11 +1,11 @@
-from typing import Optional, List, Union
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
+from typing import List, Optional, Union
 
 from django.core.files.base import File
 
-from ...models import Net, Cluster, Content, ContentReference
 from ....core.constants import DeleteRecursive
+from ...models import Cluster, Content, ContentReference, Net
 
 AuthList = Optional[List[str]]
 

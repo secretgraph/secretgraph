@@ -7,23 +7,22 @@ __all__ = [
 ]
 
 import logging
-from typing import TYPE_CHECKING, Iterable, Optional
-from uuid import uuid4
 import re
 from contextlib import nullcontext
+from typing import TYPE_CHECKING, Iterable, Optional
+from uuid import uuid4
 
-from django.db.models import Q, F
+from django.conf import settings
+from django.db.models import F, Q
 from django.db.models.functions import Substr
 from django.utils.timezone import now
-from django.conf import settings
 
+from ....core.constants import DeleteRecursive, MetadataOperations
 from ....core.exceptions import ResourceLimitExceeded
-
-from ....core.constants import MetadataOperations, DeleteRecursive
+from ...models import Content, ContentReference, ContentTag
 from ...utils.auth import get_cached_result
 from ...utils.hashing import getPrefix
 from ...validators import TypeAndGroup_regex
-from ...models import Content, ContentReference, ContentTag
 
 if TYPE_CHECKING:
     from ....core import typings

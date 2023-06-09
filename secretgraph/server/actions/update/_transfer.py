@@ -3,28 +3,24 @@ __all__ = ["sync_transfer_value", "transfer_value"]
 import base64
 import json
 import logging
-from uuid import uuid4
 from email.parser import BytesParser
+from uuid import uuid4
 
-from asgiref.sync import sync_to_async, async_to_sync
 import httpx
+from asgiref.sync import async_to_sync, sync_to_async
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-
-from django.db.models.functions import Now
-from django.db.models import F
-from django.utils.module_loading import import_string
 from django.conf import settings
-from secretgraph.core.exceptions import (
-    LockedResourceError,
-)
+from django.db.models import F
+from django.db.models.functions import Now
+from django.utils.module_loading import import_string
 
+from secretgraph.core.exceptions import LockedResourceError
 from secretgraph.server.utils.auth import get_cached_result
-
 
 from ....core.constants import TransferResult
 from ....core.utils.verification import verify
+from ...models import Content, ContentReference, ContentTag, Net
 from ...utils.conf import get_httpx_params
-from ...models import Net, Content, ContentReference, ContentTag
 
 logger = logging.getLogger(__name__)
 

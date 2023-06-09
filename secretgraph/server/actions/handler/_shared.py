@@ -13,7 +13,7 @@ def only_owned_helper(
     only_first_field=False,
     admin=False,
 ):
-    from ...utils.auth import retrieve_allowed_objects, get_cached_result
+    from ...utils.auth import get_cached_result, retrieve_allowed_objects
 
     if not check_fields:
         check_fields = ["flexid", "flexid_cached", "id"]

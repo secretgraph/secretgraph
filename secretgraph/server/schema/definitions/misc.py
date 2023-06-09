@@ -1,6 +1,7 @@
-from strawberry.types import Info
-from typing import List, Optional
 import re
+from typing import List, Optional
+
+from strawberry.types import Info
 
 from ...utils.auth import get_cached_net_properties
 

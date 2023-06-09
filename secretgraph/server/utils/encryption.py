@@ -11,9 +11,9 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_private_key
 from django.conf import settings
-from django.db.models import Exists, OuterRef, Q, Subquery, F
+from django.db.models import Exists, F, OuterRef, Q, Subquery
 
-from ...core.constants import TransferResult, public_states, mapHashNames
+from ...core.constants import TransferResult, mapHashNames, public_states
 from ..models import Content, ContentReference
 
 logger = logging.getLogger(__name__)

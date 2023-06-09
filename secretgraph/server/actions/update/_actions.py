@@ -11,18 +11,16 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
 from django.utils import timezone
 
+from ...actions.handler import ActionHandler
+from ...models import Action, Cluster, Content, ContentAction
 from ...utils.auth import (
+    get_cached_result,
     retrieve_allowed_objects,
     stub_retrieve_allowed_objects,
-    get_cached_result,
 )
-from ...utils.misc import refresh_fields
 from ...utils.hashing import hashObject
-from ...actions.handler import ActionHandler
-from ...models import Action, Content, Cluster, ContentAction
-
+from ...utils.misc import refresh_fields
 from ._arguments import ActionInput
-
 
 _valid_lengths = {32, 50}
 

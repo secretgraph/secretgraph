@@ -1,7 +1,9 @@
 import logging
-from django.db import IntegrityError, transaction, models
+
+from django.db import IntegrityError, models, transaction
 from django.db.models.functions import Now
-from ..models import Content, ContentTag, ContentAction
+
+from ..models import Content, ContentAction, ContentTag
 
 logger = logging.getLogger(__name__)
 

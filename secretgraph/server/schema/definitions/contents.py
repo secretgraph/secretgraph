@@ -1,27 +1,24 @@
-from typing import TYPE_CHECKING, Annotated, Optional
 from datetime import datetime
-from strawberry.types import Info
+from typing import TYPE_CHECKING, Annotated, Optional
 from uuid import UUID
+
+from django.db.models import Q, QuerySet, Subquery
 from strawberry import relay
+from strawberry.types import Info
 from strawberry_django_plus import gql
-from django.db.models import Subquery, Q, QuerySet
 
 from ....core.constants import public_states
-from ...utils.auth import (
-    get_cached_result,
-    get_cached_net_properties,
-    fetch_by_id,
-)
 from ...actions.fetch import fetch_contents
-from ...models import (
-    Content,
-    Action,
-    ContentReference,
+from ...models import Action, Content, ContentReference
+from ...utils.auth import (
+    fetch_by_id,
+    get_cached_net_properties,
+    get_cached_result,
 )
-from ..shared import UseCriteria, UseCriteriaPublic
 from ..filters import ContentFilter
+from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import ActionMixin
-from .references import ContentReferenceNode, ContentReferenceFilter
+from .references import ContentReferenceFilter, ContentReferenceNode
 
 if TYPE_CHECKING:
     from .clusters import ClusterNode

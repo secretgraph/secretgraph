@@ -2,15 +2,17 @@
 # flake8: noqa
 
 import re
-from django.conf import settings
-from django.db import migrations, models
+import uuid
+
+import django.core.validators
 import django.db.models.deletion
 import django.db.models.expressions
 import django.utils.timezone
-import django.core.validators
+from django.conf import settings
+from django.db import migrations, models
+
 import secretgraph.server.models
 import secretgraph.server.validators
-import uuid
 
 
 class Migration(migrations.Migration):

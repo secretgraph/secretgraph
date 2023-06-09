@@ -1,5 +1,6 @@
-import strawberry
 from enum import Enum
+
+import strawberry
 
 from ...core import constants
 

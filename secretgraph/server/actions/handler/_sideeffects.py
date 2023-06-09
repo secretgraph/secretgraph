@@ -7,10 +7,7 @@ from strawberry import relay
 
 from ....core import constants
 from ...models import Action, Cluster, Content
-from ._shared import (
-    only_owned_helper,
-    get_forbidden_content_ids,
-)
+from ._shared import get_forbidden_content_ids, only_owned_helper
 
 
 class SideEffectsHandlers:

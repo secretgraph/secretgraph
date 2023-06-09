@@ -1,12 +1,8 @@
-from typing import (
-    TypeVar,
-    Optional,
-    TypedDict,
-)
+from typing import Optional, TypedDict, TypeVar
 
 from django.db.models import QuerySet
 
-from ..core.typings import Scope, Action, Hash
+from ..core.typings import Action, Hash, Scope
 from . import models
 
 AuthActionInfoDict = TypeVar(

@@ -1,9 +1,10 @@
 from datetime import timedelta
+
 from django.core.management.base import BaseCommand
 from django.db.models import Exists, OuterRef, Q, Subquery
 from django.utils import timezone
 
-from ...models import Content, Net, Cluster
+from ...models import Cluster, Content, Net
 
 
 class Command(BaseCommand):

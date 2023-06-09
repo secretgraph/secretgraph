@@ -1,13 +1,14 @@
-from base64 import b64encode
 import os
+from base64 import b64encode
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 from django.test.client import RequestFactory
 from django.urls import reverse
 
-from ...models import Net, Cluster
-from ...actions.update import manage_actions_fn, ActionInput
+from ...actions.update import ActionInput, manage_actions_fn
+from ...models import Cluster, Net
 
 
 class Command(BaseCommand):

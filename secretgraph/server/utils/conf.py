@@ -1,8 +1,7 @@
 from urllib.parse import urlsplit
 
-from django.http.request import validate_host
 from django.conf import settings
-
+from django.http.request import validate_host
 
 _default_allowed_hosts = ["localhost", "127.0.0.1", "[::1]"]
 

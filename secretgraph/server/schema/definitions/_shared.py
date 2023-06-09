@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import List, Optional
+
 import strawberry
+from django.db.models import Q
 from strawberry.types import Info
 from strawberry_django_plus import gql
-from django.db.models import Q
 
 from ....core import constants
-from ...utils.auth import get_cached_result
 from ...models import Content
+from ...utils.auth import get_cached_result
 
 
 @strawberry.type

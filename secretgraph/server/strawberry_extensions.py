@@ -1,12 +1,10 @@
+import ratelimit
+from django.conf import settings
+from graphql import ExecutionResult as GraphQLExecutionResult
+from graphql.error.graphql_error import GraphQLError
 from strawberry.extensions import SchemaExtension
 from strawberry.types import ExecutionContext
 from strawberry.types.graphql import OperationType
-from graphql import ExecutionResult as GraphQLExecutionResult
-from graphql.error.graphql_error import GraphQLError
-import ratelimit
-
-
-from django.conf import settings
 
 
 class RatelimitMutations(SchemaExtension):

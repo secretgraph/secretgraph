@@ -5,40 +5,37 @@ import base64
 import logging
 import sys
 from contextlib import nullcontext
+from dataclasses import fields
 from itertools import chain
 from typing import Iterable, List, Optional
 from uuid import UUID, uuid4
-from dataclasses import fields
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
-from django.conf import settings
 from django.db.models import F, Q
 from django.utils.timezone import now
 
-from ....core.exceptions import ResourceLimitExceeded
-
 from ....core import constants
+from ....core.exceptions import ResourceLimitExceeded
+from ...models import Cluster, Content, ContentReference, ContentTag, Net
 from ...utils.auth import (
-    ids_to_results,
     get_cached_result,
+    ids_to_results,
     retrieve_allowed_objects,
 )
 from ...utils.hashing import calculateHashes
 from ...utils.misc import refresh_fields
-
-
-from ...models import Cluster, Content, ContentReference, ContentTag, Net
 from ._actions import manage_actions_fn
-from ._metadata import transform_references, transform_tags
 from ._arguments import (
-    ContentMergedInput,
     ContentInput,
     ContentKeyInput,
+    ContentMergedInput,
     ReferenceInput,
 )
+from ._metadata import transform_references, transform_tags
 
 logger = logging.getLogger(__name__)
 

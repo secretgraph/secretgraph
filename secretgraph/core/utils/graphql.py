@@ -1,8 +1,8 @@
 import math
 
 from gql import Client
-from gql.transport.websockets import WebsocketsTransport
 from gql.transport.aiohttp import AIOHTTPTransport
+from gql.transport.websockets import WebsocketsTransport
 
 
 def create_client(url, headers={}) -> Client:

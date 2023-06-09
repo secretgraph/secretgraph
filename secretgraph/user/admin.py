@@ -1,9 +1,8 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth import get_user_model
-from secretgraph.server.utils.auth import (
-    get_cached_net_properties,
-)
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+
+from secretgraph.server.utils.auth import get_cached_net_properties
 
 user_model = get_user_model()
 

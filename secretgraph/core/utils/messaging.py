@@ -1,11 +1,11 @@
 __all__ = ["PostBox"]
 
 import base64
+import hashlib
 import io
 import json
 import logging
 import os
-import hashlib
 import tempfile
 from email import parser as emailparser
 from email import policy

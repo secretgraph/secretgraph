@@ -1,9 +1,7 @@
 __all__ = ["SecretgraphProxyConfig"]
 
 from django.apps import AppConfig
-
 from django.views import static
-
 
 original_serve = static.serve
 

@@ -1,26 +1,23 @@
-from urllib.parse import urlencode
 import logging
+from urllib.parse import urlencode
 
 from django import template
 from django.conf import settings
-from django.shortcuts import resolve_url
-from django.utils.safestring import mark_safe
-from django.utils.html import escape
 from django.core.paginator import Paginator
-
-from django.db.models import Q, Subquery, OuterRef
+from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Substr
+from django.shortcuts import resolve_url
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 
 from secretgraph.server.utils.mark import freeze_contents, update_file_accessed
 
-from ..models import Content, ContentTag, Cluster
-from ..utils.auth import get_cached_result, fetch_by_id
-from ..actions.fetch import (
-    fetch_clusters as _fetch_clusters,
-    fetch_contents as _fetch_contents,
-)
-from ..utils.encryption import iter_decrypt_contents
 from ...core import constants
+from ..actions.fetch import fetch_clusters as _fetch_clusters
+from ..actions.fetch import fetch_contents as _fetch_contents
+from ..models import Cluster, Content, ContentTag
+from ..utils.auth import fetch_by_id, get_cached_result
+from ..utils.encryption import iter_decrypt_contents
 
 try:
     from bleach import sanitizer

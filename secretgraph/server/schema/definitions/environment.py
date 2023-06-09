@@ -1,16 +1,14 @@
-from typing import TYPE_CHECKING, Annotated, Optional, List, Iterable
-from django.urls import NoReverseMatch
-from strawberry.types import Info
-from strawberry import relay
-from strawberry_django_plus import gql
+from typing import TYPE_CHECKING, Annotated, Iterable, List, Optional
+
 from django.conf import settings
 from django.shortcuts import resolve_url
+from django.urls import NoReverseMatch
+from strawberry import relay
+from strawberry.types import Info
+from strawberry_django_plus import gql
 
+from ...models import ClusterGroup, Content
 from ...utils.auth import get_cached_net_properties
-from ...models import (
-    Content,
-    ClusterGroup,
-)
 
 if TYPE_CHECKING:
     from .contents import ContentNode

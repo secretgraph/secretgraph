@@ -1,7 +1,6 @@
 from django.contrib.auth import views
-from django.views.generic import TemplateView
 from django.urls import path
-
+from django.views.generic import TemplateView
 
 app_name = "auth"
 

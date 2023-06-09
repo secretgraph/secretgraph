@@ -2,6 +2,7 @@ import argparse
 import sys
 from os import path
 from typing import Optional
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import OuterRef, Subquery
@@ -9,13 +10,13 @@ from django.db.models.functions import Substr
 from django.test.client import RequestFactory
 from django.urls import reverse
 
-from ...models import Content, ContentTag, Cluster
 from ...actions.update import (
-    create_content_fn,
-    update_content_fn,
     ContentInput,
     ContentValueInput,
+    create_content_fn,
+    update_content_fn,
 )
+from ...models import Cluster, Content, ContentTag
 from ...utils.hashing import hashTagsContentHash
 
 

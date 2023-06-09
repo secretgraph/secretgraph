@@ -1,4 +1,4 @@
-from typing import Literal, Any, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from cryptography.hazmat.primitives import serialization
 

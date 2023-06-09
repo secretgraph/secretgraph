@@ -1,7 +1,9 @@
 import base64
+from typing import Iterable
+
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.hashes import Hash
-from typing import Iterable
+
 from .. import constants
 from ..typings import PrivateCryptoKey, PublicCryptoKey
 

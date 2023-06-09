@@ -7,9 +7,9 @@ It exposes the WSGI callable as a module-level variable named ``application``.
 
 # WARNING: prefer asgi over wsgi as wsgi lacks lots of features like websockets
 
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 if str(BASE_DIR) not in sys.path:

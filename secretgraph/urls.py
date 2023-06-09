@@ -1,17 +1,16 @@
-from django.conf.urls.i18n import i18n_patterns
 from django.conf import settings
+from django.conf.urls.i18n import i18n_patterns
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import include, path
+from django.utils import timezone
+from django.views.decorators.cache import cache_control
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import last_modified
-from django.views.decorators.cache import cache_control
-from django.utils import timezone
 from django.views.generic.base import RedirectView
 from django.views.i18n import JavaScriptCatalog
 
-from .server.views import CORSFileUploadGraphQLView
 from .schema import schema
-
+from .server.views import CORSFileUploadGraphQLView
 
 last_modified_date = timezone.now()
 

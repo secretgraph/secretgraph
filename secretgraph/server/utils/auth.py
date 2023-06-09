@@ -2,35 +2,28 @@ from __future__ import annotations
 
 import base64
 import logging
-from itertools import islice
-from typing import TYPE_CHECKING, Iterable, Optional
-from strawberry import relay
-from strawberry_django_plus import gql
-from functools import reduce, partial
-from itertools import chain
+from functools import partial, reduce
+from itertools import chain, islice
 from operator import or_
+from typing import TYPE_CHECKING, Iterable, Optional
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from django.db import models
 from django.apps import apps
-from django.utils import timezone
 from django.conf import settings
+from django.db import models
+from django.utils import timezone
+from strawberry import relay
+from strawberry_django_plus import gql
 
 from ...core import constants
 from ..actions.handler import ActionHandler
-from ..models import (
-    Action,
-    Cluster,
-    Content,
-    Net,
-    NetGroup,
-    SGroupProperty,
-)
+from ..models import Action, Cluster, Content, Net, NetGroup, SGroupProperty
 from .hashing import calculateHashes
 
 if TYPE_CHECKING:
-    from ...core import typings
     from django.http import HttpRequest
+
+    from ...core import typings
 
 logger = logging.getLogger(__name__)
 

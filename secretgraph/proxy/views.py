@@ -1,7 +1,7 @@
-from django.http import JsonResponse
-from django.views import View
-from django.urls import reverse
 from django.contrib.staticfiles.storage import staticfiles_storage
+from django.http import JsonResponse
+from django.urls import reverse
+from django.views import View
 from manifest_loader.utils import manifest
 
 

@@ -1,12 +1,13 @@
-from datetime import timedelta
 import time
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
 from django.db.models import Subquery
 from django.utils.timezone import now
 
 from ...models import Cluster, Content
-from ...utils.auth import fetch_by_id
 from ...signals import sweepContentsAndClusters
+from ...utils.auth import fetch_by_id
 
 
 class Command(BaseCommand):

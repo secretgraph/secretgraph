@@ -1,26 +1,23 @@
 __all__ = ["SecretgraphServerConfig"]
 
 from django.apps import AppConfig
+from django.core.signals import got_request_exception, request_started
 from django.db.models.signals import (
     post_delete,
-    pre_delete,
-    post_save,
     post_migrate,
-)
-from django.core.signals import (
-    got_request_exception,
-    request_started,
+    post_save,
+    pre_delete,
 )
 
 from .signals import (
     deleteContentCb,
     deleteEncryptedFileCb,
-    deleteSizePreCb,
     deleteSizeCommitCb,
-    generateFlexid,
-    regenerateKeyHash,
+    deleteSizePreCb,
     fillEmptyFlexidsCb,
+    generateFlexid,
     initializeDb,
+    regenerateKeyHash,
     rollbackUsedActionsAndFreeze,
     sweepContentsAndClusters,
 )
@@ -33,7 +30,7 @@ class SecretgraphServerConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
-        from .models import Content, Cluster
+        from .models import Cluster, Content
 
         pre_delete.connect(
             deleteContentCb,

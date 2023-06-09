@@ -4,9 +4,9 @@ from typing import Optional
 
 from django.db.models import Q, QuerySet, Subquery
 
-from ..utils.auth import fetch_by_id
 from ...core.constants import public_states
 from ..models import Cluster, Content
+from ..utils.auth import fetch_by_id
 
 logger = logging.getLogger(__name__)
 

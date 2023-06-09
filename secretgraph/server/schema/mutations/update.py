@@ -4,13 +4,12 @@ import logging
 from typing import Optional
 
 import strawberry
-from strawberry.types import Info
-
-from strawberry import relay
-from strawberry_django_plus import gql
 from django.db import transaction
 from django.db.models import QuerySet
 from django.db.models.functions import Substr
+from strawberry import relay
+from strawberry.types import Info
+from strawberry_django_plus import gql
 
 from ...actions.update import (
     create_cluster_fn,
@@ -19,19 +18,15 @@ from ...actions.update import (
     update_content_fn,
 )
 from ...models import Cluster, Content, SGroupProperty
+from ...utils.arguments import pre_clean_content_spec
 from ...utils.auth import (
     fetch_by_id,
-    ids_to_results,
-    get_cached_result,
     get_cached_net_properties,
+    get_cached_result,
+    ids_to_results,
     update_cached_net_properties,
 )
-from ..arguments import (
-    AuthList,
-    ClusterInput,
-    ContentInput,
-)
-from ...utils.arguments import pre_clean_content_spec
+from ..arguments import AuthList, ClusterInput, ContentInput
 from ..definitions import ClusterNode, ContentNode
 
 logger = logging.getLogger(__name__)

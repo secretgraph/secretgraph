@@ -1,12 +1,12 @@
-from itertools import product, islice
-import uuid
 import logging
+import uuid
 from datetime import timedelta as td
-from strawberry.relay import to_base64
-from django.db import transaction, models
+from itertools import islice, product
+
+from django.db import models, transaction
 from django.db.utils import IntegrityError
 from django.utils import timezone
-
+from strawberry.relay import to_base64
 
 from ..core.constants import DeleteRecursive
 
@@ -18,16 +18,17 @@ def _hashbuilder_helper(inp: str):
 
 
 def initializeDb(**kwargs):
+    from django.conf import settings
+
     from .models import (
-        Net,
+        Cluster,
+        ClusterGroup,
         Content,
         ContentTag,
-        Cluster,
-        SGroupProperty,
-        ClusterGroup,
+        Net,
         NetGroup,
+        SGroupProperty,
     )
-    from django.conf import settings
 
     # system net for injected keys cluster and as fallback
     net = Net.objects.update_or_create(
@@ -235,9 +236,10 @@ def generateFlexid(sender, instance, force=False, **kwargs):
 
 
 def regenerateKeyHash(force=False, **kwargs):
-    from .utils.hashing import calculateHashes
-    from .models import Content, ContentTag
     from django.conf import settings
+
+    from .models import Content, ContentTag
+    from .utils.hashing import calculateHashes
 
     contents = Content.objects.filter(type="PublicKey")
     current_prefix = f"Key:{settings.SECRETGRAPH_HASH_ALGORITHMS[0]}:"
@@ -295,7 +297,7 @@ def fillEmptyFlexidsCb(**kwargs):
 
 
 def rollbackUsedActionsAndFreeze(request, **kwargs):
-    from .models import Action, ContentTag, Content
+    from .models import Action, Content, ContentTag
 
     if getattr(request, "secretgraphActionsToRollback", None):
         Action.objects.filter(

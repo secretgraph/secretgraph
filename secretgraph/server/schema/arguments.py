@@ -1,13 +1,13 @@
 import dataclasses
-from typing import Iterable, Optional, List
-from strawberry.file_uploads import Upload
 from datetime import datetime
+from typing import Iterable, List, Optional
+
 import strawberry
-from strawberry.scalars import JSON, ID
+from strawberry.file_uploads import Upload
+from strawberry.scalars import ID, JSON
 
-from .shared import DeleteRecursive
 from ..models import Net
-
+from .shared import DeleteRecursive
 
 AuthList = Optional[List[str]]
 

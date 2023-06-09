@@ -1,6 +1,7 @@
 from django.urls import path
-from django.views.generic import TemplateView
 from django.views.decorators.cache import cache_control
+from django.views.generic import TemplateView
+
 from secretgraph.server.view_decorators import no_opener
 
 from .views import WebmanifestView

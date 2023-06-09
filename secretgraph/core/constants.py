@@ -1,8 +1,8 @@
 import enum
 from dataclasses import dataclass
 
-from rdflib import Namespace
 from cryptography.hazmat.primitives import hashes
+from rdflib import Namespace
 
 from .typings import ContentState
 

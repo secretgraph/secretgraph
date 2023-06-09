@@ -1,12 +1,12 @@
-from datetime import timedelta
 from contextlib import nullcontext
+from datetime import timedelta
 from typing import Optional
 
-from strawberry import relay
 from django.contrib import admin
-from django.db.models import Subquery, F, QuerySet
 from django.db import transaction
+from django.db.models import F, QuerySet, Subquery
 from django.utils import timezone
+from strawberry import relay
 
 from secretgraph.server.utils.auth import (
     get_cached_net_properties,
@@ -15,17 +15,17 @@ from secretgraph.server.utils.auth import (
 
 from .models import (
     Action,
-    ContentAction,
     Cluster,
-    Content,
-    ContentTag,
-    ContentReference,
     ClusterGroup,
+    Content,
+    ContentAction,
+    ContentReference,
+    ContentTag,
+    Net,
     NetGroup,
     SGroupProperty,
-    Net,
 )
-from .signals import sweepContentsAndClusters, fillEmptyFlexidsCb
+from .signals import fillEmptyFlexidsCb, sweepContentsAndClusters
 
 
 @admin.display(ordering="id", description="")

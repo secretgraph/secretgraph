@@ -2,7 +2,6 @@ __all__ = ["SecretGraphUserConfig"]
 
 from django.apps import AppConfig
 from django.contrib.auth import get_user_model
-
 from django.db.models.signals import post_save
 
 from .signals import syncNetAndUserActiveCb
@@ -16,6 +15,7 @@ class SecretGraphUserConfig(AppConfig):
 
     def ready(self):
         from django.conf import settings
+
         from ..server.models import Net
 
         if getattr(settings, "AUTH_USER_MODEL", None):

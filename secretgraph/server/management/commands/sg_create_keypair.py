@@ -13,8 +13,8 @@ from django.db.models import Q
 from django.test.client import RequestFactory
 from django.urls import reverse
 
-from ...actions.update import create_key_fn, ContentInput, ContentKeyInput
-from ...models import Net, Cluster
+from ...actions.update import ContentInput, ContentKeyInput, create_key_fn
+from ...models import Cluster, Net
 
 
 def _gen_key_vars_nohash(inp: bytes | str):

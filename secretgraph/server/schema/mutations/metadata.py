@@ -1,32 +1,26 @@
 from __future__ import annotations
 
-from typing import List, Optional
-from itertools import chain
 import logging
+from itertools import chain
+from typing import List, Optional
 
 import strawberry
-from strawberry.types import Info
-from strawberry import relay
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Value
-from ..shared import MetadataOperations
+from strawberry import relay
+from strawberry.types import Info
 
-from ...utils.arguments import (
-    pre_clean_update_content_args,
-    check_actions,
-)
-from ...actions.update import (
-    update_metadata_fn,
-    manage_actions_fn,
-)
-from ...models import Cluster, Content, SGroupProperty, ContentTag, Net
+from ...actions.update import manage_actions_fn, update_metadata_fn
+from ...models import Cluster, Content, ContentTag, Net, SGroupProperty
 from ...signals import generateFlexid
+from ...utils.arguments import check_actions, pre_clean_update_content_args
 from ...utils.auth import (
     fetch_by_id,
-    ids_to_results,
     get_cached_net_properties,
+    ids_to_results,
 )
-from ..arguments import AuthList, ActionInput, ReferenceInput
+from ..arguments import ActionInput, AuthList, ReferenceInput
+from ..shared import MetadataOperations
 
 logger = logging.getLogger(__name__)
 
