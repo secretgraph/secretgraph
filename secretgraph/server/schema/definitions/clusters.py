@@ -22,7 +22,6 @@ from .contents import ContentNode
 
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(ActionMixin, relay.Node):
-    shut_up: relay.NodeID[str]
     limited: gql.Private[bool] = False
 
     @gql.django.field()
@@ -110,10 +109,11 @@ class ClusterNode(ActionMixin, relay.Node):
                 "name", flat=True
             )
 
-    @gql.django.connection()
+    @relay.connection(relay.ListConnection[ContentNode])
+    @gql.django.django_resolver
     def contents(
         self, info: Info, filters: ContentFilterCluster
-    ) -> list[ContentNode]:
+    ) -> Iterable[ContentNode]:
         queryset = get_cached_result(info.context["request"])["Content"][
             "objects_with_public"
         ].filter(cluster=self)

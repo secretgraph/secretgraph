@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Optional
+from typing import TYPE_CHECKING, Annotated, Iterable, Optional
 from uuid import UUID
 
 from django.db.models import Q, QuerySet, Subquery
@@ -158,10 +158,11 @@ class ContentNode(ActionMixin, relay.Node):
             self.cluster.limited = True
         return self.cluster
 
-    @gql.django.connection()
+    @relay.connection(relay.ListConnection[ContentReferenceNode])
+    @gql.django.django_resolver
     def references(
         self, info: Info, filters: ContentReferenceFilter
-    ) -> list[ContentReferenceNode]:
+    ) -> Iterable[ContentReferenceNode]:
         if (
             not isinstance(self, Content)
             or self.limited
@@ -190,10 +191,11 @@ class ContentNode(ActionMixin, relay.Node):
             **filterob,
         )
 
-    @gql.django.connection()
+    @relay.connection(relay.ListConnection[ContentReferenceNode])
+    @gql.django.django_resolver
     def referencedBy(
         self, info: Info, filters: ContentReferenceFilter
-    ) -> list[ContentReferenceNode]:
+    ) -> Iterable[ContentReferenceNode]:
         if (
             not isinstance(self, Content)
             or self.limited

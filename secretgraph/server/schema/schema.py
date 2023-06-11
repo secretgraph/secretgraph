@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Iterable, Optional
 
 from strawberry import relay
 
@@ -46,16 +46,16 @@ from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 class SecretgraphObject:
     node: relay.Node = relay.node()
 
-    @gql.django.connection()
+    @relay.connection(relay.ListConnection[ClusterNode])
     @gql.django.django_resolver
-    def clusters(self, info, filters: ClusterFilter) -> list[ClusterNode]:
+    def clusters(self, info, filters: ClusterFilter) -> Iterable[ClusterNode]:
         return ClusterNode.get_queryset_intern(
             Cluster.objects.all(), info, filters
         )
 
-    @gql.django.connection()
+    @relay.connection(relay.ListConnection[ClusterNode])
     @gql.django.django_resolver
-    def contents(self, info, filters: ContentFilter) -> list[ContentNode]:
+    def contents(self, info, filters: ContentFilter) -> Iterable[ContentNode]:
         return ContentNode.get_queryset_intern(
             Content.objects.all(), info, filters
         )

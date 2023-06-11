@@ -26,8 +26,6 @@ class InjectedKeyNode:
 
 @gql.django.type(ClusterGroup, name="ClusterGroup")
 class ClusterGroupNode(relay.Node):
-    shut_up: relay.NodeID[str]
-
     @classmethod
     def resolve_id(cls, root, *, info: Info) -> str:
         return root.name
@@ -44,8 +42,6 @@ class ClusterGroupNode(relay.Node):
 
 @gql.type()
 class SecretgraphConfig(relay.Node):
-    shut_up: relay.NodeID[int]
-
     @classmethod
     def resolve_id(cls, root, *, info: Info) -> str:
         return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
