@@ -1,6 +1,8 @@
 import strawberry
+from django.conf import settings
 from graphene_protector.django.strawberry import Schema
 from strawberry import relay
+from strawberry.schema.config import StrawberryConfig
 
 from .server.schema import Mutation as ServerMutation
 from .server.schema import Query as ServerQuery
@@ -26,4 +28,7 @@ schema = Schema(
     mutation=Mutation,
     subscription=ServerSubscription,
     extensions=[RatelimitMutations, RatelimitErrors],
+    config=StrawberryConfig(
+        relay_max_results=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS
+    ),
 )
