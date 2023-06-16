@@ -42,6 +42,9 @@ class ClusterGroupNode(relay.Node):
 
 @gql.type()
 class SecretgraphConfig(relay.Node):
+    # we cannot define Node classes without NodeID yet
+    stub: relay.NodeID[str]
+
     @classmethod
     def resolve_id(cls, root, *, info: Info) -> str:
         return getattr(settings, "LAST_CONFIG_RELOAD_ID", "")
