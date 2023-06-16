@@ -158,7 +158,7 @@ class ContentNode(ActionMixin, relay.Node):
             self.cluster.limited = True
         return self.cluster
 
-    @relay.connection(relay.ListConnection[ContentReferenceNode])
+    @gql.relay.connection(gql.relay.ListConnection[ContentReferenceNode])
     @gql.django.django_resolver
     def references(
         self, info: Info, filters: ContentReferenceFilter
@@ -191,7 +191,7 @@ class ContentNode(ActionMixin, relay.Node):
             **filterob,
         )
 
-    @relay.connection(relay.ListConnection[ContentReferenceNode])
+    @gql.relay.connection(gql.relay.ListConnection[ContentReferenceNode])
     @gql.django.django_resolver
     def referencedBy(
         self, info: Info, filters: ContentReferenceFilter

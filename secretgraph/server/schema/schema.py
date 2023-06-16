@@ -1,7 +1,5 @@
 from typing import Iterable, Optional
 
-from strawberry import relay
-
 # from django.utils.translation import gettext_lazy as _
 from strawberry.types import Info
 from strawberry_django_plus import gql
@@ -44,16 +42,16 @@ from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 
 @gql.type
 class SecretgraphObject:
-    node: relay.Node = relay.node()
+    node: gql.relay.Node = gql.relay.node()
 
-    @relay.connection(relay.ListConnection[ClusterNode])
+    @gql.relay.connection(gql.relay.ListConnection[ClusterNode])
     @gql.django.django_resolver
     def clusters(self, info, filters: ClusterFilter) -> Iterable[ClusterNode]:
         return ClusterNode.get_queryset_intern(
             Cluster.objects.all(), info, filters
         )
 
-    @relay.connection(relay.ListConnection[ClusterNode])
+    @gql.relay.connection(gql.relay.ListConnection[ClusterNode])
     @gql.django.django_resolver
     def contents(self, info, filters: ContentFilter) -> Iterable[ContentNode]:
         return ContentNode.get_queryset_intern(

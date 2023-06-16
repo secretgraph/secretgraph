@@ -111,7 +111,7 @@ class ClusterNode(ActionMixin, relay.Node):
                 "name", flat=True
             )
 
-    @relay.connection(relay.ListConnection[ContentNode])
+    @gql.relay.connection(gql.relay.ListConnection[ContentNode])
     @gql.django.django_resolver
     def contents(
         self, info: Info, filters: ContentFilterCluster
