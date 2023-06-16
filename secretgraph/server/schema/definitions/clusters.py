@@ -23,6 +23,7 @@ from .contents import ContentNode
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(ActionMixin, relay.Node):
     limited: gql.Private[bool] = False
+    flexid: relay.NodeID[str]
 
     @gql.django.field()
     def featured(self) -> Optional[bool]:

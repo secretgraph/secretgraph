@@ -58,7 +58,7 @@ graphene-protector = ">=0.7.2"
 django = ">=4.1"
 channels = {version = '>=4.0', extras = ["daphne"] }
 strawberry-graphql = {version = '>=0.145', extras = ["debug"] }
-strawberry-django-plus = "*"
+strawberry-django-plus = ">=3.0"
 tox = "*"
 
 

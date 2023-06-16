@@ -210,12 +210,12 @@ tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pyte
 
 [[package]]
 name = "autobahn"
-version = "23.6.1"
+version = "23.6.2"
 description = "WebSocket client & server library, WAMP real-time framework"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "autobahn-23.6.1.tar.gz", hash = "sha256:ce6e540402e3524ca46c55a1bc46255225969b5837ca792ea5415d21ac571034"},
+    {file = "autobahn-23.6.2.tar.gz", hash = "sha256:ec9421c52a2103364d1ef0468036e6019ee84f71721e86b36fe19ad6966c1181"},
 ]
 
 [package.dependencies]
@@ -225,16 +225,16 @@ setuptools = "*"
 txaio = ">=21.2.1"
 
 [package.extras]
-all = ["PyGObject (>=3.40.0)", "argon2_cffi (>=20.1.0)", "attrs (>=20.3.0)", "base58 (>=2.1.0)", "base58 (>=2.1.0)", "bitarray @ git+https://github.com/ilanschnell/bitarray.git@master", "bitarray @ git+https://github.com/ilanschnell/bitarray.git@master", "cbor2 (>=5.2.0)", "cbor2 (>=5.2.0)", "cbor2 (>=5.2.0)", "cffi (>=1.14.5)", "cffi (>=1.14.5)", "click (>=8.1.2)", "click (>=8.1.2)", "ecdsa (>=0.16.1)", "ecdsa (>=0.16.1)", "eth-abi (>=4.0.0)", "eth-abi (>=4.0.0)", "flatbuffers (>=22.12.6)", "hkdf (>=0.0.3)", "hkdf (>=0.0.3)", "jinja2 (>=2.11.3)", "jinja2 (>=2.11.3)", "mnemonic (>=0.19)", "mnemonic (>=0.19)", "passlib (>=1.7.4)", "py-ecc (>=5.1.0)", "py-ecc (>=5.1.0)", "py-eth-sig-utils (>=0.4.0)", "py-eth-sig-utils (>=0.4.0)", "py-multihash (>=2.0.1)", "py-multihash (>=2.0.1)", "py-ubjson (>=0.16.1)", "pynacl (>=1.4.0)", "pyopenssl (>=20.0.1)", "python-snappy (>=0.6.0)", "pytrie (>=0.4.0)", "qrcode (>=7.3.1)", "rlp (>=2.0.1)", "rlp (>=2.0.1)", "service_identity (>=18.1.0)", "spake2 (>=0.8)", "spake2 (>=0.8)", "twisted (>=20.3.0)", "twisted (>=20.3.0)", "twisted (>=20.3.0)", "u-msgpack-python (>=2.1)", "web3[ipfs] (>=6.0.0)", "web3[ipfs] (>=6.0.0)", "xbr (>=21.2.1)", "xbr (>=21.2.1)", "yapf (==0.29.0)", "yapf (==0.29.0)", "zlmdb (>=21.2.1)", "zlmdb (>=21.2.1)", "zope.interface (>=5.2.0)"]
+all = ["PyGObject (>=3.40.0)", "argon2_cffi (>=20.1.0)", "attrs (>=20.3.0)", "base58 (>=2.1.0)", "bitarray (>=2.7.5)", "cbor2 (>=5.2.0)", "cffi (>=1.14.5)", "click (>=8.1.2)", "ecdsa (>=0.16.1)", "eth-abi (>=4.0.0)", "flatbuffers (>=22.12.6)", "hkdf (>=0.0.3)", "jinja2 (>=2.11.3)", "mnemonic (>=0.19)", "msgpack (>=1.0.2)", "passlib (>=1.7.4)", "py-ecc (>=5.1.0)", "py-eth-sig-utils (>=0.4.0)", "py-multihash (>=2.0.1)", "py-ubjson (>=0.16.1)", "pynacl (>=1.4.0)", "pyopenssl (>=20.0.1)", "python-snappy (>=0.6.0)", "pytrie (>=0.4.0)", "qrcode (>=7.3.1)", "rlp (>=2.0.1)", "service_identity (>=18.1.0)", "spake2 (>=0.8)", "twisted (>=20.3.0)", "ujson (>=4.0.2)", "web3[ipfs] (>=6.0.0)", "xbr (>=21.2.1)", "yapf (==0.29.0)", "zlmdb (>=21.2.1)", "zope.interface (>=5.2.0)"]
 compress = ["python-snappy (>=0.6.0)"]
 dev = ["backports.tempfile (>=1.0)", "bumpversion (>=0.5.3)", "codecov (>=2.0.15)", "flake8 (<5)", "humanize (>=0.5.1)", "mypy (>=0.610)", "passlib", "pep8-naming (>=0.3.3)", "pip (>=9.0.1)", "pyenchant (>=1.6.6)", "pyflakes (>=1.0.0)", "pyinstaller (>=4.2)", "pylint (>=1.9.2)", "pytest (>=3.4.2)", "pytest-aiohttp", "pytest-asyncio (>=0.14.0)", "pytest-runner (>=2.11.1)", "pyyaml (>=4.2b4)", "qualname", "sphinx (>=1.7.1)", "sphinx-autoapi (>=1.7.0)", "sphinx_rtd_theme (>=0.1.9)", "sphinxcontrib-images (>=0.9.1)", "tox (>=4.2.8)", "tox-gh-actions (>=2.2.0)", "twine (>=3.3.0)", "twisted (>=22.10.0)", "txaio (>=20.4.1)", "watchdog (>=0.8.3)", "wheel (>=0.36.2)", "yapf (==0.29.0)"]
 encryption = ["pynacl (>=1.4.0)", "pyopenssl (>=20.0.1)", "pytrie (>=0.4.0)", "qrcode (>=7.3.1)", "service_identity (>=18.1.0)"]
 nvx = ["cffi (>=1.14.5)"]
 scram = ["argon2_cffi (>=20.1.0)", "cffi (>=1.14.5)", "passlib (>=1.7.4)"]
-serialization = ["cbor2 (>=5.2.0)", "flatbuffers (>=22.12.6)", "py-ubjson (>=0.16.1)", "u-msgpack-python (>=2.1)"]
+serialization = ["cbor2 (>=5.2.0)", "flatbuffers (>=22.12.6)", "msgpack (>=1.0.2)", "py-ubjson (>=0.16.1)", "ujson (>=4.0.2)"]
 twisted = ["attrs (>=20.3.0)", "twisted (>=20.3.0)", "zope.interface (>=5.2.0)"]
 ui = ["PyGObject (>=3.40.0)"]
-xbr = ["base58 (>=2.1.0)", "bitarray @ git+https://github.com/ilanschnell/bitarray.git@master", "cbor2 (>=5.2.0)", "click (>=8.1.2)", "ecdsa (>=0.16.1)", "eth-abi (>=4.0.0)", "hkdf (>=0.0.3)", "jinja2 (>=2.11.3)", "mnemonic (>=0.19)", "py-ecc (>=5.1.0)", "py-eth-sig-utils (>=0.4.0)", "py-multihash (>=2.0.1)", "rlp (>=2.0.1)", "spake2 (>=0.8)", "twisted (>=20.3.0)", "web3[ipfs] (>=6.0.0)", "xbr (>=21.2.1)", "yapf (==0.29.0)", "zlmdb (>=21.2.1)"]
+xbr = ["base58 (>=2.1.0)", "bitarray (>=2.7.5)", "cbor2 (>=5.2.0)", "click (>=8.1.2)", "ecdsa (>=0.16.1)", "eth-abi (>=4.0.0)", "hkdf (>=0.0.3)", "jinja2 (>=2.11.3)", "mnemonic (>=0.19)", "py-ecc (>=5.1.0)", "py-eth-sig-utils (>=0.4.0)", "py-multihash (>=2.0.1)", "rlp (>=2.0.1)", "spake2 (>=0.8)", "twisted (>=20.3.0)", "web3[ipfs] (>=6.0.0)", "xbr (>=21.2.1)", "yapf (==0.29.0)", "zlmdb (>=21.2.1)"]
 
 [[package]]
 name = "automat"
@@ -699,13 +699,13 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "filelock"
-version = "3.12.1"
+version = "3.12.2"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "filelock-3.12.1-py3-none-any.whl", hash = "sha256:42f1e4ff2b497311213d61ad7aac5fed9050608e5309573f101eefa94143134a"},
-    {file = "filelock-3.12.1.tar.gz", hash = "sha256:82b1f7da46f0ae42abf1bc78e548667f484ac59d2bcec38c713cee7e2eb51e83"},
+    {file = "filelock-3.12.2-py3-none-any.whl", hash = "sha256:cbb791cdea2a72f23da6ac5b5269ab0a0d161e9ef0100e653b69049a7706d1ec"},
+    {file = "filelock-3.12.2.tar.gz", hash = "sha256:002740518d8aa59a26b0c76e10fb8c6e15eae825d34b6fdf670333fd7b938d81"},
 ]
 
 [package.extras]
@@ -1119,13 +1119,13 @@ dev = ["Sphinx (>=5.1.1)", "black (==23.3.0)", "build (>=0.10.0)", "coverage (>=
 
 [[package]]
 name = "markdown-it-py"
-version = "2.2.0"
+version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "markdown-it-py-2.2.0.tar.gz", hash = "sha256:7c9a5e412688bc771c67432cbfebcdd686c93ce6484913dccf06cb5a0bea35a1"},
-    {file = "markdown_it_py-2.2.0-py3-none-any.whl", hash = "sha256:5a35f8d1870171d9acc47b99612dc146129b631baf04970128b568f190d0cc30"},
+    {file = "markdown-it-py-3.0.0.tar.gz", hash = "sha256:e3f60a94fa066dc52ec76661e37c851cb232d92f9886b15cb560aaada2df8feb"},
+    {file = "markdown_it_py-3.0.0-py3-none-any.whl", hash = "sha256:355216845c60bd96232cd8d8c40e8f9765cc86f46880e43a8fd22dc1a1a8cab1"},
 ]
 
 [package.dependencies]
@@ -1138,7 +1138,7 @@ compare = ["commonmark (>=0.9,<1.0)", "markdown (>=3.4,<4.0)", "mistletoe (>=1.0
 linkify = ["linkify-it-py (>=1,<3)"]
 plugins = ["mdit-py-plugins"]
 profiling = ["gprof2dot"]
-rtd = ["attrs", "myst-parser", "pyyaml", "sphinx", "sphinx-copybutton", "sphinx-design", "sphinx_book_theme"]
+rtd = ["jupyter_sphinx", "mdit-py-plugins", "myst-parser", "pyyaml", "sphinx", "sphinx-copybutton", "sphinx-design", "sphinx_book_theme"]
 testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
 
 [[package]]
@@ -1529,22 +1529,22 @@ diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
 name = "pyproject-api"
-version = "1.5.1"
+version = "1.5.2"
 description = "API to interact with the python pyproject.toml based projects"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pyproject_api-1.5.1-py3-none-any.whl", hash = "sha256:4698a3777c2e0f6b624f8a4599131e2a25376d90fe8d146d7ac74c67c6f97c43"},
-    {file = "pyproject_api-1.5.1.tar.gz", hash = "sha256:435f46547a9ff22cf4208ee274fca3e2869aeb062a4834adfc99a4dd64af3cf9"},
+    {file = "pyproject_api-1.5.2-py3-none-any.whl", hash = "sha256:9cffcbfb64190f207444d7579d315f3278f2c04ba46d685fad93197b5326d348"},
+    {file = "pyproject_api-1.5.2.tar.gz", hash = "sha256:999f58fa3c92b23ebd31a6bad5d1f87d456744d75e05391be7f5c729015d3d91"},
 ]
 
 [package.dependencies]
-packaging = ">=23"
+packaging = ">=23.1"
 tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
 
 [package.extras]
-docs = ["furo (>=2022.12.7)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.22,!=1.23.4)"]
-testing = ["covdefaults (>=2.2.2)", "importlib-metadata (>=6)", "pytest (>=7.2.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)", "virtualenv (>=20.17.1)", "wheel (>=0.38.4)"]
+docs = ["furo (>=2023.5.20)", "sphinx (>=7.0.1)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
+testing = ["covdefaults (>=2.3)", "importlib-metadata (>=6.6)", "pytest (>=7.3.1)", "pytest-cov (>=4.1)", "pytest-mock (>=3.10)", "setuptools (>=67.8)", "wheel (>=0.40)"]
 
 [[package]]
 name = "python-dateutil"
@@ -1654,17 +1654,17 @@ networkx = ["networkx (>=2.0.0,<3.0.0)"]
 
 [[package]]
 name = "rich"
-version = "13.4.1"
+version = "13.4.2"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "rich-13.4.1-py3-none-any.whl", hash = "sha256:d204aadb50b936bf6b1a695385429d192bc1fdaf3e8b907e8e26f4c4e4b5bf75"},
-    {file = "rich-13.4.1.tar.gz", hash = "sha256:76f6b65ea7e5c5d924ba80e322231d7cb5b5981aa60bfc1e694f1bc097fe6fe1"},
+    {file = "rich-13.4.2-py3-none-any.whl", hash = "sha256:8f87bc7ee54675732fa66a05ebfe489e27264caeeff3728c945d25971b6485ec"},
+    {file = "rich-13.4.2.tar.gz", hash = "sha256:d653d6bccede5844304c605d5aac802c7cf9621efd700b46c7ec2b51ea914898"},
 ]
 
 [package.dependencies]
-markdown-it-py = ">=2.2.0,<3.0.0"
+markdown-it-py = ">=2.2.0"
 pygments = ">=2.13.0,<3.0.0"
 
 [package.extras]
@@ -1690,13 +1690,13 @@ doc = ["pytoolconfig[doc]", "sphinx (>=4.5.0)", "sphinx-autodoc-typehints (>=1.1
 
 [[package]]
 name = "service-identity"
-version = "21.1.0"
+version = "23.1.0"
 description = "Service identity verification for pyOpenSSL & cryptography."
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 files = [
-    {file = "service-identity-21.1.0.tar.gz", hash = "sha256:6e6c6086ca271dc11b033d17c3a8bea9f24ebff920c587da090afc9519419d34"},
-    {file = "service_identity-21.1.0-py2.py3-none-any.whl", hash = "sha256:f0b0caac3d40627c3c04d7a51b6e06721857a0e10a8775f2d1d7e72901b3a7db"},
+    {file = "service_identity-23.1.0-py3-none-any.whl", hash = "sha256:87415a691d52fcad954a500cb81f424d0273f8e7e3ee7d766128f4575080f383"},
+    {file = "service_identity-23.1.0.tar.gz", hash = "sha256:ecb33cd96307755041e978ab14f8b14e13b40f1fbd525a4dc78f46d2b986431d"},
 ]
 
 [package.dependencies]
@@ -1704,12 +1704,12 @@ attrs = ">=19.1.0"
 cryptography = "*"
 pyasn1 = "*"
 pyasn1-modules = "*"
-six = "*"
 
 [package.extras]
-dev = ["coverage[toml] (>=5.0.2)", "furo", "idna", "pyOpenSSL", "pytest", "sphinx"]
-docs = ["furo", "sphinx"]
+dev = ["pyopenssl", "service-identity[docs,idna,mypy,tests]"]
+docs = ["furo", "myst-parser", "pyopenssl", "sphinx", "sphinx-notfound-page"]
 idna = ["idna"]
+mypy = ["idna", "mypy", "types-pyopenssl"]
 tests = ["coverage[toml] (>=5.0.2)", "pytest"]
 
 [[package]]
@@ -1779,34 +1779,33 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "strawberry-django-plus"
-version = "2.6.2"
+version = "3.0.0"
 description = "Enhanced Strawberry GraphQL integration with Django"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "strawberry_django_plus-2.6.2-py3-none-any.whl", hash = "sha256:8d89b58f74cbea77176976b136a7878809d0b57073b216b3f8fd4e537b9bc950"},
-    {file = "strawberry_django_plus-2.6.2.tar.gz", hash = "sha256:5a5a48dff0efa8a5c09df6cfd212159df592d08f30fb1c06e444b8ab35931eec"},
+    {file = "strawberry_django_plus-3.0.0-py3-none-any.whl", hash = "sha256:db06b4eb8735f9805703f37100e69ca7bc0a474b618e1d2da3d940ba23e3e414"},
+    {file = "strawberry_django_plus-3.0.0.tar.gz", hash = "sha256:f8e3340604cb478d4499ffa08d942bfd4c52e78fe8b5da8d29fed38efbbd2a6d"},
 ]
 
 [package.dependencies]
 django = ">=3.2"
-strawberry-graphql = ">=0.161.0"
-strawberry-graphql-django = ">=0.8"
+strawberry-graphql = ">=0.184.0"
+strawberry-graphql-django = ">=0.9.4"
 typing-extensions = ">=4.2.0"
 
 [package.extras]
-debug-toolbar = ["django-debug-toolbar (>=3.4)"]
 enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.183.6"
+version = "0.186.0"
 description = "A library for creating GraphQL APIs"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql-0.183.6-py3-none-any.whl", hash = "sha256:36beb6ad64af935d53920fc47e1f94ef16ebba26ad611eb847aae94ac2a55f43"},
-    {file = "strawberry_graphql-0.183.6.tar.gz", hash = "sha256:cf8a6266a806afea27f399632e832c5d96e606f1a65e1b7807feb781f0c6c561"},
+    {file = "strawberry_graphql-0.186.0-py3-none-any.whl", hash = "sha256:6a788de7f6168cff0577d380070ddc0e79515505c112cf9e9c3396df7374c6c3"},
+    {file = "strawberry_graphql-0.186.0.tar.gz", hash = "sha256:5dddc9deba323a4fe54ecad85e0a6c8cc249cbca3b5d17c34b9c8a55534f9f05"},
 ]
 
 [package.dependencies]
@@ -1814,16 +1813,16 @@ graphql-core = ">=3.2.0,<3.3.0"
 libcst = {version = ">=0.4.7", optional = true, markers = "extra == \"debug\" or extra == \"debug-server\" or extra == \"cli\""}
 python-dateutil = ">=2.7.0,<3.0.0"
 rich = {version = ">=12.0.0", optional = true, markers = "extra == \"debug\" or extra == \"debug-server\" or extra == \"cli\""}
-typing_extensions = ">=4.0.0,<5.0.0"
+typing_extensions = ">=4.1.0"
 
 [package.extras]
 aiohttp = ["aiohttp (>=3.7.4.post0,<4.0.0)"]
 asgi = ["python-multipart (>=0.0.5,<0.0.7)", "starlette (>=0.18.0)"]
 chalice = ["chalice (>=1.22,<2.0)"]
 channels = ["asgiref (>=3.2,<4.0)", "channels (>=3.0.5)"]
-cli = ["click (>=7.0,<9.0)", "libcst (>=0.4.7)", "pygments (>=2.3,<3.0)", "rich (>=12.0.0)"]
+cli = ["libcst (>=0.4.7)", "pygments (>=2.3,<3.0)", "rich (>=12.0.0)", "typer (>=0.7.0)"]
 debug = ["libcst (>=0.4.7)", "rich (>=12.0.0)"]
-debug-server = ["click (>=7.0,<9.0)", "libcst (>=0.4.7)", "pygments (>=2.3,<3.0)", "python-multipart (>=0.0.5,<0.0.7)", "rich (>=12.0.0)", "starlette (>=0.18.0)", "uvicorn (>=0.11.6,<0.22.0)"]
+debug-server = ["libcst (>=0.4.7)", "pygments (>=2.3,<3.0)", "python-multipart (>=0.0.5,<0.0.7)", "rich (>=12.0.0)", "starlette (>=0.18.0)", "typer (>=0.7.0)", "uvicorn (>=0.11.6,<0.22.0)"]
 django = ["Django (>=3.2)", "asgiref (>=3.2,<4.0)"]
 fastapi = ["fastapi (>=0.65.2)", "python-multipart (>=0.0.5,<0.0.7)"]
 flask = ["flask (>=1.1)"]
@@ -1835,18 +1834,18 @@ starlite = ["starlite (>=1.48.0)"]
 
 [[package]]
 name = "strawberry-graphql-django"
-version = "0.9.4"
+version = "0.9.5"
 description = "Strawberry GraphQL Django extension"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql_django-0.9.4-py3-none-any.whl", hash = "sha256:99ff77019ebb4f0c17beb64b86aff3257cefd5299269542830b52f48e7eafbfd"},
-    {file = "strawberry_graphql_django-0.9.4.tar.gz", hash = "sha256:d3e20eb3106ca329270825aa14c14ecf1e0b3248cc8946dcf90c1ea23f8be8fd"},
+    {file = "strawberry_graphql_django-0.9.5-py3-none-any.whl", hash = "sha256:848418179337c2901d793f938de38726efe320f8e0ba637f9b0c9c686913e80c"},
+    {file = "strawberry_graphql_django-0.9.5.tar.gz", hash = "sha256:c849c5212a9f9daa3281d3fc90a701c26c0a3405be56a3d4a2a6eab6ba1e8a1e"},
 ]
 
 [package.dependencies]
 Django = ">=3.2"
-strawberry-graphql = ">=0.160.0"
+strawberry-graphql = ">=0.184.0"
 
 [package.extras]
 debug-toolbar = ["django-debug-toolbar (>=3.4)"]
@@ -1893,30 +1892,30 @@ files = [
 
 [[package]]
 name = "tox"
-version = "4.6.0"
+version = "4.6.1"
 description = "tox is a generic virtualenv management and test command line tool"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "tox-4.6.0-py3-none-any.whl", hash = "sha256:4874000453e637a87ca892f9744a2ab9a7d24064dad1b0ecbf5a4c3c146cc732"},
-    {file = "tox-4.6.0.tar.gz", hash = "sha256:954f1f647f67f481d239a193288983242a6152b67503c4a56b19a4aafaa29736"},
+    {file = "tox-4.6.1-py3-none-any.whl", hash = "sha256:b45c4927bd1b3d91d532fbae9d7ffb676ff2b4d2ae26ef93b41b3189d1eff860"},
+    {file = "tox-4.6.1.tar.gz", hash = "sha256:bf71ff8ee08499d4a3db6b73e35ef8d0e4346a3bea84517245b1e4a09b9f0774"},
 ]
 
 [package.dependencies]
-cachetools = ">=5.3"
+cachetools = ">=5.3.1"
 chardet = ">=5.1"
 colorama = ">=0.4.6"
-filelock = ">=3.12"
+filelock = ">=3.12.2"
 packaging = ">=23.1"
-platformdirs = ">=3.5.1"
+platformdirs = ">=3.5.3"
 pluggy = ">=1"
 pyproject-api = ">=1.5.1"
 tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
 virtualenv = ">=20.23"
 
 [package.extras]
-docs = ["furo (>=2023.5.20)", "sphinx (>=7.0.1)", "sphinx-argparse-cli (>=1.11)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)", "sphinx-copybutton (>=0.5.2)", "sphinx-inline-tabs (>=2023.4.21)", "sphinxcontrib-towncrier (>=0.2.1a0)", "towncrier (>=22.12)"]
-testing = ["build[virtualenv] (>=0.10)", "covdefaults (>=2.3)", "devpi-process (>=0.3)", "diff-cover (>=7.5)", "distlib (>=0.3.6)", "flaky (>=3.7)", "hatch-vcs (>=0.3)", "hatchling (>=1.17)", "psutil (>=5.9.5)", "pytest (>=7.3.1)", "pytest-cov (>=4.1)", "pytest-mock (>=3.10)", "pytest-xdist (>=3.3.1)", "re-assert (>=1.1)", "time-machine (>=2.9)", "wheel (>=0.40)"]
+docs = ["furo (>=2023.5.20)", "sphinx (>=7.0.1)", "sphinx-argparse-cli (>=1.11)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)", "sphinx-copybutton (>=0.5.2)", "sphinx-inline-tabs (>=2023.4.21)", "sphinxcontrib-towncrier (>=0.2.1a0)", "towncrier (>=23.6)"]
+testing = ["build[virtualenv] (>=0.10)", "covdefaults (>=2.3)", "detect-test-pollution (>=1.1.1)", "devpi-process (>=0.3)", "diff-cover (>=7.6)", "distlib (>=0.3.6)", "flaky (>=3.7)", "hatch-vcs (>=0.3)", "hatchling (>=1.17.1)", "psutil (>=5.9.5)", "pytest (>=7.3.2)", "pytest-cov (>=4.1)", "pytest-mock (>=3.10)", "pytest-xdist (>=3.3.1)", "re-assert (>=1.1)", "time-machine (>=2.9)", "wheel (>=0.40)"]
 
 [[package]]
 name = "twisted"
@@ -2438,4 +2437,4 @@ server = ["channels", "django", "django-fast-ratelimit", "django-manifest-loader
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9, <4"
-content-hash = "ad28fbf6803590c7fd93a1ff5f5064036bf75a21461c67b2c79364b82392595b"
+content-hash = "9dabfd1750d8877d198582be0eaa0af0962b493dc36476484e16805942b7a848"
