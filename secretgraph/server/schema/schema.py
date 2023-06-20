@@ -117,7 +117,7 @@ class SecretgraphMutations:
         resolver=mutate_transfer, handle_django_errors=False
     )
 
-    logoutUser: None = gql.mutation(resolver=logoutUser)
+    logoutUser = gql.mutation(resolver=logoutUser)
 
 
 @gql.type
