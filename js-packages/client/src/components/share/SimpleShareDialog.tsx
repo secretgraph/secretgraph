@@ -33,7 +33,7 @@ import {
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { hashToken } from '@secretgraph/misc/utils/hashing'
 import * as SetOps from '@secretgraph/misc/utils/set'
-import { FastField, FieldArray, Form, Formik } from 'formik'
+import { FastField, Form, Formik } from 'formik'
 import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
 

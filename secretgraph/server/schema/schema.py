@@ -61,7 +61,7 @@ class SecretgraphObject:
     @gql.field
     @staticmethod
     def config() -> SecretgraphConfig:
-        return SecretgraphConfig()
+        return SecretgraphConfig(stub="1")
 
     permissions: list[str] = gql.field(resolver=get_permissions)
     activeUser: Optional[str] = gql.field(

@@ -33,7 +33,7 @@ import {
 import { extractGroupKeys } from '@secretgraph/misc/utils/references'
 import { parseToStoreAndPrefixes } from '@secretgraph/rdf/utils/graph'
 import * as DOMPurify from 'dompurify'
-import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
+import { FastField, Field, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'

@@ -56,6 +56,7 @@ import {
     FastField,
     Field,
     FieldArray,
+    FieldArrayRenderProps,
     FieldProps,
     Form,
     Formik,
@@ -333,7 +334,7 @@ function UpdateKeysForm({
     return (
         <Form>
             <FieldArray name="actionsPrivateKey">
-                {({ remove, replace, push, form }) => {
+                {({ remove, replace, push, form }: FieldArrayRenderProps) => {
                     return (
                         <ActionsDialog
                             hashAlgorithm={hashAlgorithmsWorking[0]}
@@ -355,7 +356,7 @@ function UpdateKeysForm({
                 }}
             </FieldArray>
             <FieldArray name="actionsPublicKey">
-                {({ remove, replace, push, form }) => {
+                {({ remove, replace, push, form }: FieldArrayRenderProps) => {
                     return (
                         <ActionsDialog
                             hashAlgorithm={hashAlgorithmsWorking[0]}

@@ -33,7 +33,14 @@ import {
     exportConfigAsUrl,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
-import { FastField, Field, FieldArray, Form, Formik } from 'formik'
+import {
+    FastField,
+    Field,
+    FieldArray,
+    FieldArrayRenderProps,
+    Form,
+    Formik,
+} from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
@@ -236,7 +243,12 @@ function InnerConfig({
                     return (
                         <Form>
                             <FieldArray name="actions">
-                                {({ remove, replace, push, form }) => {
+                                {({
+                                    remove,
+                                    replace,
+                                    push,
+                                    form,
+                                }: FieldArrayRenderProps) => {
                                     return (
                                         <ActionsDialog
                                             remove={remove}

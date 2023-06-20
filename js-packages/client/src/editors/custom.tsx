@@ -26,7 +26,15 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
-import { FastField, Field, FieldArray, FieldProps, Form, Formik } from 'formik'
+import {
+    FastField,
+    Field,
+    FieldArray,
+    FieldArrayRenderProps,
+    FieldProps,
+    Form,
+    Formik,
+} from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
@@ -182,7 +190,12 @@ const InnerCustom = ({
                 return (
                     <Form>
                         <FieldArray name="actions">
-                            {({ remove, replace, push, form }) => {
+                            {({
+                                remove,
+                                replace,
+                                push,
+                                form,
+                            }: FieldArrayRenderProps) => {
                                 return (
                                     <ActionsDialog
                                         remove={remove}

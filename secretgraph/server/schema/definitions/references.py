@@ -70,7 +70,7 @@ class ContentReferenceNode(relay.Node):
         result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
             result["objects_with_public"].filter(references=self),
-            clustersAreRestricted=True,
+            clustersAreRestrictedOrAdmin=True,
         ).first()
 
     @gql.django.field
@@ -80,5 +80,5 @@ class ContentReferenceNode(relay.Node):
         result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
             result["objects_with_public"].filter(referencedBy=self),
-            clustersAreRestricted=True,
+            clustersAreRestrictedOrAdmin=True,
         ).first()

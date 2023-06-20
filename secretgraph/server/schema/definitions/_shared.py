@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 import strawberry
 from django.db.models import Q
@@ -15,12 +15,12 @@ class ActionEntry:
     # of action key
     keyHash: str
     type: str
-    allowedTags: Optional[List[str]]
+    allowedTags: Optional[list[str]]
 
 
-class ActionMixin:
-    @gql.field()
-    async def availableActions(self, info: Info) -> List[ActionEntry]:
+class ActionBaseNamespace:
+    @staticmethod
+    async def availableActions(self, info: Info) -> list[ActionEntry]:
         if getattr(self, "limited", False):
             return
         name = self.__class__.__name__.replace("Node", "", 1)
@@ -99,8 +99,7 @@ class ActionMixin:
                         allowedTags=None,
                     )
 
-    @gql.field()
-    @gql.django.django_resolver
+    @staticmethod
     def authOk(self, info: Info) -> bool:
         name = self.__class__.__name__.replace("Node", "", 1)
         result = get_cached_result(
@@ -125,3 +124,15 @@ class ActionMixin:
             if authOk:
                 break
         return authOk
+
+
+class ActionMixin:
+    @gql.field()
+    async def availableActions(self, info: Info) -> list[ActionEntry]:
+        async for i in ActionBaseNamespace.availableActions(self, info):
+            yield i
+
+    @gql.field()
+    @gql.django.django_resolver
+    def authOk(self, info: Info) -> bool:
+        return ActionBaseNamespace.authOk(self, info)

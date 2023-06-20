@@ -29,6 +29,7 @@
     },
     "devDependencies": {
         "typescript": "*",
+        "@types/hoist-non-react-statics": "*",
         "@types/react": "*",
         "@types/dompurify": "*",
         "@types/file-saver": "*",

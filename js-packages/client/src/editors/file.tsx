@@ -41,6 +41,7 @@ import {
     FastField,
     Field,
     FieldArray,
+    FieldArrayRenderProps,
     FieldProps,
     Form,
     Formik,
@@ -1047,7 +1048,12 @@ function InnerFile({
                     return (
                         <Form>
                             <FieldArray name="actions">
-                                {({ remove, replace, push, form }) => {
+                                {({
+                                    remove,
+                                    replace,
+                                    push,
+                                    form,
+                                }: FieldArrayRenderProps) => {
                                     return (
                                         <ActionsDialog
                                             hashAlgorithm={hashAlgorithms[0]}

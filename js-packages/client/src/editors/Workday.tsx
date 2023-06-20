@@ -31,6 +31,7 @@ import {
     FastField,
     Field,
     FieldArray,
+    FieldArrayRenderProps,
     FieldProps,
     Form,
     Formik,
@@ -285,7 +286,12 @@ function InnerWorkday({
                 return (
                     <Form>
                         <FieldArray name="actions">
-                            {({ remove, replace, push, form }) => {
+                            {({
+                                remove,
+                                replace,
+                                push,
+                                form,
+                            }: FieldArrayRenderProps) => {
                                 return (
                                     <ActionsDialog
                                         remove={remove}
@@ -358,7 +364,7 @@ function InnerWorkday({
                                     divider={<Divider />}
                                 >
                                     <FieldArray name="times">
-                                        {({ push }) => (
+                                        {({ push }: FieldArrayRenderProps) => (
                                             <TimeEntries
                                                 push={push}
                                                 disabled={

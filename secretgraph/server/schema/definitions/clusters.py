@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Iterable, List, Optional
 from uuid import UUID
 
+from django.conf import settings
 from django.db.models import Q, Subquery, Value
 from strawberry import relay
 from strawberry.types import Info
@@ -16,15 +17,25 @@ from ...utils.auth import (
 )
 from ..filters import ClusterFilter, ContentFilterCluster
 from ..shared import UseCriteria, UseCriteriaPublic
-from ._shared import ActionMixin
+from ._shared import ActionBaseNamespace, ActionEntry
 from .contents import ContentNode
 
 
 @gql.django.type(Cluster, name="Cluster")
-class ClusterNode(ActionMixin, relay.Node):
+class ClusterNode(relay.Node):
     limited: gql.Private[bool] = False
     # overloaded by resolve_id
     flexid: relay.NodeID[str]
+
+    @gql.field()
+    async def availableActions(self, info: Info) -> list[ActionEntry]:
+        async for i in ActionBaseNamespace.availableActions(self, info):
+            yield i
+
+    @gql.field()
+    @gql.django.django_resolver
+    def authOk(self, info: Info) -> bool:
+        return ActionBaseNamespace.authOk(self, info)
 
     @gql.django.field()
     def featured(self) -> Optional[bool]:
@@ -112,7 +123,6 @@ class ClusterNode(ActionMixin, relay.Node):
             )
 
     @gql.relay.connection(gql.relay.ListConnection[ContentNode])
-    @gql.django.django_resolver
     def contents(
         self, info: Info, filters: ContentFilterCluster
     ) -> Iterable[ContentNode]:
@@ -139,9 +149,9 @@ class ClusterNode(ActionMixin, relay.Node):
             allowDeleted=allowDeleted,
         )
 
-    @gql.django.django_resolver
-    @staticmethod
-    def _resolve_nodes(
+    @classmethod
+    def resolve_nodes(
+        cls,
         *,
         info: Info,
         node_ids: Optional[Iterable[str]] = None,
@@ -154,21 +164,9 @@ class ClusterNode(ActionMixin, relay.Node):
         return fetch_by_id(
             result["objects_with_public"],
             node_ids,
-            limit_ids=None,
+            limit_ids=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
             check_short_id=True,
             check_short_name=True,
-        )
-
-    @classmethod
-    def resolve_nodes(
-        cls,
-        *,
-        info: Info,
-        node_ids: Optional[Iterable[str]] = None,
-        required: bool = False,
-    ):
-        return cls._resolve_nodes(
-            info=info, node_ids=node_ids, required=required
         )
 
     @classmethod
@@ -268,6 +266,8 @@ class ClusterNode(ActionMixin, relay.Node):
                     ].values("id")
                 )
             ).distinct(),
+            isAdmin="allow_hidden"
+            in get_cached_net_properties(info.context["request"]),
             ids=filters.ids,
             limit_ids=None,
             states=filters.states,

@@ -17,7 +17,7 @@ from ...utils.auth import (
 )
 from ..filters import ContentFilter
 from ..shared import UseCriteria, UseCriteriaPublic
-from ._shared import ActionMixin
+from ._shared import ActionBaseNamespace, ActionEntry
 from .references import ContentReferenceFilter, ContentReferenceNode
 
 if TYPE_CHECKING:
@@ -59,7 +59,7 @@ class ReadStatistic:
 
 
 @gql.django.type(Content, name="Content")
-class ContentNode(ActionMixin, relay.Node):
+class ContentNode(relay.Node):
     flexid: relay.NodeID[str]
 
     nonce: str
@@ -73,6 +73,15 @@ class ContentNode(ActionMixin, relay.Node):
     )
     link: str
     limited: gql.Private[bool] = False
+
+    async def availableActions(self, info: Info) -> list[ActionEntry]:
+        async for i in ActionBaseNamespace.availableActions(self, info):
+            yield i
+
+    @gql.field()
+    @gql.django.django_resolver
+    def authOk(self, info: Info) -> bool:
+        return ActionBaseNamespace.authOk(self, info)
 
     @gql.field()
     def readStatistic(self: Content) -> ReadStatistic:
@@ -179,7 +188,7 @@ class ContentNode(ActionMixin, relay.Node):
 
         filterob["target__in"] = fetch_contents(
             query,
-            clustersAreRestricted=True,
+            clustersAreRestrictedOrAdmin=True,
             states=filters.states,
             includeTypes=filters.includeTypes,
             excludeTypes=filters.excludeTypes,
@@ -211,7 +220,7 @@ class ContentNode(ActionMixin, relay.Node):
 
         filterob["source__in"] = fetch_contents(
             query,
-            clustersAreRestricted=True,
+            clustersAreRestrictedOrAdmin=True,
             states=filters.states,
             includeTypes=filters.includeTypes,
             excludeTypes=filters.excludeTypes,
@@ -224,7 +233,12 @@ class ContentNode(ActionMixin, relay.Node):
         )
 
     @classmethod
-    def resolve_id(cls, root, *, info: Optional[Info] = None) -> str:
+    def resolve_id(
+        cls,
+        root: Content,
+        *,
+        info: Info,
+    ) -> str:
         if root.limited:
             return ""
         return root.flexid
@@ -329,7 +343,12 @@ class ContentNode(ActionMixin, relay.Node):
         return fetch_contents(
             queryset,
             states=filters.states,
-            clustersAreRestricted=fixedCluster or filters.clusters is not None,
+            clustersAreRestrictedOrAdmin=fixedCluster
+            or "allow_hidden"
+            in get_cached_net_properties(
+                info.context["request"],
+            )
+            or filters.clusters is not None,
             includeTypes=filters.includeTypes,
             excludeTypes=filters.excludeTypes,
             includeTags=filters.includeTags,

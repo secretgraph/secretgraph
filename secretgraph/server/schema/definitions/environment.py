@@ -36,6 +36,7 @@ class ClusterGroupNode(relay.Node):
     injectedKeys: List[InjectedKeyNode]
 
     @gql.field()
+    @gql.django.django_resolver
     def properties(self) -> list[str]:
         return self.properties.values_list("name", flat=True)
 

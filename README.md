@@ -193,7 +193,7 @@ Only valid for the nginx template specified in this repo!. Note: you have to esc
 -   allow_global_name: can register a global cluster name
 -   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
 -   allow_featured: can feature or unfeature clusters (only global clusters can be featured)
--   allow_hidden: can see hidden contents (Net,Cluster), can set hidden attribute (Net,Cluster), hidden groups of clusters become visible (Net)
+-   allow_hidden: can see hidden contents (Net,Cluster), can set hidden attribute (Net,Cluster), hidden groups of clusters become visible (Net), can query PublicKeys
 -   manage_deletion: can delete every content or cluster (Net)
 -   manage_active: can can block and unblock nets (via Cluster ids)
 -   manage_groups: can manage global groups of clusters, hidden groups of clusters become visible

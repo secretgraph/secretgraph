@@ -16,7 +16,11 @@ from ...core import constants
 from ..actions.fetch import fetch_clusters as _fetch_clusters
 from ..actions.fetch import fetch_contents as _fetch_contents
 from ..models import Cluster, Content, ContentTag
-from ..utils.auth import fetch_by_id, get_cached_result
+from ..utils.auth import (
+    fetch_by_id,
+    get_cached_net_properties,
+    get_cached_result,
+)
 from ..utils.encryption import iter_decrypt_contents
 
 try:
@@ -96,6 +100,9 @@ def fetch_clusters(
     search=None,
     ids=None,
     excludeIds=None,
+    states=None,
+    includeTypes=None,
+    excludeTypes=None,
     includeTags=None,
     excludeTags=None,
     authorization=None,
@@ -139,8 +146,13 @@ def fetch_clusters(
             queryset.distinct(),
             ids=_split_comma(ids),
             limit_ids=None,
+            states=_split_comma(states),
             includeTags=_split_comma(includeTags),
             excludeTags=_split_comma(excludeTags),
+            includeTypes=_split_comma(includeTypes),
+            excludeTypes=_split_comma(excludeTypes),
+            isAdmin="allow_hidden"
+            in get_cached_net_properties(context["request"]),
         ),
         page_size,
     ).get_page(page)
@@ -248,7 +260,8 @@ def fetch_contents(
         result["objects_with_public"],
         ids=_split_comma(ids),
         limit_ids=None,
-        clustersAreRestricted=bool(clusters),
+        clustersAreRestrictedOrAdmin=bool(clusters)
+        or "allow_hidden" in get_cached_net_properties(context["request"]),
         states=states,
         includeTypes=_split_comma(includeTypes),
         excludeTypes=_split_comma(excludeTypes),
