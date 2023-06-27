@@ -17,31 +17,14 @@ from ...utils.auth import (
 )
 from ..filters import ClusterFilter, ContentFilterCluster
 from ..shared import UseCriteria, UseCriteriaPublic
-from ._shared import ActionBaseNamespace, ActionEntry
+from ._shared import SBaseTypesMixin
 from .contents import ContentNode
 
 
 @gql.django.type(Cluster, name="Cluster")
-class ClusterNode(relay.Node):
-    limited: gql.Private[bool] = False
-    reduced: gql.Private[bool] = False
+class ClusterNode(SBaseTypesMixin, relay.Node):
     # overloaded by resolve_id
     flexid: relay.NodeID[str]
-
-    @gql.field()
-    @gql.django.django_resolver
-    async def availableActions(self, info: Info) -> list[ActionEntry]:
-        if self.limited or self.reduced:
-            return
-        async for i in ActionBaseNamespace.availableActions(self, info):
-            yield i
-
-    @gql.field()
-    @gql.django.django_resolver
-    def authOk(self, info: Info) -> bool:
-        if self.limited or self.reduced:
-            return False
-        return ActionBaseNamespace.authOk(self, info)
 
     @gql.django.field()
     def featured(self) -> Optional[bool]:
@@ -60,24 +43,6 @@ class ClusterNode(relay.Node):
         if self.limited:
             return None
         return self.globalNameRegisteredAt is None
-
-    @gql.django.field()
-    def updated(self) -> Optional[datetime]:
-        if self.limited:
-            return None
-        return self.updated
-
-    @gql.django.field()
-    def deleted(self) -> Optional[datetime]:
-        if self.limited:
-            return None
-        return self.markForDestruction
-
-    @gql.django.field()
-    def updateId(self) -> Optional[UUID]:
-        if self.limited:
-            return None
-        return self.updateId
 
     @gql.django.field()
     def name(self) -> Optional[str]:
@@ -100,17 +65,6 @@ class ClusterNode(relay.Node):
         if self.limited:
             return None
         return self.description
-
-    @gql.django.field()
-    def properties(self, info: Info) -> list[str]:
-        if self.limited or self.reduced:
-            return []
-        if "allow_hidden" in get_cached_net_properties(
-            info.context["request"]
-        ):
-            return self.properties
-        else:
-            return self.nonhidden_properties
 
     @gql.django.field()
     def groups(self, info: Info) -> list[str]:

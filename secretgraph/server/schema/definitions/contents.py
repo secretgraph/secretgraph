@@ -17,7 +17,7 @@ from ...utils.auth import (
 )
 from ..filters import ContentFilter
 from ..shared import UseCriteria, UseCriteriaPublic
-from ._shared import ActionBaseNamespace, ActionEntry
+from ._shared import SBaseTypesMixin
 from .references import ContentReferenceFilter, ContentReferenceNode
 
 if TYPE_CHECKING:
@@ -59,7 +59,7 @@ class ReadStatistic:
 
 
 @gql.django.type(Content, name="Content")
-class ContentNode(relay.Node):
+class ContentNode(SBaseTypesMixin, relay.Node):
     flexid: relay.NodeID[str]
 
     nonce: str
@@ -70,23 +70,6 @@ class ContentNode(relay.Node):
         field_name="markForDestruction"
     )
     link: str
-    limited: gql.Private[bool] = False
-    reduced: gql.Private[bool] = False
-
-    @gql.field()
-    @gql.django.django_resolver
-    async def availableActions(self, info: Info) -> list[ActionEntry]:
-        if self.limited or self.reduced:
-            return
-        async for i in ActionBaseNamespace.availableActions(self, info):
-            yield i
-
-    @gql.field()
-    @gql.django.django_resolver
-    def authOk(self, info: Info) -> bool:
-        if self.limited or self.reduced:
-            return False
-        return ActionBaseNamespace.authOk(self, info)
 
     @gql.field()
     def readStatistic(self: Content) -> Optional[ReadStatistic]:
@@ -101,22 +84,10 @@ class ContentNode(relay.Node):
         return ReadStatistic(query=query)
 
     @gql.field()
-    def updated(self) -> Optional[datetime]:
-        if self.limited:
-            return None
-        return self.updated
-
-    @gql.field()
     def contentHash(self) -> Optional[str]:
         if self.limited:
             return None
         return self.contentHash
-
-    @gql.field()
-    def updateId(self) -> Optional[UUID]:
-        if self.limited:
-            return None
-        return self.updateId
 
     @gql.field()
     @gql.django.django_resolver
@@ -160,17 +131,6 @@ class ContentNode(relay.Node):
                 target__in=result["objects_with_public"]
             ),
         )
-
-    @gql.django.field()
-    def properties(self, info: Info) -> list[str]:
-        if self.limited or self.reduced:
-            return []
-        if "allow_hidden" in get_cached_net_properties(
-            info.context["request"]
-        ):
-            return self.properties
-        else:
-            return self.nonhidden_properties
 
     @gql.field()
     @gql.django.django_resolver

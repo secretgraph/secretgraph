@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 import strawberry
 from django.db.models import Q
@@ -7,7 +9,7 @@ from strawberry_django_plus import gql
 
 from ....core import constants
 from ...models import Content
-from ...utils.auth import get_cached_result
+from ...utils.auth import get_cached_net_properties, get_cached_result
 
 
 @strawberry.type
@@ -18,10 +20,15 @@ class ActionEntry:
     allowedTags: Optional[list[str]]
 
 
-class ActionBaseNamespace:
-    @staticmethod
+@gql.type
+class SBaseTypesMixin:
+    limited: gql.Private[bool] = False
+    reduced: gql.Private[bool] = False
+
+    @gql.field()
+    @gql.django.django_resolver
     async def availableActions(self, info: Info) -> list[ActionEntry]:
-        if getattr(self, "limited", False):
+        if self.limited or self.reduced:
             return
         name = self.__class__.__name__.replace("Node", "", 1)
         results = get_cached_result(
@@ -99,8 +106,11 @@ class ActionBaseNamespace:
                         allowedTags=None,
                     )
 
-    @staticmethod
-    def authOk(self, info: Info) -> bool:
+    @gql.field()
+    @gql.django.django_resolver
+    def authOk(self, info: Info) -> Optional[bool]:
+        if self.limited or self.reduced:
+            return None
         name = self.__class__.__name__.replace("Node", "", 1)
         result = get_cached_result(
             info.context["request"], ensureInitialized=True
@@ -125,14 +135,31 @@ class ActionBaseNamespace:
                 break
         return authOk
 
-
-class ActionMixin:
     @gql.field()
-    async def availableActions(self, info: Info) -> list[ActionEntry]:
-        async for i in ActionBaseNamespace.availableActions(self, info):
-            yield i
+    def updated(self) -> Optional[datetime]:
+        if self.limited:
+            return None
+        return self.updated
 
     @gql.field()
-    @gql.django.django_resolver
-    def authOk(self, info: Info) -> bool:
-        return ActionBaseNamespace.authOk(self, info)
+    def updateId(self) -> Optional[UUID]:
+        if self.limited:
+            return None
+        return self.updateId
+
+    @gql.django.field()
+    def deleted(self) -> Optional[datetime]:
+        if self.limited:
+            return None
+        return self.markForDestruction
+
+    @gql.django.field()
+    def properties(self, info: Info) -> list[str]:
+        if self.limited or self.reduced:
+            return []
+        if "allow_hidden" in get_cached_net_properties(
+            info.context["request"]
+        ):
+            return self.properties
+        else:
+            return self.nonhidden_properties
