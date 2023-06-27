@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Annotated, Iterable, Optional
 from uuid import UUID
 
+from django.conf import settings
 from django.db.models import Q, QuerySet, Subquery
 from strawberry import relay
 from strawberry.types import Info
@@ -11,7 +12,7 @@ from ....core.constants import public_states
 from ...actions.fetch import fetch_contents
 from ...models import Action, Content, ContentReference
 from ...utils.auth import (
-    fetch_by_id,
+    fetch_by_id_noconvert,
     get_cached_net_properties,
     get_cached_result,
 )
@@ -222,6 +223,22 @@ class ContentNode(SBaseTypesMixin, relay.Node):
         )
 
     @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: Info,
+        node_ids: Iterable[str],
+        required: bool = False,
+    ):
+        result = get_cached_result(info.context["request"])["Content"]
+        # for allowing specifing global name
+        return fetch_contents(
+            result["objects_with_public"],
+            ids=node_ids,
+            limit_ids=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
+        )
+
+    @classmethod
     def resolve_id(
         cls,
         root: Content,
@@ -233,28 +250,16 @@ class ContentNode(SBaseTypesMixin, relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info, **kwargs) -> list[Content]:
-        results = get_cached_result(info.context["request"])
-
-        return queryset.filter(
-            id__in=Subquery(
-                results["Content"]["objects_with_public"].values("id")
-            )
-        )
-
-    # TODO: merge with get_queryset and update filters
-    @classmethod
-    def get_queryset_intern(
+    def get_queryset(
         cls,
         queryset,
-        info: Info,
-        filters: ContentFilter,
+        info,
+        filters: ContentFilter = ContentFilter(),
         fixedCluster: gql.Private[bool] = False,
         allowDeleted: gql.Private[bool] = False,
-    ) -> list[Content]:
-        results = get_cached_result(
-            info.context["request"],
-        )
+        **kwargs,
+    ) -> Iterable[Content]:
+        results = get_cached_result(info.context["request"])
 
         if (
             filters.hidden != UseCriteria.FALSE
@@ -275,10 +280,9 @@ class ContentNode(SBaseTypesMixin, relay.Node):
         if not fixedCluster and filters.clusters is not None:
             queryset = queryset.filter(
                 cluster_id__in=Subquery(
-                    fetch_by_id(
+                    fetch_by_id_noconvert(
                         results["Cluster"]["objects_with_public"],
                         filters.clusters,
-                        limit_ids=None,
                         check_short_id=True,
                         check_short_name=True,
                     ).values("id")

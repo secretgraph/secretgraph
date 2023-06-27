@@ -5,7 +5,7 @@ import logging
 from functools import partial, reduce
 from itertools import chain, islice
 from operator import or_
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Iterable, Optional, cast
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.apps import apps
@@ -399,25 +399,15 @@ def retrieve_allowed_objects(
     return returnval
 
 
-def fetch_by_id(
+def fetch_by_id_noconvert(
     query: models.QuerySet,
-    flexids: Iterable[str | relay.GlobalID] | str | relay.GlobalID,
+    flexids: tuple[str] | set[str] | list[str],
     /,
     check_long=True,  # can be set to false in case of only short names and ids
     check_short_id=False,
     check_short_name=False,
-    limit_ids: Optional[int] = 1,
 ) -> models.QuerySet:
-    if flexids and isinstance(flexids, (str, relay.GlobalID)):
-        flexids = [flexids]
-    # speedup in case None or no flexids were specified
-    if not flexids:
-        return query.none()
-    # assert all(map(lambda x: isinstance(x, (str, relay.GlobalID)), flexids))
-    if limit_ids:
-        flexids = islice(flexids, limit_ids)
-    flexids = list(map(str, flexids))
-    # empty list => shortcut
+    # empty tuple => shortcut
     if not flexids:
         return query.none()
     filters = models.Q()
@@ -439,6 +429,33 @@ def fetch_by_id(
     return query.filter(filters)
 
 
+def fetch_by_id(
+    query: models.QuerySet,
+    flexids: Iterable[str | relay.GlobalID] | str | relay.GlobalID,
+    /,
+    check_long=True,  # can be set to false in case of only short names and ids
+    check_short_id=False,
+    check_short_name=False,
+    limit_ids: Optional[int] = 1,
+) -> models.QuerySet:
+    if flexids and isinstance(flexids, (str, relay.GlobalID)):
+        flexids = (flexids,)
+    # speedup in case None or no flexids were specified
+    if not flexids:
+        return query.none()
+    # assert all(map(lambda x: isinstance(x, (str, relay.GlobalID)), flexids))
+    if limit_ids:
+        flexids = islice(flexids, limit_ids)
+    flexids = tuple(map(str, flexids))
+    return fetch_by_id_noconvert(
+        query,
+        flexids,
+        check_long=check_long,
+        check_short_id=check_short_id,
+        check_short_name=check_short_name,
+    )
+
+
 def ids_to_results(
     request,
     ids,
@@ -456,7 +473,7 @@ def ids_to_results(
             klasses_d[klass.__name__] = klass
     if not isinstance(ids, (tuple, list)):
         ids = (ids,)
-    flexid_d = {}
+    flexid_d: dict[str, set[str]] = {}
     for id in ids:
         if isinstance(id, str):
             if id.startswith("@"):
@@ -466,9 +483,9 @@ def ids_to_results(
         elif isinstance(id, relay.GlobalID):
             type_name, flexid = id.type_name, id.node_id
         elif isinstance(id, klasses):
-            flexid = id.flexid
+            flexid = cast(str, id.flexid)
             # FIXME: can be incorrect
-            type_name = type(id).__name__
+            type_name: str = type(id).__name__
         else:
             raise ValueError(
                 "Only for {}. Provided: {}".format(
@@ -490,32 +507,31 @@ def ids_to_results(
             results[type_name] = get_cached_result(
                 request, authset=authset, cacheName=cacheName
             )[type_name].copy()
-            results[type_name]["objects_with_public"] = fetch_by_id(
+            results[type_name]["objects_with_public"] = fetch_by_id_noconvert(
                 results[type_name]["objects_with_public"],
                 flexids,
                 check_long=False,
                 check_short_id=True,
                 check_short_name=True,
-                limit_ids=None,
             )
-            results[type_name]["objects_without_public"] = fetch_by_id(
+            results[type_name][
+                "objects_without_public"
+            ] = fetch_by_id_noconvert(
                 results[type_name]["objects_without_public"],
                 flexids,
                 check_long=False,
                 check_short_id=True,
                 check_short_name=True,
-                limit_ids=None,
             )
         else:
             results[type_name] = retrieve_allowed_objects(
                 request,
-                fetch_by_id(
+                fetch_by_id_noconvert(
                     klass.objects.all(),
                     flexids,
                     check_long=False,
                     check_short_id=True,
                     check_short_name=True,
-                    limit_ids=None,
                 )
                 if flexids
                 else klass.objects.none(),

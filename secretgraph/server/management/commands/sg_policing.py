@@ -9,7 +9,7 @@ from django.utils.timezone import now
 
 from ....core.constants import public_states
 from ...models import Cluster, ClusterGroup, Content, ContentTag, Net
-from ...utils.auth import fetch_by_id
+from ...utils.auth import fetch_by_id_noconvert
 
 
 def boolarg(val):
@@ -180,10 +180,9 @@ class Command(BaseCommand):
                     Q(name__regex=regex) | Q(description__regex=regex)
                 )
             if ids:
-                clusters_filtered = fetch_by_id(
+                clusters_filtered = fetch_by_id_noconvert(
                     clusters_filtered,
                     ids,
-                    limit_ids=None,
                     check_short_id=True,
                     check_short_name=True,
                 )
@@ -249,10 +248,9 @@ class Command(BaseCommand):
                 )
             )
             if ids:
-                contents_filtered = fetch_by_id(
+                contents_filtered = fetch_by_id_noconvert(
                     contents_filtered,
                     ids,
-                    limit_ids=None,
                     check_short_id=True,
                     check_short_name=True,
                 )

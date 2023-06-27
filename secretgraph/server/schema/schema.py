@@ -46,16 +46,24 @@ class SecretgraphObject:
 
     @gql.relay.connection(gql.relay.ListConnection[ClusterNode])
     @gql.django.django_resolver
-    def clusters(self, info, filters: ClusterFilter) -> Iterable[ClusterNode]:
-        return ClusterNode.get_queryset_intern(
-            Cluster.objects.all(), info, filters
+    def clusters(
+        self, info, filters: ClusterFilter = ClusterFilter()
+    ) -> Iterable[ClusterNode]:
+        return ClusterNode.get_queryset(
+            Cluster.objects.all(),
+            info,
+            filters,
         )
 
     @gql.relay.connection(gql.relay.ListConnection[ClusterNode])
     @gql.django.django_resolver
-    def contents(self, info, filters: ContentFilter) -> Iterable[ContentNode]:
-        return ContentNode.get_queryset_intern(
-            Content.objects.all(), info, filters
+    def contents(
+        self, info, filters: ContentFilter = ContentFilter()
+    ) -> Iterable[ContentNode]:
+        return ContentNode.get_queryset(
+            Content.objects.all(),
+            info=info,
+            filters=filters,
         )
 
     @gql.field

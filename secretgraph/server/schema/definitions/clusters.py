@@ -1,6 +1,4 @@
-from datetime import datetime
-from typing import Iterable, List, Optional
-from uuid import UUID
+from typing import Iterable, Optional
 
 from django.conf import settings
 from django.db.models import Q, Subquery, Value
@@ -11,7 +9,7 @@ from strawberry_django_plus import gql
 from ...actions.fetch import fetch_clusters
 from ...models import Cluster
 from ...utils.auth import (
-    fetch_by_id,
+    fetch_by_id_noconvert,
     get_cached_net_properties,
     get_cached_result,
 )
@@ -84,7 +82,9 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
 
     @gql.relay.connection(gql.relay.ListConnection[ContentNode])
     def contents(
-        self, info: Info, filters: ContentFilterCluster
+        self,
+        info: Info,
+        filters: ContentFilterCluster = ContentFilterCluster(),
     ) -> Iterable[ContentNode]:
         if self.reduced:
             return []
@@ -103,7 +103,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             filters.hidden = UseCriteria.FALSE
             if not allowDeleted:
                 filters.deleted = UseCriteria.FALSE
-        return ContentNode.get_queryset_intern(
+        return ContentNode.get_queryset(
             queryset,
             info,
             filters,
@@ -116,19 +116,15 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         cls,
         *,
         info: Info,
-        node_ids: Optional[Iterable[str]] = None,
+        node_ids: Iterable[str],
         required: bool = False,
     ):
         result = get_cached_result(info.context["request"])["Cluster"]
-        if not node_ids:
-            return result["objects_with_public"]
         # for allowing specifing global name
-        return fetch_by_id(
+        return fetch_clusters(
             result["objects_with_public"],
-            node_ids,
+            ids=node_ids,
             limit_ids=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
-            check_short_id=True,
-            check_short_name=True,
         )
 
     @classmethod
@@ -143,19 +139,15 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(cls, queryset, info, **kwargs) -> list[Cluster]:
+    def get_queryset(
+        cls,
+        queryset,
+        info,
+        filters: ClusterFilter = ClusterFilter(),
+        **kwargs,
+    ) -> Iterable[Cluster]:
         result = get_cached_result(info.context["request"])["Cluster"]
-        return queryset.filter(
-            id__in=Subquery(result["objects_with_public"].values("id"))
-        )
-
-    # TODO: merge with get_queryset and update filters
-    @classmethod
-    def get_queryset_intern(
-        cls, queryset, info: Info, filters: Optional[ClusterFilter] = None
-    ) -> list[Cluster]:
-        result = get_cached_result(info.context["request"])["Cluster"]
-        deleted = filters.deleted
+        deleted = False if not filters else filters.deleted
         if (
             deleted != UseCriteria.FALSE
             and "manage_deletion"
@@ -171,50 +163,49 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                     del_result["objects_without_public"].values("id")
                 )
             )
+        if filters:
+            if filters.search:
+                queryset = queryset.filter(
+                    Q(flexid_cached__startswith=filters.search)
+                    | Q(name__icontains=filters.search)
+                    | Q(description__icontains=filters.search)
+                )
 
-        if filters.search:
-            queryset = queryset.filter(
-                Q(flexid_cached__startswith=filters.search)
-                | Q(name__icontains=filters.search)
-                | Q(description__icontains=filters.search)
-            )
-
-        if filters.excludeIds is not None:
-            queryset = queryset.exclude(
-                Q(
-                    id__in=Subquery(
-                        fetch_by_id(
-                            Cluster.objects.all(),
-                            filters.excludeIds,
-                            limit_ids=None,
-                            check_short_id=True,
-                            check_short_name=True,
-                        ).values("id")
+            if filters.excludeIds is not None:
+                queryset = queryset.exclude(
+                    Q(
+                        id__in=Subquery(
+                            fetch_by_id_noconvert(
+                                Cluster.objects.all(),
+                                filters.excludeIds,
+                                check_short_id=True,
+                                check_short_name=True,
+                            ).values("id")
+                        )
                     )
                 )
-            )
 
-        if (
-            filters.public != UseCriteriaPublic.IGNORE
-            and filters.public != UseCriteriaPublic.TOKEN
-        ):
-            queryset = queryset.filter(
-                globalNameRegisteredAt__isnull=filters.public
-                != UseCriteriaPublic.TRUE
-            )
+            if (
+                filters.public != UseCriteriaPublic.IGNORE
+                and filters.public != UseCriteriaPublic.TOKEN
+            ):
+                queryset = queryset.filter(
+                    globalNameRegisteredAt__isnull=filters.public
+                    != UseCriteriaPublic.TRUE
+                )
+
+            if filters.primary != UseCriteria.IGNORE:
+                queryset = queryset.filter(
+                    primaryFor__isnull=filters.primary != UseCriteria.TRUE
+                )
+
+            if filters.featured != UseCriteria.IGNORE:
+                queryset = queryset.filter(
+                    featured=filters.featured == UseCriteria.TRUE
+                )
         if deleted != UseCriteria.IGNORE:
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
-            )
-
-        if filters.primary != UseCriteria.IGNORE:
-            queryset = queryset.filter(
-                primaryFor__isnull=filters.primary != UseCriteria.TRUE
-            )
-
-        if filters.featured != UseCriteria.IGNORE:
-            queryset = queryset.filter(
-                featured=filters.featured == UseCriteria.TRUE
             )
 
         return fetch_clusters(

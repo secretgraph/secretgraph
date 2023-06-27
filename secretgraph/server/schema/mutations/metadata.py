@@ -13,7 +13,7 @@ from ...models import Cluster, Content, ContentTag, Net, SGroupProperty
 from ...signals import generateFlexid
 from ...utils.arguments import check_actions, pre_clean_update_content_args
 from ...utils.auth import (
-    fetch_by_id,
+    fetch_by_id_noconvert,
     get_cached_net_properties,
     ids_to_results,
 )
@@ -38,15 +38,14 @@ def regenerate_flexid(
     ):
         results = {
             "Content": {
-                "objects_without_public": fetch_by_id(
-                    Content.objects.all(), ids, limit_ids=None
+                "objects_without_public": fetch_by_id_noconvert(
+                    Content.objects.all(), ids
                 )
             },
             "Cluster": {
-                "objects_without_public": fetch_by_id(
+                "objects_without_public": fetch_by_id_noconvert(
                     Cluster.objects.all(),
                     ids,
-                    limit_ids=None,
                     check_short_name=True,
                 )
             },
@@ -100,12 +99,12 @@ def mark(
             )[0]
             cgroups = dProperty.clusterGroups.all()
             contents = Content.objects.filter(cluster__groups__in=cgroups)
-        contents = fetch_by_id(contents, ids, limit_ids=None)
+        contents = fetch_by_id_noconvert(contents, ids)
 
         contents.update(hidden=hidden)
     if featured is not None or active is not None:
-        clusters_all = fetch_by_id(
-            Cluster.objects.all(), ids, limit_ids=None, check_short_name=True
+        clusters_all = fetch_by_id_noconvert(
+            Cluster.objects.all(), ids, check_short_name=True
         )
         if featured is not None:
             if "allow_featured" in get_cached_net_properties(
@@ -157,7 +156,7 @@ def update_metadata(
         info.context["request"], authset=authorization
     )
     if manage_update:
-        contents = fetch_by_id(
+        contents = fetch_by_id_noconvert(
             Content.objects.annotate(
                 has_immutable=Exists(
                     ContentTag.objects.filter(
@@ -167,12 +166,10 @@ def update_metadata(
                 )
             ),
             ids,
-            limit_ids=None,
         )
-        clusters = fetch_by_id(
+        clusters = fetch_by_id_noconvert(
             Cluster.objects.all(),
             ids,
-            limit_ids=None,
         )
     else:
         result = ids_to_results(

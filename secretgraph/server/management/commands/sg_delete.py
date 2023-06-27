@@ -7,7 +7,7 @@ from django.utils.timezone import now
 
 from ...models import Cluster, Content
 from ...signals import sweepContentsAndClusters
-from ...utils.auth import fetch_by_id
+from ...utils.auth import fetch_by_id_noconvert
 
 
 class Command(BaseCommand):
@@ -19,16 +19,14 @@ class Command(BaseCommand):
         parser.add_argument("--purge", action="store_true")
 
     def handle(self, ids, noconfirm, purge, **options):
-        clusters = fetch_by_id(
+        clusters = fetch_by_id_noconvert(
             Cluster.objects.exclude(name="@system"),
             ids,
-            limit_ids=None,
             check_short_name=True,
         )
-        contents = fetch_by_id(
+        contents = fetch_by_id_noconvert(
             Content.objects.all(),
             ids,
-            limit_ids=None,
         )
         if not contents and not clusters:
             print("No contents or clusters found")

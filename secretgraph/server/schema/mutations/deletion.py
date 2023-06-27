@@ -10,7 +10,7 @@ from strawberry.types import Info
 
 from ...models import Cluster, Content
 from ...utils.auth import (
-    fetch_by_id,
+    fetch_by_id_noconvert,
     get_cached_net_properties,
     ids_to_results,
 )
@@ -36,9 +36,9 @@ def delete_content_or_cluster(
         info.context["request"], authset=authorization
     )
     if manage_deletion:
-        contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
-        clusters = fetch_by_id(
-            Cluster.objects.all(), ids, limit_ids=None, check_short_name=True
+        contents = fetch_by_id_noconvert(Content.objects.all(), ids)
+        clusters = fetch_by_id_noconvert(
+            Cluster.objects.all(), ids, check_short_name=True
         )
     else:
         results = ids_to_results(
@@ -98,8 +98,8 @@ def reset_deletion_content_or_cluster(
     if "manage_deletion" in get_cached_net_properties(
         info.context["request"], authset=authorization
     ):
-        contents = fetch_by_id(Content.objects.all(), ids, limit_ids=None)
-        clusters = fetch_by_id(Cluster.objects.all(), ids, limit_ids=None)
+        contents = fetch_by_id_noconvert(Content.objects.all(), ids)
+        clusters = fetch_by_id_noconvert(Cluster.objects.all(), ids)
     else:
         results = ids_to_results(
             info.context["request"],

@@ -37,7 +37,7 @@ def fetch_clusters(
     minUpdated=None,
     maxUpdated=None,
 ) -> QuerySet[Cluster]:
-    if ids:
+    if ids is not None:
         query = fetch_by_id(
             query,
             ids,
@@ -76,13 +76,13 @@ def fetch_clusters(
         if includeTypes:
             incl_type_filters = Q(
                 type__in=includeTypes
-                if isAdmin
+                if isAdmin or ids is not None
                 else _exclude_PublicKey(includeTypes)
             )
         elif excludeTypes:
             excl_type_filters = Q(
                 type__in=excludeTypes
-                if isAdmin
+                if isAdmin or ids is not None
                 else _include_PublicKey(excludeTypes)
             )
         elif not isAdmin:
@@ -144,7 +144,7 @@ def fetch_contents(
     minUpdated=None,
     maxUpdated=None,
 ) -> QuerySet[Content]:
-    if ids:
+    if ids is not None:
         query = fetch_by_id(
             query,
             ids,
@@ -189,7 +189,7 @@ def fetch_contents(
             hash_filters = Q(contentHash__in=contentHashes)
         state_filters = ~Q(state="sensitive")
         if states:
-            if clustersAreRestrictedOrAdmin:
+            if clustersAreRestrictedOrAdmin or ids is not None:
                 state_filters = Q(state__in=states)
             else:
                 s_intern = set(states)
@@ -204,16 +204,16 @@ def fetch_contents(
         if includeTypes:
             incl_type_filters = Q(
                 type__in=includeTypes
-                if clustersAreRestrictedOrAdmin
+                if clustersAreRestrictedOrAdmin or ids is not None
                 else _exclude_PublicKey({"PublicKey"})
             )
         elif excludeTypes:
             excl_type_filters = Q(
                 type__in=excludeTypes
-                if clustersAreRestrictedOrAdmin
+                if clustersAreRestrictedOrAdmin or ids is not None
                 else _include_PublicKey(excludeTypes)
             )
-        elif not clustersAreRestrictedOrAdmin:
+        elif not clustersAreRestrictedOrAdmin and ids is None:
             excl_type_filters = Q(type="PublicKey")
 
         query = query.filter(

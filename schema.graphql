@@ -37,7 +37,7 @@ type Cluster implements Node {
   """cluster groups: groups for cluster permissions and injected keys"""
   groups: [String!]!
   contents(
-    filters: ContentFilterCluster!
+    filters: ContentFilterCluster! = {states: null, includeTypes: null, excludeTypes: null, includeTags: null, excludeTags: null, contentHashes: null, minUpdated: null, maxUpdated: null, deleted: null, hidden: FALSE, public: IGNORE}
 
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
@@ -571,7 +571,7 @@ type SecretgraphObject {
   permissions: [String!]!
   activeUser: String
   clusters(
-    filters: ClusterFilter!
+    filters: ClusterFilter! = {search: null, states: null, includeTypes: null, excludeTypes: null, includeTags: null, excludeTags: null, ids: null, excludeIds: null, contentHashes: null, featured: IGNORE, primary: IGNORE, deleted: FALSE, public: IGNORE, minUpdated: null, maxUpdated: null}
 
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
@@ -586,7 +586,7 @@ type SecretgraphObject {
     last: Int = null
   ): ClusterConnection!
   contents(
-    filters: ContentFilter!
+    filters: ContentFilter! = {states: null, includeTypes: null, excludeTypes: null, includeTags: null, excludeTags: null, contentHashes: null, minUpdated: null, maxUpdated: null, deleted: FALSE, hidden: FALSE, public: IGNORE, clusters: null, featured: IGNORE}
 
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
