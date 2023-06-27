@@ -16,10 +16,28 @@ input ActionInput {
 }
 
 type Cluster implements Node {
+  """The Globally Unique ID of this object"""
   id: GlobalID!
-  authOk: Boolean!
   availableActions: [ActionEntry!]!
+  authOk: Boolean!
+  featured: Boolean
+  primary: Boolean
+
+  """Is cluster public/global"""
+  public: Boolean
+  updated: DateTime
+  deleted: DateTime
+  updateId: UUID
+  name: String
+  user: String
+  description: String
+  properties: [String!]!
+
+  """cluster groups: groups for cluster permissions and injected keys"""
+  groups: [String!]!
   contents(
+    filters: ContentFilterCluster!
+
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
 
@@ -31,23 +49,7 @@ type Cluster implements Node {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-    filters: ContentFilterCluster!
   ): ContentConnection!
-  deleted: DateTime
-  description: String
-  featured: Boolean
-
-  """cluster groups: groups for cluster permissions and injected keys"""
-  groups: [String!]
-  name: String
-  primary: Boolean
-  properties: [String!]
-
-  """Is cluster public/global"""
-  public: Boolean
-  updateId: UUID
-  updated: DateTime
-  user: String
 }
 
 """A connection to a list of items."""
@@ -57,9 +59,6 @@ type ClusterConnection {
 
   """Contains the nodes in this connection"""
   edges: [ClusterEdge!]!
-
-  """Total quantity of existing nodes"""
-  totalCount: Int
 }
 
 """An edge in a connection."""
@@ -97,6 +96,7 @@ input ClusterFilter {
 }
 
 type ClusterGroup implements Node {
+  """The Globally Unique ID of this object"""
   id: GlobalID!
   name: String!
   description: String!
@@ -126,52 +126,53 @@ type ClusterMutation {
 }
 
 type Content implements Node {
+  """The Globally Unique ID of this object"""
   id: GlobalID!
   nonce: String!
-  updated: DateTime!
-  contentHash: String
-  updateId: UUID!
   type: String!
   state: String!
   deleted: DateTime
   link: String!
-  authOk: Boolean!
   availableActions: [ActionEntry!]!
-  cluster: Cluster
-  properties: [String!]
-
-  """Uses fetch/view group actions to provide statistics"""
-  readStatistic: ReadStatistic!
-  referencedBy(
-    """Returns the items in the list that come before the specified cursor."""
-    before: String = null
-
-    """Returns the items in the list that come after the specified cursor."""
-    after: String = null
-
-    """Returns the first n items from the list."""
-    first: Int = null
-
-    """Returns the items in the list that come after the specified cursor."""
-    last: Int = null
-    filters: ContentReferenceFilter!
-  ): ContentReferenceConnection!
-  references(
-    """Returns the items in the list that come before the specified cursor."""
-    before: String = null
-
-    """Returns the items in the list that come after the specified cursor."""
-    after: String = null
-
-    """Returns the first n items from the list."""
-    first: Int = null
-
-    """Returns the items in the list that come after the specified cursor."""
-    last: Int = null
-    filters: ContentReferenceFilter!
-  ): ContentReferenceConnection!
-  signatures(includeAlgorithms: [String!] = null): [String!]!
+  authOk: Boolean!
+  readStatistic: ReadStatistic
+  updated: DateTime
+  contentHash: String
+  updateId: UUID
   tags(includeTags: [String!] = null, excludeTags: [String!] = null): [String!]!
+  signatures(includeAlgorithms: [String!] = null): [String!]!
+  properties: [String!]!
+  cluster: Cluster
+  references(
+    filters: ContentReferenceFilter!
+
+    """Returns the items in the list that come before the specified cursor."""
+    before: String = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    after: String = null
+
+    """Returns the first n items from the list."""
+    first: Int = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    last: Int = null
+  ): ContentReferenceConnection!
+  referencedBy(
+    filters: ContentReferenceFilter!
+
+    """Returns the items in the list that come before the specified cursor."""
+    before: String = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    after: String = null
+
+    """Returns the first n items from the list."""
+    first: Int = null
+
+    """Returns the items in the list that come after the specified cursor."""
+    last: Int = null
+  ): ContentReferenceConnection!
 }
 
 """A connection to a list of items."""
@@ -181,9 +182,6 @@ type ContentConnection {
 
   """Contains the nodes in this connection"""
   edges: [ContentEdge!]!
-
-  """Total quantity of existing nodes"""
-  totalCount: Int
 }
 
 """An edge in a connection."""
@@ -267,6 +265,7 @@ type ContentMutation {
 }
 
 type ContentReference implements Node {
+  """The Globally Unique ID of this object"""
   id: GlobalID!
 
   """
@@ -286,9 +285,6 @@ type ContentReferenceConnection {
 
   """Contains the nodes in this connection"""
   edges: [ContentReferenceEdge!]!
-
-  """Total quantity of existing nodes"""
-  totalCount: Int
 }
 
 """An edge in a connection."""
@@ -569,10 +565,12 @@ type SecretgraphObject {
   node(
     """The ID of the object."""
     id: GlobalID!
-  ): Node
+  ): Node!
   permissions: [String!]!
   activeUser: String
   clusters(
+    filters: ClusterFilter!
+
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
 
@@ -584,9 +582,10 @@ type SecretgraphObject {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-    filters: ClusterFilter!
   ): ClusterConnection!
   contents(
+    filters: ContentFilter!
+
     """Returns the items in the list that come before the specified cursor."""
     before: String = null
 
@@ -598,8 +597,7 @@ type SecretgraphObject {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-    filters: ContentFilter!
-  ): ContentConnection!
+  ): ClusterConnection!
   config: SecretgraphConfig!
 }
 

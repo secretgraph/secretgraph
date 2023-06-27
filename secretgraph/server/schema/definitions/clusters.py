@@ -24,17 +24,23 @@ from .contents import ContentNode
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(relay.Node):
     limited: gql.Private[bool] = False
+    reduced: gql.Private[bool] = False
     # overloaded by resolve_id
     flexid: relay.NodeID[str]
 
     @gql.field()
+    @gql.django.django_resolver
     async def availableActions(self, info: Info) -> list[ActionEntry]:
+        if self.limited or self.reduced:
+            return
         async for i in ActionBaseNamespace.availableActions(self, info):
             yield i
 
     @gql.field()
     @gql.django.django_resolver
     def authOk(self, info: Info) -> bool:
+        if self.limited or self.reduced:
+            return False
         return ActionBaseNamespace.authOk(self, info)
 
     @gql.django.field()
@@ -96,9 +102,9 @@ class ClusterNode(relay.Node):
         return self.description
 
     @gql.django.field()
-    def properties(self, info: Info) -> Optional[List[str]]:
-        if self.limited:
-            return None
+    def properties(self, info: Info) -> list[str]:
+        if self.limited or self.reduced:
+            return []
         if "allow_hidden" in get_cached_net_properties(
             info.context["request"]
         ):
@@ -107,9 +113,9 @@ class ClusterNode(relay.Node):
             return self.nonhidden_properties
 
     @gql.django.field()
-    def groups(self, info: Info) -> Optional[List[str]]:
-        if self.limited:
-            return None
+    def groups(self, info: Info) -> list[str]:
+        if self.limited or self.reduced:
+            return []
         # permissions allows to see the hidden global groups
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
@@ -126,6 +132,8 @@ class ClusterNode(relay.Node):
     def contents(
         self, info: Info, filters: ContentFilterCluster
     ) -> Iterable[ContentNode]:
+        if self.reduced:
+            return []
         queryset = get_cached_result(info.context["request"])["Content"][
             "objects_with_public"
         ].filter(cluster=self)

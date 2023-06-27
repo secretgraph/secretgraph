@@ -30,6 +30,5 @@ schema = Schema(
     extensions=[RatelimitMutations, RatelimitErrors],
     config=StrawberryConfig(
         relay_max_results=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
-        auto_camel_case=False,
     ),
 )

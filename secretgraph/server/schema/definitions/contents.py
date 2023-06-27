@@ -63,38 +63,60 @@ class ContentNode(relay.Node):
     flexid: relay.NodeID[str]
 
     nonce: str
-    updated: datetime
-    contentHash: Optional[str]
-    updateId: UUID
     type: str
     state: str
+
     deleted: Optional[datetime] = gql.django.field(
         field_name="markForDestruction"
     )
     link: str
     limited: gql.Private[bool] = False
+    reduced: gql.Private[bool] = False
 
+    @gql.field()
+    @gql.django.django_resolver
     async def availableActions(self, info: Info) -> list[ActionEntry]:
+        if self.limited or self.reduced:
+            return
         async for i in ActionBaseNamespace.availableActions(self, info):
             yield i
 
     @gql.field()
     @gql.django.django_resolver
     def authOk(self, info: Info) -> bool:
+        if self.limited or self.reduced:
+            return False
         return ActionBaseNamespace.authOk(self, info)
 
     @gql.field()
-    def readStatistic(self: Content) -> ReadStatistic:
-        """Uses fetch/view group actions to provide statistics"""
-        return ReadStatistic(
-            query=Action.objects.filter(
-                contentAction_id__in=Subquery(
-                    self.actions.filter(group__in=("fetch", "view")).values(
-                        "id"
-                    )
-                )
+    def readStatistic(self: Content) -> Optional[ReadStatistic]:
+        if self.limited or self.reduced:
+            return None
+        query = Action.objects.filter(
+            contentAction_id__in=Subquery(
+                self.actions.filter(group__in=("fetch", "view")).values("id")
             )
         )
+        """Uses fetch/view group actions to provide statistics"""
+        return ReadStatistic(query=query)
+
+    @gql.field()
+    def updated(self) -> Optional[datetime]:
+        if self.limited:
+            return None
+        return self.updated
+
+    @gql.field()
+    def contentHash(self) -> Optional[str]:
+        if self.limited:
+            return None
+        return self.contentHash
+
+    @gql.field()
+    def updateId(self) -> Optional[UUID]:
+        if self.limited:
+            return None
+        return self.updateId
 
     @gql.field()
     @gql.django.django_resolver
@@ -104,6 +126,8 @@ class ContentNode(relay.Node):
         includeTags: Optional[list[str]] = None,
         excludeTags: Optional[list[str]] = None,
     ) -> list[str]:
+        if self.reduced:
+            return []
         incl_filters = Q()
         excl_filters = Q()
         for i in includeTags or []:
@@ -126,6 +150,8 @@ class ContentNode(relay.Node):
         info: Info,
         includeAlgorithms: Optional[list[str]] = None,
     ) -> list[str]:
+        if self.reduced:
+            return []
         # authorization often cannot be used, but it is ok, we have cached then
         result = get_cached_result(info.context["request"])["Content"]
         return self.signatures(
@@ -136,9 +162,9 @@ class ContentNode(relay.Node):
         )
 
     @gql.django.field()
-    def properties(self, info: Info) -> Optional[list[str]]:
-        if self.limited:
-            return None
+    def properties(self, info: Info) -> list[str]:
+        if self.limited or self.reduced:
+            return []
         if "allow_hidden" in get_cached_net_properties(
             info.context["request"]
         ):
@@ -152,7 +178,7 @@ class ContentNode(relay.Node):
         self: Content, info: Info
     ) -> Optional[Annotated["ClusterNode", gql.lazy(".clusters")]]:
         # we are in the 2nd level, block
-        if self.limited:
+        if self.limited or self.reduced:
             return None
         results = get_cached_result(
             info.context["request"], ensureInitialized=True
@@ -160,9 +186,10 @@ class ContentNode(relay.Node):
         if self.state not in public_states:
             query = results["Cluster"]["objects_without_public"]
         else:
+            # e.g. blocked by action
             query = results["Cluster"]["objects_with_public"]
-        cluster_visible = query.filter(id=self.cluster_id).exists()
-        if not cluster_visible:
+        cluster_is_visible = query.filter(id=self.cluster_id).exists()
+        if not cluster_is_visible:
             # set cluster to limited (first level)
             self.cluster.limited = True
         return self.cluster
@@ -175,6 +202,7 @@ class ContentNode(relay.Node):
         if (
             not isinstance(self, Content)
             or self.limited
+            or self.reduced
             # TODO: maybe relax later
             or self.cluster_id == 0
         ):
@@ -208,6 +236,7 @@ class ContentNode(relay.Node):
         if (
             not isinstance(self, Content)
             or self.limited
+            or self.reduced
             # TODO: maybe relax later
             or self.cluster_id == 0
         ):

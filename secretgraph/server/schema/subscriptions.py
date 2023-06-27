@@ -42,16 +42,24 @@ def valid_node_ids(request, ids, authorization=None):
 @sync_to_async(thread_sensitive=True)
 def poll_flexids_for_nodes(ids, timestamp):
     return [
-        *Cluster.objects.filter(
-            flexid_cached__in=ids, updated__gte=timestamp
-        ).annotate(limited=Value(True)),
-        *Content.objects.filter(
-            flexid_cached__in=ids, updated__gte=timestamp
-        ).annotate(limited=Value(True)),
+        *Cluster.objects.filter(flexid_cached__in=ids, updated__gte=timestamp)
+        .only("flexid_cached", "updateId", "name", "description")
+        .annotate(reduced=Value(True)),
+        *Content.objects.filter(flexid_cached__in=ids, updated__gte=timestamp)
+        .only(
+            "flexid_cached",
+            "updateId",
+            "contentHash",
+            "nonce",
+            "type",
+            "state",
+            "link",
+        )
+        .annotate(reduced=Value(True)),
     ]
 
 
-async def wait_for_update(ids: set[str], channel: InMemoryChannelLayer):
+async def wait_for_update(ids: set[str], channel: "InMemoryChannelLayer"):
     while True:
         updated_ids = await channel.receive("content_or_cluster.update")[
             "relay_ids"
