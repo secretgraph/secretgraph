@@ -37,7 +37,7 @@ class SecretgraphServerConfig(AppConfig):
 
     def ready(self):
         from .models import Cluster, Content
-        from .utils.misc import get_channel_layer
+        from .utils.misc import get_secretgraph_channel
 
         pre_delete.connect(
             deleteContentCb,
@@ -83,7 +83,7 @@ class SecretgraphServerConfig(AppConfig):
             dispatch_uid="secretgraph_ContentgenerateFlexid",
         )
 
-        if get_channel_layer() and hasattr(post_save, "asend"):
+        if get_secretgraph_channel() and hasattr(post_save, "asend"):
             post_save.connect(
                 notifyUpdateOrCreate,
                 sender=Cluster,
