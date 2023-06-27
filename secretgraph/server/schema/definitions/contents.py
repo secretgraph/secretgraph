@@ -61,6 +61,7 @@ class ReadStatistic:
 
 @gql.django.type(Content, name="Content")
 class ContentNode(SBaseTypesMixin, relay.Node):
+    # we cannot define Node classes without NodeID yet
     flexid: relay.NodeID[str]
 
     nonce: str

@@ -21,7 +21,7 @@ from .contents import ContentNode
 
 @gql.django.type(Cluster, name="Cluster")
 class ClusterNode(SBaseTypesMixin, relay.Node):
-    # overloaded by resolve_id
+    # we cannot define Node classes without NodeID yet
     flexid: relay.NodeID[str]
 
     @gql.django.field()
