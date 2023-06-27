@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from asgiref.sync import sync_to_async
 from django.db.models import Value
@@ -10,7 +10,11 @@ from strawberry.types import Info
 
 from ..models import Cluster, Content
 from ..utils.auth import ids_to_results
+from ..utils.misc import get_channel_layer
 from .arguments import AuthList
+
+if TYPE_CHECKING:
+    from channels.layers import InMemoryChannelLayer
 
 NodeUpdateSubscription = AsyncGenerator[List[relay.Node], None]
 
@@ -26,29 +30,34 @@ def valid_node_ids(request, ids, authorization=None):
         authset=authorization,
     )
     return {
-        "Cluster": list(
-            results["Cluster"]["objects_with_public"].values_list(
-                "flexid", flat=True
-            )
-        ),
-        "Content": list(
-            results["Content"]["objects_with_public"].values_list(
-                "flexid", flat=True
-            )
-        ),
+        *results["Cluster"]["objects_with_public"].values_list(
+            "flexid_cached", flat=True
+        )
+        * results["Content"]["objects_with_public"].values_list(
+            "flexid_cached", flat=True
+        )
     }
 
 
 @sync_to_async(thread_sensitive=True)
-def poll_flexids_for_nodes(ids_dict, timestamp):
+def poll_flexids_for_nodes(ids, timestamp):
     return [
         *Cluster.objects.filter(
-            flexid__in=ids_dict["Cluster"], updated__gte=timestamp
+            flexid_cached__in=ids, updated__gte=timestamp
         ).annotate(limited=Value(True)),
         *Content.objects.filter(
-            flexid__in=ids_dict["Content"], updated__gte=timestamp
+            flexid_cached__in=ids, updated__gte=timestamp
         ).annotate(limited=Value(True)),
     ]
+
+
+async def wait_for_update(ids: set[str], channel: InMemoryChannelLayer):
+    while True:
+        updated_ids = await channel.receive("content_or_cluster.update")[
+            "relay_ids"
+        ]
+        if not ids.isdisjoint(updated_ids):
+            break
 
 
 async def subscribe_node_updates(
@@ -57,15 +66,19 @@ async def subscribe_node_updates(
     authorization: Optional[AuthList] = None,
 ) -> NodeUpdateSubscription:
     timestamp = timezone.now()
-    ids_dict = await valid_node_ids(info.context, ids[:100], authorization)
-    if not ids_dict["Cluster"] and not ids_dict["Content"]:
+    ids = await valid_node_ids(info.context, ids[:100], authorization)
+    if not ids:
         yield []
         return
+    channel = get_channel_layer()
 
     while True:
-        nodes = await poll_flexids_for_nodes(ids_dict, timestamp)
+        nodes = await poll_flexids_for_nodes(ids, timestamp)
         if len(nodes):
             yield nodes
 
         timestamp = timezone.now()
-        await asyncio.sleep(10)
+        if channel:
+            await wait_for_update(ids, channel)
+        else:
+            await asyncio.sleep(10)

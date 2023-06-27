@@ -1,5 +1,7 @@
 __all__ = ["SecretgraphServerConfig"]
 
+import logging
+
 from django.apps import AppConfig
 from django.core.signals import got_request_exception, request_started
 from django.db.models.signals import (
@@ -17,10 +19,14 @@ from .signals import (
     fillEmptyFlexidsCb,
     generateFlexid,
     initializeDb,
+    notifyDeletion,
+    notifyUpdateOrCreate,
     regenerateKeyHash,
     rollbackUsedActionsAndFreeze,
     sweepContentsAndClusters,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SecretgraphServerConfig(AppConfig):
@@ -31,6 +37,7 @@ class SecretgraphServerConfig(AppConfig):
 
     def ready(self):
         from .models import Cluster, Content
+        from .utils.misc import get_channel_layer
 
         pre_delete.connect(
             deleteContentCb,
@@ -75,6 +82,35 @@ class SecretgraphServerConfig(AppConfig):
             sender=Content,
             dispatch_uid="secretgraph_ContentgenerateFlexid",
         )
+
+        if get_channel_layer() and hasattr(post_save, "asend"):
+            post_save.connect(
+                notifyUpdateOrCreate,
+                sender=Cluster,
+                dispatch_uid="secretgraph_ClusternotifyUpdateOrCreate",
+            )
+
+            post_save.connect(
+                notifyUpdateOrCreate,
+                sender=Content,
+                dispatch_uid="secretgraph_ContentnotifyUpdateOrCreate",
+            )
+
+            post_delete.connect(
+                notifyDeletion,
+                sender=Cluster,
+                dispatch_uid="secretgraph_ClusternotifyDeletion",
+            )
+
+            post_delete.connect(
+                notifyDeletion,
+                sender=Content,
+                dispatch_uid="secretgraph_ContentnotifyDeletion",
+            )
+        else:
+            logger.info(
+                "django too old/no channel layers defined. disable notification"
+            )
 
         post_migrate.connect(
             initializeDb,

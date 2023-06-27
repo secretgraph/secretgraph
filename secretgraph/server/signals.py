@@ -374,3 +374,44 @@ def sweepContentsAndClusters(ignoreTime=False, **kwargs):
             c.delete()
         except models.RestrictedError:
             pass
+
+
+async def notifyUpdateOrCreate(sender, instance, created, **kwargs):
+    from .utils.misc import get_secretgraph_channel
+
+    channel = get_secretgraph_channel()
+    if channel:
+        if created:
+            await channel.send(
+                "content_or_cluster.created",
+                {
+                    "relay_ids": [instance.flexid_cached],
+                    "db_ids": [instance.id],
+                    "type": sender.__name__,
+                },
+            )
+
+        else:
+            await channel.send(
+                "content_or_cluster.update",
+                {
+                    "relay_ids": [instance.flexid_cached],
+                    "db_ids": [instance.id],
+                    "type": sender.__name__,
+                },
+            )
+
+
+async def notifyDeletion(sender, instance, **kwargs):
+    from .utils.misc import get_secretgraph_channel
+
+    channel = get_secretgraph_channel()
+    if channel:
+        await channel.send(
+            "content_or_cluster.deletion",
+            {
+                "relay_ids": [instance.flexid_cached],
+                "db_ids": [instance.id],
+                "type": sender.__name__,
+            },
+        )

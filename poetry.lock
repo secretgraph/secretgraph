@@ -835,13 +835,13 @@ websockets = ["websockets (>=10,<11)", "websockets (>=9,<10)"]
 
 [[package]]
 name = "graphene-protector"
-version = "0.10.1"
+version = "0.11.1"
 description = "Protects graphene, graphql or strawberry against malicious queries"
 optional = false
 python-versions = ">=3.8,<4"
 files = [
-    {file = "graphene_protector-0.10.1-py3-none-any.whl", hash = "sha256:105ca3a6004023367a1e3b53cd9bfeb2d97ee754a0644ffba799cc59eb531fe6"},
-    {file = "graphene_protector-0.10.1.tar.gz", hash = "sha256:a591eb68fb0eb45a3e5fd52f99330777437325adb8eb21eeaf691bb266299f3f"},
+    {file = "graphene_protector-0.11.1-py3-none-any.whl", hash = "sha256:d2e57c1324f4d3fb2ed63b2f7d614d3bfcd72da77d31e7f4b926a18f1b593061"},
+    {file = "graphene_protector-0.11.1.tar.gz", hash = "sha256:b22fbf0f03310659b7369d47eaebcead066729ebe07bc65a24e23b8ab7e32d18"},
 ]
 
 [package.dependencies]
@@ -1259,18 +1259,18 @@ files = [
 
 [[package]]
 name = "mysqlclient"
-version = "2.1.1"
+version = "2.2.0"
 description = "Python interface to MySQL"
 optional = true
-python-versions = ">=3.5"
+python-versions = ">=3.8"
 files = [
-    {file = "mysqlclient-2.1.1-cp310-cp310-win_amd64.whl", hash = "sha256:c1ed71bd6244993b526113cca3df66428609f90e4652f37eb51c33496d478b37"},
-    {file = "mysqlclient-2.1.1-cp311-cp311-win_amd64.whl", hash = "sha256:c812b67e90082a840efb82a8978369e6e69fc62ce1bda4ca8f3084a9d862308b"},
-    {file = "mysqlclient-2.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:0d1cd3a5a4d28c222fa199002810e8146cffd821410b67851af4cc80aeccd97c"},
-    {file = "mysqlclient-2.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:b355c8b5a7d58f2e909acdbb050858390ee1b0e13672ae759e5e784110022994"},
-    {file = "mysqlclient-2.1.1-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:996924f3483fd36a34a5812210c69e71dea5a3d5978d01199b78b7f6d485c855"},
-    {file = "mysqlclient-2.1.1-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:dea88c8d3f5a5d9293dfe7f087c16dd350ceb175f2f6631c9cf4caf3e19b7a96"},
-    {file = "mysqlclient-2.1.1.tar.gz", hash = "sha256:828757e419fb11dd6c5ed2576ec92c3efaa93a0f7c39e263586d1ee779c3d782"},
+    {file = "mysqlclient-2.2.0-cp310-cp310-win_amd64.whl", hash = "sha256:68837b6bb23170acffb43ae411e47533a560b6360c06dac39aa55700972c93b2"},
+    {file = "mysqlclient-2.2.0-cp311-cp311-win_amd64.whl", hash = "sha256:5670679ff1be1cc3fef0fa81bf39f0cd70605ba121141050f02743eb878ac114"},
+    {file = "mysqlclient-2.2.0-cp38-cp38-win_amd64.whl", hash = "sha256:004fe1d30d2c2ff8072f8ea513bcec235fd9b896f70dad369461d0ad7e570e98"},
+    {file = "mysqlclient-2.2.0-cp39-cp39-win_amd64.whl", hash = "sha256:9c6b142836c7dba4f723bf9c93cc46b6e5081d65b2af807f400dda9eb85a16d0"},
+    {file = "mysqlclient-2.2.0-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:955dba905a7443ce4788c63fdb9f8d688316260cf60b20ff51ac3b1c77616ede"},
+    {file = "mysqlclient-2.2.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:530ece9995a36cadb6211b9787f0c9e05cdab6702549bdb4236af5e9b535ed6a"},
+    {file = "mysqlclient-2.2.0.tar.gz", hash = "sha256:04368445f9c487d8abb7a878e3d23e923e6072c04a6c320f9e0dc8a82efba14e"},
 ]
 
 [[package]]
@@ -1286,13 +1286,13 @@ files = [
 
 [[package]]
 name = "platformdirs"
-version = "3.6.0"
+version = "3.8.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.6.0-py3-none-any.whl", hash = "sha256:ffa199e3fbab8365778c4a10e1fbf1b9cd50707de826eb304b50e57ec0cc8d38"},
-    {file = "platformdirs-3.6.0.tar.gz", hash = "sha256:57e28820ca8094678b807ff529196506d7a21e17156cb1cddb3e74cebce54640"},
+    {file = "platformdirs-3.8.0-py3-none-any.whl", hash = "sha256:ca9ed98ce73076ba72e092b23d3c93ea6c4e186b3f1c3dad6edd98ff6ffcca2e"},
+    {file = "platformdirs-3.8.0.tar.gz", hash = "sha256:b0cabcb11063d21a0b261d557acb0a9d2126350e63b70cdf7db6347baea456dc"},
 ]
 
 [package.extras]
@@ -1301,13 +1301,13 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-
 
 [[package]]
 name = "pluggy"
-version = "1.0.0"
+version = "1.2.0"
 description = "plugin and hook calling mechanisms for python"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "pluggy-1.0.0-py2.py3-none-any.whl", hash = "sha256:74134bbf457f031a36d68416e1509f34bd5ccc019f0bcc952c7b909d06b37bd3"},
-    {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
+    {file = "pluggy-1.2.0-py3-none-any.whl", hash = "sha256:c2fd55a7d7a3863cba1a013e4e2414658b1d07b6bc57b3919e0c63c9abb99849"},
+    {file = "pluggy-1.2.0.tar.gz", hash = "sha256:d12f0c4b579b15f5e054301bb226ee85eeeba08ffec228092f8defbaa3a4c4b3"},
 ]
 
 [package.extras]
@@ -1779,18 +1779,18 @@ test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "strawberry-django-plus"
-version = "3.0.1"
+version = "3.0.3"
 description = "Enhanced Strawberry GraphQL integration with Django"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "strawberry_django_plus-3.0.1-py3-none-any.whl", hash = "sha256:d03cd91ae1826e9333c891ab3100fb3e9ef509f45a45af284788c095ec962621"},
-    {file = "strawberry_django_plus-3.0.1.tar.gz", hash = "sha256:45758cdb558527ecffa988112ba4cbf4539cdf612e487dc21a111c3030eeb7b7"},
+    {file = "strawberry_django_plus-3.0.3-py3-none-any.whl", hash = "sha256:295abb8468947f288d5198721ccd94a76a3df1d39b9d7fcfe229caa8484f14a4"},
+    {file = "strawberry_django_plus-3.0.3.tar.gz", hash = "sha256:78d1c9aff77507bdc2c8d2c989fd8bd02325cbf3697c6f35d5e39e9c314f4bda"},
 ]
 
 [package.dependencies]
 django = ">=3.2"
-strawberry-graphql = ">=0.184.0"
+strawberry-graphql = ">=0.187.5"
 strawberry-graphql-django = ">=0.9.4"
 typing-extensions = ">=4.2.0"
 
@@ -1799,13 +1799,13 @@ enum = ["django-choices-field (>=2.0)"]
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.186.2"
+version = "0.189.1"
 description = "A library for creating GraphQL APIs"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql-0.186.2-py3-none-any.whl", hash = "sha256:f5890ec43f086ca35a32043df600da539efa968a75ca65323ce202310f00ecbb"},
-    {file = "strawberry_graphql-0.186.2.tar.gz", hash = "sha256:624fd469ec488dc6675c6e14dc0a9f07a623a805856de284b55a3a128ad9c210"},
+    {file = "strawberry_graphql-0.189.1-py3-none-any.whl", hash = "sha256:79d6c4001b399781609a802876051610f280737685f2f2b9b3918695cc3e95d2"},
+    {file = "strawberry_graphql-0.189.1.tar.gz", hash = "sha256:167f12c8855ebffa9f948bacfdefdc8a7f092079f60dc2a8defbc4f477481407"},
 ]
 
 [package.dependencies]
@@ -1813,7 +1813,7 @@ graphql-core = ">=3.2.0,<3.3.0"
 libcst = {version = ">=0.4.7", optional = true, markers = "extra == \"debug\" or extra == \"debug-server\" or extra == \"cli\""}
 python-dateutil = ">=2.7.0,<3.0.0"
 rich = {version = ">=12.0.0", optional = true, markers = "extra == \"debug\" or extra == \"debug-server\" or extra == \"cli\""}
-typing_extensions = ">=4.1.0"
+typing-extensions = ">=4.5.0"
 
 [package.extras]
 aiohttp = ["aiohttp (>=3.7.4.post0,<4.0.0)"]
