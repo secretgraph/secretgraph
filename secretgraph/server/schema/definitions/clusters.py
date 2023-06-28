@@ -120,7 +120,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         required: bool = False,
     ):
         result = get_cached_result(info.context["request"])["Cluster"]
-        # for allowing specifing global name
+        # for allowing specifing global name and bypassing get_queryset filters
         return fetch_clusters(
             result["objects_with_public"],
             ids=node_ids,

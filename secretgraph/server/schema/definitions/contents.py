@@ -232,7 +232,7 @@ class ContentNode(SBaseTypesMixin, relay.Node):
         required: bool = False,
     ):
         result = get_cached_result(info.context["request"])["Content"]
-        # for allowing specifing global name
+        # for bypassing get_queryset filters
         return fetch_contents(
             result["objects_with_public"],
             ids=node_ids,
