@@ -297,6 +297,16 @@ function UpdateKeysForm({
         touched,
         dirty,
     } = useFormikContext<any>()
+
+
+    const updateCallbacks = React.useCallback((callbacks: string[]) => {
+        const ncallbacks = callbacks.filter((val) => val)
+        ncallbacks.sort()
+        if (ncallbacks[ncallbacks.length - 1] != '') {
+            ncallbacks.push('')
+        }
+        setFieldValue('callbacks', ncallbacks)
+    }, [])
     const [joinedHashes, setJoinedHashes] = React.useState<string>('loading')
     React.useEffect(() => {
         let active = true
@@ -393,6 +403,70 @@ function UpdateKeysForm({
                     label="Description"
                     disabled={disabled}
                 />
+                <Box
+                                    sx={{
+                                        padding: (theme) =>
+                                            theme.spacing(2, 0, 4, 0),
+                                    }}
+                                >
+                                    <Typography variant="h4">Callbacks</Typography>
+                                    {values.callbacks.map(
+                                        (tag: string, index: number) => (
+                                            <Field
+                                                name={`tags[${index}]`}
+                                                key={index}
+                                            >
+                                                {(
+                                                    formikFieldProps: FieldProps
+                                                ) => {
+                                                    return (
+                                                        <FormikTextField
+                                                            {...formikFieldProps}
+                                                            sx={{
+                                                                paddingLeft: (
+                                                                    theme
+                                                                ) =>
+                                                                    theme.spacing(
+                                                                        2
+                                                                    ),
+                                                                marginTop: (
+                                                                    theme
+                                                                ) =>
+                                                                    theme.spacing(
+                                                                        2
+                                                                    ),
+                                                            }}
+                                                            fullWidth
+                                                            variant="filled"
+                                                            disabled={
+                                                                disabled ||
+                                                                isSubmitting
+                                                            }
+                                                            onBlur={(ev) => {
+                                                                updateCallbacks(
+                                                                    values.callbacks
+                                                                )
+                                                                formikFieldProps.field.onBlur(
+                                                                    ev
+                                                                )
+                                                            }}
+                                                            onKeyUp={(ev) => {
+                                                                if (
+                                                                    ev.code ===
+                                                                    'Enter'
+                                                                ) {
+                                                                    updateCallbacks(
+                                                                        values.callbacks
+                                                                    )
+                                                                }
+                                                            }}
+                                                        />
+                                                    )
+                                                }}
+                                            </Field>
+                                        )
+                                    )}
+                                </Box>
                 <Typography variant="h5" gutterBottom>
                     Key hashes
                 </Typography>
@@ -973,6 +1047,7 @@ const KeysUpdate = ({
                             publicTags: [
                                 `description=${values.description}`,
                                 `name=${values.name}`,
+                                ...values.callbacks.map((callback)=>`callback=${callback}`)
                             ],
                             publicKey: pubKey,
                             privateKey: privKey || undefined,
