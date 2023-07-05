@@ -1,10 +1,11 @@
 from typing import Iterable, Optional
 
+import strawberry
+import strawberry_django
 from django.conf import settings
 from django.db.models import Q, Subquery, Value
 from strawberry import relay
 from strawberry.types import Info
-from strawberry_django_plus import gql
 
 from ...actions.fetch import fetch_clusters
 from ...models import Cluster
@@ -19,36 +20,36 @@ from ._shared import SBaseTypesMixin
 from .contents import ContentNode
 
 
-@gql.django.type(Cluster, name="Cluster")
+@strawberry_django.type(Cluster, name="Cluster")
 class ClusterNode(SBaseTypesMixin, relay.Node):
     # we cannot define Node classes without NodeID yet
     flexid: relay.NodeID[str]
 
-    @gql.django.field()
+    @strawberry_django.field()
     def featured(self) -> Optional[bool]:
         if self.limited:
             return None
         return self.featured
 
-    @gql.django.field()
+    @strawberry_django.field()
     def primary(self) -> Optional[bool]:
         if self.limited:
             return None
         return self.is_primary
 
-    @gql.django.field(description="Is cluster public/global")
+    @strawberry_django.field(description="Is cluster public/global")
     def public(self) -> Optional[bool]:
         if self.limited:
             return None
         return self.globalNameRegisteredAt is None
 
-    @gql.django.field()
+    @strawberry_django.field()
     def name(self) -> Optional[str]:
         if self.limited:
             return None
         return self.name
 
-    @gql.django.field()
+    @strawberry_django.field()
     def user(self) -> Optional[str]:
         if self.limited:
             return None
@@ -58,13 +59,13 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             return None
         return self.user_name
 
-    @gql.django.field()
+    @strawberry_django.field()
     def description(self) -> Optional[str]:
         if self.limited:
             return None
         return self.description
 
-    @gql.django.field()
+    @strawberry_django.field()
     def groups(self, info: Info) -> list[str]:
         if self.limited or self.reduced:
             return []
@@ -80,7 +81,8 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                 "name", flat=True
             )
 
-    @gql.relay.connection(gql.relay.ListConnection[ContentNode])
+    @strawberry_django.connection(strawberry.relay.ListConnection[ContentNode])
+    @strawberry_django.django_resolver
     def contents(
         self,
         info: Info,

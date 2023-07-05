@@ -34,7 +34,7 @@ django = {version = '>=4.2', optional = true}
 channels = {version = ">=4.0", optional = true}
 graphene-protector = {version=">=0.8.0", optional = true}
 strawberry-graphql = {version=">=0.183",  optional = true}
-strawberry-django-plus = {version="*", optional = true}
+strawberry-graphql-django = {version=">=0.10", optional = true}
 flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 psycopg = {version="*", extras=["binary","pool"], optional = true}
@@ -58,7 +58,7 @@ graphene-protector = ">=0.7.2"
 django = ">=4.1"
 channels = {version = '>=4.0', extras = ["daphne"] }
 strawberry-graphql = {version = '>=0.145', extras = ["debug"] }
-strawberry-django-plus = ">=3.0"
+strawberry-graphql-django = ">=0.10"
 tox = "*"
 
 
@@ -71,9 +71,7 @@ graphene-protector = ">=0.7.2"
 django = ">=4.2"
 channels = {version = '>=4.0', extras = ["daphne"] }
 strawberry-graphql = {version = '>=0.145', extras = ["debug"] }
-strawberry-django-plus = "*"
-pylint = "*"
-rope = "*"
+strawberry-graphql-django = ">=0.10"
 tox = "*"
 
 
@@ -83,7 +81,7 @@ server = [
     "channels",
     "graphene-protector",
     "strawberry-graphql",
-    "strawberry-django-plus",
+    "strawberry-graphql-django",
     "django-fast-ratelimit",
     "django-manifest-loader",
 ]

@@ -2,11 +2,11 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Annotated, Iterable, Optional
 from uuid import UUID
 
+import strawberry
+import strawberry_django
 from django.conf import settings
 from django.db.models import Q, QuerySet, Subquery
-from strawberry import relay
 from strawberry.types import Info
-from strawberry_django_plus import gql
 
 from ....core.constants import public_states
 from ...actions.fetch import fetch_contents
@@ -16,21 +16,21 @@ from ...utils.auth import (
     get_cached_net_properties,
     get_cached_result,
 )
-from ..filters import ContentFilter
+from ..filters import ContentFilter, ContentReferenceFilter
 from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import SBaseTypesMixin
-from .references import ContentReferenceFilter, ContentReferenceNode
+from .references import ContentReferenceNode
 
 if TYPE_CHECKING:
     from .clusters import ClusterNode
 
 
 # for actions view and fetch
-@gql.type
+@strawberry.type
 class ReadStatistic:
-    query: gql.Private[QuerySet[Action]]
+    query: strawberry.Private[QuerySet[Action]]
 
-    @gql.field()
+    @strawberry.field()
     async def last(self) -> Optional[datetime]:
         action = await (
             self.query.filter(used__isnull=False).only("used").alatest("used")
@@ -39,7 +39,7 @@ class ReadStatistic:
             return action.used
         return None
 
-    @gql.field()
+    @strawberry.field()
     async def first(self) -> Optional[datetime]:
         action = await (
             self.query.filter(used__isnull=False)
@@ -50,30 +50,26 @@ class ReadStatistic:
             return action.used
         return None
 
-    @gql.field()
+    @strawberry.field()
     async def count(self) -> int:
         return await self.query.filter(used__isnull=False).acount()
 
-    @gql.field()
+    @strawberry.field()
     async def totalAmount(self) -> int:
         return await self.query.acount()
 
 
-@gql.django.type(Content, name="Content")
-class ContentNode(SBaseTypesMixin, relay.Node):
+@strawberry_django.type(Content, name="Content")
+class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
     # we cannot define Node classes without NodeID yet
-    flexid: relay.NodeID[str]
+    flexid: strawberry.relay.NodeID[str]
 
     nonce: str
     type: str
     state: str
-
-    deleted: Optional[datetime] = gql.django.field(
-        field_name="markForDestruction"
-    )
     link: str
 
-    @gql.field()
+    @strawberry_django.field()
     def readStatistic(self: Content) -> Optional[ReadStatistic]:
         if self.limited or self.reduced:
             return None
@@ -85,14 +81,13 @@ class ContentNode(SBaseTypesMixin, relay.Node):
         """Uses fetch/view group actions to provide statistics"""
         return ReadStatistic(query=query)
 
-    @gql.field()
+    @strawberry_django.field()
     def contentHash(self) -> Optional[str]:
         if self.limited:
             return None
         return self.contentHash
 
-    @gql.field()
-    @gql.django.django_resolver
+    @strawberry_django.field()
     def tags(
         self: Content,
         info: Info,
@@ -117,7 +112,7 @@ class ContentNode(SBaseTypesMixin, relay.Node):
             )
         return tags
 
-    @gql.django.field()
+    @strawberry_django.field()
     def signatures(
         self: Content,
         info: Info,
@@ -134,11 +129,10 @@ class ContentNode(SBaseTypesMixin, relay.Node):
             ),
         )
 
-    @gql.field()
-    @gql.django.django_resolver
+    @strawberry_django.field()
     def cluster(
         self: Content, info: Info
-    ) -> Optional[Annotated["ClusterNode", gql.lazy(".clusters")]]:
+    ) -> Optional[Annotated["ClusterNode", strawberry.lazy(".clusters")]]:
         # we are in the 2nd level, block
         if self.limited or self.reduced:
             return None
@@ -156,8 +150,10 @@ class ContentNode(SBaseTypesMixin, relay.Node):
             self.cluster.limited = True
         return self.cluster
 
-    @gql.relay.connection(gql.relay.ListConnection[ContentReferenceNode])
-    @gql.django.django_resolver
+    @strawberry_django.connection(
+        strawberry.relay.ListConnection[ContentReferenceNode]
+    )
+    @strawberry_django.django_resolver
     def references(
         self, info: Info, filters: ContentReferenceFilter
     ) -> Iterable[ContentReferenceNode]:
@@ -190,8 +186,10 @@ class ContentNode(SBaseTypesMixin, relay.Node):
             **filterob,
         )
 
-    @gql.relay.connection(gql.relay.ListConnection[ContentReferenceNode])
-    @gql.django.django_resolver
+    @strawberry_django.connection(
+        strawberry.relay.ListConnection[ContentReferenceNode]
+    )
+    @strawberry_django.django_resolver
     def referencedBy(
         self, info: Info, filters: ContentReferenceFilter
     ) -> Iterable[ContentReferenceNode]:
@@ -256,8 +254,8 @@ class ContentNode(SBaseTypesMixin, relay.Node):
         queryset,
         info,
         filters: ContentFilter = ContentFilter(),
-        fixedCluster: gql.Private[bool] = False,
-        allowDeleted: gql.Private[bool] = False,
+        fixedCluster: strawberry.Private[bool] = False,
+        allowDeleted: strawberry.Private[bool] = False,
         **kwargs,
     ) -> Iterable[Content]:
         results = get_cached_result(info.context["request"])

@@ -31,7 +31,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",  # Required for GraphiQL, debug
     "channels",
     "strawberry.django",
-    "strawberry_django_plus",
 ]
 
 MIDDLEWARE = [

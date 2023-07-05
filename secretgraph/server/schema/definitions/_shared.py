@@ -3,9 +3,9 @@ from typing import Optional
 from uuid import UUID
 
 import strawberry
+import strawberry_django
 from django.db.models import Q
 from strawberry.types import Info
-from strawberry_django_plus import gql
 
 from ....core import constants
 from ...models import Content
@@ -20,13 +20,12 @@ class ActionEntry:
     allowedTags: Optional[list[str]]
 
 
-@gql.type
+@strawberry.type
 class SBaseTypesMixin:
-    limited: gql.Private[bool] = False
-    reduced: gql.Private[bool] = False
+    limited: strawberry.Private[bool] = False
+    reduced: strawberry.Private[bool] = False
 
-    @gql.field()
-    @gql.django.django_resolver
+    @strawberry_django.field()
     async def availableActions(self, info: Info) -> list[ActionEntry]:
         if self.limited or self.reduced:
             return
@@ -106,8 +105,7 @@ class SBaseTypesMixin:
                         allowedTags=None,
                     )
 
-    @gql.field()
-    @gql.django.django_resolver
+    @strawberry_django.field()
     def authOk(self, info: Info) -> Optional[bool]:
         if self.limited or self.reduced:
             return None
@@ -135,25 +133,25 @@ class SBaseTypesMixin:
                 break
         return authOk
 
-    @gql.field()
+    @strawberry_django.field()
     def updated(self) -> Optional[datetime]:
         if self.limited:
             return None
         return self.updated
 
-    @gql.field()
+    @strawberry_django.field()
     def updateId(self) -> Optional[UUID]:
         if self.limited:
             return None
         return self.updateId
 
-    @gql.django.field()
+    @strawberry_django.field()
     def deleted(self) -> Optional[datetime]:
         if self.limited:
             return None
         return self.markForDestruction
 
-    @gql.django.field()
+    @strawberry_django.field()
     def properties(self, info: Info) -> list[str]:
         if self.limited or self.reduced:
             return []

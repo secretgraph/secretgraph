@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.utils import timezone
 from strawberry import relay
 from strawberry.types import Info
-from strawberry_django_plus import gql
+from strawberry_django import type as django_type
 
 from ..server.models import Cluster, Content
 from ..server.utils.auth import ids_to_results, retrieve_allowed_objects
@@ -16,7 +16,9 @@ from ..server.utils.auth import ids_to_results, retrieve_allowed_objects
 user_model = get_user_model()
 
 
-@gql.django.type(user_model, name="User")
+django_type(user_model, name="User")
+
+
 class UserNode(relay.Node):
     email: str
     username: str

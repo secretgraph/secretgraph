@@ -1,11 +1,12 @@
 from typing import TYPE_CHECKING, Annotated, Iterable, List, Optional
 
+import strawberry
+import strawberry_django
 from django.conf import settings
 from django.shortcuts import resolve_url
 from django.urls import NoReverseMatch
 from strawberry import relay
 from strawberry.types import Info
-from strawberry_django_plus import gql
 
 from ...models import ClusterGroup, Content
 from ...utils.auth import get_cached_net_properties
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from .contents import ContentNode
 
 
-@gql.django.type(Content, name="InjectedKey")
+@strawberry_django.type(Content, name="InjectedKey")
 class InjectedKeyNode:
     link: str
     contentHash: str
@@ -24,7 +25,7 @@ class InjectedKeyNode:
         return queryset.filter(type="PublicKey", injectedFor__isnull=False)
 
 
-@gql.django.type(ClusterGroup, name="ClusterGroup")
+@strawberry_django.type(ClusterGroup, name="ClusterGroup")
 class ClusterGroupNode(relay.Node):
     @classmethod
     def resolve_id(cls, root, *, info: Info) -> str:
@@ -35,13 +36,12 @@ class ClusterGroupNode(relay.Node):
     hidden: bool
     injectedKeys: List[InjectedKeyNode]
 
-    @gql.field()
-    @gql.django.django_resolver
+    @strawberry_django.field()
     def properties(self) -> list[str]:
         return self.properties.values_list("name", flat=True)
 
 
-@gql.type()
+@strawberry.type()
 class SecretgraphConfig(relay.Node):
     # we cannot define Node classes without NodeID yet
     stub: relay.NodeID[str]
@@ -60,7 +60,7 @@ class SecretgraphConfig(relay.Node):
     ) -> None:
         return [cls()]
 
-    @gql.django.field
+    @strawberry_django.field
     @staticmethod
     def clusterGroups(info: Info) -> List[ClusterGroupNode]:
         # permissions allows to see the hidden global groups
@@ -73,17 +73,17 @@ class SecretgraphConfig(relay.Node):
         else:
             return ClusterGroup.objects.filter(hidden=False)
 
-    @gql.field()
+    @strawberry.field()
     @staticmethod
     def hashAlgorithms() -> List[str]:
         return settings.SECRETGRAPH_HASH_ALGORITHMS
 
-    @gql.field(description="Maximal results per relay query")
+    @strawberry.field(description="Maximal results per relay query")
     @staticmethod
     def maxRelayResults() -> int:
         return getattr(settings, "STRAWBERRY_DJANGO_RELAY_MAX_RESULTS", 100)
 
-    @gql.field()
+    @strawberry.field()
     @classmethod
     def canDirectRegister(cls) -> bool:
         if not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
@@ -92,7 +92,7 @@ class SecretgraphConfig(relay.Node):
             return False
         return True
 
-    @gql.field()
+    @strawberry.field()
     @classmethod
     def registerUrl(cls) -> Optional[str]:
         if not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
@@ -105,7 +105,7 @@ class SecretgraphConfig(relay.Node):
                 return None
         return None
 
-    @gql.field()
+    @strawberry.field()
     @staticmethod
     def loginUrl() -> Optional[str]:
         if not getattr(
@@ -120,6 +120,9 @@ class SecretgraphConfig(relay.Node):
                 pass
         return None
 
-    @staticmethod
-    def documents() -> List[Annotated["ContentNode", gql.lazy(".contents")]]:
-        return Content.objects.global_documents()
+    # @strawberry_django.field
+    # @staticmethod
+    # def documents() -> (
+    #    List[Annotated["ContentNode", strawberry.lazy(".contents")]]
+    # ):
+    #    return Content.objects.global_documents()

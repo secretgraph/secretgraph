@@ -13,7 +13,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from strawberry import relay
-from strawberry_django_plus import gql
+from strawberry_django import django_resolver
 
 from ...core import constants
 from ..actions.handler import ActionHandler
@@ -72,7 +72,7 @@ class LazyViewResult(object):
             if i in self._result_dict:
                 del self._result_dict[i]
 
-    @gql.django.django_resolver
+    @django_resolver
     def preinit(self, *fields, refresh=False):
         for i in fields:
             if refresh and i in self._result_dict:

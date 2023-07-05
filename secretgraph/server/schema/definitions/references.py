@@ -1,33 +1,21 @@
 from typing import TYPE_CHECKING, Annotated, Iterable, List, Optional
 
+import strawberry_django
 from django.db import models
 from django.db.models.functions import Concat
-from strawberry import relay
+from strawberry import lazy, relay
 from strawberry.types import Info
-from strawberry_django_plus import gql
 
 from ...actions.fetch import fetch_contents
 from ...models import ContentReference
 from ...utils.auth import get_cached_result
-from ..shared import DeleteRecursive, UseCriteria
+from ..shared import DeleteRecursive
 
 if TYPE_CHECKING:
     from .contents import ContentNode
 
 
-@gql.input
-class ContentReferenceFilter:
-    states: Optional[List[str]] = None
-    includeTypes: Optional[List[str]] = None
-    excludeTypes: Optional[List[str]] = None
-    includeTags: Optional[List[str]] = None
-    excludeTags: Optional[List[str]] = None
-    contentHashes: Optional[List[str]] = None
-    deleted: UseCriteria = UseCriteria.FALSE
-    groups: Optional[List[str]] = None
-
-
-@gql.django.type(ContentReference, name="ContentReference")
+@strawberry_django.type(ContentReference, name="ContentReference")
 class ContentReferenceNode(relay.Node):
     group: str
     extra: str
@@ -63,20 +51,20 @@ class ContentReferenceNode(relay.Node):
 
         return queryset.filter(relay_id__in=node_ids)
 
-    @gql.django.field
+    @strawberry_django.field
     def source(
         self, info: Info
-    ) -> Annotated["ContentNode", gql.lazy(".contents")]:
+    ) -> Annotated["ContentNode", lazy(".contents")]:
         result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
             result["objects_with_public"].filter(references=self),
             clustersAreRestrictedOrAdmin=True,
         ).first()
 
-    @gql.django.field
+    @strawberry_django.field
     def target(
         self, info: Info
-    ) -> Annotated["ContentNode", gql.lazy(".contents")]:
+    ) -> Annotated["ContentNode", lazy(".contents")]:
         result = get_cached_result(info.context["request"])["Content"]
         return fetch_contents(
             result["objects_with_public"].filter(referencedBy=self),

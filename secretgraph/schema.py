@@ -1,7 +1,7 @@
 import strawberry
+import strawberry_django
 from django.conf import settings
 from graphene_protector.django.strawberry import Schema
-from strawberry import relay
 from strawberry.schema.config import StrawberryConfig
 
 from .server.schema import Mutation as ServerMutation
@@ -15,7 +15,7 @@ from .server.strawberry_extensions import RatelimitErrors, RatelimitMutations
 
 @strawberry.type
 class Query(ServerQuery):
-    node: relay.Node = relay.node()
+    node: strawberry.relay.Node = strawberry.relay.node()
 
 
 @strawberry.type

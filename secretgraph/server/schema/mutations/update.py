@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from django.db.models.functions import Substr
 from strawberry import relay
 from strawberry.types import Info
-from strawberry_django_plus import gql
+from strawberry_django import django_resolver
 
 from ...actions.update import (
     create_cluster_fn,
@@ -221,7 +221,7 @@ def mutate_content(
     return returnval
 
 
-@gql.django.django_resolver
+@django_resolver
 def logoutUser(info: Info) -> None:
     user = getattr(info.context["request"], "user", None)
     if user and getattr(user, "is_authenticated", True):
