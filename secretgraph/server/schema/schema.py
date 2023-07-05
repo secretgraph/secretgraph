@@ -45,6 +45,7 @@ from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 
 @strawberry.type
 class SecretgraphObject:
+    # TODO: reinclude when fixed
     # node: strawberry.relay.Node = strawberry.relay.node()
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ClusterNode])
