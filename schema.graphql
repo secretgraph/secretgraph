@@ -585,7 +585,7 @@ type SecretgraphObject {
 
     """Returns the items in the list that come after the specified cursor."""
     last: Int = null
-  ): ClusterConnection!
+  ): ContentConnection!
   config: SecretgraphConfig!
 }
 

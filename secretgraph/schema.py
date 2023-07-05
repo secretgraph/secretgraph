@@ -1,5 +1,4 @@
 import strawberry
-import strawberry_django
 from django.conf import settings
 from graphene_protector.django.strawberry import Schema
 from strawberry.schema.config import StrawberryConfig

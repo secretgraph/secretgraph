@@ -75,14 +75,13 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         # manage_groups: required for correctly updating groups
         props = get_cached_net_properties(info.context["request"])
         if "allow_hidden" in props or "manage_groups" in props:
-            return self.groups.values_list("name", flat=True)
+            return list(self.groups.values_list("name", flat=True))
         else:
-            return self.groups.filter(hidden=False).values_list(
-                "name", flat=True
+            return list(
+                self.groups.filter(hidden=False).values_list("name", flat=True)
             )
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ContentNode])
-    @strawberry_django.django_resolver
     def contents(
         self,
         info: Info,

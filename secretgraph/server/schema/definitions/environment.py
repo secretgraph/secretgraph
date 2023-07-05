@@ -38,7 +38,7 @@ class ClusterGroupNode(relay.Node):
 
     @strawberry_django.field()
     def properties(self) -> list[str]:
-        return self.properties.values_list("name", flat=True)
+        return list(self.properties.values_list("name", flat=True))
 
 
 @strawberry.type()
@@ -60,9 +60,10 @@ class SecretgraphConfig(relay.Node):
     ) -> None:
         return [cls()]
 
-    @strawberry_django.field
+    @strawberry_django.field()
+    @strawberry_django.django_resolver()
     @staticmethod
-    def clusterGroups(info: Info) -> List[ClusterGroupNode]:
+    def clusterGroups(info: Info) -> list[ClusterGroupNode]:
         # permissions allows to see the hidden global groups
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication

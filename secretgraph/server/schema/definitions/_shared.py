@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
 import strawberry
@@ -8,7 +8,7 @@ from django.db.models import Q
 from strawberry.types import Info
 
 from ....core import constants
-from ...models import Content
+from ...models import Cluster, Content
 from ...utils.auth import get_cached_net_properties, get_cached_result
 
 
@@ -26,7 +26,9 @@ class SBaseTypesMixin:
     reduced: strawberry.Private[bool] = False
 
     @strawberry_django.field()
-    async def availableActions(self, info: Info) -> list[ActionEntry]:
+    async def availableActions(
+        self: Union[Content, Cluster], info: Info
+    ) -> list[ActionEntry]:
         if self.limited or self.reduced:
             return
         name = self.__class__.__name__.replace("Node", "", 1)
@@ -106,7 +108,7 @@ class SBaseTypesMixin:
                     )
 
     @strawberry_django.field()
-    def authOk(self, info: Info) -> Optional[bool]:
+    def authOk(self: Union[Content, Cluster], info: Info) -> Optional[bool]:
         if self.limited or self.reduced:
             return None
         name = self.__class__.__name__.replace("Node", "", 1)
@@ -134,30 +136,30 @@ class SBaseTypesMixin:
         return authOk
 
     @strawberry_django.field()
-    def updated(self) -> Optional[datetime]:
+    def updated(self: Union[Content, Cluster]) -> Optional[datetime]:
         if self.limited:
             return None
         return self.updated
 
     @strawberry_django.field()
-    def updateId(self) -> Optional[UUID]:
+    def updateId(self: Union[Content, Cluster]) -> Optional[UUID]:
         if self.limited:
             return None
         return self.updateId
 
     @strawberry_django.field()
-    def deleted(self) -> Optional[datetime]:
+    def deleted(self: Union[Content, Cluster]) -> Optional[datetime]:
         if self.limited:
             return None
         return self.markForDestruction
 
     @strawberry_django.field()
-    def properties(self, info: Info) -> list[str]:
+    def properties(self: Union[Content, Cluster], info: Info) -> list[str]:
         if self.limited or self.reduced:
             return []
         if "allow_hidden" in get_cached_net_properties(
             info.context["request"]
         ):
-            return self.properties
+            return list(self.properties)
         else:
-            return self.nonhidden_properties
+            return list(self.nonhidden_properties)

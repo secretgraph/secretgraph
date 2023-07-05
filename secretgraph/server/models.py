@@ -237,7 +237,9 @@ class Net(models.Model):
 
 class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
-    limited = False
+    limited: bool = False
+    # not a field but an attribute for reducing dependencies
+    reduced: bool = False
     name: str = models.CharField(
         max_length=181,
         default="",
@@ -404,7 +406,10 @@ class ContentManager(models.Manager):
 
 
 class Content(FlexidModel):
+    # not a field but an attribute for restricting view
     limited: bool = False
+    # not a field but an attribute for reducing dependencies
+    reduced: bool = False
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(blank=True, default=uuid4)
     downloadId: str = models.CharField(
@@ -805,7 +810,7 @@ class ContentReference(models.Model):
 
 
 class SGroupPropertyManager(models.Manager):
-    def defaultNetProperties(self, queryset=None):
+    def defaultNetProperties(self, queryset=None) -> models.QuerySet:
         if queryset is None:
             queryset = self.get_queryset()
 
@@ -815,7 +820,7 @@ class SGroupPropertyManager(models.Manager):
         default_ngroups = dProperty.netGroups.all()
         return queryset.filter(netGroups__in=default_ngroups)
 
-    def defaultClusterProperties(self, queryset=None):
+    def defaultClusterProperties(self, queryset=None) -> models.QuerySet:
         if queryset is None:
             queryset = self.get_queryset()
 

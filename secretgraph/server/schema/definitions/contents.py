@@ -103,14 +103,12 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
 
         for i in excludeTags or []:
             excl_filters |= Q(tag__startswith=i)
-        tags = self.tags.filter(~excl_filters & incl_filters).values_list(
-            "tag", flat=True
-        )
+        tags = self.tags.filter(~excl_filters & incl_filters)
         if self.limited:
             tags.filter(
                 Q(tag__startswith="key_hash=") | Q(tag__startswith="name=")
             )
-        return tags
+        return list(tags.values_list("tag", flat=True))
 
     @strawberry_django.field()
     def signatures(
@@ -153,7 +151,6 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
     @strawberry_django.connection(
         strawberry.relay.ListConnection[ContentReferenceNode]
     )
-    @strawberry_django.django_resolver
     def references(
         self, info: Info, filters: ContentReferenceFilter
     ) -> Iterable[ContentReferenceNode]:
@@ -189,7 +186,6 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
     @strawberry_django.connection(
         strawberry.relay.ListConnection[ContentReferenceNode]
     )
-    @strawberry_django.django_resolver
     def referencedBy(
         self, info: Info, filters: ContentReferenceFilter
     ) -> Iterable[ContentReferenceNode]:
