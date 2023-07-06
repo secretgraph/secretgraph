@@ -157,9 +157,15 @@ function CustomView({ data }: { data: Blob }) {
         let active = true
         async function f() {
             try {
-                setText(await data.text())
+                const text = await data.text()
+                if (active) {
+                    setText(text)
+                }
             } catch (exc) {
-                setText(Buffer.from(await data.arrayBuffer()).toString('hex'))
+                const buffer = await data.arrayBuffer()
+                if (active) {
+                    setText(Buffer.from(buffer).toString('hex'))
+                }
             }
         }
         f()
