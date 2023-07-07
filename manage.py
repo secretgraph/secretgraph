@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent
 
@@ -17,10 +17,6 @@ def main():
         "SECRETGRAPH_SILENCE",
         os.environ.get(
             "RUN_MAIN",  # is started with reloader
-            os.environ.get(
-                "WERKZEUG_RUN_MAIN",  # is started with extensions reloader
-                None,
-            ),
         ),
     ):
         print("USE SETTINGS:", os.environ["DJANGO_SETTINGS_MODULE"])

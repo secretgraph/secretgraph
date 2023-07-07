@@ -5,7 +5,6 @@ import strawberry_django
 
 # from django.utils.translation import gettext_lazy as _
 from strawberry.types import Info
-from strawberry_django import mutations
 
 from ..models import Cluster, Content
 from ..utils.auth import get_cached_net_properties, get_cached_result
@@ -46,7 +45,13 @@ from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 @strawberry.type
 class SecretgraphObject:
     # TODO: reinclude when fixed
-    # node: strawberry.relay.Node = strawberry.relay.node()
+    # node: Optional[strawberry.relay.Node] = strawberry.relay.node()
+    @strawberry.field()
+    @staticmethod
+    def node(
+        info, id: strawberry.relay.GlobalID
+    ) -> Optional[strawberry.relay.Node]:
+        return id.resolve_node(id.node_id, info=info, required=False)
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ClusterNode])
     def clusters(
@@ -79,7 +84,7 @@ class SecretgraphObject:
 
 @strawberry.type
 class SecretgraphMutations:
-    updateOrCreateContent: ContentMutation = mutations.input_mutation(
+    updateOrCreateContent: ContentMutation = strawberry_django.input_mutation(
         resolver=mutate_content,
         description=(
             "Supports creation or update of:\n"
@@ -89,7 +94,7 @@ class SecretgraphMutations:
         ),
         handle_django_errors=False,
     )
-    updateOrCreateCluster: ClusterMutation = mutations.input_mutation(
+    updateOrCreateCluster: ClusterMutation = strawberry_django.input_mutation(
         resolver=mutate_cluster,
         description=(
             "Create a cluster, optionally initialize with a key-(pair)"
@@ -98,30 +103,32 @@ class SecretgraphMutations:
     )
 
     deleteContentOrCluster: DeleteContentOrClusterMutation = (
-        mutations.input_mutation(
+        strawberry_django.input_mutation(
             resolver=delete_content_or_cluster, handle_django_errors=False
         )
     )
     resetDeletionContentOrCluster: ResetDeletionContentOrClusterMutation = (
-        mutations.input_mutation(
+        strawberry_django.input_mutation(
             resolver=reset_deletion_content_or_cluster,
             handle_django_errors=False,
         )
     )
-    regenerateFlexid: RegenerateFlexidMutation = mutations.input_mutation(
-        resolver=regenerate_flexid, handle_django_errors=False
+    regenerateFlexid: RegenerateFlexidMutation = (
+        strawberry_django.input_mutation(
+            resolver=regenerate_flexid, handle_django_errors=False
+        )
     )
-    updateMetadata: MetadataUpdateMutation = mutations.input_mutation(
+    updateMetadata: MetadataUpdateMutation = strawberry_django.input_mutation(
         resolver=update_metadata, handle_django_errors=False
     )
-    updateMarks: MarkMutation = mutations.input_mutation(
+    updateMarks: MarkMutation = strawberry_django.input_mutation(
         resolver=mark, handle_django_errors=False
     )
-    pushContent: PushContentMutation = mutations.input_mutation(
+    pushContent: PushContentMutation = strawberry_django.input_mutation(
         resolver=mutate_push_content, handle_django_errors=False
     )
 
-    transferContent: TransferMutation = mutations.input_mutation(
+    transferContent: TransferMutation = strawberry_django.input_mutation(
         resolver=mutate_transfer, handle_django_errors=False
     )
 

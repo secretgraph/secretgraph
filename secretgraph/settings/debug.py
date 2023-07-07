@@ -4,6 +4,8 @@ os.environ["DEBUG"] = "true"
 
 from secretgraph.settings.withclient import *  # noqa: F403, F401, E402
 
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import strawberry
 from django.conf import settings
 from graphene_protector.django.strawberry import Schema
@@ -14,7 +16,7 @@ from .server.strawberry_extensions import RatelimitErrors, RatelimitMutations
 
 @strawberry.type
 class Query(ServerQuery):
-    node: strawberry.relay.Node = strawberry.relay.node()
+    node: Optional[strawberry.relay.Node] = strawberry.relay.node()
 
 
 @strawberry.type

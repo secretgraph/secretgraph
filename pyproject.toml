@@ -48,8 +48,7 @@ tinycss2 = {version="*", optional = true}
 optional = true
 
 [tool.poetry.group.test.dependencies]
-django-webtest = "*"
-WSGIProxy2 = "*"
+schemathesis = "*"
 django-manifest-loader = "*"
 django-fast-ratelimit = ">=0.9.0"
 bleach = "*"
@@ -59,8 +58,6 @@ django = ">=4.1"
 channels = {version = '>=4.0', extras = ["daphne"] }
 strawberry-graphql = {version = '>=0.145', extras = ["debug"] }
 strawberry-graphql-django = ">=0.10"
-tox = "*"
-
 
 [tool.poetry.group.dev.dependencies]
 django-manifest-loader = "*"
