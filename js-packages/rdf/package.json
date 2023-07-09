@@ -5,11 +5,13 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
-        "n3": "*"
+        "n3": "*",
+        "rdf-js": "*"
     },
     "devDependencies": {
         "typescript": "*",
-        "@types/n3": "*"
+        "@types/n3": "*",
+        "@rdfjs/types": "*"
     },
     "exports": {
         "./": "./lib/"
