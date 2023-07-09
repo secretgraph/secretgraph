@@ -51,7 +51,7 @@ class SecretgraphObject:
     def node(
         info, id: strawberry.relay.GlobalID
     ) -> Optional[strawberry.relay.Node]:
-        return id.resolve_node(id.node_id, info=info, required=False)
+        return id.resolve_node(info=info, required=False)
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ClusterNode])
     def clusters(

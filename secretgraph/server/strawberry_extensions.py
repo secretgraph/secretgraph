@@ -46,7 +46,7 @@ class RatelimitMutations(SchemaExtension):
         data = execution_context.result and execution_context.result.data
         # only increase if no writeok with value False is found
         if data and any(
-            map(lambda x: x.get("writeok", None) is False, data.values())
+            map(lambda x: x and x.get("writeok", None) is False, data.values())
         ):
             return
         ratelimit.get_ratelimit(

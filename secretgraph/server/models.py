@@ -199,7 +199,7 @@ class Net(models.Model):
     @property
     def properties(self) -> list[str]:
         if not self.id:
-            return SGroupProperty.objects.defaultNetProperties.values_list(
+            return SGroupProperty.objects.defaultNetProperties().values_list(
                 "name", flat=True
             )
         return SGroupProperty.objects.filter(netGroups__nets=self).values_list(
@@ -281,7 +281,7 @@ class Cluster(FlexidModel):
     @property
     def properties(self) -> list[str]:
         if not self.id:
-            return SGroupProperty.objects.defaultClusterProperties.values_list(
+            return SGroupProperty.objects.defaultClusterProperties().values_list(
                 "name", flat=True
             )
         return SGroupProperty.objects.filter(
@@ -291,7 +291,7 @@ class Cluster(FlexidModel):
     @property
     def nonhidden_properties(self) -> list[str]:
         if not self.id:
-            return SGroupProperty.objects.defaultClusterProperties.values_list(
+            return SGroupProperty.objects.defaultClusterProperties().values_list(
                 "name", flat=True
             )
         return SGroupProperty.objects.filter(
