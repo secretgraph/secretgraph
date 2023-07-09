@@ -5,8 +5,7 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
-        "n3": "*",
-        "rdf-js": "*"
+        "n3": "*"
     },
     "devDependencies": {
         "typescript": "*",
