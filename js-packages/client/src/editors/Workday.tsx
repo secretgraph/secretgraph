@@ -161,6 +161,8 @@ interface InnerWorkdayProps {
     data?: {
         note: string
         times: TimeEntryData[]
+        work: string
+        day: string
     }
     tags?: { [name: string]: string[] }
     url: string
@@ -189,10 +191,8 @@ function InnerWorkday({
     const initialValues = {
         actions,
         cluster: mainCtx.editCluster,
-        day:
-            (tags ? tags['~day'][0] : null) ||
-            new Date(Date.now()).toDateString(),
-        work: (tags ? tags['~work'][0] : null) || '',
+        day: (data ? data.day : null) || new Date(Date.now()).toDateString(),
+        work: (data ? data.work : null) || '',
         note: data?.note || '',
         times: data?.times || [
             {
@@ -215,6 +215,8 @@ function InnerWorkday({
                     JSON.stringify({
                         note: values.note,
                         times: values.times.slice(0, -1),
+                        work: values.work,
+                        day: new Date(values.day).toDateString(),
                     }),
                 ])
                 const res = await updateOrCreateContentWithConfig({
@@ -232,6 +234,7 @@ function InnerWorkday({
                         `~name=Work: ${values.work}`,
                         `~work=${values.work}`,
                         `~day=${new Date(values.day).toDateString()}`,
+                        `mime=application/json`,
                     ],
                     id: nodeData?.id,
                     updateId: nodeData?.updateId,

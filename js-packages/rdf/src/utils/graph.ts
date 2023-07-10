@@ -1,5 +1,5 @@
+import * as RDF from '@rdfjs/types'
 import * as N3 from 'n3'
-import * as RDF from 'rdf-js'
 
 export function parseToStoreAndPrefixes(
     inp: string,

@@ -100,39 +100,6 @@ export const updateKeyMutation = gql`
     }
 `
 
-export const findPublicKeyQuery = gql`
-    query contentFindPublicKeyQuery(
-        $id: GlobalID!
-        $authorization: [String!]
-    ) {
-        secretgraph(authorization: $authorization) {
-            node(id: $id) {
-                ... on Content {
-                    id
-                    type
-                    state
-                    references(filters: { groups: ["public_key"] }) {
-                        edges {
-                            node {
-                                target {
-                                    id
-                                    updateId
-                                    link
-                                    type
-                                    state
-                                    cluster {
-                                        id
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-`
-
 // needs type because this attribute is checked for the extra key tag extractor pass
 // publicKey -> privateKey -> (key tag | references to public keys (have shared key)) and signature references
 export const keysRetrievalQuery = gql`

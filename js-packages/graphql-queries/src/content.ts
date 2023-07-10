@@ -379,6 +379,7 @@ export const getContentReferencedByQuery = gql`
         $id: GlobalID!
         $authorization: [String!]
         $deleted: UseCriteria
+        $groups: [String!]
         $count: Int
         $cursor: String
     ) {
@@ -389,11 +390,16 @@ export const getContentReferencedByQuery = gql`
                     referencedBy(
                         first: $count
                         after: $cursor
-                        filters: { deleted: $deleted }
+                        filters: { deleted: $deleted, groups: $groups }
                     )
                         @connection(
                             key: "feedReferencedBy"
-                            filter: ["authorization", "id", "deleted"]
+                            filter: [
+                                "authorization"
+                                "id"
+                                "groups"
+                                "deleted"
+                            ]
                         ) {
                         edges {
                             node {
@@ -410,6 +416,113 @@ export const getContentReferencedByQuery = gql`
                         pageInfo {
                             hasNextPage
                             endCursor
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
+export const getContentRelatedQuery = gql`
+    query contentGetRelatedQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+        $deleted: UseCriteria
+        $groups: [String!]
+        $keyhashes: [String!]
+        $count: Int
+        $cursor: String
+    ) {
+        secretgraph(authorization: $authorization) {
+            node(id: $id) {
+                ... on Content {
+                    id
+                    referencedBy(
+                        first: $count
+                        after: $cursor
+                        filters: { deleted: $deleted, groups: $groups }
+                    )
+                        @connection(
+                            key: "feedRelatedBy"
+                            filter: [
+                                "authorization"
+                                "id"
+                                "groups"
+                                "deleted"
+                            ]
+                        ) {
+                        edges {
+                            node {
+                                extra
+                                target {
+                                    deleted
+                                    id
+                                    link
+                                    type
+                                    tags
+                                    references(
+                                        filters: {
+                                            groups: ["key", "signature"]
+                                            includeTags: $keyhashes
+                                        }
+                                    ) {
+                                        edges {
+                                            node {
+                                                extra
+                                                target {
+                                                    link
+                                                    type
+                                                    state
+                                                    tags(
+                                                        includeTags: [
+                                                            "key_hash="
+                                                        ]
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        pageInfo {
+                            hasNextPage
+                            endCursor
+                        }
+                    }
+                }
+            }
+        }
+    }
+`
+
+export const findOriginsQuery = gql`
+    query contentFindOriginsQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+        $groups: [String!]!
+    ) {
+        secretgraph(authorization: $authorization) {
+            node(id: $id) {
+                ... on Content {
+                    id
+                    type
+                    state
+                    references(filters: { groups: $groups }) {
+                        edges {
+                            node {
+                                target {
+                                    id
+                                    updateId
+                                    link
+                                    type
+                                    state
+                                    cluster {
+                                        id
+                                    }
+                                }
+                            }
                         }
                     }
                 }

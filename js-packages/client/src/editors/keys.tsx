@@ -13,12 +13,10 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/system/Box'
 import {
     contentFeedQuery,
+    findOriginsQuery,
     getContentConfigurationQuery,
 } from '@secretgraph/graphql-queries/content'
-import {
-    findPublicKeyQuery,
-    keysRetrievalQuery,
-} from '@secretgraph/graphql-queries/key'
+import { keysRetrievalQuery } from '@secretgraph/graphql-queries/key'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
@@ -298,7 +296,6 @@ function UpdateKeysForm({
         dirty,
     } = useFormikContext<any>()
 
-
     const updateCallbacks = React.useCallback((callbacks: string[]) => {
         const ncallbacks = callbacks.filter((val) => val)
         ncallbacks.sort()
@@ -404,69 +401,43 @@ function UpdateKeysForm({
                     disabled={disabled}
                 />
                 <Box
-                                    sx={{
-                                        padding: (theme) =>
-                                            theme.spacing(2, 0, 4, 0),
-                                    }}
-                                >
-                                    <Typography variant="h4">Callbacks</Typography>
-                                    {values.callbacks.map(
-                                        (tag: string, index: number) => (
-                                            <Field
-                                                name={`tags[${index}]`}
-                                                key={index}
-                                            >
-                                                {(
-                                                    formikFieldProps: FieldProps
-                                                ) => {
-                                                    return (
-                                                        <FormikTextField
-                                                            {...formikFieldProps}
-                                                            sx={{
-                                                                paddingLeft: (
-                                                                    theme
-                                                                ) =>
-                                                                    theme.spacing(
-                                                                        2
-                                                                    ),
-                                                                marginTop: (
-                                                                    theme
-                                                                ) =>
-                                                                    theme.spacing(
-                                                                        2
-                                                                    ),
-                                                            }}
-                                                            fullWidth
-                                                            variant="filled"
-                                                            disabled={
-                                                                disabled ||
-                                                                isSubmitting
-                                                            }
-                                                            onBlur={(ev) => {
-                                                                updateCallbacks(
-                                                                    values.callbacks
-                                                                )
-                                                                formikFieldProps.field.onBlur(
-                                                                    ev
-                                                                )
-                                                            }}
-                                                            onKeyUp={(ev) => {
-                                                                if (
-                                                                    ev.code ===
-                                                                    'Enter'
-                                                                ) {
-                                                                    updateCallbacks(
-                                                                        values.callbacks
-                                                                    )
-                                                                }
-                                                            }}
-                                                        />
-                                                    )
-                                                }}
-                                            </Field>
-                                        )
-                                    )}
-                                </Box>
+                    sx={{
+                        padding: (theme) => theme.spacing(2, 0, 4, 0),
+                    }}
+                >
+                    <Typography variant="h4">Callbacks</Typography>
+                    {values.callbacks.map((tag: string, index: number) => (
+                        <Field name={`tags[${index}]`} key={index}>
+                            {(formikFieldProps: FieldProps) => {
+                                return (
+                                    <FormikTextField
+                                        {...formikFieldProps}
+                                        sx={{
+                                            paddingLeft: (theme) =>
+                                                theme.spacing(2),
+                                            marginTop: (theme) =>
+                                                theme.spacing(2),
+                                        }}
+                                        fullWidth
+                                        variant="filled"
+                                        disabled={disabled || isSubmitting}
+                                        onBlur={(ev) => {
+                                            updateCallbacks(values.callbacks)
+                                            formikFieldProps.field.onBlur(ev)
+                                        }}
+                                        onKeyUp={(ev) => {
+                                            if (ev.code === 'Enter') {
+                                                updateCallbacks(
+                                                    values.callbacks
+                                                )
+                                            }
+                                        }}
+                                    />
+                                )
+                            }}
+                        </Field>
+                    ))}
+                </Box>
                 <Typography variant="h5" gutterBottom>
                     Key hashes
                 </Typography>
@@ -1047,7 +1018,9 @@ const KeysUpdate = ({
                             publicTags: [
                                 `description=${values.description}`,
                                 `name=${values.name}`,
-                                ...values.callbacks.map((callback)=>`callback=${callback}`)
+                                ...values.callbacks.map(
+                                    (callback) => `callback=${callback}`
+                                ),
                             ],
                             publicKey: pubKey,
                             privateKey: privKey || undefined,
@@ -1375,10 +1348,11 @@ async function findOrReturn({
         return true
     }
     const { data } = await client.query({
-        query: findPublicKeyQuery,
+        query: findOriginsQuery,
         variables: {
             authorization,
             id,
+            groups: ['public_key'],
         },
     })
     const node = data.secretgraph.node
