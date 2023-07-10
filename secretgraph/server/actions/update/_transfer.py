@@ -225,6 +225,7 @@ async def transfer_value(
         )
         if destroy_content:
             # then delete with the correct amount of bytes
+            # why? adelete recalculates byte usage
             await content.adelete()
         else:
             if await content.tags.filter(tag="freeze").aexists():
@@ -233,6 +234,7 @@ async def transfer_value(
                 await content.tags.filter(tag="immutable").adelete()
             if not had_hide:
                 content.hide = False
+            # now we create a new update id
             content.updateId = uuid4()
             await content.asave(update_fields=["hide", "updateId", "nonce"])
 

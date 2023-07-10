@@ -281,8 +281,10 @@ class Cluster(FlexidModel):
     @property
     def properties(self) -> list[str]:
         if not self.id:
-            return SGroupProperty.objects.defaultClusterProperties().values_list(
-                "name", flat=True
+            return (
+                SGroupProperty.objects.defaultClusterProperties().values_list(
+                    "name", flat=True
+                )
             )
         return SGroupProperty.objects.filter(
             clusterGroups__clusters=self
@@ -291,8 +293,10 @@ class Cluster(FlexidModel):
     @property
     def nonhidden_properties(self) -> list[str]:
         if not self.id:
-            return SGroupProperty.objects.defaultClusterProperties().values_list(
-                "name", flat=True
+            return (
+                SGroupProperty.objects.defaultClusterProperties().values_list(
+                    "name", flat=True
+                )
             )
         return SGroupProperty.objects.filter(
             clusterGroups__in=self.groups.filter(hidden=False)
@@ -453,6 +457,8 @@ class Content(FlexidModel):
     state: str = models.CharField(max_length=10, null=False)
 
     objects = ContentManager()
+    references: models.ManyToOneRel["ContentReference"]
+    referencedBy: models.ManyToOneRel["ContentReference"]
 
     class Meta:
         constraints = [
