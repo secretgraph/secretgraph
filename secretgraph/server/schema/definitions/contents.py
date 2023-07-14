@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Annotated, Iterable, Optional
-from uuid import UUID
 
 import strawberry
 import strawberry_django
@@ -254,6 +253,8 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         allowDeleted: strawberry.Private[bool] = False,
         **kwargs,
     ) -> Iterable[Content]:
+        if getattr(queryset, "_sg_filtered_already", False):
+            return queryset
         results = get_cached_result(info.context["request"])
 
         if (
@@ -268,6 +269,9 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             hidden = UseCriteria.FALSE
         if hidden != UseCriteria.IGNORE:
             queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
+        assert fixedCluster or hasattr(
+            filters, "featured"
+        ), "wrong type for fixed cluster: %s" % type(filters)
         if not fixedCluster and filters.featured != UseCriteria.IGNORE:
             queryset = queryset.filter(
                 cluster__featured=filters.featured == UseCriteria.TRUE

@@ -24,7 +24,7 @@ class ContentReferenceNode(relay.Node):
     deleteRecursive: DeleteRecursive
 
     @classmethod
-    def get_queryset(cls, queryset, info):
+    def get_queryset(cls, queryset, info, **kwargs):
         return queryset.annotate(
             relay_id=Concat(
                 models.F("source__flexid"),

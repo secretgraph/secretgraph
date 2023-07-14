@@ -104,13 +104,15 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             filters.hidden = UseCriteria.FALSE
             if not allowDeleted:
                 filters.deleted = UseCriteria.FALSE
-        return ContentNode.get_queryset(
+        qs = ContentNode.get_queryset(
             queryset,
             info,
-            filters,
+            filters=filters,
             fixedCluster=True,
             allowDeleted=allowDeleted,
         )
+        setattr(qs, "_sg_filtered_already", True)
+        return qs
 
     @classmethod
     def resolve_nodes(
