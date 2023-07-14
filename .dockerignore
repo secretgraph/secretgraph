@@ -1,6 +1,9 @@
 .venv
 .git
 .github
+.tox
+.schemathesis
+.hypothesis
 __pycache__
 node_modules
 webpack_bundles
