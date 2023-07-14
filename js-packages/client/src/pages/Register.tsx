@@ -130,7 +130,6 @@ function Register() {
                             clusters: {},
                             contents: {},
                         }
-                        const client = createClient(newConfig.baseUrl)
                         const result = await initializeCluster({
                             client,
                             config: newConfig,

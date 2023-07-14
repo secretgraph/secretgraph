@@ -101,7 +101,7 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
                 user = None
             if user:
                 net = Net.objects.filter(user_name=user.get_username()).first()
-                if net.clusters.exists():
+                if net and net.clusters.exists():
                     logger.info(
                         "User '%s' has already registered some cluster, "
                         "but doesn't use them for registering new ones. "
