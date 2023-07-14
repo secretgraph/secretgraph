@@ -8,6 +8,7 @@
         "@secretgraph/misc": "*",
         "@secretgraph/rdf": "*",
         "@secretgraph/graphql-queries": "*",
+        "@secretgraph/ui-components": "*",
         "@apollo/client": "*",
         "graphql-ws": "*",
         "qrcode.react": "*",
