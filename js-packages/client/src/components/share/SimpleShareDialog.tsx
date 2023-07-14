@@ -33,15 +33,15 @@ import {
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { hashToken } from '@secretgraph/misc/utils/hashing'
 import * as SetOps from '@secretgraph/misc/utils/set'
+import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
+import TokenSelect from '@secretgraph/ui-components/forms/TokenSelect'
+import { HashEntry } from '@secretgraph/ui-components/misc'
 import { FastField, Form, Formik } from 'formik'
 import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
-import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
-import TokenSelect from '../forms/TokenSelect'
 import ActionOrCertificateConfigurator from '../formsWithContext/ActionOrCertificateConfigurator'
-import { HashEntry } from '../misc'
 
 const _update_set = new Set(['update', 'manage'])
 function SharePanel({ url }: { url: string }) {

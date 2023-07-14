@@ -16,11 +16,11 @@ import {
     resetDeletionNodes,
 } from '@secretgraph/misc/utils/operations/node'
 import * as SetOps from '@secretgraph/misc/utils/set'
+import MapSelect from '@secretgraph/ui-components/MapSelect'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
-import MapSelect from './MapSelect'
 
 const _update_set = new Set(['update', 'manage'])
 const _create_set = new Set(['create', 'manage'])

@@ -29,6 +29,12 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
+import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
+import FormikDatePicker from '@secretgraph/ui-components/formik/FormikDatePicker'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
+import FormikTimePicker from '@secretgraph/ui-components/formik/FormikTimePicker'
+import StateSelect from '@secretgraph/ui-components/forms/StateSelect'
+import UploadButton from '@secretgraph/ui-components/UploadButton'
 import {
     FastField,
     Field,
@@ -42,13 +48,7 @@ import {
 import * as React from 'react'
 
 import ActionsDialog from '../../components/ActionsDialog'
-import DecisionFrame from '../../components/DecisionFrame'
-import FormikDatePicker from '../../components/formik/FormikDatePicker'
-import FormikTextField from '../../components/formik/FormikTextField'
-import FormikTimePicker from '../../components/formik/FormikTimePicker'
-import StateSelect from '../../components/forms/StateSelect'
 import ClusterSelectViaUrl from '../../components/formsWithContext/ClusterSelectViaUrl'
-import UploadButton from '../../components/UploadButton'
 import * as Contexts from '../../contexts'
 import { mapperToArray } from '../../hooks'
 
@@ -200,15 +200,6 @@ export function InnerProfile({
                         <Grid container spacing={2}>
                             <Grid xs={12}>
                                 <FastField
-                                    component={FormikTextField}
-                                    name="work"
-                                    fullWidth
-                                    label="Work"
-                                    disabled={isSubmitting || disabled}
-                                />
-                            </Grid>
-                            <Grid xs={12}>
-                                <FastField
                                     component={ClusterSelectViaUrl}
                                     url={url}
                                     name="cluster"
@@ -238,11 +229,54 @@ export function InnerProfile({
                             <Grid xs={12}>
                                 <FastField
                                     component={FormikTextField}
-                                    name="note"
+                                    name="name"
                                     fullWidth
-                                    multiline
-                                    minRows={3}
-                                    label="Note"
+                                    label="Identifying Name"
+                                    disabled={isSubmitting || disabled}
+                                />
+                            </Grid>
+                            <Grid xs={12} sm={6}>
+                                <FastField
+                                    component={FormikTextField}
+                                    name="firstname"
+                                    fullWidth
+                                    label="First Name"
+                                    disabled={isSubmitting || disabled}
+                                />
+                            </Grid>
+                            <Grid xs={12} sm={6}>
+                                <FastField
+                                    component={FormikTextField}
+                                    name="middlename"
+                                    fullWidth
+                                    label="Middle Names"
+                                    disabled={isSubmitting || disabled}
+                                />
+                            </Grid>
+                            <Grid xs={12} sm={6}>
+                                <FastField
+                                    component={FormikTextField}
+                                    name="lastname"
+                                    fullWidth
+                                    label="Last Name"
+                                    disabled={isSubmitting || disabled}
+                                />
+                            </Grid>
+                            <Grid xs={12} sm={2}>
+                                <FastField
+                                    component={FormikTextField}
+                                    name="nationality"
+                                    fullWidth
+                                    label="Nationality"
+                                    disabled={isSubmitting || disabled}
+                                />
+                            </Grid>
+                            <Grid xs={12} sm={2}>
+                                <FastField
+                                    component={FormikDatePicker}
+                                    name="birthdate"
+                                    fullWidth
+                                    label="Birthdate"
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>

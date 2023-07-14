@@ -14,10 +14,10 @@ import {
     checkConfigObject,
     updateConfigRemoteReducer,
 } from '@secretgraph/misc/utils/operations'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 
-import FormikTextField from '../components/formik/FormikTextField'
 import * as Contexts from '../contexts'
 import {
     decryptingPasswordSettingsHelp,

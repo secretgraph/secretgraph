@@ -348,7 +348,9 @@ export default function SideBarHeader({
                         notifyItems()
                     }}
                 >
-                    {searchCtx.deleted ? 'Restore selected' : 'Delete selected'}
+                    {searchCtx.deleted
+                        ? 'Restore selected'
+                        : 'Delete selected'}
                 </Button>
             </div>
         </>

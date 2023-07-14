@@ -33,6 +33,10 @@ import {
     exportConfigAsUrl,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
+import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
+import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
+import SimpleSelect from '@secretgraph/ui-components/forms/SimpleSelect'
 import {
     FastField,
     Field,
@@ -45,10 +49,6 @@ import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
 import ConfigProtected from '../components/ConfigProtected'
-import DecisionFrame from '../components/DecisionFrame'
-import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
-import FormikTextField from '../components/formik/FormikTextField'
-import SimpleSelect from '../components/forms/SimpleSelect'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import ConfigShareDialog from '../components/share/ConfigShareDialog'
 import * as Contexts from '../contexts'

@@ -26,6 +26,10 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
+import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
+import StateSelect from '@secretgraph/ui-components/forms/StateSelect'
+import UploadButton from '@secretgraph/ui-components/UploadButton'
 import {
     FastField,
     Field,
@@ -38,11 +42,7 @@ import {
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
-import DecisionFrame from '../components/DecisionFrame'
-import FormikTextField from '../components/formik/FormikTextField'
-import StateSelect from '../components/forms/StateSelect'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
-import UploadButton from '../components/UploadButton'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
 

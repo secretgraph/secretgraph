@@ -1,23 +1,5 @@
 import { useQuery } from '@apollo/client'
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
-import Security from '@mui/icons-material/Security'
-import TabContext from '@mui/lab/TabContext'
-import TabList from '@mui/lab/TabList'
-import TabPanel from '@mui/lab/TabPanel'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import IconButton from '@mui/material/IconButton'
-import LinearProgress from '@mui/material/LinearProgress'
-import Stack from '@mui/material/Stack'
-import Tab from '@mui/material/Tab'
-import TextField, { TextFieldProps } from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Unstable_Grid2'
-import Box from '@mui/system/Box'
 import {
-    contentFeedQuery,
     contentRetrievalQuery,
     getContentConfigurationQuery,
 } from '@secretgraph/graphql-queries/content'
@@ -25,39 +7,11 @@ import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
-import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import {
-    findWorkingHashAlgorithms,
-    hashTagsContentHash,
-} from '@secretgraph/misc/utils/hashing'
-import {
-    decryptContentObject,
-    updateOrCreateContentWithConfig,
-} from '@secretgraph/misc/utils/operations'
-import { extractGroupKeys } from '@secretgraph/misc/utils/references'
-import * as DOMPurify from 'dompurify'
-import {
-    ErrorMessage,
-    FastField,
-    Field,
-    FieldArray,
-    FieldArrayRenderProps,
-    FieldProps,
-    Form,
-    Formik,
-} from 'formik'
+import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import { decryptContentObject } from '@secretgraph/misc/utils/operations'
+import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
 import * as React from 'react'
 
-import ActionsDialog from '../../components/ActionsDialog'
-import DecisionFrame from '../../components/DecisionFrame'
-import FormikCheckboxWithLabel from '../../components/formik/FormikCheckboxWithLabel'
-import FormikTextField from '../../components/formik/FormikTextField'
-import SimpleSelect from '../../components/forms/SimpleSelect'
-import StateSelect from '../../components/forms/StateSelect'
-import ClusterSelectViaUrl from '../../components/formsWithContext/ClusterSelectViaUrl'
-import SimpleShareDialog from '../../components/share/SimpleShareDialog'
-import SunEditor from '../../components/SunEditor'
-import UploadButton from '../../components/UploadButton'
 import * as Contexts from '../../contexts'
 import { InnerFile } from './form'
 

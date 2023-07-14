@@ -6,10 +6,9 @@ import Stack from '@mui/material/Stack'
 import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/system/Box'
+import SunEditor from '@secretgraph/ui-components/SunEditor'
 import * as DOMPurify from 'dompurify'
 import * as React from 'react'
-
-import SunEditor from '../../components/SunEditor'
 
 // hack for Suneditor
 export const htmlIsEmpty = (value?: string): boolean => {

@@ -4,16 +4,16 @@ import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
 import { useTheme } from '@mui/material/styles'
 import * as Interfaces from '@secretgraph/misc/interfaces'
+import { CapturingSuspense } from '@secretgraph/ui-components/misc'
 import * as React from 'react'
 
 import ActionBar from '../components/ActionBar'
 import HeaderBar from '../components/HeaderBar'
-import { CapturingSuspense } from '../components/misc'
 import * as Contexts from '../contexts'
 import { elements } from '../editors'
 import { drawerWidth } from '../theme'
 
-// const SideBar = React.lazy(() => import('../components/SideBar'));
+// const SideBar = React.lazy(() => import('@secretgraph/ui-components/SideBar'));
 const Login = React.lazy(() => import('./Login'))
 const Register = React.lazy(() => import('./Register'))
 const SideBar = React.lazy(() => import('../components/SideBar'))

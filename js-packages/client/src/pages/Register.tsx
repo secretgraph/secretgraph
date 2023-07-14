@@ -17,11 +17,11 @@ import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import { updateContent } from '@secretgraph/misc/utils/operations'
 import { initializeCluster } from '@secretgraph/misc/utils/operations/cluster'
 import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
+import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 
-import FormikCheckboxWithLabel from '../components/formik/FormikCheckboxWithLabel'
-import FormikTextField from '../components/formik/FormikTextField'
 import * as Contexts from '../contexts'
 import {
     initializeHelp,

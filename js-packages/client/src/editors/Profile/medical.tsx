@@ -1,17 +1,16 @@
 import Grid from '@mui/material/Unstable_Grid2'
+import FormikDatePicker from '@secretgraph/ui-components/formik/FormikDatePicker'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
+import FormikTimePicker from '@secretgraph/ui-components/formik/FormikTimePicker'
 import { FastField, Field, useField } from 'formik'
 import * as React from 'react'
 
-import FormikDatePicker from '../../components/formik/FormikDatePicker'
-import FormikTextField from '../../components/formik/FormikTextField'
-import FormikTimePicker from '../../components/formik/FormikTimePicker'
-
-type MedicalEntryData = {
+export type MedicalEntryData = {
     when: string
     what: string
 }
 
-const MedicalEntry = React.memo(function MedicalEntry({
+export const MedicalEntry = React.memo(function MedicalEntry({
     disabled,
     index,
     prefix,
@@ -46,7 +45,7 @@ const MedicalEntry = React.memo(function MedicalEntry({
     )
 })
 
-const MedicalEntries = React.memo(function MedicalEntries({
+export const MedicalEntries = React.memo(function MedicalEntries({
     disabled,
     input,
     push,

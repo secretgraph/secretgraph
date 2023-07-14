@@ -1,0 +1,42 @@
+{
+    "name": "@secretgraph/ui-omponents",
+    "version": "0.1.0",
+    "description": "",
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@secretgraph/rdf": "*",
+        "@secretgraph/graphql-queries": "*",
+        "formik": "*",
+        "react": ">=18.2.0",
+        "suneditor": "*",
+        "suneditor-react": "*",
+        "@emotion/styled": "*",
+        "@emotion/react": "*",
+        "@mui/material": "*",
+        "@mui/icons-material": "*",
+        "@mui/lab": "*",
+        "@mui/x-date-pickers": "*",
+        "@mui/system": "*",
+        "date-fns": "*"
+    },
+    "devDependencies": {
+        "typescript": "*",
+        "@types/hoist-non-react-statics": "*",
+        "@types/react": "*",
+        "@types/dompurify": "*",
+        "@types/file-saver": "*",
+        "@types/webpack-env": "*"
+    },
+    "optionalDependencies": {
+        "@secretgraph/rdf": "*"
+    },
+    "exports": {
+        "./": "./lib/"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/secretgraph/secretgraph.git",
+        "directory": "js-packages/client"
+    }
+}

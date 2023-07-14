@@ -15,9 +15,6 @@
       "@secretgraph/rdf/*": ["../../rdf/src/*"],
       "@secretgraph/graphql-queries/*": [
         "../../graphql-queries/src/*"
-      ],
-      "@secretgraph/ui-components/*": [
-        "../../ui-components/src/*"
       ]
     }
   },
@@ -30,9 +27,6 @@
     },
     {
       "path": "../graphql-queries/tsconfig.json"
-    },
-    {
-      "path": "../ui-components/tsconfig.json"
     }
   ],
   "include": [

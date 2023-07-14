@@ -29,6 +29,9 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
+import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
+import StateSelect from '@secretgraph/ui-components/forms/StateSelect'
+import UploadButton from '@secretgraph/ui-components/UploadButton'
 import {
     FastField,
     Field,
@@ -41,14 +44,6 @@ import {
 } from 'formik'
 import * as React from 'react'
 
-import ActionsDialog from '../../components/ActionsDialog'
-import DecisionFrame from '../../components/DecisionFrame'
-import FormikDatePicker from '../../components/formik/FormikDatePicker'
-import FormikTextField from '../../components/formik/FormikTextField'
-import FormikTimePicker from '../../components/formik/FormikTimePicker'
-import StateSelect from '../../components/forms/StateSelect'
-import ClusterSelectViaUrl from '../../components/formsWithContext/ClusterSelectViaUrl'
-import UploadButton from '../../components/UploadButton'
 import * as Contexts from '../../contexts'
 import { InnerProfile, InnerProfileProps } from './form'
 

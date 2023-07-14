@@ -22,12 +22,11 @@ import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
+import { HashEntry } from '@secretgraph/ui-components/misc'
 import { FastField, FieldArrayRenderProps, FormikProps } from 'formik'
 import * as React from 'react'
 
-import FormikCheckBox from './formik/FormikCheckbox'
 import ActionConfigurator from './formsWithContext/ActionOrCertificateConfigurator'
-import { HashEntry } from './misc'
 
 interface ActionsDialogProps
     extends Pick<FieldArrayRenderProps, 'remove' | 'replace' | 'push'>,

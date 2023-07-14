@@ -4,8 +4,10 @@ import * as SetOps from '@secretgraph/misc/utils/set'
 import { FieldProps } from 'formik'
 import * as React from 'react'
 
+import ClusterSelect, {
+    ClusterSelectProps,
+} from '../../../../ui-components/src/forms/ClusterSelect'
 import * as Contexts from '../../contexts'
-import ClusterSelect, { ClusterSelectProps } from '../forms/ClusterSelect'
 
 export default function ClusterSelectViaUrl<
     Multiple extends boolean | undefined,

@@ -13,11 +13,11 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { Writeable } from '@secretgraph/misc/typing'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as SetOps from '@secretgraph/misc/utils/set'
+import { CapturingSuspense } from '@secretgraph/ui-components/misc'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import { drawerWidth } from '../../theme'
-import { CapturingSuspense } from '../misc'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))
 const SideBarNotifications = React.lazy(() => import('./notifications')) */

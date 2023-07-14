@@ -35,6 +35,13 @@ import {
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
 import { extractGroupKeys } from '@secretgraph/misc/utils/references'
+import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
+import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
+import SimpleSelect from '@secretgraph/ui-components/forms/SimpleSelect'
+import StateSelect from '@secretgraph/ui-components/forms/StateSelect'
+import SunEditor from '@secretgraph/ui-components/SunEditor'
+import UploadButton from '@secretgraph/ui-components/UploadButton'
 import * as DOMPurify from 'dompurify'
 import {
     ErrorMessage,
@@ -49,15 +56,8 @@ import {
 import * as React from 'react'
 
 import ActionsDialog from '../../components/ActionsDialog'
-import DecisionFrame from '../../components/DecisionFrame'
-import FormikCheckboxWithLabel from '../../components/formik/FormikCheckboxWithLabel'
-import FormikTextField from '../../components/formik/FormikTextField'
-import SimpleSelect from '../../components/forms/SimpleSelect'
-import StateSelect from '../../components/forms/StateSelect'
 import ClusterSelectViaUrl from '../../components/formsWithContext/ClusterSelectViaUrl'
 import SimpleShareDialog from '../../components/share/SimpleShareDialog'
-import SunEditor from '../../components/SunEditor'
-import UploadButton from '../../components/UploadButton'
 import * as Contexts from '../../contexts'
 import { mapperToArray } from '../../hooks'
 import { Recorder, TextFileAdapter, ViewWidget, htmlIsEmpty } from './misc'

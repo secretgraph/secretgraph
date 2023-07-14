@@ -12,11 +12,11 @@ import { parseISO } from 'date-fns'
 import { FastField, useField, useFormikContext } from 'formik'
 import * as React from 'react'
 
+import FormikCheckboxWithLabel from '../../../../ui-components/src/formik/FormikCheckboxWithLabel'
+import FormikDateTimePicker from '../../../../ui-components/src/formik/FormikDateTimePicker'
+import SimpleSelect from '../../../../ui-components/src/forms/SimpleSelect'
+import TokenSelect from '../../../../ui-components/src/forms/TokenSelect'
 import * as Contexts from '../../contexts'
-import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
-import FormikDateTimePicker from '../formik/FormikDateTimePicker'
-import SimpleSelect from '../forms/SimpleSelect'
-import TokenSelect from '../forms/TokenSelect'
 
 const availableActions = [
     'auth',

@@ -29,6 +29,9 @@
       "@secretgraph/client/*": [
         "./js-packages/client/src/*"
       ],
+      "@secretgraph/ui-components/*": [
+        "./js-packages/ui-components/src/*"
+      ],
       "@secretgraph/rdf/*": [
         "./js-packages/rdf/src/*"
       ],

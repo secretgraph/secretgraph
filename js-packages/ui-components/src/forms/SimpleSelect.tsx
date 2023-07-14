@@ -66,7 +66,12 @@ interface SimpleSelectPropsTagsStrict<
     FreeSolo extends boolean | undefined
 > extends SimpleSelectPropsTags<T, Multiple, DisableClearable, FreeSolo> {
     renderTags: NonNullable<
-        AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>['renderTags']
+        AutocompleteProps<
+            T,
+            Multiple,
+            DisableClearable,
+            FreeSolo
+        >['renderTags']
     >
 }
 
@@ -95,7 +100,7 @@ export default function SimpleSelect<
                         variant="outlined"
                         label={(
                             appProps.getOptionLabel as NonNullable<
-                                typeof appProps['getOptionLabel']
+                                (typeof appProps)['getOptionLabel']
                             >
                         )(option)}
                         size="small"

@@ -5,6 +5,17 @@ import * as React from 'react'
 import FormikTextField from '../formik/FormikTextField'
 import { MapSelectProps, createOptionsIterator } from '../MapSelect'
 
+declare module '@mui/material/styles' {
+    interface Theme {
+        contentStates: Map<string, { label: string }>
+        contentStatesKey: Map<string, { label: string }>
+    }
+    interface ThemeOptions {
+        contentStates: Map<string, { label: string }>
+        contentStatesKey: Map<string, { label: string }>
+    }
+}
+
 export default function StateSelect<V extends string | string[] = string>({
     forKey,
     ...props
