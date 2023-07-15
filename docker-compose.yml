@@ -17,7 +17,7 @@ services:
         build:
             context: .
         volumes:
-            - '${SG_PATH:-./secretgraph_volume}:/var/lib/secretgraph
+            - '${SG_PATH:-./secretgraph_volume}:/var/lib/secretgraph'
             - static_files:/static
             - sockets:/sockets
         environment:
