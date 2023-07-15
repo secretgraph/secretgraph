@@ -2,6 +2,8 @@ db.sqlite3
 celery.sqlite3
 .vscode
 tsconfig.tsbuildinfo
+# override and custom definitions
+docker-compose.*.yml
 
 cgihandler.cgi
 cgihandler.fcgi

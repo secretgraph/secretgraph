@@ -7,7 +7,7 @@ services:
             - static_files:/static:ro
             - sockets:/sockets
         ports:
-            - '8000:8000'
+            - '${PORT:-8000}:8000'
         depends_on:
             - secretgraph
         environment:
@@ -22,8 +22,8 @@ services:
             - sockets:/sockets
         environment:
             USER_GROUP: '101'
-            SECRET_KEY: 'changeme'
-            ALLOWED_HOSTS: 'localhost'
+            SECRET_KEY: '${SECRET_KEY:-changeme}'
+            ALLOWED_HOSTS: '${ALLOWED_HOSTS:-localhost}'
 
 volumes:
     static_files:

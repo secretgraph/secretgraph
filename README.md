@@ -40,9 +40,14 @@ docker-compose up -d
 podman-compose up -d
 ```
 
-Note: you should change the SECRET_KEY and ALLOWED_HOSTS via override
+Note: you should change the SECRET_KEY and ALLOWED_HOSTS via `docker-compose.override.yml`, .env or extending schemas
 
 It is now ready of running behind reverse proxies.
+
+change port:
+
+`env PORT=8001 docker-compose ...`
+or use `.env` with `PORT=8001`
 
 ## Manually (production)
 
