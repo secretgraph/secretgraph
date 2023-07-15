@@ -20,6 +20,5 @@ COPY secretgraph /app/secretgraph
 COPY tools /app/tools
 WORKDIR /app
 RUN poetry install --no-root --no-cache --compile --only main -E server -E proxy -E postgresql -E mysql
-COPY --from=node_build /app/webpack_bundles /app/webpack_bundles
-RUN python ./manage.py collectstatic --noinput
+COPY --from=node_build --link /app/webpack_bundles /app/webpack_bundles
 CMD ["./tools/start_docker.sh"]
