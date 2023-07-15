@@ -44,10 +44,32 @@ Note: you should change the SECRET_KEY and ALLOWED_HOSTS via `docker-compose.ove
 
 It is now ready of running behind reverse proxies.
 
-change port:
+### change port:
 
 `env PORT=8001 docker-compose ...`
 or use `.env` with `PORT=8001`
+or local only: `PORT=127.0.0.1:8001`
+
+### change path
+
+analog to change port:
+
+`SG_PATH=<new path>`
+
+### use postgres unix sockets
+
+```yaml
+services:
+    secretgraph:
+        volumes:
+            - /var/run/postgresql:/var/run/postgresql
+        environment:
+            DB_ENGINE: 'django.db.backends.postgresql'
+            DB_NAME: ...
+            DB_USER: ...
+            DB_PASSWORD: ...
+            DB_HOST: ''
+```
 
 ## Manually (production)
 

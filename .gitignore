@@ -4,6 +4,7 @@ celery.sqlite3
 tsconfig.tsbuildinfo
 # override and custom definitions
 docker-compose.*.yml
+secretgraph_volume
 
 cgihandler.cgi
 cgihandler.fcgi
