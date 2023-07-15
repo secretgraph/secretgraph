@@ -1,4 +1,4 @@
-FROM docker.io/node:latest as node_build
+FROM docker.io/node:alpine as node_build
 # needs extra directory for build, add sub directory as well
 RUN mkdir -p /app/webpack_bundles
 WORKDIR /app
