@@ -50,11 +50,13 @@ It is now ready of running behind reverse proxies.
 or use `.env` with `PORT=8001`
 or local only: `PORT=127.0.0.1:8001`
 
-### change path
+### change volume
 
 analog to change port:
 
-`SG_PATH=<new path>`
+`SG_VOLUME=<new path or volume name>`
+
+set an volume in the compose override and use `SG_VOLUME=volume` in evironment to make an docker managed volume
 
 ### use postgres unix sockets
 
