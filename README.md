@@ -108,8 +108,10 @@ npm install
 A reverse proxy must provide three things to work with secretgraph:
 
 1. a reasonable big client body size (for uploading big files) or having it disabled (could be problematic in terms of security)
-2. forwarding the real ip and scheme
+2. forwarding the real ip and scheme (note: change SCHEME_HEADER to '$http_x_forwarded_proto' in .env or in docker-compose override to '$$http_x_forwarded_proto')
 3. compatibility with websockets (see nginx-docker.conf.template)
+
+In case of csrf errors with docker check first the scheme header definitions. Often only http is detected but https is provided.
 
 ## Usage
 
