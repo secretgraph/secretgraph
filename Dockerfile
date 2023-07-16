@@ -16,9 +16,9 @@ RUN mkdir -p /static && chown -R secretgraph:www-data /static
 RUN mkdir -p /app
 RUN python -m pip install --no-cache poetry hypercorn[h3,uvloop]
 COPY manage.py poetry.lock pyproject.toml /app
-COPY secretgraph /app/secretgraph
-COPY tools /app/tools
 WORKDIR /app
 RUN poetry install --no-root --no-cache --compile --only main -E server -E proxy -E postgresql -E mysql
+COPY secretgraph /app/secretgraph
+COPY tools /app/tools
 COPY --from=node_build /app/webpack_bundles /app/webpack_bundles
 CMD ["./tools/start_docker.sh"]
