@@ -225,7 +225,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         required: bool = False,
     ):
         result = get_cached_result(info.context["request"])["Content"]
-        # for bypassing get_queryset filters
+        # for permission check
         return fetch_contents(
             result["objects_with_public"],
             ids=node_ids,
@@ -244,7 +244,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(
+    def do_query(
         cls,
         queryset,
         info,
@@ -253,8 +253,9 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         allowDeleted: strawberry.Private[bool] = False,
         **kwargs,
     ) -> Iterable[Content]:
-        if getattr(queryset, "_sg_filtered_already", False):
-            return queryset
+        """
+        custom method because get_queryset is not made for this and otherwise is applied twice
+        """
         results = get_cached_result(info.context["request"])
 
         if (

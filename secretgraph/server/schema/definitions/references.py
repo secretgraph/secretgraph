@@ -43,6 +43,7 @@ class ContentReferenceNode(relay.Node):
         node_ids: Iterable[str],
         required: bool = False,
     ):
+        # check permissions
         result = get_cached_result(info.context["request"])["Content"]
         queryset = ContentReference.objects.filter(
             source__in=result["objects_with_public"],

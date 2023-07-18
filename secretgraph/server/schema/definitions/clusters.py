@@ -104,15 +104,13 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             filters.hidden = UseCriteria.FALSE
             if not allowDeleted:
                 filters.deleted = UseCriteria.FALSE
-        qs = ContentNode.get_queryset(
+        return ContentNode.do_query(
             queryset,
             info,
             filters=filters,
             fixedCluster=True,
             allowDeleted=allowDeleted,
         )
-        setattr(qs, "_sg_filtered_already", True)
-        return qs
 
     @classmethod
     def resolve_nodes(
@@ -123,7 +121,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         required: bool = False,
     ):
         result = get_cached_result(info.context["request"])["Cluster"]
-        # for allowing specifing global name and bypassing get_queryset filters
+        # for allowing specifing global name and permission check
         return fetch_clusters(
             result["objects_with_public"],
             ids=node_ids,
@@ -142,13 +140,16 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         return root.flexid
 
     @classmethod
-    def get_queryset(
+    def do_query(
         cls,
         queryset,
         info,
         filters: ClusterFilter = ClusterFilter(),
         **kwargs,
     ) -> Iterable[Cluster]:
+        """
+        custom method because get_queryset is not made for this and otherwise is applied twice
+        """
         result = get_cached_result(info.context["request"])["Cluster"]
         deleted = False if not filters else filters.deleted
         if (

@@ -57,7 +57,7 @@ class SecretgraphObject:
     def clusters(
         self, info, filters: ClusterFilter = ClusterFilter()
     ) -> Iterable[ClusterNode]:
-        return ClusterNode.get_queryset(
+        return ClusterNode.do_query(
             Cluster.objects.all(),
             info,
             filters,
@@ -67,7 +67,7 @@ class SecretgraphObject:
     def contents(
         self, info, filters: ContentFilter = ContentFilter()
     ) -> Iterable[ContentNode]:
-        return ContentNode.get_queryset(
+        return ContentNode.do_query(
             Content.objects.all(),
             info=info,
             filters=filters,
