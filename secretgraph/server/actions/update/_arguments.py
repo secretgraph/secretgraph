@@ -101,6 +101,8 @@ class ClusterInput:
     description: Optional[str] = None
     featured: Optional[bool] = None
     primary: Optional[bool] = None
-    actions: Optional[List[ActionInput]] = None
+    actions: Optional[list[ActionInput]] = None
     # has no references so missing reference tag is no problem
-    keys: Optional[List[ContentKeyInput]] = None
+    keys: Optional[list[ContentKeyInput]] = None
+    clusterGroups: Optional[list[str]] = None
+    netGroups: Optional[list[str]] = None

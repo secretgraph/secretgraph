@@ -10,8 +10,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F
 from django.utils import timezone
 
+from ....core import constants
 from ....core.exceptions import ResourceLimitExceeded
-from ...models import Cluster, ClusterGroup, Net, SGroupProperty
+from ...models import Cluster, ClusterGroup, Net, NetGroup, SGroupProperty
 from ...utils.auth import (
     fetch_by_id,
     get_cached_net_properties,
@@ -21,11 +22,14 @@ from ...utils.auth import (
 from ._actions import manage_actions_fn
 from ._arguments import ClusterInput, ContentInput
 from ._contents import create_key_fn
+from ._groups import apply_groups, calculate_groups
 
 logger = logging.getLogger(__name__)
 
 
-def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
+def _update_or_create_cluster(
+    request, cluster: Cluster, objdata: ClusterInput, authset
+):
     create_cluster = not cluster.id
     size_new = 0
     size_old = cluster.size
@@ -56,7 +60,13 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     if not create_cluster:
         old_net = cluster.net
     manage = Cluster.objects.none()
-    if create_cluster or objdata.primary or isinstance(net, str):
+    if (
+        create_cluster
+        or objdata.primary
+        or objdata.clusterGroups
+        or objdata.netGroups
+        or isinstance(net, str)
+    ):
         manage = retrieve_allowed_objects(
             request,
             Cluster.objects.all(),
@@ -147,10 +157,9 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
     del net
     create_net = not cluster.net.id
     if objdata.primary or not cluster.net.primaryCluster:
-        if (
-            cluster.net.primaryCluster
-            and "manage_update"
-            not in get_cached_net_properties(request, authset=authset)
+        if cluster.net.primaryCluster and (
+            "manage_update"
+            not in get_cached_net_properties(request, ensureInitialized=True)
         ):
             try:
                 manage.get(id=cluster.net.primaryCluster.id)
@@ -197,6 +206,39 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
         else:
             old_net.bytes_in_use = F("bytes_in_use") - size_old
     cluster.net.last_used = timezone.now()
+    clusterGroups_qset = None
+    if getattr(objdata, "clusterGroups", None) is not None and (
+        "manage_groups"
+        in get_cached_net_properties(request, ensureInitialized=True)
+        or create_cluster
+        or manage.filter(id=cluster.id)
+    ):
+        clusterGroups_qset = calculate_groups(
+            ClusterGroup,
+            groups=objdata.clusterGroups,
+            operation=constants.MetadataOperations.REPLACE,
+            admin="manage_groups"
+            in get_cached_net_properties(request, ensureInitialized=True),
+            initial=create_cluster,
+        )
+    netGroups_qset = None
+    if getattr(objdata, "netGroups", None) is not None and (
+        "manage_groups"
+        in get_cached_net_properties(request, ensureInitialized=True)
+        or create_net
+        or manage.filter(id=cluster.net.primaryCluster_id)
+    ):
+        netGroups_qset = calculate_groups(
+            NetGroup,
+            groups=objdata.netGroups,
+            operation=constants.MetadataOperations.REPLACE,
+            admin="manage_groups"
+            in get_cached_net_properties(request, ensureInitialized=True),
+            initial=create_net,
+        )
+    dProperty = SGroupProperty.objects.get_or_create(
+        name="default", defaults={}
+    )[0]
 
     def cluster_save_fn():
         update_fields = None
@@ -212,13 +254,25 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
         cluster.net.save(update_fields=update_fields)
         # first net must be created
         if create_net:
-            dProperty = SGroupProperty.objects.get_or_create(
-                name="default", defaults={}
-            )[0]
             cluster.net.groups.set(dProperty.netGroups.all())
+        # replace works different here than just set, so put it after setting initial groups
+        apply_groups(
+            cluster.net,
+            netGroups_qset,
+            operation=constants.MetadataOperations.REPLACE,
+        )
 
         cluster.updateId = uuid4()
         cluster.save()
+        if create_cluster:
+            cluster.groups.set(dProperty.clusterGroups.all())
+        # replace works different here than just set, so put it after setting initial groups
+        apply_groups(
+            cluster,
+            clusterGroups_qset,
+            operation=constants.MetadataOperations.REPLACE,
+        )
+
         # save only once
         if objdata.primary and not primary_updated:
             cluster.net.primaryCluster = cluster
@@ -227,10 +281,6 @@ def _update_or_create_cluster(request, cluster: Cluster, objdata, authset):
         if old_net and old_net.id:
             # don't update last_used
             old_net.save(update_fields=["bytes_in_use"])
-        if getattr(objdata, "groups", None) is not None:
-            cluster.groups.set(
-                ClusterGroup.objects.filter(name__in=objdata.groups)
-            )
 
     # path: actions are specified
     if getattr(objdata, "actions", None) is not None:

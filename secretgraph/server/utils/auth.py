@@ -630,9 +630,13 @@ def update_cached_net_properties(
     groups=None,
     properties=None,
     permissions_name="secretgraphNetProperties",
+    emptyOk=False,
 ):
     if getattr(request, permissions_name, None) is None:
-        raise AttributeError("cached properties does not exist")
+        if emptyOk:
+            setattr(request, permissions_name, frozenset())
+        else:
+            raise AttributeError("cached properties does not exist")
     if groups:
         group_properties = SGroupProperty.objects.filter(
             netGroups__in=groups

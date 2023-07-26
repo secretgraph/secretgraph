@@ -3,7 +3,7 @@ from __future__ import annotations
 __all__ = [
     "transform_tags",
     "transform_references",
-    "update_metadata_fn",
+    "update_content_metadata_fn",
 ]
 
 import logging
@@ -299,7 +299,7 @@ def transform_references(
     )
 
 
-def update_metadata_fn(
+def update_content_metadata_fn(
     request,
     content,
     *,

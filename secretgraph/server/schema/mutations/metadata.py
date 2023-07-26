@@ -1,6 +1,6 @@
 import logging
 from itertools import chain
-from typing import List, Optional
+from typing import Optional
 
 import strawberry
 from django.db import transaction
@@ -8,8 +8,21 @@ from django.db.models import Exists, OuterRef, Value
 from strawberry import relay
 from strawberry.types import Info
 
-from ...actions.update import manage_actions_fn, update_metadata_fn
-from ...models import Cluster, Content, ContentTag, Net, SGroupProperty
+from ...actions.update import (
+    apply_groups,
+    calculate_groups,
+    manage_actions_fn,
+    update_content_metadata_fn,
+)
+from ...models import (
+    Cluster,
+    ClusterGroup,
+    Content,
+    ContentTag,
+    Net,
+    NetGroup,
+    SGroupProperty,
+)
 from ...signals import generateFlexid
 from ...utils.arguments import check_actions, pre_clean_update_content_args
 from ...utils.auth import (
@@ -25,12 +38,12 @@ logger = logging.getLogger(__name__)
 
 @strawberry.type
 class RegenerateFlexidMutation:
-    updated: List[relay.GlobalID]
+    updated: list[relay.GlobalID]
 
 
 def regenerate_flexid(
     info: Info,
-    ids: List[strawberry.ID],  # ID or cluster global name
+    ids: list[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> RegenerateFlexidMutation:
     if "manage_update" in get_cached_net_properties(
@@ -70,12 +83,12 @@ def regenerate_flexid(
 # only admin/moderator
 @strawberry.type
 class MarkMutation:
-    updated: List[relay.GlobalID]
+    updated: list[relay.GlobalID]
 
 
 def mark(
     info,
-    ids: List[strawberry.ID],  # ID or cluster global name
+    ids: list[strawberry.ID],  # ID or cluster global name
     hidden: Optional[bool] = None,
     featured: Optional[bool] = None,
     active: Optional[bool] = None,
@@ -139,16 +152,18 @@ def mark(
 
 @strawberry.type
 class MetadataUpdateMutation:
-    updated: List[relay.GlobalID]
+    updated: list[relay.GlobalID]
 
 
 def update_metadata(
     info: Info,
-    ids: List[relay.GlobalID],
+    ids: list[relay.GlobalID],
     state: Optional[str] = None,
-    tags: Optional[List[str]] = None,
-    references: Optional[List[ReferenceInput]] = None,
-    actions: Optional[List[ActionInput]] = None,
+    tags: Optional[list[str]] = None,
+    references: Optional[list[ReferenceInput]] = None,
+    actions: Optional[list[ActionInput]] = None,
+    clusterGroups: Optional[list[str]] = None,
+    netGroups: Optional[list[str]] = None,
     operation: Optional[MetadataOperations] = MetadataOperations.APPEND,
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
@@ -191,13 +206,34 @@ def update_metadata(
             has_immutable=Value(False)
         )
         clusters = result["Clusters"]["objects_without_public"]
-        if clusters:
+        if clusters and actions is not None:
             check_actions(actions, result["Clusters"])
+    clusterGroups_qset = None
+    if clusterGroups is not None and clusters:
+        clusterGroups_qset = calculate_groups(
+            ClusterGroup,
+            groups=clusterGroups,
+            operation=operation,
+            admin=manage_update,
+        )
+    netGroups_qset = None
+    nets = Net.objects.none()
+    primaryForClusters = Cluster.objects.none()
+    if netGroups is not None and clusters:
+        nets = Net.objects.filter(primaryCluster__in=clusters)
+        primaryForClusters = clusters.filter(primaryFor__in=nets)
+        if nets:
+            netGroups_qset = calculate_groups(
+                NetGroup,
+                groups=netGroups,
+                operation=operation,
+                admin=manage_update,
+            )
 
     ops = []
     for content_obj in contents:
         ops.append(
-            update_metadata_fn(
+            update_content_metadata_fn(
                 info.context["request"],
                 content_obj,
                 state=state if not content_obj.has_immutable else None,
@@ -235,4 +271,12 @@ def update_metadata(
     with transaction.atomic():
         for f in ops:
             updated.add(f().flexid_cached)
+        if apply_groups(clusters, clusterGroups_qset, operation=operation):
+            updated.update(clusters.values_list("flexid_cached", flat=True))
+
+        if apply_groups(nets, netGroups_qset, operation=operation):
+            updated.update(
+                primaryForClusters.values_list("flexid_cached", flat=True)
+            )
+
     return MetadataUpdateMutation(updated=list(updated))

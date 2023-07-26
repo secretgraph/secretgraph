@@ -761,6 +761,15 @@ DeleteRecursive = models.TextChoices(
 )
 
 
+UserSelectable = models.TextChoices(
+    "UserSelectable",
+    map(
+        lambda x: (x[0], x[1].value),
+        constants.UserSelectable.__members__.items(),
+    ),
+)
+
+
 class ContentReference(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     source: Content = models.ForeignKey(
@@ -866,6 +875,13 @@ class NetGroup(models.Model):
         validators=[SafeNameValidator(), MinLengthValidator(1)],
     )
     description: str = models.TextField()
+    userSelectable: str = models.CharField(
+        blank=True,
+        default=constants.UserSelectable.NONE.value,
+        null=False,
+        max_length=1,
+        choices=UserSelectable.choices,
+    )
     nets: models.ManyToManyField[Net] = models.ManyToManyField(
         Net,
         related_name="groups",
@@ -900,6 +916,13 @@ class ClusterGroup(models.Model):
         validators=[SafeNameValidator(), MinLengthValidator(1)],
     )
     description: str = models.TextField()
+    userSelectable: str = models.CharField(
+        blank=True,
+        default=constants.UserSelectable.NONE.value,
+        null=False,
+        max_length=1,
+        choices=UserSelectable.choices,
+    )
     # don't show in groups, mutual exclusive to keys
     hidden: bool = models.BooleanField(default=False, blank=True)
     clusters: models.ManyToManyField[Cluster] = models.ManyToManyField(

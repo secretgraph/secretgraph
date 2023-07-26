@@ -121,10 +121,11 @@ class ClusterInput:
     description: Optional[str] = None
     featured: Optional[bool] = None
     primary: Optional[bool] = None
-    actions: Optional[List[ActionInput]] = None
-    keys: Optional[List[ContentKeyInput]] = strawberry.field(
+    actions: Optional[list[ActionInput]] = None
+    keys: Optional[list[ContentKeyInput]] = strawberry.field(
         description="add up to two keys initially;"
         "note: if out of resources even the cluster is reverted",
         default=None,
     )
-    groups: Optional[List[str]] = None
+    clusterGroups: Optional[list[str]] = None
+    netGroups: Optional[list[str]] = None

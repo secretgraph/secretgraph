@@ -58,6 +58,22 @@ DeleteRecursive.valid_values = frozenset(
 )
 
 
+class UserSelectable(enum.Enum):
+    _ignore_ = ["valid_values"]
+    valid_values: frozenset[str]
+    NONE = "a"
+    UNRESTRICTED = "b"
+    SELECTABLE = "c"
+    DESELECTABLE = "d"
+    # like UNRESTRICTED but only when creating a cluster or net
+    INITIAL_MODIFYABLE = "e"
+
+
+UserSelectable.valid_values = frozenset(
+    map(lambda x: x.value, UserSelectable.__members__.values())
+)
+
+
 class ClaimState(enum.Enum):
     _ignore_ = ["valid_values"]
     valid_values: frozenset[str]

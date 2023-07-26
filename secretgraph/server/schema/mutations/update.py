@@ -49,12 +49,6 @@ def mutate_cluster(
         ):
             cluster.featured = None
 
-    if cluster.groups is not None:
-        if "manage_groups" not in get_cached_net_properties(
-            info.context["request"], authset=authorization
-        ):
-            cluster.groups = None
-
     if cluster.name is not None and cluster.name.startswith("@"):
         if "allow_global_name" not in (
             get_cached_net_properties(
@@ -84,12 +78,10 @@ def mutate_cluster(
             authset=authorization,
         )(transaction.atomic)
     else:
-        if cluster.groups is None:
+        if cluster.clusterGroups is None:
             dProperty = SGroupProperty.objects.get_or_create(
                 name="default", defaults={}
             )[0]
-            default_cgroups = dProperty.clusterGroups.all()
-            cluster.groups = default_cgroups.values_list("name", flat=True)
             get_cached_net_properties(
                 info.context["request"], authset=authorization
             )

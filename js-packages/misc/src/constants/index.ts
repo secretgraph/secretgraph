@@ -95,6 +95,21 @@ export const UseCriteriaPublic = {
     IGNORE: 'IGNORE' as const,
     TOKEN: 'TOKEN' as const,
 }
+
+export const DeleteRecursive = {
+    TRUE: 'TRUE' as const,
+    FALSE: 'FALSE' as const,
+    NO_GROUP: 'NO_GROUP' as const,
+}
+
+export const UserSelectable = {
+    NONE: 'NONE' as const,
+    UNRESTRICTED: 'UNRESTRICTED' as const,
+    SELECTABLE: 'SELECTABLE' as const,
+    DESELECTABLE: 'DESELECTABLE' as const,
+    INITIAL_MODIFYABLE: 'INITIAL_MODIFYABLE' as const,
+}
+
 export const protectedActions = new Set<'storedUpdate' | 'auth'>([
     'storedUpdate',
     'auth',
