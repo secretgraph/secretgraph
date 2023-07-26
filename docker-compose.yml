@@ -19,6 +19,8 @@ services:
         volumes:
             - sockets:/sockets
             - static_files:/static
+        enviroment:
+            USER_GROUP: '101'
 
 volumes:
     sockets:
