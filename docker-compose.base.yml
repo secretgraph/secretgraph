@@ -1,0 +1,12 @@
+version: '3.9'
+services:
+    secretgraph:
+        init: true
+        build:
+            context: .
+        volumes:
+            - '${SG_VOLUME:-./secretgraph_volume}:/var/lib/secretgraph'
+        environment:
+            USER_GROUP: '101'
+            SECRET_KEY: '${SECRET_KEY:-changeme}'
+            ALLOWED_HOSTS: '${ALLOWED_HOSTS:-localhost}'

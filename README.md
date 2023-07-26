@@ -37,7 +37,9 @@ In long: both can mostly emulate each other with performance/memory penalties fo
 ```sh
 docker-compose up -d
 # or
-podman-compose up -d
+podman-compose  up -d
+# or extend from docker-compose.base.yml for most flexibility
+# Note: you need to serve the static files and connect the unix sockets
 ```
 
 Note: you should change the SECRET_KEY and ALLOWED_HOSTS via `docker-compose.override.yml`, .env or extending schemas

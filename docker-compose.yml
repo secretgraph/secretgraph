@@ -13,18 +13,13 @@ services:
         environment:
             SCHEME_HEADER: '${SCHEME_HEADER:-$$scheme}'
     secretgraph:
-        init: true
-        build:
-            context: .
+        extends:
+            file: docker-compose.base.yml
+            service: secretgraph
         volumes:
-            - '${SG_VOLUME:-./secretgraph_volume}:/var/lib/secretgraph'
-            - static_files:/static
             - sockets:/sockets
-        environment:
-            USER_GROUP: '101'
-            SECRET_KEY: '${SECRET_KEY:-changeme}'
-            ALLOWED_HOSTS: '${ALLOWED_HOSTS:-localhost}'
+            - static_files:/static
 
 volumes:
-    static_files:
     sockets:
+    static_files:
