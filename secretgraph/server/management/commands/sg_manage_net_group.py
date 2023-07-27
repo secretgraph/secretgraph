@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.db.models import OuterRef, Subquery
 
-from ...models import ContentTag, NetGroup, SGroupProperty
+from ....core.constants import UserSelectable
+from ...models import NetGroup, SGroupProperty
 
 
 def boolarg(val):
@@ -15,12 +15,20 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("name", nargs="?")
         parser.add_argument("--description", default=None)
+        parser.add_argument(
+            "--user-selectable",
+            choices=UserSelectable.__members__.keys(),
+            default=None,
+        )
         parser.add_argument("--properties", nargs="*", default=None)
 
     @staticmethod
     def print_group(net_group):
         print(repr(net_group))
         print("  description:", net_group.description)
+        print(
+            "  user selectable:", UserSelectable(net_group.userSelectable).name
+        )
         print(
             "  defined in settings:",
             net_group.name in settings.SECRETGRAPH_DEFAULT_NET_GROUPS,
@@ -36,37 +44,12 @@ class Command(BaseCommand):
             "  Properties:",
             ", ".join(net_group.properties.values_list("name", flat=True)),
         )
-        print(
-            "  Injected Keys:",
-            ", ".join(
-                map(
-                    lambda x: "{} ({}): {}".format(
-                        x.name, x.contentHash, x.description or ""
-                    )
-                    if x.name
-                    else "{}: {}".format(x.contentHash, x.description or ""),
-                    net_group.injectedKeys.annotate(
-                        name=Subquery(
-                            ContentTag.objects.filter(
-                                content_id=OuterRef("id"),
-                                tag__startswith="name=",
-                            ).values("tag")[:1]
-                        ),
-                        description=Subquery(
-                            ContentTag.objects.filter(
-                                content_id=OuterRef("id"),
-                                tag__startswith="description=",
-                            ).values("tag")[:1]
-                        ),
-                    ),
-                )
-            ),
-        )
 
     def handle(
         self,
         name,
         description,
+        user_selectable,
         properties,
         **options,
     ):
@@ -80,7 +63,11 @@ class Command(BaseCommand):
 
             if description is not None:
                 net_group.description = description
-            if description is not None:
+            if user_selectable is not None:
+                net_group.userSelectable = getattr(
+                    UserSelectable, user_selectable
+                ).value
+            if description is not None or user_selectable is not None:
                 net_group.clean()
                 net_group.save()
 

@@ -8,7 +8,7 @@ from django.db.utils import IntegrityError
 from django.utils import timezone
 from strawberry.relay import to_base64
 
-from ..core.constants import DeleteRecursive
+from ..core.constants import DeleteRecursive, UserSelectable
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +66,12 @@ def initializeDb(**kwargs):
         group.pop("clusters", None)
         injectedKeys = group.pop("injectedKeys", None)
         managed = group.pop("managed", False)
+        userSelectable = group.pop("userSelectable", UserSelectable.NONE)
+        userSelectable = getattr(
+            UserSelectable, str(userSelectable), str(userSelectable)
+        )
         created = not ClusterGroup.objects.filter(name=name).exists()
-        instance = ClusterGroup(**group)
+        instance = ClusterGroup(**group, userSelectable=userSelectable)
         instance.name = name
         instance.clean()
         ClusterGroup.objects.bulk_create(
@@ -101,9 +105,13 @@ def initializeDb(**kwargs):
             )
         # not valid
         group.pop("nets", None)
+        userSelectable = group.pop("userSelectable", UserSelectable.NONE)
+        userSelectable = getattr(
+            UserSelectable, str(userSelectable), str(userSelectable)
+        )
         managed = group.pop("managed", False)
         created = not NetGroup.objects.filter(name=name).exists()
-        instance = NetGroup(**group)
+        instance = NetGroup(**group, userSelectable=userSelectable)
         instance.name = name
         instance.clean()
         NetGroup.objects.bulk_create(

@@ -45,7 +45,7 @@ protectedTypes = {"Config", "PrivateKey"}
 keyTypes = {"PublicKey", "PrivateKey"}
 
 
-class DeleteRecursive(enum.Enum):
+class DeleteRecursive(enum.StrEnum):
     _ignore_ = ["valid_values"]
     valid_values: frozenset[str]
     TRUE = "a"
@@ -58,7 +58,7 @@ DeleteRecursive.valid_values = frozenset(
 )
 
 
-class UserSelectable(enum.Enum):
+class UserSelectable(enum.StrEnum):
     _ignore_ = ["valid_values"]
     valid_values: frozenset[str]
     NONE = "a"
@@ -74,7 +74,7 @@ UserSelectable.valid_values = frozenset(
 )
 
 
-class ClaimState(enum.Enum):
+class ClaimState(enum.StrEnum):
     _ignore_ = ["valid_values"]
     valid_values: frozenset[str]
     UNVERIFIED = "a"
@@ -89,7 +89,7 @@ ClaimState.valid_values = frozenset(
 )
 
 
-class UseCriteria(enum.Enum):
+class UseCriteria(enum.StrEnum):
     _ignore_ = ["valid_values"]
     valid_values: frozenset[str]
     TRUE = "true"
@@ -102,7 +102,7 @@ UseCriteria.valid_values = frozenset(
 )
 
 
-class UseCriteriaPublic(enum.Enum):
+class UseCriteriaPublic(enum.StrEnum):
     _ignore_ = ["valid_values"]
     valid_values: frozenset[str]
     TRUE = "true"
@@ -116,7 +116,7 @@ UseCriteriaPublic.valid_values = frozenset(
 )
 
 
-class MetadataOperations(enum.Enum):
+class MetadataOperations(enum.StrEnum):
     _ignore_ = ["valid_values"]
     valid_values: frozenset[str]
     APPEND = "append"

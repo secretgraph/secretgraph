@@ -2,7 +2,8 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Exists, OuterRef, Subquery
 
-from ...models import Content, ContentTag, NetGroup, SGroupProperty
+from ....core.constants import UserSelectable
+from ...models import ClusterGroup, Content, ContentTag, SGroupProperty
 
 
 def boolarg(val):
@@ -19,18 +20,27 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("name", nargs="?")
         parser.add_argument("--description", default=None)
-        parser.add_argument("--properties", nargs="*", default=None)
-        parser.add_argument("--injected-keys", nargs="*", default=None)
+        parser.add_argument(
+            "--user-selectable",
+            choices=UserSelectable.__members__.keys(),
+            default=None,
+        )
         parser.add_argument(
             "--hidden",
             type=boolarg,
             default=None,
         )
+        parser.add_argument("--properties", nargs="*", default=None)
+        parser.add_argument("--injected-keys", nargs="*", default=None)
 
     @staticmethod
     def print_group(cluster_group):
         print(repr(cluster_group))
         print("  description:", cluster_group.description)
+        print(
+            "  user selectable:",
+            UserSelectable(cluster_group.userSelectable).name,
+        )
         print("  hidden:", cluster_group.hidden)
         print(
             "  defined in settings:",
@@ -80,24 +90,33 @@ class Command(BaseCommand):
         self,
         name,
         description,
+        user_selectable,
         hidden,
         properties,
         injected_keys,
         **options,
     ):
         if not name:
-            for cluster_group in NetGroup.objects.all():
+            for cluster_group in ClusterGroup.objects.all():
                 self.print_group(cluster_group)
         else:
-            cluster_group, created = NetGroup.objects.get_or_create(
+            cluster_group, created = ClusterGroup.objects.get_or_create(
                 name=name,
             )
 
             if description is not None:
                 cluster_group.description = description
+            if user_selectable is not None:
+                cluster_group.userSelectable = getattr(
+                    UserSelectable, user_selectable
+                ).value
             if hidden is not None:
                 cluster_group.hidden = hidden
-            if description is not None or hidden is not None:
+            if (
+                description is not None
+                or user_selectable is not None
+                or hidden is not None
+            ):
                 cluster_group.clean()
                 cluster_group.save()
 
