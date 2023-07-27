@@ -1280,10 +1280,7 @@ export const loadConfig = async (
             ]).text()
             let foundConfig
             try {
-                foundConfig = cleanConfig(
-                    JSON.parse(text),
-                    window.location.href
-                )
+                foundConfig = cleanConfig(JSON.parse(text), url.href)
             } catch (e) {
                 console.warn('failed to parse config file', e)
                 return [null, false]
