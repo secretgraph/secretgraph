@@ -766,13 +766,18 @@ export function updateConfig(
                             >[string]
                         >
                     ) => {
+                        if (!(update instanceof Array)) {
+                            throw new InvalidMergeError(
+                                'signWith value not an array'
+                            )
+                        }
                         const newUpdate = [...new Set(update)]
                         newUpdate.sort()
-                        const [newState, count] = mergeDeleteObjectsReplace(
-                            oldval,
-                            newUpdate
-                        )
-                        return [newState, count]
+                        if (!oldval || !compareArray(oldval, newUpdate)) {
+                            return [newUpdate, 1]
+                        } else {
+                            return [oldval, 0]
+                        }
                     }
                 )
                 newState[key] = res[0]
@@ -978,7 +983,8 @@ export function updateConfig(
                 if (
                     val &&
                     val.length &&
-                    !compareArray(val as string[], newState[key])
+                    (!newState[key] ||
+                        !compareArray(val as string[], newState[key]))
                 ) {
                     newState[key] = val as string[]
                     count++
@@ -988,7 +994,8 @@ export function updateConfig(
                 if (
                     val &&
                     val.length == 2 &&
-                    !compareArray(val as [string, string], newState[key])
+                    (!newState[key] ||
+                        !compareArray(val as [string, string], newState[key]))
                 ) {
                     newState[key] = val as [string, string]
                     count++
@@ -1194,12 +1201,12 @@ export const loadConfig = async (
             throw Error('requires nonce and/or pws')
         }
         for (const key of keys) {
-            const split = key.split(':', 2)
-            if (split.length > 1 && split[1]) {
-                raw_keys.add(Buffer.from(split[1], 'base64'))
-                key_hashes.push(split[1])
+            const split = key.split(':', 3)
+            if (split.length == 3 && split[2]) {
+                raw_keys.add(Buffer.from(split[2], 'base64'))
+                key_hashes.push(`${split[0]}:${split[1]}`)
             } else {
-                raw_keys.add(Buffer.from(split[0], 'base64'))
+                raw_keys.add(Buffer.from(split.at(-1) as string, 'base64'))
             }
         }
         if (pws) {
@@ -1273,12 +1280,14 @@ export const loadConfig = async (
             ]).text()
             let foundConfig
             try {
-                foundConfig = cleanConfig(JSON.parse(text))
+                foundConfig = cleanConfig(
+                    JSON.parse(text),
+                    window.location.href
+                )
             } catch (e) {
                 console.warn('failed to parse config file', e)
                 return [null, false]
             }
-            // TODO: fixup hosts, we have the url
             return foundConfig
         } catch (exc) {
             console.warn('retrieving private keys failed: ', exc)

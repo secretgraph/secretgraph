@@ -186,6 +186,9 @@ export async function checkConfigObject(
         ? b64toarr(config.certificates[authInfo.certificateHashes[0]].data)
         : null
     if (!authInfo.tokens.length || !cert) {
+        if (!authInfo.certificateHashes.length) {
+            console.error('No certificates found')
+        }
         return false
     }
 
@@ -409,26 +412,28 @@ export async function updateConfigRemoteReducer(
     const hashAlgorithms = findWorkingHashAlgorithms(
         serverConfigRes.data.secretgraph.config.hashAlgorithms
     )
-    let slotHashes = [...(slots ? slots : resconf[0].slots)]
+    let slotPre = [...(slots ? slots : resconf[0].slots)]
     if (excludeSlots) {
-        slotHashes = slotHashes.filter(
-            (slot: string) => !excludeSlots.has(slot)
-        )
+        slotPre = slotPre.filter((slot: string) => !excludeSlots.has(slot))
     }
     // TODO: fix implementation to handle that case
     const maxRelayResults: number =
         serverConfigRes.data.secretgraph.config.maxRelayResults
-    if (slotHashes.length > maxRelayResults) {
+    if (slotPre.length > maxRelayResults) {
         console.warn(
             `Too many slots specified, max: ${maxRelayResults}. Cutoff results to maxRelayResults`
         )
-        slotHashes = slotHashes.slice(0, maxRelayResults)
+        slotPre = slotPre.slice(0, maxRelayResults)
     }
-    slotHashes = await Promise.all(
-        slotHashes.map((slot: string) =>
+    const slotHashes = await Promise.all(
+        slotPre.map((slot: string) =>
             hashTagsContentHash([`slot=${slot}`], 'Config', hashAlgorithms[0])
         )
     )
+    if (!authInfo.tokens.length) {
+        throw Error('No auth tokens found, not possible to continue')
+    }
+
     const configQueryRes = await client.query({
         query: updateConfigQuery,
         variables: {
@@ -444,9 +449,41 @@ export async function updateConfigRemoteReducer(
     }
     const nodes: { node: any }[] =
         configQueryRes.data.secretgraph.contents.edges
-    const mainNodeIndex = nodes.findIndex(
-        (result, index) => nodes[index].node.contentHash == slotHashes[0]
+    let mainNodeIndex = nodes.findIndex(
+        ({ node }) => node.contentHash == slotHashes[0]
     )
+    if (mainNodeIndex < 0) {
+        console.warn('Main not found, retry with different hash algorithms')
+        const contentHashes = new Set(
+            (
+                await calculateHashes(
+                    utf8encoder.encode(`slot=${slotPre[0]}`),
+                    hashAlgorithms
+                )
+            ).map((val) => `Config:${val}`)
+        )
+        const configQueryRes = await client.query({
+            query: updateConfigQuery,
+            variables: {
+                cluster: resconf[0].configCluster,
+                authorization: authInfo.tokens,
+                configContentHashes: [...contentHashes],
+            },
+            // but why? should be updated by cache updates (for this no-cache is required in config content updates)
+            fetchPolicy: 'network-only',
+        })
+        if (configQueryRes.errors) {
+            throw configQueryRes.errors
+        }
+        // bug length is readonly
+        for (const edge of configQueryRes.data.secretgraph.contents.edges) {
+            nodes.push(edge)
+        }
+        mainNodeIndex = nodes.findIndex(({ node }) =>
+            contentHashes.has(node.contentHash)
+        )
+    }
+
     if (mainNodeIndex < 0) {
         throw Error('could not find main config object')
     }

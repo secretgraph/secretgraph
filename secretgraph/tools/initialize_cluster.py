@@ -220,7 +220,7 @@ async def run(argv, session: AsyncClientSession):
             },
         },
         "slots": argv.slots,
-        "signWith": {argv.slots[0]: publicKey_hash},
+        "signWith": {argv.slots[0]: [publicKey_hash]},
         "hosts": {
             argv.url: {
                 "clusters": {
@@ -228,6 +228,7 @@ async def run(argv, session: AsyncClientSession):
                         "hashes": {
                             manage_key_hash: ["manage"],
                             view_key_hash: ["view"],
+                            publicKey_hash: [],
                         }
                     }
                 },

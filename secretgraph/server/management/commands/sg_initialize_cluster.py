@@ -15,6 +15,7 @@ from django.test.client import RequestFactory
 from django.urls import reverse
 
 from ....core import constants
+from ....core.typings import ConfigInterface
 from ...actions.update import (
     ActionInput,
     ContentInput,
@@ -199,54 +200,53 @@ class Command(BaseCommand):
                 net.save()
             cluster = clusterfn()["cluster"]
             pkey = cluster.contents.get(type="PublicKey")
-            configEncoded = json.dumps(
-                {
-                    "baseUrl": url,
-                    "configCluster": cluster.flexid_cached,
-                    "certificates": {
-                        publicKey_hash: {
-                            "data": privateKey_b64,
-                            "note": "initial certificate",
-                        }
+            config: ConfigInterface = {
+                "baseUrl": url,
+                "configCluster": cluster.flexid_cached,
+                "certificates": {
+                    publicKey_hash: {
+                        "data": privateKey_b64,
+                        "note": "initial certificate",
+                    }
+                },
+                "tokens": {
+                    view_token_hash: {
+                        "data": view_token_b64,
+                        "system": True,
+                        "note": "config token",
                     },
-                    "trustedKeys": {
-                        publicKey_hash: {
-                            "links": [urljoin(url, pkey.link)],
-                            "level": 1,
-                            "note": "",
-                            "lastChecked": int(time()),
-                        }
+                    manage_key_hash: {
+                        "data": manage_key_b64,
+                        "system": False,
+                        "note": "initial token",
                     },
-                    "tokens": {
-                        view_token_hash: {
-                            "data": view_token_b64,
-                            "system": True,
-                            "note": "config token",
-                        },
-                        manage_key_hash: {
-                            "data": manage_key_b64,
-                            "system": False,
-                            "note": "initial token",
-                        },
-                    },
-                    "slots": options["slots"],
-                    "signWith": {options["slots"][0]: [publicKey_hash]},
-                    "hosts": {
-                        url: {
-                            "clusters": {
-                                cluster.flexid_cached: {
-                                    "hashes": {
-                                        view_token_hash: ["view"],
-                                        manage_key_hash: ["manage"],
-                                        publicKey_hash: [],
-                                    }
+                },
+                "slots": options["slots"],
+                "signWith": {options["slots"][0]: [publicKey_hash]},
+                "hosts": {
+                    url: {
+                        "clusters": {
+                            cluster.flexid_cached: {
+                                "hashes": {
+                                    view_token_hash: ["view"],
+                                    manage_key_hash: ["manage"],
+                                    publicKey_hash: [],
                                 }
-                            },
-                            "contents": {},
-                        }
-                    },
-                }
-            )
+                            }
+                        },
+                        "contents": {},
+                    }
+                },
+                "trustedKeys": {
+                    publicKey_hash: {
+                        "links": [urljoin(url, pkey.link)],
+                        "level": 1,
+                        "note": "",
+                        "lastChecked": int(time()),
+                    }
+                },
+            }
+            configEncoded = json.dumps(config)
             ecnryptedContent = AESGCM(config_shared_key).encrypt(
                 nonce_config,
                 configEncoded.encode("utf8"),
@@ -264,7 +264,9 @@ class Command(BaseCommand):
                         nonce=nonce_config,
                         tags=[
                             "name=config.json",
+                            "mime=application/json",
                             f"key_hash={publicKey_hash}",
+                            "slot={}".format(options["slots"][0]),
                         ],
                         references=[
                             ReferenceInput(
