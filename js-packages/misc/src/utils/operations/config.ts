@@ -447,13 +447,14 @@ export async function updateConfigRemoteReducer(
     if (configQueryRes.errors) {
         throw configQueryRes.errors
     }
-    const nodes: { node: any }[] =
-        configQueryRes.data.secretgraph.contents.edges
+    let nodes: { node: any }[] = configQueryRes.data.secretgraph.contents.edges
     let mainNodeIndex = nodes.findIndex(
         ({ node }) => node.contentHash == slotHashes[0]
     )
     if (mainNodeIndex < 0) {
-        console.warn('Main not found, retry with different hash algorithms')
+        console.debug(
+            'Main not found, hash algorithm updated? Initialize upgrade routine'
+        )
         const contentHashes = new Set(
             (
                 await calculateHashes(
@@ -468,6 +469,9 @@ export async function updateConfigRemoteReducer(
                 cluster: resconf[0].configCluster,
                 authorization: authInfo.tokens,
                 configContentHashes: [...contentHashes],
+                configTags: slotPre
+                    .slice(1)
+                    .map((slot: string) => `slot=${slot}`),
             },
             // but why? should be updated by cache updates (for this no-cache is required in config content updates)
             fetchPolicy: 'network-only',
@@ -475,10 +479,7 @@ export async function updateConfigRemoteReducer(
         if (configQueryRes.errors) {
             throw configQueryRes.errors
         }
-        // bug length is readonly
-        for (const edge of configQueryRes.data.secretgraph.contents.edges) {
-            nodes.push(edge)
-        }
+        nodes = configQueryRes.data.secretgraph.contents.edges
         mainNodeIndex = nodes.findIndex(({ node }) =>
             contentHashes.has(node.contentHash)
         )
