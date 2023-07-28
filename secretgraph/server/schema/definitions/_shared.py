@@ -21,6 +21,13 @@ class ActionEntry:
 
 
 @strawberry.type
+class SGAuthResult:
+    allowed: list[str]
+    challenge: str
+    signatures: list[str]
+
+
+@strawberry.type
 class SBaseTypesMixin:
     limited: strawberry.Private[bool] = False
     reduced: strawberry.Private[bool] = False
@@ -108,14 +115,16 @@ class SBaseTypesMixin:
                     )
 
     @strawberry_django.field()
-    def authOk(self: Union[Content, Cluster], info: Info) -> Optional[bool]:
+    def auth(
+        self: Union[Content, Cluster], info: Info
+    ) -> Optional[SGAuthResult]:
         if self.limited or self.reduced:
             return None
         name = self.__class__.__name__.replace("Node", "", 1)
         result = get_cached_result(
             info.context["request"], ensureInitialized=True
         )[name]
-        authOk = False
+        authResult = None
         if isinstance(self, Content):
             # if content: check cluster and content keys
             mappers = [
@@ -129,11 +138,17 @@ class SBaseTypesMixin:
         for mapper in mappers:
             for key_val in mapper.items():
                 if key_val[0][0] == "auth":
-                    authOk = True
+                    authResult = SGAuthResult(
+                        allowed=result["decrypted"][key_val[1]]["allowed"],
+                        challenge=result["decrypted"][key_val[1]]["challenge"],
+                        signatures=result["decrypted"][key_val[1]][
+                            "signatures"
+                        ],
+                    )
                     break
-            if authOk:
+            if authResult:
                 break
-        return authOk
+        return authResult
 
     @strawberry_django.field()
     def updated(self: Union[Content, Cluster]) -> Optional[datetime]:

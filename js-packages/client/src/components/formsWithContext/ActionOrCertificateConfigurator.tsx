@@ -8,6 +8,7 @@ import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import { parseISO } from 'date-fns'
 import { FastField, useField, useFormikContext } from 'formik'
 import * as React from 'react'
@@ -116,7 +117,23 @@ const ActionFields = React.memo(function ActionFields({
     }, [action])
     switch (action) {
         case 'auth':
-            return <></>
+            return (
+                <div>
+                    <FastField
+                        component={FormikTextField}
+                        name={`${path}allowed`}
+                        disabled={disabled}
+                        helperText="comma seperated list of allowed requester ip addresses"
+                    />
+                    <FastField
+                        component={FormikTextField}
+                        name={`${path}challenge`}
+                        disabled={disabled}
+                        helperText="challenge"
+                    />
+                    {/** TODO: autogenerate signatures for challenge */}
+                </div>
+            )
         case 'view':
             if (isContent) {
                 return (

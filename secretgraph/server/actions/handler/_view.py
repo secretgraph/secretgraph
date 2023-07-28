@@ -1,6 +1,9 @@
+import ipaddress
 from datetime import timedelta as td
+from urllib.parse import urlparse
 
 from django.db.models import Q
+from ratelimit.misc import get_ip
 
 from ...models import Cluster, Content
 from ._shared import get_forbidden_content_ids
@@ -8,12 +11,20 @@ from ._shared import get_forbidden_content_ids
 
 class ViewHandlers:
     @staticmethod
-    def do_auth(action_dict, scope, sender, accesslevel, action, **kwargs):
-        if scope != "auth":
-            return None
+    def do_auth(action_dict, scope, sender, request, action, **kwargs):
         # for beeing able to rollback when an error happens
         if action.used:
             action.delete()
+            return None
+        if scope != "auth":
+            return None
+        client_ip = ipaddress.ip_network(get_ip(request))
+        for allowed in action_dict["allowed"]:
+            if ipaddress.ip_network(allowed, strict=False).supernet_of(
+                client_ip
+            ):
+                break
+        else:
             return None
 
         if issubclass(sender, Content):
@@ -24,23 +35,40 @@ class ViewHandlers:
             return {
                 "filters": ~excl_filters,
                 "accesslevel": 3,
+                "allowed": action_dict["allowed"],
+                "challenge": action_dict["challenge"],
+                "signatures": action_dict["signatures"],
             }
         elif issubclass(sender, Cluster):
             return {
                 "filters": Q(),
                 "accesslevel": 3,
+                "allowed": action_dict["allowed"],
+                "challenge": action_dict["challenge"],
+                "signatures": action_dict["signatures"],
             }
         return None
 
     @classmethod
     def clean_auth(cls, action_dict, request, content, admin):
+        # check that all are valid
+        tuple(map(ipaddress.ip_network, action_dict["allowed"]))
         result = {
             "action": "auth",
             "excludeIds": []
             if content
             else list(get_forbidden_content_ids(request)),
             "maxLifetime": td(hours=1),
+            "allowed": list(map(str, action_dict["allowed"])),
+            "challenge": str(action_dict["challenge"]),
+            "signatures": list(map(str, action_dict["signatures"])),
         }
+        if not result["allowed"]:
+            raise ValueError("Missing allowed ip(ranges) (allowed)")
+        if not result["challenge"]:
+            raise ValueError("Missing challenge (challenge)")
+        if not result["signatures"]:
+            raise ValueError("Missing signatures (signatures)")
         return result
 
     @staticmethod

@@ -25,6 +25,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+RATELIMIT_TRUSTED_PROXIES = os.environ.get("TRUSTED_PROXIES", "unix").split(
+    ","
+)
+if RATELIMIT_TRUSTED_PROXIES[0] == "all":
+    RATELIMIT_TRUSTED_PROXIES = "all"
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

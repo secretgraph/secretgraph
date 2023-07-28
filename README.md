@@ -186,6 +186,7 @@ Special configuration keys:
 -   `REQUIRE_USER`: require the binding of nets to user accounts (except admin created nets) (default: true)
 -   `ALLOW_REGISTER`: allow registering new users (default: false)
 -   `ALLOWED_HOSTS`: listen to hosts (default localhost)
+-   `TRUSTED_PROXIES`: set valid ip addresses (comma seperated) of reverse proxy, "all" for blind trust, "unix" for unix sockets (can be specified together with ip addresses). Used for retrieving client ip (default: unix)
 -   `HEADLESS`: activates `SECRETGRAPH_HEADLESS` (remove gui) (default: false)
 -   `NO_USERS`: removes user auth stuff, can only be enabled if `REQUIRE_USER` and `SECRETGRAPH_ADMINAREA` are off
 -   `SECRETGRAPH_ADMINAREA`: enable the admin area, allow admin login
@@ -375,6 +376,9 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
 -   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored
     -   for all action definitions
 -   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty: Should be defined together with view for of permanent/temporary access to data
+    allowed: valid requester ips
+    challenge: challenge data
+    signatures: signatures of challenge data (at least 1)
     -   for Content: ignores inherited id exclusion
     -   for Cluster: adhers inherited id exclusion
 -   view (Content, Cluster) affects (Content, Cluster):
@@ -691,6 +695,7 @@ The item get parameter is mandatory.
 
 # TODO
 
+-   finish auth, test and finish missing bits
 -   implement UserSelectable
 -   editor for Personal Data
 -   verification workflow
