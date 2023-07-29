@@ -333,10 +333,13 @@ def rollbackUsedActionsAndFreeze(request, **kwargs):
                 pass
 
 
-def sweepContentsAndClusters(ignoreTime=False, **kwargs):
-    from .models import Cluster, Content, ContentAction
+def sweepOutdated(ignoreTime=False, **kwargs):
+    from .models import Action, Cluster, Content, ContentAction
 
     now = timezone.now()
+    Action.objects.filter(
+        stop__lt=now - td(hours=24), stop__isnull=False
+    ).delete()
     cas = ContentAction.objects.filter(group="fetch")
     cas_trigger = cas.filter(action__used__isnull=False)
     cas_disarm = cas.filter(action__used__isnull=True)

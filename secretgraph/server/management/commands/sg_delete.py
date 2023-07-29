@@ -6,7 +6,7 @@ from django.db.models import Subquery
 from django.utils.timezone import now
 
 from ...models import Cluster, Content
-from ...signals import sweepContentsAndClusters
+from ...signals import sweepOutdated
 from ...utils.auth import fetch_by_id_noconvert
 
 
@@ -72,4 +72,4 @@ class Command(BaseCommand):
         clusters.update(markForDestruction=timestamp)
         if purge:
             time.sleep(2)
-            sweepContentsAndClusters()
+            sweepOutdated()

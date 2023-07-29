@@ -625,6 +625,10 @@ This is currently not implemented as it needs background workers and has many ca
 
 # FAQ
 
+## Cleanup of actions
+
+Actions which have stop defined and stop is in the past are autoremoved after some time
+
 ## Token hashing
 
 Token hashing is slightly different from normal hashing as you could build a rainbow table for 256 bit aes keys.

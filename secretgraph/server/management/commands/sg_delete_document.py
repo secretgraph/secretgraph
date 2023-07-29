@@ -7,7 +7,7 @@ from django.db.models.functions import Substr
 from django.utils.timezone import now
 
 from ...models import Content, ContentTag
-from ...signals import sweepContentsAndClusters
+from ...signals import sweepOutdated
 
 
 class Command(BaseCommand):
@@ -83,4 +83,4 @@ class Command(BaseCommand):
         contents.update(markForDestruction=timestamp)
         if purge:
             time.sleep(2)
-            sweepContentsAndClusters()
+            sweepOutdated()

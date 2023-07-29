@@ -25,7 +25,7 @@ from .models import (
     NetGroup,
     SGroupProperty,
 )
-from .signals import fillEmptyFlexidsCb, sweepContentsAndClusters
+from .signals import fillEmptyFlexidsCb, sweepOutdated
 
 
 @admin.display(ordering="id", description="")
@@ -75,7 +75,7 @@ class FlexidMixin:
     )
     def purge_immediate(self, request, queryset):
         self.delete_queryset(request, queryset, 0)
-        sweepContentsAndClusters()
+        sweepOutdated()
 
     def delete_queryset(self, request, queryset, minutes=10):
         now = timezone.now() + timedelta(minutes=minutes)
@@ -271,7 +271,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     readonly_fields = ["id", "flexid_cached", "name_cached"]
 
     def get_queryset(self, request):
-        sweepContentsAndClusters()
+        sweepOutdated()
         qs = super().get_queryset(request)
         if not getattr(request.user, "is_superuser", False):
             qs = qs.filter(
@@ -362,7 +362,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     readonly_fields = ["flexid_cached"]
 
     def get_queryset(self, request):
-        sweepContentsAndClusters()
+        sweepOutdated()
         qs = super().get_queryset(request)
         if not getattr(request.user, "is_superuser", False):
             qs = qs.filter(

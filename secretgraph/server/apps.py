@@ -23,7 +23,7 @@ from .signals import (
     notifyUpdateOrCreate,
     regenerateKeyHash,
     rollbackUsedActionsAndFreeze,
-    sweepContentsAndClusters,
+    sweepOutdated,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,10 +132,10 @@ class SecretgraphServerConfig(AppConfig):
         got_request_exception.connect(
             rollbackUsedActionsAndFreeze,
             sender=self,
-            dispatch_uid="secretgraph_rollbackUsedActions",
+            dispatch_uid="secretgraph_rollbackUsedActionsAndFreeze",
         )
         request_started.connect(
-            sweepContentsAndClusters,
+            sweepOutdated,
             sender=self,
             dispatch_uid="secretgraph_sweepContentsAndClusters",
         )

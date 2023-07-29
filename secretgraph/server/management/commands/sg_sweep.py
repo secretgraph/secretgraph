@@ -14,6 +14,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, all_deleted, **options):
-        from ...signals import sweepContentsAndClusters
+        from ...signals import sweepOutdated
 
-        sweepContentsAndClusters(ignoreTime=all_deleted)
+        sweepOutdated(ignoreTime=all_deleted)
