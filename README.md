@@ -563,7 +563,8 @@ either via updateMetadata or an updateOrCreateCluster
 
 To query net groups, use secretgraph.node with a composed id: `<net>:<primaryCluster flexid>` and apply base64 on it.
 You get an NetNode and can query its groups.
-Note: you need the manage permission of the primaryCluster
+
+Note: you need the manage permission of the primaryCluster or the admin permission `manage_user`
 
 ## How does net resource tracking work?
 

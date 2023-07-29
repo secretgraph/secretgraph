@@ -99,9 +99,7 @@ class SecretgraphConfig(relay.Node):
         if "allow_hidden" in props or "manage_groups" in props:
             return NetGroup.objects.all()
         else:
-            return NetGroup.objects.exclude(
-                userSelectable=UserSelectable.NONE.value
-            )
+            return NetGroup.objects.filter(hidden=False)
 
     @strawberry.field()
     @staticmethod

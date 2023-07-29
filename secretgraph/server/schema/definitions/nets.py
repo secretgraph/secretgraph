@@ -9,7 +9,7 @@ from strawberry.types import Info
 
 from ....core.constants import UserSelectable
 from ...actions.fetch import fetch_clusters
-from ...models import Net
+from ...models import Cluster, Net
 from ...utils.auth import get_cached_net_properties, get_cached_result
 
 
@@ -29,9 +29,7 @@ class NetNode(relay.Node):
             return list(self.groups.values_list("name", flat=True))
         else:
             return list(
-                self.groups.exclude(
-                    userSelectable=UserSelectable.NONE.value
-                ).values_list("name", flat=True)
+                self.groups.filter(hidden=False).values_list("name", flat=True)
             )
 
     @classmethod
@@ -42,16 +40,19 @@ class NetNode(relay.Node):
         node_ids: Iterable[str],
         required: bool = False,
     ):
-        result = get_cached_result(
-            info.context["request"],
-            scope="manage",
-            cacheName="secretgraphNetResult",
-        )["Cluster"]
+        if "manage_user" in get_cached_net_properties(info.context["request"]):
+            query = Cluster.objects.all()
+        else:
+            query = get_cached_result(
+                info.context["request"],
+                scope="manage",
+                cacheName="secretgraphNetResult",
+            )["Cluster"]["objects_without_public"]
         # for allowing specifing global name and permission check
         return Net.objects.filter(
             primaryCluster__in=Subquery(
                 fetch_clusters(
-                    result["objects_with_public"],
+                    query,
                     ids=node_ids,
                     limit_ids=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
                 ).values("id")

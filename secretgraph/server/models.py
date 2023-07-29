@@ -882,6 +882,8 @@ class NetGroup(models.Model):
         max_length=1,
         choices=UserSelectable.choices,
     )
+    # doesn't appear in non-admin searches
+    hidden: bool = models.BooleanField(blank=True, default=False)
     nets: models.ManyToManyField[Net] = models.ManyToManyField(
         Net,
         related_name="groups",
