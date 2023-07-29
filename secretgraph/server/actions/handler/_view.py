@@ -1,5 +1,6 @@
 import ipaddress
 from datetime import timedelta as td
+from functools import reduce
 from urllib.parse import urlparse
 
 from django.db.models import Q
@@ -20,10 +21,13 @@ class ViewHandlers:
             return None
         client_ip = ipaddress.ip_network(get_ip(request))
         for allowed in action_dict["allowed"]:
-            if ipaddress.ip_network(allowed, strict=False).supernet_of(
-                client_ip
-            ):
-                break
+            try:
+                if ipaddress.ip_network(allowed, strict=False).supernet_of(
+                    client_ip
+                ):
+                    break
+            except:
+                pass
         else:
             return None
 
@@ -51,8 +55,34 @@ class ViewHandlers:
 
     @classmethod
     def clean_auth(cls, action_dict, request, content, admin):
-        # check that all are valid
-        tuple(map(ipaddress.ip_network, action_dict["allowed"]))
+        if not action_dict.get("challenge"):
+            raise ValueError("Missing challenge (challenge)")
+        if not action_dict.get("allowed"):
+            raise ValueError(
+                "Missing allowed requesters ip(ranges) and other identifies (allowed)"
+            )
+        for i in action_dict["allowed"]:
+            try:
+                ipaddress.ip_network(i)
+                break
+            except:
+                pass
+        else:
+            raise ValueError("Needs at least one allowed ip(range) (allowed)")
+
+        if not result.get("signatures"):
+            raise ValueError("Missing signatures (signatures)")
+        len_sigs = reduce(len, result["signatures"])
+        if len_sigs == 0:
+            raise ValueError("Empty signatures (signatures)")
+
+        if (
+            reduce(len, result["allowed"])
+            + len_sigs
+            + len(result["challenge"])
+            > 10_000_000
+        ):
+            raise ValueError("auth too big")
         result = {
             "action": "auth",
             "excludeIds": []
@@ -63,19 +93,6 @@ class ViewHandlers:
             "challenge": str(action_dict["challenge"]),
             "signatures": list(map(str, action_dict["signatures"])),
         }
-        if not result["allowed"]:
-            raise ValueError("Missing allowed ip(ranges) (allowed)")
-        if not result["challenge"]:
-            raise ValueError("Missing challenge (challenge)")
-        if not result["signatures"]:
-            raise ValueError("Missing signatures (signatures)")
-        if (
-            len("".join(result["allowed"]))
-            + len("".join(result["signatures"]))
-            + len(result["challenge"])
-            > 10_000_000
-        ):
-            raise ValueError("auth too big")
         return result
 
     @staticmethod

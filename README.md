@@ -623,6 +623,20 @@ When a transfer succeeds, signature references are created in case the Publickey
 
 This is currently not implemented as it needs background workers and has many caveats
 
+## Auth workflow
+
+Secretgraph has a strong authorization workflow for authorizing the user to 3party applications.
+
+In contrast to OAUTH on a rogue server it is validated that client actually authorized the action.
+This is done by user signatures of the challenge.
+
+Here the workflow in detail:
+
+3party -> Client: challenge, allowed (at least one ip(range), can be used to pass requester)
+Client -> Server: auth action with allowed, challenge, signatures (of challenge), generates token authtoken
+Client -> 3party: provide 3party url with authtoken and `item` GET parameter
+3party -> Server: queries data and verifies signatures, he can use allowed for performing extra checks like the requester url
+
 # FAQ
 
 ## Cleanup of actions
@@ -708,7 +722,7 @@ It is invisible for all access scopes except "view" or if the former condition i
 
 ### Auth (Cluster/Content):
 
-The item get parameter is mandatory.
+The `item` GET parameter is mandatory.
 
 # TODO
 
