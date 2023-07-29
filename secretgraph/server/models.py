@@ -22,6 +22,7 @@ from django.db import models, transaction
 from django.db.models.functions import Concat, Length, Substr
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from strawberry import relay
 
 from ..core import constants
@@ -861,6 +862,10 @@ class SGroupProperty(models.Model):
 
     objects = SGroupPropertyManager()
 
+    class Meta:
+        verbose_name = _("Group Property")
+        verbose_name_plural = _("Group Properties")
+
     def __str__(self) -> str:
         return self.name
 
@@ -874,7 +879,10 @@ class NetGroup(models.Model):
         unique=True,
         validators=[SafeNameValidator(), MinLengthValidator(1)],
     )
-    description: str = models.TextField()
+    description: str = models.TextField(
+        default="",
+        blank=True,
+    )
     userSelectable: str = models.CharField(
         blank=True,
         default=constants.UserSelectable.NONE.value,
@@ -886,6 +894,7 @@ class NetGroup(models.Model):
     hidden: bool = models.BooleanField(blank=True, default=False)
     nets: models.ManyToManyField[Net] = models.ManyToManyField(
         Net,
+        blank=True,
         related_name="groups",
         help_text=net_groups_help,
     )
@@ -922,7 +931,10 @@ class ClusterGroup(models.Model):
         unique=True,
         validators=[SafeNameValidator(), MinLengthValidator(1)],
     )
-    description: str = models.TextField()
+    description: str = models.TextField(
+        default="",
+        blank=True,
+    )
     userSelectable: str = models.CharField(
         blank=True,
         default=constants.UserSelectable.NONE.value,
@@ -939,6 +951,7 @@ class ClusterGroup(models.Model):
     )
     injectedKeys: models.ManyToManyField[Content] = models.ManyToManyField(
         Content,
+        blank=True,
         related_name="injectedFor",
         limit_choices_to={
             "type": "PublicKey",
@@ -949,6 +962,7 @@ class ClusterGroup(models.Model):
         SGroupProperty
     ] = models.ManyToManyField(
         SGroupProperty,
+        blank=True,
         related_name="clusterGroups",
         limit_choices_to=~models.Q(name__startswith="manage_"),
     )
