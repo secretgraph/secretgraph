@@ -69,7 +69,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
     def groups(self, info: Info) -> list[str]:
         if self.limited or self.reduced:
             return []
-        # permissions allows to see the hidden global groups
+        # permissions allows to see the hidden cluster groups
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
         # manage_groups: required for correctly updating groups

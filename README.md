@@ -553,6 +553,18 @@ They include seeing hidden contents or even delete contents not owned by the use
 Content permissions are restricted to create subcontents according to a pattern, to update or to view.
 Contents can link to each other (depending on permissions) via references. References can auto destroy the owner if the referenced object is deleted via the DeleteRecursive attribute.
 
+## groups? NetGroups? ClusterGroups?
+
+Netgroups are attached to the net and give permissions or work as marker
+ClusterGroups are attached to a cluster and alter its behaviour
+
+On clusters only ClusterGroups are visible (Cluster.groups), Users can manage (if allowed to via userSelectable) both types of groups
+either via updateMetadata or an updateOrCreateCluster
+
+To query net groups, use secretgraph.node with a composed id: `<net>:<primaryCluster flexid>` and apply base64 on it.
+You get an NetNode and can query its groups.
+Note: you need the manage permission of the primaryCluster
+
 ## How does net resource tracking work?
 
 Every user has a net. This net is required to be assigned to Clusters and optional for Contents (if not specified the net of the assigned cluster is used)-

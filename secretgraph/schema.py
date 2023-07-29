@@ -8,6 +8,7 @@ from strawberry.schema.config import StrawberryConfig
 from .server.schema import Mutation as ServerMutation
 from .server.schema import Query as ServerQuery
 from .server.schema import Subscription as ServerSubscription
+from .server.schema.definitions import NetNode
 from .server.strawberry_extensions import RatelimitErrors, RatelimitMutations
 
 # from .user.schema import Query as UserQuery
@@ -29,6 +30,7 @@ schema = Schema(
     mutation=Mutation,
     subscription=ServerSubscription,
     extensions=[RatelimitMutations, RatelimitErrors],
+    types=[NetNode],
     config=StrawberryConfig(
         relay_max_results=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
     ),

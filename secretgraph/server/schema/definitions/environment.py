@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Annotated, Iterable, List, Optional
+from typing import TYPE_CHECKING, Iterable, Optional
 
 import strawberry
 import strawberry_django
@@ -8,7 +8,8 @@ from django.urls import NoReverseMatch
 from strawberry import relay
 from strawberry.types import Info
 
-from ...models import ClusterGroup, Content
+from ....core.constants import UserSelectable
+from ...models import ClusterGroup, Content, NetGroup
 from ...utils.auth import get_cached_net_properties
 
 if TYPE_CHECKING:
@@ -33,12 +34,24 @@ class ClusterGroupNode(relay.Node):
 
     name: str
     description: str
+    userSelectable: strawberry.auto
     hidden: bool
-    injectedKeys: List[InjectedKeyNode]
+    injectedKeys: list[InjectedKeyNode]
 
     @strawberry_django.field()
     def properties(self) -> list[str]:
         return list(self.properties.values_list("name", flat=True))
+
+
+@strawberry_django.type(NetGroup, name="NetGroup")
+class NetGroupNode(relay.Node):
+    @classmethod
+    def resolve_id(cls, root, *, info: Info) -> str:
+        return root.name
+
+    name: str
+    description: str
+    userSelectable: strawberry.auto
 
 
 @strawberry.type()
@@ -64,7 +77,7 @@ class SecretgraphConfig(relay.Node):
     @strawberry_django.django_resolver()
     @staticmethod
     def clusterGroups(info: Info) -> list[ClusterGroupNode]:
-        # permissions allows to see the hidden global groups
+        # permissions allows to see the hidden global cluster groups
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
         # manage_groups: required for correctly updating groups
@@ -74,9 +87,25 @@ class SecretgraphConfig(relay.Node):
         else:
             return ClusterGroup.objects.filter(hidden=False)
 
+    @strawberry_django.field()
+    @strawberry_django.django_resolver()
+    @staticmethod
+    def netGroups(info: Info) -> list[NetGroupNode]:
+        # permissions allows to see the nonselectable global net groups
+        # allow_hidden: have mod rights,
+        #   so the groups are handy for communication
+        # manage_groups: required for correctly updating groups
+        props = get_cached_net_properties(info.context["request"])
+        if "allow_hidden" in props or "manage_groups" in props:
+            return NetGroup.objects.all()
+        else:
+            return NetGroup.objects.exclude(
+                userSelectable=UserSelectable.NONE.value
+            )
+
     @strawberry.field()
     @staticmethod
-    def hashAlgorithms() -> List[str]:
+    def hashAlgorithms() -> list[str]:
         return settings.SECRETGRAPH_HASH_ALGORITHMS
 
     @strawberry.field(description="Maximal results per relay query")
