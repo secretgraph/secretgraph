@@ -69,6 +69,13 @@ class ViewHandlers:
             raise ValueError("Missing challenge (challenge)")
         if not result["signatures"]:
             raise ValueError("Missing signatures (signatures)")
+        if (
+            len("".join(result["allowed"]))
+            + len("".join(result["signatures"]))
+            + len(result["challenge"])
+            > 10_000_000
+        ):
+            raise ValueError("auth too big")
         return result
 
     @staticmethod
