@@ -946,6 +946,7 @@ class ClusterGroup(models.Model):
     hidden: bool = models.BooleanField(default=False, blank=True)
     clusters: models.ManyToManyField[Cluster] = models.ManyToManyField(
         Cluster,
+        blank=True,
         related_name="groups",
         help_text=cluster_groups_help,
     )
