@@ -897,9 +897,11 @@ class NetGroup(models.Model):
         return self.name
 
     def __repr__(self) -> str:
-        return "<NetGroup: %s, us: %s>" % (
+        return "<NetGroup: %s, us: %s%s%s>" % (
             self.name,
             constants.UserSelectable(self.userSelectable).name,
+            ", hidden" if self.hidden else "",
+            ", managed" if self.is_managed else "",
         )
 
     @property
@@ -961,10 +963,11 @@ class ClusterGroup(models.Model):
         return self.name
 
     def __repr__(self) -> str:
-        return "<ClusterGroup: %s, us: %s%s>" % (
+        return "<ClusterGroup: %s, us: %s%s%s>" % (
             self.name,
             constants.UserSelectable(self.userSelectable).name,
             ", hidden" if self.hidden else "",
+            ", managed" if self.is_managed else "",
         )
 
     @property
