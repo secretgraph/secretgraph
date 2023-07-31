@@ -679,16 +679,6 @@ docs = ["furo (>=2023.5.20)", "sphinx (>=7.0.1)", "sphinx-autodoc-typehints (>=1
 testing = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "diff-cover (>=7.5)", "pytest (>=7.3.1)", "pytest-cov (>=4.1)", "pytest-mock (>=3.10)", "pytest-timeout (>=2.1)"]
 
 [[package]]
-name = "flipflop"
-version = "1.0"
-description = "FastCGI wrapper for WSGI applications"
-optional = true
-python-versions = "*"
-files = [
-    {file = "flipflop-1.0.tar.gz", hash = "sha256:32a23ed7bdb53bab03271c4c92abceae1ee3a337dd7fd5a18334fd64930ebcfd"},
-]
-
-[[package]]
 name = "frozenlist"
 version = "1.4.0"
 description = "A list-like structure which implements collections.abc.MutableSequence"
@@ -1352,18 +1342,18 @@ files = [
 
 [[package]]
 name = "platformdirs"
-version = "3.9.1"
+version = "3.10.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.9.1-py3-none-any.whl", hash = "sha256:ad8291ae0ae5072f66c16945166cb11c63394c7a3ad1b1bc9828ca3162da8c2f"},
-    {file = "platformdirs-3.9.1.tar.gz", hash = "sha256:1b42b450ad933e981d56e59f1b97495428c9bd60698baab9f3eb3d00d5822421"},
+    {file = "platformdirs-3.10.0-py3-none-any.whl", hash = "sha256:d7c24979f292f916dc9cbf8648319032f551ea8c49a4c9bf2fb556a02070ec1d"},
+    {file = "platformdirs-3.10.0.tar.gz", hash = "sha256:b45696dab2d7cc691a3226759c0d3b00c47c8b6e293d96f6436f733303f77f6d"},
 ]
 
 [package.extras]
-docs = ["furo (>=2023.5.20)", "proselint (>=0.13)", "sphinx (>=7.0.1)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-cov (>=4.1)", "pytest-mock (>=3.10)"]
+docs = ["furo (>=2023.7.26)", "proselint (>=0.13)", "sphinx (>=7.1.1)", "sphinx-autodoc-typehints (>=1.24)"]
+test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4)", "pytest-cov (>=4.1)", "pytest-mock (>=3.11.1)"]
 
 [[package]]
 name = "pluggy"
@@ -1552,13 +1542,13 @@ test = ["flaky", "pretend", "pytest (>=3.0.1)"]
 
 [[package]]
 name = "pyparsing"
-version = "3.1.0"
+version = "3.1.1"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
 optional = false
 python-versions = ">=3.6.8"
 files = [
-    {file = "pyparsing-3.1.0-py3-none-any.whl", hash = "sha256:d554a96d1a7d3ddaf7183104485bc19fd80543ad6ac5bdb6426719d766fb06c1"},
-    {file = "pyparsing-3.1.0.tar.gz", hash = "sha256:edb662d6fe322d6e990b1594b5feaeadf806803359e3d4d42f11e295e588f0ea"},
+    {file = "pyparsing-3.1.1-py3-none-any.whl", hash = "sha256:32c7c0b711493c72ff18a981d24f28aaf9c1fb7ed5e9667c9e84e3db623bdbfb"},
+    {file = "pyparsing-3.1.1.tar.gz", hash = "sha256:ede28a1a32462f5a9705e07aea48001a08f7cf81a021585011deba701581a0db"},
 ]
 
 [package.extras]
@@ -1756,13 +1746,13 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "rich"
-version = "13.4.2"
+version = "13.5.0"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "rich-13.4.2-py3-none-any.whl", hash = "sha256:8f87bc7ee54675732fa66a05ebfe489e27264caeeff3728c945d25971b6485ec"},
-    {file = "rich-13.4.2.tar.gz", hash = "sha256:d653d6bccede5844304c605d5aac802c7cf9621efd700b46c7ec2b51ea914898"},
+    {file = "rich-13.5.0-py3-none-any.whl", hash = "sha256:996670a7618ccce27c55ba6fc0142e6e343773e11d34c96566a17b71b0e6f179"},
+    {file = "rich-13.5.0.tar.gz", hash = "sha256:62c81e88dc078d2372858660e3d5566746870133e51321f852ccc20af5c7e7b2"},
 ]
 
 [package.dependencies]
@@ -2043,13 +2033,13 @@ starlette = "*"
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.196.1"
+version = "0.198.0"
 description = "A library for creating GraphQL APIs"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = ">=3.8,<4.0"
 files = [
-    {file = "strawberry_graphql-0.196.1-py3-none-any.whl", hash = "sha256:84a3dde2012395520dab3550996279a2cb3253c244a62946b59215dbbc530eec"},
-    {file = "strawberry_graphql-0.196.1.tar.gz", hash = "sha256:2c9872ef0dae2d5883180b5df95dfa460f1c9485d5b420f6e2a85afac9da9184"},
+    {file = "strawberry_graphql-0.198.0-py3-none-any.whl", hash = "sha256:ae2316641b380c309a70ef71e21c5ef606ef151032c1471936c6c731834eaf90"},
+    {file = "strawberry_graphql-0.198.0.tar.gz", hash = "sha256:12f57e435b0c07497a6b0d84d5f21e638a254db571826af53a1a45604506c023"},
 ]
 
 [package.dependencies]
@@ -2078,13 +2068,13 @@ starlite = ["starlite (>=1.48.0)"]
 
 [[package]]
 name = "strawberry-graphql-django"
-version = "0.14.0"
+version = "0.14.1"
 description = "Strawberry GraphQL Django extension"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "strawberry_graphql_django-0.14.0-py3-none-any.whl", hash = "sha256:1513920c78afaecb9c7aef30ed5529f79d1e47f7e9723f06edf5f48ea99cf139"},
-    {file = "strawberry_graphql_django-0.14.0.tar.gz", hash = "sha256:e245e9cea9f0d294bd80b39f8897f281918acfedac306665ca6807801eff2f47"},
+    {file = "strawberry_graphql_django-0.14.1-py3-none-any.whl", hash = "sha256:f4e521fe0a52074be6121b29b5c71e3220a6ab42b4185c41cb68704ecb681de2"},
+    {file = "strawberry_graphql_django-0.14.1.tar.gz", hash = "sha256:4a3106f3443416f3553540b76815fbb157853300fa0ca511253013b2d4183c35"},
 ]
 
 [package.dependencies]
@@ -2559,7 +2549,6 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [extras]
-fastcgi = ["flipflop"]
 mysql = ["mysqlclient"]
 postgresql = ["psycopg"]
 proxy = ["bleach", "tinycss2"]
@@ -2567,5 +2556,5 @@ server = ["channels", "django", "django-fast-ratelimit", "django-manifest-loader
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.9, <4"
-content-hash = "f91a35b4e745cfa13c9171d13ef1b44e6e0af48bb18dc755274dfbd31f5165f4"
+python-versions = ">=3.9,<4"
+content-hash = "aab91657fc755e7ea5d760a990125c59e1cbe8ca57a76003a52b27660955ca45"

@@ -24,7 +24,7 @@ keywords = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9, <4"
+python = ">=3.9,<4"
 cryptography = "*"
 rdflib = '*'
 certifi = "*"
@@ -35,7 +35,6 @@ channels = {version = ">=4.0", optional = true}
 graphene-protector = {version=">=0.8.0", optional = true}
 strawberry-graphql = {version=">=0.183",  optional = true}
 strawberry-graphql-django = {version=">=0.10", optional = true}
-flipflop = {version="*", optional = true}
 mysqlclient = {version="*", optional = true}
 psycopg = {version="*", extras=["binary","pool"], optional = true}
 django-manifest-loader = {version="*", optional = true}
@@ -86,7 +85,6 @@ proxy = [
     "bleach",
     "tinycss2"
 ]
-fastcgi = ["flipflop"]
 postgresql = ["psycopg"]
 mysql = ["mysqlclient"]
 
