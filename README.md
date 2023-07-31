@@ -376,7 +376,7 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
 -   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored
     -   for all action definitions
 -   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty: Should be defined together with view for of permanent/temporary access to data
-    allowed: valid requester ips
+    requester: requester
     challenge: challenge data
     signatures: signatures of challenge data (at least 1)
     -   for Content: ignores inherited id exclusion
@@ -632,14 +632,14 @@ This is done by user signatures of the challenge.
 
 Here the workflow in detail:
 
-3party -> Client: challenge (should be printable, utf8), allowed (at least one ip(range), can be used to pass valid receivers)
-Client -> Server: auth action with allowed, challenge, signatures (of challenge and sorted allowed), generates token authtoken
+3party -> Client: challenge (should be printable, utf8), requester: url which requested the auth
+Client -> Server: auth action with requester, challenge, signatures (of challenge and requester), generates token authtoken
 Client -> 3party: provide 3party url with authtoken and `item` GET parameter
-3party -> Server: queries data and verifies signatures, he can use allowed for performing extra checks like the requester url
+3party -> Server: queries data and verifies signatures, he should use requester for verifying the requester url
 
-A signature is made from: `<sorted allowed><challenge>` and in format `<hashalgorithm>:<public key hash>:<signature in b64>`
+A signature is made from: `<requester><challenge>` and in format `<hashalgorithm>:<public key hash>:<signature in b64>`
 
-The challenge should be timelimitted e.g. 2 hours or 1 day. It may can contain an encrypted timestamp.
+The challenge should be timelimited e.g. 2 hours or 1 day. It may can contain an encrypted timestamp.
 The challenge is technically not limitted but would be better to have only visible characters in utf8 because of input problems in case the user have to provide it himself
 
 # FAQ

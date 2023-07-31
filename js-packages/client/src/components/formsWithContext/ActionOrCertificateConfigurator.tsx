@@ -121,9 +121,9 @@ const ActionFields = React.memo(function ActionFields({
                 <div>
                     <FastField
                         component={FormikTextField}
-                        name={`${path}allowed`}
+                        name={`${path}requester`}
                         disabled={disabled}
-                        helperText="comma seperated list of allowed requester ip addresses"
+                        helperText="Requester"
                     />
                     <FastField
                         component={FormikTextField}

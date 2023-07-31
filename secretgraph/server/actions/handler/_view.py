@@ -18,17 +18,6 @@ class ViewHandlers:
             return None
         if scope != "auth":
             return None
-        client_ip = ipaddress.ip_network(get_ip(request))
-        for allowed in action_dict["allowed"]:
-            try:
-                if ipaddress.ip_network(allowed, strict=False).supernet_of(
-                    client_ip
-                ):
-                    break
-            except:
-                pass
-        else:
-            return None
 
         if issubclass(sender, Content):
             excl_filters = Q()
@@ -38,7 +27,7 @@ class ViewHandlers:
             return {
                 "filters": ~excl_filters,
                 "accesslevel": 3,
-                "allowed": action_dict["allowed"],
+                "requester": action_dict["requester"],
                 "challenge": action_dict["challenge"],
                 "signatures": action_dict["signatures"],
             }
@@ -46,7 +35,7 @@ class ViewHandlers:
             return {
                 "filters": Q(),
                 "accesslevel": 3,
-                "allowed": action_dict["allowed"],
+                "requester": action_dict["requester"],
                 "challenge": action_dict["challenge"],
                 "signatures": action_dict["signatures"],
             }
@@ -56,19 +45,8 @@ class ViewHandlers:
     def clean_auth(cls, action_dict, request, content, admin):
         if not action_dict.get("challenge"):
             raise ValueError("Missing challenge (challenge)")
-        if not action_dict.get("allowed"):
-            raise ValueError(
-                "Missing allowed requesters ip(ranges) and other identifies (allowed)"
-            )
-        for i in action_dict["allowed"]:
-            try:
-                ipaddress.ip_network(i)
-                break
-            except:
-                pass
-        else:
-            raise ValueError("Needs at least one allowed ip(range) (allowed)")
-
+        if not action_dict.get("requester"):
+            raise ValueError("Missing requester (requester)")
         if not result.get("signatures"):
             raise ValueError("Missing signatures (signatures)")
         len_sigs = reduce(len, result["signatures"])
@@ -76,9 +54,7 @@ class ViewHandlers:
             raise ValueError("Empty signatures (signatures)")
 
         if (
-            reduce(len, result["allowed"])
-            + len_sigs
-            + len(result["challenge"])
+            len(result["requester"]) + len_sigs + len(result["challenge"])
             > 10_000_000
         ):
             raise ValueError("auth too big")
@@ -88,7 +64,7 @@ class ViewHandlers:
             if content
             else list(get_forbidden_content_ids(request)),
             "maxLifetime": td(hours=1),
-            "allowed": list(map(str, action_dict["allowed"])),
+            "requester": str(action_dict["requester"]),
             "challenge": str(action_dict["challenge"]),
             "signatures": list(map(str, action_dict["signatures"])),
         }

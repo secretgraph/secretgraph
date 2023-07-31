@@ -22,7 +22,7 @@ class ActionEntry:
 
 @strawberry.type
 class SGAuthResult:
-    allowed: list[str]
+    requester: str
     challenge: str
     signatures: list[str]
 
@@ -139,7 +139,7 @@ class SBaseTypesMixin:
             for key_val in mapper.items():
                 if key_val[0][0] == "auth":
                     authResult = SGAuthResult(
-                        allowed=result["decrypted"][key_val[1]]["allowed"],
+                        requester=result["decrypted"][key_val[1]]["requester"],
                         challenge=result["decrypted"][key_val[1]]["challenge"],
                         signatures=result["decrypted"][key_val[1]][
                             "signatures"
