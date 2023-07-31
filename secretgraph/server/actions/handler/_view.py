@@ -1,7 +1,6 @@
 import ipaddress
 from datetime import timedelta as td
 from functools import reduce
-from urllib.parse import urlparse
 
 from django.db.models import Q
 from ratelimit.misc import get_ip

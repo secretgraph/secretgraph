@@ -1,10 +1,18 @@
 import enum
+import re
+import string
 from dataclasses import dataclass
 
 from cryptography.hazmat.primitives import hashes
 from rdflib import Namespace
 
 from .typings import ContentState
+
+# for locking down strings but allowing ip addresses and most urls. Currently not in use
+safe_chars = frozenset(
+    [*string.ascii_letters, *string.digits, *"!#%&*+,-./:;=?@\\[]^_`|~"]
+)
+safe_chars_re = re.compile(r"[a-zA-Z0-9!#%&*+,-./:;=?@\\[\]^_`|~]*")
 
 public_states: set[ContentState] = {
     "required",

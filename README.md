@@ -632,10 +632,15 @@ This is done by user signatures of the challenge.
 
 Here the workflow in detail:
 
-3party -> Client: challenge, allowed (at least one ip(range), can be used to pass requester)
-Client -> Server: auth action with allowed, challenge, signatures (of challenge), generates token authtoken
+3party -> Client: challenge (should be printable, utf8), allowed (at least one ip(range), can be used to pass valid receivers)
+Client -> Server: auth action with allowed, challenge, signatures (of challenge and sorted allowed), generates token authtoken
 Client -> 3party: provide 3party url with authtoken and `item` GET parameter
 3party -> Server: queries data and verifies signatures, he can use allowed for performing extra checks like the requester url
+
+A signature is made from: `<sorted allowed><challenge>` and in format `<hashalgorithm>:<public key hash>:<signature in b64>`
+
+The challenge should be timelimitted e.g. 2 hours or 1 day. It may can contain an encrypted timestamp.
+The challenge is technically not limitted but would be better to have only visible characters in utf8 because of input problems in case the user have to provide it himself
 
 # FAQ
 
