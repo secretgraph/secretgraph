@@ -464,7 +464,11 @@ export async function transformActions({
                     hashes[activeHash] = []
                 }
                 hashes[activeHash]!.push(val.value.action)
+                // in case of auth, autogenerate signatures
                 if (val.value.action == 'auth') {
+                    if (!signKeys.length) {
+                        throw Error('auth action without signkeys')
+                    }
                     val.value.signatures = (
                         await createSignatureReferences(
                             Buffer.from(
