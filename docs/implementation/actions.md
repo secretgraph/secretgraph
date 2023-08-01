@@ -3,9 +3,9 @@
 -   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored
     -   for all action definitions
 -   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty: Should be defined together with view for of permanent/temporary access to data
-    requester: requester
-    challenge: challenge data
-    signatures: signatures of challenge data (at least 1)
+    -   requester: requester
+    -   challenge: challenge data
+    -   signatures: signatures of challenge data (at least 1)
     -   for Content: ignores inherited id exclusion
     -   for Cluster: adhers inherited id exclusion
 -   view (Content, Cluster) affects (Content, Cluster):
