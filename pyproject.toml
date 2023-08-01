@@ -54,7 +54,7 @@ bleach = "*"
 tinycss2 = "*"
 graphene-protector = ">=0.7.2"
 django = ">=4.1"
-channels = {version = '>=4.0', extras = ["daphne"] }
+channels = {version = '>=4.0' }
 strawberry-graphql = {version = '>=0.145', extras = ["debug"] }
 strawberry-graphql-django = ">=0.10"
 

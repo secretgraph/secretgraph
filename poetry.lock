@@ -1746,13 +1746,13 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "rich"
-version = "13.5.0"
+version = "13.5.1"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "rich-13.5.0-py3-none-any.whl", hash = "sha256:996670a7618ccce27c55ba6fc0142e6e343773e11d34c96566a17b71b0e6f179"},
-    {file = "rich-13.5.0.tar.gz", hash = "sha256:62c81e88dc078d2372858660e3d5566746870133e51321f852ccc20af5c7e7b2"},
+    {file = "rich-13.5.1-py3-none-any.whl", hash = "sha256:b97381b204a206e1be618f5e1215a57174a1a7732490b3bf6668cf41d30bc72d"},
+    {file = "rich-13.5.1.tar.gz", hash = "sha256:881653ee7037803559d8eae98f145e0a4c4b0ec3ff0300d2cc8d479c71fc6819"},
 ]
 
 [package.dependencies]
@@ -2068,18 +2068,18 @@ starlite = ["starlite (>=1.48.0)"]
 
 [[package]]
 name = "strawberry-graphql-django"
-version = "0.14.1"
+version = "0.15.0"
 description = "Strawberry GraphQL Django extension"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = ">=3.8,<4.0"
 files = [
-    {file = "strawberry_graphql_django-0.14.1-py3-none-any.whl", hash = "sha256:f4e521fe0a52074be6121b29b5c71e3220a6ab42b4185c41cb68704ecb681de2"},
-    {file = "strawberry_graphql_django-0.14.1.tar.gz", hash = "sha256:4a3106f3443416f3553540b76815fbb157853300fa0ca511253013b2d4183c35"},
+    {file = "strawberry_graphql_django-0.15.0-py3-none-any.whl", hash = "sha256:91b30971f95d2a754fa19ea24b1007f15c60c2cef8fabd88304cba3434f8bd7a"},
+    {file = "strawberry_graphql_django-0.15.0.tar.gz", hash = "sha256:a89dce650dc33f268550f847d9ca3ac54313ce08b1f3c60d8f5c859e3227a879"},
 ]
 
 [package.dependencies]
 Django = ">=3.2"
-strawberry-graphql = ">=0.194.1"
+strawberry-graphql = ">=0.198.0"
 
 [package.extras]
 debug-toolbar = ["django-debug-toolbar (>=3.4)"]
@@ -2557,4 +2557,4 @@ server = ["channels", "django", "django-fast-ratelimit", "django-manifest-loader
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "aab91657fc755e7ea5d760a990125c59e1cbe8ca57a76003a52b27660955ca45"
+content-hash = "2add515426352e073f44c210b85a2df257fa6ccf5887af4bac26db0593aa91b7"
