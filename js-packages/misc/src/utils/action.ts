@@ -7,6 +7,7 @@ import {
     utf8encoder,
 } from './encoding'
 import { findWorkingHashAlgorithms, hashObject, hashToken } from './hashing'
+import { createSignatureReferences } from './references'
 import * as SetOps from './set'
 
 const actionMatcher = /:(.*)/
@@ -350,11 +351,13 @@ export async function transformActions({
     hashAlgorithm,
     mapper: _mapper,
     config,
+    signKeys = [],
     ignoreCluster = true,
 }: {
     actions: (ActionInputEntry | CertificateInputEntry)[]
     hashAlgorithm: string
     config?: Interfaces.ConfigInterface
+    signKeys?: CryptoKey[]
     mapper?:
         | ReturnType<typeof generateActionMapper>
         | UnpackPromise<ReturnType<typeof generateActionMapper>>
@@ -417,7 +420,6 @@ export async function transformActions({
                     if (ignoreCluster) {
                         actions = actions.filter((val) => !val[1])
                     }
-                    console.log(actions)
                     hashes[newHash] = actions.map((val) => val[0])
                     if (
                         mapperval.oldHash &&
@@ -462,6 +464,17 @@ export async function transformActions({
                     hashes[activeHash] = []
                 }
                 hashes[activeHash]!.push(val.value.action)
+                if (val.value.action == 'auth') {
+                    val.value.signatures = (
+                        await createSignatureReferences(
+                            Buffer.from(
+                                `${val.value.requester}${val.value.challenge}`
+                            ).buffer,
+                            signKeys,
+                            hashAlgorithm
+                        )
+                    ).map((val) => val.extra)
+                }
                 // send updates
                 finishedActions.push({
                     existingHash: val.oldHash || undefined,

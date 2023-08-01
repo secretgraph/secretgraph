@@ -624,17 +624,6 @@ export async function updateOrCreateContentWithConfig({
       }
     | false
 > {
-    const {
-        hashes,
-        actions: finishedActions,
-        configUpdate,
-    } = await transformActions({
-        actions,
-        mapper,
-        config,
-        hashAlgorithm,
-    })
-
     const host = config.hosts[url]
 
     const content_key_or_token_hashes = new Set<string>(
@@ -646,7 +635,7 @@ export async function updateOrCreateContentWithConfig({
     const cluster_key_or_token_hashes = new Set(
         Object.keys(host?.clusters[cluster] || [])
     )
-    const privkeys = extractPrivKeys({
+    const _privkeys = extractPrivKeys({
         config,
         url,
         hashAlgorithm,
@@ -680,6 +669,18 @@ export async function updateOrCreateContentWithConfig({
             itemDomain: url,
         })
     }
+    const privkeys = await Promise.all(Object.values(_privkeys))
+    const {
+        hashes,
+        actions: finishedActions,
+        configUpdate,
+    } = await transformActions({
+        actions,
+        mapper,
+        config,
+        hashAlgorithm,
+        signKeys: privkeys,
+    })
 
     let result
     try {
@@ -687,7 +688,7 @@ export async function updateOrCreateContentWithConfig({
             client: itemClient,
             config,
             cluster,
-            privkeys: Object.values(privkeys),
+            privkeys,
             pubkeys: Object.values(pubkeys),
             hashAlgorithm,
             actions: finishedActions,
