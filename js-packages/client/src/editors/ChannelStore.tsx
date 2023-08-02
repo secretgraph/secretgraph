@@ -42,7 +42,6 @@ import { FastField, Field, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
-import { mapperToArray } from '../hooks'
 
 const rdfMimes = new Set(['text/turtle', 'application/trig', 'text/n3'])
 function jsonToNodes(currentElement: Array<any> | Object) {

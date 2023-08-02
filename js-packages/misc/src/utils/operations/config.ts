@@ -110,8 +110,8 @@ async function updateRemoteConfig({
     slotHash?: string
     node?: any
     config: Interfaces.ConfigInterface
-    privkeys: Parameters<typeof encryptSharedKey>[1]
-    pubkeys: Parameters<typeof createSignatureReferences>[1]
+    pubkeys: Parameters<typeof encryptSharedKey>[1]
+    privkeys: Parameters<typeof createSignatureReferences>[1]
     hashAlgorithm: string
 }): Promise<[Interfaces.ConfigInterface, number] | false> {
     if (!node) {
@@ -578,7 +578,7 @@ interface updateOrCreateContentWithConfigSharedParams {
 type updateOrCreateContentWithConfigReplacedParams =
     | 'client'
     | 'pubkeys'
-    | 'privatekeys'
+    | 'privkeys'
     | keyof updateOrCreateContentWithConfigSharedParams
 
 type updateOrCreateContentWithConfigParams = Omit<

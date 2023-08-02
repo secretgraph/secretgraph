@@ -26,8 +26,8 @@ export async function createKeys({
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
     cluster: string
-    privateKey?: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>
-    publicKey: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>
+    privateKey?: Interfaces.KeyInput
+    publicKey: Interfaces.KeyInput
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     privateTags?: Iterable<string | PromiseLike<string>>
@@ -78,8 +78,9 @@ export async function createKeys({
         )
     )
     privateTags.push(`key=${specialRef.extra}`)
+    const publicKeyArray = await unserializeToArrayBuffer(publicKey)
     const signatureReferencesPromise = createSignatureReferences(
-        publicKey,
+        publicKeyArray,
         options.privkeys ? options.privkeys : [],
         halgo.operationName
     )
@@ -115,7 +116,7 @@ export async function createKeys({
             privateTags,
             publicState,
             nonce: await serializeToBase64(nonce),
-            publicKey: new Blob([await unserializeToArrayBuffer(publicKey)]),
+            publicKey: new Blob([publicKeyArray]),
             privateKey: await encryptedPrivateKeyPromise,
             privateActions: options.privateActions
                 ? [...options.privateActions]
@@ -231,7 +232,7 @@ export async function updateKey({
         }
         completedKey = { data: await unserializeToArrayBuffer(updatedKey) }
         const signatureReferencesPromise = createSignatureReferences(
-            updatedKey,
+            completedKey.data,
             options.privkeys ? options.privkeys : [],
             options.hashAlgorithm
         )

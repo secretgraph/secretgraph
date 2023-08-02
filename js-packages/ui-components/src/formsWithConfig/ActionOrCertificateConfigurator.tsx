@@ -85,18 +85,23 @@ const ActionFields = React.memo(function ActionFields({
     path,
     disabled,
     isContent,
+    extraPrimes,
 }: {
     path: '' | `${string}.`
     isContent: boolean
     disabled?: boolean
+    extraPrimes: { [key: string]: any }
 }) {
     const { values, setValues } = useFormikContext<any>()
     const { value: action } = useField<any>(`${path}action`)[0]
     React.useEffect(() => {
         const validFields =
             Constants.validFields[
-                `${action}${isContent ? 'Content' : 'Cluster'}`
+                `${action || extraPrimes[`${path}action`]}${
+                    isContent ? 'Content' : 'Cluster'
+                }`
             ]
+
         if (!validFields) {
             console.error(
                 'Invalid: ',
@@ -113,10 +118,20 @@ const ActionFields = React.memo(function ActionFields({
                 hasChanges = true
             }
         }
+        for (const [key, primetype] of Object.entries(extraPrimes)) {
+            if (
+                primeFields(newValues, `${path}${key}`.split('.'), primetype)
+            ) {
+                hasChanges = true
+            }
+        }
         if (hasChanges) {
             setValues(newValues, false)
         }
     }, [action])
+    if (!action) {
+        return null
+    }
     switch (action) {
         case 'auth':
             return (
@@ -345,7 +360,7 @@ const TokenAndValidForSelector = React.memo(function TokenAndValidForSelector({
     hashAlgorithm: string
 }) {
     return (
-        <Grid container>
+        <Grid container spacing={1}>
             {tokens ? (
                 <Grid xs={12} sm={6}>
                     <FastField
@@ -484,6 +499,10 @@ function ActionConfigurator({
                         path={`${path}value.`}
                         disabled={disabled || locked}
                         isContent={isContent}
+                        extraPrimes={{
+                            [`${path}value.action`]: value.value.action,
+                            [`${path}validFor`]: value.validFor,
+                        }}
                     />
                 </Box>
             )}

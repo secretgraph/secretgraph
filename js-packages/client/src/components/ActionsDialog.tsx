@@ -22,6 +22,7 @@ import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
+import * as SetOps from '@secretgraph/misc/utils/set'
 import ActionConfigurator from '@secretgraph/ui-components/formsWithConfig/ActionOrCertificateConfigurator'
 import { HashEntry } from '@secretgraph/ui-components/misc'
 import { FastField, FieldArrayRenderProps, FormikProps } from 'formik'
@@ -37,7 +38,8 @@ interface ActionsDialogProps
     isContent: boolean
     isPublic: boolean
     fieldname?: string
-    validFor?: string
+    validFor?: string[]
+    validForOptions?: string[]
     preselectedValidFor?: string[]
     hashAlgorithm: string
     handleClose: () => void
@@ -61,14 +63,21 @@ export default function ActionsDialog({
     fieldname = 'actions',
     title = 'Access Control',
     preselectedValidFor = [],
+    validForOptions,
     validFor,
     ...dialogProps
 }: ActionsDialogProps) {
     const { config } = React.useContext(Contexts.InitializedConfig)
+    const validForSet = validFor ? new Set(validFor) : null
     const tokens = React.useMemo(() => {
         const tokens: string[] = []
         for (const action of form.values[fieldname]) {
-            if (validFor && !action.validFor.includes(validFor)) {
+            if (
+                validForSet &&
+                !SetOps.hasIntersection(validForSet, action.validFor || [])
+            ) {
+                if (!action.validFor)
+                    [console.warn('No validFor detected', action)]
                 continue
             }
             if (action.type == 'action') {
@@ -108,7 +117,12 @@ export default function ActionsDialog({
             if (value.delete) {
                 return
             }
-            if (validFor && !value.validFor.includes(validFor)) {
+            if (
+                validForSet &&
+                !SetOps.hasIntersection(validForSet, value.validFor || [])
+            ) {
+                if (!value.validFor)
+                    [console.warn('No validFor detected', value)]
                 return
             }
             if (value.type == 'action') {
@@ -188,6 +202,11 @@ export default function ActionsDialog({
                                 <Typography component="span">
                                     Actions
                                 </Typography>
+                                <IconButton
+                                    onClick={() => setSelectedItem(undefined)}
+                                >
+                                    <AddIcon />
+                                </IconButton>
                                 <Divider />
                             </summary>
 
@@ -291,6 +310,7 @@ export default function ActionsDialog({
                             hashAlgorithm={hashAlgorithm}
                             isContent={isContent}
                             mode={isPublic ? 'public' : 'default'}
+                            validForOptions={validForOptions}
                             value={
                                 selectedItem
                                     ? selectedItem.value

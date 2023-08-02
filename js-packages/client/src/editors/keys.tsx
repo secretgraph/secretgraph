@@ -69,7 +69,7 @@ import * as React from 'react'
 import ActionsDialog from '../components/ActionsDialog'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import * as Contexts from '../contexts'
-import { mapperToArray } from '../hooks'
+import { mappersToArray } from '../hooks'
 
 async function loadKeys({
     data,
@@ -340,7 +340,7 @@ function UpdateKeysForm({
     disabled = disabled || viewOnly || isSubmitting
     return (
         <Form>
-            <FieldArray name="actionsPrivateKey">
+            <FieldArray name="actions">
                 {({ remove, replace, push, form }: FieldArrayRenderProps) => {
                     return (
                         <ActionsDialog
@@ -356,13 +356,16 @@ function UpdateKeysForm({
                             open={mainCtx.openDialog == 'private'}
                             isContent
                             isPublic={false}
-                            fieldname="actionsPrivateKey"
+                            fieldname="actions"
                             title="Access Control of Private Key"
+                            preselectedValidFor={['PrivateKey']}
+                            validFor={['PrivateKey']}
+                            validForOptions={['PrivateKey']}
                         />
                     )
                 }}
             </FieldArray>
-            <FieldArray name="actionsPublicKey">
+            <FieldArray name="actions">
                 {({ remove, replace, push, form }: FieldArrayRenderProps) => {
                     return (
                         <ActionsDialog
@@ -378,8 +381,11 @@ function UpdateKeysForm({
                             open={mainCtx.openDialog == 'public'}
                             isContent
                             isPublic={values.state == 'public'}
-                            fieldname="actionsPublicKey"
+                            fieldname="actions"
                             title="Access Control of Public Key"
+                            preselectedValidFor={['PublicKey']}
+                            validFor={['PublicKey']}
+                            validForOptions={['PublicKey']}
                         />
                     )
                 }}
@@ -838,12 +844,13 @@ const KeysUpdate = ({
         Contexts.InitializedConfig
     )
 
-    const actionsPublicKey = mapperToArray(publicKey?.mapper || {}, {
-        lockExisting: !!mainCtx.item,
-    })
-    const actionsPrivateKey = mapperToArray(privateKey?.mapper || {}, {
-        lockExisting: !!mainCtx.item,
-    })
+    const actions = mappersToArray(
+        [publicKey?.mapper || {}, privateKey?.mapper || {}],
+        {
+            lockExisting: !!mainCtx.item,
+            validFor: ['PublicKey', 'PrivateKey'],
+        }
+    )
     const initialValues = {
         cluster: mainCtx.editCluster,
         state: publicKey?.nodeData?.state,
@@ -863,8 +870,7 @@ const KeysUpdate = ({
               ).toString('base64')}\n-----END PRIVATE KEY-----`
             : '',
         signWith: privateKey ? privateKey.signWith : false,
-        actionsPrivateKey,
-        actionsPublicKey,
+        actions,
     }
     return (
         <Formik
@@ -879,10 +885,11 @@ const KeysUpdate = ({
                         actions: finishedActionsPublicKey,
                         configUpdate: configUpdatePublicKey,
                     } = await transformActions({
-                        actions: values.actionsPrivateKey,
+                        actions: values.actions,
                         mapper: privateKey?.mapper,
                         config,
                         hashAlgorithm: hashAlgorithmsWorking[0],
+                        validFor: 'PublicKey',
                     })
                     const keyParams = {
                         name: 'RSA-OAEP',
@@ -959,10 +966,11 @@ const KeysUpdate = ({
                         configUpdate: configUpdatePrivateKey,
                     } = privKey
                         ? await transformActions({
-                              actions: values.actionsPrivateKey,
+                              actions: values.actions,
                               mapper: privateKey?.mapper,
                               config,
                               hashAlgorithm: hashAlgorithmsWorking[0],
+                              validFor: 'PrivateKey',
                           })
                         : {
                               actions: [],

@@ -26,8 +26,8 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import { addActionsMutation } from '@secretgraph/graphql-queries/node'
 import {
     ActionInputEntry,
-    CertificateEntry,
     CertificateInputEntry,
+    CertificateMapperEntry,
     transformActions,
 } from '@secretgraph/misc/utils/action'
 import {

@@ -45,7 +45,7 @@ import * as React from 'react'
 import ActionsDialog from '../components/ActionsDialog'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import * as Contexts from '../contexts'
-import { mapperToArray } from '../hooks'
+import { mappersToArray } from '../hooks'
 
 type TimeEntryData = {
     start: string
@@ -184,7 +184,7 @@ function InnerWorkday({
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
-    const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
+    const actions = mappersToArray([mapper], { lockExisting: !!mainCtx.item })
 
     const initialValues = {
         actions,

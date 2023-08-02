@@ -59,7 +59,7 @@ import ActionsDialog from '../../components/ActionsDialog'
 import ClusterSelectViaUrl from '../../components/formsWithContext/ClusterSelectViaUrl'
 import SimpleShareDialog from '../../components/share/SimpleShareDialog'
 import * as Contexts from '../../contexts'
-import { mapperToArray } from '../../hooks'
+import { mappersToArray } from '../../hooks'
 import { Recorder, TextFileAdapter, ViewWidget, htmlIsEmpty } from './misc'
 
 export interface FileInternProps {
@@ -104,7 +104,7 @@ export function InnerFile({
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     let name: string = mainCtx.cloneData?.name || ''
 
-    const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
+    const actions = mappersToArray([mapper], { lockExisting: !!mainCtx.item })
     let encryptName =
         mainCtx.cloneData?.encryptName !== undefined
             ? mainCtx.cloneData.encryptName

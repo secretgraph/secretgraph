@@ -39,7 +39,7 @@ export async function createContent({
     state: string
     value: Interfaces.CryptoGCMInInterface['data']
     pubkeys: Parameters<typeof encryptSharedKey>[1]
-    privkeys?: Parameters<typeof createSignatureReferences>[1]
+    privkeys: Parameters<typeof createSignatureReferences>[1]
     tags: Iterable<string | PromiseLike<string>>
     contentHash?: string | null
     references?: Iterable<Interfaces.ReferenceInterface> | null

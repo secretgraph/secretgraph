@@ -111,9 +111,9 @@ export default function ClusterSelect<
             }}
             renderOption={(props, option: string) => {
                 let roption = labelMap[option]
-                let rawId = option
+                let parsedId = option
                 try {
-                    rawId = (fromGraphqlId(option) as [string, string])[1]
+                    parsedId = (fromGraphqlId(option) as [string, string])[1]
                 } catch (e) {}
                 if (roption && roption.name) {
                     return (
@@ -130,7 +130,7 @@ export default function ClusterSelect<
                                     }}
                                     variant="body2"
                                 >
-                                    {rawId}
+                                    {parsedId}
                                 </Typography>
                             </div>
                         </li>
@@ -138,7 +138,7 @@ export default function ClusterSelect<
                 } else {
                     return (
                         <li title={roption?.description || ''} {...props}>
-                            {rawId}
+                            {parsedId}
                         </li>
                     )
                 }

@@ -50,7 +50,7 @@ import * as React from 'react'
 import ActionsDialog from '../components/ActionsDialog'
 import SimpleShareDialog from '../components/share/SimpleShareDialog'
 import * as Contexts from '../contexts'
-import { mapperToArray } from '../hooks'
+import { mappersToArray } from '../hooks'
 
 async function extractInfo({
     config,
@@ -125,7 +125,7 @@ const ClusterIntern = ({
         updateMainCtx({ title: props.name || '' })
     }, [props.name])
 
-    const actions = mapperToArray(mapper, {
+    const actions = mappersToArray([mapper], {
         lockExisting: !!mainCtx.item,
         readonlyCluster: false,
     })
@@ -655,6 +655,7 @@ const CreateCluster = () => {
                             actions: new Set(['manage,true']),
                             system: false,
                             hasUpdate: true,
+                            validFor: [],
                         },
                     },
                     hashAlgorithm: hashAlgorithms[0],

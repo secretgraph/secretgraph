@@ -2,69 +2,30 @@ import { UnpackPromise, ValueType } from '@secretgraph/misc/typing'
 import {
     ActionInputEntry,
     CertificateInputEntry,
+    annotateAndMergeMappers,
     generateActionMapper,
+    mapperToArray,
 } from '@secretgraph/misc/utils/action'
 import { useEffect, useMemo, useState } from 'react'
 
-export function mapperToArray(
-    mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>,
+export function mappersToArray(
+    mappers: UnpackPromise<ReturnType<typeof generateActionMapper>>[],
     {
         lockExisting = true,
         readonlyCluster = true,
-        validForActions,
-        validForCertificates,
+        validFor,
     }: {
         lockExisting?: boolean
         readonlyCluster?: boolean
-        validForActions?: string[]
-        validForCertificates?: string[]
+        validFor?: string[]
     }
 ) {
     return useMemo(() => {
-        const elements: (ActionInputEntry | CertificateInputEntry)[] = []
-        Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
-            const entry = mapper[params.newHash]
-            if (entry.type == 'action') {
-                for (const val of entry.actions) {
-                    const [actionType, isCluster] = val.split(',', 2)
-                    elements.push({
-                        type: 'action',
-                        data: params.data,
-                        newHash: params.newHash,
-                        oldHash: params.oldHash || undefined,
-                        start: '',
-                        stop: '',
-                        note: entry.note,
-                        value: {
-                            action: actionType,
-                        },
-                        update: entry.hasUpdate,
-                        delete: false,
-                        readonly:
-                            entry.system ||
-                            (isCluster == 'true' && readonlyCluster),
-                        locked: lockExisting,
-                        validFor: validForActions || [],
-                    })
-                }
-            } else {
-                elements.push({
-                    type: 'certificate',
-                    data: params.data,
-                    newHash: params.newHash,
-                    oldHash: params.oldHash || undefined,
-                    note: entry.note,
-                    update: entry.hasUpdate,
-                    signWith: entry.signWith,
-                    delete: false,
-                    readonly: false,
-                    locked: true,
-                    validFor: validForCertificates || [],
-                })
-            }
+        return mapperToArray(annotateAndMergeMappers({ mappers, validFor }), {
+            lockExisting,
+            readonlyCluster,
         })
-        return elements
-    }, [mapper])
+    }, mappers)
 }
 
 export function suspendPromiseFn<T>(

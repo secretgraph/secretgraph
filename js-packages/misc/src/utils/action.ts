@@ -1,6 +1,6 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
-import { RequireAttributes, UnpackPromise } from '../typing'
+import { RequireAttributes, UnpackPromise, ValueType } from '../typing'
 import {
     serializeToBase64,
     unserializeToArrayBuffer,
@@ -12,7 +12,7 @@ import * as SetOps from './set'
 
 const actionMatcher = /:(.*)/
 
-export interface CertificateEntry {
+export interface CertificateMapperEntry {
     type: 'certificate'
     signWith: boolean
     newHash: string
@@ -20,9 +20,10 @@ export interface CertificateEntry {
     note: string
     data: string
     hasUpdate: boolean
+    validFor: string[]
 }
 export interface ActionMapperEntry
-    extends Omit<CertificateEntry, 'type' | 'signWith'> {
+    extends Omit<CertificateMapperEntry, 'type' | 'signWith'> {
     type: 'action'
     // name, is cluster (unknown is also false)
     actions: Set<`${string},${'true' | 'false'}`>
@@ -73,7 +74,9 @@ export async function generateActionMapper({
     unknownTokens?: string[] // eg. tokens in url
     unknownKeyhashes?: string[] // eg tags
     hashAlgorithms: string[]
-}): Promise<{ [newHash: string]: ActionMapperEntry | CertificateEntry }> {
+}): Promise<{
+    [newHash: string]: ActionMapperEntry | CertificateMapperEntry
+}> {
     const hashalgos = findWorkingHashAlgorithms(hashAlgorithms)
     const tokenToHash: Record<string, string> = {}
     const upgradeHash: Record<string, string> = {}
@@ -198,7 +201,7 @@ export async function generateActionMapper({
     await Promise.all(updateHashOps)
 
     const actions: {
-        [newHash: string]: ActionMapperEntry | CertificateEntry
+        [newHash: string]: ActionMapperEntry | CertificateMapperEntry
     } = {}
 
     const signWithHashes = new Set(config.signWith[config.slots[0]] || [])
@@ -240,6 +243,7 @@ export async function generateActionMapper({
                     system: data.system || false,
                     actions: actionsRaw,
                     hasUpdate: hasActionUpdate || hasUpdate,
+                    validFor: [],
                 }
             } else if (config.tokens[hash]) {
                 const data = config.tokens[hash]
@@ -252,6 +256,7 @@ export async function generateActionMapper({
                     system: data.system || false,
                     actions: actionsRaw,
                     hasUpdate: hasActionUpdate || hasUpdate,
+                    validFor: [],
                 }
             }
             if (config.certificates[upgradeHash[hash]]) {
@@ -264,6 +269,7 @@ export async function generateActionMapper({
                     data: data.data,
                     signWith: signWithHashes.has(upgradeHash[hash]),
                     hasUpdate,
+                    validFor: [],
                 }
             } else if (config.certificates[hash]) {
                 const data = config.certificates[hash]
@@ -275,6 +281,7 @@ export async function generateActionMapper({
                     data: data.data,
                     signWith: signWithHashes.has(hash),
                     hasUpdate,
+                    validFor: [],
                 }
             }
         }
@@ -312,6 +319,7 @@ export async function generateActionMapper({
                     system: data.system || false,
                     actions: new Set(['other,false']),
                     hasUpdate: !data.data,
+                    validFor: [],
                 }
             } else if (config.tokens[hash]) {
                 const data = config.tokens[hash]
@@ -324,6 +332,7 @@ export async function generateActionMapper({
                     system: data.system || false,
                     actions: new Set(['other,false']),
                     hasUpdate: !data.data,
+                    validFor: [],
                 }
             } else {
                 actions[upgradeHash[hash]] = {
@@ -335,6 +344,7 @@ export async function generateActionMapper({
                     system: false,
                     actions: new Set(['other,false']),
                     hasUpdate: true,
+                    validFor: [],
                 }
             }
         } else if (
@@ -345,6 +355,97 @@ export async function generateActionMapper({
         }
     }
     return actions
+}
+
+export function annotateAndMergeMappers({
+    mappers,
+    validFor,
+}: {
+    mappers: UnpackPromise<ReturnType<typeof generateActionMapper>>[]
+    validFor?: string[]
+}) {
+    if (validFor && mappers.length != validFor.length) {
+        throw Error('Mismatch between length mappers and length validFor')
+    }
+    const newMapper: UnpackPromise<ReturnType<typeof generateActionMapper>> =
+        {}
+    for (const mapper of mappers) {
+        for (const entry of Object.entries(mapper)) {
+            const newValidFor: string[] = []
+            if (validFor) {
+                for (let index = 0; index < mappers.length; index++) {
+                    if (mappers[index][entry[0]]) {
+                        newValidFor.push(validFor[index])
+                    }
+                }
+                newMapper[`${entry[0]}:${newValidFor.join(',')}`] = {
+                    ...entry[1],
+                    validFor: newValidFor,
+                }
+            } else {
+                newMapper[
+                    `${entry[0]}:${(entry[1].validFor || []).join(',')}`
+                ] = entry[1]
+            }
+        }
+    }
+
+    return newMapper
+}
+
+export function mapperToArray(
+    mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>,
+    {
+        lockExisting = true,
+        readonlyCluster = true,
+    }: {
+        lockExisting?: boolean
+        readonlyCluster?: boolean
+    }
+) {
+    const elements: (ActionInputEntry | CertificateInputEntry)[] = []
+    Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
+        const entry = mapper[params.newHash]
+        if (entry.type == 'action') {
+            for (const val of entry.actions) {
+                const [actionType, isCluster] = val.split(',', 2)
+                elements.push({
+                    type: 'action',
+                    data: params.data,
+                    newHash: params.newHash,
+                    oldHash: params.oldHash || undefined,
+                    start: '',
+                    stop: '',
+                    note: entry.note,
+                    value: {
+                        action: actionType,
+                    },
+                    update: entry.hasUpdate,
+                    delete: false,
+                    readonly:
+                        entry.system ||
+                        (isCluster == 'true' && readonlyCluster),
+                    locked: lockExisting,
+                    validFor: entry.validFor,
+                })
+            }
+        } else {
+            elements.push({
+                type: 'certificate',
+                data: params.data,
+                newHash: params.newHash,
+                oldHash: params.oldHash || undefined,
+                note: entry.note,
+                update: entry.hasUpdate,
+                signWith: entry.signWith,
+                delete: false,
+                readonly: false,
+                locked: true,
+                validFor: entry.validFor,
+            })
+        }
+    })
+    return elements
 }
 
 export async function transformActions({
@@ -393,10 +494,20 @@ export async function transformActions({
                     ? await hashObject(val.data, hashAlgorithm)
                     : await hashToken(val.data, hashAlgorithm))
             // find mapper value
-            const mapperval =
+            let mapperval =
                 mapper && mapper[newHash] ? mapper[newHash] : undefined
-            // delete action
+            if (mapper && !mapperval && newHash) {
+                const key = Object.keys(mapper).find((key) =>
+                    key.startsWith(newHash) && validFor
+                        ? key.includes(validFor)
+                        : true
+                )
+                if (key) {
+                    mapperval = mapper[key]
+                }
+            }
             if (val.delete) {
+                // delete action
                 if (!val.oldHash) {
                     throw Error('requires oldHash')
                 }

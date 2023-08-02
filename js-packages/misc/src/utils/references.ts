@@ -405,7 +405,7 @@ async function createSignatureReferences_helper(
         | Interfaces.CryptoHashPair
         | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>,
     hashalgo: string,
-    content: ArrayBuffer | PromiseLike<ArrayBuffer>
+    content: ArrayBuffer
 ) {
     const _x = await key
     let signkey: Interfaces.KeyInput, hash: string | Promise<string>
@@ -437,7 +437,7 @@ async function createSignatureReferences_helper(
                     },
                     'privateKey'
                 ),
-                await content
+                content
             )
         ),
         hash: await hash,
@@ -445,7 +445,7 @@ async function createSignatureReferences_helper(
 }
 
 export async function createSignatureReferences(
-    content: Parameters<typeof unserializeToArrayBuffer>[0],
+    content: ArrayBuffer,
     privkeys: (
         | Interfaces.KeyInput
         | Interfaces.CryptoHashPair
@@ -460,18 +460,16 @@ export async function createSignatureReferences(
     }
     for (const privKey of privkeys) {
         references.push(
-            createSignatureReferences_helper(
-                privKey,
-                hashalgo,
-                unserializeToArrayBuffer(content)
-            ).then(({ signature, hash }): Interfaces.ReferenceInterface => {
-                return {
-                    target: hash,
-                    group: 'signature',
-                    extra: `${hashValue.serializedName}:${signature}`,
-                    deleteRecursive: 'FALSE',
+            createSignatureReferences_helper(privKey, hashalgo, content).then(
+                ({ signature, hash }): Interfaces.ReferenceInterface => {
+                    return {
+                        target: hash,
+                        group: 'signature',
+                        extra: `${hashValue.serializedName}:${signature}`,
+                        deleteRecursive: 'FALSE',
+                    }
                 }
-            })
+            )
         )
     }
 

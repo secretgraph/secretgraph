@@ -52,7 +52,7 @@ import ConfigProtected from '../components/ConfigProtected'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import ConfigShareDialog from '../components/share/ConfigShareDialog'
 import * as Contexts from '../contexts'
-import { mapperToArray } from '../hooks'
+import { mappersToArray } from '../hooks'
 
 interface InnerConfigProps {
     disabled?: boolean
@@ -82,7 +82,7 @@ function InnerConfig({
     const { config, updateConfig } = React.useContext(
         Contexts.InitializedConfig
     )
-    const actions = mapperToArray(mapper, { lockExisting: !!mainCtx.item })
+    const actions = mappersToArray([mapper], { lockExisting: !!mainCtx.item })
 
     const initialValues = {
         slots: thisConfig?.slots || [],
