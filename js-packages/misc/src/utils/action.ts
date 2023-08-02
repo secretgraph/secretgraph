@@ -371,21 +371,43 @@ export function annotateAndMergeMappers({
         {}
     for (const mapper of mappers) {
         for (const entry of Object.entries(mapper)) {
-            const newValidFor: string[] = []
-            if (validFor) {
-                for (let index = 0; index < mappers.length; index++) {
-                    if (mappers[index][entry[0]]) {
-                        newValidFor.push(validFor[index])
+            if (entry[1].type == 'certificate') {
+                if (newMapper[entry[0]]) {
+                    continue
+                }
+                const newValidFor: string[] = []
+                if (validFor) {
+                    for (let index = 0; index < mappers.length; index++) {
+                        if (mappers[index][entry[0]]) {
+                            newValidFor.push(validFor[index])
+                        }
+                    }
+                    newMapper[entry[0]] = {
+                        ...entry[1],
+                        validFor: newValidFor,
                     }
                 }
-                newMapper[`${entry[0]}:${newValidFor.join(',')}`] = {
-                    ...entry[1],
-                    validFor: newValidFor,
-                }
             } else {
-                newMapper[
-                    `${entry[0]}:${(entry[1].validFor || []).join(',')}`
-                ] = entry[1]
+                const newValidFor: string[] = []
+                const actions = [...entry[1].actions]
+                actions.sort()
+                const key = `${entry[0]},${actions.join(',')}`
+                if (newMapper[key]) {
+                    continue
+                }
+                if (validFor) {
+                    for (let index = 0; index < mappers.length; index++) {
+                        if (mappers[index][entry[0]]) {
+                            newValidFor.push(validFor[index])
+                        }
+                    }
+                    newMapper[key] = {
+                        ...entry[1],
+                        validFor: newValidFor,
+                    }
+                } else {
+                    newMapper[key] = entry[1]
+                }
             }
         }
     }
@@ -404,16 +426,22 @@ export function mapperToArray(
     }
 ) {
     const elements: (ActionInputEntry | CertificateInputEntry)[] = []
-    Object.values<ValueType<typeof mapper>>(mapper).forEach((params) => {
-        const entry = mapper[params.newHash]
+    Object.values<ValueType<typeof mapper>>(mapper).forEach((value) => {
+        const key = Object.keys(mapper).find((key) =>
+            key.startsWith(value.newHash)
+        )
+        if (!key) {
+            return
+        }
+        const entry = mapper[key]
         if (entry.type == 'action') {
             for (const val of entry.actions) {
                 const [actionType, isCluster] = val.split(',', 2)
                 elements.push({
                     type: 'action',
-                    data: params.data,
-                    newHash: params.newHash,
-                    oldHash: params.oldHash || undefined,
+                    data: value.data,
+                    newHash: value.newHash,
+                    oldHash: value.oldHash || undefined,
                     start: '',
                     stop: '',
                     note: entry.note,
@@ -432,9 +460,9 @@ export function mapperToArray(
         } else {
             elements.push({
                 type: 'certificate',
-                data: params.data,
-                newHash: params.newHash,
-                oldHash: params.oldHash || undefined,
+                data: value.data,
+                newHash: value.newHash,
+                oldHash: value.oldHash || undefined,
                 note: entry.note,
                 update: entry.hasUpdate,
                 signWith: entry.signWith,
@@ -496,11 +524,11 @@ export async function transformActions({
             // find mapper value
             let mapperval =
                 mapper && mapper[newHash] ? mapper[newHash] : undefined
-            if (mapper && !mapperval && newHash) {
-                const key = Object.keys(mapper).find((key) =>
-                    key.startsWith(newHash) && validFor
-                        ? key.includes(validFor)
-                        : true
+            if (mapper && !mapperval && val.type == 'action') {
+                const key = Object.keys(mapper).find(
+                    (key) =>
+                        key.startsWith(newHash) &&
+                        key.includes(`,${val.value.action}`)
                 )
                 if (key) {
                     mapperval = mapper[key]
