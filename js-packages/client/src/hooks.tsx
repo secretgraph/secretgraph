@@ -4,14 +4,21 @@ import {
     CertificateInputEntry,
     generateActionMapper,
 } from '@secretgraph/misc/utils/action'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 export function mapperToArray(
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>,
     {
         lockExisting = true,
         readonlyCluster = true,
-    }: { lockExisting?: boolean; readonlyCluster?: boolean }
+        validForActions,
+        validForCertificates,
+    }: {
+        lockExisting?: boolean
+        readonlyCluster?: boolean
+        validForActions?: string[]
+        validForCertificates?: string[]
+    }
 ) {
     return useMemo(() => {
         const elements: (ActionInputEntry | CertificateInputEntry)[] = []
@@ -37,6 +44,7 @@ export function mapperToArray(
                             entry.system ||
                             (isCluster == 'true' && readonlyCluster),
                         locked: lockExisting,
+                        validFor: validForActions || [],
                     })
                 }
             } else {
@@ -51,6 +59,7 @@ export function mapperToArray(
                     delete: false,
                     readonly: false,
                     locked: true,
+                    validFor: validForCertificates || [],
                 })
             }
         })

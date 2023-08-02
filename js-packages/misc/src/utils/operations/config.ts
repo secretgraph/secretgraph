@@ -569,6 +569,7 @@ interface updateOrCreateContentWithConfigSharedParams {
     actions: Parameters<typeof transformActions>[0]['actions']
     hashAlgorithm: string
     authorization: string[]
+    validFor?: string
     groupKeys?: {
         [name: string]: { [hash: string]: Promise<CryptoKey> }
     }
@@ -613,6 +614,7 @@ export async function updateOrCreateContentWithConfig({
     updateId,
     value,
     groupKeys,
+    validFor,
     ...options
 }: updateOrCreateContentWithConfigParams): Promise<
     | {
@@ -680,6 +682,7 @@ export async function updateOrCreateContentWithConfig({
         config,
         hashAlgorithm,
         signKeys: privkeys,
+        validFor,
     })
 
     let result

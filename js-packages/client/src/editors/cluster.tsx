@@ -35,6 +35,8 @@ import {
     updateConfigRemoteReducer,
 } from '@secretgraph/misc/utils/operations'
 import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
+import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
+import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import {
     FastField,
     Field,
@@ -45,8 +47,6 @@ import {
 } from 'formik'
 import * as React from 'react'
 
-import FormikCheckboxWithLabel from '../../../ui-components/src/formik/FormikCheckboxWithLabel'
-import FormikTextField from '../../../ui-components/src/formik/FormikTextField'
 import ActionsDialog from '../components/ActionsDialog'
 import SimpleShareDialog from '../components/share/SimpleShareDialog'
 import * as Contexts from '../contexts'

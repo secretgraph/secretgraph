@@ -39,6 +39,7 @@ export interface CertificateInputEntry {
     delete?: boolean
     readonly?: boolean
     locked: true
+    validFor: string[]
 }
 
 export interface ActionInputEntry
@@ -353,6 +354,7 @@ export async function transformActions({
     config,
     signKeys = [],
     ignoreCluster = true,
+    validFor,
 }: {
     actions: (ActionInputEntry | CertificateInputEntry)[]
     hashAlgorithm: string
@@ -362,6 +364,7 @@ export async function transformActions({
         | ReturnType<typeof generateActionMapper>
         | UnpackPromise<ReturnType<typeof generateActionMapper>>
     ignoreCluster?: boolean
+    validFor?: string
 }) {
     const mapper = await _mapper
     const finishedActions: Interfaces.ActionInterface[] = []
@@ -378,6 +381,9 @@ export async function transformActions({
     await Promise.all(
         actions.map(async (val) => {
             if (val.readonly) {
+                return
+            }
+            if (validFor && !val.validFor.includes(validFor)) {
                 return
             }
             // autogenerate newHash if not available
@@ -502,7 +508,7 @@ export async function transformActions({
                 ) {
                     if (!config) {
                         throw Error(
-                            'no config specified but certificate signWIth upgrades'
+                            'no config specified but certificate signWith upgrades'
                         )
                     }
                     if (val.signWith) {

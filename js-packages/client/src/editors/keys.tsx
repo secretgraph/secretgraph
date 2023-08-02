@@ -49,7 +49,9 @@ import { createKeys, updateKey } from '@secretgraph/misc/utils/operations/key'
 import { deleteNodes } from '@secretgraph/misc/utils/operations/node'
 import { extractPubKeysReferences } from '@secretgraph/misc/utils/references'
 import * as SetOps from '@secretgraph/misc/utils/set'
+import FormikTextField from '@secretgraph/ui-components//formik/FormikTextField'
 import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
+import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
 import StateSelect from '@secretgraph/ui-components/forms/StateSelect'
 import { saveAs } from 'file-saver'
 import {
@@ -64,8 +66,6 @@ import {
 } from 'formik'
 import * as React from 'react'
 
-import FormikCheckboxWithLabel from '../../../ui-components/src/formik/FormikCheckboxWithLabel'
-import FormikTextField from '../../../ui-components/src/formik/FormikTextField'
 import ActionsDialog from '../components/ActionsDialog'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import * as Contexts from '../contexts'

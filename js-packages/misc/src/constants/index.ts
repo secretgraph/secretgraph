@@ -13,8 +13,8 @@ export const validNotLoggedInActions = new Set<MainContextInterface['action']>(
 )
 
 export const validFields: { [type: string]: { [key: string]: any } } = {
-    authContent: {},
-    authCluster: {},
+    authContent: { requester: '', challenge: '' },
+    authCluster: { requester: '', challenge: '' },
     viewContent: { fetch: false, allowPeek: false },
     viewCluster: { allowPeek: false },
     deleteContent: {},

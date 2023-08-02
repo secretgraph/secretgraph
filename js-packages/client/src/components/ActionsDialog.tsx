@@ -22,11 +22,12 @@ import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
+import ActionConfigurator from '@secretgraph/ui-components/formsWithConfig/ActionOrCertificateConfigurator'
 import { HashEntry } from '@secretgraph/ui-components/misc'
 import { FastField, FieldArrayRenderProps, FormikProps } from 'formik'
 import * as React from 'react'
 
-import ActionConfigurator from './formsWithContext/ActionOrCertificateConfigurator'
+import * as Contexts from '../contexts'
 
 interface ActionsDialogProps
     extends Pick<FieldArrayRenderProps, 'remove' | 'replace' | 'push'>,
@@ -36,6 +37,8 @@ interface ActionsDialogProps
     isContent: boolean
     isPublic: boolean
     fieldname?: string
+    validFor?: string
+    preselectedValidFor?: string[]
     hashAlgorithm: string
     handleClose: () => void
     form: FormikProps<{
@@ -57,11 +60,17 @@ export default function ActionsDialog({
     fullWidth = true,
     fieldname = 'actions',
     title = 'Access Control',
+    preselectedValidFor = [],
+    validFor,
     ...dialogProps
 }: ActionsDialogProps) {
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const tokens = React.useMemo(() => {
         const tokens: string[] = []
         for (const action of form.values[fieldname]) {
+            if (validFor && !action.validFor.includes(validFor)) {
+                continue
+            }
             if (action.type == 'action') {
                 tokens.push(action.value.data)
             }
@@ -97,6 +106,9 @@ export default function ActionsDialog({
         }
         form.values[fieldname].forEach((value, index) => {
             if (value.delete) {
+                return
+            }
+            if (validFor && !value.validFor.includes(validFor)) {
                 return
             }
             if (value.type == 'action') {
@@ -270,6 +282,7 @@ export default function ActionsDialog({
                         key={`isSelected${!!selectedItem}`}
                     >
                         <ActionConfigurator
+                            config={config}
                             path={
                                 selectedItem
                                     ? `${fieldname}.${selectedItem.index}.`
@@ -293,6 +306,7 @@ export default function ActionsDialog({
                                           data: '',
                                           note: '',
                                           newHash: '',
+                                          validFor: preselectedValidFor,
                                       }
                             }
                             handleNoteChange={handleNoteChange}

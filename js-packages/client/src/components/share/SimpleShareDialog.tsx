@@ -38,13 +38,13 @@ import { hashToken } from '@secretgraph/misc/utils/hashing'
 import * as SetOps from '@secretgraph/misc/utils/set'
 import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
 import TokenSelect from '@secretgraph/ui-components/forms/TokenSelect'
+import ActionOrCertificateConfigurator from '@secretgraph/ui-components/formsWithConfig/ActionOrCertificateConfigurator'
 import { HashEntry } from '@secretgraph/ui-components/misc'
 import { FastField, Form, Formik } from 'formik'
 import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
-import ActionOrCertificateConfigurator from '../formsWithContext/ActionOrCertificateConfigurator'
 
 const _update_set = new Set(['update', 'manage'])
 function SharePanel({ url }: { url: string }) {
@@ -119,6 +119,7 @@ function NewPanel({
     disabled?: boolean
 }) {
     const { mainCtx } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const { itemClient } = React.useContext(Contexts.Clients)
     const [ntokens, setNTokens] = React.useState<string[]>([])
     const actions: ActionInputEntry[] = []
@@ -134,6 +135,7 @@ function NewPanel({
             type: 'action',
             newHash: '',
             locked: false,
+            validFor: [],
         })
     } else {
         actions.push({
@@ -147,6 +149,7 @@ function NewPanel({
             type: 'action',
             newHash: '',
             locked: false,
+            validFor: [],
         })
     }
     const url = React.useMemo(() => {
@@ -200,6 +203,7 @@ function NewPanel({
                     return (
                         <Form>
                             <ActionOrCertificateConfigurator
+                                config={config}
                                 hashAlgorithm={hashAlgorithm}
                                 path="actions.0."
                                 disabled={disabled}
@@ -217,6 +221,7 @@ function NewPanel({
                                     note: '',
                                     newHash: '',
                                     value: values.actions[0].value,
+                                    validFor: [],
                                 }}
                             />
                             <FastField
@@ -331,6 +336,7 @@ function AuthPanel({
                             data: token,
                             newHash,
                             type: 'action',
+                            validFor: [],
                         })
                     }
                     if (values.updateActive) {
@@ -339,6 +345,7 @@ function AuthPanel({
                             data: token,
                             newHash,
                             type: 'action',
+                            validFor: [],
                         })
                     }
                     const { actions: finishedActions } =
@@ -381,6 +388,7 @@ function AuthPanel({
                                     </div>
                                     {values.viewActive ? (
                                         <ActionOrCertificateConfigurator
+                                            config={config}
                                             hashAlgorithm={hashAlgorithm}
                                             path="view."
                                             disabled={disabled}
@@ -399,6 +407,7 @@ function AuthPanel({
                                                 data: values.token || '',
                                                 note: '',
                                                 newHash: '',
+                                                validFor: [],
                                             }}
                                         />
                                     ) : null}
@@ -413,6 +422,7 @@ function AuthPanel({
                             </div>
                             {values.updateActive ? (
                                 <ActionOrCertificateConfigurator
+                                    config={config}
                                     hashAlgorithm={hashAlgorithm}
                                     path="update."
                                     disabled={disabled}
@@ -431,6 +441,7 @@ function AuthPanel({
                                         data: '',
                                         note: '',
                                         newHash: '',
+                                        validFor: [],
                                     }}
                                 />
                             ) : null}
@@ -462,6 +473,7 @@ function OverviewPanel({
     tokens,
     disabled,
     hashAlgorithm,
+    validFor,
     ...props
 }: Exclude<TabPanelProps, 'children'> & {
     shareUrl: string
@@ -471,7 +483,9 @@ function OverviewPanel({
     actions: (ActionInputEntry | CertificateInputEntry)[]
     hashAlgorithm: string
     tokens: string[]
+    validFor?: string
 }) {
+    const { config } = React.useContext(Contexts.InitializedConfig)
     const [selectedItem, setSelectedItem] = React.useState<
         { value: ActionInputEntry; index: number } | undefined
     >(undefined)
@@ -481,7 +495,10 @@ function OverviewPanel({
             index: number
         }[] = []
         actions.forEach((value, index) => {
-            if (value.delete) {
+            if (
+                value.delete ||
+                (validFor && !value.validFor.includes(validFor))
+            ) {
                 return
             }
             if (value.type == 'action') {
@@ -560,6 +577,7 @@ function OverviewPanel({
                         >
                             <Form>
                                 <ActionOrCertificateConfigurator
+                                    config={config}
                                     path="action."
                                     hashAlgorithm={hashAlgorithm}
                                     disabled={disabled}

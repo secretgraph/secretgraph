@@ -41,8 +41,6 @@ import * as DOMPurify from 'dompurify'
 import { FastField, Field, FieldProps, Form, Formik } from 'formik'
 import * as React from 'react'
 
-import FormikCheckboxWithLabel from '../../../ui-components/src/formik/FormikCheckboxWithLabel'
-import FormikTextField from '../../../ui-components/src/formik/FormikTextField'
 import * as Contexts from '../contexts'
 import { mapperToArray } from '../hooks'
 

@@ -1,12 +1,12 @@
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import * as SetOps from '@secretgraph/misc/utils/set'
+import ClusterSelect, {
+    ClusterSelectProps,
+} from '@secretgraph/ui-components/forms/ClusterSelect'
 import { FieldProps } from 'formik'
 import * as React from 'react'
 
-import ClusterSelect, {
-    ClusterSelectProps,
-} from '../../../../ui-components/src/forms/ClusterSelect'
 import * as Contexts from '../../contexts'
 
 export default function ClusterSelectViaUrl<

@@ -4,20 +4,20 @@ import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Grid from '@mui/material/Unstable_Grid2'
 import * as Constants from '@secretgraph/misc/constants'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
-import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import { parseISO } from 'date-fns'
 import { FastField, useField, useFormikContext } from 'formik'
 import * as React from 'react'
 
-import FormikCheckboxWithLabel from '../../../../ui-components/src/formik/FormikCheckboxWithLabel'
-import FormikDateTimePicker from '../../../../ui-components/src/formik/FormikDateTimePicker'
-import SimpleSelect from '../../../../ui-components/src/forms/SimpleSelect'
-import TokenSelect from '../../../../ui-components/src/forms/TokenSelect'
-import * as Contexts from '../../contexts'
+import FormikCheckboxWithLabel from '../formik/FormikCheckboxWithLabel'
+import FormikDateTimePicker from '../formik/FormikDateTimePicker'
+import FormikTextField from '../formik/FormikTextField'
+import SimpleSelect from '../forms/SimpleSelect'
+import TokenSelect from '../forms/TokenSelect'
 
 const availableActions = [
     'auth',
@@ -66,6 +66,8 @@ type ActionConfiguratorProps = {
     isContent: boolean
     hashAlgorithm: string
     mode?: 'public' | 'default' | 'share' | 'publicShare'
+    validForOptions?: string[]
+    config: Interfaces.ConfigInterface
 }
 type CertificateConfiguratorProps = {
     value: CertificateInputEntry
@@ -131,7 +133,6 @@ const ActionFields = React.memo(function ActionFields({
                         disabled={disabled}
                         helperText="challenge"
                     />
-                    {/** TODO: autogenerate signatures for challenge */}
                 </div>
             )
         case 'view':
@@ -330,6 +331,53 @@ const SelectStartStop = React.memo(function SelectStartStop({
     )
 })
 
+const TokenAndValidForSelector = React.memo(function TokenAndValidForSelector({
+    disabled,
+    path,
+    validForOptions,
+    tokens,
+    hashAlgorithm,
+}: {
+    disabled: boolean
+    path: '' | `${string}.`
+    validForOptions: string[]
+    tokens?: string[]
+    hashAlgorithm: string
+}) {
+    return (
+        <Grid container>
+            {tokens ? (
+                <Grid xs={12} sm={6}>
+                    <FastField
+                        name={`${path}data`}
+                        component={TokenSelect}
+                        hashAlgorithm={hashAlgorithm}
+                        updateHashField={`${path}newHash`}
+                        fullWidth
+                        freeSolo
+                        tokens={tokens}
+                        disabled={disabled}
+                        label="Token"
+                    />
+                </Grid>
+            ) : null}
+            {validForOptions.length >= 1 ? (
+                <Grid xs={12} sm={6}>
+                    <FastField
+                        name={`${path}validFor`}
+                        component={SimpleSelect}
+                        fullWidth
+                        multiple
+                        options={validForOptions}
+                        disabled={disabled}
+                        label="Valid for"
+                    />
+                </Grid>
+            ) : null}
+        </Grid>
+    )
+})
+
 function ActionConfigurator({
     value,
     path = '',
@@ -341,9 +389,10 @@ function ActionConfigurator({
     hashAlgorithm,
     handleNoteChange,
     mode = 'default',
+    validForOptions,
+    config,
 }: ActionConfiguratorProps) {
     disabled = !!(disabled || value?.readonly)
-    const { config } = React.useContext(Contexts.InitializedConfig)
 
     const { value: note, onChange: onChangeNote } = useField(`${path}note`)[0]
     const { value: newHash } = useField(`${path}newHash`)[0]
@@ -402,17 +451,13 @@ function ActionConfigurator({
                     )}
                 </>
             ) : null}
-            {!noToken ? (
-                <FastField
-                    name={`${path}data`}
-                    component={TokenSelect}
-                    hashAlgorithm={hashAlgorithm}
-                    updateHashField={`${path}newHash`}
-                    fullWidth
-                    freeSolo
-                    tokens={tokens}
+            {(validForOptions && validForOptions.length >= 1) || !noToken ? (
+                <TokenAndValidForSelector
+                    tokens={noToken ? undefined : tokens}
+                    validForOptions={validForOptions || []}
                     disabled={disabled || locked}
-                    label="Token"
+                    path={path}
+                    hashAlgorithm={hashAlgorithm}
                 />
             ) : null}
             {handleNoteChange ? (

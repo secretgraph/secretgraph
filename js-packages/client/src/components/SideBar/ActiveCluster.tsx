@@ -11,6 +11,8 @@ import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 
+// not in use, maybe remove
+
 export default React.memo(function ActiveCluster({
     authinfo,
     cluster,

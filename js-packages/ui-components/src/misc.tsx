@@ -113,7 +113,12 @@ export const HashEntry = React.memo(function HashEntry({
                     onClick={() => selectItem(item)}
                     style={{ wordBreak: 'break-all' }}
                 >
-                    <div>{item.value.value.action}</div>
+                    <div>
+                        {item.value.value.action}
+                        {item.value.validFor.length ? (
+                            <span>{item.value.validFor.join(', ')}</span>
+                        ) : null}
+                    </div>
                 </TableCell>
                 <TableCell size="small" padding="checkbox"></TableCell>
                 <TableCell size="small"></TableCell>
@@ -126,7 +131,12 @@ export const HashEntry = React.memo(function HashEntry({
                     style={{ wordBreak: 'break-all' }}
                 >
                     <div>{item.value.newHash}</div>
-                    <div>{item.value.value.action}</div>
+                    <div>
+                        {item.value.value.action}
+                        {item.value.validFor.length ? (
+                            <span>{item.value.validFor.join(', ')}</span>
+                        ) : null}
+                    </div>
                 </TableCell>
                 {noUpgrade ? null : (
                     <TableCell size="small" padding="checkbox">
@@ -180,7 +190,12 @@ export const HashEntry = React.memo(function HashEntry({
                     style={{ wordBreak: 'break-all' }}
                 >
                     <div>{item.value.newHash}</div>
-                    <div>{item.value.newHash}</div>
+                    <div>
+                        certificate
+                        {item.value.validFor.length ? (
+                            <span>({item.value.validFor.join(', ')})</span>
+                        ) : null}
+                    </div>
                 </TableCell>
                 <TableCell size="small" padding="checkbox">
                     <FastField
