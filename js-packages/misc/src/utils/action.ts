@@ -7,6 +7,7 @@ import {
     utf8encoder,
 } from './encoding'
 import { findWorkingHashAlgorithms, hashObject, hashToken } from './hashing'
+import { compareArray } from './misc'
 import { createSignatureReferences } from './references'
 import * as SetOps from './set'
 
@@ -369,44 +370,61 @@ export function annotateAndMergeMappers({
     }
     const newMapper: UnpackPromise<ReturnType<typeof generateActionMapper>> =
         {}
-    for (const mapper of mappers) {
-        for (const entry of Object.entries(mapper)) {
-            if (entry[1].type == 'certificate') {
-                if (newMapper[entry[0]]) {
+
+    for (let mapperindex = 0; mapperindex < mappers.length; mapperindex++) {
+        const mapper = mappers[mapperindex]
+        for (const [key, value] of Object.entries(mapper)) {
+            if (value.type == 'certificate') {
+                if (newMapper[key]) {
                     continue
                 }
                 const newValidFor: string[] = []
                 if (validFor) {
                     for (let index = 0; index < mappers.length; index++) {
-                        if (mappers[index][entry[0]]) {
+                        if (mappers[index][key]) {
                             newValidFor.push(validFor[index])
                         }
                     }
-                    newMapper[entry[0]] = {
-                        ...entry[1],
+                    newMapper[key] = {
+                        ...value,
                         validFor: newValidFor,
                     }
                 }
             } else {
                 const newValidFor: string[] = []
-                const actions = [...entry[1].actions]
-                actions.sort()
-                const key = `${entry[0]},${actions.join(',')}`
-                if (newMapper[key]) {
-                    continue
-                }
                 if (validFor) {
+                    let alreadyExists = false
                     for (let index = 0; index < mappers.length; index++) {
-                        if (mappers[index][entry[0]]) {
-                            newValidFor.push(validFor[index])
+                        if (
+                            mappers[index][key] &&
+                            !SetOps.isNotEq(
+                                (mappers[index][key] as ActionMapperEntry)
+                                    .actions,
+                                value.actions
+                            )
+                        ) {
+                            if (index < mapperindex) {
+                                alreadyExists = true
+                                break
+                            } else {
+                                newValidFor.push(validFor[index])
+                            }
                         }
                     }
-                    newMapper[key] = {
-                        ...entry[1],
-                        validFor: newValidFor,
+                    if (!alreadyExists) {
+                        newValidFor.sort()
+                        newMapper[`${key},${newValidFor.join(',')}`] = {
+                            ...value,
+                            validFor: newValidFor,
+                        }
                     }
                 } else {
-                    newMapper[key] = entry[1]
+                    if (newMapper[key]) {
+                        throw Error(
+                            'Cannot merge multiple mappers, with same hashes without annotatation'
+                        )
+                    }
+                    newMapper[key] = value
                 }
             }
         }
@@ -427,15 +445,8 @@ export function mapperToArray(
 ) {
     const elements: (ActionInputEntry | CertificateInputEntry)[] = []
     Object.values<ValueType<typeof mapper>>(mapper).forEach((value) => {
-        const key = Object.keys(mapper).find((key) =>
-            key.startsWith(value.newHash)
-        )
-        if (!key) {
-            return
-        }
-        const entry = mapper[key]
-        if (entry.type == 'action') {
-            for (const val of entry.actions) {
+        if (value.type == 'action') {
+            for (const val of value.actions) {
                 const [actionType, isCluster] = val.split(',', 2)
                 elements.push({
                     type: 'action',
@@ -444,17 +455,17 @@ export function mapperToArray(
                     oldHash: value.oldHash || undefined,
                     start: '',
                     stop: '',
-                    note: entry.note,
+                    note: value.note,
                     value: {
                         action: actionType,
                     },
-                    update: entry.hasUpdate,
+                    update: value.hasUpdate,
                     delete: false,
                     readonly:
-                        entry.system ||
+                        value.system ||
                         (isCluster == 'true' && readonlyCluster),
                     locked: lockExisting,
-                    validFor: entry.validFor,
+                    validFor: value.validFor,
                 })
             }
         } else {
@@ -463,17 +474,45 @@ export function mapperToArray(
                 data: value.data,
                 newHash: value.newHash,
                 oldHash: value.oldHash || undefined,
-                note: entry.note,
-                update: entry.hasUpdate,
-                signWith: entry.signWith,
+                note: value.note,
+                update: value.hasUpdate,
+                signWith: value.signWith,
                 delete: false,
                 readonly: false,
                 locked: true,
-                validFor: entry.validFor,
+                validFor: value.validFor,
             })
         }
     })
     return elements
+}
+
+export function extractMapperValue(
+    mapper: UnpackPromise<ReturnType<typeof generateActionMapper>> | undefined,
+    keyElement: ActionInputEntry | CertificateInputEntry,
+    newHash: string,
+    validFor: undefined | string
+) {
+    let mapperval: ActionMapperEntry | CertificateMapperEntry | undefined =
+        undefined
+    if (mapper) {
+        if (!validFor || keyElement.type == 'certificate') {
+            mapperval = mapper[newHash]
+        } else {
+            // shortcut
+            mapperval = mapper[`${newHash},${validFor}`]
+            if (!mapperval) {
+                const key = Object.keys(mapper).find(
+                    (key) =>
+                        key.startsWith(newHash) && key.includes(`,${validFor}`)
+                )
+                if (key) {
+                    mapperval = mapper[key]
+                }
+            }
+        }
+    }
+    return mapperval
 }
 
 export async function transformActions({
@@ -522,18 +561,7 @@ export async function transformActions({
                     ? await hashObject(val.data, hashAlgorithm)
                     : await hashToken(val.data, hashAlgorithm))
             // find mapper value
-            let mapperval =
-                mapper && mapper[newHash] ? mapper[newHash] : undefined
-            if (mapper && !mapperval && val.type == 'action') {
-                const key = Object.keys(mapper).find(
-                    (key) =>
-                        key.startsWith(newHash) &&
-                        key.includes(`,${val.value.action}`)
-                )
-                if (key) {
-                    mapperval = mapper[key]
-                }
-            }
+            let mapperval = extractMapperValue(mapper, val, newHash, validFor)
             if (val.delete) {
                 // delete action
                 if (!val.oldHash) {
