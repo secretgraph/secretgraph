@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 from django.db.models import Q, QuerySet, Subquery
 
 from ...core.constants import public_states
-from ..models import Cluster, Content
+from ..models import Cluster, ClusterGroup, Content
 from ..utils.auth import fetch_by_id
 
 logger = logging.getLogger(__name__)
@@ -23,17 +23,16 @@ def _exclude_PublicKey(inp: Iterable[str]):
     return s
 
 
+def _prefix_topic(inp: str):
+    return f"topic_{inp}"
+
+
 def fetch_clusters(
     query,
     ids=None,  # relaxed id check
     limit_ids: Optional[int] = 1,
-    isAdmin=False,
-    states=None,
-    includeTypes=None,
-    excludeTypes=None,
-    includeTags=None,
-    excludeTags=None,
-    contentHashes=None,
+    includeTopics=None,
+    excludeTopics=None,
     minUpdated=None,
     maxUpdated=None,
 ) -> QuerySet[Cluster]:
@@ -45,70 +44,13 @@ def fetch_clusters(
             check_short_id=True,
             check_short_name=True,
         )
-
-    if (
-        includeTags
-        or excludeTags
-        or contentHashes
-        or includeTypes
-        or excludeTypes
-        or states
-    ):
-        incl_filters = Q()
-        for i in includeTags or []:
-            if i.startswith("id="):
-                incl_filters |= Q(flexid_cached=i[3:])
-            elif i.startswith("=id="):
-                incl_filters |= Q(flexid_cached=i[4:])
-            elif i.startswith("="):
-                incl_filters |= Q(tags__tag=i[1:])
-            else:
-                incl_filters |= Q(tags__tag__startswith=i)
-
-        hash_filters = Q()
-        if contentHashes:
-            hash_filters = Q(contentHash__in=contentHashes)
-        state_filters = ~Q(state="sensitive")
-        if states:
-            state_filters = Q(state__in=states)
-        incl_type_filters = Q()
-        excl_type_filters = Q()
-        if includeTypes:
-            incl_type_filters = Q(
-                type__in=includeTypes
-                if isAdmin or ids is not None
-                else _exclude_PublicKey(includeTypes)
-            )
-        elif excludeTypes:
-            excl_type_filters = Q(
-                type__in=excludeTypes
-                if isAdmin or ids is not None
-                else _include_PublicKey(excludeTypes)
-            )
-        elif not isAdmin:
-            excl_type_filters = Q(type="PublicKey")
-
-        excl_filters = Q()
-        for i in excludeTags or []:
-            if i.startswith("id="):
-                excl_filters |= Q(flexid_cached=i[3:])
-            elif i.startswith("=id="):
-                excl_filters |= Q(flexid_cached=i[4:])
-            elif i.startswith("="):
-                excl_filters |= Q(tags__tag=i[1:])
-            else:
-                excl_filters |= Q(tags__tag__startswith=i)
-        content_query = Content.objects.filter(
-            (~excl_filters)
-            & incl_filters
-            & hash_filters
-            & incl_type_filters
-            & (~excl_type_filters)
-            & state_filters
+    if includeTopics or excludeTopics:
+        cgquery = ClusterGroup.objects.filter(
+            Q(name__in=list(map(_prefix_topic, includeTopics)))
+            & ~Q(name__in=list(map(_prefix_topic, excludeTopics)))
         )
-        query = query.filter(
-            id__in=Subquery(content_query.values("cluster_id"))
-        )
+
+        query = query.filter(groups__id__in=Subquery(cgquery.values("id")))
 
     if minUpdated and not maxUpdated:
         maxUpdated = dt.max
@@ -120,7 +62,7 @@ def fetch_clusters(
             Q(updated__range=(minUpdated, maxUpdated))
             | Q(
                 id__in=Subquery(
-                    content_query.filter(
+                    Content.objects.filter(
                         updated__range=(minUpdated, maxUpdated)
                     ).values("cluster_id")
                 )

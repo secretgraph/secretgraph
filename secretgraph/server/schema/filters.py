@@ -36,15 +36,17 @@ class ClusterFilter:
     search: Optional[str] = strawberry.field(
         default=None, description="Search description, id and name"
     )
-    states: Optional[list[str]] = None
-    includeTypes: Optional[list[str]] = None
-    excludeTypes: Optional[list[str]] = None
-    includeTags: Optional[list[str]] = None
-    excludeTags: Optional[list[str]] = strawberry.field(
-        default=None,
-        description="Use id=xy for excluding clusters with content ids",
-    )
-    ids: Optional[list[strawberry.ID]] = strawberry.field(
+    includeTopics: Optional[list[str]] = None
+    excludeTopics: Optional[list[str]] = None
+    # states: Optional[list[str]] = None
+    # includeTypes: Optional[list[str]] = None
+    # excludeTypes: Optional[list[str]] = None
+    # includeTags: Optional[list[str]] = None
+    # excludeTags: Optional[list[str]] = strawberry.field(
+    #    default=None,
+    #    description="Use id=xy for excluding clusters with content ids",
+    # )
+    includeIds: Optional[list[strawberry.ID]] = strawberry.field(
         default=None,
         description="Filter clusters with ids or global name",
     )

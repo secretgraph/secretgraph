@@ -1,6 +1,6 @@
 # TODO
 
--   finish auth, test and finish missing bits
+-   finish auth: test workflow
 -   implement UserSelectable
 -   editor for Personal Data
 -   verification workflow

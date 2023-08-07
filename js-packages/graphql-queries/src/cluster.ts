@@ -3,10 +3,8 @@ import { gql } from '@apollo/client'
 export const clusterFeedQuery = gql`
     query clusterFeedQuery(
         $authorization: [String!]
-        $states: [String!]
-        $types: [String!]
-        $include: [String!]
-        $exclude: [String!]
+        $includeTopics: [String!]
+        $excludeTopics: [String!]
         $excludeIds: [ID!]
         $deleted: UseCriteria
         $public: UseCriteriaPublic
@@ -17,14 +15,12 @@ export const clusterFeedQuery = gql`
         clusters: secretgraph(authorization: $authorization) {
             clusters(
                 filters: {
-                    includeTypes: $types
-                    states: $states
-                    includeTags: $include
-                    excludeTags: $exclude
                     excludeIds: $excludeIds
                     deleted: $deleted
                     public: $public
                     search: $search
+                    includeTopics: $includeTopics
+                    excludeTopics: $excludeTopics
                 }
                 first: $count
                 after: $cursor
@@ -33,10 +29,8 @@ export const clusterFeedQuery = gql`
                     key: "feedClusters"
                     filter: [
                         "authorization"
-                        "types"
-                        "states"
-                        "include"
-                        "exclude"
+                        "includeTopics"
+                        "excludeTopics"
                         "excludeIds"
                         "deleted"
                         "public"

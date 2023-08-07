@@ -223,15 +223,10 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                     ].values("id")
                 )
             ).distinct(),
-            isAdmin="allow_hidden"
-            in get_cached_net_properties(info.context["request"]),
-            ids=filters.ids,
+            ids=filters.includeIds,
             limit_ids=None,
-            states=filters.states,
-            includeTypes=filters.includeTypes,
-            excludeTypes=filters.excludeTypes,
-            includeTags=filters.includeTags,
-            excludeTags=filters.excludeTags,
+            includeTypes=filters.includeTopics,
+            excludeTypes=filters.excludeTopics,
             minUpdated=filters.minUpdated,
             maxUpdated=filters.maxUpdated,
             contentHashes=filters.contentHashes,
