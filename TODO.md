@@ -3,7 +3,7 @@
 -   finish auth: test workflow
 -   implement UserSelectable
 -   editor for Personal Data
--   verification workflow
+-   verification workflow in tests
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   complete share
     -   add option to save new token in config (not auth)
