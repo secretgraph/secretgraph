@@ -1124,14 +1124,33 @@ const KeysUpdate = ({
                     )
 
                     if (privKey || privateKey) {
+                        const pubkeyhash = (
+                            await hashKey(pubKey, hashAlgorithmsWorking[0])
+                        ).hash
                         configUpdate.certificates = {
-                            [(await hashKey(pubKey, hashAlgorithmsWorking[0]))
-                                .hash]: privKey
+                            [pubkeyhash]: privKey
                                 ? {
                                       data: await serializeToBase64(privKey),
                                       note: '',
                                   }
                                 : null,
+                        }
+                        if (initialValues.signWith != values.signWith) {
+                            configUpdate.signWith = {
+                                [config.slots[0]]:
+                                    privKey && values.signWith
+                                        ? [
+                                              ...(config.signWith[
+                                                  config.slots[0]
+                                              ] || []),
+                                              pubkeyhash,
+                                          ]
+                                        : (
+                                              config.signWith[
+                                                  config.slots[0]
+                                              ] || []
+                                          ).filter((val) => val != pubkeyhash),
+                            }
                         }
                     }
                     const configNew = await updateConfigRemoteReducer(config, {

@@ -1,6 +1,7 @@
 import re
 from itertools import chain
 
+from ...core.constants import public_states
 from ..models import Net
 
 # TODO: may improve dataclasses so everything is calculated from itself
@@ -154,12 +155,8 @@ def pre_clean_content_spec(create: bool, content, result):
             elif _net not in additionalNets:
                 additionalNets[_net] = True
 
-        if not tags:
-            if not create:
-                pass
-            else:
-                continue
-        else:
+        # only check if tags are available
+        if tags:
             if action_dict.get("allowedTags", None) is None:
                 pass
             else:

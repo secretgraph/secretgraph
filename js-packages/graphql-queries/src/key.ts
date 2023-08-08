@@ -5,7 +5,7 @@ export const createKeysMutation = gql`
         $cluster: ID!
         $net: ID
         $publicTags: [String!]!
-        $privateTags: [String!]!
+        $privateTags: [String!]
         $publicActions: [ActionInput!]
         $privateActions: [ActionInput!]
         $references: [ReferenceInput!]

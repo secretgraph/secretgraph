@@ -5,7 +5,7 @@ createKeysMutation = """
         $cluster: ID!
         $net: ID
         $publicTags: [String!]!
-        $privateTags: [String!]!
+        $privateTags: [String!]
         $publicActions: [ActionInput!]
         $privateActions: [ActionInput!]
         $references: [ReferenceInput!]

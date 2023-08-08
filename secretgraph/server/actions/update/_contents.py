@@ -417,7 +417,14 @@ def _update_or_create_content_or_key(
         ):
             raise ValueError("Not encrypted for required keys")
         if not verifiers_ref and content.needs_signature:
-            raise ValueError("Not signed by a known key")
+            if content.cluster.id and not content.cluster.contents.filter(
+                type="PublicKey", state__in=constants.publickey_states
+            ):
+                raise ValueError(
+                    "Not signed by a cluster key - cluster has no keys"
+                )
+
+            raise ValueError("Not signed by a cluster key")
         if (
             not create
             and is_transfer
