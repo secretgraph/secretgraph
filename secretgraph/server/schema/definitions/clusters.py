@@ -231,5 +231,4 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             excludeTopics=filters.excludeTopics,
             minUpdated=filters.minUpdated,
             maxUpdated=filters.maxUpdated,
-            contentHashes=filters.contentHashes,
         )
