@@ -33,6 +33,8 @@ def fetch_clusters(
     limit_ids: Optional[int] = 1,
     includeTopics=None,
     excludeTopics=None,
+    includeTypes=None,
+    excludeTypes=None,
     minUpdated=None,
     maxUpdated=None,
 ) -> QuerySet[Cluster]:
@@ -44,13 +46,32 @@ def fetch_clusters(
             check_short_id=True,
             check_short_name=True,
         )
-    if includeTopics or excludeTopics:
+    if includeTopics:
+        if excludeTopics:
+            includeTopics = set(includeTopics)
+            includeTopics.difference_update(excludeTopics)
         cgquery = ClusterGroup.objects.filter(
-            Q(name__in=list(map(_prefix_topic, includeTopics)))
-            & ~Q(name__in=list(map(_prefix_topic, excludeTopics)))
+            name__in=list(map(_prefix_topic, includeTopics)), hidden=False
+        )
+    elif excludeTopics:
+        cgquery = ClusterGroup.objects.exclude(
+            name__in=list(map(_prefix_topic, excludeTopics)), hidden=False
         )
 
         query = query.filter(groups__id__in=Subquery(cgquery.values("id")))
+    content_query = Content.objects.all()
+    # because no specific tags can be queried it is safe to allow querying types without restriction
+    if includeTypes:
+        if excludeTypes:
+            includeTypes = set(includeTypes)
+            includeTypes.difference_update(excludeTypes)
+        content_query = content_query.filter(
+            type__in=includeTypes, markForDestruction__isnull=True
+        )
+    elif excludeTypes:
+        content_query = content_query.exclude(
+            type__in=excludeTypes, markForDestruction__isnull=True
+        )
 
     if minUpdated and not maxUpdated:
         maxUpdated = dt.max
@@ -62,11 +83,15 @@ def fetch_clusters(
             Q(updated__range=(minUpdated, maxUpdated))
             | Q(
                 id__in=Subquery(
-                    Content.objects.filter(
+                    content_query.filter(
                         updated__range=(minUpdated, maxUpdated)
                     ).values("cluster_id")
                 )
             )
+        )
+    elif includeTypes or excludeTypes:
+        query = query.filter(
+            Q(id__in=Subquery(content_query.values("cluster_id")))
         )
 
     return query
@@ -144,10 +169,13 @@ def fetch_contents(
         incl_type_filters = Q()
         excl_type_filters = Q()
         if includeTypes:
+            if excludeTypes:
+                includeTypes = set(includeTypes)
+                includeTypes.difference_update(excludeTypes)
             incl_type_filters = Q(
                 type__in=includeTypes
                 if clustersAreRestrictedOrAdmin or ids is not None
-                else _exclude_PublicKey({"PublicKey"})
+                else _exclude_PublicKey(includeTypes)
             )
         elif excludeTypes:
             excl_type_filters = Q(

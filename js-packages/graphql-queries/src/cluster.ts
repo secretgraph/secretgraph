@@ -5,6 +5,8 @@ export const clusterFeedQuery = gql`
         $authorization: [String!]
         $includeTopics: [String!]
         $excludeTopics: [String!]
+        $includeTypes: [String!]
+        $excludeTypes: [String!]
         $excludeIds: [ID!]
         $deleted: UseCriteria
         $public: UseCriteriaPublic
@@ -21,6 +23,8 @@ export const clusterFeedQuery = gql`
                     search: $search
                     includeTopics: $includeTopics
                     excludeTopics: $excludeTopics
+                    includeTypes: $includeTypes
+                    excludeTypes: $excludeTypes
                 }
                 first: $count
                 after: $cursor
@@ -31,6 +35,8 @@ export const clusterFeedQuery = gql`
                         "authorization"
                         "includeTopics"
                         "excludeTopics"
+                        "includeTypes"
+                        "excludeTypes"
                         "excludeIds"
                         "deleted"
                         "public"

@@ -9,7 +9,10 @@ from .shared import UseCriteria, UseCriteriaPublic
 @strawberry.input
 class ContentFilterCluster:
     states: Optional[list[str]] = None
-    includeTypes: Optional[list[str]] = None
+    includeTypes: Optional[list[str]] = strawberry.field(
+        default=None,
+        description="PublicKey cannot be included",
+    )
     excludeTypes: Optional[list[str]] = None
     includeTags: Optional[list[str]] = None
     excludeTags: Optional[list[str]] = strawberry.field(
@@ -38,14 +41,14 @@ class ClusterFilter:
     )
     includeTopics: Optional[list[str]] = None
     excludeTopics: Optional[list[str]] = None
-    # states: Optional[list[str]] = None
-    # includeTypes: Optional[list[str]] = None
-    # excludeTypes: Optional[list[str]] = None
-    # includeTags: Optional[list[str]] = None
-    # excludeTags: Optional[list[str]] = strawberry.field(
-    #    default=None,
-    #    description="Use id=xy for excluding clusters with content ids",
-    # )
+    includeTypes: Optional[list[str]] = strawberry.field(
+        default=None,
+        description="Include if a not deleted content of this type is a child of this cluster",
+    )
+    excludeTypes: Optional[list[str]] = strawberry.field(
+        default=None,
+        description="Exclude if a not deleted content of this type is a child of this cluster",
+    )
     includeIds: Optional[list[strawberry.ID]] = strawberry.field(
         default=None,
         description="Filter clusters with ids or global name",

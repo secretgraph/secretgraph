@@ -969,10 +969,14 @@ class ClusterGroup(models.Model):
     )
 
     def clean(self):
-        if self.hidden and self.injectedKeys.exists():
-            raise ValidationError(
-                {"hidden": "injectedKeys and hidden are mutual exclusive"}
-            )
+        errors = {}
+        if self.hidden:
+            if self.injectedKeys.exists():
+                errors[
+                    "injectedKeys"
+                ] = "injectedKeys and hidden are mutual exclusive"
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self) -> str:
         return self.name

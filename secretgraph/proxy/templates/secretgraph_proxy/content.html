@@ -2,11 +2,11 @@
 {% load secretgraph %}
 
 {% block content %}
-{% fetch_contents ids=id as contents %}
+{% fetch_contents includeIds=id as contents %}
 <div class="container">
     <h2>Name: <span>{{contents.0.tags_proxy.name.0|default:""}}</span></h2>
     {# we need to check permissions #}
-    {% fetch_clusters ids=contents.0.cluster.flexid as clusters %}
+    {% fetch_clusters includeIds=contents.0.cluster.flexid as clusters %}
     {% if clusters %}
         <div>
             Cluster: <a href="{% url "secretgraph_proxy:cluster" id=contents.0.cluster.flexid %}">{{contents.0.cluster.name}}</a>

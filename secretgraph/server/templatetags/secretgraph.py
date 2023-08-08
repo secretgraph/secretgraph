@@ -102,11 +102,8 @@ def fetch_clusters(
     excludeIds=None,
     includeTopics=None,
     excludeTopics=None,
-    # states=None,
-    # includeTypes=None,
-    # excludeTypes=None,
-    # includeTags=None,
-    # excludeTags=None,
+    includeTypes=None,
+    excludeTypes=None,
     authorization=None,
 ):
     queryset = get_cached_result(context["request"], authset=authorization)[
@@ -150,13 +147,8 @@ def fetch_clusters(
             limit_ids=None,
             includeTopics=_split_comma(includeTopics),
             excludeTopics=_split_comma(excludeTopics),
-            # states=_split_comma(states),
-            # includeTags=_split_comma(includeTags),
-            # excludeTags=_split_comma(excludeTags),
-            # includeTypes=_split_comma(includeTypes),
-            # excludeTypes=_split_comma(excludeTypes),
-            isAdmin="allow_hidden"
-            in get_cached_net_properties(context["request"]),
+            includeTypes=_split_comma(includeTypes),
+            excludeTypes=_split_comma(excludeTypes),
         ),
         page_size,
     ).get_page(page)
@@ -173,7 +165,7 @@ def fetch_contents(
     deleted=False,
     clusters=None,
     states=None,
-    ids=None,
+    includeIds=None,
     excludeIds=None,
     includeTypes=None,
     excludeTypes=None,
@@ -262,7 +254,7 @@ def fetch_contents(
         )
     result["objects_with_public"] = _fetch_contents(
         result["objects_with_public"],
-        ids=_split_comma(ids),
+        ids=_split_comma(includeIds),
         limit_ids=None,
         clustersAreRestrictedOrAdmin=bool(clusters)
         or "allow_hidden" in get_cached_net_properties(context["request"]),

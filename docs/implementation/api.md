@@ -12,13 +12,22 @@
 -   link: can add reference to content (all public without @system+most actions which allow viewing a content)
 -   auth: one-time view with intent to signal auth event
 
-## Properties:
+## Groups
+
+There are two types of groups:
+
+-   Netgroups: they are attached to the user (net). Addressing a net works via its primary cluster
+-   Clustergroups: they are attached to a cluster and can alter its behavior
+
+Both can alter the behavior via properties
+
+### Properties:
 
 -   default: on cluster creation these groups are added by default except if groups are explicit specified
 -   allow_global_name: can register a global cluster name
 -   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
 -   allow_featured: can feature or unfeature clusters (only global clusters can be featured)
--   allow_hidden: can see hidden contents (Net,Cluster), can set hidden attribute (Net,Cluster), hidden groups of clusters become visible (Net), can query PublicKeys
+-   allow_hidden: can see hidden contents (Net,Cluster), can set hidden attribute (Net,Cluster), hidden groups of clusters become visible (Net), can query PublicKeys via contents
 -   manage_deletion: can delete every content or cluster (Net)
 -   manage_active: can can block and unblock nets (via Cluster ids)
 -   manage_groups: can manage global groups of clusters, hidden groups of clusters become visible
@@ -29,11 +38,21 @@
 -   auto_hide_global: clusters with a group with this property have their public contents auto hidden if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)
 -   auto_hide_global_update: clusters with a group with this property have their public contents auto hidden after an update if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)
 
-## Global group attributes
+### Group attributes
 
--   managed (only settings): settings definition of global group is binding
+-   hidden: not visible to users without allow_hidden permission
+-   userSelectable: alter how users can interact with the groups. There also fuses (deselect only, select only) and an initial only selection
+-   managed (only settings): settings definition of global group cannot be overwritten in runtime
+-   injectedKeys (only Clustergroup)
 
-## States:
+### Topic groups
+
+Cluster groups with prefix `topic_` in their name and which are not hidden can be queried via includeTopics/excludeTopics.
+This is a replacement for the former deep querying of clusters (could select content attributes)
+
+Hint: topics needn't to be removed they can also be hidden in case they should be reactivated
+
+## Content States:
 
 -   required: Only PublicKey, like trusted+required as encryption target
 -   trusted: Only PublicKey, a trusted encryption target. At least one is required.
@@ -120,7 +139,10 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
 
 ## includeTypes and excludeTypes
 
-includeTypes is stronger than excludeTypes, it disables excludeTypes
+PublicKey is auto excluded in case a query is made without cluster ids and no allow_hidden permission is given.
+This applies only to the contents. The clusters query can freely check if types are available
+
+The reason behind this quirk is to prevent snooping keys to deanonymize users.
 
 ## Operations (Mutations)
 

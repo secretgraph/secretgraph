@@ -61,8 +61,6 @@ export default React.memo(function Clusters({
                 deleted: searchCtx.deleted
                     ? Constants.UseCriteria.TRUE
                     : Constants.UseCriteria.FALSE,
-                include: searchCtx.include,
-                exclude: searchCtx.exclude,
                 excludeIds: excludeIds,
             },
             nextFetchPolicy: 'cache-and-network',

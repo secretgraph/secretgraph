@@ -2,7 +2,7 @@
 {% load secretgraph %}
 
 {% block content %}
-{% fetch_clusters ids=id as clusters %}
+{% fetch_clusters includeIds=id as clusters %}
 <div class="container">
     <div class="">
         <h2 class="">Name: <span>{{clusters.0.name|default:""}}</span></h2>
