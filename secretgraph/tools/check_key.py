@@ -13,7 +13,7 @@ def main(argv=None):
     try:
         key = base64.b64decode(argv.file.read())
     except Exception:
-        parser.exit(message="Not a base64 encoded der certificate")
+        parser.exit(message="Not a base64 encoded DER certificate")
     try:
         fkey = serialization.load_der_private_key(key, argv.password)
     except Exception:
@@ -28,7 +28,7 @@ def main(argv=None):
             if argv.password:
                 parser.exit(message="Password is wrong")
             else:
-                parser.exit(message="Not a certificate")
+                parser.exit(message="Not a DER public key")
 
 
 if __name__ == "__main__":

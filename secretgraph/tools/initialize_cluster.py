@@ -21,6 +21,9 @@ from secretgraph.core.utils.hashing import (
     hashObject,
     hashTagsContentHash,
 )
+from secretgraph.queries.cluster import createClusterMutation
+from secretgraph.queries.content import createContentMutation
+from secretgraph.queries.server import serverConfigQuery
 
 parser = argparse.ArgumentParser()
 parser.add_argument("url")
@@ -28,97 +31,6 @@ parser.add_argument("--public-only", action="store_true")
 parser.add_argument("--bits", "-b", type=int, default=4096)
 parser.add_argument("--slots", nargs="+", default=["main"], type=str)
 parser.add_argument("--store-config", type=argparse.FileType("w"))
-
-serverConfigQuery_query = """
-query serverSecretgraphConfigQuery {
-    secretgraph{
-        config {
-            id
-            hashAlgorithms
-            registerUrl
-        }
-    }
-}
-"""
-
-clusterCreateMutation_mutation = """
-mutation clusterCreateMutation($description: String, $actions: [ActionInput!], $publicKey: Upload!, $privateKey: Upload, $publicTags: [String!]!, $privateTags: [String!]!, $nonce: String, $authorization: [String!]) {
-
-    secretgraph{
-        updateOrCreateCluster(
-            input: {
-                cluster: {
-                    description: $description
-                    actions: $actions
-                    keys: [{
-                        publicKey: $publicKey
-                        publicTags: $publicTags
-                        privateKey: $privateKey
-                        privateTags: $privateTags
-                        nonce: $nonce
-                    }]
-                }
-                authorization: $authorization
-            }
-        ) {
-            cluster {
-                id
-                groups
-                availableActions {
-                    keyHash
-                    type
-                    allowedTags
-                }
-                contents(
-                    filters: {
-                        states: ["trusted", "required", "public"]
-                        deleted: FALSE
-                        includeTypes: ["PublicKey"]
-                    }
-                ) {
-                    edges {
-                        node {
-                            link
-                        }
-                    }
-                }
-            }
-            writeok
-        }
-    }
-}
-"""  # noqa E502
-
-configCreateMutation_mutation = """
-mutation contentConfigMutation($cluster: ID!, $tags: [String!], $type: String!, $state: String!, $references: [ReferenceInput!], $value: Upload!, $nonce: String, $contentHash: String, $authorization: [String!]) {
-    secretgraph{
-        updateOrCreateContent(
-        input: {
-            content: {
-                cluster: $cluster
-                value: {
-                    type: $type
-                    state: $state
-                    tags: $tags
-                    value: $value
-                    nonce: $nonce
-                    references: $references
-                }
-                contentHash: $contentHash
-            }
-            authorization: $authorization
-        }
-        ) {
-            content {
-                id
-                nonce
-                link
-            }
-            writeok
-        }
-    }
-}
-"""  # noqa E502
 
 
 async def run(argv, session: AsyncClientSession):
@@ -150,14 +62,36 @@ async def run(argv, session: AsyncClientSession):
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    result = await session.execute(gql(serverConfigQuery_query))
+    result = await session.execute(gql(serverConfigQuery))
     serverConfig = result["secretgraph"]["config"]
     hash_algos = findWorkingHashAlgorithms(serverConfig["hashAlgorithms"])
     publicKey_hash = hashObject(pub_key_bytes, hash_algos[0])
-    prepared_cluster = {
+    key1 = {
         "publicKey": BytesIO(pub_key_bytes),
+        "publicState": "trusted",
+        "publicTags": ["name=initial key"],
+    }
+    if not argv.public_only:
+        key1["privateKey"] = BytesIO(
+            AESGCM(privkey_key).encrypt(nonce_key, priv_key_bytes, None)
+        )
+        privatekey_key_enc = pub_key.encrypt(
+            privkey_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
+                algorithm=hash_algos[0].algorithm,
+                label=None,
+            ),
+        )
+        key1["nonce"] = nonce_key_b64
+        key1["privateTags"] = [
+            "key={}".format(base64.b64encode(privatekey_key_enc)),
+        ]
+
+    prepared_cluster = {
         "publicTags": [],
         "state": "public",
+        "keys": [key1],
         "actions": [
             {"value": '{"action": "manage"}', "key": manage_token_b64},
             {
@@ -175,24 +109,8 @@ async def run(argv, session: AsyncClientSession):
             },
         ],
     }
-    if not argv.public_only:
-        prepared_cluster["privateKey"] = BytesIO(
-            AESGCM(privkey_key).encrypt(nonce_key, priv_key_bytes, None)
-        )
-        privatekey_key_enc = pub_key.encrypt(
-            privkey_key,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
-                algorithm=hash_algos[0].algorithm,
-                label=None,
-            ),
-        )
-        prepared_cluster["nonce"] = nonce_key_b64
-        prepared_cluster["privateTags"] = [
-            "key={}".format(base64.b64encode(privatekey_key_enc)),
-        ]
     result = await session.execute(
-        gql(clusterCreateMutation_mutation),
+        gql(createClusterMutation),
         prepared_cluster,
         upload_files=True,
     )
@@ -322,7 +240,7 @@ async def run(argv, session: AsyncClientSession):
     }
 
     result = await session.execute(
-        gql(configCreateMutation_mutation), prepared_content, upload_files=True
+        gql(createContentMutation), prepared_content, upload_files=True
     )
 
     jsob_config = result["secretgraph"]["updateOrCreateContent"]
