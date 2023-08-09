@@ -28,7 +28,7 @@ _valid_lengths = {32, 50}
 def manage_actions_fn(
     request, obj, actionlist: List[ActionInput], authset=None, admin=False
 ):
-    add_actions = {}
+    add_actions = []
     delete_actions = set()
     delete_actions_content = set()
     action_types = set()
@@ -92,14 +92,9 @@ def manage_actions_fn(
             if isinstance(action_value, str):
                 action_value = json.loads(action_value)
         if action_value == "delete" or action.existingHash:
+            # existingHash: replace action with hash by new ones
             if action.existingHash:
-                if action_value == "delete":
-                    if action.existingHash in add_actions:
-                        raise ValueError(
-                            "Cannot update and delete the same Action"
-                        )
-                    delete_actions.add(action.existingHash)
-                elif content:
+                if content:
                     delete_actions_content.add(action.existingHash)
                 else:
                     delete_actions.add(action.existingHash)
@@ -152,7 +147,7 @@ def manage_actions_fn(
         actionObj.cluster = cluster
         actionObj.action_type = action_value["action"]
         action_types.add(action_value["action"])
-        add_actions[actionObj.keyHash] = actionObj
+        add_actions.append(actionObj)
 
     delete_q = Q(keyHash__in=delete_actions)
     if content:
@@ -171,7 +166,7 @@ def manage_actions_fn(
             if add_actions:
                 if create:
                     Action.objects.bulk_create(
-                        refresh_fields(add_actions.values(), "cluster")
+                        refresh_fields(add_actions, "cluster")
                     )
                     if content:
                         ContentAction.objects.bulk_create(
@@ -179,24 +174,24 @@ def manage_actions_fn(
                                 lambda c: c.contentAction,
                                 filter(
                                     lambda x: x.contentAction,
-                                    add_actions.values(),
+                                    add_actions,
                                 ),
                             )
                         )
                 else:
-                    Action.objects.bulk_create(add_actions.values())
+                    Action.objects.bulk_create(add_actions)
                     if content:
                         ContentAction.objects.bulk_create(
                             map(
                                 lambda c: c.contentAction,
                                 filter(
                                     lambda x: x.contentAction,
-                                    add_actions.values(),
+                                    add_actions,
                                 ),
                             )
                         )
         return obj
 
-    setattr(save_fn, "actions", [*add_actions.values()])
+    setattr(save_fn, "actions", add_actions)
     setattr(save_fn, "action_types", action_types)
     return save_fn

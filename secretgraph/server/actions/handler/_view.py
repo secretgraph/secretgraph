@@ -61,6 +61,10 @@ class ViewHandlers:
             > 10_000_000
         ):
             raise ValueError("auth too big")
+        # fail if another auth was specified
+        if getattr(request, "_secretgrapAuthWasSpecifiedForToken", False):
+            raise ValueError("Token already used for auth")
+        setattr(request, "_secretgrapAuthWasSpecifiedForToken", True)
         return {
             "action": "auth",
             "excludeIds": []

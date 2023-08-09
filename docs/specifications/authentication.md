@@ -16,3 +16,5 @@ A signature is made from: `<requester><challenge>` and in format `<hashalgorithm
 
 The challenge should be timelimited e.g. 2 hours or 1 day. It may can contain an encrypted timestamp.
 The challenge is technically not limitted but would be better to have only visible characters in utf8 because of input problems in case the user have to provide it himself
+
+Note: the secretgraph hash functions include already the `<hashalgorithm>:`prefix`

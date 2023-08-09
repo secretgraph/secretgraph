@@ -2,6 +2,7 @@
 
 -   delete fake type deletes an action. "delete" can be also just ""delete"" (json string). Key is not required and ignored
     -   for all action definitions
+    -   requires existingHash
 -   auth (Content, Cluster) affects (Content, Cluster). For onetime auth token for authenticating thirdparty: Should be defined together with view for of permanent/temporary access to data
     -   requester: requester
     -   challenge: challenge data
@@ -73,6 +74,8 @@
         -   Cluster: map id updated fields (only some)
         -   Content: map id updated fields (only some)
         -   Action: map keyHash updated fields (only some)
+
+The action existingHash field can be used to replace actions with the hash specified by existingHash (if you have the permission for replacing). The placeholders `value: action: "delete"` or `value: "delete"` can be used to simply delete actions with the hash of the content/cluster
 
 ## ContentActions
 

@@ -145,11 +145,22 @@ class SBaseTypesMixin:
             mappers = [result.get("action_info_clusters", {}).get(self.id, {})]
         for mapper in mappers:
             for key_val in mapper.items():
+                # use first auth token match
                 if key_val[0][0] == "auth":
+                    # in multiple steps using the same token for auth
+                    # it is possible to create exactly this scenario
+                    # but it should be seen as error
+                    assert (
+                        len(key_val[1]) == 1
+                    ), "auth should only have one match"
                     authResult = SGAuthResult(
-                        requester=result["decrypted"][key_val[1]]["requester"],
-                        challenge=result["decrypted"][key_val[1]]["challenge"],
-                        signatures=result["decrypted"][key_val[1]][
+                        requester=result["decrypted"][key_val[1][0]][
+                            "requester"
+                        ],
+                        challenge=result["decrypted"][key_val[1][0]][
+                            "challenge"
+                        ],
+                        signatures=result["decrypted"][key_val[1][0]][
                             "signatures"
                         ],
                     )

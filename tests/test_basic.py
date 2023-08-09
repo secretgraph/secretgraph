@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+from contextlib import redirect_stderr
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
@@ -67,18 +68,19 @@ class BasicTests(TestCase):
         ]["id"]
         with self.subTest("Fail because content is not signed"):
             request = self.factory.get("/graphql")
-            result = await schema.execute(
-                createContentMutation,
-                {
-                    "cluster": clusterid,
-                    "state": "public",
-                    "value": ContentFile(b""),
-                    "type": "File",
-                    "authorization": f"{clusterid}:${base64.b64encode(manage_token).decode()}",
-                    "tags": [],
-                },
-                StrawberryDjangoContext(request=request, response=None),
-            )
+            with redirect_stderr(None):
+                result = await schema.execute(
+                    createContentMutation,
+                    {
+                        "cluster": clusterid,
+                        "state": "public",
+                        "value": ContentFile(b""),
+                        "type": "File",
+                        "authorization": f"{clusterid}:${base64.b64encode(manage_token).decode()}",
+                        "tags": [],
+                    },
+                    StrawberryDjangoContext(request=request, response=None),
+                )
             self.assertTrue(result.errors)
         with self.subTest("Allow bootstrapping"):
             encryptkey = rsa.generate_private_key(
