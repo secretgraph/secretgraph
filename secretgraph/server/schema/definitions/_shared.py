@@ -63,10 +63,12 @@ class SBaseTypesMixin:
             for key_val in mapper.items():
                 if key_val[0][0] == "manage":
                     has_manage = True
+                # auth is protected so it...
                 if key_val[0][0] not in constants.protectedActions:
                     seen_ids.update(key_val[1])
                     allowedTags = None
-                    if key_val[0][0] not in {"view", "auth"}:
+                    # ...doesn't appear here
+                    if key_val[0][0] != "view":
                         for action_id in key_val[1]:
                             _tags = results[name]["decrypted"][action_id].get(
                                 "allowedTags"
@@ -121,8 +123,14 @@ class SBaseTypesMixin:
         if self.limited or self.reduced:
             return None
         name = self.__class__.__name__.replace("Node", "", 1)
-        result = get_cached_result(
+        viewresult = get_cached_result(
             info.context["request"], ensureInitialized=True
+        )
+        result = get_cached_result(
+            info.context["request"],
+            cacheName="secretgraphAuthResult",
+            scope="auth",
+            authset=viewresult.authset,
         )[name]
         authResult = None
         if isinstance(self, Content):

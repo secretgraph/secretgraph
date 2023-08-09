@@ -107,8 +107,6 @@ class BasicTests(TestCase):
         manage_token = os.urandom(50)
         view_token = os.urandom(50)
         request = self.factory.get("/graphql")
-        nonce_signkey = os.urandom(13)
-        nonce_signkey_b64 = base64.b64encode(nonce_signkey).decode("ascii")
         signkey = rsa.generate_private_key(
             public_exponent=65537, key_size=2048
         )
@@ -116,10 +114,6 @@ class BasicTests(TestCase):
         pub_signkey_bytes = pub_signkey.public_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-        nonce_encryptkey = os.urandom(13)
-        nonce_encryptkey_b64 = base64.b64encode(nonce_encryptkey).decode(
-            "ascii"
         )
         # 1024 is too small and could not be used for OAEP
         encryptkey = rsa.generate_private_key(
@@ -143,13 +137,11 @@ class BasicTests(TestCase):
                         "publicKey": ContentFile(pub_signkey_bytes),
                         "publicState": "public",
                         "publicTags": ["name=initial sign key"],
-                        "nonce": nonce_signkey_b64,
                     },
                     {
                         "publicKey": ContentFile(pub_encryptkey_bytes),
                         "publicState": "trusted",
                         "publicTags": ["name=initial encrypt key"],
-                        "nonce": nonce_encryptkey_b64,
                     },
                 ],
                 "actions": [

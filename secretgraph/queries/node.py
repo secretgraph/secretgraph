@@ -100,3 +100,66 @@ getPermissions = """
         }
     }
 """
+
+authQuery = """
+    query authQuery(
+        $id: GlobalID!
+        $authorization: [String!]
+        $keyhashes: [String!]
+    ) {
+        secretgraph(authorization: $authorization) {
+            node(id: $id) {
+                ... on Cluster {
+                    id
+                    availableActions {
+                        keyHash
+                        type
+                        allowedTags
+                    }
+                    auth {
+                        requester
+                        challenge
+                        signatures
+                    }
+                }
+                ... on Content {
+                    id
+                    availableActions {
+                        keyHash
+                        type
+                        allowedTags
+                    }
+                    nonce
+                    link
+                    type
+                    auth {
+                        requester
+                        challenge
+                        signatures
+                    }
+                    cluster {
+                        id
+                    }
+                    references(
+                        filters: {
+                            groups: ["key", "signature"]
+                            includeTags: $keyhashes
+                        }
+                    ) {
+                        edges {
+                            node {
+                                extra
+                                target {
+                                    link
+                                    type
+                                    state
+                                    tags(includeTags: ["key_hash="])
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+"""

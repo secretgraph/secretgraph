@@ -10,7 +10,7 @@
 -   push: create subcontents via push
 -   view: view contents and or clusters (depending on scope)
 -   link: can add reference to content (all public without @system+most actions which allow viewing a content)
--   auth: one-time view with intent to signal auth event
+-   auth: one-time view with intent to signal auth event (triggered when selecting auth element in graphql)
 
 ## Groups
 

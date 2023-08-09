@@ -1,4 +1,3 @@
-import ipaddress
 from datetime import timedelta as td
 from functools import reduce
 
@@ -12,11 +11,11 @@ from ._shared import get_forbidden_content_ids
 class ViewHandlers:
     @staticmethod
     def do_auth(action_dict, scope, sender, request, action, **kwargs):
+        if scope != "auth":
+            return None
         # for beeing able to rollback when an error happens
         if action.used:
             action.delete()
-            return None
-        if scope != "auth":
             return None
 
         if issubclass(sender, Content):
@@ -47,18 +46,21 @@ class ViewHandlers:
             raise ValueError("Missing challenge (challenge)")
         if not action_dict.get("requester"):
             raise ValueError("Missing requester (requester)")
-        if not result.get("signatures"):
+        if not action_dict.get("signatures"):
             raise ValueError("Missing signatures (signatures)")
-        len_sigs = reduce(len, result["signatures"])
+        len_sigs = reduce(
+            lambda x, y: x + len(y), action_dict["signatures"], 0
+        )
         if len_sigs == 0:
             raise ValueError("Empty signatures (signatures)")
-
         if (
-            len(result["requester"]) + len_sigs + len(result["challenge"])
+            len(action_dict["requester"])
+            + len_sigs
+            + len(action_dict["challenge"])
             > 10_000_000
         ):
             raise ValueError("auth too big")
-        result = {
+        return {
             "action": "auth",
             "excludeIds": []
             if content
@@ -68,7 +70,6 @@ class ViewHandlers:
             "challenge": str(action_dict["challenge"]),
             "signatures": list(map(str, action_dict["signatures"])),
         }
-        return result
 
     @staticmethod
     def do_view(action_dict, scope, sender, accesslevel, action, **kwargs):
