@@ -11,6 +11,7 @@ from ._shared import get_forbidden_content_ids
 class ViewHandlers:
     @staticmethod
     def do_auth(action_dict, scope, sender, request, action, **kwargs):
+        # for preventing accidentally deletion (Note: 1 hour limit cleans also up)
         if scope != "auth":
             return None
         # for beeing able to rollback when an error happens
