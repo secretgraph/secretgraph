@@ -28,13 +28,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-_cached_classes = {"Content", "Cluster", "Action"}
-
-
 class LazyViewResult(object):
     _result_dict = None
 
-    def __init__(self, fn, request: HttpRequest, *viewResults, authset=None):
+    def __init__(
+        self,
+        fn,
+        request: HttpRequest,
+        *viewResults: list[typings.AllowedObjectsResult],
+        authset=None,
+    ):
         self._result_dict = {}
         self.request = request
         self.authset = authset
@@ -124,7 +127,7 @@ def stub_retrieve_allowed_objects(
     scope: typings.Scope = "view",
     authset: Iterable[str] | set[str] = None,
     query_call: str = "all",
-):
+) -> typings.AuthResultObject:
     if authset is None:
         authset = set(
             getattr(request, "headers", {})
@@ -150,7 +153,7 @@ def stub_retrieve_allowed_objects(
         "authset": authset,
         "scope": scope,
         "rejecting_action": None,
-        "decrypted": {},
+        "action_results": {},
         "active_actions": set(),
         "actions": Action.objects.none(),
         # {id: {(action, hash): id}}  # noqa
@@ -168,7 +171,7 @@ def retrieve_allowed_objects(
     scope: typings.Scope = "view",
     authset: Optional[Iterable[str] | set[str]] = None,
     ignore_restrictions: bool = False,
-):
+) -> typings.AllowedObjectsResult:
     if authset is None:
         authset = set(
             getattr(request, "headers", {})
@@ -205,7 +208,7 @@ def retrieve_allowed_objects(
         "authset": authset,
         "scope": scope,
         "rejecting_action": None,
-        "decrypted": {},
+        "action_results": {},
         "active_actions": set(),
         "actions": Action.objects.none(),
         # {id: {(action, hash): id}}  # noqa
@@ -229,7 +232,7 @@ def retrieve_allowed_objects(
         # execute every action only once
         actions = pre_filtered_actions.filter(
             q, keyHash__in=keyhashes
-        ).exclude(id__in=returnval["decrypted"].keys())
+        ).exclude(id__in=returnval["action_results"].keys())
         if not actions:
             continue
 
@@ -242,7 +245,7 @@ def retrieve_allowed_objects(
         accesslevel = 0
         for action in actions:
             action_dict = action.decrypt_aesgcm(aesgcm)
-            decrypted = ActionHandler.handle_action(
+            action_result = ActionHandler.handle_action(
                 query.model,
                 action_dict,
                 scope=scope,
@@ -251,9 +254,9 @@ def retrieve_allowed_objects(
                 request=request,
                 authset=authset,
             )
-            if decrypted is None:
+            if action_result is None:
                 continue
-            if decrypted is False:
+            if action_result is False:
                 returnval["rejecting_action"] = (action, action_dict)
                 returnval["objects_with_public"] = query.none()
                 returnval["objects_without_public"] = query.none()
@@ -266,19 +269,19 @@ def retrieve_allowed_objects(
                 action_info_dict_ref = returnval[
                     "action_info_clusters"
                 ].setdefault(action.cluster_id, {})
-            returnval["decrypted"].setdefault(action.id, decrypted)
+            returnval["action_results"].setdefault(action.id, action_result)
 
-            newaccesslevel = decrypted["accesslevel"]
+            newaccesslevel = action_result["accesslevel"]
             if accesslevel < newaccesslevel:
                 accesslevel = newaccesslevel
-                filters = decrypted.get("filters", models.Q())
+                filters = action_result.get("filters", models.Q())
 
                 action_info_dict_ref[
                     (action_dict["action"], action.keyHash)
                 ] = [action.id]
                 returnval["active_actions"] = set()
             elif accesslevel == newaccesslevel:
-                filters &= decrypted.get("filters", models.Q())
+                filters &= action_result.get("filters", models.Q())
                 action_info_dict_ref.setdefault(
                     (action_dict["action"], action.keyHash),
                     [],

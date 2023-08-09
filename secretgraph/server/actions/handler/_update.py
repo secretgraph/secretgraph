@@ -516,8 +516,8 @@ class UpdateHandlers:
             s = set(objs.values_list("id", flat=True))
             # now add exclude infos (if not admin)
             # note: manage always resolves, so this is valid
-            for action in res_action["decrypted"]:
-                if action["action"] == "manage":
+            for action in res_action["action_results"]:
+                if action["value"]["action"] == "manage":
                     s.update(action["exclude"].get(type_name, []))
             result["exclude"][type_name] = list(s)
         return result

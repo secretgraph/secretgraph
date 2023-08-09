@@ -141,8 +141,9 @@ SECRETGRAPH_DEFAULT_CLUSTER_GROUPS = {}
 SECRETGRAPH_HASH_ALGORITHMS = ["sha512"]
 # length of tokens used in file names
 SECRETGRAPH_FILETOKEN_LENGTH = 50
-# how many chars can tags/refs have per operation
+# limit of accumated chars of tags and refs per clean method call
 SECRETGRAPH_OPERATION_SIZE_LIMIT = 500000
+# size limit for tag
 SECRETGRAPH_TAG_LIMIT = 8000
 SECRETGRAPH_RATELIMITS = {
     "GRAPHQL_MUTATIONS": "100/2s",

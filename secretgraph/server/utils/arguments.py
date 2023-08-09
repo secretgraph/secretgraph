@@ -12,13 +12,13 @@ def check_actions(actions, result):
     if not actions:
         return
     for action_id in result["active_actions"]:
-        action_dict = result["decrypted"][action_id]
-        if action_dict.get("allowedActions", None) is None:
+        action_result = result["action_results"][action_id]
+        if action_result.get("allowedActions", None) is None:
             pass
         else:
             matcher = re.compile(
                 "^(%s)$"
-                % "|".join(map(re.escape, action_dict["allowedActions"]))
+                % "|".join(map(re.escape, action_result["allowedActions"]))
             )
             if actions.any(lambda x: not matcher.fullmatch(x.value.value)):
                 continue
@@ -35,47 +35,47 @@ def pre_clean_update_content_args(tags, state, references, actions, result):
     injectedRefs = {}
 
     for action_id in result["active_actions"]:
-        action_dict = result["decrypted"][action_id]
+        action_result = result["action_results"][action_id]
         if not actions:
             pass
         else:
-            if action_dict.get("allowedActions", None) is None:
+            if action_result.get("allowedActions", None) is None:
                 pass
             else:
                 matcher = re.compile(
                     "^(%s)$"
-                    % "|".join(map(re.escape, action_dict["allowedActions"]))
+                    % "|".join(map(re.escape, action_result["allowedActions"]))
                 )
                 if actions.any(lambda x: not matcher.fullmatch(x.value.value)):
                     continue
         if not state:
             pass
-        elif action_dict.get("allowedStates", None) is None:
+        elif action_result.get("allowedStates", None) is None:
             pass
         else:
-            if state not in action_dict["allowedStates"]:
+            if state not in action_result["allowedStates"]:
                 continue
 
         if not tags:
             pass
         else:
-            if action_dict.get("allowedTags", None) is None:
+            if action_result.get("allowedTags", None) is None:
                 pass
             else:
                 matcher = re.compile(
                     "^(?:%s)(?:(?<==)|$)"
-                    % "|".join(map(re.escape, action_dict["allowedTags"]))
+                    % "|".join(map(re.escape, action_result["allowedTags"]))
                 )
                 if tags.any(lambda x: not matcher.fullmatch(x)):
                     continue
-        if action_dict["accesslevel"] < 0:
+        if action_result["accesslevel"] < 0:
             continue
         # now mark that at least one action passed the checks
         passed = True
 
-        if action_dict.get("injectedTags"):
-            injectedTags.update(action_dict["injectedTags"])
-        for ref in action_dict.get("injectedRefs") or []:
+        if action_result.get("injectedTags"):
+            injectedTags.update(action_result["injectedTags"])
+        for ref in action_result.get("injectedRefs") or []:
             key = (ref.target, ref.group or "")
             if key in injectedRefs:
                 continue
@@ -121,7 +121,7 @@ def pre_clean_content_spec(create: bool, content, result):
     if create and not ctype:
         raise ValueError("no type found")
     for action_id in result["active_actions"]:
-        action_dict = result["decrypted"][action_id]
+        action_dict = result["action_results"][action_id]
         if not actions:
             pass
         else:

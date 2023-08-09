@@ -10,11 +10,11 @@ AuthActionInfoDict = TypeVar(
 )
 
 
-class ResultObject(TypedDict):
+class AllowedObjectsResult(TypedDict):
     authset: list[str]
     scope: Scope
     rejecting_action: Optional[tuple[models.Action, dict]]
-    decrypted: dict
+    action_results: dict
     active_actions: set[str]
     actions: QuerySet
     # {id: {(action, hash): id}}  # noqa

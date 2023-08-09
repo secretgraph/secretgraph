@@ -74,7 +74,7 @@ def get_forbidden_content_ids(request):
 
     # now add exclude infos of authset
     s = set()
-    r = get_cached_result(
+    result = get_cached_result(
         request,
         scope="manage",
         cacheName="secretgraphCleanResult",
@@ -82,7 +82,8 @@ def get_forbidden_content_ids(request):
     )["Action"]
     # note: manage always resolves, so using Action is possible
     # it also has the advantage of honoring admin
-    for action in r["decrypted"]:
-        if action["action"] == "manage":
-            s.update(action["exclude"].get("Content", []))
+
+    for action in result["action_results"].values():
+        if action["value"]["action"] == "manage":
+            s.update(action["value"]["exclude"].get("Content", []))
     return frozenset(s)

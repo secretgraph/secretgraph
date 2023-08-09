@@ -2,7 +2,7 @@ import re
 
 import hypothesis_graphql
 from django.test import Client
-from hypothesis import given
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.django import TestCase
 from hypothesis_graphql import nodes
@@ -39,6 +39,7 @@ class HypothesisTests(TestCase):
         return super().setUp()
 
     @given(case=base_strategy)
+    @settings(suppress_health_check=(HealthCheck.too_slow,))
     def test_base(self, case):
         response = self.client.post(
             "http://localhost/graphql",

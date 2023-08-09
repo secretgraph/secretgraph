@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Optional, Union
 from uuid import UUID
@@ -70,9 +71,9 @@ class SBaseTypesMixin:
                     # ...doesn't appear here
                     if key_val[0][0] != "view":
                         for action_id in key_val[1]:
-                            _tags = results[name]["decrypted"][action_id].get(
-                                "allowedTags"
-                            )
+                            _tags = results[name]["action_results"][
+                                action_id
+                            ].get("allowedTags")
                             if _tags is not None:
                                 if allowedTags is None:
                                     allowedTags = list()
@@ -149,18 +150,18 @@ class SBaseTypesMixin:
                 if key_val[0][0] == "auth":
                     # in multiple steps using the same token for auth
                     # it is possible to create exactly this scenario
-                    # but it should be seen as error
-                    assert (
-                        len(key_val[1]) == 1
-                    ), "auth should only have one match"
+                    if len(key_val[1]) != 1:
+                        logging.warning(
+                            "multiple auth actions for one token specified, use the first ignore the rest"
+                        )
                     authResult = SGAuthResult(
-                        requester=result["decrypted"][key_val[1][0]][
+                        requester=result["action_results"][key_val[1][0]][
                             "requester"
                         ],
-                        challenge=result["decrypted"][key_val[1][0]][
+                        challenge=result["action_results"][key_val[1][0]][
                             "challenge"
                         ],
-                        signatures=result["decrypted"][key_val[1][0]][
+                        signatures=result["action_results"][key_val[1][0]][
                             "signatures"
                         ],
                     )

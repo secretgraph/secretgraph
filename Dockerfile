@@ -13,12 +13,12 @@ RUN useradd -Mr -G www-data secretgraph
 RUN mkdir -p /var/lib/secretgraph && chown secretgraph:secretgraph /var/lib/secretgraph
 RUN mkdir -p /sockets && chown -R secretgraph:www-data /sockets
 RUN mkdir -p /static && chown -R secretgraph:www-data /static
-RUN mkdir -p /app
+RUN mkdir -p /app/tools
 RUN python -m pip install --no-cache poetry hypercorn[h3,uvloop]
 COPY manage.py poetry.lock pyproject.toml /app
 WORKDIR /app
 RUN poetry install --no-root --no-cache --compile --only main -E server -E proxy -E postgresql -E mysql
 COPY secretgraph /app/secretgraph
-COPY tools /app/tools
+COPY tools/start.sh tools/start_docker.sh /app/tools
 COPY --from=node_build /app/webpack_bundles /app/webpack_bundles
 CMD ["./tools/start_docker.sh"]
