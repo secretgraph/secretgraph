@@ -36,7 +36,7 @@ def mutate_push_content(
     content: PushContentInput,
     authorization: Optional[AuthList] = None,
 ) -> PushContentMutation:
-    objs = Content.objects.all()
+    objs = Content.objects.filter(markForDestruction__isnull=True)
     if content.parent:
         objs = fetch_by_id(objs, content.parent)
     result = retrieve_allowed_objects(

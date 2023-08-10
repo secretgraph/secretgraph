@@ -632,7 +632,7 @@ def get_cached_net_properties(
             )["authset"]
         query = retrieve_allowed_objects(
             request,
-            "Cluster",
+            Cluster.objects.filter(markForDestruction__isnull=True),
             scope="manage",
             authset=authset,
         )["objects_without_public"]

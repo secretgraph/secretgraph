@@ -133,7 +133,9 @@ class SBaseTypesMixin:
         if isinstance(self, Content):
             result = retrieve_allowed_objects(
                 info.context["request"],
-                Content.objects.filter(id=self.id),
+                Content.objects.filter(
+                    id=self.id, markForDestruction__isnull=True
+                ),
                 scope="auth",
                 authset=viewresult.authset,
             )
@@ -147,7 +149,9 @@ class SBaseTypesMixin:
         else:
             result = retrieve_allowed_objects(
                 info.context["request"],
-                Cluster.objects.filter(id=self.id),
+                Cluster.objects.filter(
+                    id=self.id, markForDestruction__isnull=True
+                ),
                 scope="auth",
                 authset=viewresult.authset,
             )
