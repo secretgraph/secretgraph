@@ -51,7 +51,7 @@ NO_USERS = os.environ.get("SECRETGRAPH_NO_USERS", "false").lower() == "true"
 if not NO_USERS:
     INSTALLED_APPS += [  # noqa F405
         "django.contrib.sessions",  # required for auth
-        "django.contrib.admin",  # required for templates
+        "django.contrib.admin",  # required for templates (and for SECRETGRAPH_ADMINAREA)
         "django.contrib.auth",  # required for user
         "django.contrib.contenttypes",  # required for auth
         "secretgraph.server",
