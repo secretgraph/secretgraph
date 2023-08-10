@@ -23,7 +23,8 @@ from .hashing import calculateHashes
 if TYPE_CHECKING:
     from django.http import HttpRequest
 
-    from ...core import typings
+    from ...core.typings import Scope
+    from ..typings import AllowedObjectsResult
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class LazyViewResult(object):
         self,
         fn,
         request: HttpRequest,
-        *viewResults: list[typings.AllowedObjectsResult],
+        *viewResults: list[AllowedObjectsResult],
         authset=None,
     ):
         self._result_dict = {}
@@ -124,10 +125,10 @@ def _speedup_tokenparsing(
 def stub_retrieve_allowed_objects(
     request: HttpRequest,
     query: models.QuerySet | str,
-    scope: typings.Scope = "view",
+    scope: Scope = "view",
     authset: Iterable[str] | set[str] = None,
     query_call: str = "all",
-) -> typings.AuthResultObject:
+) -> AllowedObjectsResult:
     if authset is None:
         authset = set(
             getattr(request, "headers", {})
@@ -168,10 +169,10 @@ def stub_retrieve_allowed_objects(
 def retrieve_allowed_objects(
     request: HttpRequest,
     query: models.QuerySet | str,
-    scope: typings.Scope = "view",
+    scope: Scope = "view",
     authset: Optional[Iterable[str] | set[str]] = None,
     ignore_restrictions: bool = False,
-) -> typings.AllowedObjectsResult:
+) -> AllowedObjectsResult:
     if authset is None:
         authset = set(
             getattr(request, "headers", {})
