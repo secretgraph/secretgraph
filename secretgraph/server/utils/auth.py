@@ -189,6 +189,9 @@ def retrieve_allowed_objects(
         )
     if isinstance(query, str):
         query = apps.get_model("secretgraph", query).objects.all()
+        need_query_restriction = False
+    else:
+        need_query_restriction = bool(query.query.has_filters())
     now = timezone.now()
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
@@ -199,11 +202,31 @@ def retrieve_allowed_objects(
         pre_filtered_actions = pre_filtered_actions.filter(
             cluster__net__active=True, start__lte=now
         ).filter(models.Q(stop__isnull=True) | models.Q(stop__gte=now))
-    if issubclass(query.model, Content):
+    # if the query is not the all query
+    if need_query_restriction:
+        if issubclass(query.model, Content):
+            related_cluster_query = Cluster.objects.filter(
+                models.Exists(query.filter(cluster_id=models.OuterRef("id")))
+            )
+            pre_filtered_actions = pre_filtered_actions.filter(
+                models.Q(
+                    contentAction__isnull=True,
+                    cluster_id__in=models.Subquery(
+                        related_cluster_query.values("id")
+                    ),
+                )
+                | models.Q(contentAction__content__in=query)
+            )
+        elif issubclass(query.model, Cluster):
+            pre_filtered_actions = pre_filtered_actions.filter(
+                cluster__in=query
+            )
+    # only show non content actions
+    if issubclass(query.model, Cluster):
         pre_filtered_actions = pre_filtered_actions.filter(
-            models.Q(contentAction__isnull=True)
-            | models.Q(contentAction__content__in=query)
+            contentAction__isnull=True
         )
+
     returnval = {
         "authset": authset,
         "scope": scope,
@@ -227,7 +250,7 @@ def retrieve_allowed_objects(
             contentAction__content__flexid_cached=flexid_cached
         ) | models.Q(cluster__flexid_cached=flexid_cached)
         if issubclass(query.model, Cluster):
-            # don't block auth with @system
+            # don't block auth with encoded @system
             q |= models.Q(cluster__name_cached=flexid_cached)
         # execute every action only once
         actions = pre_filtered_actions.filter(
@@ -410,6 +433,7 @@ def fetch_by_id_noconvert(
     check_short_id=False,
     check_short_name=False,
 ) -> models.QuerySet:
+    """Speed optimized fetch_by_id in case data is in right format"""
     # empty tuple => shortcut
     if not flexids:
         return query.none()
@@ -607,7 +631,7 @@ def get_cached_net_properties(
             )["authset"]
         query = retrieve_allowed_objects(
             request,
-            Cluster.objects.all(),
+            "Cluster",
             scope="manage",
             authset=authset,
         )["objects_without_public"]

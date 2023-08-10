@@ -10,7 +10,11 @@ from strawberry.types import Info
 
 from ....core import constants
 from ...models import Cluster, Content
-from ...utils.auth import get_cached_net_properties, get_cached_result
+from ...utils.auth import (
+    get_cached_net_properties,
+    get_cached_result,
+    retrieve_allowed_objects,
+)
 
 
 @strawberry.type
@@ -123,18 +127,16 @@ class SBaseTypesMixin:
     ) -> Optional[SGAuthResult]:
         if self.limited or self.reduced:
             return None
-        name = self.__class__.__name__.replace("Node", "", 1)
         viewresult = get_cached_result(
             info.context["request"], ensureInitialized=True
         )
-        result = get_cached_result(
-            info.context["request"],
-            cacheName="secretgraphAuthResult",
-            scope="auth",
-            authset=viewresult.authset,
-        )[name]
-        authResult = None
         if isinstance(self, Content):
+            result = retrieve_allowed_objects(
+                info.context["request"],
+                Content.objects.filter(id=self.id),
+                scope="auth",
+                authset=viewresult.authset,
+            )
             # if content: check cluster and content keys
             mappers = [
                 result.get("action_info_contents", {}).get(self.id, {}),
@@ -143,7 +145,14 @@ class SBaseTypesMixin:
                 ),
             ]
         else:
+            result = retrieve_allowed_objects(
+                info.context["request"],
+                Cluster.objects.filter(id=self.id),
+                scope="auth",
+                authset=viewresult.authset,
+            )
             mappers = [result.get("action_info_clusters", {}).get(self.id, {})]
+        authResult = None
         for mapper in mappers:
             for key_val in mapper.items():
                 # use first auth token match

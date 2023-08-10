@@ -69,7 +69,7 @@ def _update_or_create_cluster(
     ):
         manage = retrieve_allowed_objects(
             request,
-            Cluster.objects.all(),
+            "Cluster",
             scope="manage",
             authset=authset,
         )["objects_without_public"]
@@ -97,7 +97,7 @@ def _update_or_create_cluster(
         if not net:
             if retrieve_allowed_objects(
                 request,
-                Cluster.objects.all(),
+                "Cluster",
                 scope="manage",
                 authset=authset,
                 ignore_restrictions=True,

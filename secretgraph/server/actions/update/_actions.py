@@ -75,7 +75,7 @@ def manage_actions_fn(
             request,
             retrieve_allowed_objects(
                 request,
-                cluster.actions.all(),
+                "Cluster",
                 scope="manage",
                 authset=authset,
             ),
