@@ -111,6 +111,8 @@ export const createClusterMutation = gql`
         $primary: Boolean
         $actions: [ActionInput!]
         $keys: [ContentKeyInput!]
+        $clusterGroups: [String!]
+        $netGroups: [String!]
         $authorization: [String!]
     ) {
         secretgraph {
@@ -123,6 +125,8 @@ export const createClusterMutation = gql`
                         featured: $featured
                         primary: $primary
                         keys: $keys
+                        clusterGroups: $clusterGroups
+                        netGroups: $netGroups
                     }
                     authorization: $authorization
                 }
@@ -171,6 +175,8 @@ export const updateClusterMutation = gql`
         $featured: Boolean
         $primary: Boolean
         $actions: [ActionInput!]
+        $clusterGroups: [String!]
+        $netGroups: [String!]
         $authorization: [String!]
     ) {
         secretgraph {
@@ -184,6 +190,8 @@ export const updateClusterMutation = gql`
                         actions: $actions
                         featured: $featured
                         primary: $primary
+                        clusterGroups: $clusterGroups
+                        netGroups: $netGroups
                     }
                     authorization: $authorization
                 }

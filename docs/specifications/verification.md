@@ -10,8 +10,10 @@
 
 ## Verification
 
-Secretgraph proposes the concept of partial trees for verification as a full tree would require all key-value pairs, which source is maybe not shared for privacy reasons.
-Instead of certain keys and corresponding values are extracted, put in a one dimensional array, Sorted and used for unique hash
+Secretgraph proposes the concept of partial trees for verification as a full tree would require all key-value pairs, from which some tree parts are maybe not shared for privacy reasons.
+Instead of certain keys and corresponding values are extracted. We may need to add a key named salt with a random value which is also part of the hash to prevent extracting additional information by trying.
+
+To build the hash, we put the key value pairs in a one dimensional array, sort it and use it for the unique hash
 
 ## Draft concept
 

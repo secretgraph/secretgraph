@@ -1,8 +1,7 @@
 # TODO
 
--   finish auth: test workflow
--   implement UserSelectable
--   editor for Personal Data
+-   implement UserSelectable in frontend (in progress)
+-   editor for Personal Data (in progress)
 -   verification workflow in tests
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   complete share

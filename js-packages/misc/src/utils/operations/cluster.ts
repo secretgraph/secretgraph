@@ -24,6 +24,8 @@ export async function createCluster(options: {
     publicKey: CryptoKey
     privateKey?: CryptoKey
     privateKeyKey?: Uint8Array
+    clusterGroups?: string[]
+    netGroups?: string[]
     authorization?: string[]
 }): Promise<FetchResult<any>> {
     let nonce: null | Uint8Array = null
@@ -67,6 +69,8 @@ export async function createCluster(options: {
                     privateTags,
                     publicTags: ['name=initial key'],
                     nonce: nonce ? await serializeToBase64(nonce) : null,
+                    clusterGroups: options.clusterGroups,
+                    netGroups: options.netGroups,
                 },
             ],
             nonce: nonce ? await serializeToBase64(nonce) : null,
@@ -88,6 +92,8 @@ export async function updateCluster(options: {
     net?: string
     name?: string
     description?: string
+    clusterGroups?: string[]
+    netGroups?: string[]
     authorization: string[]
 }): Promise<FetchResult<any>> {
     return await options.client.mutate({
@@ -102,6 +108,8 @@ export async function updateCluster(options: {
             authorization: options.authorization,
             featured: options.featured,
             primary: options.primary,
+            clusterGroups: options.clusterGroups,
+            netGroups: options.netGroups,
         },
     })
 }
@@ -128,6 +136,8 @@ export async function initializeCluster({
     hashAlgorithm: string
     noteToken: string
     noteCertificate: string
+    clusterGroups?: string[]
+    netGroups?: string[]
 }) {
     const manage_key = crypto.getRandomValues(new Uint8Array(50))
     const view_key = crypto.getRandomValues(new Uint8Array(50))
