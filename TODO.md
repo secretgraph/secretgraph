@@ -1,5 +1,6 @@
 # TODO
 
+-   fix keys, invalid cluster id is given (content instead of cluster)
 -   implement UserSelectable in frontend (in progress)
 -   editor for Personal Data (in progress)
 -   verification workflow in tests

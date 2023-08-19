@@ -33,6 +33,12 @@ function updateState<T>(state: T, update: Partial<T>): T {
     const newState = Object.assign({}, state)
     for (const key of Object.keys(update) as (keyof typeof update)[]) {
         let val = update[key]
+        if (key == 'editCluster' || key == 'currentCluster') {
+            // protect against invalid clusters
+            if (val && !(val as string).startsWith('Q2x1c3Rlcj')) {
+                throw Error('not a cluster id: ' + val)
+            }
+        }
         if (val !== undefined) {
             newState[key] = val as any
         }

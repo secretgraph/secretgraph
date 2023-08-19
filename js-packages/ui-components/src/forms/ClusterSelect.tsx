@@ -102,6 +102,7 @@ export default function ClusterSelect<
         }
         props.form.setFieldValue(props.field.name, ids[0])
     }, [ids.length ? ids[0] : ' '])
+    // TODO: prevent invalid values (id != cluster)
     return (
         <SimpleSelect
             {...props}
