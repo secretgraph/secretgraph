@@ -19,6 +19,7 @@ from secretgraph.queries.cluster import createClusterMutation
 from secretgraph.queries.content import createContentMutation
 from secretgraph.queries.key import createKeysMutation
 from secretgraph.schema import schema
+from secretgraph.server.models import Cluster, Content
 
 
 class BasicTests(TestCase):
@@ -62,6 +63,10 @@ class BasicTests(TestCase):
             },
             StrawberryDjangoContext(request=request, response=None),
         )
+        self.assertEqual(
+            await Cluster.objects.exclude(name="@system").acount(), 1
+        )
+        self.assertEqual(await Content.objects.acount(), 0)
         self.assertFalse(result.errors)
         clusterid = result.data["secretgraph"]["updateOrCreateCluster"][
             "cluster"
@@ -104,6 +109,11 @@ class BasicTests(TestCase):
                 StrawberryDjangoContext(request=request, response=None),
             )
             self.assertTrue(result.data)
+        self.assertEqual(
+            await Cluster.objects.exclude(name="@system").acount(), 1
+        )
+        # one public key is created
+        self.assertEqual(await Content.objects.acount(), 1)
 
     async def test_create_cluster_and_content_with_keys(self):
         manage_token = os.urandom(50)
@@ -252,3 +262,7 @@ class BasicTests(TestCase):
             )
             self.assertFalse(result.errors)
             self.assertTrue(result.data)
+        self.assertEqual(
+            await Cluster.objects.exclude(name="@system").acount(), 1
+        )
+        self.assertEqual(await Content.objects.acount(), 3)

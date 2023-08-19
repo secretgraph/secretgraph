@@ -7,14 +7,9 @@ import {
     authInfoFromConfig,
     updateConfigReducer,
 } from '@secretgraph/misc/utils/config'
-import {
-    b64tobuffer,
-    fromGraphqlId,
-    toGraphqlId,
-    utf8ToBinary,
-    utf8decoder,
-} from '@secretgraph/misc/utils/encoding'
+import { fromGraphqlId, toGraphqlId } from '@secretgraph/misc/utils/encoding'
 import { createClient } from '@secretgraph/misc/utils/graphql'
+import { InvalidPrefix, checkPrefix } from '@secretgraph/misc/utils/misc'
 import * as React from 'react'
 
 import * as Contexts from './contexts'
@@ -29,14 +24,27 @@ type Props = {
     >
 }
 
-function updateState<T>(state: T, update: Partial<T>): T {
+function updateStateSearch<T>(state: T, update: Partial<T>): T {
+    const newState = Object.assign({}, state)
+    for (const key of Object.keys(update) as (keyof typeof update)[]) {
+        let val = update[key]
+        if (val !== undefined) {
+            newState[key] = val as any
+        }
+    }
+    return newState
+}
+function updateStateMain<T>(state: T, update: Partial<T>): T {
     const newState = Object.assign({}, state)
     for (const key of Object.keys(update) as (keyof typeof update)[]) {
         let val = update[key]
         if (key == 'editCluster' || key == 'currentCluster') {
-            // protect against invalid clusters
-            if (val && !(val as string).startsWith('Q2x1c3Rlcj')) {
-                throw Error('not a cluster id: ' + val)
+            // check cluster
+            try {
+                checkPrefix(val as string, 'Q2x1c3Rlcj')
+            } catch (error) {
+                console.error(error)
+                continue
             }
         }
         if (val !== undefined) {
@@ -72,7 +80,7 @@ function Definitions({
     const [mainCtx, updateMainCtx] = React.useReducer<
         updateStateType<Interfaces.MainContextInterface>,
         URLSearchParams
-    >(updateState, searchInit, (query) => {
+    >(updateStateMain, searchInit, (query) => {
         const vActions = config ? validActions : validNotLoggedInActions
         let action: Interfaces.MainContextInterface['action'] = config
             ? 'create'
@@ -176,7 +184,7 @@ function Definitions({
 
     const [searchCtx, updateSearchCtx] = React.useReducer<
         updateStateType<Interfaces.SearchContextInterface>
-    >(updateState, {
+    >(updateStateSearch, {
         cluster: null,
         include: [],
         exclude: [],

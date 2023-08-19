@@ -4,6 +4,7 @@ import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
 import { fromGraphqlId } from '@secretgraph/misc/utils/encoding'
+import { checkPrefix } from '@secretgraph/misc/utils/misc'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -70,22 +71,24 @@ export default function ClusterSelect<
             return ret
         }
         for (const { node } of data.clusters.clusters.edges) {
-            if (!node.id) {
-                console.debug('invalid node', node)
-            } else {
-                if (
-                    !node.availableActions.some((val: any) =>
-                        _valid_set.has(val.type)
-                    )
-                ) {
-                    ret.disabled.add(node.id)
-                }
-                ret.ids.push(node.id)
-                if (node.name || node.description) {
-                    ret.labelMap[node.id] = {
-                        name: node.name,
-                        description: node.description,
-                    }
+            try {
+                checkPrefix(node.id, 'Q2x1c3Rlcj', true)
+            } catch (error) {
+                console.warn('found cluster ids have an error', error)
+                continue
+            }
+            if (
+                !node.availableActions.some((val: any) =>
+                    _valid_set.has(val.type)
+                )
+            ) {
+                ret.disabled.add(node.id)
+            }
+            ret.ids.push(node.id)
+            if (node.name || node.description) {
+                ret.labelMap[node.id] = {
+                    name: node.name,
+                    description: node.description,
                 }
             }
         }
@@ -102,7 +105,12 @@ export default function ClusterSelect<
         }
         props.form.setFieldValue(props.field.name, ids[0])
     }, [ids.length ? ids[0] : ' '])
-    // TODO: prevent invalid values (id != cluster)
+    try {
+        checkPrefix(props.form.values[props.field.name], 'Q2x1c3Rlcj')
+    } catch (error) {
+        console.error(error)
+        return null
+    }
     return (
         <SimpleSelect
             {...props}

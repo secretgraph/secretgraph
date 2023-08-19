@@ -42,7 +42,7 @@ import {
     hashKey,
     hashObject,
 } from '@secretgraph/misc/utils/hashing'
-import { fallback_fetch } from '@secretgraph/misc/utils/misc'
+import { checkPrefix, fallback_fetch } from '@secretgraph/misc/utils/misc'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations/config'
 import { decryptContentObject } from '@secretgraph/misc/utils/operations/content'
 import { createKeys, updateKey } from '@secretgraph/misc/utils/operations/key'
@@ -1397,7 +1397,7 @@ async function findOrReturn({
     id: string | null
     url: string | null
     authorization: string[]
-}): Promise<[string, string | null] | null | true> {
+}): Promise<{ content: string; cluster: string | null } | null | true> {
     if (!id || !url) {
         return true
     }
@@ -1418,10 +1418,10 @@ async function findOrReturn({
         d = node.references
     }
     if (d && d.edges.length) {
-        return [
-            d.edges[0].node.target.id,
-            d.edges[0].node.target.cluster?.id || null,
-        ]
+        return {
+            content: d.edges[0].node.target.id,
+            cluster: d.edges[0].node.target.cluster?.id || null,
+        }
     }
     return null
 }
@@ -1450,18 +1450,21 @@ export default function KeyComponent() {
                     setBarrier(undefined)
                 } else if (result) {
                     let authInfo = undefined
-                    if (result[1] && result[1] != mainCtx.editCluster) {
+                    if (
+                        result.cluster &&
+                        result.cluster != mainCtx.editCluster
+                    ) {
                         authInfo = authInfoFromConfig({
                             config,
                             url: mainCtx.url as string,
-                            contents: new Set([result[0]]),
-                            clusters: new Set([result[1]]),
+                            contents: new Set([result.content]),
+                            clusters: new Set([result.cluster]),
                         })
                     }
                     updateMainCtx({
-                        item: result[0],
-                        editCluster: result[1] || undefined,
-                        currentCluster: result[1] || undefined,
+                        item: result.content,
+                        editCluster: result.cluster || undefined,
+                        currentCluster: result.cluster || undefined,
                         type: 'PublicKey',
                         tokens: authInfo?.tokens || undefined,
                         tokensPermissions: authInfo?.types || undefined,
