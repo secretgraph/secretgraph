@@ -1,18 +1,13 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import TreeItem from '@mui/lab/TreeItem'
-import TreeView from '@mui/lab/TreeView'
 import Divider from '@mui/material/Divider'
 import Drawer from '@mui/material/Drawer'
 import { useTheme } from '@mui/material/styles'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
+import { TreeItem } from '@mui/x-tree-view/TreeItem'
+import { TreeView } from '@mui/x-tree-view/TreeView'
 import * as Constants from '@secretgraph/misc/constants'
-import * as Interfaces from '@secretgraph/misc/interfaces'
 import { Writeable } from '@secretgraph/misc/typing'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import * as SetOps from '@secretgraph/misc/utils/set'
 import { CapturingSuspense } from '@secretgraph/ui-components/misc'
 import * as React from 'react'
 
@@ -24,7 +19,6 @@ const SideBarNotifications = React.lazy(() => import('./notifications')) */
 import SideBarClusters from './clusters'
 import SideBarContents from './contents'
 import SideBarHeader from './header'
-import SideBarNotifications from './notifications'
 import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 
 const SideBarItems = () => {

@@ -6,7 +6,6 @@
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   complete share
     -   add option to save new token in config (not auth)
--   editors starting with : for meta editors like galeries (real types cannot contain ":")
 -   teach decryptObject transfer
 -   keys need more infos, like callback url, item and tokens
 -   key callbacks: graphqlurl?item=baseCluster&token=... or contenturl?token= for pushable contents
@@ -25,6 +24,7 @@
 
 # TODO later
 
+-   editors starting with : for meta editors like galeries (real types cannot contain ":")
 -   allow token stubs, only containing description
 -   select certificates a private content is encrypted for
 -   cleanup utils/arguments.py

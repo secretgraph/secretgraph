@@ -1,4 +1,5 @@
-import '@mui/lab/themeAugmentation'
+import type {} from '@mui/lab/themeAugmentation'
+import type {} from '@mui/x-tree-view/themeAugmentation'
 
 import { Theme, createTheme, responsiveFontSizes } from '@mui/material/styles'
 

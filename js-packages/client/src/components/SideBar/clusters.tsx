@@ -1,12 +1,7 @@
-import {
-    ApolloClient,
-    useApolloClient,
-    useLazyQuery,
-    useQuery,
-} from '@apollo/client'
+import { useLazyQuery } from '@apollo/client'
 import GroupWorkIcon from '@mui/icons-material/GroupWork'
 import ReplayIcon from '@mui/icons-material/Replay'
-import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem'
+import { TreeItem, TreeItemProps } from '@mui/x-tree-view/TreeItem'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'

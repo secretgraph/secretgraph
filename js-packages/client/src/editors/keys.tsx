@@ -227,6 +227,7 @@ async function loadKeys({
 async function calcPublicKey(key: string, hashAlgorithm: string) {
     const keyParams = {
         name: 'RSA-OAEP',
+        hash: Constants.mapHashNames[hashAlgorithm].operationName,
     }
     // can fail, fail wanted
     const matchedPrivKey = (
@@ -234,6 +235,7 @@ async function calcPublicKey(key: string, hashAlgorithm: string) {
             /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
         ) as string[]
     )[1]
+    // convert
     const publicKey = await unserializeToArrayBuffer(
         unserializeToCryptoKey(matchedPrivKey, keyParams, 'publicKey')
     )
@@ -247,8 +249,10 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
     if (hashAlgorithms.length == 0) {
         return []
     }
+    // hash doesn't matter, just make sure to have one for appeasing importKey
     const keyParams = {
         name: 'RSA-OAEP',
+        hash: Constants.mapHashNames[hashAlgorithms[0]].operationName,
     }
     // can fail, fail wanted
     const matchedPubKey = (
@@ -256,6 +260,7 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
             /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
         ) as string[]
     )[1]
+    // should not convert, it must be a public key
     const rawKey = await unserializeToArrayBuffer(
         unserializeToCryptoKey(matchedPubKey, keyParams, 'publicKey', true)
     )
@@ -299,7 +304,10 @@ function UpdateKeysForm({
     const updateCallbacks = React.useCallback((callbacks: string[]) => {
         const ncallbacks = callbacks.filter((val) => val)
         ncallbacks.sort()
-        if (ncallbacks[ncallbacks.length - 1] != '') {
+        if (
+            ncallbacks.length == 0 ||
+            ncallbacks[ncallbacks.length - 1] != ''
+        ) {
             ncallbacks.push('')
         }
         setFieldValue('callbacks', ncallbacks)
@@ -311,20 +319,22 @@ function UpdateKeysForm({
             if (!values.publicKey) {
                 setJoinedHashes('')
                 setFieldError('publicKey', 'Empty')
+                return
             }
-            await calcHashes(values.publicKey, hashAlgorithmsWorking).then(
-                (data) => {
-                    if (!active) return
-                    setJoinedHashes(data.join(', '))
-                    setFieldError('publicKey', undefined)
-                },
-                (reason) => {
-                    if (!active) return
-                    console.debug(reason)
-                    setJoinedHashes('')
-                    setFieldError('publicKey', 'Invalid Key')
-                }
-            )
+            try {
+                const data = await calcHashes(
+                    values.publicKey,
+                    hashAlgorithmsWorking
+                )
+                if (!active) return
+                setJoinedHashes(data.join(', '))
+                setFieldError('publicKey', undefined)
+            } catch (error) {
+                if (!active) return
+                console.debug('error', error)
+                setJoinedHashes('')
+                setFieldError('publicKey', 'Invalid Key')
+            }
         }
         fn()
         return () => {
@@ -411,9 +421,19 @@ function UpdateKeysForm({
                         padding: (theme) => theme.spacing(2, 0, 4, 0),
                     }}
                 >
-                    <Typography variant="h4">Callbacks</Typography>
+                    <Typography variant="h5">Callbacks</Typography>
                     {values.callbacks.map((tag: string, index: number) => (
-                        <Field name={`tags[${index}]`} key={index}>
+                        <Field
+                            name={`callbacks[${index}]`}
+                            key={index}
+                            validate={(val: string) => {
+                                try {
+                                    new URL(val)
+                                } catch (e) {
+                                    return 'Invalid callback url'
+                                }
+                            }}
+                        >
                             {(formikFieldProps: FieldProps) => {
                                 return (
                                     <FormikTextField
@@ -425,7 +445,6 @@ function UpdateKeysForm({
                                                 theme.spacing(2),
                                         }}
                                         fullWidth
-                                        variant="filled"
                                         disabled={disabled || isSubmitting}
                                         onBlur={(ev) => {
                                             updateCallbacks(values.callbacks)
@@ -444,18 +463,20 @@ function UpdateKeysForm({
                         </Field>
                     ))}
                 </Box>
-                <Typography variant="h5" gutterBottom>
-                    Key hashes
-                </Typography>
-                <Typography
-                    variant="body2"
-                    style={{
-                        wordBreak: 'break-all',
-                        whiteSpace: 'pre-line',
-                    }}
-                >
-                    {joinedHashes}
-                </Typography>
+                <div>
+                    <Typography variant="h5" gutterBottom>
+                        Key hashes
+                    </Typography>
+                    <Typography
+                        variant="body2"
+                        style={{
+                            wordBreak: 'break-all',
+                            whiteSpace: 'pre-line',
+                        }}
+                    >
+                        {joinedHashes}
+                    </Typography>
+                </div>
                 {canSelectCluster ? (
                     <Field
                         component={ClusterSelectViaUrl}
@@ -606,24 +627,24 @@ function UpdateKeysForm({
                                             val,
                                             hashAlgorithmsWorking[0]
                                         ).then(
-                                            async (data) => {
-                                                setFieldValue(
-                                                    'publicKey',
-                                                    data,
-                                                    true
-                                                )
-                                                await calcHashes(
-                                                    data,
-                                                    hashAlgorithmsWorking
-                                                ).then((data) => {
-                                                    setJoinedHashes(
-                                                        data.join(', ')
+                                            (data) => {
+                                                if (values.publicKey != data) {
+                                                    console.debug(
+                                                        'Generate public key'
                                                     )
-                                                })
+                                                    setFieldValue(
+                                                        'publicKey',
+                                                        data,
+                                                        true
+                                                    )
+                                                }
                                                 return null
                                             },
                                             (reason) => {
-                                                console.debug(reason)
+                                                console.debug(
+                                                    'generating public key failed',
+                                                    reason
+                                                )
                                                 return 'Invalid Key'
                                             }
                                         )
@@ -851,6 +872,12 @@ const KeysUpdate = ({
             validFor: ['PublicKey', 'PrivateKey'],
         }
     )
+    const callbacks = publicKey?.tags?.callbacks
+        ? publicKey.tags.callbacks
+        : []
+    if (callbacks.length == 0 && !viewOnly) {
+        callbacks.push('')
+    }
     const initialValues = {
         cluster: mainCtx.editCluster,
         state: publicKey?.nodeData?.state,
@@ -858,7 +885,7 @@ const KeysUpdate = ({
         description: publicKey?.tags?.description
             ? publicKey.tags.description[0]
             : '',
-        callbacks: publicKey?.tags?.callbacks ? publicKey.tags.callbacks : [],
+        callbacks,
         publicKey: publicKey
             ? `-----BEGIN PUBLIC KEY-----\n${Buffer.from(
                   publicKey.data

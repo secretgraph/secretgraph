@@ -25,6 +25,7 @@
         "@mui/icons-material": "*",
         "@mui/lab": "*",
         "@mui/x-date-pickers": "*",
+        "@mui/x-tree-view": "*",
         "@mui/system": "*",
         "date-fns": "*"
     },
