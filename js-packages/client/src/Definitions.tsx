@@ -118,6 +118,7 @@ function Definitions({
             editCluster: cluster,
             cloneData: null,
         }
+        // initialize clusters when type = Cluster and therefore no cluster query parameter exists
         if (ctx.type == 'Cluster' && !ctx.currentCluster) {
             try {
                 checkPrefix(ctx.item, { prefix: 'Cluster:', b64: true })
