@@ -22,13 +22,13 @@ export default function LoadingComponent() {
                 let authinfo = authInfoFromConfig({
                     config,
                     url: mainCtx.url || config.baseUrl,
-                    contents:
-                        mainCtx.type == 'Cluster' || !mainCtx.item
-                            ? undefined
-                            : new Set([mainCtx.item]),
-                    clusters: !mainCtx.currentCluster
-                        ? undefined
-                        : new Set([mainCtx.currentCluster]),
+                    // we cannot check type here as it is loading
+                    contents: mainCtx.item
+                        ? new Set([mainCtx.item])
+                        : undefined,
+                    clusters: mainCtx.currentCluster
+                        ? new Set([mainCtx.currentCluster])
+                        : undefined,
                     require,
                 })
                 if (!authinfo.tokens.length) {
