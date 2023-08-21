@@ -15,11 +15,7 @@ export default function LoadingComponent() {
         const f = async () => {
             if (['update', 'view'].includes(mainCtx.action)) {
                 const require = new Set(
-                    mainCtx.action == 'create'
-                        ? mainCtx.type == 'Cluster'
-                            ? ['manage']
-                            : ['manage', 'create']
-                        : mainCtx.action == 'update'
+                    mainCtx.action == 'update'
                         ? ['manage', 'update']
                         : ['view', 'update', 'manage']
                 )
@@ -62,13 +58,23 @@ export default function LoadingComponent() {
                                             .type,
                                         tokens: authinfo.tokens,
                                         tokensPermissions: authinfo.types,
+                                        editCluster:
+                                            result.data.secretgraph.node
+                                                .cluster.id,
+                                        currentCluster:
+                                            result.data.secretgraph.node
+                                                .cluster.id,
                                     })
                                 } else {
+                                    // Cluster
                                     updateMainCtx({
-                                        type: result.data.secretgraph.node
-                                            .__typename,
+                                        type: 'Cluster',
                                         tokens: authinfo.tokens,
                                         tokensPermissions: authinfo.types,
+                                        editCluster:
+                                            result.data.secretgraph.node.id,
+                                        currentCluster:
+                                            result.data.secretgraph.node.id,
                                     })
                                 }
                             } else {

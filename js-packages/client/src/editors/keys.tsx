@@ -42,7 +42,7 @@ import {
     hashKey,
     hashObject,
 } from '@secretgraph/misc/utils/hashing'
-import { checkPrefix, fallback_fetch } from '@secretgraph/misc/utils/misc'
+import { fallback_fetch } from '@secretgraph/misc/utils/misc'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations/config'
 import { decryptContentObject } from '@secretgraph/misc/utils/operations/content'
 import { createKeys, updateKey } from '@secretgraph/misc/utils/operations/key'
@@ -844,7 +844,7 @@ interface KeysUpdateProps {
         signWith: boolean
         mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     }
-    setCluster?: (arg: string) => void
+    canSelectCluster: boolean
     url: string
 }
 
@@ -853,7 +853,7 @@ const KeysUpdate = ({
     hashAlgorithmsRaw,
     publicKey,
     privateKey,
-    setCluster,
+    canSelectCluster,
     url,
     viewOnly,
     disabled,
@@ -1208,7 +1208,7 @@ const KeysUpdate = ({
                         hashAlgorithmsWorking={hashAlgorithmsWorking}
                         url={url}
                         generateButton={!publicKey}
-                        canSelectCluster={!!setCluster}
+                        canSelectCluster={canSelectCluster}
                         viewOnly={viewOnly}
                         disabled={disabled}
                     />
@@ -1221,7 +1221,6 @@ const KeysUpdate = ({
 function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [cluster, setCluster] = React.useState<string | null>(null)
     const [data, setData] = React.useState<
         | (UnpackPromise<ReturnType<typeof loadKeys>> & {
               key: string
@@ -1229,7 +1228,11 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
         | null
     >(null)
 
-    const { refetch, data: dataUnfinished } = useQuery(keysRetrievalQuery, {
+    let {
+        refetch,
+        data: dataUnfinished,
+        loading,
+    } = useQuery(keysRetrievalQuery, {
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
         variables: {
@@ -1238,22 +1241,28 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
         },
         onError: console.error,
     })
+
     React.useEffect(() => {
         if (dataUnfinished) {
+            loading = true
             refetch()
         }
-    }, [mainCtx.updateId, cluster])
+    }, [mainCtx.updateId])
+
+    React.useEffect(() => {
+        if (
+            dataUnfinished &&
+            dataUnfinished.secretgraph.node.cluster.id != mainCtx.editCluster
+        ) {
+            loading = true
+            refetch()
+        }
+    }, [mainCtx.editCluster])
 
     React.useEffect(() => {
         let active = true
-        if (!dataUnfinished) {
+        if (!dataUnfinished || loading) {
             return
-        }
-        if (!cluster) {
-            if (!dataUnfinished.secretgraph.node.cluster.id) {
-                throw Error('no cluster found')
-            }
-            setCluster(dataUnfinished.secretgraph.node.cluster.id)
         }
         const f = async () => {
             const updateOb: Partial<Interfaces.MainContextInterface> = {
@@ -1316,11 +1325,9 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
             {...data}
             url={mainCtx.url as string}
             viewOnly={viewOnly}
-            setCluster={
+            canSelectCluster={
                 mainCtx.tokensPermissions.has('manage') ||
                 mainCtx.tokensPermissions.has('delete')
-                    ? setCluster
-                    : undefined
             }
         />
     )
@@ -1378,9 +1385,7 @@ function CreateKeys() {
     return (
         <KeysUpdate
             url={activeUrl}
-            setCluster={(cluster: string) =>
-                updateMainCtx({ editCluster: cluster })
-            }
+            canSelectCluster
             disabled={loading}
             {...algosAndKey}
         />

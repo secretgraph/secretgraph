@@ -1,27 +1,5 @@
 import { isNotEq } from './set'
 
-export class InvalidPrefix extends Error {}
-
-export function checkPrefix(
-    inp: string | null | undefined | (string | null)[],
-    prefix: string,
-    forceTrue: boolean = false
-) {
-    if (inp instanceof Array) {
-        for (const elem of inp) {
-            checkPrefix(elem, prefix)
-        }
-    } else if (forceTrue && (!inp || !inp.startsWith(prefix))) {
-        throw new InvalidPrefix(
-            `Input doesn't match: ${inp}, prefix: ${prefix}`
-        )
-    } else if (inp && !inp.startsWith(prefix)) {
-        throw new InvalidPrefix(
-            `Input doesn't match: ${inp}, prefix: ${prefix}`
-        )
-    }
-}
-
 export class InvalidMergeError extends Error {}
 
 export function compareArray(a: any[], b: any[]) {

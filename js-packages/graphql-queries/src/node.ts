@@ -65,6 +65,9 @@ export const getNodeType = gql`
                     id
                     type
                     state
+                    cluster {
+                        id
+                    }
                 }
             }
         }

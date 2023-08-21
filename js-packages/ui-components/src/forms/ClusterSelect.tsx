@@ -1,10 +1,9 @@
 import { ApolloClient, useQuery } from '@apollo/client'
-import { Box, Typography } from '@mui/material'
+import Typography from '@mui/material/Typography'
 import { AutocompleteValue } from '@mui/material/useAutocomplete'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
-import { fromGraphqlId } from '@secretgraph/misc/utils/encoding'
-import { checkPrefix } from '@secretgraph/misc/utils/misc'
+import { checkPrefix, fromGraphqlId } from '@secretgraph/misc/utils/encoding'
 import { Field, FieldProps } from 'formik'
 import * as React from 'react'
 
@@ -72,7 +71,11 @@ export default function ClusterSelect<
         }
         for (const { node } of data.clusters.clusters.edges) {
             try {
-                checkPrefix(node.id, 'Q2x1c3Rlcj', true)
+                checkPrefix(node.id, {
+                    prefix: 'Cluster:',
+                    b64: true,
+                    nonEmpty: true,
+                })
             } catch (error) {
                 console.warn('found cluster ids have an error', error)
                 continue
@@ -106,7 +109,10 @@ export default function ClusterSelect<
         props.form.setFieldValue(props.field.name, ids[0])
     }, [ids.length ? ids[0] : ' '])
     try {
-        checkPrefix(props.form.values[props.field.name], 'Q2x1c3Rlcj')
+        checkPrefix(props.form.values[props.field.name], {
+            prefix: 'Cluster:',
+            b64: true,
+        })
     } catch (error) {
         console.error(error)
         return null

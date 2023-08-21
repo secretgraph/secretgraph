@@ -7,9 +7,13 @@ import {
     authInfoFromConfig,
     updateConfigReducer,
 } from '@secretgraph/misc/utils/config'
-import { fromGraphqlId, toGraphqlId } from '@secretgraph/misc/utils/encoding'
+import {
+    InvalidPrefix,
+    checkPrefix,
+    fromGraphqlId,
+    toGraphqlId,
+} from '@secretgraph/misc/utils/encoding'
 import { createClient } from '@secretgraph/misc/utils/graphql'
-import { InvalidPrefix, checkPrefix } from '@secretgraph/misc/utils/misc'
 import * as React from 'react'
 
 import * as Contexts from './contexts'
@@ -41,9 +45,12 @@ function updateStateMain<T>(state: T, update: Partial<T>): T {
         if (key == 'editCluster' || key == 'currentCluster') {
             // check cluster
             try {
-                checkPrefix(val as string, 'Q2x1c3Rlcj')
+                checkPrefix(val as string | null | undefined, {
+                    prefix: 'Cluster:',
+                    b64: true,
+                })
             } catch (error) {
-                console.error(error)
+                console.error(`error for key ${String(key)}`, error)
                 continue
             }
         }
@@ -112,8 +119,11 @@ function Definitions({
             cloneData: null,
         }
         if (ctx.type == 'Cluster' && !ctx.currentCluster) {
-            ctx.currentCluster = ctx.item
-            ctx.editCluster = ctx.item
+            try {
+                checkPrefix(ctx.item, { prefix: 'Cluster:', b64: true })
+                ctx.currentCluster = ctx.item
+                ctx.editCluster = ctx.item
+            } catch (exc) {}
         }
         if (ctx.action == 'clone' && window.opener?.cloneData) {
             ctx.action = 'create'
@@ -176,10 +186,11 @@ function Definitions({
         window.location.hash = search.toString()
     }, [
         mainCtx.action,
+        mainCtx.type,
         mainCtx.item,
         mainCtx.currentCluster,
-        mainCtx.type,
         mainCtx.url,
+        loginUrl,
     ])
 
     const [searchCtx, updateSearchCtx] = React.useReducer<

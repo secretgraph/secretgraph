@@ -117,3 +117,33 @@ export function fromGraphqlId(gid: string) {
 export function toGraphqlId(type: string, rid: string) {
     return Buffer.from(utf8ToBinary(`${type}:${rid}`)).toString('base64')
 }
+
+export class InvalidPrefix extends Error {}
+
+export function checkPrefix(
+    inp: string | null | undefined | (string | null)[],
+    options: { prefix: string; nonEmpty?: boolean; b64?: boolean }
+) {
+    if (inp instanceof Array) {
+        for (const elem of inp) {
+            checkPrefix(elem, options)
+        }
+    } else {
+        if (!inp) {
+            if (options.nonEmpty) {
+                throw new InvalidPrefix(
+                    `Input empty: ${inp}, prefix: ${options.prefix}`
+                )
+            }
+            return
+        }
+        if (options.b64) {
+            inp = utf8decoder.decode(b64tobuffer(inp))
+        }
+        if (!inp.startsWith(options.prefix)) {
+            throw new InvalidPrefix(
+                `Input doesn't match: ${inp}, prefix: ${options.prefix}`
+            )
+        }
+    }
+}
