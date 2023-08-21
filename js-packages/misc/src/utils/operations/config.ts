@@ -56,7 +56,7 @@ export async function loadConfigFromSlot({
         // only view action is allowed here as manage can do damage without decryption
         require: new Set(['view']),
         // only use token named config token
-        search: 'config token',
+        searchToken: 'config token',
     })
     const configQueryRes = await client.query({
         query: findConfigQuery,
@@ -254,7 +254,7 @@ export async function exportConfigAsUrl({
         // only view action is allowed here as manage can do damage without decryption
         require: new Set(['view']),
         // only use token named config token
-        search: 'config token',
+        searchToken: 'config token',
     })
     const privcert: Uint8Array | null = authInfo.certificateHashes.length
         ? b64toarr(config.certificates[authInfo.certificateHashes[0]].data)

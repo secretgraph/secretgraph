@@ -64,7 +64,7 @@ export default React.memo(function SidebarContents({
             )
         }
         return ret
-    }, [searchCtx.include, injectInclude, authinfo?.hashes])
+    }, [searchCtx.include, injectInclude, authinfo?.tokenHashes])
     const excl = React.useMemo(
         () => searchCtx.exclude.concat(injectExclude),
         [searchCtx.exclude, injectExclude]

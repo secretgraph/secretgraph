@@ -78,13 +78,12 @@ export type ConfigHashesInterface<N = never, T = string> = {
 
 export interface ConfigContentInterface<N = never, T = string> {
     hashes: ConfigHashesInterface<N>
-    //trusted: string[]
-    cluster: string | N
+    // empty string for unknown cluster
+    cluster: string
 }
 
 export interface ConfigClusterInterface<N = never, T = string> {
     hashes: ConfigHashesInterface<N>
-    //trusted: string[]
 }
 
 interface BaseHostInterface<ClusterType, ContentType> {
@@ -178,7 +177,7 @@ export interface SearchContextInterface {
 
 export interface AuthInfoInterface {
     tokens: string[]
-    hashes: string[]
+    tokenHashes: string[]
     certificateHashes: string[]
     types: Set<string>
     limitReached: boolean

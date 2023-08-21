@@ -1002,7 +1002,7 @@ export async function authInfoFromTokens({
     }
     return {
         certificateHashes,
-        hashes: (await Promise.all(hashes)).sort(),
+        tokenHashes: (await Promise.all(hashes)).sort(),
         tokens: [...tokens].sort(),
         types: new Set(),
         limitReached,
