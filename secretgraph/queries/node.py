@@ -66,6 +66,9 @@ getNodeType = """
                     id
                     type
                     state
+                    cluster {
+                        id
+                    }
                 }
             }
         }

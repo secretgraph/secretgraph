@@ -110,6 +110,8 @@ createClusterMutation = """
         $primary: Boolean
         $actions: [ActionInput!]
         $keys: [ContentKeyInput!]
+        $clusterGroups: [String!]
+        $netGroups: [String!]
         $authorization: [String!]
     ) {
         secretgraph {
@@ -122,6 +124,8 @@ createClusterMutation = """
                         featured: $featured
                         primary: $primary
                         keys: $keys
+                        clusterGroups: $clusterGroups
+                        netGroups: $netGroups
                     }
                     authorization: $authorization
                 }
@@ -170,6 +174,8 @@ updateClusterMutation = """
         $featured: Boolean
         $primary: Boolean
         $actions: [ActionInput!]
+        $clusterGroups: [String!]
+        $netGroups: [String!]
         $authorization: [String!]
     ) {
         secretgraph {
@@ -183,6 +189,8 @@ updateClusterMutation = """
                         actions: $actions
                         featured: $featured
                         primary: $primary
+                        clusterGroups: $clusterGroups
+                        netGroups: $netGroups
                     }
                     authorization: $authorization
                 }
