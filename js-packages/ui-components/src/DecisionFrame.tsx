@@ -52,9 +52,9 @@ export default class DecisionFrame extends React.Component<
                     {recoverFn ? (
                         <>
                             Do you want to try to recover by switching to
-                            custom and fix the errors?
+                            :custom and fix the errors?
                             <Button
-                                onClick={() => recoverFn({ type: 'custom' })}
+                                onClick={() => recoverFn({ type: ':custom' })}
                             >
                                 Switch to custom
                             </Button>

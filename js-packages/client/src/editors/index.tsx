@@ -67,22 +67,14 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
     [
-        'custom',
+        ':custom',
         {
             label: gettext('Custom'),
             component: React.lazy(() => import('./custom')),
         },
     ],
     [
-        'loading',
-        {
-            label: gettext('Loading'),
-            ignore: true,
-            component: Loading,
-        },
-    ],
-    [
-        'undefined',
+        ':loading',
         {
             label: gettext('Loading'),
             ignore: true,
@@ -90,3 +82,15 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
 ])
+
+export function getEditor(
+    type: string | null | undefined
+): Interfaces.ElementEntryInterface {
+    let FrameElementWrapper = elements.get(type ? String(type) : ':loading')
+    if (!FrameElementWrapper) {
+        FrameElementWrapper = elements.get(
+            ':custom'
+        ) as Interfaces.ElementEntryInterface
+    }
+    return FrameElementWrapper
+}

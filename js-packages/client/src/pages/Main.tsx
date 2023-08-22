@@ -10,7 +10,7 @@ import * as React from 'react'
 import ActionBar from '../components/ActionBar'
 import HeaderBar from '../components/HeaderBar'
 import * as Contexts from '../contexts'
-import { elements } from '../editors'
+import { getEditor } from '../editors'
 import { drawerWidth } from '../theme'
 
 // const SideBar = React.lazy(() => import('@secretgraph/ui-components/SideBar'));
@@ -33,17 +33,7 @@ function MainPage() {
             case 'view':
             case 'create':
             case 'update':
-                let FrameElementWrapper = elements.get(
-                    mainCtx.type ? mainCtx.type : 'undefined'
-                )
-                if (!FrameElementWrapper) {
-                    FrameElementWrapper = elements.get(
-                        'undefined'
-                    ) as Interfaces.ElementEntryInterface
-                }
-                FrameElement = (
-                    FrameElementWrapper as Interfaces.ElementEntryInterface
-                ).component
+                FrameElement = getEditor(mainCtx.type).component
 
                 break
             case 'login':

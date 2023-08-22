@@ -16,7 +16,7 @@ import { is_pwa } from '@secretgraph/misc/utils/misc'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
-import { elements } from '../editors'
+import { getEditor } from '../editors'
 import ConfigShareDialog from './share/ConfigShareDialog'
 
 const menuRef: React.RefObject<any> = React.createRef()
@@ -46,7 +46,7 @@ export default React.memo(function HeaderBar() {
     }
     switch (mainCtx.action) {
         case 'create':
-            let temp = elements.get(mainCtx.type as string)
+            let temp = getEditor(mainCtx.type)
             title = `Create: ${temp ? temp.label : 'unknown'}`
             documenttitle = `Secretgraph: ${title}`
             break

@@ -73,7 +73,7 @@ function ActionBar(props: Props) {
             require: _create_set,
         }).tokens
     }, [mainCtx.tokens, mainCtx.tokensPermissions, activeUrl, config])
-    if (mainCtx.type == 'loading') {
+    if (mainCtx.type == ':loading') {
         return null
     }
 

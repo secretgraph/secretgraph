@@ -143,7 +143,7 @@ function Definitions({
                 ctx.action != 'register' &&
                 ctx.action != 'help'
             ) {
-                ctx.type = 'loading'
+                ctx.type = ':loading'
             }
             if (config) {
                 setLoginUrl('')
