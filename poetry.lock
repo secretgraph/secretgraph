@@ -2560,4 +2560,4 @@ server = ["channels", "django", "django-fast-ratelimit", "django-manifest-loader
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "2add515426352e073f44c210b85a2df257fa6ccf5887af4bac26db0593aa91b7"
+content-hash = "33d9f07a3a43814a1b32633221446749f569f392aab5b63f8d8c9d124a8007b2"
