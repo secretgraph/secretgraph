@@ -85,6 +85,7 @@ async def run(argv, session: AsyncClientSession):
         )
         key1["nonce"] = nonce_key_b64
         key1["privateTags"] = [
+            "name=initial key",
             "key={}".format(base64.b64encode(privatekey_key_enc)),
         ]
 

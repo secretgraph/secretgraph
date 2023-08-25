@@ -201,9 +201,6 @@ const ClusterIntern = ({
                             include: [clusterFeedQuery, getClusterQuery],
                         })
                     } else {
-                        const privkey_key = crypto.getRandomValues(
-                            new Uint8Array(32)
-                        )
                         const { publicKey, privateKey } =
                             (await crypto.subtle.generateKey(
                                 {
@@ -225,9 +222,13 @@ const ClusterIntern = ({
                             name,
                             description,
                             hashAlgorithm,
-                            publicKey,
-                            privateKey,
-                            privateKeyKey: privkey_key,
+                            keys: [
+                                {
+                                    publicKey,
+                                    privateKey,
+                                    publicState: 'trusted',
+                                },
+                            ],
                             authorization: tokens,
                             featured: values.featured,
                             primary: values.primary,

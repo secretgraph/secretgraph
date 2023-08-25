@@ -21,63 +21,129 @@ export async function createCluster(options: {
     description?: string
     featured?: boolean
     primary?: boolean
-    publicKey: CryptoKey
-    privateKey?: CryptoKey
-    privateKeyKey?: Uint8Array
+    keys: (
+        | {
+              sharedKey?: Uint8Array
+              publicKey: CryptoKey
+              privateKey: CryptoKey
+              privateTags?: string[]
+              publicTags?: string[]
+              publicState: 'protected' | 'public' | 'required' | 'trusted'
+          }
+        | {
+              publicKey: CryptoKey
+              publicTags?: string[]
+              privateKey?: undefined
+              publicState: 'protected' | 'public' | 'required' | 'trusted'
+          }
+    )[]
     clusterGroups?: string[]
     netGroups?: string[]
     authorization?: string[]
 }): Promise<FetchResult<any>> {
-    let nonce: null | Uint8Array = null
     const halgo = mapHashNames[options.hashAlgorithm]
+    let keys: Promise<
+        | {
+              publicKey: Blob
+              privateKey: Blob
+              privateTags: string[]
+              publicTags: string[]
+              nonce: string
+              publicState: 'protected' | 'public' | 'required' | 'trusted'
+          }
+        | {
+              publicKey: Blob
+              publicTags: string[]
+              publicState: 'protected' | 'public' | 'required' | 'trusted'
+          }
+    >[] = []
+    for (const k of options.keys) {
+        if (!k?.privateKey) {
+            keys.push(
+                (async () => {
+                    return {
+                        publicKey: await unserializeToArrayBuffer(
+                            k.publicKey
+                        ).then((obj) => new Blob([obj])),
+                        publicTags: k.publicTags || [],
+                        publicState: k.publicState,
+                    }
+                })()
+            )
+        } else {
+            const k2 = k as {
+                sharedKey?: Uint8Array
+                publicKey: CryptoKey
+                privateKey: CryptoKey
+                privateTags?: string[]
+                publicTags?: string[]
+                publicState: 'protected' | 'public' | 'required' | 'trusted'
+            }
+            keys.push(
+                (async () => {
+                    const nonce = crypto.getRandomValues(new Uint8Array(13))
+                    const privateKeyKey = k2.sharedKey
+                        ? await unserializeToArrayBuffer(k2.sharedKey)
+                        : crypto.getRandomValues(new Uint8Array(32))
 
-    let privateKeyPromise: Promise<null | Blob>
-    const publicKeyPromise = unserializeToArrayBuffer(options.publicKey).then(
-        (obj) => new Blob([obj])
-    )
-    const privateTags = []
-    if (options.privateKey && options.privateKeyKey) {
-        nonce = crypto.getRandomValues(new Uint8Array(13))
-        privateKeyPromise = encryptAESGCM({
-            key: options.privateKeyKey.slice(-32),
-            data: options.privateKey,
-            nonce,
-        }).then((obj) => new Blob([obj.data]))
-        privateTags.push(
-            await encryptRSAOEAP({
-                key: options.privateKey,
-                data: options.privateKeyKey.slice(-32),
-                hashAlgorithm: options.hashAlgorithm,
-            })
-                .then((data) => serializeToBase64(data.data))
-                .then((obj) => `key=${halgo.serializedName}:${obj}`)
-        )
-    } else {
-        privateKeyPromise = Promise.resolve(null)
+                    const ret: {
+                        publicKey: Blob
+                        privateKey: Blob
+                        privateTags: string[]
+                        publicTags: string[]
+                        nonce: string
+                        publicState:
+                            | 'protected'
+                            | 'public'
+                            | 'required'
+                            | 'trusted'
+                    } = {
+                        publicKey: await unserializeToArrayBuffer(
+                            k2.publicKey
+                        ).then((obj) => new Blob([obj])),
+                        privateKey: await encryptAESGCM({
+                            key: privateKeyKey.slice(-32),
+                            data: k2.privateKey,
+                            nonce,
+                        }).then((obj) => new Blob([obj.data])),
+                        privateTags: [],
+                        publicTags: k2.publicTags || [],
+                        nonce: await serializeToBase64(nonce),
+                        publicState: k2.publicState,
+                    }
+                    if (k2.privateTags) {
+                        ret.privateTags.push(...k2.privateTags)
+                    }
+                    ret.privateTags.push(
+                        await encryptRSAOEAP({
+                            key: k2.privateKey,
+                            data: privateKeyKey.slice(-32),
+                            hashAlgorithm: options.hashAlgorithm,
+                        })
+                            .then((data) => serializeToBase64(data.data))
+                            .then(
+                                (obj) => `key=${halgo.serializedName}:${obj}`
+                            )
+                    )
+                    return ret
+                })()
+            )
+        }
     }
+
     return await options.client.mutate({
         mutation: createClusterMutation,
         variables: {
             net: options.net,
             name: options.name,
             description: options.description,
-            keys: [
-                {
-                    publicKey: await publicKeyPromise,
-                    publicState: 'trusted',
-                    privateKey: await privateKeyPromise,
-                    privateTags,
-                    publicTags: ['name=initial key'],
-                    nonce: nonce ? await serializeToBase64(nonce) : null,
-                    clusterGroups: options.clusterGroups,
-                    netGroups: options.netGroups,
-                },
-            ],
-            nonce: nonce ? await serializeToBase64(nonce) : null,
+            keys: await Promise.all(keys),
             actions: options.actions,
             authorization: options.authorization,
             featured: options.featured,
             primary: options.primary,
+            clusterGroups: options.clusterGroups,
+            netGroups: options.netGroups,
         },
     })
 }
@@ -177,9 +243,15 @@ export async function initializeCluster({
         net,
         description,
         hashAlgorithm,
-        publicKey,
-        privateKey,
-        privateKeyKey: manage_key,
+        keys: [
+            {
+                publicKey,
+                privateKey,
+                publicTags: ['name=initial key'],
+                privateTags: ['name=initial key'],
+                publicState: 'trusted',
+            },
+        ],
         primary: true,
         ...options,
     })

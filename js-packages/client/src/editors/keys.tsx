@@ -1087,6 +1087,9 @@ const KeysUpdate = ({
                             publicTags: [
                                 `description=${values.description}`,
                                 `name=${values.name}`,
+                                ...values.callbacks.map(
+                                    (callback) => `callback=${callback}`
+                                ),
                             ],
                             privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
@@ -1102,9 +1105,11 @@ const KeysUpdate = ({
                                 client,
                                 config,
                                 key: privKey,
-                                privateTags: privateKey.nodeData.tags.filter(
-                                    (tag: string) => tag.startsWith('key=')
-                                ),
+                                // encrypted shared key will be added
+                                privateTags: [
+                                    `description=${values.description}`,
+                                    `name=${values.name}`,
+                                ],
                                 privkeys: Object.values(privateKeys),
                                 pubkeys: Object.values(publicKeys),
                                 actions: finishedActionsPrivateKey,
@@ -1112,6 +1117,7 @@ const KeysUpdate = ({
                                 authorization: mainCtx.tokens,
                             })
                         } else if (privKey) {
+                            // create new private key (and if not available public key)
                             await createKeys({
                                 client,
                                 config,
@@ -1119,6 +1125,14 @@ const KeysUpdate = ({
                                 publicKey: pubKey,
                                 privateKey: privKey,
                                 publicTags: [
+                                    `description=${values.description}`,
+                                    `name=${values.name}`,
+                                    ...values.callbacks.map(
+                                        (callback) => `callback=${callback}`
+                                    ),
+                                ],
+                                // encrypted shared key will be added
+                                privateTags: [
                                     `description=${values.description}`,
                                     `name=${values.name}`,
                                 ],
@@ -1315,7 +1329,7 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
         return () => {
             active = false
         }
-    }, [dataUnfinished, config])
+    }, [dataUnfinished, loading, config])
     if (!data) {
         return null
     }
@@ -1324,6 +1338,7 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
         <KeysUpdate
             {...data}
             url={mainCtx.url as string}
+            disabled={loading || viewOnly}
             viewOnly={viewOnly}
             canSelectCluster={
                 mainCtx.tokensPermissions.has('manage') ||
@@ -1435,9 +1450,9 @@ export default function KeyComponent() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const client = useApolloClient()
-    const [barrier, setBarrier] = React.useState<Promise<any> | undefined>(
-        () => Promise.resolve()
-    )
+    const [barrier, setBarrier] = React.useState<
+        Promise<any> | undefined | true
+    >(true)
     React.useEffect(() => {
         let active = true
         const f = async () => {
@@ -1486,12 +1501,15 @@ export default function KeyComponent() {
         setBarrier(f())
         return () => {
             active = false
-            setBarrier(Promise.resolve())
+            setBarrier(true)
         }
     }, [mainCtx.url, mainCtx.item])
     if (barrier) {
+        //if (barrier === true) {
         return null
-        //throw barrier
+        /*} else {
+            throw barrier
+        }*/
     }
     return (
         <DecisionFrame
