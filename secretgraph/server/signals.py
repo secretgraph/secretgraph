@@ -333,6 +333,16 @@ def rollbackUsedActionsAndFreeze(request, **kwargs):
                 pass
 
 
+# not used yet, needs safeguards and needs info from settings
+def autoUnlock(**kwargs):
+    from .models import Content
+
+    now = timezone.now()
+    Content.objects.filter(
+        locked__lt=now - td(days=2), locked__isnull=False
+    ).update(locked=None)
+
+
 def sweepOutdated(ignoreTime=False, **kwargs):
     from .models import Action, Cluster, Content, ContentAction
 

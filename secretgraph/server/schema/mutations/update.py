@@ -121,7 +121,18 @@ def mutate_content(
             authset=authorization,
             cacheName=None,
         )["Content"]
-        content_obj = result["objects_without_public"].get()
+        # allow admin updates
+        if "manage_update" in get_cached_net_properties(
+            info.context["request"]
+        ):
+            content_obj = Content.objects.filter(locked__isnull=True).get()
+
+        else:
+            content_obj = (
+                result["objects_without_public"]
+                .filter(locked__isnull=True)
+                .get()
+            )
         if content.hidden is not None:
             if (
                 "allow_hidden"

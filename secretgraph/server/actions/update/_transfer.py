@@ -3,7 +3,6 @@ __all__ = ["sync_transfer_value", "transfer_value"]
 import base64
 import json
 import logging
-from email.parser import BytesParser
 from uuid import uuid4
 
 import httpx
@@ -12,6 +11,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.db.models import F
 from django.db.models.functions import Now
+from django.utils import timezone
 from django.utils.module_loading import import_string
 
 from secretgraph.core.exceptions import LockedResourceError
@@ -74,34 +74,19 @@ def _create_info_content(request, content: Content, signatures, admin=False):
         )
 
 
-@sync_to_async(thread_sensitive=True)
-def _lock_content(content: Content, transfer):
-    if transfer and not content.references.filter(group="transfer").exists():
-        raise ValueError("Not a transfer object")
-
-    try:
-        content.tags.create(ContentTag(tag="immutable"))
-    except Exception as exc:
-        raise LockedResourceError("already locked") from exc
-    had_hide = content.hide
-    if not had_hide:
-        content.hide = True
-        content.save(update_fields=["hide"])
-    return had_hide
-
-
 # can be also used for server to server transfers (transfer=False)
 async def transfer_value(
     request,
     content: Content,
+    is_transfer,
     key=None,
     url=None,
     headers=None,
-    transfer=True,
     session=None,
     keepalive=None,
     key_hashes=None,
-    delete_failed_verification=True,
+    delete_on_failed_verification=True,
+    delete_on_error=False,
     admin=False,
     skip_info_creation=False,
 ):
@@ -110,25 +95,38 @@ async def transfer_value(
         keepalive = bool(session)
     if key:
         assert not url, "can only specify key or url"
+        decryptor = AESGCM(key)
         try:
-            _blob = (
-                AESGCM(key)
-                .decrypt(
-                    content.file.open("rb").read(),
-                    base64.b64decode(content.nonce),
-                    None,
-                )
-                .split(b"\r\n", 1)
+            raw_bytes = base64.b64decode(
+                (
+                    await content.tags.only("tag").aget(
+                        tag__startswith="~transfer_url="
+                    )
+                ).tag.split("=", 1)[1]
             )
-            if len(_blob) == 1:
-                url = _blob[0]
-            else:
-                url = _blob[0]
-                _headers.update(
-                    BytesParser().parsebytes(_blob[1], headersonly=True)
-                )
+            url = decryptor.decrypt(
+                raw_bytes[:13],
+                raw_bytes[13:],
+                None,
+            ).decode()
         except Exception as exc:
-            logger.error("Error while decoding url, headers", exc_info=exc)
+            logger.error("Error while decoding url", exc_info=exc)
+            return TransferResult.ERROR
+        try:
+            async for tag in content.tags.only("tag").filter(
+                tag__startswith="~transfer_header="
+            ):
+                raw_bytes = base64.b64decode(tag.tag.split("=", 1)[1])
+                # headers must be ascii
+                header = (
+                    decryptor.decrypt(raw_bytes[:13], raw_bytes[:13], None)
+                    .decode("ascii")
+                    .split("=", 1)
+                )
+                if len(header) == 2:
+                    _headers[header[1]] = header[2]
+        except Exception as exc:
+            logger.error("Error while decoding headers", exc_info=exc)
             return TransferResult.ERROR
     if headers:
         if isinstance(headers, str):
@@ -160,10 +158,16 @@ async def transfer_value(
     # should be only one nonce
     checknonce = response.get("X-NONCE", "")
     if checknonce != "":
-        if len(checknonce) != 20:
-            logger.error("Invalid nonce (not 13 bytes)")
+        if len(checknonce) < 20:
+            logger.error("Invalid nonce (not at least 13 bytes)")
             # if transfer, fail, otherwise ignore
-            if transfer:
+            if is_transfer:
+                await content.adelete()
+                return TransferResult.NONRECOVERABLE_ERROR
+        if len(checknonce) > 48:
+            logger.error("Invalid nonce (too big)")
+            # if transfer, fail, otherwise ignore
+            if is_transfer:
                 await content.adelete()
                 return TransferResult.NONRECOVERABLE_ERROR
         else:
@@ -184,8 +188,16 @@ async def transfer_value(
         ):
             return TransferResult.RESOURCE_LIMIT_EXCEEDED
 
-    had_hide = await _lock_content(content, transfer)
+    if (
+        is_transfer
+        and not await content.references.filter(group="transfer").aexists()
+    ):
+        raise ValueError("Not a transfer object")
+    content.locked = timezone.now()
+    await content.asave(update_fields=["locked"])
+
     destroy_content = False
+    transfer_successful = False
 
     signatures = None
     try:
@@ -199,24 +211,29 @@ async def transfer_value(
         if not signatures:
             # was a secretgraph content and verification failed
             if errors:
-                if delete_failed_verification:
+                if delete_on_failed_verification:
                     destroy_content = True
+                else:
+                    transfer_successful = True
                 return TransferResult.FAILED_VERIFICATION
             # transfers need correctly signed contents and not arbitary urls
-            if transfer:
-                if delete_failed_verification:
+            if is_transfer:
+                if delete_on_failed_verification:
                     destroy_content = True
+                else:
+                    transfer_successful = True
                 return TransferResult.FAILED_VERIFICATION
-        elif transfer:
+        elif is_transfer:
             await content.references.filter(group="transfer").adelete()
+        transfer_successful = True
     except Exception as exc:
-        logger.error("transfer failed", exc_info=exc)
-        # file is maybe partially written, do the best possible:
-        # just remove the content
-        # MAYBE: later we can cache the original content and restore it
-        # in case it is not too big (e.g. url)
-        destroy_content = True
-        return TransferResult.NONRECOVERABLE_ERROR
+        logger.error("data transfer failed", exc_info=exc)
+        # file is maybe partially written, just reset to 0
+        with content.file.open("wb") as f:
+            f.write(b"")
+        if delete_on_error:
+            destroy_content = True
+        return TransferResult.ERROR
     finally:
         # first recalculate bytes usage
         await Net.objects.filter(id=content.net_id).aupdate(
@@ -228,15 +245,18 @@ async def transfer_value(
             # why? adelete recalculates byte usage
             await content.adelete()
         else:
-            if await content.tags.filter(tag="freeze").aexists():
-                await content.tags.filter(tag="freeze").adelete()
-            else:
-                await content.tags.filter(tag="immutable").adelete()
-            if not had_hide:
-                content.hide = False
-            # now we create a new update id
-            content.updateId = uuid4()
-            await content.asave(update_fields=["hide", "updateId", "nonce"])
+            # unlock
+
+            if transfer_successful:
+                if await content.tags.filter(tag="freeze").aexists():
+                    await content.tags.filter(tag="freeze").adelete()
+                    await content.tags.acreate(ContentTag(tag="immutable"))
+                # now we create a new update id
+                content.updateId = uuid4()
+                content.locked = None
+                await content.asave(
+                    update_fields=["locked", "updateId", "nonce"]
+                )
 
         if not session:
             s.close()

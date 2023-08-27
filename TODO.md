@@ -1,17 +1,20 @@
 # TODO
 
+-   test transfer
 -   automatize python query generation
 -   implement UserSelectable in frontend (in progress)
 -   editor for Personal Data (in progress)
--   verification workflow in tests
+-   content verification in tests (check signatures)
+-   verfication workflow (check against registry)
+    -   fake registry
+    -   new hash methods based on argon2id (benefit: hash contains all required parameters)
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   complete share
     -   add option to save new token in config (not auth)
 -   teach decryptObject transfer
--   keys need more infos, like callback url, item and tokens
--   key callbacks: graphqlurl?item=baseCluster&token=... or contenturl?token= for pushable contents
+-   keys need more infos (done but not tested and validity not enforced)
+    -   key callbacks: graphqlurl?item=baseCluster&token=... or contenturl?token= for pushable contents
 -   PushedArticle
--   split keys in signing/encrypting
 -   validationError: use params
 -   trustedKeys logic (partly done):
     -   Needs much more work especially on gui side
@@ -25,6 +28,7 @@
 
 # TODO later
 
+-   split keys in signing/encrypting (supported but not in use yet)
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")
 -   allow token stubs, only containing description
 -   select certificates a private content is encrypted for

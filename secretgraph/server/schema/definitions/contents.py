@@ -177,7 +177,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             includeTags=filters.includeTags,
             excludeTags=filters.excludeTags,
             contentHashes=filters.contentHashes,
-        )
+        ).filter(locked__isnull=True)
         return self.references.filter(
             **filterob,
         )
@@ -211,7 +211,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             includeTags=filters.includeTags,
             excludeTags=filters.excludeTags,
             contentHashes=filters.contentHashes,
-        )
+        ).filter(locked__isnull=True)
         return self.referencedBy.filter(
             **filterob,
         )
@@ -230,7 +230,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             result["objects_with_public"],
             ids=node_ids,
             limit_ids=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
-        )
+        ).filter(locked__isnull=True)
 
     @classmethod
     def resolve_id(
@@ -349,4 +349,4 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             minUpdated=filters.minUpdated,
             maxUpdated=filters.maxUpdated,
             contentHashes=filters.contentHashes,
-        )
+        ).filter(locked__isnull=True)

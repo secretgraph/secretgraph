@@ -18,6 +18,11 @@ Note: tags are not included in signature hash, therefore they are not authentica
 -   name/~name: unencrypted/encrypted name of content. Sets content-disposition on view (in case it is unencrypted or the key was provided)
 -   mime/~mime: unencrypted/encrypted mime of content. Sets content mime on view (in case it is unencrypted or the key was provided)
 
+## transfer
+
+-   ~transfer_url: target url
+-   ~transfer_header: header=value
+
 ### encrypted tags
 
 Encrypted tags have the format: ~`key`=`b64encode aesgcm crypto string`, first 13 bytes are nonce. The key is the sharedkey of the content

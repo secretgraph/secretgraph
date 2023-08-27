@@ -423,9 +423,11 @@ class Content(FlexidModel):
     markForDestruction: dt = models.DateTimeField(null=True, blank=True)
     # doesn't appear in non-admin searches
     hidden: bool = models.BooleanField(blank=True, default=False)
+    # has active transfer, doesn't appear in searches
+    locked: dt = models.DateTimeField(null=True, blank=True)
 
     nonce: str = models.CharField(
-        max_length=255, null=False, blank=True, default=""
+        max_length=48, null=False, blank=True, default=""
     )
     # can decrypt = correct key
     file: File = models.FileField(upload_to=get_content_file_path)
@@ -684,7 +686,7 @@ class Action(models.Model):
         max_length=255,
         validators=[ActionKeyHashValidator()],
     )
-    nonce: str = models.CharField(max_length=255)
+    nonce: str = models.CharField(max_length=48)
     # value returns json with required encrypted aes key
     value: Union[bytes, memoryview] = models.BinaryField(
         null=False, blank=False

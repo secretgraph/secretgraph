@@ -126,7 +126,9 @@ def mutate_transfer(
         url=url,
         headers=headers,
         verifiers=signer_key_hashes,
-        delete_failed_verification=True,
+        delete_on_failed_verification=True,
+        delete_on_error=False,
+        is_transfer=True,
     )
 
     if tres == TransferResult.NOTFOUND:
@@ -148,7 +150,6 @@ def mutate_pull(
     info: Info,
     id: relay.GlobalID,
     url: Optional[str] = None,
-    key: Optional[str] = None,  # encrypting key
     headers: Optional[JSON] = None,
     authorization: Optional[AuthList] = None,
 ) -> TransferMutation:
@@ -164,8 +165,6 @@ def mutate_pull(
         cacheName=None,
     )["Content"]
     transfer_target = transfer_result.objects.get()
-    if key and url:
-        raise ValueError("key and value specified together")
     # was signed? => restrict to keys
     signer_keys = view_result["objects_with_public"].filter(
         type="PublicKey", referencedBy__source=transfer_target
@@ -177,12 +176,12 @@ def mutate_pull(
     tres = sync_transfer_value(
         info.context["request"],
         transfer_target,
-        key=key,
         url=url,
         headers=headers,
         verifiers=signer_key_hashes,
-        delete_failed_verification=False,
-        transfer=False,
+        delete_on_failed_verification=False,
+        delete_on_error=False,
+        is_transfer=False,
     )
 
     if tres == TransferResult.NOTFOUND:

@@ -166,6 +166,7 @@ def _update_or_create_content_or_key(
     required_keys: set[str],
 ):
     create = not content.id
+    assert not content.locked, "Content is locked"
     size_new = content.flexid_byte_size
     size_old = content.flexid_byte_size
     if not create:
@@ -316,25 +317,25 @@ def _update_or_create_content_or_key(
             checknonce = b""
         else:
             checknonce = base64.b64decode(objdata.nonce)
+        assert isinstance(
+            checknonce, bytes
+        ), "checknonce should be bytes, %s" % type(
+            checknonce
+        )  # noqa E502
         # is public key or public? then ignore nonce checks
         if not content.type == "PublicKey" and content.state != "public":
             if not checknonce:
                 raise ValueError(
                     "Content must be encrypted and nonce specified"
                 )
-            if len(checknonce) != 13:
-                raise ValueError("invalid nonce size")
+            if len(checknonce) < 13 or len(checknonce) > 36:
+                raise ValueError("invalid nonce size: %s" % len(checknonce))
             if checknonce.count(b"\0") == len(checknonce):
                 raise ValueError("weak nonce")
         assert isinstance(
             objdata.nonce, str
         ), "nonce should be here a base64 string or public, %s" % type(
             objdata.nonce
-        )  # noqa E502
-        assert isinstance(
-            checknonce, bytes
-        ), "checknonce should be bytes, %s" % type(
-            checknonce
         )  # noqa E502
         content.nonce = objdata.nonce
         # otherwise file size calculation causes error

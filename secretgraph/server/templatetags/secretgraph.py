@@ -263,7 +263,7 @@ def fetch_contents(
         excludeTypes=_split_comma(excludeTypes),
         includeTags=_split_comma(includeTags),
         excludeTags=_split_comma(excludeTags),
-    )
+    ).filter(locked__isnull=True)
 
     if decrypt or default_decryptkeys:
         decryptset = set()

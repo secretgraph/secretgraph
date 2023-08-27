@@ -28,6 +28,7 @@ python = ">=3.9,<4"
 cryptography = "*"
 rdflib = '*'
 certifi = "*"
+argon2-cffi = "*"
 httpx = {version = "*", extras = ["http2"]}
 gql = {version = "*", extras = ["aiohttp", "websockets"]}
 django = {version = '>=4.2', optional = true}

@@ -172,7 +172,7 @@ def update_metadata(
     )
     if manage_update:
         contents = fetch_by_id_noconvert(
-            Content.objects.annotate(
+            Content.objects.filter(locked__isnull=True).annotate(
                 has_immutable=Exists(
                     ContentTag.objects.filter(
                         content_id=OuterRef("pk"),
@@ -201,9 +201,11 @@ def update_metadata(
 
         tags = cleaned["tags"]
         references = cleaned["references"]
-        # immutable are excluded
-        contents = result["Content"]["objects_without_public"].annotate(
-            has_immutable=Value(False)
+        # immutable are excluded in action
+        contents = (
+            result["Content"]["objects_without_public"]
+            .filter(locked__isnull=True)
+            .annotate(has_immutable=Value(False))
         )
         clusters = result["Clusters"]["objects_without_public"]
         if clusters and actions is not None:

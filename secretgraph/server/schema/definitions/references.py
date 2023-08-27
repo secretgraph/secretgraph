@@ -55,19 +55,27 @@ class ContentReferenceNode(relay.Node):
     @strawberry_django.field
     def source(
         self, info: Info
-    ) -> Annotated["ContentNode", lazy(".contents")]:
+    ) -> Optional[Annotated["ContentNode", lazy(".contents")]]:
         result = get_cached_result(info.context["request"])["Content"]
-        return fetch_contents(
-            result["objects_with_public"].filter(references=self),
-            clustersAreRestrictedOrAdmin=True,
-        ).first()
+        return (
+            fetch_contents(
+                result["objects_with_public"].filter(references=self),
+                clustersAreRestrictedOrAdmin=True,
+            )
+            .filter(locked__isnull=True)
+            .first()
+        )
 
     @strawberry_django.field
     def target(
         self, info: Info
-    ) -> Annotated["ContentNode", lazy(".contents")]:
+    ) -> Optional[Annotated["ContentNode", lazy(".contents")]]:
         result = get_cached_result(info.context["request"])["Content"]
-        return fetch_contents(
-            result["objects_with_public"].filter(referencedBy=self),
-            clustersAreRestrictedOrAdmin=True,
-        ).first()
+        return (
+            fetch_contents(
+                result["objects_with_public"].filter(referencedBy=self),
+                clustersAreRestrictedOrAdmin=True,
+            )
+            .filter(locked__isnull=True)
+            .first()
+        )

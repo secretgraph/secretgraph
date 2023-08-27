@@ -281,8 +281,10 @@ def iter_decrypt_contents(
                 result = sync_transfer_value(
                     content,
                     key=transfer_map[content.id],
-                    transfer=True,
+                    is_transfer=True,
                     verifiers=verifiers,
+                    delete_on_failed_verification=True,
+                    delete_on_error=False,
                 )
                 # transfer failed
                 if result in {
