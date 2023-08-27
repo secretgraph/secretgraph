@@ -1,8 +1,9 @@
 # TODO
 
+-   document pull and make Content optional (cluster id will cause content creation)
 -   test transfer
 -   automatize python query generation
--   implement UserSelectable in frontend (in progress)
+-   implement UserSelectable in frontend (Register page, Cluster editor)
 -   editor for Personal Data (in progress)
 -   content verification in tests (check signatures)
 -   verfication workflow (check against registry)
@@ -28,6 +29,7 @@
 
 # TODO later
 
+-   add push_transfer endpoint for server side transfer message pushing (in case the client has no access)
 -   split keys in signing/encrypting (supported but not in use yet)
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")
 -   allow token stubs, only containing description
@@ -35,7 +37,6 @@
 -   cleanup utils/arguments.py
 -   frontend: allow changing net
 -   use threading for cryptography operations (put in threadpool)
--   maybe: allow lock url to be used as a start_url (for apple devices)
 -   translations, changing languages
 -   time restrictions (time ranges, block e.g. requests from 1 to 3 at weekdays)
 -   edge-serverside encryption
