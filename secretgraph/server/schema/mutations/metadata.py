@@ -41,7 +41,7 @@ class RegenerateFlexidMutation:
     updated: list[relay.GlobalID]
 
 
-def regenerate_flexid(
+def mutate_regenerate_flexid(
     info: Info,
     ids: list[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
@@ -86,7 +86,7 @@ class MarkMutation:
     updated: list[relay.GlobalID]
 
 
-def mark(
+def mutate_update_mark(
     info,
     ids: list[strawberry.ID],  # ID or cluster global name
     hidden: Optional[bool] = None,
@@ -155,7 +155,7 @@ class MetadataUpdateMutation:
     updated: list[relay.GlobalID]
 
 
-def update_metadata(
+def mutate_update_metadata(
     info: Info,
     ids: list[relay.GlobalID],
     state: Optional[str] = None,

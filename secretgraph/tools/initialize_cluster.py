@@ -246,7 +246,6 @@ async def run(argv, session: AsyncClientSession):
 
     jsob_config = result["secretgraph"]["updateOrCreateContent"]
     link = jsob_config["content"]["link"]
-    print()
 
     search = urlencode(
         {

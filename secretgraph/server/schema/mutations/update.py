@@ -225,7 +225,7 @@ def mutate_content(
 
 
 @django_resolver
-def logoutUser(info: Info) -> None:
+def mutate_logout_user(info: Info) -> None:
     user = getattr(info.context["request"], "user", None)
     if user and getattr(user, "is_authenticated", True):
         from django.contrib.auth import logout

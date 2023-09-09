@@ -24,7 +24,7 @@ class DeleteContentOrClusterMutation:
     latestDeletion: Optional[datetime] = None
 
 
-def delete_content_or_cluster(
+def mutate_delete_content_or_cluster(
     info: Info,
     ids: List[strawberry.ID],  # ID or cluster global name
     when: Optional[datetime] = None,
@@ -90,7 +90,7 @@ class ResetDeletionContentOrClusterMutation:
     restored: List[relay.GlobalID]
 
 
-def reset_deletion_content_or_cluster(
+def mutate_reset_deletion_content_or_cluster(
     info: Info,
     ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,

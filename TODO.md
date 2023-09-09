@@ -1,12 +1,11 @@
 # TODO
 
--   document pull and make Content optional (cluster id will cause content creation)
 -   test transfer
 -   automatize python query generation
 -   implement UserSelectable in frontend (Register page, Cluster editor)
 -   editor for Personal Data (in progress)
 -   content verification in tests (check signatures)
--   verfication workflow (check against registry)
+-   verification workflow (check against registry)
     -   fake registry
     -   new hash methods based on argon2id (benefit: hash contains all required parameters)
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
@@ -29,6 +28,8 @@
 
 # TODO later
 
+-   document and enable pull and make Content optional (cluster id will cause content creation)
+    -   needs safeguards against ddos missuse
 -   add push_transfer endpoint for server side transfer message pushing (in case the client has no access)
 -   split keys in signing/encrypting (supported but not in use yet)
 -   editors starting with : for meta editors like galeries (real types cannot contain ":")

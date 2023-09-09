@@ -28,16 +28,16 @@ from .mutations import (
     RegenerateFlexidMutation,
     ResetDeletionContentOrClusterMutation,
     TransferMutation,
-    delete_content_or_cluster,
-    logoutUser,
-    mark,
     mutate_cluster,
     mutate_content,
+    mutate_delete_content_or_cluster,
+    mutate_logout_user,
     mutate_push_content,
+    mutate_regenerate_flexid,
+    mutate_reset_deletion_content_or_cluster,
     mutate_transfer,
-    regenerate_flexid,
-    reset_deletion_content_or_cluster,
-    update_metadata,
+    mutate_update_mark,
+    mutate_update_metadata,
 )
 from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 
@@ -104,25 +104,26 @@ class SecretgraphMutations:
 
     deleteContentOrCluster: DeleteContentOrClusterMutation = (
         strawberry_django.input_mutation(
-            resolver=delete_content_or_cluster, handle_django_errors=False
+            resolver=mutate_delete_content_or_cluster,
+            handle_django_errors=False,
         )
     )
     resetDeletionContentOrCluster: ResetDeletionContentOrClusterMutation = (
         strawberry_django.input_mutation(
-            resolver=reset_deletion_content_or_cluster,
+            resolver=mutate_reset_deletion_content_or_cluster,
             handle_django_errors=False,
         )
     )
     regenerateFlexid: RegenerateFlexidMutation = (
         strawberry_django.input_mutation(
-            resolver=regenerate_flexid, handle_django_errors=False
+            resolver=mutate_regenerate_flexid, handle_django_errors=False
         )
     )
     updateMetadata: MetadataUpdateMutation = strawberry_django.input_mutation(
-        resolver=update_metadata, handle_django_errors=False
+        resolver=mutate_update_metadata, handle_django_errors=False
     )
     updateMarks: MarkMutation = strawberry_django.input_mutation(
-        resolver=mark, handle_django_errors=False
+        resolver=mutate_update_mark, handle_django_errors=False
     )
     pushContent: PushContentMutation = strawberry_django.input_mutation(
         resolver=mutate_push_content, handle_django_errors=False
@@ -132,7 +133,7 @@ class SecretgraphMutations:
         resolver=mutate_transfer, handle_django_errors=False
     )
 
-    logoutUser = strawberry.mutation(resolver=logoutUser)
+    logoutUser = strawberry.mutation(resolver=mutate_logout_user)
 
 
 @strawberry.type

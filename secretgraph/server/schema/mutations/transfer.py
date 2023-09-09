@@ -153,6 +153,7 @@ def mutate_pull(
     headers: Optional[JSON] = None,
     authorization: Optional[AuthList] = None,
 ) -> TransferMutation:
+    # TODO: needs safeguards against misuse as ddos facility
     view_result = get_cached_result(info.context, authset=authorization)[
         "Content"
     ]
