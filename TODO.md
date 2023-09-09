@@ -14,7 +14,7 @@
 -   teach decryptObject transfer
 -   keys need more infos (done but not tested and validity not enforced)
     -   key callbacks: graphqlurl?item=baseCluster&token=... or contenturl?token= for pushable contents
--   PushedArticle
+-   PushedArticle (cached article)
 -   validationError: use params
 -   trustedKeys logic (partly done):
     -   Needs much more work especially on gui side

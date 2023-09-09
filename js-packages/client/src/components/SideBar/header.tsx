@@ -99,14 +99,14 @@ function HeaderPopover() {
                     label="Include Tags"
                     value={searchCtx.include}
                     onChange={(event, value, reason) => {
-                        updateSearchCtx({ include: value })
+                        updateSearchCtx({ include: value as string[] })
                     }}
                 />
                 <TagsSelect
                     label="Exclude Tags"
                     value={searchCtx.exclude}
                     onChange={(event, value, reason) => {
-                        updateSearchCtx({ exclude: value })
+                        updateSearchCtx({ exclude: value as string[] })
                     }}
                 />
                 <FormGroup row>

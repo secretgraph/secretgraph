@@ -110,16 +110,19 @@ async def verify(
     if isinstance(url, httpx.Response):
         contentResponse = url
         url = contentResponse.request.url
-    splitted_url = url.split("?", 1)
-    qs = {}
-    authorization = ""
-    if len(splitted_url) == 2:
-        qs = parse_qs(splitted_url[1])
-        authorization = ",".join(qs.get("token") or [])
-    if not contentResponse:
+        authorization = (
+            contentResponse.request.headers.get("Authorization") or ""
+        )
+    else:
+        authorization = ""
+        splitted_url = url.split("?", 1)
+        if len(splitted_url) == 2:
+            qs = parse_qs(splitted_url[1])
+            authorization = ",".join(qs.get("token") or [])
         contentResponse = await session.get(
             splitted_url[0], headers={"Authorization": authorization}
         )
+
     contentResponse.raise_for_status()
     if (
         "X-GRAPHQL-PATH" in contentResponse
