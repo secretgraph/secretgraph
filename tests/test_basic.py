@@ -3,18 +3,21 @@ import json
 import os
 from contextlib import redirect_stderr
 
+import httpx
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.test import RequestFactory, TestCase
+from django.utils.module_loading import import_string
 from strawberry.django.context import StrawberryDjangoContext
 
 from secretgraph.core.utils.hashing import (
     findWorkingHashAlgorithms,
     hashObject,
 )
+from secretgraph.core.utils.verification import verify
 from secretgraph.queries.cluster import createClusterMutation
 from secretgraph.queries.content import createContentMutation
 from secretgraph.queries.key import createKeysMutation
@@ -81,7 +84,9 @@ class BasicTests(TestCase):
                         "state": "public",
                         "value": ContentFile(b""),
                         "type": "File",
-                        "authorization": f"{clusterid}:${base64.b64encode(manage_token).decode()}",
+                        "authorization": (
+                            f"{clusterid}:${base64.b64encode(manage_token).decode()}"
+                        ),
                         "tags": [],
                     },
                     StrawberryDjangoContext(request=request, response=None),
@@ -104,7 +109,9 @@ class BasicTests(TestCase):
                     "publicState": "public",
                     "publicKey": ContentFile(pub_encryptkey_bytes),
                     "publicTags": [],
-                    "authorization": f"{clusterid}:${base64.b64encode(manage_token).decode()}",
+                    "authorization": (
+                        f"{clusterid}:${base64.b64encode(manage_token).decode()}",
+                    ),
                 },
                 StrawberryDjangoContext(request=request, response=None),
             )
@@ -219,7 +226,7 @@ class BasicTests(TestCase):
 
         pub_encryptKey_hash = hashObject(pub_encryptkey_bytes, hash_algos[0])
         pub_signKey_hash = hashObject(pub_signkey_bytes, hash_algos[0])
-
+        m_token = f"{clusterid}:{base64.b64encode(manage_token).decode()}"
         prepared_content = {
             "cluster": clusterid,
             "type": "File",
@@ -251,8 +258,9 @@ class BasicTests(TestCase):
             ],
             "value": ContentFile(encrypted_content),
             "nonce": base64.b64encode(content_nonce).decode(),
-            "authorization": f"{clusterid}:${base64.b64encode(manage_token).decode()}",
+            "authorization": [m_token],
         }
+        url = ""
         with self.subTest("Succeed because content is signed"):
             request = self.factory.get("/graphql")
             result = await schema.execute(
@@ -262,7 +270,26 @@ class BasicTests(TestCase):
             )
             self.assertFalse(result.errors)
             self.assertTrue(result.data)
+            path = result.data["secretgraph"]["updateOrCreateContent"][
+                "content"
+            ]["link"]
+            url = f"http://{request.get_host()}{path}"
+
         self.assertEqual(
             await Cluster.objects.exclude(name="@system").acount(), 1
         )
         self.assertEqual(await Content.objects.acount(), 3)
+        # TODO: verify
+        """
+        if path:
+            with self.subTest("check signature"):
+                client = httpx.AsyncClient(
+                    app=
+                )
+                rets, errors = await verify(
+                    client,
+                    f"{url}?token={m_token}",
+                    exit_first=True,
+                )
+                self.assertEqual(len(rets), 1)
+                """

@@ -14,36 +14,6 @@ from .hashing import (
     findWorkingHashAlgorithms,
 )
 
-contentVerification_query = """
-query contentVerificationQuery(
-    $id: GlobalID!
-    $includeTags: [String!]
-) {
-    secretgraph {
-        node(id: $id) {
-            ... on Content {
-                references(
-                    filters: {
-                        groups: ["signature"]
-                        includeTags: $includeTags
-                    }
-                ) {
-                    edges {
-                        node {
-                            extra
-                            target {
-                                link
-                                type
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-"""
-
 
 def _clean_keyhash(val: str):
     val = val.strip().removeprefix("key_hash").removeprefix("key_hash")
@@ -206,7 +176,7 @@ async def verify(
             try:
                 await coro
                 if exit_first:
-                    return retmap, list(errors)
+                    return retmap, errors
             except Exception as exc:
                 errors.append(exc)
-    return retmap, list(errors)
+    return retmap, errors

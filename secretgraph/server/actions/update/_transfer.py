@@ -90,6 +90,8 @@ async def transfer_value(
     admin=False,
     skip_info_creation=False,
 ):
+    if content.locked:
+        raise LockedResourceError("Content is locked for transfer/pull")
     _headers = {}
     if keepalive is None:
         keepalive = bool(session)
