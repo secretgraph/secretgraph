@@ -530,3 +530,34 @@ export const findOriginsQuery = gql`
         }
     }
 `
+
+export const contentVerificationQuery = gql`
+    query contentVerificationQuery($id: GlobalID!, $includeTags: [String!]) {
+        secretgraph {
+            node(id: $id) {
+                ... on Content {
+                    references(
+                        filters: {
+                            groups: ["signature"]
+                            includeTags: $includeTags
+                        }
+                    ) {
+                        edges {
+                            node {
+                                extra
+                                target {
+                                    link
+                                    type
+                                }
+                            }
+                        }
+                        pageInfo {
+                            hasNextPage
+                            endCursor
+                        }
+                    }
+                }
+            }
+        }
+    }
+`

@@ -247,7 +247,7 @@ class ProxyTags:
 
 def iter_decrypt_contents(
     result, /, *, queryset=None, decryptset=None
-) -> Iterable[Iterable[str]]:
+) -> Iterable[Content]:
     from ..actions.update import sync_transfer_value
 
     if decryptset is None:
@@ -322,7 +322,7 @@ def iter_decrypt_contents(
                 content.tags, content_map[content.id]
             )
 
-            def _generator():
+            def _read_decrypt() -> Iterable[bytes]:
                 if content.start_transfer:
                     if not content.start_transfer():
                         return
@@ -349,8 +349,8 @@ def iter_decrypt_contents(
                                 )
                         chunk = nextchunk
 
-            _generator.key = content_map[content.id]
-            content.read_decrypt = _generator
+            _read_decrypt.key = content_map[content.id]
+            content.read_decrypt = _read_decrypt
 
         elif content.state in public_states:
             content.tags_proxy = ProxyTags(content.tags)

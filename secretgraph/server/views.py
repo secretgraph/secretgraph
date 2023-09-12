@@ -163,10 +163,14 @@ class ContentView(View):
             )
         else:
             content = get_object_or_404(self.result["objects_without_public"])
-        response = self.handle_raw_singlecontent(
-            request, content, *args, **kwargs
-        )
-        return response
+        if "X-KEY-HASH" in request.headers or "key_hash" in request.GET:
+            return self.handle_content_key_hashes(
+                request, content, *args, **kwargs
+            )
+        else:
+            return self.handle_raw_singlecontent(
+                request, content, *args, **kwargs
+            )
 
     def handle_decrypt(self, request: HttpRequest, id, *args, **kwargs):
         content = get_object_or_404(
@@ -258,79 +262,86 @@ class ContentView(View):
         response["X-TYPE"] = content.type
         return response
 
-    @method_decorator(vary_on_headers("X-KEY-HASH", "RANGE", "Authorization"))
+    def handle_content_key_hashes(
+        self, request, content: Content, *args, **kwargs
+    ):
+        # this is the only way without content id (and only download id) to verify
+        # here we can extract private keys when allowed to do so
+        # TODO: better protect API or remove it
+        keyhash_set = set(
+            request.headers.get("X-KEY-HASH", "").replace(" ", "").split(",")
+        )
+        keyhash_set.update(request.GET.getlist("key_hash"))
+        refs = content.references.select_related("target").filter(
+            group__in=["key", "signature"]
+        )
+        # Public key in result set
+        q = Q(target__in=self.result["objects_with_public"])
+        for k in keyhash_set:
+            q |= Q(target__tags__tag=f"key_hash={k}")
+        # signatures first, should be maximal 20, so on first page
+        refs = (
+            refs.filter(q)
+            .annotate(
+                privkey_downloadId=Subquery(
+                    # private keys in result set, empty if no permission
+                    self.result["objects_with_public"]
+                    .filter(
+                        type="PrivateKey",
+                        references__target__referencedBy=OuterRef("pk"),
+                    )
+                    .values("downloadId")[:1]
+                )
+            )
+            .order_by("-group", "id")
+        )
+        response = {
+            "signatures": {},
+            "keys": {},
+        }
+        for ref in refs:
+            if ref.group == "key":
+                response["keys"][
+                    ref.target.contentHash.removeprefix("Key:")
+                ] = {
+                    "key": ref.extra,
+                    "link": (
+                        ref.privkey_downloadId
+                        and reverse(
+                            "secretgraph:contents",
+                            kwargs={"id": ref.privkey_downloadId},
+                        )
+                    )
+                    or "",
+                }
+            else:
+                response["signatures"][
+                    ref.target.contentHash.removeprefix("Key:")
+                ] = {
+                    "signature": ref.extra,
+                    "link": ref.target.link,
+                }
+        response = JsonResponse(response)
+
+        response["X-TYPE"] = content.type
+        response["X-Robots-Tag"] = "noindex,nofollow"
+        return response
+
+    @method_decorator(vary_on_headers("RANGE", "Authorization"))
     @method_decorator(last_modified(calc_content_modified_raw))
     def handle_raw_singlecontent(
         self, request, content: Content, *args, **kwargs
     ):
-        if "key_hash" in request.GET or request.headers.get("X-KEY-HASH", ""):
-            keyhash_set = set(
-                request.headers.get("X-KEY-HASH", "")
-                .replace(" ", "")
-                .split(",")
+        try:
+            name = content.tags.filter(tag__startswith="name=").first()
+            if name:
+                name = name.tag.split("=", 1)[-1]
+            response = get_file_response_with_range_support(
+                request, content.file.open("rb"), content.file.size, name
             )
-            keyhash_set.update(request.GET.getlist("key_hash"))
-            refs = content.references.select_related("target").filter(
-                group__in=["key", "signature"]
-            )
-            # Public key in result set
-            q = Q(target__in=self.result["objects_with_public"])
-            for k in keyhash_set:
-                q |= Q(target__tags__tag=f"key_hash={k}")
-            # signatures first, should be maximal 20, so on first page
-            refs = (
-                refs.filter(q)
-                .annotate(
-                    privkey_downloadId=Subquery(
-                        # private keys in result set, empty if no permission
-                        self.result["objects_with_public"]
-                        .filter(
-                            type="PrivateKey",
-                            references__target__referencedBy=OuterRef("pk"),
-                        )
-                        .values("downloadId")[:1]
-                    )
-                )
-                .order_by("-group", "id")
-            )
-            response = {
-                "signatures": {},
-                "keys": {},
-            }
-            for ref in refs:
-                if ref.group == "key":
-                    response["keys"][
-                        ref.target.contentHash.removeprefix("Key:")
-                    ] = {
-                        "key": ref.extra,
-                        "link": (
-                            ref.privkey_downloadId
-                            and reverse(
-                                "secretgraph:contents",
-                                kwargs={"id": ref.privkey_downloadId},
-                            )
-                        )
-                        or "",
-                    }
-                else:
-                    response["signatures"][
-                        ref.target.contentHash.removeprefix("Key:")
-                    ] = {
-                        "signature": ref.extra,
-                        "link": ref.target.link,
-                    }
-            response = JsonResponse(response)
-        else:
-            try:
-                name = content.tags.filter(tag__startswith="name=").first()
-                if name:
-                    name = name.tag.split("=", 1)[-1]
-                response = get_file_response_with_range_support(
-                    request, content.file.open("rb"), content.file.size, name
-                )
-                update_file_accessed([content.id])
-            except FileNotFoundError as e:
-                raise Http404() from e
+            update_file_accessed([content.id])
+        except FileNotFoundError as e:
+            raise Http404() from e
         if self.result["scope"] != "peek":
             freeze_contents([content.id], self.request)
         response["X-TYPE"] = content.type

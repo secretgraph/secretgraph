@@ -10,9 +10,9 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.test import RequestFactory, TestCase
-from django.utils.module_loading import import_string
 from strawberry.django.context import StrawberryDjangoContext
 
+from secretgraph.asgi import application
 from secretgraph.core.utils.hashing import (
     findWorkingHashAlgorithms,
     hashObject,
@@ -270,6 +270,9 @@ class BasicTests(TestCase):
             )
             self.assertFalse(result.errors)
             self.assertTrue(result.data)
+            self.assertTrue(
+                result.data["secretgraph"]["updateOrCreateContent"]["writeok"]
+            )
             path = result.data["secretgraph"]["updateOrCreateContent"][
                 "content"
             ]["link"]
@@ -279,17 +282,12 @@ class BasicTests(TestCase):
             await Cluster.objects.exclude(name="@system").acount(), 1
         )
         self.assertEqual(await Content.objects.acount(), 3)
-        # TODO: verify
-        """
-        if path:
+        if url:
             with self.subTest("check signature"):
-                client = httpx.AsyncClient(
-                    app=
-                )
+                client = httpx.AsyncClient(app=application)
                 rets, errors = await verify(
                     client,
                     f"{url}?token={m_token}",
                     exit_first=True,
                 )
                 self.assertEqual(len(rets), 1)
-                """

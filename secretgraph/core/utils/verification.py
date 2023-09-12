@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 from cryptography.hazmat.primitives.hashes import Hash
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
+from ...queries.content import contentVerificationQuery
 from ..constants import HashNameItem, mapHashNames
 from .hashing import (
     calculateHashesForHashAlgorithms,
@@ -43,11 +44,15 @@ async def _fetch_certificate(
         url, headers={"Authorization": authorization}
     )
     if key_hashes:
-        calced_hashes = calculateHashesForHashAlgorithms(hashAlgorithms)
+        calced_hashes = calculateHashesForHashAlgorithms(
+            keyResponse.content, hashAlgorithms
+        )
         if set(calced_hashes).isdisjoint(key_hashes):
             raise ValueError("invalid key, no hash algorithm matches")
     else:
-        calced_hashes = calculateHashesForHashAlgorithms(hashAlgorithms[:1])
+        calced_hashes = calculateHashesForHashAlgorithms(
+            keyResponse.content, hashAlgorithms[:1]
+        )
     return calced_hashes, load_der_public_key(keyResponse.content), url
 
 
@@ -72,6 +77,8 @@ async def _verify_helper(
 async def verify(
     session: httpx.AsyncClient,
     url: str | httpx.Response,
+    /,
+    content_id: Optional[str] = None,
     write_chunk: Optional[Callable[[bytes], None]] = None,
     key_hashes: Iterable[str] = (),
     exit_first: bool = False,
@@ -80,9 +87,14 @@ async def verify(
     if isinstance(url, httpx.Response):
         contentResponse = url
         url = contentResponse.request.url
+        splitted_url = url.split("?", 1)
         authorization = (
             contentResponse.request.headers.get("Authorization") or ""
         )
+        if not authorization:
+            if len(splitted_url) == 2:
+                qs = parse_qs(splitted_url[1])
+                authorization = ",".join(qs.get("token") or [])
     else:
         authorization = ""
         splitted_url = url.split("?", 1)
@@ -94,61 +106,106 @@ async def verify(
         )
 
     contentResponse.raise_for_status()
-    if (
-        "X-GRAPHQL-PATH" in contentResponse
-        and "X-GRAPHQL-PATH" in contentResponse
-    ):
+    raw_hashalgorithms = contentResponse.headers.get("X-HASH-ALGORITHMS") or ""
+    raw_gqlpath = contentResponse.headers.get("X-GRAPHQL-PATH") or ""
+
+    if raw_hashalgorithms and raw_gqlpath:
         hashalgorithms = findWorkingHashAlgorithms(
-            contentResponse["X-HASH-ALGORITHMS"]
+            raw_hashalgorithms.split(",")
         )
-        graphqlurl = urljoin(
-            splitted_url[0], contentResponse["X-GRAPHQL-PATH"]
-        )
+        graphqlurl = urljoin(splitted_url[0], raw_gqlpath)
         retmap = {}
-        key_hashes = set(map(_clean_keyhash, key_hashes))
-        variables = {}
-        if key_hashes:
-            variables["includeTags"] = list(key_hashes)
-        result = (
-            await session.post(
-                graphqlurl,
-                data=variables,
-                headers={"Authorization": authorization},
-            )
-        ).json()
+
         ops = []
         url_map = {}
         signature_map = {}
-
-        for ref in result["secretgraph"]["node"]["references"]["edges"]:
-            signature = ref["extra"]
-            link = ref["node"]["link"]
-            signature = signature.split(":", 1)
-            signHashAlgorithm = mapHashNames[signature[0]]
-            if signature[0] not in mapHashNames or len(signature) != 2:
-                continue
-            signature_map.setdefault(
-                signHashAlgorithm.serializedName,
-                {
-                    "urls": {},
-                    "signHashAlgorithm": signHashAlgorithm,
-                    "hashCtx": Hash(signHashAlgorithm.algorithm),
-                },
+        if content_id:
+            key_hashes_tags = set(map(_clean_keyhash, key_hashes))
+            variables = {"id": content_id}
+            if key_hashes_tags:
+                variables["includeTags"] = list(key_hashes_tags)
+            verifyData = (
+                (
+                    await session.post(
+                        graphqlurl,
+                        json={
+                            "query": contentVerificationQuery,
+                            "variables": variables,
+                        },
+                        headers={"Authorization": authorization},
+                    )
+                )
+                .raise_for_status()
+                .json()
             )
-            joined_link = urljoin(splitted_url[0], link)
-            url_map[joined_link] = None
-            signature_map["urls"][joined_link] = signature
 
-        async for _chunk in contentResponse.aiter_bytes(512):
-            chunk = await _chunk
+            for ref in verifyData["secretgraph"]["node"]["references"][
+                "edges"
+            ]:
+                signature = ref["extra"]
+                link = ref["node"]["link"]
+                signature = signature.split(":", 1)
+                if signature[0] not in mapHashNames or len(signature) != 2:
+                    continue
+                signHashAlgorithm = mapHashNames[signature[0]]
+                signature_map.setdefault(
+                    signHashAlgorithm.serializedName,
+                    {
+                        "urls": {},
+                        "signHashAlgorithm": signHashAlgorithm,
+                        "hashCtx": Hash(signHashAlgorithm.algorithm),
+                    },
+                )
+                joined_link = urljoin(splitted_url[0], link)
+                url_map[joined_link] = None
+                signature_map[signHashAlgorithm.serializedName]["urls"][
+                    joined_link
+                ] = signature
+        else:
+            verifyData = (
+                (
+                    await session.get(
+                        f"{splitted_url[0]}",
+                        headers={
+                            "Authorization": authorization,
+                            "X-KEY-HASH": ",".join(key_hashes),
+                        },
+                    )
+                )
+                .raise_for_status()
+                .json()
+            )
+
+            for _hash, ref in verifyData["signatures"].items():
+                signature = ref["signature"]
+                link = ref["link"]
+                signature = signature.split(":", 1)
+                if signature[0] not in mapHashNames or len(signature) != 2:
+                    continue
+                signHashAlgorithm = mapHashNames[signature[0]]
+                signature_map.setdefault(
+                    signHashAlgorithm.serializedName,
+                    {
+                        "urls": {},
+                        "signHashAlgorithm": signHashAlgorithm,
+                        "hashCtx": Hash(signHashAlgorithm.algorithm),
+                    },
+                )
+                joined_link = urljoin(splitted_url[0], link)
+                url_map[joined_link] = None
+                signature_map[signHashAlgorithm.serializedName]["urls"][
+                    joined_link
+                ] = signature
+
+        async for chunk in contentResponse.aiter_bytes(512):
             if write_chunk:
                 write_chunk(chunk)
             for sig in signature_map.values():
-                sig["hash"].update(chunk)
+                sig["hashCtx"].update(chunk)
         if write_finalize:
             chunk = write_finalize()
             for sig in signature_map.values():
-                sig["hash"].update(chunk)
+                sig["hashCtx"].update(chunk)
         for url in url_map.keys():
             url_map[url] = _fetch_certificate(
                 session=session,
