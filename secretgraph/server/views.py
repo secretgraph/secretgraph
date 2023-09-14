@@ -144,6 +144,7 @@ class ContentView(View):
         )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
+        authset.discard("")
         self.result = retrieve_allowed_objects(
             request,
             "Content",

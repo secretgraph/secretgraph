@@ -285,8 +285,8 @@ class BasicTests(TestCase):
         self.assertEqual(await Content.objects.acount(), 3)
         if url:
             with self.subTest("check signature"):
-                # NOTE: never forget to urlencode token
                 client = httpx.AsyncClient(app=application)
+                # NOTE: quote_plus is required for urlencoding
                 rets, errors = await verify(
                     client,
                     f"{url}?token={quote_plus(m_token)}",

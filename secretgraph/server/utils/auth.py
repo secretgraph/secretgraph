@@ -180,6 +180,7 @@ def retrieve_allowed_objects(
             .replace(" ", "")
             .split(",")
         )
+        # authset can contain: ""
         authset.discard("")
     elif not isinstance(authset, set):
         authset = set(authset)

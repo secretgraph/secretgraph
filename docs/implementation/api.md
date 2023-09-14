@@ -84,6 +84,12 @@ The current maximum are 2 key-pairs.
 
 ### GET or header
 
+WARNING:
+
+when using the GET parameter make sure to properly encode the data.
+As most data is base64 encoded there are sometimes + signs which can cause hard to debug problems
+So make sure you use an encoder which properly escapes the problematic chars
+
 -   key=key hash:sharedkey (privatekey way) or key=content id:sharedkey (direct way) : decrypt on the fly with key as crypto key (or X-Key Header)
 -   token=flexid/global flexid:token: Auth token (or Authorization Header)
 -   key_hash=hash: retrieve keys with hash (or X-KEY-HASH Header)
