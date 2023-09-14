@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import base64
 from typing import Callable, Iterable, Optional
 from urllib.parse import parse_qs, urljoin
 
@@ -22,18 +23,6 @@ logger = logging.getLogger(__name__)
 def _clean_keyhash(val: str):
     val = val.strip().removeprefix("key_hash").removeprefix("key_hash")
     return f"key_hash={val}"
-
-
-def _verify_signature(key, hashFinal, signHashAlgorithm, signature):
-    return key.verify(
-        signature=signature,
-        data=hashFinal,
-        padding=padding.PSS(
-            mgf=padding.MGF1(signHashAlgorithm.algorithm),
-            salt_length=padding.PSS.AUTO,
-        ),
-        algorithm=Prehashed(signHashAlgorithm.algorithm),
-    )
 
 
 async def _fetch_certificate(
@@ -68,14 +57,20 @@ async def _verify_helper(
     signHashAlgorithm: HashNameItem,
 ):
     _hashes_key = await hashes_key
-    if _verify_signature(
-        _hashes_key[1], signatureDigest, signHashAlgorithm, signature
-    ):
-        retmap[_hashes_key[0][0]] = {
-            "key": _hashes_key[1],
-            "signature": f"{signHashAlgorithm.serializedName}:{signature}",
-            "key_url": _hashes_key[2],
-        }
+    _hashes_key[1].verify(
+        signature=signature,
+        data=signatureDigest,
+        padding=padding.PSS(
+            mgf=padding.MGF1(signHashAlgorithm.algorithm),
+            salt_length=padding.PSS.AUTO,
+        ),
+        algorithm=Prehashed(signHashAlgorithm.algorithm),
+    )
+    retmap[_hashes_key[0][0]] = {
+        "key": _hashes_key[1],
+        "signature": f"{signHashAlgorithm.serializedName}:{signature}",
+        "key_url": _hashes_key[2],
+    }
 
 
 async def verify(
@@ -168,7 +163,7 @@ async def verify(
                 url_map[joined_link] = None
                 signature_map[signHashAlgorithm.serializedName]["urls"][
                     joined_link
-                ] = signature
+                ] = base64.b64decode(signature[1])
         else:
             logger.debug("item unknown, fallback to anonymous verification")
             verifyData = (
@@ -204,7 +199,7 @@ async def verify(
                 url_map[joined_link] = None
                 signature_map[signHashAlgorithm.serializedName]["urls"][
                     joined_link
-                ] = signature
+                ] = base64.b64decode(signature[1])
 
         async for chunk in contentResponse.aiter_bytes(512):
             if write_chunk:

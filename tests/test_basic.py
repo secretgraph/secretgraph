@@ -296,7 +296,6 @@ class BasicTests(TransactionTestCase):
                 f"{url}?token={quote_plus(m_token)}",
                 exit_first=True,
             )
-            print(errors)
             self.assertEqual(len(rets), 1)
         self.assertTrue(item_id)
         with self.subTest("check signature with item"):
@@ -307,5 +306,4 @@ class BasicTests(TransactionTestCase):
                 f"{url}?token={quote_plus(m_token)}&item={quote_plus(item_id)}",
                 exit_first=True,
             )
-            print(errors)
             self.assertEqual(len(rets), 1)
