@@ -1,5 +1,6 @@
 import base64
 import json
+from urllib.parse import quote_plus
 import os
 from contextlib import redirect_stderr
 
@@ -284,10 +285,11 @@ class BasicTests(TestCase):
         self.assertEqual(await Content.objects.acount(), 3)
         if url:
             with self.subTest("check signature"):
+                # NOTE: never forget to urlencode token
                 client = httpx.AsyncClient(app=application)
                 rets, errors = await verify(
                     client,
-                    f"{url}?token={m_token}",
+                    f"{url}?token={quote_plus(m_token)}",
                     exit_first=True,
                 )
                 self.assertEqual(len(rets), 1)
