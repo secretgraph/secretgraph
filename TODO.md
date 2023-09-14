@@ -4,7 +4,6 @@
 -   automatize python query generation
 -   implement UserSelectable in frontend (Register page, Cluster editor)
 -   editor for Personal Data (in progress)
--   content verification in tests (check signatures)
 -   verification workflow (check against registry)
     -   fake registry
     -   new hash methods based on argon2id (benefit: hash contains all required parameters)
