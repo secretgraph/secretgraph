@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TransactionTestCase
 from strawberry.django.context import StrawberryDjangoContext
 
 from secretgraph.asgi import application
@@ -26,7 +26,7 @@ from secretgraph.schema import schema
 from secretgraph.server.models import Cluster, Content
 
 
-class BasicTests(TestCase):
+class BasicTests(TransactionTestCase):
     def setUp(self):
         # Every test needs access to the request factory.
         self.factory = RequestFactory()
@@ -262,6 +262,7 @@ class BasicTests(TestCase):
             "authorization": [m_token],
         }
         url = ""
+        item_id = ""
         with self.subTest("Succeed because content is signed"):
             request = self.factory.get("/graphql")
             result = await schema.execute(
@@ -277,19 +278,34 @@ class BasicTests(TestCase):
             path = result.data["secretgraph"]["updateOrCreateContent"][
                 "content"
             ]["link"]
+            item_id = result.data["secretgraph"]["updateOrCreateContent"][
+                "content"
+            ]["id"]
             url = f"http://{request.get_host()}{path}"
 
         self.assertEqual(
             await Cluster.objects.exclude(name="@system").acount(), 1
         )
         self.assertEqual(await Content.objects.acount(), 3)
-        if url:
-            with self.subTest("check signature"):
-                client = httpx.AsyncClient(app=application)
-                # NOTE: quote_plus is required for urlencoding
-                rets, errors = await verify(
-                    client,
-                    f"{url}?token={quote_plus(m_token)}",
-                    exit_first=True,
-                )
-                self.assertEqual(len(rets), 1)
+        self.assertTrue(url)
+        with self.subTest("check signature without item"):
+            client = httpx.AsyncClient(app=application)
+            # NOTE: quote_plus is required for urlencoding
+            rets, errors = await verify(
+                client,
+                f"{url}?token={quote_plus(m_token)}",
+                exit_first=True,
+            )
+            print(errors)
+            self.assertEqual(len(rets), 1)
+        self.assertTrue(item_id)
+        with self.subTest("check signature with item"):
+            client = httpx.AsyncClient(app=application)
+            # NOTE: quote_plus is required for urlencoding
+            rets, errors = await verify(
+                client,
+                f"{url}?token={quote_plus(m_token)}&item={quote_plus(item_id)}",
+                exit_first=True,
+            )
+            print(errors)
+            self.assertEqual(len(rets), 1)

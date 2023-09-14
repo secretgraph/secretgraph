@@ -65,6 +65,13 @@ def calc_content_modified_decrypted(request, content, *args, **kwargs):
     return calc_content_modified_raw(request, content, *args, **kwargs)
 
 
+def _assert_nospace(inp: set[str]):
+    for el in inp:
+        if " " in el:
+            return False
+    return True
+
+
 # range support inspired from
 # https://gist.github.com/dcwatson/cb5d8157a8fa5a4a046e
 class RangeFileWrapper(object):
@@ -145,6 +152,14 @@ class ContentView(View):
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
         authset.discard("")
+        if settings.DEBUG:
+            assert " " not in request.GET.get(
+                "item", ""
+            ), "whitespace in item GET parameter"
+            # spaces are stripped from Authorization
+            assert _assert_nospace(
+                authset
+            ), "whitespace in one of the tokens (GET token)"
         self.result = retrieve_allowed_objects(
             request,
             "Content",
@@ -220,10 +235,15 @@ class ContentView(View):
         )
 
         decryptset = set(
-            request.headers.get("X-Key", "").replace(" ", "").split(",")
+            request.headers.get("X-KEY", "").replace(" ", "").split(",")
         )
         decryptset.update(self.request.GET.getlist("key"))
         decryptset.discard("")
+        if settings.DEBUG:
+            # spaces are stripped from X-KEY
+            assert _assert_nospace(
+                decryptset
+            ), "whitespace in one of the keys (GET key)"
         try:
             iterator = iter_decrypt_contents(result, decryptset=decryptset)
             content = next(iterator)

@@ -1,9 +1,10 @@
 import asyncio
+import logging
 from typing import Callable, Iterable, Optional
 from urllib.parse import parse_qs, urljoin
 
 import httpx
-from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 from cryptography.hazmat.primitives.hashes import Hash
 from cryptography.hazmat.primitives.serialization import load_der_public_key
@@ -15,6 +16,8 @@ from .hashing import (
     findWorkingHashAlgorithms,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _clean_keyhash(val: str):
     val = val.strip().removeprefix("key_hash").removeprefix("key_hash")
@@ -23,13 +26,13 @@ def _clean_keyhash(val: str):
 
 def _verify_signature(key, hashFinal, signHashAlgorithm, signature):
     return key.verify(
-        signature,
-        hashFinal,
-        padding.PSS(
+        signature=signature,
+        data=hashFinal,
+        padding=padding.PSS(
             mgf=padding.MGF1(signHashAlgorithm.algorithm),
-            salt_length=padding.PSS.MAX_LENGTH,
+            salt_length=padding.PSS.AUTO,
         ),
-        Prehashed(signHashAlgorithm.algorithm),
+        algorithm=Prehashed(signHashAlgorithm.algorithm),
     )
 
 
@@ -43,6 +46,7 @@ async def _fetch_certificate(
     keyResponse = await session.get(
         url, headers={"Authorization": authorization}
     )
+    keyResponse.raise_for_status()
     if key_hashes:
         calced_hashes = calculateHashesForHashAlgorithms(
             keyResponse.content, hashAlgorithms
@@ -78,12 +82,12 @@ async def verify(
     session: httpx.AsyncClient,
     url: str | httpx.Response,
     /,
-    content_id: Optional[str] = None,
     write_chunk: Optional[Callable[[bytes], None]] = None,
     key_hashes: Iterable[str] = (),
     exit_first: bool = False,
     write_finalize: Optional[Callable[[], bytes]] = None,
 ):
+    content_id = None
     if isinstance(url, httpx.Response):
         contentResponse = url
         url = contentResponse.request.url
@@ -91,19 +95,23 @@ async def verify(
         authorization = (
             contentResponse.request.headers.get("Authorization") or ""
         )
-        if not authorization:
-            if len(splitted_url) == 2:
-                qs = parse_qs(splitted_url[1])
+        if len(splitted_url) == 2:
+            qs = parse_qs(splitted_url[1])
+            content_id = qs.get("item")
+            if not authorization:
                 authorization = ",".join(qs.get("token") or [])
     else:
         authorization = ""
         splitted_url = url.split("?", 1)
         if len(splitted_url) == 2:
             qs = parse_qs(splitted_url[1])
+            content_id = qs.get("item")
             authorization = ",".join(qs.get("token") or [])
         contentResponse = await session.get(
             splitted_url[0], headers={"Authorization": authorization}
         )
+    if content_id:
+        content_id = content_id[0]
 
     contentResponse.raise_for_status()
     raw_hashalgorithms = contentResponse.headers.get("X-HASH-ALGORITHMS") or ""
@@ -137,13 +145,13 @@ async def verify(
                 )
                 .raise_for_status()
                 .json()
-            )
+            )["data"]
 
             for ref in verifyData["secretgraph"]["node"]["references"][
                 "edges"
             ]:
-                signature = ref["extra"]
-                link = ref["node"]["link"]
+                signature = ref["node"]["extra"]
+                link = ref["node"]["target"]["link"]
                 signature = signature.split(":", 1)
                 if signature[0] not in mapHashNames or len(signature) != 2:
                     continue
@@ -162,6 +170,7 @@ async def verify(
                     joined_link
                 ] = signature
         else:
+            logger.debug("item unknown, fallback to anonymous verification")
             verifyData = (
                 (
                     await session.get(

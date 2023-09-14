@@ -90,9 +90,15 @@ when using the GET parameter make sure to properly encode the data.
 As most data is base64 encoded there are sometimes + signs which can cause hard to debug problems
 So make sure you use an encoder which properly escapes the problematic chars
 
+Especially make sure to quote + which is probably the only problematic char of base64 in query context.
+It is really a source of pain and long debug times.
+
+GET Parameters
+
 -   key=key hash:sharedkey (privatekey way) or key=content id:sharedkey (direct way) : decrypt on the fly with key as crypto key (or X-Key Header)
--   token=flexid/global flexid:token: Auth token (or Authorization Header)
+-   token=global content/cluster id:token: Auth token (or Authorization Header), (id=flexid)
 -   key_hash=hash: retrieve keys with hash (or X-KEY-HASH Header)
+-   item=global content/cluster id, (id=flexid), in use e.g. for verification
 -   peek: don't trigger freeze (only with update permission) (or via X-PEEK header)
 
 Not implemented yet
