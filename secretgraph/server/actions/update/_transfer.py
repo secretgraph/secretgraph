@@ -209,6 +209,7 @@ async def transfer_value(
                 url=response,
                 key_hashes=key_hashes,
                 write_chunk=f.write,
+                force_item=is_transfer,
             )
         if not signatures:
             # was a secretgraph content and verification failed

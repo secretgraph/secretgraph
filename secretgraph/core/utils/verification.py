@@ -81,8 +81,9 @@ async def verify(
     key_hashes: Iterable[str] = (),
     exit_first: bool = False,
     write_finalize: Optional[Callable[[], bytes]] = None,
+    force_item=False,
 ):
-    content_id = None
+    item_id = None
     if isinstance(url, httpx.Response):
         contentResponse = url
         url = contentResponse.request.url
@@ -92,7 +93,7 @@ async def verify(
         )
         if len(splitted_url) == 2:
             qs = parse_qs(splitted_url[1])
-            content_id = qs.get("item")
+            item_id = qs.get("item")
             if not authorization:
                 authorization = ",".join(qs.get("token") or [])
     else:
@@ -100,13 +101,15 @@ async def verify(
         splitted_url = url.split("?", 1)
         if len(splitted_url) == 2:
             qs = parse_qs(splitted_url[1])
-            content_id = qs.get("item")
+            item_id = qs.get("item")
             authorization = ",".join(qs.get("token") or [])
         contentResponse = await session.get(
             splitted_url[0], headers={"Authorization": authorization}
         )
-    if content_id:
-        content_id = content_id[0]
+    if item_id:
+        item_id = item_id[0]
+    elif force_item:
+        raise ValueError("Url GET parameters contained no item")
 
     contentResponse.raise_for_status()
     raw_hashalgorithms = contentResponse.headers.get("X-HASH-ALGORITHMS") or ""
@@ -122,9 +125,9 @@ async def verify(
         ops = []
         url_map = {}
         signature_map = {}
-        if content_id:
+        if item_id:
             key_hashes_tags = set(map(_clean_keyhash, key_hashes))
-            variables = {"id": content_id}
+            variables = {"id": item_id}
             if key_hashes_tags:
                 variables["includeTags"] = list(key_hashes_tags)
             verifyData = (
@@ -165,7 +168,7 @@ async def verify(
                     joined_link
                 ] = base64.b64decode(signature[1])
         else:
-            logger.debug("item unknown, fallback to anonymous verification")
+            logger.debug("item unknown, use anonymous verification")
             verifyData = (
                 (
                     await session.get(

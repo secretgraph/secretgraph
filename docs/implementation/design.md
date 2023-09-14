@@ -71,9 +71,12 @@ Otherwise files are remaining and the usage is not correctly calculated
 
 ## Transfer
 
-Transfer can only be started on contents with transfer references. They can only be specified at creation time for security reasons (otherwise it is possible to circumvent the rentention time).
+Transfer can only be started on contents with transfer references. They can only be specified at creation time for security reasons (otherwise it is possible to circumvent the retention time).
 Transfer contents are deleted when an unrecoverable error happens or the server returns 404
 When a transfer succeeds, signature references are created in case the Publickey is on the server and visible, otherwise a link and a signature tag are created
+
+The tag transfer_url is used for the url (only one). It must contain an GET parameter named item pointing to the content (global id).
+The tag transfer_header can be used for headers. Multiple entries are valid
 
 ## Pull / stream in
 

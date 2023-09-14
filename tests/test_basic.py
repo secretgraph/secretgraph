@@ -305,5 +305,6 @@ class BasicTests(TransactionTestCase):
                 client,
                 f"{url}?token={quote_plus(m_token)}&item={quote_plus(item_id)}",
                 exit_first=True,
+                force_item=True,
             )
             self.assertEqual(len(rets), 1)
