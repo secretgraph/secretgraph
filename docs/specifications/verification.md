@@ -32,6 +32,12 @@ Note: the wallet in the design concept can be a content or cluster in the secret
 
 Just prefixing the result will allow ambiguities as the query parameters can collide with the sorted key value pairs
 
+## Why refactor the url to a base64 like value
+
+Urls can still use query parameters or unsound implementations to cause collisions so base64 it.
+Strip ? and & as refactoring because they point to the same url as without.
+Strip the = from the base64 string as it collides with the key=value syntax
+
 ## secretgraph implementation specific
 
 Secretgraph uses argon2id for generating the hashes. It reuses the salt value to save the argon2 parameters. The salt is still part of the hash.
@@ -44,6 +50,10 @@ Domain:
 For possible rejections based on the capabilities of a registry we prefix with a domain
 
 Domains can be e.g. phonenumber, personal_info
+
+## Changes
+
+-   instead of passing plain url, refactor it and pass the = free base64 encoded version of it as prefix
 
 ## Demo
 

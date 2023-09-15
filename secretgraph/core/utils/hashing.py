@@ -100,7 +100,7 @@ def sortedRegistryHashRaw(inp: Iterable[str], url: str) -> str:
     salt = None
     parameters = None
     obja = []
-    urlb = url.encode("utf8")
+    urlb = base64.b64encode(url.encode("utf8").rstrip(b"&?")).rstrip(b"=")
     for x in inp:
         obja.append(b"%b%b" % (urlb, x.encode("utf8")))
         if x.startswith("salt="):
