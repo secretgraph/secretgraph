@@ -24,6 +24,8 @@ ttps://gitlab.opencode.de/bmi/eidas2/-/issues/68
 
 This is a stripped down international version which explains less trivials.
 
+Note: the wallet in the design concept can be a content or cluster in the secretgraph world. May enable updates via auth
+
 ## Design decisions
 
 ### Why not simply prefixing the concatened result with the url?
