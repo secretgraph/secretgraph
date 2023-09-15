@@ -13,13 +13,17 @@
 Secretgraph proposes the concept of partial trees for verification as a full tree would require all key-value pairs, from which some tree parts are maybe not shared for privacy reasons.
 Instead of certain keys and corresponding values are extracted. We may need to add a key named salt with a random value which is also part of the hash to prevent extracting additional information by trying.
 
-To build the hash, we put the key value pairs in a one dimensional array, sort it and use it for the unique hash
+To build the hash, we put the key value pairs in a one dimensional array, sort it, prefix it with the address and use it for the unique hash.
 
 ## Draft concept
 
-![Verification Workflow](Verification_and_Wallet.png)
+![Verification Workflow](Verification_and_Wallet2.png)
 
 This is a stripped down variant of the draft:
 ttps://gitlab.opencode.de/bmi/eidas2/-/issues/68
 
 This is a stripped down international version which explains less trivials.
+
+Note:
+
+for performance reasons there is a new version. Instead of prefixing every key value pair, prefix the whole result with the url

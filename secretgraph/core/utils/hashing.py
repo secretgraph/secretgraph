@@ -1,5 +1,9 @@
 import base64
+import os
 from typing import Iterable
+from itertools import chain
+
+import argon2
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.hashes import Hash
@@ -74,7 +78,41 @@ def sortedHash(
     inp: Iterable[str], hashAlgorithm: constants.HashNameItem | str
 ) -> str:
     obj = map(lambda x: x.encode("utf8"), sorted(inp))
-    return hashObject(obj, hashAlgorithm)
+    return _hashObject(obj, hashAlgorithm)
+
+
+def generateArgon2RegistrySalt(
+    parameters: argon2.Parameters = argon2.profiles.RFC_9106_LOW_MEMORY,
+) -> str:
+    salt = os.urandom(parameters.salt_len)
+    return argon2.PasswordHasher.from_parameters(parameters).hash(
+        b"secretgraph", salt=salt
+    )
+
+
+def sortedRegistryHash(inp: Iterable[str], url: str) -> str:
+    salt = None
+    parameters = None
+    obja = []
+    urlb = url.encode("utf8")
+    for x in inp:
+        obja.append(x.encode("utf8"))
+        if x.startswith("salt="):
+            argon2_hash = x.split("=", 1)[1]
+            ph = argon2.PasswordHasher()
+            try:
+                ph.verify(argon2_hash, b"secretgraph")
+            except Exception:
+                continue
+            parameters = argon2.extract_parameters(argon2_hash)
+            # extract the salt, the last parameter is the pw which is set to "secretgraph"
+            salt = base64.b64decode(argon2_hash.rsplit("$", 2)[-2])
+    if not salt or not parameters:
+        raise ValueError("missing salt")
+    obj = b"".join(chain(urlb, sorted(obja)))
+    return argon2.PasswordHasher.from_parameters(parameters).hash(
+        obj, salt=salt
+    )
 
 
 def hashTagsContentHash(
@@ -82,7 +120,6 @@ def hashTagsContentHash(
     domain: str,
     hashAlgorithm: constants.HashNameItem | str,
 ) -> str:
-
     return "%s:%s" % (domain, sortedHash(inp, hashAlgorithm))
 
 
