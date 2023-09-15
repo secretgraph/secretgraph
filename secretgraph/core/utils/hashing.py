@@ -105,7 +105,10 @@ def sortedRegistryHashRaw(inp: Iterable[str], url: str) -> str:
                 continue
             parameters = argon2.extract_parameters(argon2_hash)
             # extract the salt, the last parameter is the pw which is set to "secretgraph"
-            salt = base64.b64decode(argon2_hash.rsplit("$", 2)[-2])
+            _salt = argon2_hash.rsplit("$", 2)[-2]
+            # = are stripped, readd them
+            padding = "=" * (3 - ((len(_salt) + 3) % 4))
+            salt = base64.b64decode(_salt + padding)
     if not salt or not parameters:
         raise ValueError("missing salt")
     obj = b"".join(sorted(obja))
