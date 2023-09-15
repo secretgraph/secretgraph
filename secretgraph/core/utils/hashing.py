@@ -1,7 +1,6 @@
 import base64
 import os
 from typing import Iterable
-from itertools import chain
 
 import argon2
 
@@ -90,13 +89,13 @@ def generateArgon2RegistrySalt(
     )
 
 
-def sortedRegistryHash(inp: Iterable[str], url: str) -> str:
+def sortedRegistryHashRaw(inp: Iterable[str], url: str) -> str:
     salt = None
     parameters = None
     obja = []
     urlb = url.encode("utf8")
     for x in inp:
-        obja.append(x.encode("utf8"))
+        obja.append(b"%b%b" % (urlb, x.encode("utf8")))
         if x.startswith("salt="):
             argon2_hash = x.split("=", 1)[1]
             ph = argon2.PasswordHasher()
@@ -109,10 +108,14 @@ def sortedRegistryHash(inp: Iterable[str], url: str) -> str:
             salt = base64.b64decode(argon2_hash.rsplit("$", 2)[-2])
     if not salt or not parameters:
         raise ValueError("missing salt")
-    obj = b"".join(chain(urlb, sorted(obja)))
-    return argon2.PasswordHasher.from_parameters(parameters).hash(
-        obj, salt=salt
-    )
+    obj = b"".join(sorted(obja))
+    return "argon2:%s" % argon2.PasswordHasher.from_parameters(
+        parameters
+    ).hash(obj, salt=salt)
+
+
+def sortedRegistryHash(inp: Iterable[str], url: str, domain: str) -> str:
+    return f"{domain}:{sortedRegistryHashRaw(inp, url)}"
 
 
 def hashTagsContentHash(

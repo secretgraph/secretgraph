@@ -17,13 +17,28 @@ To build the hash, we put the key value pairs in a one dimensional array, sort i
 
 ## Draft concept
 
-![Verification Workflow](Verification_and_Wallet2.png)
+![Verification Workflow](Verification_and_Wallet.png)
 
 This is a stripped down variant of the draft:
 ttps://gitlab.opencode.de/bmi/eidas2/-/issues/68
 
 This is a stripped down international version which explains less trivials.
 
-Note:
+## Design decisions
 
-for performance reasons there is a new version. Instead of prefixing every key value pair, prefix the whole result with the url
+### Why not simply prefixing the concatened result with the url?
+
+Just prefixing the result will allow ambiguities as the query parameters can collide with the sorted key value pairs
+
+## secretgraph implementation specific
+
+Secretgraph uses argon2id for generating the hashes. It reuses the salt value to save the argon2 parameters. The salt is still part of the hash.
+For checking that the salt is compatible it can be verified against the password b"secretgraph" (should be the same in unicode)
+
+Because of the secretgraph hashing format: `<hash algorithm>:<actual hash>`, argon2 hashes are prefixed with `argon2:<actual argon2 hash>`
+
+Domain:
+
+For possible rejections based on the capabilities of a registry we prefix with a domain
+
+Domains can be e.g. phonenumber, personal_info
