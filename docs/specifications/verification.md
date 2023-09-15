@@ -44,3 +44,11 @@ Domain:
 For possible rejections based on the capabilities of a registry we prefix with a domain
 
 Domains can be e.g. phonenumber, personal_info
+
+## Demo
+
+```python
+from secretgraph.core.utils.hashing import sortedRegistryHash, generateArgon2RegistrySalt
+salt = generateArgon2RegistrySalt()
+sortedRegistryHash(("foo=sdds","", f"salt={salt}"), "http://localhost", "fun")
+```

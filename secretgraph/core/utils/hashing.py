@@ -1,6 +1,5 @@
 import base64
-import os
-from typing import Iterable
+from typing import Iterable, Optional
 
 import argon2
 
@@ -82,10 +81,20 @@ def sortedHash(
 
 def generateArgon2RegistrySalt(
     parameters: argon2.Parameters = argon2.profiles.RFC_9106_LOW_MEMORY,
+    salt: Optional[bytes] = None,
 ) -> str:
-    salt = os.urandom(parameters.salt_len)
     return argon2.PasswordHasher.from_parameters(parameters).hash(
         b"secretgraph", salt=salt
+    )
+
+
+def extract_parameters_and_salt(argon2_hash: str):
+    # extract the salt, the last parameter is the pw which is set to "secretgraph"
+    salt = argon2_hash.rsplit("$", 2)[-2]
+    # = are stripped, readd them
+    padding = "=" * (3 - ((len(salt) + 3) % 4))
+    return argon2.extract_parameters(argon2_hash), base64.b64decode(
+        salt + padding
     )
 
 
@@ -103,12 +112,8 @@ def sortedRegistryHashRaw(inp: Iterable[str], url: str) -> str:
                 ph.verify(argon2_hash, b"secretgraph")
             except Exception:
                 continue
-            parameters = argon2.extract_parameters(argon2_hash)
-            # extract the salt, the last parameter is the pw which is set to "secretgraph"
-            _salt = argon2_hash.rsplit("$", 2)[-2]
-            # = are stripped, readd them
-            padding = "=" * (3 - ((len(_salt) + 3) % 4))
-            salt = base64.b64decode(_salt + padding)
+            parameters, salt = extract_parameters_and_salt(argon2_hash)
+
     if not salt or not parameters:
         raise ValueError("missing salt")
     obj = b"".join(sorted(obja))
