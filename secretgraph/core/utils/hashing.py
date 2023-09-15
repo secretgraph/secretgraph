@@ -90,9 +90,9 @@ def generateArgon2RegistrySalt(
 
 def extract_parameters_and_salt(argon2_hash: str):
     # extract the salt, the last parameter is the pw which is set to "secretgraph"
-    salt = argon2_hash.rsplit("$", 2)[-2]
+    salt = argon2_hash.rsplit("$", 2)[-2].encode("ascii")
     # = are stripped, readd them
-    padding = "=" * (3 - ((len(salt) + 3) % 4))
+    padding = b"=" * (3 - ((len(salt) + 3) % 4))
     return argon2.extract_parameters(argon2_hash), base64.b64decode(
         salt + padding
     )
