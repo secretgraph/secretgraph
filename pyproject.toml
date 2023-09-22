@@ -49,6 +49,7 @@ optional = true
 
 [tool.poetry.group.test.dependencies]
 schemathesis = "*"
+faker = "*"
 django-manifest-loader = "*"
 django-fast-ratelimit = ">=0.9.0"
 bleach = "*"

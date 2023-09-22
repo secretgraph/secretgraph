@@ -2,12 +2,19 @@ import base64
 from typing import Iterable, Optional
 
 import argon2
-
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.hashes import Hash
 
 from .. import constants
 from ..typings import PrivateCryptoKey, PublicCryptoKey
+
+
+class DuplicateSaltError(ValueError):
+    pass
+
+
+class MissingSaltError(ValueError):
+    pass
 
 
 def findWorkingHashAlgorithms(
@@ -110,10 +117,12 @@ def sortedRegistryHashRaw(inp: Iterable[str], url: str) -> str:
                 ph.verify(argon2_hash, b"secretgraph")
             except Exception:
                 continue
+            if salt:
+                raise DuplicateSaltError("duplicate valid salt")
             parameters, salt = extract_parameters_and_salt(argon2_hash)
 
     if not salt or not parameters:
-        raise ValueError("missing salt")
+        raise MissingSaltError("missing salt")
     obj = b"".join(sorted(obja))
     return "argon2:%s" % argon2.PasswordHasher.from_parameters(
         parameters
