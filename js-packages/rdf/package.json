@@ -4,6 +4,7 @@
     "description": "Rdf definitions and further editors for @secretgraph/secretgraph",
     "author": "",
     "license": "MIT",
+    "sideEffects": false,
     "dependencies": {
         "n3": "*"
     },

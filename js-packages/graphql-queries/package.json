@@ -4,6 +4,7 @@
     "description": "",
     "author": "",
     "license": "MIT",
+    "sideEffects": false,
     "dependencies": {
         "@apollo/client": "*",
         "apollo-upload-client": "*",

@@ -4,6 +4,9 @@
     "description": "",
     "author": "",
     "license": "MIT",
+    "sideEffects": [
+        "*.css"
+    ],
     "dependencies": {
         "@secretgraph/rdf": "*",
         "@secretgraph/graphql-queries": "*",
