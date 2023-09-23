@@ -96,7 +96,7 @@ class NetGroupInline(admin.TabularInline):
     def has_change_permission(self, request, obj=None):
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_groups" in get_cached_net_properties(request)
+        ) or "manage_net_groups" in get_cached_net_properties(request)
 
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission
@@ -113,7 +113,7 @@ class ClusterGroupInline(admin.TabularInline):
         # obj not ClusterGroup
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_groups" in get_cached_net_properties(request)
+        ) or "manage_cluster_groups" in get_cached_net_properties(request)
 
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission
@@ -465,7 +465,7 @@ class ClusterGroupAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_groups" in get_cached_net_properties(request)
+        ) or "manage_cluster_groups" in get_cached_net_properties(request)
 
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission
@@ -486,7 +486,7 @@ class NetGroupAdmin(BeautifyNetMixin, admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_groups" in get_cached_net_properties(request)
+        ) or "manage_net_groups" in get_cached_net_properties(request)
 
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission
@@ -509,7 +509,7 @@ class SGroupPropertyAdmin(admin.ModelAdmin):
             return False
         return getattr(
             request.user, "is_superuser", False
-        ) or "manage_groups" in get_cached_net_properties(request)
+        ) or "manage_cluster_groups" in get_cached_net_properties(request)
 
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission

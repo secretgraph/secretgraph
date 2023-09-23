@@ -1,13 +1,11 @@
-from typing import Iterable, Optional
+from typing import Iterable
 
-import strawberry
 import strawberry_django
 from django.conf import settings
-from django.db.models import Q, Subquery, Value
+from django.db.models import Subquery
 from strawberry import relay
 from strawberry.types import Info
 
-from ....core.constants import UserSelectable
 from ...actions.fetch import fetch_clusters
 from ...models import Cluster, Net
 from ...utils.auth import get_cached_net_properties, get_cached_result
@@ -21,11 +19,11 @@ class NetNode(relay.Node):
     @strawberry_django.field()
     def groups(self, info: Info) -> list[str]:
         # permissions allows to see the nonselectable net groups
-        # allow_hidden: have mod rights,
+        # allow_hidden_net: have mod  rights plus allowance to see nets,
         #   so the groups are handy for communication
-        # manage_groups: required for correctly updating groups
+        # manage_net_groups: required for correctly updating groups
         props = get_cached_net_properties(info.context["request"])
-        if "allow_hidden" in props or "manage_groups" in props:
+        if "allow_hidden_net" in props or "manage_net_groups" in props:
             return list(self.groups.values_list("name", flat=True))
         else:
             return list(

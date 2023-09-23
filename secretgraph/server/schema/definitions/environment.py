@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import Iterable, Optional
 
 import strawberry
 import strawberry_django
@@ -8,12 +8,8 @@ from django.urls import NoReverseMatch
 from strawberry import relay
 from strawberry.types import Info
 
-from ....core.constants import UserSelectable
 from ...models import ClusterGroup, Content, NetGroup
 from ...utils.auth import get_cached_net_properties
-
-if TYPE_CHECKING:
-    from .contents import ContentNode
 
 
 @strawberry_django.type(Content, name="InjectedKey")
@@ -52,6 +48,14 @@ class NetGroupNode(relay.Node):
     name: str
     description: str
     userSelectable: strawberry.auto
+    hidden: bool
+
+    @strawberry_django.field()
+    def properties(self, info: Info) -> Optional[list[str]]:
+        props = get_cached_net_properties(info.context["request"])
+        if "allow_hidden_net_props" in props or "manage_net_groups" in props:
+            return list(self.properties.values_list("name", flat=True))
+        return None
 
 
 @strawberry.type()
@@ -80,9 +84,9 @@ class SecretgraphConfig(relay.Node):
         # permissions allows to see the hidden global cluster groups
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
-        # manage_groups: required for correctly updating groups
+        # manage_cluster_groups: required for correctly updating groups
         props = get_cached_net_properties(info.context["request"])
-        if "allow_hidden" in props or "manage_groups" in props:
+        if "allow_hidden" in props or "manage_cluster_groups" in props:
             return ClusterGroup.objects.all()
         else:
             return ClusterGroup.objects.filter(hidden=False)
@@ -94,9 +98,13 @@ class SecretgraphConfig(relay.Node):
         # permissions allows to see the nonselectable global net groups
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
-        # manage_groups: required for correctly updating groups
+        # manage_net_groups: required for correctly updating groups
         props = get_cached_net_properties(info.context["request"])
-        if "allow_hidden" in props or "manage_groups" in props:
+        if (
+            "allow_hidden" in props
+            or "manage_net_groups" in props
+            or "manage_user" in props
+        ):
             return NetGroup.objects.all()
         else:
             return NetGroup.objects.filter(hidden=False)

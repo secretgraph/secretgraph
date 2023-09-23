@@ -135,7 +135,11 @@ class Command(BaseCommand):
         request = RequestFactory().get(url)
         update_cached_net_properties(
             request,
-            properties=["manage_groups", "manage_update"],
+            properties=[
+                "manage_cluster_groups",
+                "manage_net_groups",
+                "manage_update",
+            ],
             emptyOk=True,
         )
         clusterfn = create_cluster_fn(

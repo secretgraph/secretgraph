@@ -209,7 +209,7 @@ def _update_or_create_cluster(
     cluster.net.last_used = timezone.now()
     clusterGroups_qset = None
     if getattr(objdata, "clusterGroups", None) is not None and (
-        "manage_groups"
+        "manage_cluster_groups"
         in get_cached_net_properties(request, ensureInitialized=True)
         or create_cluster
         or manage.filter(id=cluster.id)
@@ -218,13 +218,13 @@ def _update_or_create_cluster(
             ClusterGroup,
             groups=objdata.clusterGroups,
             operation=constants.MetadataOperations.REPLACE,
-            admin="manage_groups"
+            admin="manage_cluster_groups"
             in get_cached_net_properties(request, ensureInitialized=True),
             initial=create_cluster,
         )
     netGroups_qset = None
     if getattr(objdata, "netGroups", None) is not None and (
-        "manage_groups"
+        "manage_net_groups"
         in get_cached_net_properties(request, ensureInitialized=True)
         or create_net
         or manage.filter(id=cluster.net.primaryCluster_id)
@@ -233,7 +233,7 @@ def _update_or_create_cluster(
             NetGroup,
             groups=objdata.netGroups,
             operation=constants.MetadataOperations.REPLACE,
-            admin="manage_groups"
+            admin="manage_net_groups"
             in get_cached_net_properties(request, ensureInitialized=True),
             initial=create_net,
         )

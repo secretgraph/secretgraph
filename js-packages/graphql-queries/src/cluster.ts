@@ -74,10 +74,20 @@ export const getClusterQuery = gql`
                 clusterGroups {
                     name
                     description
+                    userSelectable
+                    hidden
+                    properties
                     injectedKeys {
                         link
                         contentHash
                     }
+                }
+                netGroups {
+                    name
+                    description
+                    userSelectable
+                    hidden
+                    properties
                 }
             }
             permissions

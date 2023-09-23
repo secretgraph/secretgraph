@@ -9,13 +9,21 @@ export const serverConfigQuery = gql`
                 maxRelayResults
                 clusterGroups {
                     name
+                    description
+                    userSelectable
                     hidden
                     properties
-                    description
                     injectedKeys {
                         link
                         contentHash
                     }
+                }
+                netGroups {
+                    name
+                    description
+                    userSelectable
+                    hidden
+                    properties
                 }
                 canDirectRegister
                 registerUrl
@@ -38,16 +46,27 @@ export const serverConfigQueryWithPermissions = gql`
                 maxRelayResults
                 clusterGroups {
                     name
+                    description
+                    userSelectable
                     hidden
                     properties
-                    description
                     injectedKeys {
                         link
                         contentHash
                     }
                 }
+                netGroups {
+                    name
+                    description
+                    userSelectable
+                    hidden
+                    properties
+                }
+                canDirectRegister
                 registerUrl
+                loginUrl
             }
+            activeUser
         }
     }
 `

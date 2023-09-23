@@ -72,9 +72,9 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         # permissions allows to see the hidden cluster groups
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
-        # manage_groups: required for correctly updating groups
+        # manage_cluster_groups: required for correctly updating groups
         props = get_cached_net_properties(info.context["request"])
-        if "allow_hidden" in props or "manage_groups" in props:
+        if "allow_hidden" in props or "manage_cluster_groups" in props:
             return list(self.groups.values_list("name", flat=True))
         else:
             return list(
