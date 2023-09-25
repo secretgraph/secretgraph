@@ -236,6 +236,16 @@ class Net(models.Model):
         )
 
 
+class ClusterManager(models.Manager):
+    def consistent(self, queryset=None):
+        if not queryset:
+            queryset = self.get_queryset()
+        return queryset.filter(
+            flexid__isnull=False,
+            flexid_cached__isnull=False,
+        )
+
+
 class Cluster(FlexidModel):
     # not a field but an attribute for restricting view
     limited: bool = False
@@ -267,6 +277,8 @@ class Cluster(FlexidModel):
     net: Net = models.ForeignKey(
         Net, on_delete=models.CASCADE, related_name="clusters"
     )
+
+    objects = ClusterManager()
     primaryFor: models.OneToOneRel[Net]
     groups: models.ManyToManyRel["ClusterGroup"]
 
@@ -344,6 +356,15 @@ class Cluster(FlexidModel):
 
 
 class ContentManager(models.Manager):
+    def consistent(self, queryset=None):
+        if not queryset:
+            queryset = self.get_queryset()
+        return queryset.filter(
+            flexid__isnull=False,
+            flexid_cached__isnull=False,
+            downloadId__isnull=False,
+        )
+
     def _get_q_required_keys(self, cluster):
         return models.Q(cluster=cluster, state="required", type="PublicKey")
 
@@ -367,7 +388,7 @@ class ContentManager(models.Manager):
             return q & models.Q(injectedFor__isnull=False)
 
     def trusted_keys(self, cluster: Cluster):
-        return self.get_queryset().filter(
+        return self.consistent().filter(
             cluster=cluster,
             state__in=["trusted", "required"],
             type="PublicKey",
@@ -379,29 +400,35 @@ class ContentManager(models.Manager):
         groups: Optional[Union[Cluster, Content, str, Iterable[str]]] = None,
         states=None,
     ):
-        return self.get_queryset().filter(
+        return self.consistent().filter(
             self._get_q_injected_keys(groups, states)
         )
 
     def required_keys(self, cluster: Cluster):
-        return self.get_queryset().filter(self._get_q_required_keys(cluster))
+        return self.consistent().filter(self._get_q_required_keys(cluster))
 
     def required_keys_full(
         self,
         cluster: Cluster,
     ):
         # union would prevent many features like annotate
-        return self.get_queryset().filter(
+        return self.consistent().filter(
             self._get_q_required_keys(cluster)
             | self._get_q_injected_keys(groups=cluster)
         )
 
     def global_documents(self, ignoreStates=False):
-        query = self.filter(
-            cluster__name="@system",
-            type__in=("File", "Text"),
-        ).annotate(
-            limited=models.Value(True)  # no access to cluster for unprivileged
+        query = (
+            self.consistent()
+            .filter(
+                cluster__name="@system",
+                type__in=("File", "Text"),
+            )
+            .annotate(
+                limited=models.Value(
+                    True
+                )  # no access to cluster for unprivileged
+            )
         )
         if not ignoreStates:
             query = query.filter(

@@ -38,6 +38,7 @@ def fetch_clusters(
     minUpdated=None,
     maxUpdated=None,
 ) -> QuerySet[Cluster]:
+    # returns only consistent results
     if ids is not None:
         query = fetch_by_id(
             query,
@@ -46,6 +47,7 @@ def fetch_clusters(
             check_short_id=True,
             check_short_name=True,
         )
+    query = Cluster.objects.consistent(query)
     if includeTopics:
         if excludeTopics:
             includeTopics = set(includeTopics)
@@ -111,6 +113,7 @@ def fetch_contents(
     minUpdated=None,
     maxUpdated=None,
 ) -> QuerySet[Content]:
+    # returns only consistent results
     if ids is not None:
         query = fetch_by_id(
             query,
@@ -118,6 +121,7 @@ def fetch_contents(
             check_short_id=True,
             limit_ids=limit_ids,
         )
+    query = Content.objects.consistent(query)
     if (
         includeTags
         or excludeTags

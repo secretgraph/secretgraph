@@ -197,7 +197,7 @@ def deleteEncryptedFileCb(sender, instance, **kwargs):
 def generateFlexidAndDownloadId(sender, instance, force=False, **kwargs):
     from .models import Cluster, Content
 
-    if force or not instance.flexid or not instance.flexid_cached:
+    if force or not instance.flexid:
         for i in range(0, 100):
             if i >= 99:
                 raise ValueError("A possible infinite loop was detected")
@@ -223,6 +223,11 @@ def generateFlexidAndDownloadId(sender, instance, force=False, **kwargs):
         if issubclass(sender, Cluster) and force:
             for c in instance.contents.all():
                 generateFlexidAndDownloadId(Content, c, True)
+    elif not instance.flexid_cached:
+        instance.flexid_cached = to_base64(sender.__name__, instance.flexid)
+        # remove potential broken and conflicting instances
+        sender.objects.filter(flexid_cached=instance.flexid_cached).delete()
+        instance.save(update_fields=["flexid_cached"])
 
     if issubclass(sender, Content):
         if force or not instance.downloadId:
@@ -246,10 +251,36 @@ def generateFlexidAndDownloadId(sender, instance, force=False, **kwargs):
 def fillEmptyCb(**kwargs):
     from .models import Cluster, Content
 
-    for c in Cluster.objects.filter(flexid=None):
+    for c in Cluster.objects.filter(
+        models.Q(flexid__isnull=True) | models.Q(flexid_cached__isnull=True)
+    ):
         generateFlexidAndDownloadId(Cluster, c, False)
     for c in Content.objects.filter(
-        models.Q(flexid=None) | models.Q(downloadId=None)
+        models.Q(flexid__isnull=True)
+        | models.Q(flexid_cached__isnull=True)
+        | models.Q(downloadId__isnull=True)
+    ):
+        generateFlexidAndDownloadId(Content, c, False)
+
+
+def fillOldEmptyCb(**kwargs):
+    from django.utils import timezone
+
+    from .models import Cluster, Content
+
+    # give content/cluster creation 10 minutes
+    max_updated = timezone.now() - td(minutes=10)
+
+    for c in Cluster.objects.filter(
+        models.Q(flexid__isnull=True) | models.Q(flexid_cached__isnull=True),
+        updated__lt=max_updated,
+    ):
+        generateFlexidAndDownloadId(Cluster, c, False)
+    for c in Content.objects.filter(
+        models.Q(flexid__isnull=True)
+        | models.Q(flexid_cached__isnull=True)
+        | models.Q(downloadId__isnull=True),
+        updated__lt=max_updated,
     ):
         generateFlexidAndDownloadId(Content, c, False)
 

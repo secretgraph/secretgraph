@@ -21,6 +21,7 @@ from .signals import (
     deleteSizeCommitCb,
     deleteSizePreCb,
     fillEmptyCb,
+    fillOldEmptyCb,
     generateFlexidAndDownloadId,
     initializeDb,
     notifyDeletion,
@@ -87,12 +88,12 @@ class SecretgraphServerConfig(AppConfig):
             dispatch_uid="secretgraph_ContentgenerateFlexid",
         )
 
-        # in case some empty fields lurk around, TODO only old
-        # request_finished.connect(
-        #    fillEmptyCb,
-        #    sender=self,
-        #    dispatch_uid="secretgraph_fillEmptyFallbackCb",
-        # )
+        # in case some uninitialized lurk around
+        request_finished.connect(
+            fillOldEmptyCb,
+            sender=self,
+            dispatch_uid="secretgraph_fillOldEmptyCb",
+        )
 
         if get_secretgraph_channel() and hasattr(post_save, "asend"):
             post_save.connect(
