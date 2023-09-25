@@ -9,13 +9,21 @@ serverConfigQuery = """
                 maxRelayResults
                 clusterGroups {
                     name
+                    description
+                    userSelectable
                     hidden
                     properties
-                    description
                     injectedKeys {
                         link
                         contentHash
                     }
+                }
+                netGroups {
+                    name
+                    description
+                    userSelectable
+                    hidden
+                    properties
                 }
                 canDirectRegister
                 registerUrl
@@ -38,16 +46,27 @@ serverConfigQueryWithPermissions = """
                 maxRelayResults
                 clusterGroups {
                     name
+                    description
+                    userSelectable
                     hidden
                     properties
-                    description
                     injectedKeys {
                         link
                         contentHash
                     }
                 }
+                netGroups {
+                    name
+                    description
+                    userSelectable
+                    hidden
+                    properties
+                }
+                canDirectRegister
                 registerUrl
+                loginUrl
             }
+            activeUser
         }
     }
 """

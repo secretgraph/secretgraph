@@ -1,5 +1,7 @@
 # TODO
 
+-   admin:
+    -   show net properties only for permissioned users (code cleanup with nets required)
 -   test transfer
 -   automatize python query generation
 -   implement UserSelectable in frontend (Register page, Cluster editor)

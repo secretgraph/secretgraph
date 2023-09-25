@@ -3,7 +3,11 @@ __all__ = ["SecretgraphServerConfig"]
 import logging
 
 from django.apps import AppConfig
-from django.core.signals import got_request_exception, request_started
+from django.core.signals import (
+    got_request_exception,
+    request_finished,
+    request_started,
+)
 from django.db.models.signals import (
     post_delete,
     post_migrate,
@@ -16,8 +20,8 @@ from .signals import (
     deleteEncryptedFileCb,
     deleteSizeCommitCb,
     deleteSizePreCb,
-    fillEmptyFlexidsCb,
-    generateFlexid,
+    fillEmptyCb,
+    generateFlexidAndDownloadId,
     initializeDb,
     notifyDeletion,
     notifyUpdateOrCreate,
@@ -72,16 +76,23 @@ class SecretgraphServerConfig(AppConfig):
         )
 
         post_save.connect(
-            generateFlexid,
+            generateFlexidAndDownloadId,
             sender=Cluster,
             dispatch_uid="secretgraph_ClustergenerateFlexid",
         )
 
         post_save.connect(
-            generateFlexid,
+            generateFlexidAndDownloadId,
             sender=Content,
             dispatch_uid="secretgraph_ContentgenerateFlexid",
         )
+
+        # in case some empty fields lurk around, TODO only old
+        # request_finished.connect(
+        #    fillEmptyCb,
+        #    sender=self,
+        #    dispatch_uid="secretgraph_fillEmptyFallbackCb",
+        # )
 
         if get_secretgraph_channel() and hasattr(post_save, "asend"):
             post_save.connect(
@@ -119,9 +130,9 @@ class SecretgraphServerConfig(AppConfig):
         )
 
         post_migrate.connect(
-            fillEmptyFlexidsCb,
+            fillEmptyCb,
             sender=self,
-            dispatch_uid="secretgraph_fillEmptyFlexidsCb",
+            dispatch_uid="secretgraph_fillEmptyCb",
         )
 
         post_migrate.connect(

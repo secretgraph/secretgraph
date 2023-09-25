@@ -194,7 +194,7 @@ def deleteEncryptedFileCb(sender, instance, **kwargs):
         instance.file.delete(False)
 
 
-def generateFlexid(sender, instance, force=False, **kwargs):
+def generateFlexidAndDownloadId(sender, instance, force=False, **kwargs):
     from .models import Cluster, Content
 
     if force or not instance.flexid or not instance.flexid_cached:
@@ -222,7 +222,7 @@ def generateFlexid(sender, instance, force=False, **kwargs):
         # el
         if issubclass(sender, Cluster) and force:
             for c in instance.contents.all():
-                generateFlexid(Content, c, True)
+                generateFlexidAndDownloadId(Content, c, True)
 
     if issubclass(sender, Content):
         if force or not instance.downloadId:
@@ -241,6 +241,17 @@ def generateFlexid(sender, instance, force=False, **kwargs):
                     break
                 except IntegrityError:
                     pass
+
+
+def fillEmptyCb(**kwargs):
+    from .models import Cluster, Content
+
+    for c in Cluster.objects.filter(flexid=None):
+        generateFlexidAndDownloadId(Cluster, c, False)
+    for c in Content.objects.filter(
+        models.Q(flexid=None) | models.Q(downloadId=None)
+    ):
+        generateFlexidAndDownloadId(Content, c, False)
 
 
 def regenerateKeyHash(force=False, **kwargs):
@@ -293,15 +304,6 @@ def regenerateKeyHash(force=False, **kwargs):
             contentHash__in=map(lambda x: f"Key:{x}", chashes[1:]),
             type="PublicKey",
         ).update(contentHash=f"Key:{chashes[0]}")
-
-
-def fillEmptyFlexidsCb(**kwargs):
-    from .models import Cluster, Content
-
-    for c in Cluster.objects.filter(flexid=None):
-        generateFlexid(Cluster, c, False)
-    for c in Content.objects.filter(flexid=None):
-        generateFlexid(Content, c, False)
 
 
 def rollbackUsedActionsAndFreeze(request, **kwargs):

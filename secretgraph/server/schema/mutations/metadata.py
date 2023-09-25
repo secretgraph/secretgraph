@@ -23,7 +23,7 @@ from ...models import (
     NetGroup,
     SGroupProperty,
 )
-from ...signals import generateFlexid
+from ...signals import generateFlexidAndDownloadId
 from ...utils.arguments import check_actions, pre_clean_update_content_args
 from ...utils.auth import (
     fetch_by_id_noconvert,
@@ -75,7 +75,7 @@ def mutate_regenerate_flexid(
     updated = []
     for result in results.values():
         for obj in result["objects_without_public"]:
-            generateFlexid(type(obj), obj, True)
+            generateFlexidAndDownloadId(type(obj), obj, True)
             updated.append(obj.flexid_cached)
     return RegenerateFlexidMutation(updated=updated)
 

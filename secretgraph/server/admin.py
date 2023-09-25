@@ -25,7 +25,7 @@ from .models import (
     NetGroup,
     SGroupProperty,
 )
-from .signals import fillEmptyFlexidsCb, sweepOutdated
+from .signals import generateFlexidAndDownloadId, sweepOutdated
 
 
 @admin.display(ordering="id", description="")
@@ -59,8 +59,8 @@ class FlexidMixin:
         permissions=["change"], description="Reset Flexid of selected"
     )
     def reset_flexid(self, request, queryset):
-        queryset.update(flexid=None, flexid_cached=None)
-        fillEmptyFlexidsCb()
+        for obj in queryset:
+            generateFlexidAndDownloadId(type(obj), obj, True)
 
     @admin.action(permissions=["delete"], description="Undelete selected")
     def undelete(self, request, queryset):
@@ -121,6 +121,10 @@ class ClusterGroupInline(admin.TabularInline):
 
 class ClusterGroupInlineOfSGroupProperty(ClusterGroupInline):
     model = SGroupProperty.clusterGroups.through
+
+
+class NetGroupInlineOfSGroupProperty(NetGroupInline):
+    model = SGroupProperty.netGroups.through
 
 
 class ClusterGroupInlineOfCluster(ClusterGroupInline):
@@ -475,7 +479,15 @@ class NetGroupAdmin(BeautifyNetMixin, admin.ModelAdmin):
     list_display = ["name"]
     sortable_by = ["name"]
     search_fields = ["name", "nets__user_name"]
-    list_filter = ["properties"]
+
+    def get_exclude(self, request, obj=None):
+        if (
+            getattr(request.user, "is_superuser", False)
+            or "manage_net_groups" in get_cached_net_properties(request)
+            or "allow_hidden_net_props" in get_cached_net_properties(request)
+        ):
+            return []
+        return ["properties"]
 
     def has_module_permission(self, request):
         return True
@@ -488,6 +500,15 @@ class NetGroupAdmin(BeautifyNetMixin, admin.ModelAdmin):
             request.user, "is_superuser", False
         ) or "manage_net_groups" in get_cached_net_properties(request)
 
+    def get_list_filter(self, request):
+        if (
+            getattr(request.user, "is_superuser", False)
+            or "manage_net_groups" in get_cached_net_properties(request)
+            or "allow_hidden_net_props" in get_cached_net_properties(request)
+        ):
+            return ["properties"]
+        return []
+
     has_delete_permission = has_change_permission
     has_add_permission = has_change_permission
 
@@ -496,7 +517,29 @@ class SGroupPropertyAdmin(admin.ModelAdmin):
     list_display = ["name"]
     sortable_by = ["name"]
     search_fields = ["name"]
-    inlines = [ClusterGroupInlineOfSGroupProperty]
+
+    def get_exclude(self, request, obj=None):
+        if (
+            getattr(request.user, "is_superuser", False)
+            or "manage_net_groups" in get_cached_net_properties(request)
+            or "allow_hidden_net_props" in get_cached_net_properties(request)
+        ):
+            return []
+        return ["properties"]
+
+    def get_inlines(self, request, obj=None):
+        if (
+            getattr(request.user, "is_superuser", False)
+            or "manage_net_groups" in get_cached_net_properties(request)
+            or "allow_hidden_net_props" in get_cached_net_properties(request)
+        ):
+            return [
+                ClusterGroupInlineOfSGroupProperty,
+                NetGroupInlineOfSGroupProperty,
+            ]
+        return [
+            ClusterGroupInlineOfSGroupProperty,
+        ]
 
     def has_module_permission(self, request):
         return True
