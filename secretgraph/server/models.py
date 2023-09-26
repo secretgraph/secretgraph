@@ -588,23 +588,23 @@ class Content(FlexidModel):
     def signatures(
         self, hashAlgorithms=None, references=None
     ) -> Iterable[str]:
-        q = models.Q()
-        q2 = models.Q()
+        q_tags = models.Q()
+        q_refs = models.Q()
         if references:
             references = references.filter(source__id=self.id)
         else:
             references = self.references
         if hashAlgorithms:
             for algo in hashAlgorithms:
-                q |= models.Q(tag__startswith=f"signature={algo=}")
-                q2 |= models.Q(extra__startswith=f"{algo}=")
+                q_tags |= models.Q(tag__startswith=f"signature={algo=}")
+                q_refs |= models.Q(extra__startswith=f"{algo}=")
         else:
-            q = models.Q(tag__startswith="signature=")
+            q_tags = models.Q(tag__startswith="signature=")
         return chain(
-            self.tags.filter(q)
+            self.tags.filter(q_tags)
             .annotate(signature=Substr("tag", 10))
             .values_list("signature"),
-            references.filter(q2, group="signature")
+            references.filter(q_refs, group="signature")
             .annotate(
                 signature=Concat(
                     "extra", models.Value("="), "target__contentHash"

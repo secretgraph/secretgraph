@@ -90,6 +90,15 @@ class NetGroupInline(admin.TabularInline):
     extra = 1
     model = Net.groups.through
 
+    def get_exclude(self, request, obj=None):
+        if getattr(
+            request.user, "is_superuser", False
+        ) or not get_cached_net_properties(request).isdisjoint(
+            {"manage_net_groups", "allow_hidden_net_props"}
+        ):
+            return []
+        return ["properties"]
+
     def has_view_permission(self, request, obj=None) -> bool:
         return True
 
@@ -481,10 +490,10 @@ class NetGroupAdmin(BeautifyNetMixin, admin.ModelAdmin):
     search_fields = ["name", "nets__user_name"]
 
     def get_exclude(self, request, obj=None):
-        if (
-            getattr(request.user, "is_superuser", False)
-            or "manage_net_groups" in get_cached_net_properties(request)
-            or "allow_hidden_net_props" in get_cached_net_properties(request)
+        if getattr(
+            request.user, "is_superuser", False
+        ) or not get_cached_net_properties(request).isdisjoint(
+            {"manage_net_groups", "allow_hidden_net_props"}
         ):
             return []
         return ["properties"]
@@ -528,10 +537,10 @@ class SGroupPropertyAdmin(admin.ModelAdmin):
         return ["properties"]
 
     def get_inlines(self, request, obj=None):
-        if (
-            getattr(request.user, "is_superuser", False)
-            or "manage_net_groups" in get_cached_net_properties(request)
-            or "allow_hidden_net_props" in get_cached_net_properties(request)
+        if getattr(
+            request.user, "is_superuser", False
+        ) or not get_cached_net_properties(request).isdisjoint(
+            {"manage_net_groups", "allow_hidden_net_props"}
         ):
             return [
                 ClusterGroupInlineOfSGroupProperty,

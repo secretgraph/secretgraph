@@ -2160,13 +2160,13 @@ starlite = ["starlite (>=1.48.0)"]
 
 [[package]]
 name = "strawberry-graphql-django"
-version = "0.17.3"
+version = "0.17.4"
 description = "Strawberry GraphQL Django extension"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "strawberry_graphql_django-0.17.3-py3-none-any.whl", hash = "sha256:d1391151ceab226b11a1c0d64e4e9701ec2e177151f45294a1b01feb818312af"},
-    {file = "strawberry_graphql_django-0.17.3.tar.gz", hash = "sha256:aca5fed51db097fc39a635e89921752a612c5aac4be94ce8715438af0e426ede"},
+    {file = "strawberry_graphql_django-0.17.4-py3-none-any.whl", hash = "sha256:3ce4753b4179119814c2369e9e95e0e00de7c469bd5765ed1f6f5b20ddaf8033"},
+    {file = "strawberry_graphql_django-0.17.4.tar.gz", hash = "sha256:171c05ee7c322ea866f234a9b712c06102f5f4c50cc319811680b27aaebb9f82"},
 ]
 
 [package.dependencies]

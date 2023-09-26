@@ -34,6 +34,8 @@ base_strategy = hypothesis_graphql.queries(
 
 
 class HypothesisTests(TestCase):
+    fixtures = ["recoverable_broken_db"]
+
     def setUp(self) -> None:
         self.client = Client()
         return super().setUp()

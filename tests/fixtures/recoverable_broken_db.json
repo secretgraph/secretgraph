@@ -1,0 +1,72 @@
+[
+    {
+        "model": "secretgraph.net",
+        "pk": 1,
+        "fields": {
+            "created": "2023-09-26T07:52:01.405Z",
+            "last_used": "2023-09-26T07:52:01.405Z",
+            "active": true,
+            "quota": null,
+            "max_upload_size": null,
+            "bytes_in_use": 0,
+            "user_name": null,
+            "primaryCluster": null
+        }
+    },
+    {
+        "model": "secretgraph.cluster",
+        "pk": 1,
+        "fields": {
+            "name": "",
+            "name_cached": null,
+            "description": "",
+            "markForDestruction": null,
+            "globalNameRegisteredAt": null,
+            "featured": false,
+            "updated": "2023-09-26T07:52:06.693Z",
+            "updateId": "ecf2a79a-05b7-4ee3-9cfa-7c58f7478f9f",
+            "net": 1
+        }
+    },
+    {
+        "model": "secretgraph.content",
+        "pk": 1,
+        "fields": {
+            "flexid": "3155509f-5006-4d2a-839e-0a290f19bc25",
+            "flexid_cached": "Q29udGVudDozMTU1NTA5Zi01MDA2LTRkMmEtODM5ZS0wYTI5MGYxOWJjMjU=",
+            "updated": "2023-09-26T11:36:39.494Z",
+            "updateId": "10e6238f-efef-4e3e-96f4-775d6b7956e5",
+            "downloadId": "ac1004ea-da93-48fb-b3bc-2a0d7c3d0858",
+            "markForDestruction": null,
+            "hidden": false,
+            "locked": null,
+            "nonce": "",
+            "file": "",
+            "file_accessed": null,
+            "contentHash": null,
+            "net": 1,
+            "cluster": 1,
+            "type": "",
+            "state": ""
+        }
+    },
+    {
+        "model": "secretgraph.content",
+        "pk": 2,
+        "fields": {
+            "updated": "2023-09-26T11:36:39.494Z",
+            "updateId": "10e6238f-efef-4e3e-96f4-775d6b7956e3",
+            "markForDestruction": null,
+            "hidden": false,
+            "locked": null,
+            "nonce": "",
+            "file": "",
+            "file_accessed": null,
+            "contentHash": null,
+            "net": 1,
+            "cluster": 1,
+            "type": "",
+            "state": ""
+        }
+    }
+]

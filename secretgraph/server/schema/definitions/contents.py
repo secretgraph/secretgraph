@@ -119,11 +119,14 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             return []
         # authorization often cannot be used, but it is ok, we have cached then
         result = get_cached_result(info.context["request"])["Content"]
-        return self.signatures(
-            includeAlgorithms,
-            ContentReference.objects.filter(
-                target__in=result["objects_with_public"]
-            ),
+        # we need to resolve in the sync context
+        return list(
+            self.signatures(
+                includeAlgorithms,
+                ContentReference.objects.filter(
+                    target__in=result["objects_with_public"]
+                ),
+            )
         )
 
     @strawberry_django.field()
