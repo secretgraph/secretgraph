@@ -79,7 +79,7 @@ export const getClusterQuery = gql`
                     properties
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
                 netGroups {

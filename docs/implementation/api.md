@@ -130,7 +130,7 @@ By design only one content is returned
 Prequisite: you specified valid tokens (at least 1)
 currently there are three ways:
 
--   via X-KEY-HASH header, key_hash GET parameter: you get a list of shared keys and signatures matching the key_hash.
+-   via X-KEY-HASH header, key_hash GET parameter: you get a dict of shared keys and signatures matching the key_hash.
     The shared keys may have a link to the private key (only if permission)
     -   decrypt the shared key directly
     -   decrypt the shared key via private key

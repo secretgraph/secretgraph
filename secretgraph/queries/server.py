@@ -15,7 +15,7 @@ serverConfigQuery = """
                     properties
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
                 netGroups {
@@ -52,7 +52,7 @@ serverConfigQueryWithPermissions = """
                     properties
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
                 netGroups {

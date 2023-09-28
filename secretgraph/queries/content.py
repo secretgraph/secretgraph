@@ -200,7 +200,7 @@ contentRetrievalQuery = """
                     hidden
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
             }
@@ -306,7 +306,7 @@ getContentConfigurationQuery = """
                     description
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
             }

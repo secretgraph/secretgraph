@@ -15,7 +15,10 @@ from ...utils.auth import get_cached_net_properties
 @strawberry_django.type(Content, name="InjectedKey")
 class InjectedKeyNode:
     link: str
-    contentHash: str
+
+    @strawberry_django.field(only="contentHash")
+    def hash(self) -> str:
+        return self.contentHash.removeprefix("Key:")
 
     @classmethod
     def get_queryset(cls, queryset, info) -> list[Content]:

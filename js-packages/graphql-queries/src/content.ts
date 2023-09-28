@@ -199,7 +199,7 @@ export const contentRetrievalQuery = gql`
                     hidden
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
             }
@@ -305,7 +305,7 @@ export const getContentConfigurationQuery = gql`
                     description
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
             }

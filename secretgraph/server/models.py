@@ -8,7 +8,7 @@ import secrets
 from datetime import datetime as dt
 from functools import cached_property
 from itertools import chain
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, TypedDict, Union
 from uuid import UUID, uuid4
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -84,6 +84,21 @@ def default_net_limit(net, attr):
     if callable(quota):
         return quota(net)
     return quota
+
+
+class Signature(TypedDict):
+    signature: str
+    link: str
+
+
+class Key(TypedDict):
+    key: str
+    link: Optional[str]
+
+
+class SignaturesAndKeys(TypedDict):
+    signatures: dict[str, Signature]
+    keys: dict[str, Key]
 
 
 class FlexidModel(models.Model):
@@ -489,6 +504,7 @@ class Content(FlexidModel):
     objects = ContentManager()
     references: models.ManyToOneRel["ContentReference"]
     referencedBy: models.ManyToOneRel["ContentReference"]
+    actions: models.ManyToOneRel["ContentAction"]
 
     class Meta:
         constraints = [
@@ -585,33 +601,60 @@ class Content(FlexidModel):
     def get_absolute_url(self):
         return self.link
 
-    def signatures(
-        self, hashAlgorithms=None, references=None
-    ) -> Iterable[str]:
-        q_tags = models.Q()
-        q_refs = models.Q()
-        if references:
-            references = references.filter(source__id=self.id)
+    def signatures_and_keys(
+        self,
+        keyhashes: Optional[Iterable[str]] = None,
+        allowed: Optional[models.QuerySet[Content]] = None,
+    ) -> SignaturesAndKeys:
+        q = models.Q()
+        if keyhashes:
+            for k in keyhashes:
+                q |= models.Q(target__tags__tag=f"key_hash={k}")
         else:
-            references = self.references
-        if hashAlgorithms:
-            for algo in hashAlgorithms:
-                q_tags |= models.Q(tag__startswith=f"signature={algo=}")
-                q_refs |= models.Q(extra__startswith=f"{algo}=")
-        else:
-            q_tags = models.Q(tag__startswith="signature=")
-        return chain(
-            self.tags.filter(q_tags)
-            .annotate(signature=Substr("tag", 10))
-            .values_list("signature"),
-            references.filter(q_refs, group="signature")
-            .annotate(
-                signature=Concat(
-                    "extra", models.Value("="), "target__contentHash"
-                )
-            )
-            .values_list("signature"),
+            q = models.Q(target__in=allowed)
+        refs = self.references.select_related("target").filter(
+            group__in=["key", "signature"]
         )
+        refs = (
+            refs.filter(q)
+            .annotate(
+                privkey_downloadId=models.Subquery(
+                    # private keys in result set, empty if no permission
+                    allowed.filter(
+                        type="PrivateKey",
+                        references__target__referencedBy=models.OuterRef("pk"),
+                    ).values("downloadId")[:1]
+                )
+                if allowed is not None
+                else models.Value(None)
+            )
+            .order_by("-group", "id")
+        )
+        result = {
+            "signatures": {},
+            "keys": {},
+        }
+        for ref in refs:
+            if ref.group == "key":
+                result["keys"][ref.target.contentHash.removeprefix("Key:")] = {
+                    "key": ref.extra,
+                    "link": (
+                        ref.privkey_downloadId
+                        and reverse(
+                            "secretgraph:contents",
+                            kwargs={"id": ref.privkey_downloadId},
+                        )
+                    )
+                    or None,
+                }
+            else:
+                result["signatures"][
+                    ref.target.contentHash.removeprefix("Key:")
+                ] = {
+                    "signature": ref.extra,
+                    "link": ref.target.link,
+                }
+        return result
 
     def clean(self) -> None:
         if self.type == "PrivateKey":

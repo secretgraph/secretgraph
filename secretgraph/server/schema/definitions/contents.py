@@ -10,6 +10,7 @@ from strawberry.types import Info
 from ....core.constants import public_states
 from ...actions.fetch import fetch_contents
 from ...models import Action, Content, ContentReference
+from ...models import SignaturesAndKeys as _SignaturesAndKeys
 from ...utils.auth import (
     fetch_by_id_noconvert,
     get_cached_net_properties,
@@ -31,23 +32,29 @@ class ReadStatistic:
 
     @strawberry.field()
     async def last(self) -> Optional[datetime]:
-        action = await (
-            self.query.filter(used__isnull=False).only("used").alatest("used")
-        )
-        if action:
-            return action.used
-        return None
+        try:
+            action = await (
+                self.query.filter(used__isnull=False)
+                .only("used")
+                .alatest("used")
+            )
+        except Action.DoesNotExist:
+            return None
+        assert action
+        return action.used
 
     @strawberry.field()
     async def first(self) -> Optional[datetime]:
-        action = await (
-            self.query.filter(used__isnull=False)
-            .only("used")
-            .aearliest("used")
-        )
-        if action:
-            return action.used
-        return None
+        try:
+            action = await (
+                self.query.filter(used__isnull=False)
+                .only("used")
+                .aearliest("used")
+            )
+        except Action.DoesNotExist:
+            return None
+        assert action
+        return action.used
 
     @strawberry.field()
     async def count(self) -> int:
@@ -56,6 +63,36 @@ class ReadStatistic:
     @strawberry.field()
     async def totalAmount(self) -> int:
         return await self.query.acount()
+
+
+@strawberry.type
+class Signature:
+    hash: str
+    signature: str
+    link: str
+
+
+@strawberry.type
+class Key:
+    hash: str
+    key: str
+    link: Optional[str]
+
+
+@strawberry.type
+class SignaturesAndKeys:
+    inp: strawberry.Private[_SignaturesAndKeys]
+
+    @strawberry.field
+    def signatures(self) -> Signature:
+        return [
+            Signature(hash=i[0], **i[1])
+            for i in self.inp["signatures"].items()
+        ]
+
+    @strawberry.field
+    def keys(self) -> Key:
+        return [Key(hash=i[0], **i[1]) for i in self.inp["signatures"].items()]
 
 
 @strawberry_django.type(Content, name="Content")
@@ -73,9 +110,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         if self.limited or self.reduced:
             return None
         query = Action.objects.filter(
-            contentAction_id__in=Subquery(
-                self.actions.filter(group__in=("fetch", "view")).values("id")
-            )
+            contentAction__in=self.actions.filter(group__in=("fetch", "view"))
         )
         """Uses fetch/view group actions to provide statistics"""
         return ReadStatistic(query=query)
@@ -111,21 +146,16 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
 
     @strawberry_django.field()
     def signatures(
-        self: Content,
-        info: Info,
-        includeAlgorithms: Optional[list[str]] = None,
-    ) -> list[str]:
+        self: Content, info: Info, keyHashes: Optional[list[str]] = None
+    ) -> Optional[SignaturesAndKeys]:
         if self.reduced:
-            return []
+            return None
         # authorization often cannot be used, but it is ok, we have cached then
         result = get_cached_result(info.context["request"])["Content"]
         # we need to resolve in the sync context
-        return list(
-            self.signatures(
-                includeAlgorithms,
-                ContentReference.objects.filter(
-                    target__in=result["objects_with_public"]
-                ),
+        return SignaturesAndKeys(
+            inp=self.signatures_and_keys(
+                keyHashes, result["objects_with_public"]
             )
         )
 

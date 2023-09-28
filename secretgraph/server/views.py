@@ -9,7 +9,6 @@ from urllib.parse import quote
 
 import ratelimit
 from django.conf import settings
-from django.db.models import OuterRef, Q, Subquery
 from django.db.models.functions import Substr
 from django.http import (
     FileResponse,
@@ -20,7 +19,6 @@ from django.http import (
     StreamingHttpResponse,
 )
 from django.shortcuts import get_object_or_404
-from django.urls import reverse
 from django.utils.cache import add_never_cache_headers, patch_cache_control
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import last_modified
@@ -32,11 +30,7 @@ from ..core import constants
 from .utils.auth import retrieve_allowed_objects
 from .utils.encryption import iter_decrypt_contents
 from .utils.mark import freeze_contents, update_file_accessed
-from .view_decorators import (
-    add_cors_headers,
-    add_secretgraph_headers,
-    no_opener,
-)
+from .view_decorators import add_cors_headers, add_secretgraph_headers, no_opener
 
 if TYPE_CHECKING:
     from .models import Content
@@ -293,56 +287,13 @@ class ContentView(View):
             request.headers.get("X-KEY-HASH", "").replace(" ", "").split(",")
         )
         keyhash_set.update(request.GET.getlist("key_hash"))
-        refs = content.references.select_related("target").filter(
-            group__in=["key", "signature"]
-        )
-        # Public key in result set
-        q = Q(target__in=self.result["objects_with_public"])
-        for k in keyhash_set:
-            q |= Q(target__tags__tag=f"key_hash={k}")
-        # signatures first, should be maximal 20, so on first page
-        refs = (
-            refs.filter(q)
-            .annotate(
-                privkey_downloadId=Subquery(
-                    # private keys in result set, empty if no permission
-                    self.result["objects_with_public"]
-                    .filter(
-                        type="PrivateKey",
-                        references__target__referencedBy=OuterRef("pk"),
-                    )
-                    .values("downloadId")[:1]
-                )
+        keyhash_set.discard("")
+        response = JsonResponse(
+            content.signatures_and_keys(
+                keyhash_set,
+                allowed=self.result["Content"]["objects_with_public"],
             )
-            .order_by("-group", "id")
         )
-        response = {
-            "signatures": {},
-            "keys": {},
-        }
-        for ref in refs:
-            if ref.group == "key":
-                response["keys"][
-                    ref.target.contentHash.removeprefix("Key:")
-                ] = {
-                    "key": ref.extra,
-                    "link": (
-                        ref.privkey_downloadId
-                        and reverse(
-                            "secretgraph:contents",
-                            kwargs={"id": ref.privkey_downloadId},
-                        )
-                    )
-                    or "",
-                }
-            else:
-                response["signatures"][
-                    ref.target.contentHash.removeprefix("Key:")
-                ] = {
-                    "signature": ref.extra,
-                    "link": ref.target.link,
-                }
-        response = JsonResponse(response)
 
         response["X-TYPE"] = content.type
         response["X-Robots-Tag"] = "noindex,nofollow"

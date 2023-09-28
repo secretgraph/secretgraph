@@ -78,7 +78,7 @@ getClusterQuery = """
                     properties
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
                 netGroups {

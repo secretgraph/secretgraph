@@ -19,7 +19,7 @@ export async function extractGroupKeys({
             name: string
             injectedKeys: {
                 link: string
-                contentHash: string
+                hash: string
             }[]
         }[]
     }
@@ -35,7 +35,6 @@ export async function extractGroupKeys({
                 hashAlgorithm
         )
     }
-    const prefix = `Key:${mapItem.serializedName}`
     const groupsMapping: {
         [name: string]: { [hash: string]: Promise<CryptoKey> }
     } = {}
@@ -70,8 +69,8 @@ export async function extractGroupKeys({
                                   }),
                           ]
                 if (!key_hash.length) {
-                    if (keyNode.contentHash.startsWith(prefix)) {
-                        key_hash = keyNode.contentHash.replace(/^Key:/, '')
+                    if (keyNode.hash.startsWith(mapItem.serializedName)) {
+                        key_hash = keyNode.hash
                     } else {
                         try {
                             key_hash = await hashObject(

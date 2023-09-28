@@ -15,7 +15,7 @@ export const serverConfigQuery = gql`
                     properties
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
                 netGroups {
@@ -52,7 +52,7 @@ export const serverConfigQueryWithPermissions = gql`
                     properties
                     injectedKeys {
                         link
-                        contentHash
+                        hash
                     }
                 }
                 netGroups {
