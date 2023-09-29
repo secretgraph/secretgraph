@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Annotated, Iterable, List, Optional
+from typing import TYPE_CHECKING, Annotated, Iterable, Optional
 
 import strawberry_django
 from django.db import models
@@ -24,7 +24,7 @@ class ContentReferenceNode(relay.Node):
     deleteRecursive: DeleteRecursive
 
     @classmethod
-    def get_queryset(cls, queryset, info, **kwargs):
+    def get_queryset(cls, queryset, info: Info, **kwargs):
         return queryset.annotate(
             relay_id=Concat(
                 models.F("source__flexid"),

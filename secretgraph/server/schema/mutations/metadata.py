@@ -87,7 +87,7 @@ class MarkMutation:
 
 
 def mutate_update_mark(
-    info,
+    info: Info,
     ids: list[strawberry.ID],  # ID or cluster global name
     hidden: Optional[bool] = None,
     featured: Optional[bool] = None,

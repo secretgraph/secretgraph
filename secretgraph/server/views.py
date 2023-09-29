@@ -30,7 +30,11 @@ from ..core import constants
 from .utils.auth import retrieve_allowed_objects
 from .utils.encryption import iter_decrypt_contents
 from .utils.mark import freeze_contents, update_file_accessed
-from .view_decorators import add_cors_headers, add_secretgraph_headers, no_opener
+from .view_decorators import (
+    add_cors_headers,
+    add_secretgraph_headers,
+    no_opener,
+)
 
 if TYPE_CHECKING:
     from .models import Content
@@ -289,10 +293,20 @@ class ContentView(View):
         keyhash_set.update(request.GET.getlist("key_hash"))
         keyhash_set.discard("")
         response = JsonResponse(
-            content.signatures_and_keys(
-                keyhash_set,
-                allowed=self.result["Content"]["objects_with_public"],
-            )
+            {
+                "signatures": {
+                    i.pop("hash"): i
+                    for i in content.signatures(
+                        keyhash_set, allowed=self.result["objects_with_public"]
+                    )
+                },
+                "keys": {
+                    i.pop("hash"): i
+                    for i in content.keys(
+                        keyhash_set, allowed=self.result["objects_with_public"]
+                    )
+                },
+            },
         )
 
         response["X-TYPE"] = content.type

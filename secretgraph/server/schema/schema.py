@@ -46,16 +46,18 @@ from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 class SecretgraphObject:
     # TODO: reinclude when fixed
     # node: Optional[strawberry.relay.Node] = strawberry.relay.node()
+    # nodes: list[strawberry.relay.Node] = strawberry.relay.node()
+
     @strawberry.field()
     @staticmethod
     def node(
-        info, id: strawberry.relay.GlobalID
+        info: Info, id: strawberry.relay.GlobalID
     ) -> Optional[strawberry.relay.Node]:
         return id.resolve_node(info=info, required=False)
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ClusterNode])
     def clusters(
-        self, info, filters: ClusterFilter = ClusterFilter()
+        self, info: Info, filters: ClusterFilter = ClusterFilter()
     ) -> Iterable[ClusterNode]:
         return ClusterNode.do_query(
             Cluster.objects.all(),
@@ -65,7 +67,7 @@ class SecretgraphObject:
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ContentNode])
     def contents(
-        self, info, filters: ContentFilter = ContentFilter()
+        self, info: Info, filters: ContentFilter = ContentFilter()
     ) -> Iterable[ContentNode]:
         return ContentNode.do_query(
             Content.objects.all(),

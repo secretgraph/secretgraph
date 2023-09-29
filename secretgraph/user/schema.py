@@ -32,7 +32,7 @@ class UserNode(relay.Node):
         cls,
         root,
         *,
-        info,
+        info: Info,
     ):
         return getattr(root, user_model.USERNAME_FIELD)
 
@@ -103,7 +103,7 @@ class DeleteUserMutation(relay.Node):
     user: Optional[UserNode]
 
     @classmethod
-    def mutate_and_get_payload(cls, info, id: strawberry.ID):
+    def mutate_and_get_payload(cls, info: Info, id: strawberry.ID):
         now = timezone.now()
         now_plus_x = now + td(minutes=20)
         # cleanup expired

@@ -21,7 +21,7 @@ class InjectedKeyNode:
         return self.contentHash.removeprefix("Key:")
 
     @classmethod
-    def get_queryset(cls, queryset, info) -> list[Content]:
+    def get_queryset(cls, queryset, info: Info) -> list[Content]:
         return queryset.filter(type="PublicKey", injectedFor__isnull=False)
 
 

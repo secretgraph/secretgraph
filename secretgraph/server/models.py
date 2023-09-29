@@ -86,18 +86,15 @@ def default_net_limit(net, attr):
 
 
 class Signature(TypedDict):
+    hash: str
     signature: str
     link: str
 
 
 class Key(TypedDict):
-    key: str
-    link: Optional[str]
-
-
-class SignaturesAndKeys(TypedDict):
-    signatures: dict[str, Signature]
-    keys: dict[str, Key]
+    hash: str  # public key hash
+    key: str  # shared key, which can be decrypted by public key
+    link: Optional[str]  # link to private key when allowed to
 
 
 class FlexidModel(models.Model):
@@ -600,21 +597,41 @@ class Content(FlexidModel):
     def get_absolute_url(self):
         return self.link
 
-    def signatures_and_keys(
+    def signatures(
         self,
         keyhashes: Optional[Iterable[str]] = None,
         allowed: Optional[models.QuerySet[Content]] = None,
-    ) -> SignaturesAndKeys:
+    ) -> Iterable[Signature]:
         q = models.Q()
-        if keyhashes:
+        if keyhashes is None:
+            q = models.Q(target__in=allowed)
+        else:
             for k in keyhashes:
                 q |= models.Q(target__tags__tag=f"key_hash={k}")
-        else:
-            q = models.Q(target__in=allowed)
         refs = self.references.select_related("target").filter(
-            group__in=["key", "signature"]
+            group="signature"
         )
-        refs = (
+        refs = refs.filter(q).order_by("id")
+        for ref in refs:
+            yield {
+                "hash": ref.target.contentHash.removeprefix("Key:"),
+                "signature": ref.extra,
+                "link": ref.target.link,
+            }
+
+    def keys(
+        self,
+        keyhashes: Optional[Iterable[str]] = None,
+        allowed: Optional[models.QuerySet[Content]] = None,
+    ) -> Iterable[Key]:
+        q = models.Q()
+        if keyhashes is None:
+            q = models.Q(target__in=allowed)
+        else:
+            for k in keyhashes:
+                q |= models.Q(target__tags__tag=f"key_hash={k}")
+        refs = self.references.select_related("target").filter(group="key")
+        for ref in (
             refs.filter(q)
             .annotate(
                 privkey_downloadId=models.Subquery(
@@ -625,35 +642,23 @@ class Content(FlexidModel):
                     ).values("downloadId")[:1]
                 )
                 if allowed is not None
-                else models.Value(None)
+                else models.Value(None),
             )
-            .order_by("-group", "id")
-        )
-        result = {
-            "signatures": {},
-            "keys": {},
-        }
-        for ref in refs:
-            if ref.group == "key":
-                result["keys"][ref.target.contentHash.removeprefix("Key:")] = {
-                    "key": ref.extra,
-                    "link": (
-                        ref.privkey_downloadId
-                        and reverse(
-                            "secretgraph:contents",
-                            kwargs={"id": ref.privkey_downloadId},
-                        )
+            .order_by("id")
+            .distinct()
+        ):
+            yield {
+                "hash": ref.target.contentHash.removeprefix("Key:"),
+                "key": ref.extra,
+                "link": (
+                    ref.privkey_downloadId
+                    and reverse(
+                        "secretgraph:contents",
+                        kwargs={"id": ref.privkey_downloadId},
                     )
-                    or None,
-                }
-            else:
-                result["signatures"][
-                    ref.target.contentHash.removeprefix("Key:")
-                ] = {
-                    "signature": ref.extra,
-                    "link": ref.target.link,
-                }
-        return result
+                )
+                or None,
+            }
 
     def clean(self) -> None:
         if self.type == "PrivateKey":

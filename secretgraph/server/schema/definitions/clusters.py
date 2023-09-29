@@ -143,7 +143,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
     def do_query(
         cls,
         queryset,
-        info,
+        info: Info,
         filters: ClusterFilter = ClusterFilter(),
         **kwargs,
     ) -> Iterable[Cluster]:

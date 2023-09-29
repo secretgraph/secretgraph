@@ -10,7 +10,6 @@ from strawberry.types import Info
 from ....core.constants import public_states
 from ...actions.fetch import fetch_contents
 from ...models import Action, Content, ContentReference
-from ...models import SignaturesAndKeys as _SignaturesAndKeys
 from ...utils.auth import (
     fetch_by_id_noconvert,
     get_cached_net_properties,
@@ -65,36 +64,6 @@ class ReadStatistic:
         return await self.query.acount()
 
 
-@strawberry.type
-class Signature:
-    hash: str
-    signature: str
-    link: str
-
-
-@strawberry.type
-class Key:
-    hash: str
-    key: str
-    link: Optional[str]
-
-
-@strawberry.type
-class SignaturesAndKeys:
-    inp: strawberry.Private[_SignaturesAndKeys]
-
-    @strawberry.field
-    def signatures(self) -> Signature:
-        return [
-            Signature(hash=i[0], **i[1])
-            for i in self.inp["signatures"].items()
-        ]
-
-    @strawberry.field
-    def keys(self) -> Key:
-        return [Key(hash=i[0], **i[1]) for i in self.inp["signatures"].items()]
-
-
 @strawberry_django.type(Content, name="Content")
 class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
     # we cannot define Node classes without NodeID yet
@@ -143,21 +112,6 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
                 Q(tag__startswith="key_hash=") | Q(tag__startswith="name=")
             )
         return list(tags.values_list("tag", flat=True))
-
-    @strawberry_django.field()
-    def signatures(
-        self: Content, info: Info, keyHashes: Optional[list[str]] = None
-    ) -> Optional[SignaturesAndKeys]:
-        if self.reduced:
-            return None
-        # authorization often cannot be used, but it is ok, we have cached then
-        result = get_cached_result(info.context["request"])["Content"]
-        # we need to resolve in the sync context
-        return SignaturesAndKeys(
-            inp=self.signatures_and_keys(
-                keyHashes, result["objects_with_public"]
-            )
-        )
 
     @strawberry_django.field()
     def cluster(
@@ -280,7 +234,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
     def do_query(
         cls,
         queryset,
-        info,
+        info: Info,
         filters: ContentFilter = ContentFilter(),
         fixedCluster: strawberry.Private[bool] = False,
         allowDeleted: strawberry.Private[bool] = False,

@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional
+from typing import Optional
 
 from strawberry.types import Info
 from strawberry_django import django_resolver
