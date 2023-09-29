@@ -7,7 +7,6 @@ import posixpath
 import secrets
 from datetime import datetime as dt
 from functools import cached_property
-from itertools import chain
 from typing import Iterable, Optional, TypedDict, Union
 from uuid import UUID, uuid4
 
@@ -19,7 +18,7 @@ from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.core.validators import MinLengthValidator
 from django.db import models, transaction
-from django.db.models.functions import Concat, Length, Substr
+from django.db.models.functions import Length
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
