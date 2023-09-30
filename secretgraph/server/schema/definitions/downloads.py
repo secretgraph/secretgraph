@@ -2,6 +2,7 @@ from typing import Iterable, Optional
 
 import strawberry
 import strawberry_django
+from django.conf import settings
 from strawberry.types import Info
 
 from ...models import Content
@@ -25,9 +26,18 @@ class ContentDownloadNode(strawberry.relay.Node):
         node_ids: Iterable[str],
         required: bool = False,
     ):
-        return Content.objects.filter(downloadId__in=node_ids).filter(
+        if not isinstance(node_ids, (tuple, list)):
+            node_ids = list(node_ids)
+        if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
+            raise ValueError("too many nodes requested")
+        query = Content.objects.filter(downloadId__in=node_ids).filter(
             locked__isnull=True
         )
+        querydict = {el.downloadId: el for el in query}
+        if required:
+            return [querydict[nid] for nid in node_ids]
+        else:
+            return [querydict.get(nid) for nid in node_ids]
 
     @classmethod
     def resolve_id(

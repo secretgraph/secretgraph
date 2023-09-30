@@ -61,8 +61,8 @@ class SecretgraphObject:
     ) -> Iterable[ClusterNode]:
         return ClusterNode.do_query(
             Cluster.objects.all(),
-            info,
-            filters,
+            info=info,
+            filters=filters,
         )
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ContentNode])

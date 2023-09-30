@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Annotated, Iterable, Optional
 
 import strawberry_django
+from django.conf import settings
 from django.db import models
 from django.db.models.functions import Concat
 from strawberry import lazy, relay
@@ -43,6 +44,10 @@ class ContentReferenceNode(relay.Node):
         node_ids: Iterable[str],
         required: bool = False,
     ):
+        if not isinstance(node_ids, (tuple, list)):
+            node_ids = list(node_ids)
+        if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
+            raise ValueError("too many nodes requested")
         # check permissions
         result = get_cached_result(info.context["request"])["Content"]
         queryset = ContentReference.objects.filter(
@@ -50,7 +55,13 @@ class ContentReferenceNode(relay.Node):
             target__in=result["objects_with_public"],
         )
 
-        return queryset.filter(relay_id__in=node_ids)
+        queryset = queryset.filter(relay_id__in=node_ids)
+
+        querydict = {el.relay_id: el for el in queryset}
+        if required:
+            return [querydict[nid] for nid in node_ids]
+        else:
+            return [querydict.get(nid) for nid in node_ids]
 
     @strawberry_django.field
     def source(

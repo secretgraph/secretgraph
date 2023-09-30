@@ -287,13 +287,16 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         sweepOutdated()
         qs = super().get_queryset(request)
         if not getattr(request.user, "is_superuser", False):
-            qs = qs.filter(
-                id__in=Subquery(
-                    get_cached_result(request)["Cluster"][
-                        "objects_with_public"
-                    ].values("id")
+            if get_cached_net_properties(request).isdisjoint(
+                {"manage_update", "allow_view"}
+            ):
+                qs = qs.filter(
+                    id__in=Subquery(
+                        get_cached_result(request)["Cluster"][
+                            "objects_with_public"
+                        ].values("id")
+                    )
                 )
-            )
             if "manage_deletion" not in get_cached_net_properties(request):
                 qs = qs.filter(markForDestruction=None)
         return qs
@@ -378,13 +381,16 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         sweepOutdated()
         qs = super().get_queryset(request)
         if not getattr(request.user, "is_superuser", False):
-            qs = qs.filter(
-                id__in=Subquery(
-                    get_cached_result(request)["Content"][
-                        "objects_with_public"
-                    ].values("id")
+            if get_cached_net_properties(request).isdisjoint(
+                {"manage_update", "allow_view"}
+            ):
+                qs = qs.filter(
+                    id__in=Subquery(
+                        get_cached_result(request)["Content"][
+                            "objects_with_public"
+                        ].values("id")
+                    )
                 )
-            )
 
             if "allow_hidden" not in get_cached_net_properties(request):
                 qs = qs.filter(hidden=False)
@@ -409,7 +415,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         if (
             obj
             and obj.hidden
-            and "allow_hidden" in get_cached_net_properties(request)
+            and "allow_hidden" not in get_cached_net_properties(request)
         ):
             return False
         return True

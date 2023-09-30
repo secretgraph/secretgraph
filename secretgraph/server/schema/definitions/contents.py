@@ -211,13 +211,30 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         node_ids: Iterable[str],
         required: bool = False,
     ):
-        result = get_cached_result(info.context["request"])["Content"]
+        if not isinstance(node_ids, (tuple, list)):
+            node_ids = list(node_ids)
+        if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
+            raise ValueError("too many nodes requested")
+        query = get_cached_result(
+            info.context["request"],
+        )[
+            "Content"
+        ]["objects_with_public"]
         # for permission check
-        return fetch_contents(
-            result["objects_with_public"],
+        query = fetch_contents(
+            query,
             ids=node_ids,
-            limit_ids=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
+            limit_ids=None,
         ).filter(locked__isnull=True)
+
+        querydict = {}
+        for el in query:
+            querydict[el.flexid] = el
+            querydict[el.flexid_cached] = el
+        if required:
+            return [querydict[nid] for nid in node_ids]
+        else:
+            return [querydict.get(nid) for nid in node_ids]
 
     @classmethod
     def resolve_id(
@@ -310,21 +327,25 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
                 markForDestruction__isnull=filters.deleted == UseCriteria.FALSE
             )
 
-        queryset = queryset.filter(
-            id__in=Subquery(
-                results["Content"][
-                    "objects_without_public"
-                    if filters.public == UseCriteriaPublic.TOKEN
-                    else "objects_with_public"
-                ].values("id")
+        #  required for enforcing permissions
+        if get_cached_net_properties(info.context["request"]).isdisjoint(
+            {"manage_update", "allow_view"}
+        ):
+            queryset = queryset.filter(
+                id__in=Subquery(
+                    results["Content"][
+                        "objects_without_public"
+                        if filters.public == UseCriteriaPublic.TOKEN
+                        else "objects_with_public"
+                    ].values("id")
+                )
             )
-        )
 
         return fetch_contents(
             queryset,
             states=filters.states,
             clustersAreRestrictedOrAdmin=fixedCluster
-            or "allow_hidden"
+            or "allow_view"
             in get_cached_net_properties(
                 info.context["request"],
             )

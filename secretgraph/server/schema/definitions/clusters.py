@@ -106,7 +106,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                 filters.deleted = UseCriteria.FALSE
         return ContentNode.do_query(
             queryset,
-            info,
+            info=info,
             filters=filters,
             fixedCluster=True,
             allowDeleted=allowDeleted,
@@ -120,13 +120,36 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         node_ids: Iterable[str],
         required: bool = False,
     ):
-        result = get_cached_result(info.context["request"])["Cluster"]
+        if not isinstance(node_ids, (tuple, list)):
+            node_ids = list(node_ids)
+        if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
+            raise ValueError("too many nodes requested")
+        if not get_cached_net_properties(info.context["request"]).isdisjoint(
+            {"manage_update", "allow_view"}
+        ):
+            query = Cluster.objects.all()
+        else:
+            query = get_cached_result(
+                info.context["request"],
+            )[
+                "Cluster"
+            ]["objects_with_public"]
         # for allowing specifing global name and permission check
-        return fetch_clusters(
-            result["objects_with_public"],
+        query = fetch_clusters(
+            query,
             ids=node_ids,
-            limit_ids=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
+            limit_ids=None,
         )
+
+        querydict = {}
+        for el in query:
+            querydict[el.name] = el
+            querydict[el.flexid] = el
+            querydict[el.flexid_cached] = el
+        if required:
+            return [querydict[nid] for nid in node_ids]
+        else:
+            return [querydict.get(nid) for nid in node_ids]
 
     @classmethod
     def resolve_id(
@@ -211,10 +234,11 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
-
-        return fetch_clusters(
-            #  required for enforcing permissions
-            queryset.filter(
+        #  required for enforcing permissions
+        if get_cached_net_properties(info.context["request"]).isdisjoint(
+            {"manage_update", "allow_view"}
+        ):
+            queryset = queryset.filter(
                 id__in=Subquery(
                     result[
                         "objects_without_public"
@@ -222,7 +246,10 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                         else "objects_with_public"
                     ].values("id")
                 )
-            ).distinct(),
+            )
+
+        return fetch_clusters(
+            queryset.distinct(),
             ids=filters.includeIds,
             limit_ids=None,
             includeTypes=filters.includeTypes,

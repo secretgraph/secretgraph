@@ -27,7 +27,8 @@ Both can alter the behavior via properties
 -   allow_global_name: can register a global cluster name
 -   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
 -   allow_featured: can feature or unfeature clusters (only global clusters can be featured)
--   allow_hidden: can see hidden contents (Net,Cluster), can set hidden attribute (Net,Cluster), hidden groups of clusters (Net), can query PublicKeys via contents. Net properties won't become visible as well not net attached
+-   allow_view: can view content or cluster without permission check (but has still no access to data if encrypted), can query Publickeys via contents, deleted contents are only visible with permission (Net)
+-   allow_hidden: can see hidden contents (Net,Cluster), can set hidden attribute (Net,Cluster), hidden groups of clusters (Net). Net properties won't become visible as well not net attached
 -   allow_hidden_net: nets become visible (Net)
 -   allow_hidden_net_props: can see net properties (Net)
 -   manage_deletion: can delete every content or cluster (Net)
@@ -35,7 +36,7 @@ Both can alter the behavior via properties
 -   manage_cluster_groups: can manage global groups of clusters, hidden groups of clusters become visible
 -   manage_net_groups: can manage global groups of nets, hidden groups of nets become visible. Can see properties of netGroups- Can see properties of netGroups
 -   manage_user: manage nets and can add net to user
--   manage_update: can update every content or cluster (but has still no access to data if encrypted)
+-   manage_update: can view and update every content or cluster (but has still no access to data if encrypted)
 -   auto_hide_local: clusters with a group with this property have their public contents auto hidden if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)
 -   auto_hide_local_update: clusters with a group with this property have their public contents auto hidden after an update if they are not a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)
 -   auto_hide_global: clusters with a group with this property have their public contents auto hidden if they are a assigned to a global cluster (keys are excluded) and hidden was not specified (only available with allow_hidden permission)

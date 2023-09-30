@@ -38,6 +38,10 @@ class NetNode(relay.Node):
         node_ids: Iterable[str],
         required: bool = False,
     ):
+        if not isinstance(node_ids, (tuple, list)):
+            node_ids = list(node_ids)
+        if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
+            raise ValueError("too many nodes requested")
         if "manage_user" in get_cached_net_properties(info.context["request"]):
             query = Cluster.objects.all()
         else:
@@ -47,15 +51,25 @@ class NetNode(relay.Node):
                 cacheName="secretgraphNetResult",
             )["Cluster"]["objects_without_public"]
         # for allowing specifing global name and permission check
-        return Net.objects.filter(
+        query = Net.objects.filter(
             primaryCluster__in=Subquery(
                 fetch_clusters(
                     query,
                     ids=node_ids,
-                    limit_ids=settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS,
+                    limit_ids=None,
                 ).values("id")
             )
         )
+        querydict = {}
+        for el in query:
+            querydict[el.name] = el
+            querydict[el.flexid] = el
+            querydict[el.flexid_cached] = el
+
+        if required:
+            return [querydict[nid] for nid in node_ids]
+        else:
+            return [querydict.get(nid) for nid in node_ids]
 
     @classmethod
     def resolve_id(
