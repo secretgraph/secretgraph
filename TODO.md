@@ -1,14 +1,9 @@
 # TODO
 
--   admin:
-    -   show net properties only for permissioned users (code cleanup with nets required)
 -   test transfer
 -   automatize python query generation
 -   implement UserSelectable in frontend (Register page, Cluster editor)
 -   editor for Personal Data (in progress)
--   verification workflow (check against registry)
-    -   fake registry
-    -   new hash methods based on argon2id (benefit: hash contains all required parameters)
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   complete share
     -   add option to save new token in config (not auth)
