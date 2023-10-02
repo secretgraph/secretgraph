@@ -95,7 +95,6 @@ def fetch_clusters(
         query = query.filter(
             Q(id__in=Subquery(content_query.values("cluster_id")))
         )
-
     return query
 
 

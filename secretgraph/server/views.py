@@ -30,11 +30,7 @@ from ..core import constants
 from .utils.auth import retrieve_allowed_objects
 from .utils.encryption import iter_decrypt_contents
 from .utils.mark import freeze_contents, update_file_accessed
-from .view_decorators import (
-    add_cors_headers,
-    add_secretgraph_headers,
-    no_opener,
-)
+from .view_decorators import add_cors_headers, add_secretgraph_headers, no_opener
 
 if TYPE_CHECKING:
     from .models import Content
@@ -286,7 +282,22 @@ class ContentView(View):
     ):
         # this is the only way without content id (and only download id) to verify
         # here we can extract private keys when allowed to do so
-        # TODO: better protect API or remove it
+
+        signature_and_key_retrieval_rate = settings.SECRETGRAPH_RATELIMITS.get(
+            "SIGNATURE_AND_KEY_RETRIEVAL"
+        )
+        if signature_and_key_retrieval_rate:
+            r = ratelimit.get_ratelimit(
+                group="signature_and_key_retrieval",
+                key="ip",
+                request=request,
+                rate=signature_and_key_retrieval_rate,
+                action=ratelimit.Action.INCREASE,
+            )
+            if r.request_limit >= 1:
+                raise ratelimit.RatelimitExceeded(
+                    "Ratelimit for signature and key retrieval exceeded"
+                )
         keyhash_set = set(
             request.headers.get("X-KEY-HASH", "").replace(" ", "").split(",")
         )

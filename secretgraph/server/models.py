@@ -249,7 +249,7 @@ class Net(models.Model):
 
 class ClusterManager(models.Manager):
     def consistent(self, queryset=None):
-        if not queryset:
+        if queryset is None:
             queryset = self.get_queryset()
         return queryset.filter(
             flexid__isnull=False,
@@ -368,7 +368,7 @@ class Cluster(FlexidModel):
 
 class ContentManager(models.Manager):
     def consistent(self, queryset=None):
-        if not queryset:
+        if queryset is None:
             queryset = self.get_queryset()
         return queryset.filter(
             flexid__isnull=False,

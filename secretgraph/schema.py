@@ -22,6 +22,7 @@ from .server.strawberry_extensions import RatelimitErrors, RatelimitMutations
 @strawberry.type
 class Query(ServerQuery):
     node: Optional[strawberry.relay.Node] = strawberry.relay.node()
+    nodes: list[strawberry.relay.Node] = strawberry.relay.node()
 
 
 @strawberry.type

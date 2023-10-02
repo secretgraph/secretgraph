@@ -126,15 +126,18 @@ By design only one content is returned
 -   X-HASH-ALGORITHMS: comma seperated hash algorithm list
 -   X-GRAPHQL-PATH: path to secretgraph graphql interface
 
-## decryption for non-secretgraph users
+## decryption for non-secretgraph users or if only the downloadId is known
 
 Prequisite: you specified valid tokens (at least 1)
-currently there are three ways:
+currently there are four ways:
 
--   via X-KEY-HASH header, key_hash GET parameter: you get a dict of shared keys and signatures matching the key_hash.
+-   via ContentDownload API (graphql, no extra ratelimit)
+-   via X-KEY-HASH header (ratelimit!), key_hash GET parameter: you get a dict of shared keys and signatures matching the key_hash.
     The shared keys may have a link to the private key (only if permission)
+
     -   decrypt the shared key directly
     -   decrypt the shared key via private key
+
 -   X-Key, key GET parameter: provide the key and get the decrypted result back (implements both decryption methods, direct and via private key)
 
 why via private key:
