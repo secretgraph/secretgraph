@@ -24,17 +24,21 @@ from ..utils.auth import (
 from ..utils.encryption import iter_decrypt_contents
 
 try:
-    from bleach import sanitizer
+    import nh3
 
-    try:
-        from bleach.css_sanitizer import CSSSanitizer
-
-        css_sanitizer = CSSSanitizer()
-    except ImportError:
-        logging.warning("tinycss2 not found, cannot sanitize css")
-        css_sanitizer = None
-
-    _default_allowed_tags = sanitizer.ALLOWED_TAGS | {
+    _default_allowed_tags = {
+        "a",
+        "abbr",
+        "acronym",
+        "b",
+        "blockquote",
+        "code",
+        "em",
+        "i",
+        "li",
+        "ol",
+        "strong",
+        "ul",
         "img",
         "p",
         "br",
@@ -52,23 +56,26 @@ try:
         "div",
         "span",
     }
-    _default_allowed_protocols = sanitizer.ALLOWED_PROTOCOLS | {
+    _default_allowed_protocols = {
+        "http",
+        "https",
         "data",
         "mailto",
     }
-    bleach_cleaner = sanitizer.Cleaner(
-        tags=_default_allowed_tags,
-        attributes=lambda tag, name, value: True,
-        protocols=_default_allowed_protocols,
-        css_sanitizer=css_sanitizer,
-    )
+    nh3_cleaner = True
 
     def clean(inp):
-        return bleach_cleaner.clean(inp)
+        return nh3.clean(
+            inp,
+            tags=_default_allowed_tags,
+            attributes="*",
+            url_schemes=_default_allowed_protocols,
+            link_rel="noopener noreferrer",
+        )
 
 except ImportError:
-    logging.warning("bleach not found, fallback to escape")
-    bleach_cleaner = None
+    logging.warning("nh3 not found, fallback to escape")
+    nh3_cleaner = False
     clean = escape
 
 
@@ -318,8 +325,8 @@ def read_content_sync(
     authorization=None,
     # provide default decrypt keys
     default_decryptkeys=None,
-    # use bleach/escape for text contents which can be inlined
-    inline_text=True if bleach_cleaner else False,
+    # use nh3/escape for text contents which can be inlined
+    inline_text=True if nh3_cleaner else False,
 ):
     if not authorization:
         authorization = set(

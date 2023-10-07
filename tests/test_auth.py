@@ -23,7 +23,6 @@ from secretgraph.queries.cluster import (
 from secretgraph.queries.node import authQuery
 from secretgraph.schema import schema
 from secretgraph.server.models import Action
-from secretgraph.server.signals import sweepOutdated
 
 
 class AuthTests(TestCase):
@@ -363,7 +362,6 @@ class AuthTests(TestCase):
         clusterupdateid = result.data["secretgraph"]["updateOrCreateCluster"][
             "cluster"
         ]["updateId"]
-
         request = self.factory.get("/graphql")
         result = await schema.execute(
             updateClusterMutation,

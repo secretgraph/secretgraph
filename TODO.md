@@ -1,6 +1,7 @@
 # TODO
 
 -   test transfer
+-   test load ~100000 Objects
 -   automatize python query generation
 -   implement UserSelectable in frontend (Register page, Cluster editor)
 -   editor for Personal Data (in progress)
