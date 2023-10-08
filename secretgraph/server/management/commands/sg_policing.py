@@ -55,7 +55,7 @@ class Command(BaseCommand):
             help="Removes privacy protections. "
             "Can be multiple times specified: "
             "0 only global clusters and their contents (default), "
-            "1 only public clusters and public contents, >= 2 all",
+            "1 only clusters and public contents, >= 2 all",
             default=0,
         )
         parser.add_argument("-g", "--groups", nargs="+")
@@ -160,7 +160,7 @@ class Command(BaseCommand):
             )
         elif exclude_groups:
             cluster_q &= ~Q(groups__name__in=exclude_groups)
-        # applies to contents and clusters
+        # applies to contents and clusters excluding the system cluster
         if private == 0:
             cluster_q &= Q(globalNameRegisteredAt__isnull=False)
 

@@ -269,6 +269,7 @@ class Cluster(FlexidModel):
         blank=True,
         validators=[SafeNameValidator()],
     )
+    # check for None to seperate between global and private clusters, can include @system
     # provides uniqueness to global name and is a speedup
     name_cached: str = models.CharField(
         max_length=252, blank=True, null=True, unique=True, editable=False
@@ -279,8 +280,13 @@ class Cluster(FlexidModel):
         blank=True,
     )
 
-    markForDestruction: dt = models.DateTimeField(null=True, blank=True)
-    globalNameRegisteredAt: dt = models.DateTimeField(null=True, blank=True)
+    markForDestruction: Optional[dt] = models.DateTimeField(
+        null=True, blank=True
+    )
+    # always None for @system, None for non global names
+    globalNameRegisteredAt: Optional[dt] = models.DateTimeField(
+        null=True, blank=True
+    )
     featured: bool = models.BooleanField(default=False, blank=True, null=False)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(blank=True, default=uuid4)

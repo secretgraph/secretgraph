@@ -41,7 +41,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
     def public(self) -> Optional[bool]:
         if self.limited:
             return None
-        return self.globalNameRegisteredAt is None
+        return self.globalNameRegisteredAt is not None
 
     @strawberry_django.field()
     def name(self) -> Optional[str]:
@@ -219,7 +219,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                 queryset = queryset.filter(
                     globalNameRegisteredAt__isnull=filters.public
                     != UseCriteriaPublic.TRUE,
-                ).exclude(name="@system")
+                )
 
             if filters.primary != UseCriteria.IGNORE:
                 queryset = queryset.filter(
@@ -249,7 +249,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             )
 
         return fetch_clusters(
-            queryset.distinct(),
+            queryset.exclude(name="@system").distinct(),
             ids=filters.includeIds,
             limit_ids=None,
             includeTypes=filters.includeTypes,

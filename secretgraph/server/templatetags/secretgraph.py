@@ -114,7 +114,7 @@ def fetch_clusters(
 ):
     queryset = get_cached_result(context["request"], authset=authorization)[
         "Cluster"
-    ]["objects_with_public"]
+    ]["objects_with_public"].exclude(name="@system")
     if search is not None:
         queryset = queryset.filter(
             Q(flexid_cached__startswith=search)
