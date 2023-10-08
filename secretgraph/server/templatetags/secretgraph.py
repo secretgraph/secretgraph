@@ -68,7 +68,6 @@ try:
         return nh3.clean(
             inp,
             tags=_default_allowed_tags,
-            attributes="*",
             url_schemes=_default_allowed_protocols,
             link_rel="noopener noreferrer",
         )
