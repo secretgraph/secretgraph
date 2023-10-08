@@ -421,11 +421,7 @@ export function InnerFile({
                                         Label={{
                                             label: 'Unique Name',
                                         }}
-                                        disabled={
-                                            isSubmitting ||
-                                            values.state == 'public' ||
-                                            disabled
-                                        }
+                                        disabled={isSubmitting || disabled}
                                         type="checkbox"
                                     />
                                     {viewOnly ? null : (

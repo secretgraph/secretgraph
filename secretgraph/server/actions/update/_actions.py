@@ -114,6 +114,7 @@ def manage_actions_fn(
         action_value = ActionHandler.clean_action(
             action_value,
             request=request,
+            cluster=cluster,
             content=content,
         )
 

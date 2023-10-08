@@ -42,7 +42,7 @@ class ViewHandlers:
         return None
 
     @classmethod
-    def clean_auth(cls, action_dict, request, content, admin):
+    def clean_auth(cls, action_dict, request, cluster, content, admin):
         if not action_dict.get("challenge"):
             raise ValueError("Missing challenge (challenge)")
         if not action_dict.get("requester"):
@@ -136,7 +136,7 @@ class ViewHandlers:
         return None
 
     @classmethod
-    def clean_view(cls, action_dict, request, content, admin):
+    def clean_view(cls, action_dict, request, cluster, content, admin):
         result = {
             "action": "view",
             "contentActionGroup": "view",

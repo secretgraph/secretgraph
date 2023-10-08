@@ -283,6 +283,37 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     search_fields = ["flexid", "name", "id", "description"]
     readonly_fields = ["id", "flexid_cached", "name_cached"]
 
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(
+            request=request, obj=obj, change=change, **kwargs
+        )
+
+        def clean_name(self):
+            name = self.cleaned_data["name"]
+            if not getattr(request.user, "is_superuser", False):
+                if name.startswith("@") and (not obj or obj.name != name):
+                    if (
+                        "allow_global_name"
+                        not in (
+                            get_cached_net_properties(
+                                info.context["request"], authset=authorization
+                            )
+                        )
+                        and not (
+                            obj.properties
+                            if obj
+                            else SGroupProperty.objects.defaultClusterProperties()
+                        )
+                        .filter(name="allow_global_name")
+                        .exists()
+                    ):
+                        name = f"+@{name}"
+            return name
+
+        form.clean_name = clean_name
+
+        return form
+
     def get_queryset(self, request):
         sweepOutdated()
         qs = super().get_queryset(request)
@@ -304,7 +335,13 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         rfields = list(self.readonly_fields)
         if not getattr(request.user, "is_superuser", False):
-            if "allow_featured" in get_cached_net_properties(request):
+            if "allow_featured" in get_cached_net_properties(request) and not (
+                "allow_featured" in set(obj.properties)
+                if obj
+                else SGroupProperty.objects.defaultClusterProperties()
+                .filter("allow_featured")
+                .exists()
+            ):
                 rfields.append("featured")
             if "manage_deletion" in get_cached_net_properties(request):
                 rfields.append("markForDestruction")

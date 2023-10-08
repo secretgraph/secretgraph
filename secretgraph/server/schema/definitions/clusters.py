@@ -218,8 +218,8 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             ):
                 queryset = queryset.filter(
                     globalNameRegisteredAt__isnull=filters.public
-                    != UseCriteriaPublic.TRUE
-                )
+                    != UseCriteriaPublic.TRUE,
+                ).exclude(name="@system")
 
             if filters.primary != UseCriteria.IGNORE:
                 queryset = queryset.filter(

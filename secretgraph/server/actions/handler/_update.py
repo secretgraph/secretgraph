@@ -67,7 +67,7 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def clean_delete(action_dict, request, content, admin):
+    def clean_delete(action_dict, request, cluster, content, admin):
         result = {"action": "delete", "contentActionGroup": "delete"}
         if content:
             # ignore tags if specified for a content
@@ -175,7 +175,7 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def clean_update(action_dict, request, content, admin):
+    def clean_update(action_dict, request, cluster, content, admin):
         result = {
             "action": "update",
             "contentActionGroup": "update",
@@ -290,7 +290,7 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def _clean_create_or_push(action_dict, request, content, admin):
+    def _clean_create_or_push(action_dict, request, cluster, content, admin):
         result = {
             "id": content.id if content and content.id else None,
             "injectedTags": [],
@@ -368,7 +368,7 @@ class UpdateHandlers:
         return result
 
     @classmethod
-    def clean_create(cls, action_dict, request, content, admin):
+    def clean_create(cls, action_dict, request, cluster, content, admin):
         if content:
             raise ValueError("create invalid for content")
         result = cls._clean_create_or_push(
@@ -424,7 +424,7 @@ class UpdateHandlers:
         return None
 
     @classmethod
-    def clean_push(cls, action_dict, request, content, admin):
+    def clean_push(cls, action_dict, request, cluster, content, admin):
         if not content:
             raise ValueError("push invalid for content")
         result = cls._clean_create_or_push(
@@ -460,7 +460,7 @@ class UpdateHandlers:
         }
 
     @staticmethod
-    def clean_manage(action_dict, request, content, admin):
+    def clean_manage(action_dict, request, cluster, content, admin):
         from ...utils.auth import fetch_by_id, get_cached_result
 
         if content:

@@ -49,13 +49,6 @@ def mutate_cluster(
         ):
             cluster.featured = None
 
-    if cluster.name is not None and cluster.name.startswith("@"):
-        if "allow_global_name" not in (
-            get_cached_net_properties(
-                info.context["request"], authset=authorization
-            )
-        ):
-            cluster.name = f"+@{cluster.name}"
     if id:
         if not updateId:
             raise ValueError("updateId required")
@@ -67,9 +60,20 @@ def mutate_cluster(
             authset=authorization,
             cacheName=None,
         )["Cluster"]
-        cluster_obj = result["objects_without_public"].first()
-        if not cluster_obj:
-            raise ValueError("No cluster found")
+        cluster_obj = result["objects_without_public"].get()
+        if cluster.name is not None and cluster.name.startswith("@"):
+            if (
+                "allow_global_name"
+                not in (
+                    get_cached_net_properties(
+                        info.context["request"], authset=authorization
+                    )
+                )
+                and not cluster_obj.groups.filter(
+                    properties__name="allow_global_name"
+                ).exists()
+            ):
+                cluster.name = f"+@{cluster.name}"
         _cluster_res = update_cluster_fn(
             info.context["request"],
             cluster_obj,
@@ -88,6 +92,20 @@ def mutate_cluster(
             update_cached_net_properties(
                 info.context["request"], groups=dProperty.netGroups.all()
             )
+
+            if cluster.name is not None and cluster.name.startswith("@"):
+                if (
+                    "allow_global_name"
+                    not in (
+                        get_cached_net_properties(
+                            info.context["request"], authset=authorization
+                        )
+                    )
+                    and not SGroupProperty.objects.defaultClusterProperties()
+                    .filter(name="allow_global_name")
+                    .exists()
+                ):
+                    cluster.name = f"+@{cluster.name}"
         _cluster_res = create_cluster_fn(
             info.context["request"], cluster, authset=authorization
         )(transaction.atomic)

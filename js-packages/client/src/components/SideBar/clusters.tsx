@@ -52,7 +52,7 @@ export default React.memo(function Clusters({
                 public:
                     !authinfo?.tokens || !authinfo.tokens.length
                         ? Constants.UseCriteriaPublic.TRUE
-                        : Constants.UseCriteriaPublic.TOKEN,
+                        : Constants.UseCriteriaPublic.FALSE,
                 deleted: searchCtx.deleted
                     ? Constants.UseCriteria.TRUE
                     : Constants.UseCriteria.FALSE,

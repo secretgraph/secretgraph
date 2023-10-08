@@ -564,13 +564,23 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             ) {
                 updateOb.deleted = false
             }
+            const permissions = new Set([...dataUnfinished.secretgraph.permissions])
+            const clusterGroups =  new Set<string>(dataUnfinished.secretgraph.node.groups)
+            for(const group of dataUnfinished.secretgraph.config.clusterGroups){
+                if (clusterGroups.has(group.name)){
+                    for(const property of group.properties){
+                        permissions.add(property)
+                    }
+
+                }
+            }
             const newData = await extractInfo({
                 config,
                 node: dataUnfinished.secretgraph.node,
                 url: mainCtx.url as string,
                 tokens: mainCtx.tokens,
                 hashAlgorithms,
-                permissions: dataUnfinished.secretgraph.permissions,
+                permissions: [...permissions],
             })
             if (active) {
                 updateMainCtx(updateOb)

@@ -73,18 +73,19 @@ def apply_groups(
     if not isinstance(inp, models.QuerySet):
         inp = [inp]
     if operation is MetadataOperations.APPEND:
-        if groups:
+        if groups is not None:
             for obj in inp:
                 obj.groups.add(groups)
             return True
     elif operation is MetadataOperations.REMOVE:
-        if groups:
+        if groups is not None:
             for obj in inp:
                 obj.groups.remove(groups)
             return True
     else:
         assert operation is MetadataOperations.REPLACE
-        if groups:
+        if groups is not None:
+            assert isinstance(groups, tuple), f"invalid groups input: {groups}"
             if groups[0] and groups[1]:
                 for obj in inp:
                     obj.groups.add(groups[0])

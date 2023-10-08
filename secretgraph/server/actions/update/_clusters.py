@@ -139,7 +139,6 @@ def _update_or_create_cluster(
                         action=ratelimit.Action.INCREASE,
                     )
                     if r.request_limit >= 1:
-                        breakpoint()
                         raise ratelimit.RatelimitExceeded(
                             r,
                             "too many attempts to register from ip",
@@ -207,14 +206,14 @@ def _update_or_create_cluster(
         else:
             old_net.bytes_in_use = F("bytes_in_use") - size_old
     cluster.net.last_used = timezone.now()
-    clusterGroups_qset = None
+    clusterGroups_qtuple = None
     if getattr(objdata, "clusterGroups", None) is not None and (
         "manage_cluster_groups"
         in get_cached_net_properties(request, ensureInitialized=True)
         or create_cluster
         or manage.filter(id=cluster.id)
     ):
-        clusterGroups_qset = calculate_groups(
+        clusterGroups_qtuple = calculate_groups(
             ClusterGroup,
             groups=objdata.clusterGroups,
             operation=constants.MetadataOperations.REPLACE,
@@ -222,14 +221,15 @@ def _update_or_create_cluster(
             in get_cached_net_properties(request, ensureInitialized=True),
             initial=create_cluster,
         )
-    netGroups_qset = None
+        assert isinstance(clusterGroups_qtuple, tuple)
+    netGroups_qtuple = None
     if getattr(objdata, "netGroups", None) is not None and (
         "manage_net_groups"
         in get_cached_net_properties(request, ensureInitialized=True)
         or create_net
         or manage.filter(id=cluster.net.primaryCluster_id)
     ):
-        netGroups_qset = calculate_groups(
+        netGroups_qtuple = calculate_groups(
             NetGroup,
             groups=objdata.netGroups,
             operation=constants.MetadataOperations.REPLACE,
@@ -237,6 +237,7 @@ def _update_or_create_cluster(
             in get_cached_net_properties(request, ensureInitialized=True),
             initial=create_net,
         )
+        assert isinstance(clusterGroups_qtuple, tuple)
     dProperty = SGroupProperty.objects.get_or_create(
         name="default", defaults={}
     )[0]
@@ -259,7 +260,7 @@ def _update_or_create_cluster(
         # replace works different here than just set, so put it after setting initial groups
         apply_groups(
             cluster.net,
-            netGroups_qset,
+            netGroups_qtuple,
             operation=constants.MetadataOperations.REPLACE,
         )
 
@@ -270,7 +271,7 @@ def _update_or_create_cluster(
         # replace works different here than just set, so put it after setting initial groups
         apply_groups(
             cluster,
-            clusterGroups_qset,
+            clusterGroups_qtuple,
             operation=constants.MetadataOperations.REPLACE,
         )
 

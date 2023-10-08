@@ -82,7 +82,7 @@ class SideEffectsHandlers:
         return None
 
     @staticmethod
-    def clean_inject(action_dict, request, content, admin):
+    def clean_inject(action_dict, request, cluster, content, admin):
         result = {
             "id": content.id if content and content.id else None,
             "injectedTags": [],
@@ -197,13 +197,17 @@ class SideEffectsHandlers:
         return None
 
     @staticmethod
-    def clean_storedUpdate(action_dict, request, content, admin):
+    def clean_storedUpdate(action_dict, request, cluster, content, admin):
         from ...utils.auth import get_cached_net_properties
 
         if content:
             raise ValueError("storedUpdate cannot be used as contentaction")
-        if "allow_dangerous_actions" not in get_cached_net_properties(
-            request, authset=request.secretgraphCleanResult.authset
+        if (
+            "allow_dangerous_actions"
+            not in get_cached_net_properties(
+                request, authset=request.secretgraphCleanResult.authset
+            )
+            and "allow_dangerous_actions" not in cluster.properties
         ):
             raise ValueError("No permission to register dangerous actions")
         now_plus_x = timezone.now() + td(minutes=20)
