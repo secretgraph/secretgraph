@@ -1,3 +1,4 @@
+from asgiref.sync import async_to_sync
 from django.core.management.base import BaseCommand
 
 
@@ -16,4 +17,4 @@ class Command(BaseCommand):
     def handle(self, all_deleted, **options):
         from ...signals import sweepOutdated
 
-        sweepOutdated(ignoreTime=all_deleted)
+        async_to_sync(sweepOutdated)(ignoreTime=all_deleted)

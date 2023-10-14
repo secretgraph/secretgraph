@@ -120,6 +120,7 @@ Removed headers
 By design only one content is returned
 
 -   X-TYPE: Type of content
+-   X-DOWNLOAD-ID: download id of content (can be used to download file and extract verifiers), part of the link
 -   X-IS-SIGNED: is verified
 -   X-NONCE: nonce
 -   X-KEY: encrypting key of private key (only if encrypted private key is returned)

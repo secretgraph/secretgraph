@@ -30,7 +30,11 @@ from ..core import constants
 from .utils.auth import retrieve_allowed_objects
 from .utils.encryption import iter_decrypt_contents
 from .utils.mark import freeze_contents, update_file_accessed
-from .view_decorators import add_cors_headers, add_secretgraph_headers, no_opener
+from .view_decorators import (
+    add_cors_headers,
+    add_secretgraph_headers,
+    no_opener,
+)
 
 if TYPE_CHECKING:
     from .models import Content
@@ -263,6 +267,7 @@ class ContentView(View):
                         quote(names[0])
                     )
                 response["Content-Disposition"] = header
+            # encrypted contents may not be indexed or followed
             response["X-Robots-Tag"] = "noindex,nofollow"
         else:
             response = get_file_response_with_range_support(
@@ -275,6 +280,7 @@ class ContentView(View):
 
         update_file_accessed([content.id])
         response["X-TYPE"] = content.type
+        response["X-DOWNLOAD-ID"] = content.downloadId
         return response
 
     def handle_content_key_hashes(
@@ -321,6 +327,7 @@ class ContentView(View):
         )
 
         response["X-TYPE"] = content.type
+        response["X-DOWNLOAD-ID"] = content.downloadId
         response["X-Robots-Tag"] = "noindex,nofollow"
         return response
 
@@ -345,6 +352,7 @@ class ContentView(View):
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
         response["X-NONCE"] = content.nonce
+        response["X-DOWNLOAD-ID"] = content.downloadId
         response["X-Robots-Tag"] = "noindex,nofollow"
         if content.type == "PrivateKey":
             response["X-KEY"] = ",".join(

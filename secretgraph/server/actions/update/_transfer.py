@@ -3,6 +3,7 @@ __all__ = ["sync_transfer_value", "transfer_value"]
 import base64
 import json
 import logging
+from typing import Optional
 from uuid import uuid4
 
 import httpx
@@ -17,7 +18,7 @@ from django.utils.module_loading import import_string
 from secretgraph.core.exceptions import LockedResourceError
 from secretgraph.server.utils.auth import get_cached_result
 
-from ....core.constants import TransferResult
+from ....core.constants import TransferResult, public_states
 from ....core.utils.verification import verify
 from ...models import Content, ContentReference, ContentTag, Net
 from ...utils.conf import get_httpx_params
@@ -26,18 +27,13 @@ logger = logging.getLogger(__name__)
 
 
 @sync_to_async(thread_sensitive=True)
-def _create_info_content(request, content: Content, signatures, admin=False):
+def _create_info_content(request, content: Content, signatures):
     references = []
     tags = []
-    if admin:
-        contents = Content.objects.all()
-    else:
-        contents = get_cached_result(request, ensureInitialized=True)[
-            "Content"
-        ]["objects_with_public"]
-    for key in contents.filter(
+    for key in Content.objects.filter(
         type="PublicKey",
-        contentHash_in=map(lambda x: f"Key:{x}", signatures.keys()),
+        state__in=public_states,
+        contentHash__in=map(lambda x: f"Key:{x}", signatures.keys()),
     ):
         found_references = True
         signature = signatures[key.contentHash.removeprefix("Key:")][
@@ -52,7 +48,7 @@ def _create_info_content(request, content: Content, signatures, admin=False):
         )
     if found_references:
         size_before = content.size_references
-        content.references.bulk_create(references, ignore_conflict=True)
+        content.references.bulk_create(references, ignore_conflicts=True)
         size_diff = content.size_references - size_before
         Net.objects.filter(id=content.net_id).update(
             bytes_in_use=F("bytes_in_use") + size_diff, last_used=Now()
@@ -67,7 +63,7 @@ def _create_info_content(request, content: Content, signatures, admin=False):
                 ContentTag(tag=f"key_link={chash}={signature['link']}")
             )
         size_before = content.size_tags
-        content.tags.bulk_create(tags, ignore_conflict=True)
+        content.tags.bulk_create(tags, ignore_conflicts=True)
         size_diff = content.size_tags - size_before
         Net.objects.filter(id=content.net_id).update(
             bytes_in_use=F("bytes_in_use") + size_diff, last_used=Now()
@@ -79,15 +75,15 @@ async def transfer_value(
     request,
     content: Content,
     is_transfer,
+    # not recommended, only for server stuff (exposes key to server)
     key=None,
     url=None,
     headers=None,
-    session=None,
+    session: Optional[httpx.AsyncClient] = None,
     keepalive=None,
     key_hashes=None,
     delete_on_failed_verification=True,
     delete_on_error=False,
-    admin=False,
     skip_info_creation=False,
 ):
     if content.locked:
@@ -121,12 +117,12 @@ async def transfer_value(
                 raw_bytes = base64.b64decode(tag.tag.split("=", 1)[1])
                 # headers must be ascii
                 header = (
-                    decryptor.decrypt(raw_bytes[:13], raw_bytes[:13], None)
+                    decryptor.decrypt(raw_bytes[:13], raw_bytes[13:], None)
                     .decode("ascii")
                     .split("=", 1)
                 )
                 if len(header) == 2:
-                    _headers[header[1]] = header[2]
+                    _headers[header[0]] = header[1]
         except Exception as exc:
             logger.error("Error while decoding headers", exc_info=exc)
             return TransferResult.ERROR
@@ -138,12 +134,19 @@ async def transfer_value(
     _headers["Connection"] = "Keep-Alive" if keepalive else "close"
 
     params, inline_domain = get_httpx_params(url)
+    params = params.copy()
+    _verify = params.pop("verify", True)
+    proxies = params.pop("proxies", None)
     if session:
         s = session
-    elif inline_domain:
-        s = httpx.AsyncClient(app=import_string(settings.ASGI_APPLICATION))
     else:
-        s = httpx.AsyncClient()
+        s = httpx.AsyncClient(
+            app=import_string(settings.ASGI_APPLICATION)
+            if inline_domain
+            else None,
+            verify=_verify,
+            proxies=proxies,
+        )
 
     # do this basic checks before locking
     response = await s.get(url, headers=_headers, **params)
@@ -158,7 +161,7 @@ async def transfer_value(
     except Exception as exc:
         logger.warning("Could not determinate file size", exc_info=exc)
     # should be only one nonce
-    checknonce = response.get("X-NONCE", "")
+    checknonce = response.headers.get("X-NONCE", "")
     if checknonce != "":
         if len(checknonce) < 20:
             logger.error("Invalid nonce (not at least 13 bytes)")
@@ -174,25 +177,28 @@ async def transfer_value(
                 return TransferResult.NONRECOVERABLE_ERROR
         else:
             content.nonce = checknonce
-    size_limit = content.net.quota
+    net = await Net.objects.aget(contents=content)
+    size_limit = net.quota
     if size_limit is not None:
-        size_limit -= content.net.bytes_in_use
+        size_limit -= net.bytes_in_use
     # size limit is remaining bytes
-    if content.net.max_upload_size is not None:
+    if net.max_upload_size is not None:
         if size_limit:
-            size_limit = min(content.net.max_upload_size, size_limit)
+            size_limit = min(net.max_upload_size, size_limit)
         else:
-            size_limit = content.net.max_upload_size
+            size_limit = net.max_upload_size
     if size_limit is not None:
         if (
-            "Content-Length" not in response
-            or response["Content-Length"] > size_limit
+            "Content-Length" not in response.headers
+            or response.headers["Content-Length"] > size_limit
         ):
             return TransferResult.RESOURCE_LIMIT_EXCEEDED
 
     if (
         is_transfer
-        and not await content.references.filter(group="transfer").aexists()
+        and not await content.tags.filter(
+            tag__regex="^~?transfer_url="
+        ).aexists()
     ):
         raise ValueError("Not a transfer object")
     content.locked = timezone.now()
@@ -205,11 +211,10 @@ async def transfer_value(
     try:
         with content.file.open("wb") as f:
             signatures, errors = await verify(
-                session=s,
-                url=response,
-                key_hashes=key_hashes,
+                s,
+                response,
+                key_hashes=key_hashes if key_hashes is not None else (),
                 write_chunk=f.write,
-                force_item=is_transfer,
             )
         if not signatures:
             # was a secretgraph content and verification failed
@@ -251,6 +256,9 @@ async def transfer_value(
             # unlock
 
             if transfer_successful:
+                await content.tags.filter(
+                    tag__regex="^~?transfer_(?:url|header)="
+                ).adelete()
                 if await content.tags.filter(tag="freeze").aexists():
                     await content.tags.filter(tag="freeze").adelete()
                     await content.tags.acreate(ContentTag(tag="immutable"))
@@ -262,9 +270,9 @@ async def transfer_value(
                 )
 
         if not session:
-            s.close()
+            await s.aclose()
     if not skip_info_creation:
-        await _create_info_content(request, content, signatures, admin=admin)
+        await _create_info_content(request, content, signatures)
     return TransferResult.SUCCESS
 
 

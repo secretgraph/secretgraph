@@ -1,5 +1,7 @@
 # TODO
 
+-   add type External. This type CAN be encrypted or not it is used by pull. The type can be changed
+-   document pull and ratelimits
 -   test transfer
 -   test load ~100000 Objects
 -   automatize python query generation

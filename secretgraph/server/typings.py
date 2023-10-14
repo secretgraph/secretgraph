@@ -5,9 +5,7 @@ from django.db.models import QuerySet
 from ..core.typings import Action, Hash, Scope
 from . import models
 
-AuthActionInfoDict = TypeVar(
-    "AuthActionInfoDict", dict[str, dict[tuple[Action, Hash], list[str]]]
-)
+AuthActionInfoDict = dict[str, dict[tuple[Action, Hash], list[str]]]
 
 
 class AllowedObjectsResult(TypedDict):
@@ -20,3 +18,6 @@ class AllowedObjectsResult(TypedDict):
     # {id: {(action, hash): id}}  # noqa
     action_info_clusters: AuthActionInfoDict
     action_info_contents: AuthActionInfoDict
+    accesslevel: int
+    objects_with_public: QuerySet
+    objects_without_public: QuerySet

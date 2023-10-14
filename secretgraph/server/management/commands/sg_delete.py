@@ -1,6 +1,7 @@
 import time
 from datetime import timedelta
 
+from asgiref.sync import async_to_sync
 from django.core.management.base import BaseCommand
 from django.db.models import Subquery
 from django.utils.timezone import now
@@ -72,4 +73,4 @@ class Command(BaseCommand):
         clusters.update(markForDestruction=timestamp)
         if purge:
             time.sleep(2)
-            sweepOutdated()
+            async_to_sync(sweepOutdated)()

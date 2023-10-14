@@ -25,8 +25,8 @@ def get_httpx_params(url):
         tld = ".%s" % urlsplitted.netloc.rsplit(".")[1]
     else:
         tld = None
-    mapper = settings.SECRETGRAPH_REQUEST_KWARGS_MAP
+    mapper = settings.SECRETGRAPH_HTTPX_KWARGS_MAP
     return (
-        mapper.get(urlsplitted.netloc, mapper[tld]),
+        mapper.get(urlsplitted.netloc, mapper.get(tld, mapper[b"default"])),
         inline_path(urlsplitted),
     )

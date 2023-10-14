@@ -6,8 +6,6 @@ import os
 import time
 from pathlib import Path
 
-import certifi
-
 DEBUG = os.environ.get("DEBUG") == "true"
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -115,7 +113,7 @@ LOGIN_REDIRECT_URL = "auth:success"
 # why binary? Because it cannot clash with a "default" host this way
 # hierarchy: host > tld > b"default"
 SECRETGRAPH_HTTPX_KWARGS_MAP = {
-    b"default": {"verify": certifi.where(), "timeout": 3, "proxies": {}},
+    b"default": {"verify": True, "timeout": 3, "proxies": {}},
     # example for usage with tor (requires requests[socks])
     # ".onion": {
     #     "timeout": 10,
@@ -147,6 +145,7 @@ SECRETGRAPH_RATELIMITS = {
     "GRAPHQL_MUTATIONS": "100/2s",
     "GRAPHQL_ERRORS": "20/4m",
     "ANONYMOUS_REGISTER": "5/m",
+    "PULL": "10/m",
     "DECRYPT_SERVERSIDE": None,
     "SIGNATURE_AND_KEY_RETRIEVAL": None,
 }

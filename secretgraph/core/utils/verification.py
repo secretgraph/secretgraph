@@ -1,6 +1,6 @@
 import asyncio
-import logging
 import base64
+import logging
 from typing import Callable, Iterable, Optional
 from urllib.parse import parse_qs, urljoin
 
@@ -18,11 +18,6 @@ from .hashing import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _clean_keyhash(val: str):
-    val = val.strip().removeprefix("key_hash").removeprefix("key_hash")
-    return f"key_hash={val}"
 
 
 async def _fetch_certificate(
@@ -86,7 +81,7 @@ async def verify(
     item_id = None
     if isinstance(url, httpx.Response):
         contentResponse = url
-        url = contentResponse.request.url
+        url = str(contentResponse.request.url)
         splitted_url = url.split("?", 1)
         authorization = (
             contentResponse.request.headers.get("Authorization") or ""
@@ -126,7 +121,9 @@ async def verify(
         url_map = {}
         signature_map = {}
         if item_id:
-            key_hashes_tags = set(map(_clean_keyhash, key_hashes))
+            key_hashes_tags = set(
+                map(lambda x: f"key_hash={key_hashes}", key_hashes)
+            )
             variables = {"id": item_id}
             if key_hashes_tags:
                 variables["includeTags"] = list(key_hashes_tags)

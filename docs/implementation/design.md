@@ -51,9 +51,17 @@ get_cached_result\["Actions"\] should be used for user facing output and manipul
 
 ## Limited API
 
-This API contains only basic information and no informations like ids.
+### classic
+
+This API contains only basic information and no informations like content or cluster ids.
 It is a fallback API in case a cluster is not allowed to be read.
-The contents are limited to PublicKey types
+The contents are limited to PublicKey types.
+
+### Download id/links
+
+In case only the download id is available (e.g. via link) another limited API is available:
+either via X-KEYHASH GET parameter (ratelimited) or via ContentDownload typed ids with the downloadId (graphql)
+The later is not subject of extra ratelimits
 
 ## Action updates
 
@@ -81,6 +89,8 @@ The tag transfer_header can be used for headers. Multiple entries are valid
 ## Pull / stream in
 
 This is currently not implemented as it needs background workers and has many caveats
+
+Note: there is an reserved type External which can be morphed despite the normal fixed types
 
 ## Cleanup of actions
 

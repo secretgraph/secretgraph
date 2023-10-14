@@ -255,12 +255,16 @@ def _update_or_create_content_or_key(
         else content.net.quota
     )
 
-    if create:
+    if create or content.type == "External":
         content.type = objdata.type
+    elif objdata.type and objdata.type != content.type:
+        raise ValueError("cannot change the type")
     if not content.type:
         raise ValueError("No type specified")
     elif not is_key and content.type in {"PrivateKey", "PublicKey"}:
         raise ValueError("%s is an invalid type" % content.type)
+    # if content.type in setttings.SECRETGRAPH_TYPE_UPDATE_TABLE:
+    #    content.type = SECRETGRAPH_TYPE_UPDATE_TABLE[content.type]
     oldstate = "draft" if create else content.state
     if objdata.state:
         content.state = objdata.state
@@ -469,9 +473,10 @@ def _update_or_create_content_or_key(
 
     if final_references is not None:
         if (
-            not is_key
+            len(encryption_target_ref) < 1
+            and not is_key
             and content.state != "public"
-            and len(encryption_target_ref) < 1
+            and content.type != "External"
         ):
             raise ValueError(">=1 key references required for non-key content")
     if objdata.actions is not None:

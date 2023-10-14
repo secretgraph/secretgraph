@@ -376,17 +376,17 @@ def autoUnlock(**kwargs):
     ).update(locked=None)
 
 
-def sweepOutdated(ignoreTime=False, **kwargs):
+async def sweepOutdated(ignoreTime=False, **kwargs):
     from .models import Action, Cluster, Content, ContentAction
 
     now = timezone.now()
-    Action.objects.filter(
+    await Action.objects.filter(
         stop__lt=now - td(hours=24), stop__isnull=False
-    ).delete()
+    ).adelete()
     cas = ContentAction.objects.filter(group="fetch")
     cas_trigger = cas.filter(action__used__isnull=False)
     cas_disarm = cas.filter(action__used__isnull=True)
-    Content.objects.annotate(
+    await Content.objects.annotate(
         latest_used=models.Subquery(
             cas_trigger.filter(content_id=models.OuterRef("id"))
             .order_by("-action__used")
@@ -395,37 +395,37 @@ def sweepOutdated(ignoreTime=False, **kwargs):
     ).filter(
         ~models.Exists(cas_disarm.filter(content_id=models.OuterRef("id"))),
         latest_used__isnull=False,  # no trigger
-    ).update(
+    ).aupdate(
         markForDestruction=models.F("latest_used") + td(hours=24)
     )
     # update all non-destructing contents of clusters in destruction with
     # the markForDestruction of the cluster
-    Content.objects.annotate(
+    await Content.objects.annotate(
         ClusterMarkForDestruction=models.Subquery(
             Cluster.objects.filter(id=models.OuterRef("cluster_id")).values(
                 "markForDestruction"
             )
         )
-    ).exclude(ClusterMarkForDestruction=None).update(
+    ).exclude(ClusterMarkForDestruction=None).aupdate(
         markForDestruction=models.F("ClusterMarkForDestruction")
     )
 
     # cleanup expired Contents
-    for c in Content.objects.filter(
+    async for c in Content.objects.filter(
         models.Q(markForDestruction__isnull=False)
         if ignoreTime
         else models.Q(markForDestruction__lte=now)
     ):
-        c.delete()
+        await c.adelete()
     # cleanup expired Clusters afterward
-    for c in Cluster.objects.annotate(models.Count("contents")).filter(
+    async for c in Cluster.objects.annotate(models.Count("contents")).filter(
         models.Q(markForDestruction__isnull=False)
         if ignoreTime
         else models.Q(markForDestruction__lte=now),
         contents__count=0,
     ):
         try:
-            c.delete()
+            await c.adelete()
         except models.RestrictedError:
             pass
 

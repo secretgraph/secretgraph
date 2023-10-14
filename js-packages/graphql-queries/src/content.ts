@@ -81,6 +81,35 @@ export const contentFeedQuery = gql`
     }
 `
 
+export const transferMutation = gql`
+    mutation transferMutation(
+        $id: GlobalID!
+        $url: String!
+        $headers: JSON
+        $authorization: [String!]
+    ) {
+        secretgraph {
+            transferContent(
+                input: {
+                    id: $id
+                    url: $url
+                    headers: $headers
+                    authorization: $authorization
+                }
+            ) {
+                content {
+                    id
+                    nonce
+                    link
+                    type
+                    state
+                    updateId
+                }
+            }
+        }
+    }
+`
+
 export const createContentMutation = gql`
     mutation contentCreateEncryptedMutation(
         $cluster: ID!

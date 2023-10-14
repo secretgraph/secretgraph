@@ -1,6 +1,7 @@
 import time
 from datetime import timedelta
 
+from asgiref.sync import async_to_sync
 from django.core.management.base import BaseCommand
 from django.db.models import Exists, OuterRef, Subquery
 from django.db.models.functions import Substr
@@ -83,4 +84,4 @@ class Command(BaseCommand):
         contents.update(markForDestruction=timestamp)
         if purge:
             time.sleep(2)
-            sweepOutdated()
+            async_to_sync(sweepOutdated)()

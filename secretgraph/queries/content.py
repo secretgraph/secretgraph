@@ -82,6 +82,35 @@ contentFeedQuery = """
     }
 """
 
+transferMutation = """
+    mutation transferMutation(
+        $id: GlobalID!
+        $url: String!
+        $headers: JSON
+        $authorization: [String!]
+    ) {
+        secretgraph {
+            transferContent(
+                input: {
+                    id: $id
+                    url: $url
+                    headers: $headers
+                    authorization: $authorization
+                }
+            ) {
+                content {
+                    id
+                    nonce
+                    link
+                    type
+                    state
+                    updateId
+                }
+            }
+        }
+    }
+"""
+
 createContentMutation = """
     mutation contentCreateEncryptedMutation(
         $cluster: ID!

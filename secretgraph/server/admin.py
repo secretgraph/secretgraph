@@ -2,6 +2,7 @@ from contextlib import nullcontext
 from datetime import timedelta
 from typing import Optional
 
+from asgiref.sync import async_to_sync
 from django.contrib import admin
 from django.db import transaction
 from django.db.models import F, QuerySet, Subquery
@@ -25,7 +26,7 @@ from .models import (
     NetGroup,
     SGroupProperty,
 )
-from .signals import generateFlexidAndDownloadId, sweepOutdated
+from .signals import generateFlexidAndDownloadId
 
 
 @admin.display(ordering="id", description="")
@@ -75,7 +76,7 @@ class FlexidMixin:
     )
     def purge_immediate(self, request, queryset):
         self.delete_queryset(request, queryset, 0)
-        sweepOutdated()
+        async_to_sync(sweepOutdated)()
 
     def delete_queryset(self, request, queryset, minutes=10):
         now = timezone.now() + timedelta(minutes=minutes)
@@ -315,7 +316,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
         return form
 
     def get_queryset(self, request):
-        sweepOutdated()
+        async_to_sync(sweepOutdated)()
         qs = super().get_queryset(request)
         if not getattr(request.user, "is_superuser", False):
             if get_cached_net_properties(request).isdisjoint(
@@ -415,7 +416,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     readonly_fields = ["flexid_cached"]
 
     def get_queryset(self, request):
-        sweepOutdated()
+        async_to_sync(sweepOutdated)()
         qs = super().get_queryset(request)
         if not getattr(request.user, "is_superuser", False):
             if get_cached_net_properties(request).isdisjoint(
