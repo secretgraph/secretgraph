@@ -16,7 +16,6 @@ from django.utils import timezone
 from django.utils.module_loading import import_string
 
 from secretgraph.core.exceptions import LockedResourceError
-from secretgraph.server.utils.auth import get_cached_result
 
 from ....core.constants import TransferResult, public_states
 from ....core.utils.verification import verify

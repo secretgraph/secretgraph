@@ -1,7 +1,9 @@
 __all__ = ["create_cluster_fn", "update_cluster_fn"]
 
 import logging
-from contextlib import nullcontext
+from collections.abc import Callable
+from contextlib import AbstractContextManager, nullcontext
+from typing import TypedDict
 from uuid import UUID, uuid4
 
 import ratelimit
@@ -25,6 +27,11 @@ from ._contents import create_key_fn
 from ._groups import apply_groups, calculate_groups
 
 logger = logging.getLogger(__name__)
+
+
+class Result(TypedDict):
+    cluster: Cluster
+    writeok: bool
 
 
 def _update_or_create_cluster(
@@ -315,9 +322,11 @@ def _update_or_create_cluster(
     return save_fn
 
 
-def create_cluster_fn(request, objdata: ClusterInput, authset=None):
+def create_cluster_fn(
+    request, objdata: ClusterInput, authset=None
+) -> Callable[[AbstractContextManager], Result]:
     if not getattr(objdata, "actions", None):
-        raise ValueError("Actions required")
+        raise ValueError('Requires "manage" Action - no actions found')
     cluster = Cluster()
     cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset)
     content_fns = []
@@ -328,7 +337,7 @@ def create_cluster_fn(request, objdata: ClusterInput, authset=None):
                 create_key_fn(request, contentdata, authset=authset)
             )
 
-    def save_fn(context=nullcontext):
+    def save_fn(context: AbstractContextManager = nullcontext):
         if callable(context):
             context = context()
         with context:
@@ -338,7 +347,7 @@ def create_cluster_fn(request, objdata: ClusterInput, authset=None):
             for fn in content_fns:
                 fn()
                 result_cache.refresh("Content")
-            return {"cluster": cluster, "writeok": True}
+            return Result(cluster=cluster, writeok=True)
 
     return save_fn
 
@@ -355,17 +364,19 @@ def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
         request, cluster, objdata, authset=authset
     )
 
-    def save_fn(context=nullcontext):
+    def save_fn(
+        context: AbstractContextManager = nullcontext,
+    ) -> Callable[[AbstractContextManager], Result]:
         if callable(context):
             context = context()
         with context:
             try:
                 Cluster.objects.get(id=cluster.id, updateId=updateId)
             except ObjectDoesNotExist:
-                return {
-                    "cluster": Cluster.objects.filter(id=cluster.id).first(),
-                    "writeok": False,
-                }
-            return {"cluster": cluster_fn(), "writeok": True}
+                return Result(
+                    cluster=Cluster.objects.filter(id=cluster.id).first(),
+                    writeok=False,
+                )
+            return Result(cluster=cluster_fn(), writeok=True)
 
     return save_fn
