@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime as dt
-from typing import Iterable, Optional
+from typing import Optional
 
 from django.db.models import Q, QuerySet, Subquery
 
