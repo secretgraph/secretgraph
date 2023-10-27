@@ -11,18 +11,6 @@ from ..utils.auth import fetch_by_id
 logger = logging.getLogger(__name__)
 
 
-def _include_PublicKey(inp: Iterable[str]):
-    s = set(inp)
-    s.add("PublicKey")
-    return s
-
-
-def _exclude_PublicKey(inp: Iterable[str]):
-    s = set(inp)
-    s.discard("PublicKey")
-    return s
-
-
 def _prefix_topic(inp: str):
     return f"topic_{inp}"
 
@@ -157,7 +145,7 @@ def fetch_contents(
         hash_filters = Q()
         if contentHashes:
             hash_filters = Q(contentHash__in=contentHashes)
-        state_filters = ~Q(state="sensitive")
+        state_filters = ~Q(state__in={"sensitive", "draft"})
         if states:
             if clustersAreRestrictedOrAdmin or ids is not None:
                 state_filters = Q(state__in=states)
@@ -175,17 +163,9 @@ def fetch_contents(
             if excludeTypes:
                 includeTypes = set(includeTypes)
                 includeTypes.difference_update(excludeTypes)
-            incl_type_filters = Q(
-                type__in=includeTypes
-                if clustersAreRestrictedOrAdmin or ids is not None
-                else _exclude_PublicKey(includeTypes)
-            )
+            incl_type_filters = Q(type__in=includeTypes)
         elif excludeTypes:
-            excl_type_filters = Q(
-                type__in=excludeTypes
-                if clustersAreRestrictedOrAdmin or ids is not None
-                else _include_PublicKey(excludeTypes)
-            )
+            excl_type_filters = Q(type__in=excludeTypes)
         elif not clustersAreRestrictedOrAdmin and ids is None:
             excl_type_filters = Q(type="PublicKey")
 
@@ -197,6 +177,23 @@ def fetch_contents(
             & incl_type_filters
             & state_filters
         )
+    else:
+        # we need to handle the case no extra filters are applied
+        if clustersAreRestrictedOrAdmin or ids:
+            query = query.exclude(state__in={"sensitive", "draft"})
+        else:
+            # only include protected and public of public cluster
+            query = query.filter(
+                Q(state="protected")
+                | (
+                    Q(
+                        state__in=public_states,
+                        cluster__globalNameRegisteredAt__isnull=False,
+                    )
+                )
+            )
+    if not clustersAreRestrictedOrAdmin and not ids:
+        query = query.exclude(type="PublicKey", state__in=public_states)
 
     if minUpdated and not maxUpdated:
         maxUpdated = dt.max
