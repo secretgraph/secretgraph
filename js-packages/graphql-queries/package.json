@@ -6,14 +6,10 @@
     "license": "MIT",
     "sideEffects": false,
     "dependencies": {
-        "@apollo/client": "*",
-        "apollo-upload-client": "*",
         "graphql": "*"
     },
-    "sideEffects": false,
     "devDependencies": {
         "typescript": "*",
-        "@types/apollo-upload-client": "*",
         "ts-graphql-plugin": "*"
     },
     "exports": {

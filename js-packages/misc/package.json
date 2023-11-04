@@ -6,9 +6,11 @@
     "license": "MIT",
     "sideEffects": false,
     "devDependencies": {
-        "typescript": "*"
+        "typescript": "*",
+        "@types/apollo-upload-client": "*"
     },
     "optionalDependencies": {
+        "apollo-upload-client": "<18.0.0",
         "@secretgraph/graphql-queries": "*",
         "@apollo/client": "*",
         "graphql-ws": "*"
