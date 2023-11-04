@@ -7,6 +7,7 @@ from itertools import chain, islice
 from operator import or_
 from typing import TYPE_CHECKING, Iterable, Optional, cast
 
+from asgiref.sync import sync_to_async
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.apps import apps
 from django.conf import settings
@@ -65,6 +66,11 @@ class LazyViewResult(object):
             )
         return self._result_dict[item]
 
+    @sync_to_async
+    def aat(self, item):
+        return self[item]
+
+    @django_resolver
     def get(self, item, default=None):
         try:
             return self.__getitem__(item)
@@ -651,6 +657,9 @@ def get_cached_net_properties(
             all_props,
         )
     return getattr(request, permissions_name)
+
+
+aget_cached_net_properties = sync_to_async(get_cached_net_properties)
 
 
 def update_cached_net_properties(

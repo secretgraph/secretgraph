@@ -30,6 +30,7 @@ rdflib = '*'
 certifi = "*"
 argon2-cffi = "*"
 httpx = {version = "*", extras = ["http2"]}
+httpcore = {version = "*", extras = ["asyncio"]}
 gql = {version = "*", extras = ["aiohttp", "websockets"]}
 django = {version = '>=4.2', optional = true}
 channels = {version = ">=4.0", optional = true}
@@ -73,8 +74,7 @@ server = [
     "django-manifest-loader",
 ]
 proxy = [
-    "bleach",
-    "tinycss2"
+    "nh3"
 ]
 postgresql = ["psycopg"]
 mysql = ["mysqlclient"]

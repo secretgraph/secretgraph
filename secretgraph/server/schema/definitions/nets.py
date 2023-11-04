@@ -8,7 +8,11 @@ from strawberry.types import Info
 
 from ...actions.fetch import fetch_clusters
 from ...models import Cluster, Net
-from ...utils.auth import get_cached_net_properties, get_cached_result
+from ...utils.auth import (
+    aget_cached_net_properties,
+    get_cached_net_properties,
+    get_cached_result,
+)
 
 
 @strawberry_django.type(Net, name="Net")
@@ -31,7 +35,7 @@ class NetNode(relay.Node):
             )
 
     @classmethod
-    def resolve_nodes(
+    async def resolve_nodes(
         cls,
         *,
         info: Info,
@@ -42,14 +46,18 @@ class NetNode(relay.Node):
             node_ids = list(node_ids)
         if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
             raise ValueError("too many nodes requested")
-        if "manage_user" in get_cached_net_properties(info.context["request"]):
+        if "manage_user" in aget_cached_net_properties(
+            info.context["request"]
+        ):
             query = Cluster.objects.all()
         else:
-            query = get_cached_result(
-                info.context["request"],
-                scope="manage",
-                cacheName="secretgraphNetResult",
-            )["Cluster"]["objects_without_public"]
+            query = (
+                await get_cached_result(
+                    info.context["request"],
+                    scope="manage",
+                    cacheName="secretgraphNetResult",
+                ).aat("Cluster")
+            )["objects_without_public"]
         # for allowing specifing global name and permission check
         query = Net.objects.filter(
             primaryCluster__in=Subquery(
@@ -61,7 +69,7 @@ class NetNode(relay.Node):
             )
         )
         querydict = {}
-        for el in query:
+        async for el in query:
             querydict[el.name] = el
             querydict[el.flexid] = el
             querydict[el.flexid_cached] = el

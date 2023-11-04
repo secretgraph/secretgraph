@@ -19,7 +19,7 @@ class ContentDownloadNode(strawberry.relay.Node):
     link: str
 
     @classmethod
-    def resolve_nodes(
+    async def resolve_nodes(
         cls,
         *,
         info: Info,
@@ -33,7 +33,7 @@ class ContentDownloadNode(strawberry.relay.Node):
         query = Content.objects.filter(downloadId__in=node_ids).filter(
             locked__isnull=True
         )
-        querydict = {el.downloadId: el for el in query}
+        querydict = {el.downloadId: el async for el in query}
         if required:
             return [querydict[nid] for nid in node_ids]
         else:

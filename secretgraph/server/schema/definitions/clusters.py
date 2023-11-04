@@ -10,6 +10,7 @@ from strawberry.types import Info
 from ...actions.fetch import fetch_clusters
 from ...models import Cluster
 from ...utils.auth import (
+    aget_cached_net_properties,
     fetch_by_id_noconvert,
     get_cached_net_properties,
     get_cached_result,
@@ -113,7 +114,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         )
 
     @classmethod
-    def resolve_nodes(
+    async def resolve_nodes(
         cls,
         *,
         info: Info,
@@ -124,25 +125,21 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             node_ids = list(node_ids)
         if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
             raise ValueError("too many nodes requested")
-        if not get_cached_net_properties(info.context["request"]).isdisjoint(
-            {"manage_update", "allow_view"}
-        ):
+        if not (
+            await aget_cached_net_properties(info.context["request"])
+        ).isdisjoint({"manage_update", "allow_view"}):
             query = Cluster.objects.all()
         else:
-            query = get_cached_result(
-                info.context["request"],
-            )[
-                "Cluster"
-            ]["objects_with_public"]
+            query = (
+                await get_cached_result(
+                    info.context["request"],
+                ).aat("Cluster")
+            )["objects_with_public"]
         # for allowing specifing global name and permission check
-        query = fetch_clusters(
-            query,
-            ids=node_ids,
-            limit_ids=None,
-        )
+        query = fetch_clusters(query, ids=node_ids, limit_ids=None)
 
         querydict = {}
-        for el in query:
+        async for el in query:
             querydict[el.name] = el
             querydict[el.flexid] = el
             querydict[el.flexid_cached] = el

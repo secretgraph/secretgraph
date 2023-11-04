@@ -15,7 +15,8 @@ class RatelimitMutations(SchemaExtension):
     # rate = "100/2s"
 
     def on_execute(self):
-        if self.rate:
+        should_be_ratelimited = bool(self.rate)
+        if should_be_ratelimited:
             execution_context = self.execution_context
             if execution_context.operation_type == OperationType.MUTATION:
                 r = ratelimit.get_ratelimit(
@@ -39,14 +40,20 @@ class RatelimitMutations(SchemaExtension):
                     return
                 else:
                     execution_context.context["request"].ratelimit = r
+            else:
+                should_be_ratelimited = False
         yield
-        if not self.rate:
+        if not should_be_ratelimited:
             return
         execution_context = self.execution_context
         data = execution_context.result and execution_context.result.data
         # only increase if no writeok with value False is found
         if data and any(
-            map(lambda x: x and x.get("writeok", None) is False, data.values())
+            map(
+                lambda x: isinstance(x, dict)
+                and x.get("writeok", None) is False,
+                data.values(),
+            )
         ):
             return
         ratelimit.get_ratelimit(

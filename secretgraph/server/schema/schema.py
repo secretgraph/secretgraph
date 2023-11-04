@@ -45,7 +45,7 @@ from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 @strawberry.type
 class SecretgraphObject:
     node: Optional[strawberry.relay.Node] = strawberry.relay.node()
-    nodes: list[strawberry.relay.Node] = strawberry.relay.node()
+    nodes: list[Optional[strawberry.relay.Node]] = strawberry.relay.node()
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ClusterNode])
     def clusters(

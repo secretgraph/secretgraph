@@ -32,6 +32,7 @@ def fetch_clusters(
             query,
             ids,
             limit_ids=limit_ids,
+            check_long=True,
             check_short_id=True,
             check_short_name=True,
         )
@@ -49,40 +50,43 @@ def fetch_clusters(
         )
 
         query = query.filter(groups__id__in=Subquery(cgquery.values("id")))
-    content_query = Content.objects.all()
-    # because no specific tags can be queried it is safe to allow querying types without restriction
-    if includeTypes:
-        if excludeTypes:
-            includeTypes = set(includeTypes)
-            includeTypes.difference_update(excludeTypes)
-        content_query = content_query.filter(
-            type__in=includeTypes, markForDestruction__isnull=True
-        )
-    elif excludeTypes:
-        content_query = content_query.exclude(
-            type__in=excludeTypes, markForDestruction__isnull=True
-        )
+    if includeTypes or excludeTypes or minUpdated or maxUpdated:
+        content_query = Content.objects.all()
+        # because no specific tags can be queried and there is no introspection into the content
+        # it is safe to allow querying types without restriction
+        if includeTypes:
+            if excludeTypes:
+                includeTypes = set(includeTypes)
+                includeTypes.difference_update(excludeTypes)
+            content_query = content_query.filter(
+                type__in=includeTypes, markForDestruction__isnull=True
+            )
+        elif excludeTypes:
+            content_query = content_query.exclude(
+                type__in=excludeTypes, markForDestruction__isnull=True
+            )
 
-    if minUpdated and not maxUpdated:
-        maxUpdated = dt.max
-    elif maxUpdated and not minUpdated:
-        minUpdated = dt.min
+        if minUpdated and not maxUpdated:
+            maxUpdated = dt.max
+        elif maxUpdated and not minUpdated:
+            minUpdated = dt.min
 
-    if minUpdated or maxUpdated:
-        query = query.filter(
-            Q(updated__range=(minUpdated, maxUpdated))
-            | Q(
-                id__in=Subquery(
-                    content_query.filter(
-                        updated__range=(minUpdated, maxUpdated)
-                    ).values("cluster_id")
+        if minUpdated or maxUpdated:
+            query = query.filter(
+                Q(updated__range=(minUpdated, maxUpdated))
+                | Q(
+                    id__in=Subquery(
+                        content_query.filter(
+                            updated__range=(minUpdated, maxUpdated)
+                        ).values("cluster_id")
+                    )
                 )
             )
-        )
-    elif includeTypes or excludeTypes:
-        query = query.filter(
-            Q(id__in=Subquery(content_query.values("cluster_id")))
-        )
+        else:
+            assert includeTypes or excludeTypes
+            query = query.filter(
+                Q(id__in=Subquery(content_query.values("cluster_id")))
+            )
     return query
 
 

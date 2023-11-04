@@ -11,6 +11,7 @@ from ....core.constants import public_states
 from ...actions.fetch import fetch_contents
 from ...models import Action, Content, ContentReference
 from ...utils.auth import (
+    aget_cached_net_properties,
     fetch_by_id_noconvert,
     get_cached_net_properties,
     get_cached_result,
@@ -204,7 +205,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         )
 
     @classmethod
-    def resolve_nodes(
+    async def resolve_nodes(
         cls,
         *,
         info: Info,
@@ -215,11 +216,17 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             node_ids = list(node_ids)
         if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
             raise ValueError("too many nodes requested")
-        query = get_cached_result(
-            info.context["request"],
-        )[
-            "Content"
-        ]["objects_with_public"]
+
+        if not (
+            await aget_cached_net_properties(info.context["request"])
+        ).isdisjoint({"manage_update", "allow_view"}):
+            query = Content.objects.all()
+        else:
+            query = (
+                await get_cached_result(
+                    info.context["request"],
+                ).aat("Content")
+            )["objects_with_public"]
         # for permission check
         query = fetch_contents(
             query,
@@ -228,7 +235,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         ).filter(locked__isnull=True)
 
         querydict = {}
-        for el in query:
+        async for el in query:
             querydict[el.flexid] = el
             querydict[el.flexid_cached] = el
         if required:
