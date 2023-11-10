@@ -4,7 +4,8 @@
     "jsx": "react-jsx",
     "lib": [
         "ESNext",
-        "dom",
+        "DOM",
+        "DOM.Iterable",
         "WebWorker"
     ],
     "baseUrl": "./",

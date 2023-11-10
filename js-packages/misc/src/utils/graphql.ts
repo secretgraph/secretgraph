@@ -2,7 +2,7 @@ import { ApolloClient, InMemoryCache, split } from '@apollo/client'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import { getMainDefinition } from '@apollo/client/utilities'
 import { relayStylePagination } from '@apollo/client/utilities'
-import { createUploadLink } from 'apollo-upload-client'
+import createUploadLink from 'apollo-upload-client/createUploadLink.mjs'
 import { createClient as SubscriptionCreateClient } from 'graphql-ws'
 
 declare var __DEV__: any
@@ -12,7 +12,7 @@ export const createClient = (
     url: string,
     includeCredentials: boolean = false
 ) => {
-    const uploadLink = new createUploadLink({
+    const uploadLink = createUploadLink({
         uri: url,
         credentials: includeCredentials ? 'include' : 'omit',
     })

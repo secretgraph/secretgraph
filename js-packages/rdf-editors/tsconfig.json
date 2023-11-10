@@ -8,7 +8,8 @@
     "composite": true,
     "lib": [
       "ESNext",
-      "dom"
+      "DOM",
+      "DOM.Iterable",
     ],
     "paths": {
       "@secretgraph/misc/*": [

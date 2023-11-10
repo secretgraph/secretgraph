@@ -5,9 +5,12 @@
     "rootDir": "src",
     "baseUrl": "src",
     "composite": true,
+    "allowJs": true,
+    "maxNodeModuleJsDepth": 10,
     "lib": [
       "ESNext",
-      "dom"
+      "DOM",
+      "DOM.Iterable",
     ],
     "paths": {
       "@secretgraph/graphql-queries/*": [
@@ -22,5 +25,5 @@
   ],
   "include": [
     "src/**/*.ts"
-  ]
+  ],
 }

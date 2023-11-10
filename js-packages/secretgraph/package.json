@@ -7,5 +7,11 @@
     "depencencies": {
         "@secretgraph/client": "*",
         "@secretgraph/rdf-editors": "*"
+    },
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/secretgraph/secretgraph.git",
+        "directory": "js-packages/secretgraph"
     }
 }

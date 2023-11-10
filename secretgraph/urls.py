@@ -47,7 +47,11 @@ if not getattr(settings, "SECRETGRAPH_HEADLESS", False):
         path(
             "jsi18n/",
             last_modified(lambda req, **kw: last_modified_date)(
-                cache_control(max_age=604800)(JavaScriptCatalog.as_view())
+                cache_control(max_age=604800)(
+                    JavaScriptCatalog.as_view(
+                        domain="django"
+                    )  # without domain domainjs is used which is wrong for most stuff
+                )
             ),
             name="javascript-i18n",
         )

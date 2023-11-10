@@ -35,11 +35,12 @@
         "@secretgraph/rdf": "*"
     },
     "exports": {
-        "./": "./lib/"
+        ".": "./lib/"
     },
+    "type": "module",
     "repository": {
         "type": "git",
         "url": "https://github.com/secretgraph/secretgraph.git",
-        "directory": "js-packages/client"
+        "directory": "js-packages/ui-components"
     }
 }

@@ -9,6 +9,7 @@
         "@secretgraph/rdf": "*",
         "@secretgraph/graphql-queries": "*",
         "@secretgraph/ui-components": "*",
+        "apollo-upload-client": "*",
         "@apollo/client": "*",
         "graphql-ws": "*",
         "qrcode.react": "*",
@@ -40,8 +41,9 @@
     "optionalDependencies": {
         "@secretgraph/rdf": "*"
     },
+    "type": "module",
     "exports": {
-        "./": "./lib/"
+        ".": "./lib/"
     },
     "repository": {
         "type": "git",

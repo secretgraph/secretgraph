@@ -3,7 +3,9 @@ import logging
 import os
 from typing import Optional
 
+import ratelimit
 import strawberry
+from django.conf import settings
 from django.db import transaction
 from django.db.models.functions import Substr
 from strawberry import relay
@@ -17,7 +19,7 @@ from ...actions.update import (
     create_content_fn,
     sync_transfer_value,
 )
-from ...models import Content, ContentTag
+from ...models import Cluster, Content, ContentTag
 from ...typings import AllowedObjectsResult
 from ...utils.arguments import pre_clean_content_spec
 from ...utils.auth import (
@@ -226,7 +228,7 @@ def mutate_pull(
         r = ratelimit.get_ratelimit(
             group="pull",
             key=b"%i" % target.net_id,
-            request=request,
+            request=info.context["request"],
             rate=signature_and_key_retrieval_rate,
             action=ratelimit.Action.INCREASE,
         )

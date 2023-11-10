@@ -14,8 +14,9 @@
         "@secretgraph/client": "*"
     },
     "exports": {
-        "./": "./lib/"
+        ".": "./lib/"
     },
+    "type": "module",
     "repository": {
         "type": "git",
         "url": "https://github.com/secretgraph/secretgraph.git",

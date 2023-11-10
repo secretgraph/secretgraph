@@ -6,8 +6,8 @@
         "strictNullChecks": true,
         "downlevelIteration": true,
         "forceConsistentCasingInFileNames": true,
-        "module": "esnext",
-        "target": "ES2017",
+        "module": "ES2022",
+        "target": "ES2022",
         "moduleResolution": "node",
     },
 }
