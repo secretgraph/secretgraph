@@ -4,7 +4,6 @@
 -   add type External. This type CAN be encrypted or not it is used by pull. The type can be changed
 -   document pull and ratelimits
 -   test transfer
--   test load ~100000 Objects
 -   automatize python query generation
 -   implement UserSelectable in frontend (Register page, Cluster editor)
 -   editor for Personal Data (in progress)
@@ -28,6 +27,7 @@
 
 # TODO later
 
+-   safeListedContents Subquery/ids which are no subject of safeguards introduced by fetch_contents, may introduce some performance overhead
 -   document and enable pull and make Content optional (cluster id will cause content creation)
     -   needs safeguards against ddos missuse
 -   add push_transfer endpoint for server side transfer message pushing (in case the client has no access)

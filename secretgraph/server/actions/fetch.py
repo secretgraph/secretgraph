@@ -96,6 +96,7 @@ def fetch_contents(
     limit_ids=1,
     states=None,
     clustersAreRestrictedOrAdmin=False,
+    safeListedContents=None,
     includeTypes=None,
     excludeTypes=None,
     includeTags=None,
@@ -156,10 +157,15 @@ def fetch_contents(
             else:
                 s_intern = set(states)
                 s_intern.difference_update(public_states)
+                # allow only
                 state_filters = Q(state__in=s_intern) | Q(
                     state__in=public_states.intersection(states),
                     cluster__globalNameRegisteredAt__isnull=False,
                 )
+                if safeListedContents:
+                    state_filters |= Q(
+                        state__in=states, id__in=safeListedContents
+                    )
 
         incl_type_filters = Q()
         excl_type_filters = Q()
@@ -170,8 +176,6 @@ def fetch_contents(
             incl_type_filters = Q(type__in=includeTypes)
         elif excludeTypes:
             excl_type_filters = Q(type__in=excludeTypes)
-        elif not clustersAreRestrictedOrAdmin and ids is None:
-            excl_type_filters = Q(type="PublicKey")
 
         query = query.filter(
             (~excl_filters)
@@ -197,7 +201,10 @@ def fetch_contents(
                 )
             )
     if not clustersAreRestrictedOrAdmin and not ids:
-        query = query.exclude(type="PublicKey", state__in=public_states)
+        q = Q(type="PublicKey", state__in=public_states)
+        if safeListedContents:
+            q &= ~Q(id_in=safeListedContents)
+        query = query.exclude(q)
 
     if minUpdated and not maxUpdated:
         maxUpdated = dt.max

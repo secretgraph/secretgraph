@@ -159,7 +159,7 @@ hash Algorithm in Constants can contain / to specify arguments (convention)
 
 ## includeTypes and excludeTypes
 
-PublicKey is auto excluded in case a query is made without cluster ids and no allow_hidden permission is given.
+public (required, trusted, public) PublicKeys are auto excluded in case a query is made without cluster ids and no allow_hidden permission is given.
 This applies only to the contents. The clusters query can freely check if types are available
 
 The reason behind this quirk is to prevent snooping keys to deanonymize users.
