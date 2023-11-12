@@ -11,6 +11,7 @@ import {
     serverLogout,
 } from '@secretgraph/graphql-queries/server'
 import * as Interfaces from '@secretgraph/misc/interfaces'
+import * as Constants from '@secretgraph/misc/constants'
 import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
@@ -19,6 +20,7 @@ import { initializeCluster } from '@secretgraph/misc/utils/operations/cluster'
 import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
 import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
+import GroupSelectList from '@secretgraph/ui-components/forms/GroupSelectList'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 
@@ -34,12 +36,31 @@ function Register() {
     const [refreshHandle, notify] = React.useReducer((state) => !state, false)
     const [registerContext, setRegisterContext] = React.useState<
         | {
+              activeUrl: string
               registerUrl?: string
               loginUrl?: string
               canDirectRegister: boolean
               activeUser?: string
               hashAlgorithms: string[]
               errors: string[]
+              netGroups: {
+                  name: string
+                  description: string
+                  userSelectable: keyof typeof Constants.UserSelectable
+                  hidden: boolean
+                  properties: string[]
+              }[]
+              clusterGroups: {
+                  name: string
+                  description: string
+                  userSelectable: keyof typeof Constants.UserSelectable
+                  hidden: boolean
+                  properties: string[]
+                  injectedKeys: {
+                      link: string
+                      hash: string
+                  }[]
+              }[]
           }
         | undefined
     >(undefined)
@@ -68,6 +89,18 @@ function Register() {
 
     return (
         <Formik
+            initialValues={{
+                url: defaultPath,
+                securityQuestion: [
+                    'The answer to life, the universe and everything',
+                    '42',
+                ],
+                lockPW: '',
+                directRegisterWhenPossible: false,
+                logoutUserAfterRegistration: true,
+                clusterGroups: [],
+                netGroups: [],
+            }}
             onSubmit={async (
                 {
                     url,
@@ -75,6 +108,8 @@ function Register() {
                     lockPW,
                     directRegisterWhenPossible,
                     logoutUserAfterRegistration,
+                    clusterGroups,
+                    netGroups,
                 },
                 { setSubmitting }
             ) => {
@@ -194,18 +229,15 @@ function Register() {
                     setSubmitting(false)
                 }
             }}
-            initialValues={{
-                url: defaultPath,
-                securityQuestion: [
-                    'The answer to life, the universe and everything',
-                    '42',
-                ],
-                lockPW: '',
-                directRegisterWhenPossible: false,
-                logoutUserAfterRegistration: true,
-            }}
         >
-            {({ submitForm, isSubmitting, isValid, values }) => {
+            {({
+                submitForm,
+                isSubmitting,
+                isValid,
+                values,
+                touched,
+                setFieldValue,
+            }) => {
                 React.useEffect(() => {
                     let active = true
                     const f = async () => {
@@ -225,17 +257,21 @@ function Register() {
                         }
                         if (!result || !result?.data) {
                             setRegisterContext({
+                                activeUrl: values.url,
                                 registerUrl: undefined,
                                 loginUrl: undefined,
                                 canDirectRegister: false,
                                 activeUser: undefined,
                                 hashAlgorithms: [],
+                                netGroups: [],
+                                clusterGroups: [],
                                 errors: ['provider url invalid'],
                             })
                             return
                         }
                         const sconfig = result.data.secretgraph.config
                         const context = {
+                            activeUrl: values.url,
                             registerUrl: sconfig.registerUrl || undefined,
                             loginUrl: sconfig.loginUrl || undefined,
                             canDirectRegister: sconfig.canDirectRegister,
@@ -245,7 +281,43 @@ function Register() {
                             hashAlgorithms: findWorkingHashAlgorithms(
                                 sconfig.hashAlgorithms
                             ),
+                            netGroups: sconfig.netGroups,
+                            clusterGroups: sconfig.clusterGroups,
                             errors: [] as string[],
+                        }
+                        if (
+                            !touched.clusterGroups ||
+                            (registerContext &&
+                                registerContext.activeUrl != context.activeUrl)
+                        ) {
+                            await setFieldValue(
+                                'clusterGroups',
+                                sconfig.clusterGroups
+                                    .filter(
+                                        (v: {
+                                            name: string
+                                            properties: string[]
+                                        }) => v.properties.includes('default')
+                                    )
+                                    .map((val: { name: string }) => val.name)
+                            )
+                        }
+                        if (
+                            !touched.netGroups ||
+                            (registerContext &&
+                                registerContext.activeUrl != context.activeUrl)
+                        ) {
+                            await setFieldValue(
+                                'netGroups',
+                                sconfig.netGroups
+                                    .filter(
+                                        (v: {
+                                            name: string
+                                            properties: string[]
+                                        }) => v.properties.includes('default')
+                                    )
+                                    .map((val: { name: string }) => val.name)
+                            )
                         }
                         if (!context.canDirectRegister) {
                             if (!context.loginUrl && !context.activeUser) {
@@ -326,6 +398,26 @@ function Register() {
                                 label="Password used for locking secretgraph on inactivity"
                                 helperText="Leave empty to not set an pw"
                             />
+                            <div>
+                                <Typography>Cluster Groups</Typography>
+                                <GroupSelectList
+                                    name="clusterGroups"
+                                    initial
+                                    groups={
+                                        registerContext?.clusterGroups || []
+                                    }
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                            <div>
+                                <Typography>Net Groups</Typography>
+                                <GroupSelectList
+                                    name="netGroups"
+                                    initial
+                                    groups={registerContext?.netGroups || []}
+                                    disabled={isSubmitting}
+                                />
+                            </div>
 
                             <div
                                 style={{

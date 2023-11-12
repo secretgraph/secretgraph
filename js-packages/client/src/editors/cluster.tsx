@@ -2,7 +2,7 @@ import { FetchResult, useQuery } from '@apollo/client'
 import LocalPoliceIcon from '@mui/icons-material/LocalPolice'
 import PublicIcon from '@mui/icons-material/Public'
 import Security from '@mui/icons-material/Security'
-import { InputAdornment } from '@mui/material'
+import { InputAdornment, Typography } from '@mui/material'
 import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
@@ -36,6 +36,7 @@ import {
 } from '@secretgraph/misc/utils/operations'
 import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
 import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
+import GroupSelectList from '@secretgraph/ui-components/forms/GroupSelectList'
 import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import {
     FastField,
@@ -59,6 +60,7 @@ async function extractInfo({
     tokens,
     hashAlgorithms,
     permissions,
+    serverConfig,
 }: {
     config: Interfaces.ConfigInterface
     node?: any
@@ -66,6 +68,26 @@ async function extractInfo({
     tokens: string[]
     hashAlgorithms: string[]
     permissions: string[]
+    serverConfig: {
+        netGroups: {
+            name: string
+            description: string
+            userSelectable: keyof typeof Constants.UserSelectable
+            hidden: boolean
+            properties: string[]
+        }[]
+        clusterGroups: {
+            name: string
+            description: string
+            userSelectable: keyof typeof Constants.UserSelectable
+            hidden: boolean
+            properties: string[]
+            injectedKeys: {
+                link: string
+                hash: string
+            }[]
+        }[]
+    }
 }) {
     const known = node && url && config.hosts[url]?.clusters[node.id]?.hashes
     const mapper = await generateActionMapper({
@@ -83,9 +105,12 @@ async function extractInfo({
         public: node.public,
         featured: node.featured,
         primary: node.primary,
+        clusterGroups: node.clusterGroups,
+        netGroups: node.netGroups,
         url,
         hashAlgorithm: hashAlgorithms[0],
         permissions,
+        serverConfig,
     }
 }
 
@@ -94,6 +119,8 @@ interface ClusterInternProps {
     description: string
     featured: boolean
     primary: boolean
+    clusterGroups: string[]
+    netGroups: string[]
     url: string
     loading?: boolean
     disabled?: boolean
@@ -101,6 +128,26 @@ interface ClusterInternProps {
     hashAlgorithm: string
     viewOnly?: boolean
     permissions: string[]
+    serverConfig: {
+        netGroups: {
+            name: string
+            description: string
+            userSelectable: keyof typeof Constants.UserSelectable
+            hidden: boolean
+            properties: string[]
+        }[]
+        clusterGroups: {
+            name: string
+            description: string
+            userSelectable: keyof typeof Constants.UserSelectable
+            hidden: boolean
+            properties: string[]
+            injectedKeys: {
+                link: string
+                hash: string
+            }[]
+        }[]
+    }
 }
 
 const ClusterIntern = ({
@@ -157,6 +204,8 @@ const ClusterIntern = ({
                     description: props.description,
                     featured: !!props.featured,
                     primary: !!props.primary,
+                    clusterGroups: props.clusterGroups,
+                    netGroups: props.netGroups,
                 }}
                 onSubmit={async (
                     { actions: actionsNew, name, description, ...values },
@@ -196,6 +245,8 @@ const ClusterIntern = ({
                             authorization: tokens,
                             featured: values.featured,
                             primary: values.primary,
+                            clusterGroups: values.clusterGroups,
+                            netGroups: values.netGroups,
                         })
                         await itemClient.refetchQueries({
                             include: [clusterFeedQuery, getClusterQuery],
@@ -232,6 +283,8 @@ const ClusterIntern = ({
                             authorization: tokens,
                             featured: values.featured,
                             primary: values.primary,
+                            clusterGroups: values.clusterGroups,
+                            netGroups: values.netGroups,
                         })
                         await itemClient.refetchQueries({
                             include: [clusterFeedQuery],
@@ -481,6 +534,31 @@ const ClusterIntern = ({
                                     />
                                 </Grid>
                                 <Grid xs={12}>
+                                    <Typography>Cluster Groups</Typography>
+                                    <GroupSelectList
+                                        name="clusterGroups"
+                                        initial={!mainCtx.item}
+                                        groups={
+                                            props.serverConfig.clusterGroups
+                                        }
+                                        disabled={disabled || loading}
+                                    />
+                                </Grid>
+                                <Grid xs={12}>
+                                    <Typography>Net Groups</Typography>
+                                    <GroupSelectList
+                                        name="netGroups"
+                                        initial={!mainCtx.item}
+                                        groups={props.serverConfig.netGroups}
+                                        disabled={
+                                            !values.primary ||
+                                            disabled ||
+                                            loading
+                                        }
+                                    />
+                                </Grid>
+
+                                <Grid xs={12}>
                                     {loading && <LinearProgress />}
                                 </Grid>
                                 {viewOnly ? null : (
@@ -564,14 +642,18 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             ) {
                 updateOb.deleted = false
             }
-            const permissions = new Set([...dataUnfinished.secretgraph.permissions])
-            const clusterGroups =  new Set<string>(dataUnfinished.secretgraph.node.groups)
-            for(const group of dataUnfinished.secretgraph.config.clusterGroups){
-                if (clusterGroups.has(group.name)){
-                    for(const property of group.properties){
+            const permissions = new Set([
+                ...dataUnfinished.secretgraph.permissions,
+            ])
+            const clusterGroups = new Set<string>(
+                dataUnfinished.secretgraph.node.groups
+            )
+            for (const group of dataUnfinished.secretgraph.config
+                .clusterGroups) {
+                if (clusterGroups.has(group.name)) {
+                    for (const property of group.properties) {
                         permissions.add(property)
                     }
-
                 }
             }
             const newData = await extractInfo({
@@ -581,11 +663,13 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 tokens: mainCtx.tokens,
                 hashAlgorithms,
                 permissions: [...permissions],
+                serverConfig: dataUnfinished.secretgraph.config,
             })
             if (active) {
                 updateMainCtx(updateOb)
                 setData({
                     ...newData,
+
                     key: `edit${new Date().getTime()}`,
                 })
             }
@@ -655,7 +739,16 @@ const CreateCluster = () => {
                     description: '',
                     featured: false,
                     primary: false,
+                    netGroups: [],
+                    clusterGroups:
+                        dataUnfinished.secretgraph.config.clusterGroups
+                            .filter(
+                                (v: { name: string; properties: string[] }) =>
+                                    v.properties.includes('default')
+                            )
+                            .map((val: { name: string }) => val.name),
                     permissions: dataUnfinished.secretgraph.permissions,
+                    serverConfig: dataUnfinished.secretgraph.config,
                     mapper: {
                         [hashKey]: {
                             type: 'action',
