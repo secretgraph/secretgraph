@@ -2,7 +2,6 @@
 
 -   add type External. This type CAN be encrypted or not it is used by pull. The type can be changed
 -   document pull and ratelimits
--   test transfer
 -   automatize python query generation
 -   implement UserSelectable in frontend (Register page, Cluster editor)
 -   editor for Personal Data (in progress)

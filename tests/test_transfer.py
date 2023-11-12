@@ -1,10 +1,7 @@
 import base64
 import json
-import logging
 import os
-from contextlib import redirect_stderr
 
-from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -18,15 +15,11 @@ from secretgraph.core.utils.hashing import (
     findWorkingHashAlgorithms,
     hashObject,
 )
-from secretgraph.queries.cluster import (
-    createClusterMutation,
-    updateClusterMutation,
-)
+from secretgraph.queries.cluster import createClusterMutation
 from secretgraph.queries.content import createContentMutation, transferMutation
-from secretgraph.queries.node import authQuery
 from secretgraph.schema import schema
 from secretgraph.server.actions.update import transfer_value
-from secretgraph.server.models import Action, Content
+from secretgraph.server.models import Content
 from secretgraph.server.signals import sweepOutdated
 
 
