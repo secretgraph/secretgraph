@@ -19,12 +19,32 @@ from ..filters import ClusterFilter, ContentFilterCluster
 from ..shared import UseCriteria, UseCriteriaPublic
 from ._shared import SBaseTypesMixin
 from .contents import ContentNode
+from .nets import NetNode
 
 
 @strawberry_django.type(Cluster, name="Cluster")
 class ClusterNode(SBaseTypesMixin, relay.Node):
     # we cannot define Node classes without NodeID yet
     flexid: relay.NodeID[str]
+
+    @strawberry_django.field()
+    def net(self, info: Info) -> Optional[NetNode]:
+        if self.limited or not self.is_primary:
+            return None
+
+        if (
+            "manage_user"
+            not in get_cached_net_properties(info.context["request"])
+            and not get_cached_result(
+                info.context["request"],
+                scope="manage",
+                cacheName="secretgraphNetResult",
+            )["Cluster"]["objects_without_public"]
+            .filter(cluster_id=self.id)
+            .exists()
+        ):
+            return None
+        return self.net
 
     @strawberry_django.field()
     def featured(self) -> Optional[bool]:

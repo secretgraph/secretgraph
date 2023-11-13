@@ -9,10 +9,12 @@ export type FormikCheckboxProps<FormValues = any> = Omit<
     FieldProps<boolean, FormValues>
 
 export default function FormikCheckbox<FormValues = any>({
-    field: { value, ...field },
+    field,
     meta,
     form,
     ...params
 }: FormikCheckboxProps<FormValues>) {
-    return <Checkbox checked={value} {...field} {...params} />
+    // make sure to specify type=checkbox in Field
+    // checked is defined then
+    return <Checkbox {...field} {...params} />
 }

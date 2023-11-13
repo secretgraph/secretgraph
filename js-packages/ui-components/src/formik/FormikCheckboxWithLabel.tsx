@@ -14,15 +14,17 @@ export type FormikCheckboxProps<FormValues = any> = Omit<
     }
 
 export default function FormikCheckboxWithLabel<FormValues = any>({
-    field: { value, ...field },
+    field,
     form,
     meta,
     Label,
     ...params
 }: FormikCheckboxProps<FormValues>) {
+    // make sure to specify type=checkbox in Field
+    // checked is defined then
     return (
         <FormControlLabel
-            control={<Checkbox checked={value} {...field} {...params} />}
+            control={<Checkbox {...field} {...params} />}
             {...Label}
         />
     )

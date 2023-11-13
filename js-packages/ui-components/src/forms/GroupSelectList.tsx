@@ -91,13 +91,16 @@ export default function GroupSelectList({
             }
 
             renderval.push(
-                <TableRow>
+                <TableRow key={group.name}>
                     <TableCell padding="checkbox">
                         <Field
                             name={name}
+                            value={group.name}
                             component={FormikCheckbox}
                             color="primary"
                             disabled={isDisabled}
+                            type="checkbox"
+                            multiple
                         />
                     </TableCell>
                     <TableCell align="right">{group.name}</TableCell>

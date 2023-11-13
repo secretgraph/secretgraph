@@ -9,10 +9,7 @@ from django.db.models import F, QuerySet, Subquery
 from django.utils import timezone
 from strawberry import relay
 
-from secretgraph.server.utils.auth import (
-    get_cached_net_properties,
-    get_cached_result,
-)
+from secretgraph.server.utils.auth import get_cached_net_properties, get_cached_result
 
 from .models import (
     Action,
@@ -26,7 +23,7 @@ from .models import (
     NetGroup,
     SGroupProperty,
 )
-from .signals import generateFlexidAndDownloadId
+from .signals import generateFlexidAndDownloadId, sweepOutdated
 
 
 @admin.display(ordering="id", description="")
@@ -297,7 +294,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
                         "allow_global_name"
                         not in (
                             get_cached_net_properties(
-                                info.context["request"], authset=authorization
+                                request
                             )
                         )
                         and not (

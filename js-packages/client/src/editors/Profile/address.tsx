@@ -70,6 +70,7 @@ export const AddressEntry = React.memo(function AddressEntry({
                     component={FormikCheckboxWithLabel}
                     disabled={disabled}
                     Label={{ label: 'Primary' }}
+                    type="checkbox"
                 />
             </Grid>
             <Grid xs={12}>

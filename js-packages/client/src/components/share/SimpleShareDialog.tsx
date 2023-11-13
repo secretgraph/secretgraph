@@ -228,6 +228,7 @@ function NewPanel({
                                 name="storeInConfig"
                                 component={FormikCheckboxWithLabel}
                                 Label={{ label: 'Store in Config' }}
+                                type="checkbox"
                             />
                             <div>{isSubmitting && <LinearProgress />}</div>
                             <div>
@@ -384,6 +385,7 @@ function AuthPanel({
                                             component={FormikCheckboxWithLabel}
                                             Label={{ label: 'Add view' }}
                                             name="viewActive"
+                                            type="checkbox"
                                         />
                                     </div>
                                     {values.viewActive ? (
@@ -418,6 +420,7 @@ function AuthPanel({
                                     component={FormikCheckboxWithLabel}
                                     Label={{ label: 'Add update' }}
                                     name="updateActive"
+                                    type="checkbox"
                                 />
                             </div>
                             {values.updateActive ? (

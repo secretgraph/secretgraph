@@ -405,6 +405,7 @@ export function InnerFile({
                                     <Field
                                         name="encryptName"
                                         component={FormikCheckboxWithLabel}
+                                        type="checkbox"
                                         Label={{
                                             label: 'Encrypt Name',
                                         }}
@@ -413,16 +414,15 @@ export function InnerFile({
                                             values.state == 'public' ||
                                             disabled
                                         }
-                                        type="checkbox"
                                     />
                                     <Field
                                         name="uniqueName"
                                         component={FormikCheckboxWithLabel}
+                                        type="checkbox"
                                         Label={{
                                             label: 'Unique Name',
                                         }}
                                         disabled={isSubmitting || disabled}
-                                        type="checkbox"
                                     />
                                     {viewOnly ? null : (
                                         <Tooltip title="Actions">

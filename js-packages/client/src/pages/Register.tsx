@@ -462,6 +462,7 @@ function Register() {
                                         <Field
                                             name="directRegisterWhenPossible"
                                             component={FormikCheckboxWithLabel}
+                                            type="checkbox"
                                             Label={{
                                                 label:
                                                     'Register without user?' +
@@ -483,6 +484,7 @@ function Register() {
                                         <Field
                                             name="logoutUserAfterRegistration"
                                             component={FormikCheckboxWithLabel}
+                                            type="checkbox"
                                             Label={{
                                                 label: 'Logout user out after registration? (You are using config instead of user afterwards)',
                                             }}

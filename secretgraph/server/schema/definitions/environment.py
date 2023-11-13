@@ -54,11 +54,15 @@ class NetGroupNode(relay.Node):
     hidden: bool
 
     @strawberry_django.field()
-    def properties(self, info: Info) -> Optional[list[str]]:
+    def properties(self, info: Info) -> list[str]:
         props = get_cached_net_properties(info.context["request"])
         if "allow_hidden_net_props" in props or "manage_net_groups" in props:
             return list(self.properties.values_list("name", flat=True))
-        return None
+        return list(
+            self.properties.filter(name="default").values_list(
+                "name", flat=True
+            )
+        )
 
 
 @strawberry.type()

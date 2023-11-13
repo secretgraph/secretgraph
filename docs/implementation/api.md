@@ -30,7 +30,7 @@ Both can alter the behavior via properties
 -   allow_view: can view content or cluster without permission check (but has still no access to data if encrypted), can query Publickeys via contents, deleted contents are only visible with permission (Net)
 -   allow_hidden: can see hidden contents (Net,Cluster), can set hidden attribute (Net,Cluster), hidden groups of clusters (Net). Net properties won't become visible as well not net attached
 -   allow_hidden_net: nets become visible (Net)
--   allow_hidden_net_props: can see net properties (Net)
+-   allow_hidden_net_props: can see net properties except default (Net)
 -   manage_deletion: can delete every content or cluster (Net)
 -   manage_active: can can block and unblock nets (via Cluster ids)
 -   manage_cluster_groups: can manage global groups of clusters, hidden groups of clusters become visible

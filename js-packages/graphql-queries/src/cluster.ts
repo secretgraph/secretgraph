@@ -94,6 +94,9 @@ export const getClusterQuery = gql`
             node(id: $id) {
                 ... on Cluster {
                     id
+                    net {
+                        groups
+                    }
                     deleted
                     groups
                     name
