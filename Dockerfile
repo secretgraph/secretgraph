@@ -21,4 +21,5 @@ RUN poetry install --no-root --no-cache --compile --only main -E server -E proxy
 COPY secretgraph /app/secretgraph
 COPY tools/start.sh tools/start_docker.sh tools/test.sh /app/tools/
 COPY --from=node_build /app/webpack_bundles /app/webpack_bundles
+RUN ./manage.py compilemessages  --ignore ".tox/**/*" --ignore ".venv/**/*"
 CMD ["./tools/start_docker.sh"]
