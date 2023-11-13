@@ -873,7 +873,7 @@ class ContentReference(models.Model):
     )
     extra: str = models.TextField(blank=True, null=False, default="")
 
-    deleteRecursive: str = models.CharField(
+    deleteRecursive: constants.DeleteRecursive = models.CharField(
         blank=True,
         default=constants.DeleteRecursive.TRUE.value,
         null=False,
@@ -965,7 +965,7 @@ class NetGroup(models.Model):
         default="",
         blank=True,
     )
-    userSelectable: str = models.CharField(
+    userSelectable: constants.UserSelectable = models.CharField(
         blank=True,
         default=constants.UserSelectable.NONE.value,
         null=False,
@@ -1017,7 +1017,7 @@ class ClusterGroup(models.Model):
         default="",
         blank=True,
     )
-    userSelectable: str = models.CharField(
+    userSelectable: constants.UserSelectable = models.CharField(
         blank=True,
         default=constants.UserSelectable.NONE.value,
         null=False,

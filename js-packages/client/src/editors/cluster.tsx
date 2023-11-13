@@ -106,7 +106,7 @@ async function extractInfo({
         featured: node.featured,
         primary: node.primary,
         clusterGroups: node.groups,
-        netGroups: [],
+        netGroups: node.net ? node.net.groups : false,
         url,
         hashAlgorithm: hashAlgorithms[0],
         permissions,
@@ -120,7 +120,7 @@ interface ClusterInternProps {
     featured: boolean
     primary: boolean
     clusterGroups: string[]
-    netGroups: string[]
+    netGroups: string[] | false
     url: string
     loading?: boolean
     disabled?: boolean
@@ -205,7 +205,8 @@ const ClusterIntern = ({
                     featured: !!props.featured,
                     primary: !!props.primary,
                     clusterGroups: props.clusterGroups,
-                    netGroups: props.netGroups,
+                    netGroups:
+                        props.netGroups === false ? [] : props.netGroups,
                 }}
                 onSubmit={async (
                     { actions: actionsNew, name, description, ...values },
@@ -284,7 +285,10 @@ const ClusterIntern = ({
                             featured: values.featured,
                             primary: values.primary,
                             clusterGroups: values.clusterGroups,
-                            netGroups: values.netGroups,
+                            netGroups:
+                                props.netGroups === false
+                                    ? undefined
+                                    : values.netGroups,
                         })
                         await itemClient.refetchQueries({
                             include: [clusterFeedQuery],
@@ -552,6 +556,7 @@ const ClusterIntern = ({
                                         groups={props.serverConfig.netGroups}
                                         disabled={
                                             !values.primary ||
+                                            props.netGroups === false ||
                                             disabled ||
                                             loading
                                         }

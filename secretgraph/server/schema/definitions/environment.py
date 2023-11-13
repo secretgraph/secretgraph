@@ -8,8 +8,11 @@ from django.urls import NoReverseMatch
 from strawberry import relay
 from strawberry.types import Info
 
+from ....core import constants
 from ...models import ClusterGroup, Content, NetGroup
 from ...utils.auth import get_cached_net_properties
+
+UserSelectable = strawberry.enum(constants.UserSelectable)
 
 
 @strawberry_django.type(Content, name="InjectedKey")
@@ -33,7 +36,7 @@ class ClusterGroupNode(relay.Node):
 
     name: str
     description: str
-    userSelectable: strawberry.auto
+    userSelectable: UserSelectable
     hidden: bool
     injectedKeys: list[InjectedKeyNode]
 
@@ -50,7 +53,7 @@ class NetGroupNode(relay.Node):
 
     name: str
     description: str
-    userSelectable: strawberry.auto
+    userSelectable: UserSelectable
     hidden: bool
 
     @strawberry_django.field()

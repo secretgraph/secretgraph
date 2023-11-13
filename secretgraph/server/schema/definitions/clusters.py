@@ -40,7 +40,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                 scope="manage",
                 cacheName="secretgraphNetResult",
             )["Cluster"]["objects_without_public"]
-            .filter(cluster_id=self.id)
+            .filter(id=self.id)
             .exists()
         ):
             return None
