@@ -202,7 +202,6 @@ def fetch_contents(
                     )
                 )
             )
-        query = query.exclude(type="External")
     if not clustersAreRestrictedOrAdmin and not ids:
         q = Q(type="PublicKey", state__in=public_states)
         if safeListedContents:
