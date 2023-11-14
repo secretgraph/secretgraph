@@ -176,6 +176,8 @@ def fetch_contents(
             incl_type_filters = Q(type__in=includeTypes)
         elif excludeTypes:
             excl_type_filters = Q(type__in=excludeTypes)
+        else:
+            excl_type_filters = Q(type="External")
 
         query = query.filter(
             (~excl_filters)
@@ -200,6 +202,7 @@ def fetch_contents(
                     )
                 )
             )
+        query = query.exclude(type="External")
     if not clustersAreRestrictedOrAdmin and not ids:
         q = Q(type="PublicKey", state__in=public_states)
         if safeListedContents:

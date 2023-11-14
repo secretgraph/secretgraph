@@ -157,12 +157,16 @@ key Hashing: algorithm:hash
 
 hash Algorithm in Constants can contain / to specify arguments (convention)
 
-## includeTypes and excludeTypes
+## default excludes
 
 public (required, trusted, public) PublicKeys are auto excluded in case a query is made without cluster ids and no allow_hidden permission is given.
 This applies only to the contents. The clusters query can freely check if types are available
 
 The reason behind this quirk is to prevent snooping keys to deanonymize users.
+
+By default also External types as well as sensitive and draft contents are excluded. They can be reincluded by specifying filters.
+
+They are not for naive searches and should be explicit requested.
 
 ## Operations (Mutations)
 
