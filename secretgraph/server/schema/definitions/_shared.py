@@ -16,6 +16,8 @@ from ...utils.auth import (
     retrieve_allowed_objects,
 )
 
+UserSelectable = strawberry.enum(constants.UserSelectable)
+
 
 @strawberry.type
 class ActionEntry:

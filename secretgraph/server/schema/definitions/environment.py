@@ -8,11 +8,9 @@ from django.urls import NoReverseMatch
 from strawberry import relay
 from strawberry.types import Info
 
-from ....core import constants
 from ...models import ClusterGroup, Content, NetGroup
 from ...utils.auth import get_cached_net_properties
-
-UserSelectable = strawberry.enum(constants.UserSelectable)
+from ._shared import UserSelectable
 
 
 @strawberry_django.type(Content, name="InjectedKey")
