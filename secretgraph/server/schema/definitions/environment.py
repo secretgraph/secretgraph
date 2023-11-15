@@ -10,7 +10,7 @@ from strawberry.types import Info
 
 from ...models import ClusterGroup, Content, NetGroup
 from ...utils.auth import get_cached_net_properties
-from ._shared import UserSelectable
+from ..shared import UserSelectable
 
 
 @strawberry_django.type(Content, name="InjectedKey")
