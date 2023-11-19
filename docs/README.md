@@ -16,3 +16,4 @@
 
 -   [Authentication Workflow](./specifications/authentication.md)
 -   [Verification Workflow](./specifications/verification.md)
+-   [CLientside Bridges](./specifications/clientside-briges.md)

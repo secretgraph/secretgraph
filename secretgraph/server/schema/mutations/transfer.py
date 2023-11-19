@@ -191,9 +191,10 @@ def mutate_pull(
         if "manage_update" in get_cached_net_properties(
             info.context["request"]
         ):
-            target: Cluster = id.resolve_node_sync(
+            target: Content = id.resolve_node_sync(
                 info, required=True, ensure_type=Content
             )
+            cluster = target.cluster
         else:
             target: Content = ids_to_results(
                 info.context["request"],
@@ -203,6 +204,7 @@ def mutate_pull(
                 authset=view_result["authset"],
                 cacheName=None,
             )["Content"]["objects_without_public"].get()
+            cluster = target.cluster
     else:
         # allow admin pulls
         if "manage_update" in get_cached_net_properties(
@@ -211,6 +213,7 @@ def mutate_pull(
             target: Cluster = id.resolve_node_sync(
                 info, required=True, ensure_type=Cluster
             )
+            cluster = target
         else:
             target: Cluster = ids_to_results(
                 info.context["request"],
@@ -220,11 +223,19 @@ def mutate_pull(
                 authset=view_result["authset"],
                 cacheName=None,
             )["Cluster"]["objects_without_public"].get()
+            cluster = target
 
     signature_and_key_retrieval_rate = settings.SECRETGRAPH_RATELIMITS.get(
         "PULL"
     )
-    if signature_and_key_retrieval_rate:
+    if (
+        signature_and_key_retrieval_rate
+        and "bypass_pull_ratelimit"
+        not in get_cached_net_properties(info.context["request"])
+        and not cluster.groups.filter(
+            properties__name="bypass_pull_ratelimit"
+        ).exists()
+    ):
         r = ratelimit.get_ratelimit(
             group="pull",
             key=b"%i" % target.net_id,
@@ -233,7 +244,7 @@ def mutate_pull(
             action=ratelimit.Action.INCREASE,
         )
         if r.request_limit >= 1:
-            raise ratelimit.RatelimitExceeded("Ratelimit for pull exceeded")
+            raise ratelimit.RatelimitExceeded(r, "Ratelimit for pull exceeded")
 
     if isinstance(target, Content):
         transfer_target = target

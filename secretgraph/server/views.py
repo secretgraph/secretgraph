@@ -223,7 +223,7 @@ class ContentView(View):
             )
             if r.request_limit >= 1:
                 raise ratelimit.RatelimitExceeded(
-                    "Ratelimit for server side decryptions exceeded"
+                    r, "Ratelimit for server side decryptions exceeded"
                 )
 
         # shallow copy initialization of result
@@ -302,7 +302,7 @@ class ContentView(View):
             )
             if r.request_limit >= 1:
                 raise ratelimit.RatelimitExceeded(
-                    "Ratelimit for signature and key retrieval exceeded"
+                    r, "Ratelimit for signature and key retrieval exceeded"
                 )
         keyhash_set = set(
             request.headers.get("X-KEY-HASH", "").replace(" ", "").split(",")

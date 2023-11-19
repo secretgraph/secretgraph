@@ -24,6 +24,7 @@ from .mutations import (
     DeleteContentOrClusterMutation,
     MarkMutation,
     MetadataUpdateMutation,
+    PullMutation,
     PushContentMutation,
     RegenerateFlexidMutation,
     ResetDeletionContentOrClusterMutation,
@@ -32,6 +33,7 @@ from .mutations import (
     mutate_content,
     mutate_delete_content_or_cluster,
     mutate_logout_user,
+    mutate_pull,
     mutate_push_content,
     mutate_regenerate_flexid,
     mutate_reset_deletion_content_or_cluster,
@@ -125,6 +127,10 @@ class SecretgraphMutations:
 
     transferContent: TransferMutation = strawberry_django.input_mutation(
         resolver=mutate_transfer, handle_django_errors=False
+    )
+
+    pullContent: PullMutation = strawberry_django.input_mutation(
+        resolver=mutate_pull, handle_django_errors=False
     )
 
     logoutUser = strawberry.mutation(resolver=mutate_logout_user)

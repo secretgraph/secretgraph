@@ -24,6 +24,7 @@ Both can alter the behavior via properties
 ### Properties:
 
 -   default: on cluster creation these groups are added by default except if groups are explicit specified
+-   bypass_pull_ratelimit: bypass pull ratelimit when using cluster with this permission or having the net permission
 -   allow_global_name: can register a global cluster name
 -   allow_dangerous_actions: can create dangerous actions (for user, e.g. deleting own stuff, currently only storedUpdate is locked behind)
 -   allow_featured: can feature or unfeature clusters (only global clusters can be featured)

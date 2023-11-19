@@ -90,7 +90,7 @@ The tag transfer_header can be used for headers. Multiple entries are valid
 
 This is currently not implemented as it needs background workers and has many caveats
 
-Note: there is an reserved type External which can be morphed despite the normal fixed types
+Note: there is an reserved type External which can be morphed in constrast to the normal fixed types.
 
 ## Cleanup of actions
 
