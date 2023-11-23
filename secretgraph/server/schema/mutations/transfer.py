@@ -244,7 +244,9 @@ def mutate_pull(
             action=ratelimit.Action.INCREASE,
         )
         if r.request_limit >= 1:
-            raise ratelimit.RatelimitExceeded(r, "Ratelimit for pull exceeded")
+            raise ratelimit.RatelimitExceeded(
+                "Ratelimit for pull exceeded", ratelimit=r
+            )
 
     if isinstance(target, Content):
         transfer_target = target

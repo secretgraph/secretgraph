@@ -147,8 +147,8 @@ def _update_or_create_cluster(
                     )
                     if r.request_limit >= 1:
                         raise ratelimit.RatelimitExceeded(
-                            r,
                             "too many attempts to register from ip",
+                            ratelimit=r,
                         )
             net = Net()
             if user:

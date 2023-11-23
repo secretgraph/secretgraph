@@ -386,7 +386,7 @@ async def sweepOutdated(ignoreTime=False, **kwargs):
     cas = ContentAction.objects.filter(group="fetch")
     cas_trigger = cas.filter(action__used__isnull=False)
     cas_disarm = cas.filter(action__used__isnull=True)
-    await Content.objects.annotate(
+    await Content.objects.alias(
         latest_used=models.Subquery(
             cas_trigger.filter(content_id=models.OuterRef("id"))
             .order_by("-action__used")
@@ -400,7 +400,7 @@ async def sweepOutdated(ignoreTime=False, **kwargs):
     )
     # update all non-destructing contents of clusters in destruction with
     # the markForDestruction of the cluster
-    await Content.objects.annotate(
+    await Content.objects.alias(
         ClusterMarkForDestruction=models.Subquery(
             Cluster.objects.filter(id=models.OuterRef("cluster_id")).values(
                 "markForDestruction"
@@ -418,7 +418,7 @@ async def sweepOutdated(ignoreTime=False, **kwargs):
     ):
         await c.adelete()
     # cleanup expired Clusters afterward
-    async for c in Cluster.objects.annotate(models.Count("contents")).filter(
+    async for c in Cluster.objects.alias(models.Count("contents")).filter(
         models.Q(markForDestruction__isnull=False)
         if ignoreTime
         else models.Q(markForDestruction__lte=now),

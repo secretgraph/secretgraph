@@ -1,7 +1,6 @@
 # TODO
 
 -   add bypass\_ property prefix to potential dangerous property prefixes
--   add type External. This type CAN be encrypted or not it is used by pull. The type can be changed
 -   document pull and ratelimits
 -   editor for Personal Data (in progress)
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
@@ -24,6 +23,7 @@
 
 # TODO later
 
+-   quantum safety (currently there is no stable implementation)
 -   automatize python query generation
 -   safeListedContents Subquery/ids which are no subject of safeguards introduced by fetch_contents, may introduce some performance overhead
 -   document and enable pull and make Content optional (cluster id will cause content creation)

@@ -26,9 +26,7 @@ class RatelimitMutations(SchemaExtension):
                     rate=self.rate,
                     action=ratelimit.Action.PEEK,
                 )
-                r.decorate_object(
-                    execution_context.context["request"], "ratelimit"
-                )
+                r.decorate_object(execution_context.context["request"])
 
                 if r.request_limit >= 1:
                     self.execution_context.result = GraphQLExecutionResult(
@@ -83,9 +81,7 @@ class RatelimitErrors(SchemaExtension):
                 rate=self.rate,
                 action=ratelimit.Action.PEEK,
             )
-            r.decorate_object(
-                execution_context.context["request"], "ratelimit"
-            )
+            r.decorate_object(execution_context.context["request"])
             if r.request_limit >= 1:
                 self.execution_context.result = GraphQLExecutionResult(
                     data=None,
