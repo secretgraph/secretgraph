@@ -1,6 +1,7 @@
 # TODO
 
 -   add bypass\_ property prefix to potential dangerous property prefixes
+-   migrate away from messages.py/js and use sync.py instead
 -   document pull and ratelimits
 -   editor for Personal Data (in progress)
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer

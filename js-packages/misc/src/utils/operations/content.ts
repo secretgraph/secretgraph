@@ -313,12 +313,14 @@ export async function decryptContentObject({
     } else if (typeof _info == 'string') {
         arrPromise = Promise.resolve(b64tobuffer(_info))
     } else {
+        // if transfer, request transfer and load when successful
         arrPromise = fallback_fetch(new URL(_node.link, itemDomain), {
             headers: {
                 Authorization: _info.join(','),
             },
         }).then((result) => result.arrayBuffer())
     }
+
     // skip decryption as always unencrypted
     if (_node.type == 'PublicKey' || _node.state == 'public') {
         return {

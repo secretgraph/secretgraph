@@ -164,12 +164,12 @@ class TransferResult(enum.Enum):
     RESOURCE_LIMIT_EXCEEDED = "resource_limit_exceeded"
 
 
-SECRETGRAPH = Namespace(
+SECRETGRAPH = Namespace(  # pyonly
     "https://secretgraph.net/static/schemes/secretgraph/secretgraph#"
 )
-CLUSTER = Namespace(
+CLUSTER = Namespace(  # pyonly
     "https://secretgraph.net/static/schemes/secretgraph/cluster#"
 )
-SIMPLECONTENT = Namespace(
+SIMPLECONTENT = Namespace(  # pyonly
     "https://secretgraph.net/static/schemes/secretgraph/simplecontent#"
 )
