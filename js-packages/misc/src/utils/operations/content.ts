@@ -2,6 +2,7 @@ import { ApolloClient, FetchResult, useMutation } from '@apollo/client'
 import {
     createContentMutation,
     updateContentMutation,
+    transferMutation,
 } from '@secretgraph/graphql-queries/content'
 
 import { mapHashNames } from '../../constants'
@@ -276,6 +277,10 @@ export async function updateContent({
         },
     })
 }
+
+class KeyMissmatchError extends Error {}
+class TransferFailedError extends Error {}
+
 interface decryptContentObjectInterface
     extends Omit<Interfaces.CryptoGCMOutInterface, 'nonce' | 'key'> {
     tags: { [tag: string]: string[] }
@@ -283,24 +288,31 @@ interface decryptContentObjectInterface
     nodeData: any
 }
 
-class KeyMissmatchError extends Error {}
-export async function decryptContentObject({
-    config: _config,
-    nodeData,
-    blobOrTokens,
-    itemDomain,
-}: {
+interface decryptContentObjectInputDirect {
     config:
         | Interfaces.ConfigInterface
         | PromiseLike<Interfaces.ConfigInterface>
     nodeData: any | PromiseLike<any>
-    blobOrTokens:
-        | Blob
-        | string
-        | string[]
-        | PromiseLike<Blob | string | string[]>
+    blobOrTokens: Blob | string | PromiseLike<Blob | string>
+}
+
+interface decryptContentObjectInputFetch
+    extends Omit<decryptContentObjectInputDirect, 'blobOrTokens'> {
+    blobOrTokens: string[] | PromiseLike<string[]>
     itemDomain: string
-}): Promise<decryptContentObjectInterface | null> {
+    client: ApolloClient<any>
+}
+
+type decryptContentObjectInput =
+    | decryptContentObjectInputDirect
+    | decryptContentObjectInputFetch
+
+export async function decryptContentObject({
+    config: _config,
+    nodeData,
+    blobOrTokens,
+    ...params
+}: decryptContentObjectInput): Promise<decryptContentObjectInterface | null> {
     let arrPromise: PromiseLike<ArrayBufferLike>
     const _info = await blobOrTokens
     const config = await _config
@@ -313,12 +325,54 @@ export async function decryptContentObject({
     } else if (typeof _info == 'string') {
         arrPromise = Promise.resolve(b64tobuffer(_info))
     } else {
+        const params2 = params as decryptContentObjectInputFetch
         // if transfer, request transfer and load when successful
-        arrPromise = fallback_fetch(new URL(_node.link, itemDomain), {
-            headers: {
-                Authorization: _info.join(','),
-            },
-        }).then((result) => result.arrayBuffer())
+        const transfer_url = nodeData.tags.find(
+            (value: string) =>
+                value.startsWith('transfer_url=') ||
+                value.startsWith('~transfer_url=')
+        )
+        if (transfer_url) {
+            const transfer_headers: { [key: string]: string } =
+                Object.fromEntries(
+                    nodeData.tags
+                        .map((value: string) =>
+                            value
+                                .match(/~?transfer_header=([^=]+)=(.*)/)
+                                ?.slice(1)
+                        )
+                        .filter((value: string | null | undefined) => value)
+                )
+            const result = await params2.client.mutate({
+                mutation: transferMutation,
+                variables: {
+                    id: nodeData.id,
+                    url: transfer_url,
+                    headers: transfer_headers,
+                    authorization: _info,
+                },
+            })
+            if (!result.data?.secretgraph?.transferContent?.content?.id) {
+                throw new TransferFailedError()
+            }
+            arrPromise = fetch(new URL(_node.link, params2.itemDomain), {
+                headers: {
+                    Authorization: _info.join(','),
+                },
+                cache: 'no-cache',
+                credentials: 'omit',
+                mode: 'no-cors',
+            }).then((result) => result.arrayBuffer())
+        } else {
+            arrPromise = fallback_fetch(
+                new URL(_node.link, params2.itemDomain),
+                {
+                    headers: {
+                        Authorization: _info.join(','),
+                    },
+                }
+            ).then((result) => result.arrayBuffer())
+        }
     }
 
     // skip decryption as always unencrypted

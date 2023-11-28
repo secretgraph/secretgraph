@@ -76,11 +76,13 @@ async function loadKeys({
     config,
     baseUrl,
     authorization,
+    client,
 }: {
     data: any
     config: Interfaces.ConfigInterface
     baseUrl: string
     authorization: string[]
+    client: ApolloClient<any>
 }) {
     const requests = []
     const results = {
@@ -159,6 +161,7 @@ async function loadKeys({
                 nodeData,
                 blobOrTokens: authorization,
                 itemDomain: baseUrl,
+                client,
             }).then(
                 async (val) => {
                     //console.log(val, config, nodeData, authorization)
@@ -1246,6 +1249,7 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
         refetch,
         data: dataUnfinished,
         loading,
+        client,
     } = useQuery(keysRetrievalQuery, {
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
@@ -1310,6 +1314,7 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
                     data: dataUnfinished,
                     config,
                     authorization: mainCtx.tokens,
+                    client,
                 })
             } catch (exc) {
                 if (!active) {

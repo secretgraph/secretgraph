@@ -461,6 +461,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
         data: dataUnfinished,
         loading,
         refetch,
+        client,
     } = useQuery(contentRetrievalQuery, {
         fetchPolicy: 'cache-and-network',
         variables: {
@@ -533,6 +534,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                     nodeData: dataUnfinished.secretgraph.node,
                     blobOrTokens: mainCtx.tokens,
                     itemDomain: mainCtx.url || '/',
+                    client,
                 })
             } catch (exc) {
                 if (!active) {

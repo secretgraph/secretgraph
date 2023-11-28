@@ -31,6 +31,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         data: dataUnfinished,
         refetch,
         loading,
+        client,
     } = useQuery(contentRetrievalQuery, {
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
@@ -114,6 +115,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                     nodeData: dataUnfinished.secretgraph.node,
                     blobOrTokens: mainCtx.tokens,
                     itemDomain: mainCtx.url || '/',
+                    client,
                 })
             } catch (exc) {
                 if (!active) {
