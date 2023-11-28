@@ -494,7 +494,8 @@ export function extractPrivKeys({
 // also handles key= tags
 export function findCertCandidatesForRefs(
     config: Interfaces.ConfigInterface,
-    nodeData: any
+    nodeData: any,
+    group: 'key' | 'transfer'
 ) {
     const found: {
         hash: string
@@ -502,7 +503,7 @@ export function findCertCandidatesForRefs(
         sharedKey: Uint8Array
     }[] = []
     // extract tag key from private key
-    if (nodeData.type == 'PrivateKey') {
+    if (nodeData.type == 'PrivateKey' && group == 'key') {
         const hashes = []
         for (const tag_value of nodeData.tags) {
             if (tag_value.startsWith('key_hash=')) {
@@ -547,28 +548,31 @@ export function findCertCandidatesForRefs(
     }
     // extract tags with hashes
     for (const { node: refnode } of nodeData.references.edges) {
+        if (refnode.group != group) {
+            continue
+        }
         for (const tag_value of refnode.target.tags) {
             const [_, hashAlgorithm, cleanhash] = tag_value.match(
                 /^[^=]+=(?:([^:]*?):)?([^:]*)/
             )
             if (cleanhash) {
                 if (config.certificates[`${hashAlgorithm}:${cleanhash}`]) {
-                    const [_, hashAlgorithm2, b64] = refnode.extra.match(
+                    const [_, hashAlgorithm2, b64extra] = refnode.extra.match(
                         /^(?:([^:]*?):)?([^:]*)/
                     )
                     found.push({
                         hash: `${hashAlgorithm}:${cleanhash}`,
                         hashAlgorithm: hashAlgorithm2 || hashAlgorithm,
-                        sharedKey: b64toarr(b64),
+                        sharedKey: b64toarr(b64extra),
                     })
                 } else if (config.certificates[cleanhash]) {
-                    const [_, hashAlgorithm2, b64] = refnode.extra.match(
+                    const [_, hashAlgorithm2, b64extra] = refnode.extra.match(
                         /^(?:([^:]*?):)?([^:]*)/
                     )
                     found.push({
                         hash: cleanhash,
                         hashAlgorithm: hashAlgorithm2 || hashAlgorithm,
-                        sharedKey: b64toarr(b64),
+                        sharedKey: b64toarr(b64extra),
                     })
                 }
             }

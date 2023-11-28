@@ -161,7 +161,7 @@ async function loadKeys({
                 nodeData,
                 blobOrTokens: authorization,
                 itemDomain: baseUrl,
-                client,
+                transferClient: client,
             }).then(
                 async (val) => {
                     //console.log(val, config, nodeData, authorization)

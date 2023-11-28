@@ -220,7 +220,7 @@ class TransferTests(TransactionTestCase):
                     ),
                 },
                 {
-                    "group": "key",
+                    "group": "transfer",
                     "target": pub_encryptKey_hash,
                     "extra": "{}:{}".format(
                         hash_algos[0].serializedName,

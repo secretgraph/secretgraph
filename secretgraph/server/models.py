@@ -157,7 +157,7 @@ class Net(models.Model):
         tags = (
             ContentTag.objects.filter(content__net_id=net_id)
             .exclude(tag__in=["freeze", "immutable"])
-            .alias(size=Length("tag"))
+            .annotate(size=Length("tag"))
             .aggregate(size_sum=models.Sum("size"))
         )
         return tags["size_sum"] or 0
@@ -166,7 +166,7 @@ class Net(models.Model):
     def _size_references(net_id) -> int:
         refs = (
             ContentReference.objects.filter(content__net_id=net_id)
-            .alias(size=Length("extra"))
+            .annotate(size=Length("extra"))
             .aggregate(size_sum=models.Sum("size"), count=models.Count("id"))
         )
         # include target id size and group field
@@ -580,14 +580,14 @@ class Content(FlexidModel):
         # exclude freeze, immutable from size calculation
         tags = (
             self.tags.exclude(tag__in=["freeze", "immutable"])
-            .alias(size=Length("tag"))
+            .annotate(size=Length("tag"))
             .aggregate(size_sum=models.Sum("size"))
         )
         return tags["size_sum"] or 0
 
     @property
     def size_references(self) -> int:
-        refs = self.references.alias(size=Length("extra")).aggregate(
+        refs = self.references.annotate(size=Length("extra")).aggregate(
             size_sum=models.Sum("size"), count=models.Count("id")
         )
         # include target id size and group field

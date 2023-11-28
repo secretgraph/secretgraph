@@ -10,7 +10,7 @@ import httpx
 from asgiref.sync import async_to_sync, sync_to_async
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
-from django.db.models import F
+from django.db.models import F, Q
 from django.db.models.functions import Now
 from django.utils import timezone
 from django.utils.module_loading import import_string
@@ -195,8 +195,13 @@ async def transfer_value(
 
     if (
         is_transfer
-        and not await content.tags.filter(
-            tag__regex="^~?transfer_url="
+        and not await Content.objects.filter(
+            Q(tags__tag__startswith="transfer_url=")
+            | Q(
+                tags__tag__startswith="~transfer_url=",
+                references__group="transfer",
+            ),
+            id=content.id,
         ).aexists()
     ):
         raise ValueError("Not a transfer object")

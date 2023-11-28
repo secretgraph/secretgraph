@@ -23,7 +23,7 @@ urlpatterns = [
         "graphql",
         csrf_exempt(
             CORSFileUploadGraphQLView.as_view(
-                graphiql=True,
+                graphql_ide="graphiql",
                 subscriptions_enabled=True,
                 schema=schema,
             )

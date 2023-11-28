@@ -77,6 +77,7 @@ def transform_tags(
     operation = operation or MetadataOperations.APPEND
     new_had_keyhash = False
     size_new = 0
+    transfer_type = 0
     tags = filter(tags_sanitizer, tags)
     if operation == MetadataOperations.REMOVE and oldtags:
         remove_filter = re.compile(r"^(?:%s)" % "|".join(map(re.escape, tags)))
@@ -98,6 +99,10 @@ def transform_tags(
                 new_had_keyhash = True
                 key_hashes.add(splitted_tag[1])
         if len(splitted_tag) == 2:
+            if splitted_tag[0] == "transfer_url":
+                transfer_type = 1
+            elif splitted_tag[0] == "~transfer_url":
+                transfer_type = 2
             s = newtags.setdefault(splitted_tag[0], set())
             if not isinstance(s, set):
                 raise ValueError("Tag and Flag name collision")
@@ -148,7 +153,7 @@ def transform_tags(
     # freeze and removes it
     if newtags.get("immutable"):
         newtags.pop("freeze")
-    return newtags, key_hashes, size_new
+    return newtags, key_hashes, transfer_type, size_new
 
 
 def clean_deleteRecursive(group, val):
@@ -282,9 +287,8 @@ def transform_references(
                 )
             if refob.group in {"key", "transfer"}:
                 chash = targetob.contentHash.removeprefix("Key:")
-                if refob.group == "key":
-                    encrypt_target_hashes.add(chash)
-                else:
+                encrypt_target_hashes.add(chash)
+                if refob.group == "transfer":
                     is_transfer = True
                 if chash not in key_hashes_tags:
                     raise ValueError("Key hash not found in tags")
@@ -315,6 +319,8 @@ def update_content_metadata_fn(
     remove_tags_q = Q()
     remove_refs_q = Q()
     size_diff = 0
+    refs_is_transfer = False
+    tags_is_transfer_type = 0
     if state:
         content.state = state
     early_op_limit = (
@@ -324,7 +330,12 @@ def update_content_metadata_fn(
     )
     if tags:
         oldtags = content.tags.values_list("tag", flat=True)
-        tags_dict, key_hashes_tags, size_tags_new = transform_tags(
+        (
+            tags_dict,
+            key_hashes_tags,
+            tags_is_transfer_type,
+            size_tags_new,
+        ) = transform_tags(
             content.type,
             tags,
             oldtags,
@@ -398,7 +409,7 @@ def update_content_metadata_fn(
         final_references,
         key_hashes_ref,
         verifiers_ref,
-        is_transfer,
+        refs_is_transfer,
         size_refs_new,
     ) = transform_references(
         content,
@@ -415,13 +426,8 @@ def update_content_metadata_fn(
     )
     if references is not None:
         size_diff += size_refs_new - content.size_references
-        if (
-            is_transfer
-            and not content.references.filter(group="transfer").exists()
-        ):
-            raise ValueError(
-                "Cannot transform an existing content to a transfer target"
-            )
+    if refs_is_transfer or tags_is_transfer_type:
+        raise ValueError("Cannot modify transfer objects")
 
     if required_keys and required_keys.isdisjoint(verifiers_ref):
         raise ValueError("Not signed by required keys")

@@ -300,7 +300,7 @@ interface decryptContentObjectInputFetch
     extends Omit<decryptContentObjectInputDirect, 'blobOrTokens'> {
     blobOrTokens: string[] | PromiseLike<string[]>
     itemDomain: string
-    client: ApolloClient<any>
+    transferClient?: ApolloClient<any>
 }
 
 type decryptContentObjectInput =
@@ -327,23 +327,65 @@ export async function decryptContentObject({
     } else {
         const params2 = params as decryptContentObjectInputFetch
         // if transfer, request transfer and load when successful
-        const transfer_url = nodeData.tags.find(
+        let transfer_url = nodeData.tags.find(
             (value: string) =>
-                value.startsWith('transfer_url=') ||
-                value.startsWith('~transfer_url=')
+                value.startsWith('~transfer_url=') ||
+                value.startsWith('transfer_url=')
         )
-        if (transfer_url) {
+        if (transfer_url && params2.transferClient) {
+            let transfer_key
+            try {
+                // also handles key= tags
+                const found = findCertCandidatesForRefs(
+                    config,
+                    _node,
+                    'transfer'
+                )
+                if (!found.length) {
+                    console.debug('No certificate tag found')
+                    return null
+                }
+                // find key (=first result of decoding shared key)
+                transfer_key = (
+                    await Promise.any(
+                        found.map(async (value) => {
+                            return await decryptRSAOEAP({
+                                key: config.certificates[value.hash].data,
+                                data: value.sharedKey,
+                                hashAlgorithm: value.hashAlgorithm,
+                            })
+                        })
+                    )
+                ).data
+            } catch (exc) {
+                console.debug(
+                    'No matching certificate nor key tag found',
+                    exc,
+                    exc?.errors
+                )
+                return null
+            }
+            const decrypted_tags = await extractTags({
+                key: transfer_key,
+                tags: nodeData.tags,
+            })
+            transfer_url = decrypted_tags['~transfer_url']
+                ? decrypted_tags['~transfer_url'][0]
+                : decrypted_tags['transfer_url'][0]
             const transfer_headers: { [key: string]: string } =
                 Object.fromEntries(
-                    nodeData.tags
+                    (decrypted_tags['~transfer_headers']
+                        ? decrypted_tags['~transfer_headers']
+                        : decrypted_tags['transfer_headers']
+                        ? decrypted_tags['transfer_headers']
+                        : []
+                    )
                         .map((value: string) =>
-                            value
-                                .match(/~?transfer_header=([^=]+)=(.*)/)
-                                ?.slice(1)
+                            value.match(/^([^=]+)=(.+)/)?.slice(1)
                         )
-                        .filter((value: string | null | undefined) => value)
+                        .filter((value: any) => value) as [string, string][]
                 )
-            const result = await params2.client.mutate({
+            const result = await params2.transferClient.mutate({
                 mutation: transferMutation,
                 variables: {
                     id: nodeData.id,
@@ -389,7 +431,7 @@ export async function decryptContentObject({
     let key
     try {
         // also handles key= tags
-        const found = findCertCandidatesForRefs(config, _node)
+        const found = findCertCandidatesForRefs(config, _node, 'key')
         if (!found.length) {
             console.debug('No certificate tag found')
             return null

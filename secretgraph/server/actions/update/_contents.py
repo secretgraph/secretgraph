@@ -169,6 +169,8 @@ def _update_or_create_content_or_key(
     assert not content.locked, "Content is locked"
     size_new = content.flexid_byte_size
     size_old = content.flexid_byte_size
+    refs_is_transfer = False
+    tags_transfer_type = 0
     if not create:
         size_old = content.size
 
@@ -273,7 +275,12 @@ def _update_or_create_content_or_key(
     tags_dict = None
     key_hashes_tags = set()
     if objdata.tags is not None:
-        tags_dict, key_hashes_tags, size_new_tags = transform_tags(
+        (
+            tags_dict,
+            key_hashes_tags,
+            tags_transfer_type,
+            size_new_tags,
+        ) = transform_tags(
             content.type, objdata.tags, early_size_limit=early_op_limit
         )
         size_new += size_new_tags
@@ -399,7 +406,7 @@ def _update_or_create_content_or_key(
             final_references,
             encryption_target_ref,
             verifiers_ref,
-            is_transfer,
+            refs_is_transfer,
             size_refs,
         ) = transform_references(
             content,
@@ -430,21 +437,21 @@ def _update_or_create_content_or_key(
                 )
 
             raise ValueError("Not signed by a cluster key")
-        if (
-            not create
-            and is_transfer
-            and not content.references.filter(group="transfer").exists()
-        ):
-            raise ValueError(
-                "Cannot transform an existing content to a transfer target"
-            )
-
         size_new += size_refs
     elif create:
         final_references = []
         # size_new += 0
     else:
         size_new += content.size_references
+
+    if not create and (tags_transfer_type != 0 or refs_is_transfer):
+        raise ValueError(
+            "Cannot transform an existing content to a transfer target"
+        )
+    elif tags_transfer_type != 2 and refs_is_transfer:
+        raise ValueError("Missing transfer url")
+    elif tags_transfer_type == 2 and not refs_is_transfer:
+        raise ValueError("Missing transfer key")
 
     final_tags = None
     if tags_dict is not None:

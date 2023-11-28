@@ -54,7 +54,7 @@ export const contentFeedQuery = gql`
                         tags(includeTags: $includeTags)
                         references(
                             filters: {
-                                groups: ["key", "signature"]
+                                groups: ["key", "signature", "transfer"]
                                 includeTags: $include
                             }
                         ) {
@@ -253,7 +253,7 @@ export const contentRetrievalQuery = gql`
                     }
                     references(
                         filters: {
-                            groups: ["key", "signature"]
+                            groups: ["key", "signature", "transfer"]
                             includeTags: $keyhashes
                         }
                     ) {
@@ -470,7 +470,11 @@ export const getContentRelatedQuery = gql`
                     referencedBy(
                         first: $count
                         after: $cursor
-                        filters: { deleted: $deleted, groups: $groups }
+                        filters: {
+                            deleted: $deleted
+                            groups: $groups
+                            excludeTags: ["transfer_url=", "~transfer_url="]
+                        }
                     )
                         @connection(
                             key: "feedRelatedBy"

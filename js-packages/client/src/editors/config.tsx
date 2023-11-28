@@ -534,7 +534,7 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                     nodeData: dataUnfinished.secretgraph.node,
                     blobOrTokens: mainCtx.tokens,
                     itemDomain: mainCtx.url || '/',
-                    client,
+                    transferClient: client,
                 })
             } catch (exc) {
                 if (!active) {
