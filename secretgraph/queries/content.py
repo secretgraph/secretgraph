@@ -55,13 +55,14 @@ contentFeedQuery = """
                         tags(includeTags: $includeTags)
                         references(
                             filters: {
-                                groups: ["key", "signature"]
+                                groups: ["key", "signature", "transfer"]
                                 includeTags: $include
                             }
                         ) {
                             edges {
                                 node {
                                     extra
+                                    group
                                     target {
                                         tags(includeTags: ["key_hash="])
                                     }
@@ -254,13 +255,14 @@ contentRetrievalQuery = """
                     }
                     references(
                         filters: {
-                            groups: ["key", "signature"]
+                            groups: ["key", "signature", "transfer"]
                             includeTags: $keyhashes
                         }
                     ) {
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     link
                                     type
@@ -300,6 +302,7 @@ getContentReferencesQuery = """
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     id
                                     link
@@ -434,6 +437,7 @@ getContentReferencedByQuery = """
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     deleted
                                     id
@@ -471,7 +475,11 @@ getContentRelatedQuery = """
                     referencedBy(
                         first: $count
                         after: $cursor
-                        filters: { deleted: $deleted, groups: $groups }
+                        filters: {
+                            deleted: $deleted
+                            groups: $groups
+                            excludeTags: ["transfer_url=", "~transfer_url="]
+                        }
                     )
                         @connection(
                             key: "feedRelatedBy"
@@ -485,6 +493,7 @@ getContentRelatedQuery = """
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     deleted
                                     id
@@ -500,6 +509,7 @@ getContentRelatedQuery = """
                                         edges {
                                             node {
                                                 extra
+                                                group
                                                 target {
                                                     link
                                                     type
@@ -575,6 +585,7 @@ contentVerificationQuery = """
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     link
                                     type

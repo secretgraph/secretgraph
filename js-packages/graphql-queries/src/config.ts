@@ -55,6 +55,7 @@ export const updateConfigQuery = gql`
                             edges {
                                 node {
                                     extra
+                                    group
                                     target {
                                         link
                                         type
@@ -169,6 +170,7 @@ export const findConfigQuery = gql`
                             edges {
                                 node {
                                     extra
+                                    group
                                     target {
                                         id
                                         tags(includeTags: ["key_hash="])
@@ -182,6 +184,7 @@ export const findConfigQuery = gql`
                                             edges {
                                                 node {
                                                     extra
+                                                    group
                                                     source {
                                                         id
                                                         tags(

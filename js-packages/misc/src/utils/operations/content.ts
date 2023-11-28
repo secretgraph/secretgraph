@@ -327,56 +327,70 @@ export async function decryptContentObject({
     } else {
         const params2 = params as decryptContentObjectInputFetch
         // if transfer, request transfer and load when successful
-        let transfer_url = nodeData.tags.find(
-            (value: string) =>
-                value.startsWith('~transfer_url=') ||
-                value.startsWith('transfer_url=')
-        )
-        if (transfer_url && params2.transferClient) {
-            let transfer_key
-            try {
-                // also handles key= tags
-                const found = findCertCandidatesForRefs(
-                    config,
-                    _node,
-                    'transfer'
-                )
-                if (!found.length) {
-                    console.debug('No certificate tag found')
+        let transfer_url = undefined,
+            transfer_headers: { [key: string]: string } = {}
+        if (params2.transferClient) {
+            transfer_url = nodeData.tags.find(
+                (value: string) =>
+                    value.startsWith('~transfer_url=') ||
+                    value.startsWith('transfer_url=')
+            )
+            if (transfer_url.startsWith('~')) {
+                let transfer_key, decrypted_tags
+                try {
+                    // also handles key= tags
+                    const found = findCertCandidatesForRefs(
+                        config,
+                        _node,
+                        'transfer'
+                    )
+                    if (!found.length) {
+                        console.debug('No certificate tag found')
+                        return null
+                    }
+                    // find key (=first result of decoding shared key)
+                    transfer_key = (
+                        await Promise.any(
+                            found.map(async (value) => {
+                                return await decryptRSAOEAP({
+                                    key: config.certificates[value.hash].data,
+                                    data: value.sharedKey,
+                                    hashAlgorithm: value.hashAlgorithm,
+                                })
+                            })
+                        )
+                    ).data
+                } catch (exc) {
+                    console.debug(
+                        'No matching certificate nor key tag found',
+                        exc,
+                        exc?.errors
+                    )
                     return null
                 }
-                // find key (=first result of decoding shared key)
-                transfer_key = (
-                    await Promise.any(
-                        found.map(async (value) => {
-                            return await decryptRSAOEAP({
-                                key: config.certificates[value.hash].data,
-                                data: value.sharedKey,
-                                hashAlgorithm: value.hashAlgorithm,
-                            })
-                        })
-                    )
-                ).data
-            } catch (exc) {
-                console.debug(
-                    'No matching certificate nor key tag found',
-                    exc,
-                    exc?.errors
-                )
-                return null
-            }
-            const decrypted_tags = await extractTags({
-                key: transfer_key,
-                tags: nodeData.tags,
-            })
-            transfer_url = decrypted_tags['~transfer_url']
-                ? decrypted_tags['~transfer_url'][0]
-                : decrypted_tags['transfer_url'][0]
-            const transfer_headers: { [key: string]: string } =
-                Object.fromEntries(
+                decrypted_tags = await extractTags({
+                    key: transfer_key,
+                    tags: nodeData.tags,
+                })
+                transfer_url = decrypted_tags['~transfer_url'][0]
+                transfer_headers = Object.fromEntries(
                     (decrypted_tags['~transfer_headers']
                         ? decrypted_tags['~transfer_headers']
-                        : decrypted_tags['transfer_headers']
+                        : []
+                    )
+                        .map((value: string) =>
+                            value.match(/^([^=]+)=(.+)/)?.slice(1)
+                        )
+                        .filter((value: any) => value) as [string, string][]
+                )
+            } else if (transfer_url) {
+                // unencrypted
+                let decrypted_tags = await extractTagsRaw({
+                    tags: nodeData.tags,
+                })
+                transfer_url = decrypted_tags['transfer_url'][0]
+                transfer_headers = Object.fromEntries(
+                    (decrypted_tags['transfer_headers']
                         ? decrypted_tags['transfer_headers']
                         : []
                     )
@@ -385,18 +399,23 @@ export async function decryptContentObject({
                         )
                         .filter((value: any) => value) as [string, string][]
                 )
-            const result = await params2.transferClient.mutate({
-                mutation: transferMutation,
-                variables: {
-                    id: nodeData.id,
-                    url: transfer_url,
-                    headers: transfer_headers,
-                    authorization: _info,
-                },
-            })
-            if (!result.data?.secretgraph?.transferContent?.content?.id) {
-                throw new TransferFailedError()
             }
+            if (transfer_url) {
+                const result = await params2.transferClient.mutate({
+                    mutation: transferMutation,
+                    variables: {
+                        id: nodeData.id,
+                        url: transfer_url,
+                        headers: transfer_headers,
+                        authorization: _info,
+                    },
+                })
+                if (!result.data?.secretgraph?.transferContent?.content?.id) {
+                    throw new TransferFailedError()
+                }
+            }
+        }
+        if (transfer_url) {
             arrPromise = fetch(new URL(_node.link, params2.itemDomain), {
                 headers: {
                     Authorization: _info.join(','),

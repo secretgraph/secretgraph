@@ -1,5 +1,6 @@
 # TODO
 
+-   queries add missing group field
 -   add bypass\_ property prefix to potential dangerous property prefixes
 -   migrate away from messages.py/js and use sync.py instead
 -   document pull and ratelimits

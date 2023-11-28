@@ -548,7 +548,9 @@ export function findCertCandidatesForRefs(
     }
     // extract tags with hashes
     for (const { node: refnode } of nodeData.references.edges) {
-        if (refnode.group != group) {
+        if (refnode.group === undefined) {
+            console.warn('missing group, fallback to old behaviour', refnode)
+        } else if (refnode.group != group) {
             continue
         }
         for (const tag_value of refnode.target.tags) {

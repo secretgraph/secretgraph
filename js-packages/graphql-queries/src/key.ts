@@ -136,6 +136,7 @@ export const keysRetrievalQuery = gql`
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     link
                                     type
@@ -148,6 +149,7 @@ export const keysRetrievalQuery = gql`
                         edges {
                             node {
                                 extra
+                                group
                                 source {
                                     id
                                     deleted
@@ -166,6 +168,7 @@ export const keysRetrievalQuery = gql`
                                         edges {
                                             node {
                                                 extra
+                                                group
                                                 target {
                                                     link
                                                     type
@@ -229,6 +232,7 @@ export const trustedKeysRetrieval = gql`
                             edges {
                                 node {
                                     extra
+                                    group
                                     source {
                                         id
                                         tags(includeTags: ["key_hash="])

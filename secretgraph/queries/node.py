@@ -145,13 +145,14 @@ authQuery = """
                     }
                     references(
                         filters: {
-                            groups: ["key", "signature"]
+                            groups: ["key", "signature", "transfer"]
                             includeTags: $keyhashes
                         }
                     ) {
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     link
                                     type

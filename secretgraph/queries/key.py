@@ -135,6 +135,7 @@ keysRetrievalQuery = """
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     link
                                     type
@@ -147,6 +148,7 @@ keysRetrievalQuery = """
                         edges {
                             node {
                                 extra
+                                group
                                 source {
                                     id
                                     deleted
@@ -165,6 +167,7 @@ keysRetrievalQuery = """
                                         edges {
                                             node {
                                                 extra
+                                                group
                                                 target {
                                                     link
                                                     type
@@ -229,6 +232,7 @@ trustedKeysRetrieval = """
                             edges {
                                 node {
                                     extra
+                                    group
                                     source {
                                         id
                                         tags(includeTags: ["key_hash="])

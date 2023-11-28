@@ -54,6 +54,7 @@ updateConfigQuery = """
                             edges {
                                 node {
                                     extra
+                                    group
                                     target {
                                         link
                                         type
@@ -168,6 +169,7 @@ findConfigQuery = """
                             edges {
                                 node {
                                     extra
+                                    group
                                     target {
                                         id
                                         tags(includeTags: ["key_hash="])
@@ -181,6 +183,7 @@ findConfigQuery = """
                                             edges {
                                                 node {
                                                     extra
+                                                    group
                                                     source {
                                                         id
                                                         tags(

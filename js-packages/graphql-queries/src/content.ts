@@ -61,6 +61,7 @@ export const contentFeedQuery = gql`
                             edges {
                                 node {
                                     extra
+                                    group
                                     target {
                                         tags(includeTags: ["key_hash="])
                                     }
@@ -260,6 +261,7 @@ export const contentRetrievalQuery = gql`
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     link
                                     type
@@ -299,6 +301,7 @@ export const getContentReferencesQuery = gql`
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     id
                                     link
@@ -433,6 +436,7 @@ export const getContentReferencedByQuery = gql`
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     deleted
                                     id
@@ -488,6 +492,7 @@ export const getContentRelatedQuery = gql`
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     deleted
                                     id
@@ -503,6 +508,7 @@ export const getContentRelatedQuery = gql`
                                         edges {
                                             node {
                                                 extra
+                                                group
                                                 target {
                                                     link
                                                     type
@@ -578,6 +584,7 @@ export const contentVerificationQuery = gql`
                         edges {
                             node {
                                 extra
+                                group
                                 target {
                                     link
                                     type
