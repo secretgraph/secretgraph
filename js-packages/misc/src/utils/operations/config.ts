@@ -80,7 +80,6 @@ export async function loadConfigFromSlot({
         config,
         blobOrTokens: authInfo.tokens,
         itemDomain: config.baseUrl,
-        client,
     })
     if (!retrieved) {
         throw Error('could not retrieve and decode config object')
@@ -139,7 +138,6 @@ async function updateRemoteConfig({
         config,
         blobOrTokens: authInfo.tokens,
         itemDomain: config.baseUrl,
-        client,
     })
     if (!retrieved) {
         throw Error('could not retrieve and decode config object')

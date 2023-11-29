@@ -327,14 +327,13 @@ export async function decryptContentObject({
     } else {
         const params2 = params as decryptContentObjectInputFetch
         // if transfer, request transfer and load when successful
-        let transfer_url = undefined,
-            transfer_headers: { [key: string]: string } = {}
+        let transfer_headers: { [key: string]: string } = {}
+        let transfer_url = nodeData.tags.find(
+            (value: string) =>
+                value.startsWith('~transfer_url=') ||
+                value.startsWith('transfer_url=')
+        )
         if (params2.transferClient) {
-            transfer_url = nodeData.tags.find(
-                (value: string) =>
-                    value.startsWith('~transfer_url=') ||
-                    value.startsWith('transfer_url=')
-            )
             if (transfer_url.startsWith('~')) {
                 let transfer_key, decrypted_tags
                 try {
@@ -415,7 +414,7 @@ export async function decryptContentObject({
                 }
             }
         }
-        if (transfer_url) {
+        if (transfer_url && params2.transferClient) {
             arrPromise = fetch(new URL(_node.link, params2.itemDomain), {
                 headers: {
                     Authorization: _info.join(','),
@@ -425,6 +424,11 @@ export async function decryptContentObject({
                 mode: 'no-cors',
             }).then((result) => result.arrayBuffer())
         } else {
+            if (transfer_url) {
+                console.warn(
+                    'transfer object found where transfers are disallowed'
+                )
+            }
             arrPromise = fallback_fetch(
                 new URL(_node.link, params2.itemDomain),
                 {

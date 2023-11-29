@@ -192,7 +192,6 @@ function ViewChannelStore() {
         data: dataUnfinished,
         refetch,
         loading,
-        client,
     } = useQuery(contentRetrievalQuery, {
         fetchPolicy: 'cache-and-network',
         nextFetchPolicy: 'network-only',
@@ -284,7 +283,6 @@ function ViewChannelStore() {
                     nodeData: dataUnfinished.secretgraph.node,
                     blobOrTokens: mainCtx.tokens,
                     itemDomain: mainCtx.url || '/',
-                    client,
                 })
             } catch (exc) {
                 if (!active) {

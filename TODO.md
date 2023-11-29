@@ -1,6 +1,5 @@
 # TODO
 
--   queries add missing group field
 -   add bypass\_ property prefix to potential dangerous property prefixes
 -   migrate away from messages.py/js and use sync.py instead
 -   document pull and ratelimits
@@ -8,7 +7,6 @@
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   complete share
     -   add option to save new token in config (not auth)
--   teach decryptObject transfer
 -   keys need more infos (done but not tested and validity not enforced)
     -   key callbacks: graphqlurl?item=baseCluster&token=... or contenturl?token= for pushable contents
 -   PushedArticle (cached article)
@@ -48,9 +46,7 @@
 -   disallow non global ids? Would ease implementation
 -   encrypt Config set with saveConfig/loaded with loadConfigSync via a static key
     -   via var
--   port to real filters
--   move to dataclasses and TypedDicts
-    -   nearly complete needs testing and TypedDicts
+-   port to real filters?
 -   config: create a virtual global merge of all configs to get every token
 -   allow alternate cryptoalgorithms instead of aesgcm for tags (except ChaCha20Poly1305 and AESSIV no good alternatives, and both aren't supported in browser)
 -   cleanup user
