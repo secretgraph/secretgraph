@@ -115,7 +115,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                     nodeData: dataUnfinished.secretgraph.node,
                     blobOrTokens: mainCtx.tokens,
                     itemDomain: mainCtx.url || '/',
-                    client,
+                    transferClient: client,
                 })
             } catch (exc) {
                 if (!active) {
