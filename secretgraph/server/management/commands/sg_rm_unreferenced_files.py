@@ -19,9 +19,9 @@ class Command(BaseCommand):
             full_file = posixpath.join(directory, file)
             if full_file not in keep_set:
                 if dry_run:
-                    print("would remove file", full_file)
+                    print("would delete file", full_file)
                 else:
-                    default_storage.remove(full_file)
+                    default_storage.delete(full_file)
                 count -= 1
 
         for sub_directory in directories:
@@ -31,14 +31,13 @@ class Command(BaseCommand):
                 count -= 1
         if count == 0:
             if dry_run:
-                print("would remove directory", directory)
+                print("would delete directory", directory)
             else:
-                default_storage.remove(directory)
+                default_storage.delete(directory)
             return True
         return False
 
     def handle(self, dry_run, **options):
         keep_set = set(Content.objects.values_list("file", flat=True))
-        print("keep set", keep_set)
-        if default_storage.exists(""):
-            self.handle_directory(keep_set, dry_run, "")
+        if default_storage.exists("secretgraph"):
+            self.handle_directory(keep_set, dry_run, "secretgraph")

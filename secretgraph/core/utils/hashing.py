@@ -82,6 +82,8 @@ def hashObjectContentHash(
 def sortedHash(
     inp: Iterable[str], hashAlgorithm: constants.HashNameItem | str
 ) -> str:
+    if isinstance(hashAlgorithm, str):
+        hashAlgorithm = constants.mapHashNames[hashAlgorithm]
     obj = map(lambda x: x.encode("utf8"), sorted(inp))
     return _hashObject(obj, hashAlgorithm)
 
@@ -143,7 +145,7 @@ def hashTagsContentHash(
 
 def calculateHashesForHashAlgorithms(
     inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
-    hashAlgorithms: Iterable[constants.HashNameItem],
+    hashAlgorithms: Iterable[constants.HashNameItem | str],
 ) -> list[str]:
     if isinstance(inp, str):
         inp = base64.b64decode(inp)
@@ -155,8 +157,10 @@ def calculateHashesForHashAlgorithms(
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
     hashes = []
-    for algo in hashAlgorithms:
-        hashes.append(_hashObject(inp, algo))
+    for hashAlgorithm in hashAlgorithms:
+        if isinstance(hashAlgorithm, str):
+            hashAlgorithm = constants.mapHashNames[hashAlgorithm]
+        hashes.append(_hashObject(inp, hashAlgorithm))
     return hashes
 
 
