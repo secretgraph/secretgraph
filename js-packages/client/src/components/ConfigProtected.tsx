@@ -8,7 +8,6 @@ import { compareClientPw } from '@secretgraph/misc/utils/encryption'
 import * as React from 'react'
 
 import * as Contexts from '../contexts'
-import { passwordLabel } from '../messages'
 
 export default function ConfigProtected({
     children,

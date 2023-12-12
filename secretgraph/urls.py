@@ -20,7 +20,7 @@ urlpatterns = [
         "secretgraph/", include("secretgraph.server.urls"), name="secretgraph"
     ),
     path(
-        "graphql",
+        "graphql/",
         csrf_exempt(
             CORSFileUploadGraphQLView.as_view(
                 graphql_ide="graphiql",

@@ -18,6 +18,12 @@ from ...utils.auth import (
 
 
 @strawberry.type
+class Language:
+    code: str
+    name: str
+
+
+@strawberry.type
 class ActionEntry:
     # of action key
     keyHash: str

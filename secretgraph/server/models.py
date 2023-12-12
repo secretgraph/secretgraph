@@ -25,14 +25,6 @@ from django.utils.translation import gettext_lazy as _
 from strawberry import relay
 
 from ..core import constants
-from .messages import (
-    cluster_groups_help,
-    contentaction_group_help,
-    last_used_help,
-    net_groups_help,
-    net_limit_help,
-    reference_group_help,
-)
 from .validators import (
     ActionKeyHashValidator,
     ContentHashValidator,
@@ -117,7 +109,10 @@ class Net(models.Model):
     created: dt = models.DateTimeField(auto_now_add=True, editable=False)
     # content or cluster was updated or created, deletions are not tracked
     last_used: dt = models.DateTimeField(
-        default=timezone.now, help_text=last_used_help
+        default=timezone.now,
+        help_text=_(
+            "Last usage of net for creating or updating contents or clusters"
+        ),
     )
     # if disabled: like a ban
     active: bool = models.BooleanField(blank=True, default=True, null=False)
@@ -126,10 +121,13 @@ class Net(models.Model):
         null=True,
         blank=True,
         default=None,
-        help_text=net_limit_help,
+        help_text=_("in bytes, null for no limit"),
     )
     max_upload_size: int = models.PositiveIntegerField(
-        null=True, blank=True, default=None, help_text=net_limit_help
+        null=True,
+        blank=True,
+        default=None,
+        help_text=_("in bytes, null for no limit"),
     )
     bytes_in_use: int = models.PositiveBigIntegerField(
         null=False, blank=True, default=0, editable=False
@@ -736,7 +734,10 @@ class ContentAction(models.Model):
         null=False,
         default="",
         blank=True,
-        help_text=contentaction_group_help,
+        help_text=_(
+            "ContentAction group: ContentActions are clustered in groups. "
+            "They are used to signal different functions of the connection"
+        ),
         validators=[TypeAndGroupValidator()],
     )
     action: Action = models.OneToOneField(
@@ -868,7 +869,10 @@ class ContentReference(models.Model):
         default="",
         null=False,
         blank=True,
-        help_text=reference_group_help,
+        help_text=_(
+            "ContentReference group: references are clustered in groups. "
+            "They are used to signal different functions of the connection"
+        ),
         validators=[TypeAndGroupValidator()],
     )
     extra: str = models.TextField(blank=True, null=False, default="")
@@ -978,7 +982,6 @@ class NetGroup(models.Model):
         Net,
         blank=True,
         related_name="groups",
-        help_text=net_groups_help,
     )
     properties: models.ManyToManyField[
         SGroupProperty
@@ -1030,7 +1033,9 @@ class ClusterGroup(models.Model):
         Cluster,
         blank=True,
         related_name="groups",
-        help_text=cluster_groups_help,
+        help_text=_(
+            "cluster groups: groups for cluster permissions and injected keys"
+        ),
     )
     injectedKeys: models.ManyToManyField[Content] = models.ManyToManyField(
         Content,

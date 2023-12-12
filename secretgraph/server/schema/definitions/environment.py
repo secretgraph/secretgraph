@@ -82,7 +82,7 @@ class SecretgraphConfig(relay.Node):
         info: Info,
         node_ids: Iterable[str],
         required: bool = False,
-    ) -> None:
+    ):
         return [cls() for nid in node_ids]
 
     @strawberry_django.field()

@@ -21,6 +21,7 @@ import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
 import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import GroupSelectList from '@secretgraph/ui-components/forms/GroupSelectList'
+import SplittedGroupSelectList from '@secretgraph/ui-components/forms/SplittedGroupSelectList'
 import { Field, Form, Formik } from 'formik'
 import * as React from 'react'
 
@@ -400,7 +401,7 @@ function Register() {
                             />
                             <div>
                                 <Typography>Cluster Groups</Typography>
-                                <GroupSelectList
+                                <SplittedGroupSelectList
                                     name="clusterGroups"
                                     initial
                                     groups={

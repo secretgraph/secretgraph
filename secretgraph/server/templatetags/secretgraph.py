@@ -90,7 +90,7 @@ register = template.Library()
 @register.simple_tag()
 def secretgraph_path():
     return resolve_url(
-        getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql")
+        getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql/")
     )
 
 

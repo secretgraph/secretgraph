@@ -15,7 +15,9 @@ from .definitions import (
     ContentFilter,
     ContentNode,
     SecretgraphConfig,
-    active_user,
+    get_active_language,
+    get_active_user,
+    get_languages,
     get_permissions,
 )
 from .mutations import (
@@ -75,7 +77,9 @@ class SecretgraphObject:
         return SecretgraphConfig(stub="1")
 
     permissions: list[str] = strawberry.field(resolver=get_permissions)
-    activeUser: Optional[str] = strawberry.field(resolver=active_user)
+    activeUser: Optional[str] = strawberry.field(resolver=get_active_user)
+    languages: list[str] = strawberry.field(resolver=get_languages)
+    activeLanguage: list[str] = strawberry.field(resolver=get_active_language)
 
 
 @strawberry.type

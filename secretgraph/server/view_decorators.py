@@ -56,7 +56,7 @@ def add_secretgraph_headers(view_func):
             settings.SECRETGRAPH_HASH_ALGORITHMS
         )
         response["X-GRAPHQL-PATH"] = resolve_url(
-            getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql")
+            getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql/")
         )
 
     fntocheck = view_func

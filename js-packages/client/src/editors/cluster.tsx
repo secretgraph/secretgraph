@@ -36,16 +36,10 @@ import {
 } from '@secretgraph/misc/utils/operations'
 import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
 import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
+import SplittedGroupSelectList from '@secretgraph/ui-components/forms/SplittedGroupSelectList'
 import GroupSelectList from '@secretgraph/ui-components/forms/GroupSelectList'
 import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
-import {
-    FastField,
-    Field,
-    FieldArray,
-    FieldArrayRenderProps,
-    Form,
-    Formik,
-} from 'formik'
+import { Field, FieldArray, FieldArrayRenderProps, Form, Formik } from 'formik'
 import * as React from 'react'
 
 import ActionsDialog from '../components/ActionsDialog'
@@ -539,7 +533,7 @@ const ClusterIntern = ({
                                 </Grid>
                                 <Grid xs={12}>
                                     <Typography>Cluster Groups</Typography>
-                                    <GroupSelectList
+                                    <SplittedGroupSelectList
                                         name="clusterGroups"
                                         initial={!mainCtx.item}
                                         groups={
