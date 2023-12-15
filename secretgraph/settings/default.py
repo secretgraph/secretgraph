@@ -11,6 +11,8 @@ DEBUG = os.environ.get("DEBUG") == "true"
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 
+LOCALE_PATHS = [str(BASE_DIR / "secretgraph" / "locales")]
+
 # last reload time (secretgraph specific)
 LAST_CONFIG_RELOAD_ID = str(time.time())
 

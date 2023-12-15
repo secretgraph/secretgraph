@@ -20,7 +20,7 @@ DATABASES = {
     }
 }
 
-SECRET_KEY = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+SECRET_KEY = os.environ.setdefault("SECRET_KEY", secrets.token_hex(32))
 
 MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")

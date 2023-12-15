@@ -1,0 +1,159 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-12-14 11:36+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+#: secretgraph/proxy/js_messages.py:6
+msgid "Draft"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:10
+msgid "Protected"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:13
+msgid "Sensitive"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:17
+msgid "Public"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:20
+msgid "Trusted"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:23
+msgid "Required"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:26
+msgid "Cluster"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:29
+msgid "File"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:32
+msgid "Text"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:36
+msgid "Keys"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:39
+msgid "Config"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:42
+msgid "ChannelStore"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:45
+msgid "Workday"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:48
+msgid "Custom"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:51
+msgid "Loading"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:54
+msgid "Source"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:57
+msgid "Contact"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:60
+msgid "Postbox"
+msgstr ""
+
+#: secretgraph/proxy/js_messages.py:63
+msgid "Message"
+msgstr ""
+
+#: secretgraph/server/models.py:114
+msgid "Last usage of net for creating or updating contents or clusters"
+msgstr ""
+
+#: secretgraph/server/models.py:124 secretgraph/server/models.py:130
+msgid "in bytes, null for no limit"
+msgstr ""
+
+#: secretgraph/server/models.py:738
+msgid ""
+"ContentAction group: ContentActions are clustered in groups. They are used "
+"to signal different functions of the connection"
+msgstr ""
+
+#: secretgraph/server/models.py:873
+msgid ""
+"ContentReference group: references are clustered in groups. They are used to "
+"signal different functions of the connection"
+msgstr ""
+
+#: secretgraph/server/models.py:952
+msgid "Group Property"
+msgstr ""
+
+#: secretgraph/server/models.py:953
+msgid "Group Properties"
+msgstr ""
+
+#: secretgraph/server/models.py:1037
+msgid "cluster groups: groups for cluster permissions and injected keys"
+msgstr ""
+
+#: secretgraph/user/templates/registration/custom_logged_out.html:4
+#: secretgraph/user/templates/registration/success.html:5
+msgid "Home"
+msgstr ""
+
+#: secretgraph/user/templates/registration/custom_logged_out.html:10
+msgid "Log in again"
+msgstr ""
+
+#: secretgraph/user/templates/registration/login.html:31
+msgid "Please correct the error below."
+msgstr ""
+
+#: secretgraph/user/templates/registration/login.html:31
+msgid "Please correct the errors below."
+msgstr ""
+
+#: secretgraph/user/templates/registration/login.html:65
+msgid "Forgotten your password or username?"
+msgstr ""
+
+#: secretgraph/user/templates/registration/login.html:69
+msgid "Log in"
+msgstr ""
+
+#: secretgraph/user/templates/registration/login.html:71
+msgid "Log out"
+msgstr ""
+
+#: secretgraph/user/templates/registration/success.html:19
+msgid "Login successful"
+msgstr ""

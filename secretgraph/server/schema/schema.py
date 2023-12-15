@@ -14,6 +14,7 @@ from .definitions import (
     ClusterNode,
     ContentFilter,
     ContentNode,
+    Language,
     SecretgraphConfig,
     get_active_language,
     get_active_user,
@@ -78,8 +79,10 @@ class SecretgraphObject:
 
     permissions: list[str] = strawberry.field(resolver=get_permissions)
     activeUser: Optional[str] = strawberry.field(resolver=get_active_user)
-    languages: list[str] = strawberry.field(resolver=get_languages)
-    activeLanguage: list[str] = strawberry.field(resolver=get_active_language)
+    languages: list[Language] = strawberry.field(resolver=get_languages)
+    activeLanguage: Optional[Language] = strawberry.field(
+        resolver=get_active_language
+    )
 
 
 @strawberry.type
