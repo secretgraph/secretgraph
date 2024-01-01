@@ -8,6 +8,7 @@
         "*.css"
     ],
     "dependencies": {
+        "@secretgraph/misc": "*",
         "@secretgraph/rdf": "*",
         "@secretgraph/graphql-queries": "*",
         "formik": "*",
@@ -19,9 +20,7 @@
         "@mui/material": "*",
         "@mui/icons-material": "*",
         "@mui/lab": "*",
-        "@mui/x-date-pickers": "*",
-        "@mui/system": "*",
-        "date-fns": "*"
+        "@mui/system": "*"
     },
     "devDependencies": {
         "typescript": "*",

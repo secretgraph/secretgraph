@@ -1,50 +1,42 @@
-import TextField from '@mui/material/TextField'
-import {
-    DateTimePicker,
-    DateTimePickerProps,
-} from '@mui/x-date-pickers/DateTimePicker'
-import { parseISO } from 'date-fns'
+import TextField, { TextFieldProps } from '@mui/material/TextField'
 import { FieldProps } from 'formik'
 import * as React from 'react'
+import { ensureDateTimeString } from '@secretgraph/misc/utils/misc'
 
-export type FormikDateTimePickerProps<
+export type FormikDatePickerProps<
     V extends string = string,
     FormValues = any
 > = Omit<
-    DateTimePickerProps<Date>,
-    keyof FieldProps<V, FormValues> | 'defaultValue' | 'onChange'
+    TextFieldProps,
+    keyof FieldProps<V, FormValues> | 'onChange' | 'type'
 > &
-    FieldProps<V, FormValues>
+    FieldProps<V, FormValues> & {
+        min?: Date | string
+        max?: Date | string
+    }
 
-export default function FormikDateTimePicker<
+export default function FormikDatePicker<
     V extends string = string,
     FormValues = any
 >({
     field: { value, ...field },
     form,
     meta: metaIntern,
-    ampm,
+    min,
+    max,
     ...params
-}: FormikDateTimePickerProps<V, FormValues>) {
+}: FormikDatePickerProps<V, FormValues>) {
     return (
-        <DateTimePicker
-            // TODO: use until code is fixed
-            ampm={ampm !== undefined ? ampm : false}
+        <TextField
             {...field}
-            value={value ? parseISO(value) : null}
-            {...params}
-            onChange={(val: Date, context) => {
-                if (val instanceof Date) {
-                    // invalid dates
-                    if (isNaN(val.getTime())) {
-                        return
-                    }
-                    form.setFieldValue(field.name, val.toISOString())
-                } else {
-                    form.setFieldValue(field.name, val)
-                }
-                form.setFieldTouched(field.name, true)
+            value={ensureDateTimeString(value)}
+            type="datetime-local"
+            inputProps={{
+                ...params.inputProps,
+                min: ensureDateTimeString(min) || undefined,
+                max: ensureDateTimeString(max) || undefined,
             }}
+            {...params}
         />
     )
 }

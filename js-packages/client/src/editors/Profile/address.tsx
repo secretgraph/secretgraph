@@ -44,9 +44,8 @@ export const AddressEntry = React.memo(function AddressEntry({
                     <Field
                         name={`${prefix}.${index}.start`}
                         component={FormikDatePicker}
-                        maxTime={maxTime}
+                        nax={maxTime}
                         disabled={disabled}
-                        clearable
                         label="Start"
                         fullWidth
                     />
@@ -55,9 +54,7 @@ export const AddressEntry = React.memo(function AddressEntry({
                     <Field
                         name={`${prefix}.${index}.stop`}
                         component={FormikTimePicker}
-                        minTime={minTime}
-                        clearable
-                        showTodayButton
+                        min={minTime}
                         disabled={disabled}
                         label="Stop"
                         fullWidth

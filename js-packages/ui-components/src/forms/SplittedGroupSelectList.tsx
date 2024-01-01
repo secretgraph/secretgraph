@@ -17,6 +17,8 @@ import * as React from 'react'
 import GroupSelectList from './GroupSelectList'
 import { GroupSelectListProps } from './GroupSelectList'
 
+declare var gettext: any
+
 /***
  *  for search
                 let roption = labelMap[option]?.name || ''
@@ -45,14 +47,18 @@ export default function SplittedGroupSelectList({
     }, [groups])
     return (
         <>
-            <details open>
-                <summary>Topics</summary>
-                <GroupSelectList {...kwargs} groups={renderval.topics} />
-            </details>
-            <details open>
-                <summary>Misc</summary>
-                <GroupSelectList {...kwargs} groups={renderval.misc} />
-            </details>
+            {renderval.topics.length ? (
+                <details open>
+                    <summary>{gettext('topics')}</summary>
+                    <GroupSelectList {...kwargs} groups={renderval.topics} />
+                </details>
+            ) : null}
+            {renderval.misc.length ? (
+                <details open>
+                    <summary>{gettext('misc')}</summary>
+                    <GroupSelectList {...kwargs} groups={renderval.misc} />
+                </details>
+            ) : null}
         </>
     )
 }

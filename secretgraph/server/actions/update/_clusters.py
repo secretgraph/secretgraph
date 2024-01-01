@@ -6,7 +6,7 @@ from contextlib import AbstractContextManager, nullcontext
 from typing import TypedDict
 from uuid import UUID, uuid4
 
-import ratelimit
+import django_fast_ratelimit as ratelimit
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F

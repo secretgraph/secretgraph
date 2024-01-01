@@ -34,7 +34,6 @@ const AchievementEntry = React.memo(function AchievementEntry({
                     name={`${prefix}.${index}.when`}
                     component={FormikDatePicker}
                     disabled={disabled}
-                    clearable
                     label="When"
                     fullWidth
                 />
@@ -130,9 +129,8 @@ export const BioEntry = React.memo(function BioEntry({
                 <Field
                     name={`${prefix}.${index}.start`}
                     component={FormikDatePicker}
-                    maxTime={maxTime}
+                    max={maxTime}
                     disabled={disabled}
-                    clearable
                     label="Start"
                     fullWidth
                 />
@@ -141,9 +139,7 @@ export const BioEntry = React.memo(function BioEntry({
                 <Field
                     name={`${prefix}.${index}.stop`}
                     component={FormikTimePicker}
-                    minTime={minTime}
-                    clearable
-                    showTodayButton
+                    min={minTime}
                     disabled={disabled}
                     label="Stop"
                     fullWidth

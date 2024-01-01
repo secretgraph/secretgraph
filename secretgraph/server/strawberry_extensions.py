@@ -1,4 +1,4 @@
-import ratelimit
+import django_fast_ratelimit as ratelimit
 from django.conf import settings
 from graphql import ExecutionResult as GraphQLExecutionResult
 from graphql.error.graphql_error import GraphQLError

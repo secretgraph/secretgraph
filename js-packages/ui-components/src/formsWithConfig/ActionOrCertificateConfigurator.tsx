@@ -9,7 +9,6 @@ import {
     ActionInputEntry,
     CertificateInputEntry,
 } from '@secretgraph/misc/utils/action'
-import { parseISO } from 'date-fns'
 import { FastField, useField, useFormikContext } from 'formik'
 import * as React from 'react'
 
@@ -319,12 +318,8 @@ const SelectStartStop = React.memo(function SelectStartStop({
                     <FastField
                         name={`${path}start`}
                         component={FormikDateTimePicker}
-                        maxDateTime={
-                            maxDateTime ? parseISO(maxDateTime) : undefined
-                        }
+                        max={maxDateTime}
                         disabled={disabled}
-                        clearable
-                        showTodayButton
                         label="Start"
                     />
                 </Grid>
@@ -332,11 +327,7 @@ const SelectStartStop = React.memo(function SelectStartStop({
                     <FastField
                         name={`${path}stop`}
                         component={FormikDateTimePicker}
-                        minDateTime={
-                            minDateTime ? parseISO(minDateTime) : undefined
-                        }
-                        clearable
-                        showTodayButton
+                        min={minDateTime}
                         disabled={disabled}
                         label="Stop"
                     />

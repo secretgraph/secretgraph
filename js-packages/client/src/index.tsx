@@ -1,7 +1,5 @@
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import {
     loadConfigSync,
     saveConfig,
@@ -44,16 +42,14 @@ function Client(props: Props) {
     }, [config])
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <ThemeProvider theme={themeDefinition}>
-                <CssBaseline />
-                <Definitions
-                    {...props}
-                    config={config}
-                    updateConfig={updateConfig}
-                />
-            </ThemeProvider>
-        </LocalizationProvider>
+        <ThemeProvider theme={themeDefinition}>
+            <CssBaseline />
+            <Definitions
+                {...props}
+                config={config}
+                updateConfig={updateConfig}
+            />
+        </ThemeProvider>
     )
 }
 

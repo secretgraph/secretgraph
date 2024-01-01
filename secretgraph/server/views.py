@@ -7,7 +7,7 @@ import re
 from typing import TYPE_CHECKING
 from urllib.parse import quote
 
-import ratelimit
+import django_fast_ratelimit as ratelimit
 from django.conf import settings
 from django.db.models.functions import Substr
 from django.http import (

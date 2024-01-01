@@ -1,48 +1,51 @@
-import { TimePicker, TimePickerProps } from '@mui/x-date-pickers/TimePicker'
-import { parseISO } from 'date-fns'
+import TextField, { TextFieldProps } from '@mui/material/TextField'
 import { FieldProps } from 'formik'
 import * as React from 'react'
+import { ensureTimeString } from '@secretgraph/misc/utils/misc'
 
 export type FormikTimePickerProps<
     V extends string = string,
     FormValues = any
 > = Omit<
-    TimePickerProps<Date>,
-    keyof FieldProps<V, FormValues> | 'defaultValue' | 'onChange'
+    TextFieldProps,
+    keyof FieldProps<V, FormValues> | 'onChange' | 'type'
 > &
-    FieldProps<V, FormValues>
+    FieldProps<V, FormValues> & {
+        min?: Date | string
+        max?: Date | string
+    }
 
-export default function FormikTimePicker<
+export default React.memo(function FormikTimePicker<
     V extends string = string,
     FormValues = any
 >({
-    field: { value, ...field },
+    field: { value, onChange, ...field },
     form,
     meta: metaIntern,
-    ampm,
+    min,
+    max,
     ...params
 }: FormikTimePickerProps<V, FormValues>) {
+    console.log(ensureTimeString(value))
     return (
-        <TimePicker
-            // TODO: use until code is fixed
-            ampm={ampm !== undefined ? ampm : false}
+        <TextField
             {...field}
-            value={value ? parseISO(value) : null}
-            {...params}
-            onChange={(val: any, context) => {
-                if (val instanceof Date) {
-                    // invalid dates
-                    if (isNaN(val.getTime())) {
-                        return
-                    }
-                    const hours = `${val.getHours()}`.padStart(2, '0')
-                    const minutes = `${val.getMinutes()}`.padStart(2, '0')
-                    form.setFieldValue(field.name, `${hours}:${minutes}`)
-                } else {
-                    form.setFieldValue(field.name, val)
-                }
-                form.setFieldTouched(field.name, true)
+            value={ensureTimeString(value) || 'fake'}
+            type="time"
+            inputProps={{
+                ...params.inputProps,
+                min: ensureTimeString(min) || undefined,
+                max: ensureTimeString(max) || undefined,
             }}
+            onChange={(ev) => {
+                console.log(ev, ev.target.value)
+                if (ev.target.value == 'fake') {
+                    onChange('')
+                } else {
+                    onChange(ev)
+                }
+            }}
+            {...params}
         />
     )
-}
+})

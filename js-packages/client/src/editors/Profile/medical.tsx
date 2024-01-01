@@ -26,7 +26,6 @@ export const MedicalEntry = React.memo(function MedicalEntry({
                     name={`${prefix}.${index}.when`}
                     component={FormikDatePicker}
                     disabled={disabled}
-                    clearable
                     label="When"
                     fullWidth
                 />

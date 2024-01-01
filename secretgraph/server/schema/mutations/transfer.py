@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Optional
 
-import ratelimit
+import django_fast_ratelimit as ratelimit
 import strawberry
 from django.conf import settings
 from django.db import transaction

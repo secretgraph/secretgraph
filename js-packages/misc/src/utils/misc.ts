@@ -1,5 +1,62 @@
 import { isNotEq } from './set'
 
+export function ensureDateOrNull(
+    inp: string | number | Date | undefined | null
+): null | Date {
+    if (!inp) {
+        return null
+    }
+    if (inp instanceof Date) {
+        return inp
+    }
+    return new Date(inp)
+}
+export function ensureDateTimeString(
+    inp: string | number | Date | undefined | null
+): string {
+    if (!inp) {
+        return ''
+    }
+    if (!(inp instanceof Date)) {
+        inp = new Date(inp)
+    }
+    if (isNaN(inp.getTime())) {
+        return ''
+    }
+    return inp.toISOString()
+}
+export function ensureDateString(
+    inp: string | number | Date | undefined | null
+): string {
+    if (!inp) {
+        return ''
+    }
+    if (!(inp instanceof Date)) {
+        inp = new Date(inp)
+    }
+    if (isNaN(inp.getTime())) {
+        return ''
+    }
+    return inp.toISOString().split('T', 1)[0]
+}
+export function ensureTimeString(
+    inp: string | number | Date | undefined | null
+): string {
+    if (!inp) {
+        return ''
+    }
+    if (!(inp instanceof Date)) {
+        inp = new Date(inp)
+    }
+    if (isNaN(inp.getTime())) {
+        return ''
+    }
+    return [
+        `${inp.getHours()}`.padStart(2, '0'),
+        `${inp.getMinutes()}`.padStart(2, '0'),
+    ].join(':')
+}
+
 export class InvalidMergeError extends Error {}
 
 export function compareArray(a: any[], b: any[]) {

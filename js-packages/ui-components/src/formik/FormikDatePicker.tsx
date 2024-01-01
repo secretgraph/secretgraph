@@ -1,16 +1,19 @@
-import { DatePicker, DatePickerProps } from '@mui/x-date-pickers/DatePicker'
-import { parseISO } from 'date-fns'
+import TextField, { TextFieldProps } from '@mui/material/TextField'
 import { FieldProps } from 'formik'
 import * as React from 'react'
+import { ensureDateString } from '@secretgraph/misc/utils/misc'
 
-export type FormikDateTimePickerProps<
+export type FormikDatePickerProps<
     V extends string = string,
     FormValues = any
 > = Omit<
-    DatePickerProps<Date>,
-    keyof FieldProps<V, FormValues> | 'defaultValue' | 'onChange'
+    TextFieldProps,
+    keyof FieldProps<V, FormValues> | 'onChange' | 'type'
 > &
-    FieldProps<V, FormValues>
+    FieldProps<V, FormValues> & {
+        min?: Date | string
+        max?: Date | string
+    }
 
 export default function FormikDatePicker<
     V extends string = string,
@@ -19,25 +22,21 @@ export default function FormikDatePicker<
     field: { value, ...field },
     form,
     meta: metaIntern,
+    min,
+    max,
     ...params
-}: FormikDateTimePickerProps<V, FormValues>) {
+}: FormikDatePickerProps<V, FormValues>) {
     return (
-        <DatePicker
+        <TextField
             {...field}
-            value={value ? parseISO(value) : null}
-            {...params}
-            onChange={(val: Date, context) => {
-                if (val instanceof Date) {
-                    // invalid dates
-                    if (isNaN(val.getTime())) {
-                        return
-                    }
-                    form.setFieldValue(field.name, val.toISOString())
-                } else {
-                    form.setFieldValue(field.name, val)
-                }
-                form.setFieldTouched(field.name, true)
+            value={ensureDateString(value)}
+            type="date"
+            inputProps={{
+                ...params.inputProps,
+                min: ensureDateString(min) || undefined,
+                max: ensureDateString(max) || undefined,
             }}
+            {...params}
         />
     )
 }

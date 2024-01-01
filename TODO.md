@@ -1,6 +1,7 @@
 # TODO
 
 -   language selector
+-   replace X-Date stuff, plain html will do a better job
 -   add bypass\_ property prefix to potential dangerous property prefixes
 -   document pull and ratelimits
 -   editor for Personal Data (in progress)

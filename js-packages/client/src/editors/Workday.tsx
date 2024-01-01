@@ -46,6 +46,7 @@ import ActionsDialog from '../components/ActionsDialog'
 import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectViaUrl'
 import * as Contexts from '../contexts'
 import { mappersToArray } from '../hooks'
+import FormikDatePicker from '@secretgraph/ui-components/formik/FormikDatePicker'
 
 type TimeEntryData = {
     start: string
@@ -67,24 +68,21 @@ const TimeEntry = React.memo(function TimeEntry({
     return (
         <Grid container spacing={1}>
             <Grid xs={12} sm={6}>
-                <Field
+                <FastField
                     name={`times.${index}.start`}
                     component={FormikTimePicker}
-                    maxTime={maxTime}
+                    max={maxTime}
                     disabled={disabled}
-                    clearable
                     label="Start"
                     format="hh:mm"
                     fullWidth
                 />
             </Grid>
             <Grid xs={12} sm={6}>
-                <Field
+                <FastField
                     name={`times.${index}.stop`}
                     component={FormikTimePicker}
-                    minTime={minTime}
-                    clearable
-                    showTodayButton
+                    min={minTime}
                     disabled={disabled}
                     label="Stop"
                     format="hh:mm"
@@ -160,13 +158,13 @@ interface InnerWorkdayProps {
         note: string
         times: TimeEntryData[]
         work: string
-        day: string
+        day: Date
     }
     tags?: { [name: string]: string[] }
     url: string
     viewOnly?: boolean
 }
-function InnerWorkday({
+const InnerWorkday = React.memo(function InnerWorkday({
     url,
     nodeData,
     mapper,
@@ -189,13 +187,13 @@ function InnerWorkday({
     const initialValues = {
         actions,
         cluster: mainCtx.editCluster,
-        day: (data ? data.day : null) || new Date(Date.now()).toDateString(),
+        day: (data ? data.day : null) || new Date().toISOString(),
         work: (data ? data.work : null) || '',
         note: data?.note || '',
         times: data?.times || [
             {
-                start: '',
-                stop: '',
+                start: new Date().toISOString(),
+                stop: new Date().toISOString(),
                 name: '',
                 distance: 0,
             },
@@ -310,30 +308,41 @@ function InnerWorkday({
                             }}
                         </FieldArray>
                         <Grid container spacing={2}>
-                            <Grid xs={12}>
-                                <FastField
-                                    component={FormikTextField}
-                                    name="work"
-                                    fullWidth
-                                    label="Work"
-                                    disabled={isSubmitting || disabled}
-                                />
-                            </Grid>
-                            <Grid xs={12}>
-                                <FastField
-                                    component={ClusterSelectViaUrl}
-                                    url={url}
-                                    name="cluster"
-                                    disabled={isSubmitting || disabled}
-                                    label="Cluster"
-                                    firstIfEmpty
-                                    validate={(val: string) => {
-                                        if (!val) {
-                                            return 'empty'
-                                        }
-                                        return null
-                                    }}
-                                />
+                            <Grid xs={11} container spacing={2}>
+                                <Grid xs>
+                                    <FastField
+                                        component={FormikTextField}
+                                        name="work"
+                                        fullWidth
+                                        label="Work"
+                                        disabled={isSubmitting || disabled}
+                                    />
+                                </Grid>
+                                <Grid xs>
+                                    <FastField
+                                        component={FormikDatePicker}
+                                        name="day"
+                                        fullWidth
+                                        label="Day"
+                                        disabled={isSubmitting || disabled}
+                                    />
+                                </Grid>
+                                <Grid xs>
+                                    <FastField
+                                        component={ClusterSelectViaUrl}
+                                        url={url}
+                                        name="cluster"
+                                        disabled={isSubmitting || disabled}
+                                        label="Cluster"
+                                        firstIfEmpty
+                                        validate={(val: string) => {
+                                            if (!val) {
+                                                return 'empty'
+                                            }
+                                            return null
+                                        }}
+                                    />
+                                </Grid>
                             </Grid>
                             <Grid xs>
                                 <Tooltip title="Actions">
@@ -400,7 +409,7 @@ function InnerWorkday({
             }}
         </Formik>
     )
-}
+})
 
 const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)

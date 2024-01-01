@@ -60,7 +60,7 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
     [
-        'WorkDay',
+        'Workday',
         {
             label: gettext('Workday'),
             component: React.lazy(() => import('./Workday')),

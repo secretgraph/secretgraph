@@ -32,6 +32,8 @@ In long: both can mostly emulate each other with performance/memory penalties fo
 
 # Installation
 
+Note: make sure that you use linux fileendings. The shell scripts will fail in docker otherwise.
+
 ## Docker
 
 ```sh

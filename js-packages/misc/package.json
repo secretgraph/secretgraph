@@ -5,6 +5,9 @@
     "author": "",
     "license": "MIT",
     "sideEffects": false,
+    "dependencies": {
+        "date-fns": "*"
+    },
     "devDependencies": {
         "typescript": "*"
     },
