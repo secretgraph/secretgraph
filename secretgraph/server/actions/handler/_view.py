@@ -2,7 +2,6 @@ from datetime import timedelta as td
 from functools import reduce
 
 from django.db.models import Q
-from ratelimit.misc import get_ip
 
 from ...models import Cluster, Content
 from ._shared import get_forbidden_content_ids
