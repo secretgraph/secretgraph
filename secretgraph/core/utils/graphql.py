@@ -1,7 +1,7 @@
 import math
 
 from gql import Client
-from gql.transport.aiohttp import AIOHTTPTransport
+from gql.transport.httpx import HTTPXAsyncTransport
 from gql.transport.websockets import WebsocketsTransport
 
 
@@ -9,7 +9,7 @@ def create_client(url, headers={}) -> Client:
     if url.startswith("wss") or url.startswith("ws"):
         transport = WebsocketsTransport(url, headers=headers)
     else:
-        transport = AIOHTTPTransport(url, headers=headers)
+        transport = HTTPXAsyncTransport(url, headers=headers)
 
     return Client(
         transport=transport,
