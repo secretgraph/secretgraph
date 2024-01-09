@@ -59,6 +59,30 @@ SECRETGRAPH_DEFAULT_CLUSTER_GROUPS["debug"] = {  # noqa F405
     "properties": ["allow_global_name", "allow_dangerous_actions", "default"],
     "managed": True,
 }
+
+
+SECRETGRAPH_DEFAULT_CLUSTER_GROUPS["debug_selectable"] = {  # noqa F405
+    "properties": [],
+    "managed": True,
+    "userSelectable": "SELECTABLE",
+}
+
+SECRETGRAPH_DEFAULT_CLUSTER_GROUPS["debug_deselectable"] = {  # noqa F405
+    "properties": ["default"],
+    "managed": True,
+    "userSelectable": "DESELECTABLE",
+}
+SECRETGRAPH_DEFAULT_CLUSTER_GROUPS["debug_unrestricted"] = {  # noqa F405
+    "properties": [],
+    "managed": True,
+    "userSelectable": "UNRESTRICTED",
+}
+
+SECRETGRAPH_DEFAULT_CLUSTER_GROUPS["debug_initial"] = {  # noqa F405
+    "properties": [],
+    "managed": True,
+    "userSelectable": "INITIAL_MODIFYABLE",
+}
 SECRETGRAPH_DEFAULT_NET_GROUPS["debug_admin"] = {  # noqa F405
     "properties": [
         "allow_global_name",
