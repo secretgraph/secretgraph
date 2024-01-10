@@ -49,8 +49,10 @@ from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 
 @strawberry.type
 class SecretgraphObject:
-    node: Optional[strawberry.relay.Node] = strawberry.relay.node()
-    nodes: list[Optional[strawberry.relay.Node]] = strawberry.relay.node()
+    node: Optional[strawberry.relay.Node] = strawberry.relay.node(default=None)
+    nodes: list[Optional[strawberry.relay.Node]] = strawberry.relay.node(
+        default=None
+    )
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ClusterNode])
     def clusters(
@@ -72,10 +74,9 @@ class SecretgraphObject:
             filters=filters,
         )
 
-    @strawberry.field
-    @staticmethod
-    def config() -> SecretgraphConfig:
-        return SecretgraphConfig(stub="1")
+    config: SecretgraphConfig = strawberry.field(
+        default_factory=SecretgraphConfig
+    )
 
     permissions: list[str] = strawberry.field(resolver=get_permissions)
     activeUser: Optional[str] = strawberry.field(resolver=get_active_user)
@@ -163,8 +164,7 @@ class Query:
         # f["Content"]
         # f["Cluster"]
         get_cached_net_properties(info.context["request"])
-        # workaround issue that node and nodes needs initialization
-        return SecretgraphObject(node=None, nodes=None)
+        return SecretgraphObject
 
 
 @strawberry.type

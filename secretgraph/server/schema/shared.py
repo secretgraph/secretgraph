@@ -26,7 +26,7 @@ class UserSelectable(Enum):
         ),
     )
     INITIAL_MODIFYABLE = strawberry.enum_value(
-        constants.UserSelectable.SELECTABLE.value,
+        constants.UserSelectable.INITIAL_MODIFYABLE.value,
         description=(
             "Only selectable/deselectable for users when registering or creating a cluster. (fuse)"
         ),

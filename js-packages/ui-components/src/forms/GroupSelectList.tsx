@@ -77,14 +77,14 @@ export default function GroupSelectList({
                 } else if (
                     group.userSelectable == Constants.UserSelectable.SELECTABLE
                 ) {
-                    if (!meta.initialValue.contains(group.name)) {
+                    if (!meta.initialValue.includes(group.name)) {
                         isDisabled = true
                     }
                 } else if (
                     group.userSelectable ==
                     Constants.UserSelectable.DESELECTABLE
                 ) {
-                    if (meta.initialValue.contains(group.name)) {
+                    if (meta.initialValue.includes(group.name)) {
                         isDisabled = true
                     }
                 }

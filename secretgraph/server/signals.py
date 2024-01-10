@@ -66,6 +66,7 @@ def initializeDb(**kwargs):
         group.pop("clusters", None)
         injectedKeys = group.pop("injectedKeys", None)
         managed = group.pop("managed", False)
+        # handle enum values as well as strings
         userSelectable = group.pop("userSelectable", UserSelectable.NONE)
         userSelectable = getattr(
             UserSelectable, str(userSelectable), str(userSelectable)
@@ -73,7 +74,7 @@ def initializeDb(**kwargs):
         created = not ClusterGroup.objects.filter(name=name).exists()
         instance = ClusterGroup(**group, userSelectable=userSelectable)
         instance.name = name
-        instance.clean()
+        instance.full_clean(validate_unique=False)
         ClusterGroup.objects.bulk_create(
             [instance],
             ignore_conflicts=not managed,
@@ -105,6 +106,7 @@ def initializeDb(**kwargs):
             )
         # not valid
         group.pop("nets", None)
+        # handle enum values as well as strings
         userSelectable = group.pop("userSelectable", UserSelectable.NONE)
         userSelectable = getattr(
             UserSelectable, str(userSelectable), str(userSelectable)
@@ -113,7 +115,7 @@ def initializeDb(**kwargs):
         created = not NetGroup.objects.filter(name=name).exists()
         instance = NetGroup(**group, userSelectable=userSelectable)
         instance.name = name
-        instance.clean()
+        instance.full_clean(validate_unique=False)
         NetGroup.objects.bulk_create(
             [instance],
             ignore_conflicts=not managed,

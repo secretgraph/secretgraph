@@ -982,7 +982,9 @@ class NetGroup(models.Model):
         Net,
         blank=True,
         related_name="groups",
-        help_text="net groups: groups for user permissions including admin access",
+        help_text=_(
+            "net groups: groups for user permissions including admin access"
+        ),
     )
     properties: models.ManyToManyField[
         SGroupProperty
