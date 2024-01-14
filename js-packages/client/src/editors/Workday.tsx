@@ -55,7 +55,8 @@ type TimeEntryData = {
     distance: number
 }
 
-const TimeEntry = React.memo(function TimeEntry({
+// no memo otherwise when indexes change the wrong result is returned
+const TimeEntry = function TimeEntry({
     disabled,
     index,
 }: {
@@ -112,7 +113,7 @@ const TimeEntry = React.memo(function TimeEntry({
             </Grid>
         </Grid>
     )
-})
+}
 
 const TimeEntries = React.memo(function TimeEntries({
     disabled,
@@ -133,18 +134,29 @@ const TimeEntries = React.memo(function TimeEntries({
         if (!lastEntry.start || !lastEntry.stop) {
             return
         }
-        push({
+        // fixme: double call with old value, workaround with filter
+        const newentry = {
             start: '',
             stop: '',
             name: '',
             distance: 0,
-        })
+        }
+        push(newentry)
     }, [lastEntry.start, lastEntry.stop])
     return (
         <>
-            {times.map((val, index) => (
-                <TimeEntry index={index} disabled={disabled} key={index} />
-            ))}
+            {times
+                .filter(
+                    (val, index) =>
+                        val.start ||
+                        val.stop ||
+                        val.name ||
+                        val.distance ||
+                        index == times.length - 1
+                )
+                .map((val, index) => (
+                    <TimeEntry index={index} disabled={disabled} key={index} />
+                ))}
         </>
     )
 })

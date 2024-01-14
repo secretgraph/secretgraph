@@ -26,7 +26,6 @@ export default React.memo(function FormikTimePicker<
     max,
     ...params
 }: FormikTimePickerProps<V, FormValues>) {
-    console.log(ensureTimeString(value))
     return (
         <TextField
             {...field}
@@ -38,7 +37,6 @@ export default React.memo(function FormikTimePicker<
                 max: ensureTimeString(max) || undefined,
             }}
             onChange={(ev) => {
-                console.log(ev, ev.target.value)
                 if (ev.target.value == 'fake') {
                     onChange('')
                 } else {

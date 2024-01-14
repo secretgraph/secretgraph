@@ -45,10 +45,18 @@ export function ensureTimeString(
     if (!inp) {
         return ''
     }
-    if (!(inp instanceof Date)) {
-        inp = new Date(inp)
+    if (typeof inp == 'string') {
+        if (inp.includes('T')) {
+            inp = new Date(inp)
+        } else {
+            inp = new Date(`2000-01-01T${inp}`)
+        }
+    } else if (typeof inp == 'number') {
+        const minutes = inp % 60
+        const hours = Math.floor(inp / 60)
+        inp = new Date(`2000-01-01T${hours}:${minutes}`)
     }
-    if (isNaN(inp.getTime())) {
+    if (!(inp instanceof Date) || isNaN(inp.getTime())) {
         return ''
     }
     return [
