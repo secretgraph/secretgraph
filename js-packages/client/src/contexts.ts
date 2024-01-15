@@ -14,6 +14,7 @@ function stubFn() {}
 export const Main = createContext<{
     mainCtx: Interfaces.MainContextInterface
     updateMainCtx: (update: Partial<Interfaces.MainContextInterface>) => void
+    goToNode: (node: any) => void
 }>({
     mainCtx: {
         action: 'login',
@@ -36,6 +37,7 @@ export const Main = createContext<{
         cloneData: null,
     },
     updateMainCtx: stubFn,
+    goToNode: stubFn,
 })
 export const Search = createContext<{
     searchCtx: Interfaces.SearchContextInterface

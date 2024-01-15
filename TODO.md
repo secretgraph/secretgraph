@@ -1,6 +1,6 @@
 # TODO
 
--   fix groups, initial selectable is deselected (partly fixed, debug print)
+-   goToNode document node change function
 -   language selector
 -   add bypass\_ property prefix to potential dangerous property prefixes
 -   document pull and ratelimits

@@ -24,8 +24,8 @@ import SidebarTreeItemLabel from './SidebarTreeItemLabel'
 const SideBarItems = () => {
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
-    const { searchCtx, updateSearchCtx } = React.useContext(Contexts.Search)
-    const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
+    const { searchCtx } = React.useContext(Contexts.Search)
+    const { mainCtx, goToNode } = React.useContext(Contexts.Main)
     const authinfoCluster = React.useMemo(
         () =>
             config
@@ -53,68 +53,6 @@ const SideBarItems = () => {
         [config, activeUrl, searchCtx.cluster]
     )
 
-    const activeUrlAsURL = new URL(activeUrl, window.location.href).href
-    const goTo = (node: any) => {
-        let type = node.__typename == 'Cluster' ? 'Cluster' : node.type
-        if (type == 'PrivateKey') {
-            type = 'PublicKey'
-        }
-        let tokens: string[] = []
-        let tokensPermissions: Set<string> = new Set()
-        if (config) {
-            const retrieveOptions: Writeable<
-                Parameters<typeof authInfoFromConfig>[0]
-            > = {
-                config,
-                url: activeUrlAsURL,
-            }
-            if (type == 'Cluster') {
-                if (node?.id) {
-                    retrieveOptions['clusters'] = new Set([node.id])
-                }
-            } else if (node?.cluster?.id) {
-                retrieveOptions['clusters'] = new Set([node.cluster.id])
-                retrieveOptions['contents'] = new Set([node.id])
-            }
-            const res = authInfoFromConfig(retrieveOptions)
-            tokens = res.tokens
-            tokensPermissions = res.types
-        }
-        let name = ''
-        if (type == 'Cluster') {
-            name = node.name
-        } else {
-            for (const tag of node.tags) {
-                if (tag.startsWith('name=')) {
-                    name = tag.match(/=(.*)/)[1]
-                    break
-                }
-            }
-        }
-
-        updateMainCtx({
-            item: node.id,
-            securityLevel: null,
-            securityWarningArmed: true,
-            readonly: true,
-            currentCluster:
-                type == 'Cluster' ? node.id : node?.cluster?.id || null,
-            editCluster:
-                type == 'Cluster' ? node.id : node?.cluster?.id || null,
-            updateId: node.updateId,
-            type,
-            deleted: false,
-            action: 'view',
-            url: activeUrl,
-            shareFn: null,
-            openDialog: null,
-            title: mainCtx.updateId == node.updateId ? undefined : name,
-            tokens,
-            tokensPermissions,
-            cloneData: null,
-        })
-    }
-
     return (
         <>
             <TreeItem
@@ -132,7 +70,7 @@ const SideBarItems = () => {
                         label="Non-Public"
                         authinfo={authinfoCluster}
                         deleted={searchCtx.deleted}
-                        goTo={goTo}
+                        goTo={goToNode}
                     />
                 )}
                 <SideBarClusters
@@ -140,7 +78,7 @@ const SideBarItems = () => {
                     nodeId={`${activeUrl}-clusters-public`}
                     label="Public"
                     deleted={searchCtx.deleted}
-                    goTo={goTo}
+                    goTo={goToNode}
                 />
             </TreeItem>
             <TreeItem
@@ -159,7 +97,7 @@ const SideBarItems = () => {
                     deleted={searchCtx.deleted}
                     label="Public"
                     heading
-                    goTo={goTo}
+                    goTo={goToNode}
                 />
                 {authinfo && (
                     <>
@@ -172,7 +110,7 @@ const SideBarItems = () => {
                             states={['draft']}
                             label="Drafts"
                             heading
-                            goTo={goTo}
+                            goTo={goToNode}
                         />
                         <SideBarContents
                             key="SideBarContentsPrivate"
@@ -183,7 +121,7 @@ const SideBarItems = () => {
                             states={['protected']}
                             label="Private"
                             heading
-                            goTo={goTo}
+                            goTo={goToNode}
                         />
                     </>
                 )}

@@ -71,7 +71,7 @@ function Register() {
         any
     ]
     const { sendMessage } = React.useContext(Contexts.Snackbar)
-    const { updateMainCtx } = React.useContext(Contexts.Main)
+    const { updateMainCtx, goToNode } = React.useContext(Contexts.Main)
     const { setActiveUrl } = React.useContext(Contexts.ActiveUrl)
     const { config, updateConfig } = React.useContext(Contexts.Config)
     React.useEffect(() => {
@@ -204,9 +204,7 @@ function Register() {
                         }
                         updateConfig(newConfig, true)
                         setActiveUrl(newConfig.baseUrl)
-                        updateMainCtx({
-                            action: 'create',
-                        })
+                        goToNode(result.clusterResult.cluster)
                         if (
                             registerContext.activeUser &&
                             !directRegisterWhenPossible &&

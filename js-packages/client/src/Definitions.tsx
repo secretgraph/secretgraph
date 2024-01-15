@@ -18,6 +18,7 @@ import * as React from 'react'
 
 import * as Contexts from './contexts'
 import Main from './pages/Main'
+import { Writeable } from '@secretgraph/misc/typing'
 
 type Props = {
     defaultPath?: string
@@ -223,6 +224,67 @@ function Definitions({
         return navClient
     }, [mainCtx.url ? mainCtx.url : ''])
 
+    const goToNode = (node: any) => {
+        let type = node.__typename == 'Cluster' ? 'Cluster' : node.type
+        if (type == 'PrivateKey') {
+            type = 'PublicKey'
+        }
+        let tokens: string[] = []
+        let tokensPermissions: Set<string> = new Set()
+        if (config) {
+            const retrieveOptions: Writeable<
+                Parameters<typeof authInfoFromConfig>[0]
+            > = {
+                config,
+                url: new URL(activeUrl, window.location.href).href,
+            }
+            if (type == 'Cluster') {
+                if (node?.id) {
+                    retrieveOptions['clusters'] = new Set([node.id])
+                }
+            } else if (node?.cluster?.id) {
+                retrieveOptions['clusters'] = new Set([node.cluster.id])
+                retrieveOptions['contents'] = new Set([node.id])
+            }
+            const res = authInfoFromConfig(retrieveOptions)
+            tokens = res.tokens
+            tokensPermissions = res.types
+        }
+        let name = ''
+        if (type == 'Cluster') {
+            name = node.name
+        } else {
+            for (const tag of node.tags) {
+                if (tag.startsWith('name=')) {
+                    name = tag.match(/=(.*)/)[1]
+                    break
+                }
+            }
+        }
+
+        updateMainCtx({
+            item: node.id,
+            securityLevel: null,
+            securityWarningArmed: true,
+            readonly: true,
+            currentCluster:
+                type == 'Cluster' ? node.id : node?.cluster?.id || null,
+            editCluster:
+                type == 'Cluster' ? node.id : node?.cluster?.id || null,
+            updateId: node.updateId,
+            type,
+            deleted: false,
+            action: 'view',
+            url: activeUrl,
+            shareFn: null,
+            openDialog: null,
+            title: mainCtx.updateId == node.updateId ? undefined : name,
+            tokens,
+            tokensPermissions,
+            cloneData: null,
+        })
+    }
+
     return (
         <Contexts.External.Provider
             value={{
@@ -253,7 +315,7 @@ function Definitions({
                             value={{ activeUrl, setActiveUrl }}
                         >
                             <Contexts.Main.Provider
-                                value={{ mainCtx, updateMainCtx }}
+                                value={{ mainCtx, updateMainCtx, goToNode }}
                             >
                                 <Contexts.Search.Provider
                                     value={{
