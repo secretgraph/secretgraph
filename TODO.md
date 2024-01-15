@@ -1,7 +1,7 @@
 # TODO
 
 -   goToNode document node change function
--   language selector
+    -   use after add created node?, needs morphing so it keeps injected tokens?
 -   add bypass\_ property prefix to potential dangerous property prefixes
 -   document pull and ratelimits
 -   editor for Personal Data (in progress)
@@ -21,6 +21,7 @@
 -   way to inject tokens (as user)
 -   way to import private key in config
 -   cleanup js structure, harmonize naming
+-   language selector?
 
 # TODO later
 

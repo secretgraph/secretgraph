@@ -14,7 +14,7 @@ function stubFn() {}
 export const Main = createContext<{
     mainCtx: Interfaces.MainContextInterface
     updateMainCtx: (update: Partial<Interfaces.MainContextInterface>) => void
-    goToNode: (node: any) => void
+    goToNode: (node: any, action?: 'view' | 'update') => void
 }>({
     mainCtx: {
         action: 'login',

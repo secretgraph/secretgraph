@@ -224,7 +224,7 @@ function Definitions({
         return navClient
     }, [mainCtx.url ? mainCtx.url : ''])
 
-    const goToNode = (node: any) => {
+    const goToNode = (node: any, action: 'view' | 'update' = 'view') => {
         let type = node.__typename == 'Cluster' ? 'Cluster' : node.type
         if (type == 'PrivateKey') {
             type = 'PublicKey'
@@ -245,6 +245,9 @@ function Definitions({
             } else if (node?.cluster?.id) {
                 retrieveOptions['clusters'] = new Set([node.cluster.id])
                 retrieveOptions['contents'] = new Set([node.id])
+            }
+            if (action == 'update') {
+                retrieveOptions['require'] = new Set(['update', 'manage'])
             }
             const res = authInfoFromConfig(retrieveOptions)
             tokens = res.tokens
@@ -274,7 +277,7 @@ function Definitions({
             updateId: node.updateId,
             type,
             deleted: false,
-            action: 'view',
+            action,
             url: activeUrl,
             shareFn: null,
             openDialog: null,
