@@ -190,6 +190,8 @@ export async function initializeCluster({
     slot,
     noteCertificate,
     noteToken,
+    clusterGroups,
+    netGroups,
     ...options
 }: {
     client: ApolloClient<any>
@@ -243,6 +245,8 @@ export async function initializeCluster({
         net,
         description,
         hashAlgorithm,
+        clusterGroups,
+        netGroups,
         keys: [
             {
                 publicKey,

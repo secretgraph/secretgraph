@@ -214,12 +214,7 @@ def _update_or_create_cluster(
             old_net.bytes_in_use = F("bytes_in_use") - size_old
     cluster.net.last_used = timezone.now()
     clusterGroups_qtuple = None
-    if getattr(objdata, "clusterGroups", None) is not None and (
-        "manage_cluster_groups"
-        in get_cached_net_properties(request, ensureInitialized=True)
-        or create_cluster
-        or manage.filter(id=cluster.id)
-    ):
+    if getattr(objdata, "clusterGroups", None) is not None:
         clusterGroups_qtuple = calculate_groups(
             ClusterGroup,
             groups=objdata.clusterGroups,
@@ -230,12 +225,7 @@ def _update_or_create_cluster(
         )
         assert isinstance(clusterGroups_qtuple, tuple)
     netGroups_qtuple = None
-    if getattr(objdata, "netGroups", None) is not None and (
-        "manage_net_groups"
-        in get_cached_net_properties(request, ensureInitialized=True)
-        or create_net
-        or manage.filter(id=cluster.net.primaryCluster_id)
-    ):
+    if getattr(objdata, "netGroups", None) is not None:
         netGroups_qtuple = calculate_groups(
             NetGroup,
             groups=objdata.netGroups,

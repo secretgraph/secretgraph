@@ -43,10 +43,11 @@ def mutate_cluster(
     updateId: Optional[strawberry.ID] = None,
     authorization: Optional[AuthList] = None,
 ) -> ClusterMutation:
+    net_props = get_cached_net_properties(
+        info.context["request"], authset=authorization
+    )
     if cluster.featured is not None:
-        if "allow_featured" not in get_cached_net_properties(
-            info.context["request"], authset=authorization
-        ):
+        if "allow_featured" not in net_props:
             cluster.featured = None
 
     if id:
@@ -63,12 +64,7 @@ def mutate_cluster(
         cluster_obj = result["objects_without_public"].get()
         if cluster.name is not None and cluster.name.startswith("@"):
             if (
-                "allow_global_name"
-                not in (
-                    get_cached_net_properties(
-                        info.context["request"], authset=authorization
-                    )
-                )
+                "allow_global_name" not in net_props
                 and not cluster_obj.groups.filter(
                     properties__name="allow_global_name"
                 ).exists()
@@ -86,21 +82,16 @@ def mutate_cluster(
             dProperty = SGroupProperty.objects.get_or_create(
                 name="default", defaults={}
             )[0]
-            get_cached_net_properties(
-                info.context["request"], authset=authorization
-            )
             update_cached_net_properties(
                 info.context["request"], groups=dProperty.netGroups.all()
+            )
+            net_props = get_cached_net_properties(
+                info.context["request"], ensureInitialized=True
             )
 
             if cluster.name is not None and cluster.name.startswith("@"):
                 if (
-                    "allow_global_name"
-                    not in (
-                        get_cached_net_properties(
-                            info.context["request"], authset=authorization
-                        )
-                    )
+                    "allow_global_name" not in net_props
                     and not SGroupProperty.objects.defaultClusterProperties()
                     .filter(name="allow_global_name")
                     .exists()

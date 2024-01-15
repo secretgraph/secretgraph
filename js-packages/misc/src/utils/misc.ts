@@ -54,6 +54,9 @@ export function ensureTimeString(
     } else if (typeof inp == 'number') {
         const minutes = inp % 60
         const hours = Math.floor(inp / 60)
+        if (hours > 23) {
+            throw new Error('invalid value for ensureTimeString: ' + inp)
+        }
         inp = new Date(`2000-01-01T${hours}:${minutes}`)
     }
     if (!(inp instanceof Date) || isNaN(inp.getTime())) {

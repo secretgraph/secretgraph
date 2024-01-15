@@ -77,15 +77,43 @@ export default function GroupSelectList({
                 } else if (
                     group.userSelectable == Constants.UserSelectable.SELECTABLE
                 ) {
-                    if (!meta.initialValue.includes(group.name)) {
+                    if (meta.initialValue.includes(group.name)) {
                         isDisabled = true
+                    } else if (
+                        initial &&
+                        group.properties.includes('default')
+                    ) {
+                        isDisabled = true
+                        // force change to true
+                        if (!meta.value.includes(group.name)) {
+                            helpers.setValue(
+                                [...meta.value, group.name],
+                                false
+                            )
+                        }
                     }
                 } else if (
                     group.userSelectable ==
                     Constants.UserSelectable.DESELECTABLE
                 ) {
-                    if (meta.initialValue.includes(group.name)) {
+                    if (
+                        !meta.initialValue.includes(group.name) &&
+                        (!initial || !group.properties.includes('default'))
+                    ) {
                         isDisabled = true
+                    } else if (
+                        initial &&
+                        !group.properties.includes('default')
+                    ) {
+                        // force change to false
+                        if (initial && meta.value.includes(group.name)) {
+                            helpers.setValue(
+                                meta.value.filter(
+                                    (val: string) => val != group.name
+                                ),
+                                false
+                            )
+                        }
                     }
                 }
             }

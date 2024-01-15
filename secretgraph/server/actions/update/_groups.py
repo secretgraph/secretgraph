@@ -1,4 +1,3 @@
-from contextlib import nullcontext
 from typing import Optional, Union
 
 from django.db import models
@@ -18,7 +17,9 @@ def calculate_groups(
         if admin:
             retval = model.objects.filter(name__in=groups)
         else:
-            q = models.Q(userSelectable=UserSelectable.SELECTABLE)
+            q = models.Q(userSelectable=UserSelectable.SELECTABLE) | models.Q(
+                userSelectable=UserSelectable.UNRESTRICTED
+            )
             if initial:
                 q |= models.Q(
                     userSelectable=UserSelectable.INITIAL_MODIFYABLE,
@@ -35,7 +36,9 @@ def calculate_groups(
                 admin=True,
             ), model.objects.exclude(name__in=groups)
         else:
-            q = models.Q(userSelectable=UserSelectable.DESELECTABLE)
+            q = models.Q(
+                userSelectable=UserSelectable.DESELECTABLE
+            ) | models.Q(userSelectable=UserSelectable.UNRESTRICTED)
             if initial:
                 q |= models.Q(
                     userSelectable=UserSelectable.INITIAL_MODIFYABLE,
@@ -53,7 +56,9 @@ def calculate_groups(
         if admin:
             retval = model.objects.filter(name__in=groups)
         else:
-            q = models.Q(userSelectable=UserSelectable.DESELECTABLE)
+            q = models.Q(
+                userSelectable=UserSelectable.DESELECTABLE
+            ) | models.Q(userSelectable=UserSelectable.UNRESTRICTED)
             if initial:
                 q |= models.Q(
                     userSelectable=UserSelectable.INITIAL_MODIFYABLE,
@@ -88,14 +93,14 @@ def apply_groups(
             assert isinstance(groups, tuple), f"invalid groups input: {groups}"
             if groups[0] and groups[1]:
                 for obj in inp:
-                    obj.groups.add(groups[0])
-                    obj.groups.remove(groups[1])
+                    obj.groups.add(*groups[0])
+                    obj.groups.remove(*groups[1])
             elif groups[0]:
                 for obj in inp:
-                    obj.groups.add(groups[0])
+                    obj.groups.add(*groups[0])
             elif groups[1]:
                 for obj in inp:
-                    obj.groups.remove(groups[1])
+                    obj.groups.remove(*groups[1])
             else:
                 return False
             return True

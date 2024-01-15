@@ -109,8 +109,7 @@ function Register() {
                     lockPW,
                     directRegisterWhenPossible,
                     logoutUserAfterRegistration,
-                    clusterGroups,
-                    netGroups,
+                    ...values
                 },
                 { setSubmitting }
             ) => {
@@ -173,6 +172,8 @@ function Register() {
                             slot,
                             noteCertificate: 'initial certificate',
                             noteToken: 'initial token',
+                            clusterGroups: values.clusterGroups,
+                            netGroups: values.netGroups,
                         })
                         if (lockPW) {
                             newConfig['configLockUrl'] =
