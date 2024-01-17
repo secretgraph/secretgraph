@@ -1,5 +1,6 @@
 # TODO
 
+-   optional: django-fast-iprestrict dep?, would remove extra settings
 -   cluster: doesn't handle missing tokens well
 -   goToNode document node change function
 -   document how to add elements, cannot use goToNode here
