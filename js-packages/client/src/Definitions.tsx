@@ -224,18 +224,25 @@ function Definitions({
         return navClient
     }, [mainCtx.url ? mainCtx.url : ''])
 
-    const goToNode = (node: any, action: 'view' | 'update' = 'view') => {
+    const goToNode = (
+        node: any,
+        action: 'view' | 'update' = 'view',
+        newConfig: Interfaces.ConfigInterface | null = null
+    ) => {
         let type = node.__typename == 'Cluster' ? 'Cluster' : node.type
         if (type == 'PrivateKey') {
             type = 'PublicKey'
         }
         let tokens: string[] = []
         let tokensPermissions: Set<string> = new Set()
-        if (config) {
+        if (!newConfig) {
+            newConfig = config
+        }
+        if (newConfig) {
             const retrieveOptions: Writeable<
                 Parameters<typeof authInfoFromConfig>[0]
             > = {
-                config,
+                config: newConfig,
                 url: new URL(activeUrl, window.location.href).href,
             }
             if (type == 'Cluster') {
@@ -264,7 +271,6 @@ function Definitions({
                 }
             }
         }
-
         updateMainCtx({
             item: node.id,
             securityLevel: null,

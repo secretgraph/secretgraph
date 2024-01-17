@@ -7,7 +7,7 @@ from secretgraph.settings.debug import *  # noqa: F403, F401, E402
 DATABASES = {
     "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}
 }
-RATELIMIT_ENABLE = False
+RATELIMIT_ENABLED = False
 
 STORAGES = {
     "default": {

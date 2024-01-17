@@ -1,7 +1,8 @@
 # TODO
 
+-   cluster: doesn't handle missing tokens well
 -   goToNode document node change function
-    -   use after add created node?, needs morphing so it keeps injected tokens?
+-   document how to add elements, cannot use goToNode here
 -   add bypass\_ property prefix to potential dangerous property prefixes
 -   document pull and ratelimits
 -   editor for Personal Data (in progress)

@@ -204,7 +204,11 @@ function Register() {
                         }
                         updateConfig(newConfig, true)
                         setActiveUrl(newConfig.baseUrl)
-                        goToNode(result.clusterResult.cluster, 'update')
+                        goToNode(
+                            result.clusterResult.cluster,
+                            'update',
+                            newConfig
+                        )
                         if (
                             registerContext.activeUser &&
                             !directRegisterWhenPossible &&
