@@ -149,8 +149,14 @@ Special configuration keys:
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_REQUIRE_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
 -   `SECRETGRAPH_RATELIMITS`: required, set ratelimits for `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE`
-    note: `GRAPHQL_ERRORS` is disabled in case `DEBUG` is on
     note: in case serverside decryption should be disabled set a ratelimit of "0/s" or (0, 1)
+
+## Ratelimits in detail
+
+-   `GRAPHQL_MUTATIONS`: secretgraph provides an extension to limit mutating requests on graphql. This extension is enabled by the default scheme. When using an custom other schema you have to include the extension or the functionality is disabled
+-   `GRAPHQL_ERRORS`: secretgraph provides an extension to limit requests on graphql which cause errors. This extension is enabled by the default scheme. When using an custom other schema you have to include the extension or the functionality is disabled.
+    `ANONYMOUS_REGISTER`: register a cluster without a user/net. When not disabling this functionality and make the server public you need abuse controls
+    `DECRYPT_SERVERSIDE`:
 
 ## docker
 

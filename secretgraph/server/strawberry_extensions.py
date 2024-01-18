@@ -67,8 +67,7 @@ class RatelimitErrors(SchemaExtension):
     rate = None
 
     def __init__(self, *, execution_context: ExecutionContext):
-        if not settings.DEBUG:
-            self.rate = settings.SECRETGRAPH_RATELIMITS.get("GRAPHQL_ERRORS")
+        self.rate = settings.SECRETGRAPH_RATELIMITS.get("GRAPHQL_ERRORS")
         super().__init__(execution_context=execution_context)
 
     def on_execute(self):
