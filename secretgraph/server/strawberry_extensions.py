@@ -14,12 +14,12 @@ class RatelimitMutations(SchemaExtension):
 
     # rate = "100/2s"
 
-    def on_execute(self):
+    async def on_execute(self):
         should_be_ratelimited = bool(self.rate)
         if should_be_ratelimited:
             execution_context = self.execution_context
             if execution_context.operation_type == OperationType.MUTATION:
-                r = ratelimit.get_ratelimit(
+                r = await ratelimit.aget_ratelimit(
                     group="secretgraph_graphql_mutations",
                     request=execution_context.context["request"],
                     key="ip"
@@ -56,7 +56,7 @@ class RatelimitMutations(SchemaExtension):
             )
         ):
             return
-        ratelimit.get_ratelimit(
+        await ratelimit.aget_ratelimit(
             group="secretgraph_graphql_mutations",
             request=execution_context.context["request"],
             key="ip"
@@ -74,10 +74,10 @@ class RatelimitErrors(SchemaExtension):
         self.rate = settings.SECRETGRAPH_RATELIMITS.get("GRAPHQL_ERRORS")
         super().__init__(execution_context=execution_context)
 
-    def on_execute(self):
+    async def on_execute(self):
         if self.rate:
             execution_context = self.execution_context
-            r = ratelimit.get_ratelimit(
+            r = await ratelimit.aget_ratelimit(
                 group="secretgraph_graphql_errors",
                 request=execution_context.context["request"],
                 key="ip"
@@ -101,7 +101,7 @@ class RatelimitErrors(SchemaExtension):
         execution_context = self.execution_context
         if not execution_context.errors:
             return
-        ratelimit.get_ratelimit(
+        await ratelimit.aget_ratelimit(
             group="secretgraph_graphql_errors",
             key="ip",
             request=execution_context.context["request"],

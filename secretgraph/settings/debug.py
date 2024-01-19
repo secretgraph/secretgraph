@@ -23,6 +23,7 @@ INSTALLED_APPS += [  # noqa F405
     "django.contrib.sessions",  # required for admin
     "django.contrib.messages",  # required for admin
     "django.contrib.admin",  # requires admin
+    "django_fast_iprestrict",
     "secretgraph.server",
     "secretgraph.user",
 ]
@@ -32,6 +33,7 @@ MIDDLEWARE += [  # noqa F405
     "django.contrib.sessions.middleware.SessionMiddleware",  # for auth
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # for auth
     "django.contrib.messages.middleware.MessageMiddleware",  # for admin
+    "django_fast_iprestrict.middleware.fast_iprestrict",  # for ratelimiting
 ]
 
 #  for admin

@@ -520,30 +520,30 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-fast-iprestrict"
-version = "0.12.0"
+version = "0.12.2"
 description = ""
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django_fast_iprestrict-0.12.0-py3-none-any.whl", hash = "sha256:da356bb63a1900fb6f53e68738204aaa41f02ea42b8e5e6deb554e55304b525d"},
-    {file = "django_fast_iprestrict-0.12.0.tar.gz", hash = "sha256:b79b04027e6c3557af3a6abb781bb3c2273248331c5384c3f44da91121157b70"},
+    {file = "django_fast_iprestrict-0.12.2-py3-none-any.whl", hash = "sha256:ecd850ab5cc4370067ddbe6444123beb9a265d64b08257761994f175f82009d9"},
+    {file = "django_fast_iprestrict-0.12.2.tar.gz", hash = "sha256:fe9a07b4f1e0d79ad9ebfee998fa96a350d567c09d391b7889d629ee6aaccb23"},
 ]
 
 [package.dependencies]
 django = ">=4.0"
 
 [package.extras]
-ratelimit = ["django-fast-ratelimit (>=5.0.0)"]
+ratelimit = ["django-fast-ratelimit (>=7.3.2)"]
 
 [[package]]
 name = "django-fast-ratelimit"
-version = "7.3.1"
+version = "7.3.2"
 description = "Fast ratelimit implementation with django caches"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django_fast_ratelimit-7.3.1-py3-none-any.whl", hash = "sha256:b15503fbf6361da68a76cad07a1d7a4a586178b958e30e74314a3635e2488822"},
-    {file = "django_fast_ratelimit-7.3.1.tar.gz", hash = "sha256:7fe4e448523d2ddded4b25fea5507df959ca13a09a46611a8ae73e34620971ef"},
+    {file = "django_fast_ratelimit-7.3.2-py3-none-any.whl", hash = "sha256:6bdb00b73c5c4ddb5ad109354c5340166011e63b8911eea1b00fba28bb607404"},
+    {file = "django_fast_ratelimit-7.3.2.tar.gz", hash = "sha256:f7f5935b2a61b14f70814c28461b56b00fff0d83e511c766ed37ad3900f43c94"},
 ]
 
 [package.dependencies]
