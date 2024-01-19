@@ -45,9 +45,6 @@ django-fast-iprestrict = {version=">=0.12.0", optional = true}
 nh3 = {version="*", optional = true}
 
 
-[tool.poetry.group.test]
-optional = true
-
 [tool.poetry.group.test.dependencies]
 schemathesis = "*"
 faker = "*"

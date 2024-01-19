@@ -103,7 +103,6 @@ class RatelimitErrors(SchemaExtension):
             return
         await ratelimit.aget_ratelimit(
             group="secretgraph_graphql_errors",
-            key="ip",
             request=execution_context.context["request"],
             key="ip"
             if self.rate != "iprestrict"

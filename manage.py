@@ -11,7 +11,10 @@ def main():
     if str(BASE_DIR) not in sys.path:
         sys.path.append(str(BASE_DIR))
     os.environ.setdefault(
-        "DJANGO_SETTINGS_MODULE", "secretgraph.settings.debug"
+        "DJANGO_SETTINGS_MODULE",
+        "secretgraph.settings.test"
+        if len(sys.argv) >= 2 and sys.argv[1] == "test"
+        else "secretgraph.settings.debug",
     )
     if not os.environ.get(
         "SECRETGRAPH_SILENCE",

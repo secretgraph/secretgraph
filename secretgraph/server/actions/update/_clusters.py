@@ -139,7 +139,6 @@ def _update_or_create_cluster(
                 )
                 if rate:
                     r = ratelimit.get_ratelimit(
-                        rate=rate,
                         request=request,
                         group="secretgraph_anonymous_register",
                         key="ip"
