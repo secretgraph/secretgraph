@@ -237,7 +237,7 @@ def mutate_pull(
         ).exists()
     ):
         r = ratelimit.get_ratelimit(
-            group="pull",
+            group="secretgraph_pull",
             key=b"%i" % target.net_id,
             request=info.context["request"],
             rate=signature_and_key_retrieval_rate,

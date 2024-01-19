@@ -139,10 +139,13 @@ def _update_or_create_cluster(
                 )
                 if rate:
                     r = ratelimit.get_ratelimit(
-                        key="ip",
                         rate=rate,
                         request=request,
-                        group="anonymous_register",
+                        group="secretgraph_anonymous_register",
+                        key="ip"
+                        if rate != "iprestrict"
+                        else "django_fast_iprestrict.apply_ratelimit:ignore_pathes",
+                        rate=rate if rate != "iprestrict" else None,
                         action=ratelimit.Action.INCREASE,
                     )
                     if r.request_limit >= 1:

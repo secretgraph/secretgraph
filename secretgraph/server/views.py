@@ -215,10 +215,14 @@ class ContentView(View):
         )
         if serverside_decryption_rate:
             r = ratelimit.get_ratelimit(
-                group="serverside_decryption",
-                key="ip",
+                group="secretgraph_serverside_decryption",
                 request=request,
-                rate=serverside_decryption_rate,
+                key="ip"
+                if serverside_decryption_rate != "iprestrict"
+                else "django_fast_iprestrict.apply_ratelimit:ignore_pathes",
+                rate=serverside_decryption_rate
+                if serverside_decryption_rate != "iprestrict"
+                else None,
                 action=ratelimit.Action.INCREASE,
             )
             if r.request_limit >= 1:
@@ -295,10 +299,14 @@ class ContentView(View):
         )
         if signature_and_key_retrieval_rate:
             r = ratelimit.get_ratelimit(
-                group="signature_and_key_retrieval",
-                key="ip",
+                group="secretgraph_signature_and_key_retrieval",
+                key="ip"
+                if signature_and_key_retrieval_rate != "iprestrict"
+                else "django_fast_iprestrict.apply_ratelimit:ignore_pathes",
+                rate=signature_and_key_retrieval_rate
+                if signature_and_key_retrieval_rate != "iprestrict"
+                else None,
                 request=request,
-                rate=signature_and_key_retrieval_rate,
                 action=ratelimit.Action.INCREASE,
             )
             if r.request_limit >= 1:

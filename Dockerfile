@@ -19,7 +19,7 @@ RUN /install-deps.sh
 RUN python -m pip install --no-cache poetry hypercorn[h3,uvloop]
 COPY manage.py poetry.lock pyproject.toml /app/
 WORKDIR /app
-RUN poetry install --no-root --no-cache --compile --only main -E server -E proxy -E postgresql -E mysql
+RUN poetry install --no-root --no-cache --compile --only main -E server -E proxy -E postgresql -E mysql -E iprestrict
 COPY secretgraph /app/secretgraph
 COPY tools/start.sh tools/start_docker.sh tools/test.sh tools/compile-messages.sh /app/tools/
 RUN ./tools/compile-messages.sh

@@ -20,10 +20,12 @@ class RatelimitMutations(SchemaExtension):
             execution_context = self.execution_context
             if execution_context.operation_type == OperationType.MUTATION:
                 r = ratelimit.get_ratelimit(
-                    group="graphql_mutations",
+                    group="secretgraph_graphql_mutations",
                     request=execution_context.context["request"],
-                    key="ip",
-                    rate=self.rate,
+                    key="ip"
+                    if self.rate != "iprestrict"
+                    else "django_fast_iprestrict.apply_ratelimit:ignore_pathes,execute_only",
+                    rate=self.rate if self.rate != "iprestrict" else None,
                     action=ratelimit.Action.PEEK,
                 )
                 r.decorate_object(execution_context.context["request"])
@@ -55,10 +57,12 @@ class RatelimitMutations(SchemaExtension):
         ):
             return
         ratelimit.get_ratelimit(
-            group="graphql_mutations",
-            key="ip",
+            group="secretgraph_graphql_mutations",
             request=execution_context.context["request"],
-            rate=self.rate,
+            key="ip"
+            if self.rate != "iprestrict"
+            else "django_fast_iprestrict.apply_ratelimit:ignore_pathes,count_only",
+            rate=self.rate if self.rate != "iprestrict" else None,
             action=ratelimit.Action.INCREASE,
         )
 
@@ -74,10 +78,12 @@ class RatelimitErrors(SchemaExtension):
         if self.rate:
             execution_context = self.execution_context
             r = ratelimit.get_ratelimit(
-                group="graphql_errors",
-                key="ip",
+                group="secretgraph_graphql_errors",
                 request=execution_context.context["request"],
-                rate=self.rate,
+                key="ip"
+                if self.rate != "iprestrict"
+                else "django_fast_iprestrict.apply_ratelimit:ignore_pathes,execute_only",
+                rate=self.rate if self.rate != "iprestrict" else None,
                 action=ratelimit.Action.PEEK,
             )
             r.decorate_object(execution_context.context["request"])
@@ -96,9 +102,12 @@ class RatelimitErrors(SchemaExtension):
         if not execution_context.errors:
             return
         ratelimit.get_ratelimit(
-            group="graphql_errors",
+            group="secretgraph_graphql_errors",
             key="ip",
             request=execution_context.context["request"],
-            rate=self.rate,
+            key="ip"
+            if self.rate != "iprestrict"
+            else "django_fast_iprestrict.apply_ratelimit:ignore_pathes,count_only",
+            rate=self.rate if self.rate != "iprestrict" else None,
             action=ratelimit.Action.INCREASE,
         )

@@ -148,15 +148,19 @@ Special configuration keys:
 -   `SECRETGRAPH_USE_USER`: if a user is logged in, also use his net, default: True. Disable in case a net only logic is used and it is causing errors
 -   `SECRETGRAPH_ALLOW_REGISTER`: boolean, default False:.True allows registering new accounts. In case of `SECRETGRAPH_REQUIRE_USER` is True, normal login is required and `SIGNUP_URL` is for `registerUrl` returned
 -   `SECRETGRAPH_CACHE_DECRYPTED`: shall decrypted results be marked for caching (slightly insecure as decrypted results lay in the cache but maybe required for slow file backends). Only useful if server side decryption is required
--   `SECRETGRAPH_RATELIMITS`: required, set ratelimits for `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE`
+-   `SECRETGRAPH_RATELIMITS`: required, set ratelimits for `GRAPHQL_MUTATIONS`, `GRAPHQL_ERRORS`, `ANONYMOUS_REGISTER`, `DECRYPT_SERVERSIDE`, `PULL`, `SIGNATURE_AND_KEY_RETRIEVAL`
     note: in case serverside decryption should be disabled set a ratelimit of "0/s" or (0, 1)
 
 ## Ratelimits in detail
 
--   `GRAPHQL_MUTATIONS`: secretgraph provides an extension to limit mutating requests on graphql. This extension is enabled by the default scheme. When using an custom other schema you have to include the extension or the functionality is disabled
--   `GRAPHQL_ERRORS`: secretgraph provides an extension to limit requests on graphql which cause errors. This extension is enabled by the default scheme. When using an custom other schema you have to include the extension or the functionality is disabled.
-    `ANONYMOUS_REGISTER`: register a cluster without a user/net. When not disabling this functionality and make the server public you need abuse controls
-    `DECRYPT_SERVERSIDE`:
+Note: some keys can be set to "iprestrict" for enabling iprestrict
+
+-   `GRAPHQL_MUTATIONS`: secretgraph provides an extension to limit invalid mutating requests on graphql. When writeok is False the request is added to the potential bad mutations. This extension is enabled by the default scheme. When using an custom other schema you have to include the extension to enable this functionality. can be set to "iprestrict" to use django-fast-iprestrict
+-   `GRAPHQL_ERRORS`: secretgraph provides an extension to limit requests on graphql which cause errors. This extension is enabled by the default scheme. When using an custom other schema you have to include the extension to enable this functionality. can be set to "iprestrict" to use django-fast-iprestrict
+-   `ANONYMOUS_REGISTER`: register a cluster without a user/net. When not disabling this functionality and make the server public you need abuse controls. can be set to "iprestrict" to use django-fast-iprestrict
+-   `DECRYPT_SERVERSIDE`: ratelimit serverside decryptions, hard limits recommended as it could be used for DDOS. Note: currently required for a working proxy view. can be set to "iprestrict" to use django-fast-iprestrict
+-   `PULL`: ratelimit for serverside pulls. Can be abused for DDOS attacks against thirdpartys so there is a ratelimit. In contrast to the other ratelimits it is applied on the net id and iprestrict is not a valid value
+-   `SIGNATURE_AND_KEY_RETRIEVAL`: ratelimit for signature retrieval. can be set to "iprestrict" to use django-fast-iprestrict
 
 ## docker
 

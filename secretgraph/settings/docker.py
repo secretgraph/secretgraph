@@ -75,9 +75,11 @@ else:
 if SECRETGRAPH_ADMINAREA:
     INSTALLED_APPS += [  # noqa F405
         "django.contrib.messages",
+        "django_fast_iprestrict",
     ]
     MIDDLEWARE += [  # noqa F405
         "django.contrib.messages.middleware.MessageMiddleware",
+        "django_fast_iprestrict.middleware.fast_iprestrict",
     ]
     TEMPLATES[0]["OPTIONS"]["context_processors"].append(  # noqa F405
         "django.contrib.messages.context_processors.messages"

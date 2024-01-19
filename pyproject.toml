@@ -41,6 +41,7 @@ mysqlclient = {version="*", optional = true}
 psycopg = {version="*", extras=["binary","pool"], optional = true}
 django-manifest-loader = {version="*", optional = true}
 django-fast-ratelimit = {version=">=3.0.0", optional = true}
+django-fast-iprestrict = {version=">=0.12.0", optional = true}
 nh3 = {version="*", optional = true}
 
 
@@ -53,7 +54,8 @@ faker = "*"
 
 [tool.poetry.group.dev.dependencies]
 django-manifest-loader = "*"
-django-fast-ratelimit = ">=0.9.0"
+django-fast-ratelimit = ">=7.0.0"
+django-fast-iprestrict = ">=0.12"
 nh3 = "*"
 graphene-protector = ">=0.7.2"
 django = ">=4.2"
@@ -78,6 +80,7 @@ proxy = [
 ]
 postgresql = ["psycopg"]
 mysql = ["mysqlclient"]
+iprestrict = ["django-fast-iprestrict"]
 
 
 [tool.black]
