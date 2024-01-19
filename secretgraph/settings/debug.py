@@ -27,6 +27,14 @@ INSTALLED_APPS += [  # noqa F405
     "secretgraph.server",
     "secretgraph.user",
 ]
+try:
+    import daphne  # noqa: F401
+
+    # before staticfiles
+    INSTALLED_APPS.insert(0, "daphne")
+except ImportError:
+    pass
+
 
 #  for admin
 MIDDLEWARE += [  # noqa F405
@@ -41,14 +49,6 @@ TEMPLATES[0]["OPTIONS"]["context_processors"] += [  # noqa F405
     "django.contrib.auth.context_processors.auth",
     "django.contrib.messages.context_processors.messages",
 ]
-try:
-    import daphne  # noqa: F401
-
-    # before staticfiles
-    INSTALLED_APPS.insert(0, "daphne")
-except ImportError:
-    pass
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
 SECRETGRAPH_REQUIRE_USER = False
@@ -85,6 +85,16 @@ SECRETGRAPH_DEFAULT_CLUSTER_GROUPS["debug_initial"] = {  # noqa F405
     "managed": True,
     "userSelectable": "INITIAL_MODIFYABLE",
 }
+
+
+SECRETGRAPH_DEFAULT_NET_GROUPS["debug_advanced"] = {  # noqa F405
+    "properties": [
+        "allow_global_name",
+        "allow_dangerous_actions",
+    ],
+    "managed": True,
+    "userSelectable": "UNRESTRICTED",
+}
 SECRETGRAPH_DEFAULT_NET_GROUPS["debug_admin"] = {  # noqa F405
     "properties": [
         "allow_global_name",
@@ -100,4 +110,5 @@ SECRETGRAPH_DEFAULT_NET_GROUPS["debug_admin"] = {  # noqa F405
         "manage_update",
         "manage_user",
     ],
+    "userSelectable": "DESELECTABLE",
 }

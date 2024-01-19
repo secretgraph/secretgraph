@@ -53,12 +53,19 @@ export interface ActionInputEntry
     locked?: boolean
 }
 
-type knownHashesType =
+type knownHashesTypeInner =
+    | {
+          keyHash: string
+          type: string
+      }
     | { [hash: string]: string[] }
-    | { keyHash: string; type: string }[] // cluster or content hashes
+    | null
+    | undefined
+
 type knownHashesTypeInput =
-    | (knownHashesType | null | undefined)[]
-    | (knownHashesType | null | undefined) // cluster or content hashes
+    | knownHashesTypeInner
+    | knownHashesTypeInner[]
+    | knownHashesTypeInput[]
 
 // TODO: mark actions from cluster
 export async function generateActionMapper({
@@ -97,48 +104,50 @@ export async function generateActionMapper({
     if (!(knownHashesContent instanceof Array)) {
         knownHashesContent = knownHashesContent ? [knownHashesContent] : []
     }
-    function helper(arr: knownHashesType[], isCluster: boolean) {
-        for (const entry of arr) {
-            if (entry instanceof Array) {
-                // typeof node actions
-                for (const el of entry) {
-                    if (!el) {
-                        console.debug(
-                            'known hashes contains invalid entry',
-                            el,
-                            'context',
-                            entry
-                        )
-                        continue
-                    }
-                    if (!knownHashes[el.keyHash]) {
-                        foundHashes.add(el.keyHash)
-                        knownHashes[el.keyHash] = new Set<`${string},${
-                            | 'true'
-                            | 'false'}`>([`${el.type},${isCluster}`])
-                    } else {
-                        knownHashes[el.keyHash].add(`${el.type},${isCluster}`)
-                    }
+    function helper(inp: knownHashesTypeInput, isCluster: boolean) {
+        if (inp instanceof Array) {
+            for (const entry of inp) {
+                helper(entry, isCluster)
+            }
+            return
+        }
+        if (inp) {
+            if ((inp as any)['keyHash']) {
+                const actionEntry = inp as {
+                    keyHash: string
+                    type: string
                 }
-            } else if (entry) {
-                if (!entry) {
-                    console.debug('known hashes contains invalid entry', entry)
-                    continue
-                }
-                for (const [hash, val] of Object.entries(entry)) {
-                    foundHashes.add(hash)
-                    knownHashes[hash] = SetOps.union(
-                        knownHashes[hash] || [],
-                        val.map<`${string},${'true' | 'false'}`>(
-                            (v) => `${v},${isCluster}`
-                        )
+                if (!knownHashes[actionEntry.keyHash]) {
+                    foundHashes.add(actionEntry.keyHash)
+                    knownHashes[actionEntry.keyHash] = new Set<`${string},${
+                        | 'true'
+                        | 'false'}`>([`${actionEntry.type},${isCluster}`])
+                } else {
+                    knownHashes[actionEntry.keyHash].add(
+                        `${actionEntry.type},${isCluster}`
                     )
+                }
+            } else {
+                try {
+                    for (const [hash, val] of Object.entries(
+                        inp as { [hash: string]: string[] }
+                    )) {
+                        knownHashes[hash] = SetOps.union(
+                            knownHashes[hash] || [],
+                            val.map<`${string},${'true' | 'false'}`>(
+                                (v) => `${v},${isCluster}`
+                            )
+                        )
+                        foundHashes.add(hash)
+                    }
+                } catch (exc) {
+                    console.error('invalid input', inp, exc)
                 }
             }
         }
     }
-    helper(knownHashesCluster as knownHashesType[], true)
-    helper(knownHashesContent as knownHashesType[], false)
+    helper(knownHashesCluster, true)
+    helper(knownHashesContent, false)
     for (const val of Object.values(knownHashes)) {
         if (val.size == 2 && val.has('other,true') && val.has('other,false')) {
             // skip

@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent
 def main():
     if str(BASE_DIR) not in sys.path:
         sys.path.append(str(BASE_DIR))
+    # switch to test settings when detecting test
     os.environ.setdefault(
         "DJANGO_SETTINGS_MODULE",
         "secretgraph.settings.test"
