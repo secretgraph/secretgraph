@@ -1,5 +1,6 @@
 # TODO
 
+-   document iprestrict groups, how to name rules
 -   optional: django-fast-iprestrict dep?, would remove extra settings
 -   cluster: doesn't handle missing tokens well
 -   goToNode document node change function
