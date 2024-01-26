@@ -1,10 +1,14 @@
-# Security concept
+# Security
 
-The idea is, that data can be stored on limited trustworthy servers.
-Missing patches should ideally not affect the security
-For this we have two defense mechanism
 
--   e2e Data encryption for preventing server leaks
--   with tokens (keys for servers) encrypted auth informations to prevent forgery by server and having an access control
+## iprestrict
 
-Server side decryption is an alternative, less secure way to access data. It is required for reading the contents on plain websites without client (e.g. secretgraph.proxy).
+
+When a ratelimit is set to iprestrict, a rule with the same name as the group is required.
+
+Following keys are defined:
+
+`secretgraph_graphql_mutations`: same as mutation ratelimit key, ignores pathes
+`secretgraph_graphql_errors`: same as graphql errors key, ignores pathes
+`secretgraph_serverside_decryption`: same as serverside decryption key, ignores pathes
+`secretgraph_signature_and_key_retrieval`: ...
