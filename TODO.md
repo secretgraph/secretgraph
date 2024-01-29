@@ -1,6 +1,5 @@
 # TODO
 
--   document iprestrict groups, how to name rules
 -   goToNode document node change function
 -   document how to add elements, cannot use goToNode here
 -   add bypass\_ property prefix to potential dangerous property prefixes

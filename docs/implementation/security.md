@@ -4,7 +4,9 @@
 ## iprestrict
 
 
-When a ratelimit is set to iprestrict, a rule with the same name as the group is required.
+When a ratelimit is set to iprestrict, you can hook in with RuleRatelimitGroup matchers.
+
+Note: the rule will not used anymore in the normal matching process
 
 Following keys are defined:
 
