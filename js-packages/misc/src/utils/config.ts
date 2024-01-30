@@ -91,26 +91,31 @@ export function cleanConfig(
     }
     if (!config.slots?.length) {
         config.slots = ['main']
+        console.debug("missing slots, fix")
         hasChanges = true
     }
-    if (!config.configLockUrl) {
+    if (config.configLockUrl === undefined) {
+        console.debug("missing configLockUrl, fix")
         config.configLockUrl = ''
         hasChanges = true
     }
 
     if (!config.configSecurityQuestion?.length) {
+        console.debug("missing configSecurityQuestion, fix")
         config.configSecurityQuestion = [
             'The answer to life, the universe, and everything ("The Hitchhiker\'s Guide to the Galaxy").',
             defaultAnswer,
         ]
         hasChanges = true
     }
-    if (!Object.keys(config.trustedKeys || {}).length) {
+    if (config.trustedKeys === undefined) {
+        console.debug("missing trustedKeys, fix")
         config.trustedKeys = {}
         hasChanges = true
     }
     for (const [key, val] of Object.entries(config.tokens)) {
         if (typeof val == 'string') {
+            console.debug("old token format, fix")
             config.tokens[key] = {
                 data: val,
                 note: '',
@@ -121,6 +126,7 @@ export function cleanConfig(
     }
     for (const [key, val] of Object.entries(config.certificates)) {
         if (typeof val == 'string') {
+            console.debug("old certificate format, fix")
             config.certificates[key] = {
                 data: val,
                 note: '',
@@ -139,6 +145,7 @@ export function cleanConfig(
     if (domain) {
         const nBaseurl = new URL(config.baseUrl, domain).href
         if (nBaseurl != config.baseUrl) {
+            console.debug("change baseurl")
             hasChanges = true
             config.baseUrl = nBaseurl
         }
@@ -225,6 +232,7 @@ export function cleanConfig(
                 )[0]
                 config.hosts[nhost].contents = new_contents
                 delete config.hosts[host]
+                console.log("move host")
                 hasChanges = true
             }
         }
@@ -236,6 +244,7 @@ export function cleanConfig(
                 const nlink = new URL(link, domain).href
                 // deduplicate
                 if (link != nlink || links.includes(nlink)) {
+                    console.debug("deduplicate trusted keys")
                     hasChanges = true
                     hasUpdate = true
                 }
@@ -1083,7 +1092,6 @@ export function updateConfig(
                         val as Interfaces.ConfigInterface[typeof key]
                     count++
                 }
-                break
         }
     }
     const ret = cleanConfig(newState)

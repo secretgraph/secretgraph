@@ -334,7 +334,7 @@ export async function decryptContentObject({
                 value.startsWith('transfer_url=')
         )
         if (params2.transferClient) {
-            if (transfer_url.startsWith('~')) {
+            if (transfer_url && transfer_url.startsWith('~')) {
                 let transfer_key, decrypted_tags
                 try {
                     // also handles key= tags

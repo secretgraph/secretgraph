@@ -407,7 +407,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                                         variant="contained"
                                         color="primary"
                                         disabled={
-                                            disabled || isSubmitting || !dirty
+                                            disabled || !values.work || isSubmitting || !dirty
                                         }
                                         onClick={submitForm}
                                     >
@@ -462,7 +462,7 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
         }
     }, [mainCtx.editCluster])
     React.useEffect(() => {
-        if (!dataUnfinished) {
+        if (!dataUnfinished || loading) {
             return
         }
         let active = true
@@ -477,6 +477,8 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
                         (val: { keyHash: string; type: string }) => val.type
                     ),
                 ]),
+                readonly:
+                    dataUnfinished.secretgraph.node.tags.includes('immutable'),
             }
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null
             const contentstuff =

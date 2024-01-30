@@ -2,7 +2,7 @@ import { ApolloClient, useQuery } from '@apollo/client'
 import List from '@mui/material/List'
 import Table from '@mui/material/Table'
 import TableRow from '@mui/material/TableRow'
-import TableBody from '@mui/material/TableBody'
+import Stack from '@mui/material/Stack'
 import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
@@ -46,7 +46,7 @@ export default function SplittedGroupSelectList({
         return { topics, misc }
     }, [groups])
     return (
-        <>
+        <Stack gap={2}>
             {renderval.topics.length ? (
                 <details open>
                     <summary>{gettext('topics')}</summary>
@@ -59,6 +59,6 @@ export default function SplittedGroupSelectList({
                     <GroupSelectList {...kwargs} groups={renderval.misc} />
                 </details>
             ) : null}
-        </>
+        </Stack>
     )
 }

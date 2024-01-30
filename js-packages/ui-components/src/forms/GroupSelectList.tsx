@@ -131,8 +131,8 @@ export default function GroupSelectList({
                             multiple
                         />
                     </TableCell>
-                    <TableCell align="right">{group.name}</TableCell>
-                    <TableCell align="right">{group.description}</TableCell>
+                    <TableCell align="left">{group.name}</TableCell>
+                    <TableCell align="left">{group.description}</TableCell>
                 </TableRow>
             )
         }
@@ -143,9 +143,8 @@ export default function GroupSelectList({
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableCell></TableCell>
-                        <TableCell align="right">Name</TableCell>
-                        <TableCell align="right">Description</TableCell>
+                        <TableCell colSpan={2} align="left" width={0}>Name</TableCell>
+                        <TableCell align="left"  width="100%">Description</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>{renderval}</TableBody>
