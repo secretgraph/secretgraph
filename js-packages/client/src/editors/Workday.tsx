@@ -200,8 +200,8 @@ const InnerWorkday = React.memo(function InnerWorkday({
         actions,
         cluster: mainCtx.editCluster,
         day: (data ? data.day : null) || new Date().toISOString(),
-        work: (data ? data.work : null) || '',
-        note: data?.note || '',
+        work: data?.work || mainCtx.cloneData?.work || '',
+        note: data?.note || mainCtx.cloneData?.note || '',
         times: data?.times || [
             {
                 start: new Date().toISOString(),
@@ -273,6 +273,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                             ],
                             editCluster: values.cluster,
                             currentCluster: values.cluster,
+                            cloneData: null,
                         })
                     } else {
                         updateMainCtx({
@@ -282,6 +283,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                             action: 'update',
                             editCluster: values.cluster,
                             currentCluster: values.cluster,
+                            cloneData: null,
                         })
                     }
                 } else {
@@ -290,6 +292,9 @@ const InnerWorkday = React.memo(function InnerWorkday({
             }}
         >
             {({ values, isSubmitting, dirty, submitForm, setFieldValue }) => {
+                React.useEffect(() => {
+                    updateMainCtx({ cloneData: values })
+                }, [values])
                 React.useEffect(() => {
                     values.cluster &&
                         updateMainCtx({ editCluster: values.cluster })
@@ -500,7 +505,7 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
                 ],
                 hashAlgorithms,
             })
-            if (!active) {
+            if (!active || loading) {
                 return
             }
             let obj
@@ -513,7 +518,7 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
                     transferClient: client,
                 })
             } catch (exc) {
-                if (!active) {
+                if (!active || loading) {
                     return
                 }
                 throw exc
@@ -522,7 +527,7 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
                 console.error('failed decoding')
                 return
             }
-            if (!active) {
+            if (!active || loading) {
                 return
             }
 

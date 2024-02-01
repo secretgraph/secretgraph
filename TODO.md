@@ -3,8 +3,6 @@
 -   Workday edit, doesn't smoothly update, key missmatch
 -   goToNode document node change function
 -   document how to add elements, cannot use goToNode here
--   add bypass\_ property prefix to potential dangerous property prefixes
--   document pull and ratelimits
 -   editor for Personal Data (in progress)
 -   HashEntry: multiple action types for a hash cause multiple seperate actions, display it nicer
 -   complete share
@@ -27,6 +25,7 @@
 # TODO later
 
 -   quantum safety (currently there is no stable implementation)
+-   add bypass\_ property prefix to potential dangerous property prefixes
 -   automatize python query generation
 -   safeListedContents Subquery/ids which are no subject of safeguards introduced by fetch_contents, may introduce some performance overhead
 -   document and enable pull and make Content optional (cluster id will cause content creation)

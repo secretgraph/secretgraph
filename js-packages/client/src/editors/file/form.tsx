@@ -142,27 +142,22 @@ export function InnerFile({
             <Formik
                 initialValues={
                     {
-                        plainInput:
-                            (mainCtx.cloneData &&
-                                mainCtx.cloneData.plainInput) ||
-                            '',
-                        htmlInput:
-                            (mainCtx.cloneData &&
-                                mainCtx.cloneData.htmlInput) ||
-                            '',
+                        plainInput: data
+                            ? ''
+                            : mainCtx.cloneData?.plainInput || '',
+                        htmlInput: data
+                            ? ''
+                            : mainCtx.cloneData?.htmlInput || '',
                         // when viewing existing data: fileInput is used
                         fileInput: data
                             ? data
-                            : (mainCtx.cloneData &&
-                                  mainCtx.cloneData.fileInput) ||
-                              null,
+                            : mainCtx.cloneData?.fileInput || null,
                         state,
                         name,
                         encryptName,
                         keywords:
                             tags?.keywords ||
-                            (mainCtx.cloneData &&
-                                mainCtx.cloneData.keywords) ||
+                            mainCtx.cloneData?.keywords ||
                             [],
                         cluster: mainCtx.editCluster || null,
                         actions,

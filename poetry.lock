@@ -529,13 +529,13 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-fast-iprestrict"
-version = "0.16.0"
+version = "0.16.1"
 description = ""
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django_fast_iprestrict-0.16.0-py3-none-any.whl", hash = "sha256:848125c8a25921ba92985ccd7bb35623bca82496fb7d379fa2daa501f72c4d40"},
-    {file = "django_fast_iprestrict-0.16.0.tar.gz", hash = "sha256:8f35b3afb9c91473206f9cdee21a0e944d808105e874177e754d2de007d54753"},
+    {file = "django_fast_iprestrict-0.16.1-py3-none-any.whl", hash = "sha256:a54eb6df622fa0192903d4ce9394ee2274b3cfae32135e16533cac9af9e05176"},
+    {file = "django_fast_iprestrict-0.16.1.tar.gz", hash = "sha256:30433504bf3984a184a56cc020cfde3768105360a1b7143f0243225e322d941b"},
 ]
 
 [package.dependencies]
@@ -546,13 +546,13 @@ ratelimit = ["django-fast-ratelimit (>=7.3.3)"]
 
 [[package]]
 name = "django-fast-ratelimit"
-version = "8.1.0"
+version = "9.0.1"
 description = "Fast ratelimit implementation with django caches"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django_fast_ratelimit-8.1.0-py3-none-any.whl", hash = "sha256:96a6ff720890b560ffcaf0cd0e9d72d66c44fb5c87f32719fe58b981dc3f07db"},
-    {file = "django_fast_ratelimit-8.1.0.tar.gz", hash = "sha256:5ce81d4236e38bf03b0e8766a183abde81f846ec901f0f416c4a2c995d65a9e2"},
+    {file = "django_fast_ratelimit-9.0.1-py3-none-any.whl", hash = "sha256:ddf72d0353a6f39711cc263f3e90c5565f9a00eb4923a66ded62779a681e8ed6"},
+    {file = "django_fast_ratelimit-9.0.1.tar.gz", hash = "sha256:478528bbc91a674df266e394561f877406d176802a39ba3193a3ede65d48b68b"},
 ]
 
 [package.dependencies]
@@ -1250,18 +1250,18 @@ files = [
 
 [[package]]
 name = "platformdirs"
-version = "4.1.0"
+version = "4.2.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "platformdirs-4.1.0-py3-none-any.whl", hash = "sha256:11c8f37bcca40db96d8144522d925583bdb7a31f7b0e37e3ed4318400a8e2380"},
-    {file = "platformdirs-4.1.0.tar.gz", hash = "sha256:906d548203468492d432bcb294d4bc2fff751bf84971fbb2c10918cc206ee420"},
+    {file = "platformdirs-4.2.0-py3-none-any.whl", hash = "sha256:0614df2a2f37e1a662acbd8e2b25b92ccf8632929bc6d43467e17fe89c75e068"},
+    {file = "platformdirs-4.2.0.tar.gz", hash = "sha256:ef0cc731df711022c174543cb70a9b5bd22e5a9337c8624ef2c2ceb8ddad8768"},
 ]
 
 [package.extras]
-docs = ["furo (>=2023.7.26)", "proselint (>=0.13)", "sphinx (>=7.1.1)", "sphinx-autodoc-typehints (>=1.24)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4)", "pytest-cov (>=4.1)", "pytest-mock (>=3.11.1)"]
+docs = ["furo (>=2023.9.10)", "proselint (>=0.13)", "sphinx (>=7.2.6)", "sphinx-autodoc-typehints (>=1.25.2)"]
+test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4.3)", "pytest-cov (>=4.1)", "pytest-mock (>=3.12)"]
 
 [[package]]
 name = "pluggy"
